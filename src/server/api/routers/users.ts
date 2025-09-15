@@ -1,5 +1,6 @@
 "use server";
 import { auth } from "@lib/auth"
+import { authClient } from "@lib/auth-client";
 
 export const signIn = async (email: string, password: string) => {
     try{
@@ -45,6 +46,24 @@ export const signUp = async (email: string, password: string, username: string) 
         return{
             success: false,
             message: e.message || "Error signing up" 
+        }
+    }
+}
+
+export const signOut = async () => {
+    try{
+        await authClient.signOut()
+
+        return{
+            success: true,
+            message: "Signed out successfully"
+        }
+    }
+    catch(err){
+        const e = err as Error
+        return{
+            success: false,
+            message: e.message || "Error signing out" 
         }
     }
 }
