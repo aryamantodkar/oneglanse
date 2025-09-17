@@ -1,5 +1,5 @@
 "use client"
-import { Button } from "./ui/button"
+import { Button } from "../ui/button"
 import { Loader2, LogOut } from "lucide-react"
 import { signOut } from "@/server/api/routers/users"
 import { toast } from "sonner"

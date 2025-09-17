@@ -4,6 +4,8 @@ import { db } from "@/server/db/index"; // your drizzle instance
 import { nextCookies } from "better-auth/next-js";
 import * as schema from "@/server/db/schema";
 import * as authSchema from "@/server/db/auth-schema";
+import { organization } from "better-auth/plugins";
+import { getActiveOrganization } from "@/server/api/routers/organizations";
 
 export const auth = betterAuth({
     socialProviders: {
@@ -15,6 +17,21 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true, 
     }, 
+    databaseHooks: {
+        session: {
+            create: {
+            before: async (session) => {
+                const organization = await getActiveOrganization(session.userId);
+                return {
+                data: {
+                    ...session,
+                    activeOrganizationId: organization?.id,
+                },
+                };
+            },
+            },
+        },
+    },
     database: drizzleAdapter(db, {
         provider: "pg", // or "mysql", "sqlite"
         schema: {
@@ -22,5 +39,8 @@ export const auth = betterAuth({
             ...authSchema
         }
     }),
-    plugins: [nextCookies()]
+    plugins: [
+        organization(),
+        nextCookies()
+    ]
 });
