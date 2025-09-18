@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1757786114999,
-      "tag": "0000_faulty_aqueduct",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1757813010960,
-      "tag": "0001_greedy_romulus",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1757945071216,
-      "tag": "0002_strong_captain_cross",
+      "when": 1758196728637,
+      "tag": "0000_conscious_triathlon",
       "breakpoints": true
     }
   ]

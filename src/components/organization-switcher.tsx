@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import type { Organization } from "@/server/db/auth-schema"
+import type { Organization } from "@/server/db/types"
 import { authClient } from "@lib/auth-client";
 
 

@@ -4,12 +4,10 @@ import { env } from "@/env";
 
 export default {
 	schema: [
-		"./src/server/db/schema.ts",     
-		"./src/server/db/auth-schema.ts",  
+		"./src/server/db/schema/index.ts",     
 	],
 	dialect: "postgresql",
 	dbCredentials: {
 		url: env.DATABASE_URL,
 	},
-	tablesFilter: ["onescopeAI_*"],
 } satisfies Config;

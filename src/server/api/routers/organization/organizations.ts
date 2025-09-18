@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { db } from "@/server/db";
 import { eq, inArray } from "drizzle-orm";
-import { member, organization, user } from "@/server/db/auth-schema";
-import { getCurrentUser } from "./users";
+import { member, organization, user } from "@/server/db/schema/auth";
+import { getCurrentUser } from "../users";
 
 export async function getOrganizations() {
     const { currentUser } = await getCurrentUser()
@@ -21,6 +21,7 @@ export async function getOrganizations() {
 
     return organizations;
 }
+
 
 export async function getActiveOrganization(userId: string) {
     const memberUser = await db.query.member.findFirst({

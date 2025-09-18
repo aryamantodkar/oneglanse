@@ -19,7 +19,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { signIn } from "@/server/api/routers/users"
 import { z } from "zod"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -56,15 +55,20 @@ export function LoginForm({
  
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    const {success, message} = await signIn(values.email, values.password)
+    
+    try{
+      await authClient.signIn.email({
+          email: values.email,
+          password: values.password
+      })
+      toast.success("Signed in successfully!")
+      router.push("/workspace")
+    }
+    catch(err){
+      console.log(err)
+      toast.error("Failed to sign in!")
+    }
 
-    if(success){
-      toast.success(message as string)
-      router.push("/dashboard")
-    }
-    else{
-      toast.error(message as string)
-    }
     setIsLoading(false)
   }
 

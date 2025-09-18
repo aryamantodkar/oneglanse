@@ -1,10 +1,10 @@
 "use client"
 import { Button } from "../ui/button"
 import { Loader2, LogOut } from "lucide-react"
-import { signOut } from "@/server/api/routers/users"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { authClient } from "@lib/auth-client"
 
 export function Logout() {
     const router = useRouter()
@@ -12,14 +12,15 @@ export function Logout() {
     
     const handleLogout = async () => {
         setIsLoading(true)
-        const {success, message} = await signOut()
-        if(success){
-            toast.success(message as string)
-            router.push("/")
-        }
-        else{
-            toast.error(message as string)
-        }
+        try{
+            await authClient.signOut()
+            toast.success("Signed out successfully!")
+            router.push("/login")
+          }
+          catch(err){
+            console.log(err)
+            toast.error("Failed to sign out!")
+          }
         setIsLoading(false)
     }
 

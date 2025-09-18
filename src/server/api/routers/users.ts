@@ -1,6 +1,6 @@
 "use server";
 import { db } from "@/server/db";
-import { user } from "@/server/db/auth-schema";
+import { user } from "@/server/db/schema/auth";
 import { auth } from "@lib/auth"
 import { authClient } from "@lib/auth-client";
 import { eq } from "drizzle-orm";
@@ -29,6 +29,7 @@ export const getCurrentUser = async () => {
         currentUser
     };
 }
+
 export const signIn = async (email: string, password: string) => {
     try{
         await auth.api.signInEmail({

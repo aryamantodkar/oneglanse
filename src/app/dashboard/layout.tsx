@@ -1,4 +1,3 @@
-import { Header } from "@/components/header";
 
 export default function DashboardLayout({
     children,
@@ -7,7 +6,6 @@ export default function DashboardLayout({
 }) {
     return (
         <div>
-            <Header/>
             {children}
         </div>
     )

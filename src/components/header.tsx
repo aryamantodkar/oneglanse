@@ -1,6 +1,6 @@
 import { Logout } from "@/components/forms/logout";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
-import { getOrganizations } from "@/server/api/routers/organizations";
+import { getOrganizations } from "@/server/api/routers/organization/organizations";
 
 export async function Header() {
   const organizations = await getOrganizations()
