@@ -9,15 +9,25 @@ import {
 } from "@/components/ui/select"
 import type { Organization } from "@/server/db/types"
 import { authClient } from "@lib/auth-client";
+import { useEffect, useState } from "react";
 
 
-interface OrganizerSwitcherProps {
-    organizations: Organization[];
-}
+export function OrganizationSwitcher (){
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
 
-export function OrganizationSwitcher ({
-    organizations
-}: OrganizerSwitcherProps){
+    useEffect(() => {
+        const fetchAllOrganizations = async () => {
+            const { data, error } = await authClient.organization.list();
+            if (error) {
+                console.error("Failed to fetch organizations:", error);
+                return;
+            }
+            setOrganizations((data ?? []) as Organization[]);
+        };
+        fetchAllOrganizations();
+    }, []);
+    
+
     const handleChangeOrganization = async (organizationId: string) => {
         await authClient.organization.setActive({
             organizationId,

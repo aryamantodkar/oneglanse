@@ -12,30 +12,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { authClient } from "@lib/auth-client"
 import { toast } from "sonner"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Loader2 } from "lucide-react"
-import { redirect, useRouter } from "next/navigation"
+import { redirect } from "next/navigation"
 import { api } from "@/trpc/react"
 import { Label } from "@/components/ui/label"
 import { createAuthClient } from "better-auth/react"
 
-const { useSession } = createAuthClient() 
 
-export default function NewWorkspace() {
-  const router = useRouter();
-  const {
-      data: session,
-      isPending,
-      refetch 
-  } = useSession()
-
-  useEffect(() => { 
-    console.log("user", session);
-    if (!isPending && !session) {
-      router.push("/");
-    }
-  }, [session, isPending, router]);
-  
+export default function NewWorkspace() {  
     const [formData, setFormData] = useState({
       workspaceName: "",
       workspaceSlug: "",

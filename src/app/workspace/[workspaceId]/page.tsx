@@ -1,4 +1,5 @@
 
+import { Header } from "@/components/header";
 import { getWorkspace } from "@lib/getWorkspace";
 import { redirect } from "next/navigation";
 
@@ -9,7 +10,7 @@ export default async function Workspace() {
     }
     return (
         <div>
-            {workspace.id}
+            <Header/>
         </div>
     )
 }

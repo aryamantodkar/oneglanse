@@ -7,6 +7,10 @@ export async function getTenant() {
 		headers: await headers()
 	})
 
+	if(!session){
+		return redirect("/login")
+	}
+
 	const orgId = session?.session.activeOrganizationId
 	if (orgId) return orgId;
 
