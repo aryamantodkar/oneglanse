@@ -17,7 +17,6 @@ import { Loader2 } from "lucide-react"
 import { redirect } from "next/navigation"
 import { api } from "@/trpc/react"
 import { Label } from "@/components/ui/label"
-import { createAuthClient } from "better-auth/react"
 
 
 export default function NewWorkspace() {  
