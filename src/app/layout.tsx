@@ -2,7 +2,6 @@ import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/sonner"
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
@@ -16,15 +15,17 @@ const geist = Geist({
 	variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
-		<html lang="en" className={`${geist.variable}`}>
-			<body>
-				<TRPCReactProvider>{children}</TRPCReactProvider>
-				<Toaster />
-			</body>
-		</html>
-	);
+        <html lang="en" className={`${geist.variable}`}>
+            <body>
+                <TRPCReactProvider>
+                    {children}
+                    <Toaster />
+                </TRPCReactProvider>
+            </body>
+        </html>
+    );
 }

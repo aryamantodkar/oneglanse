@@ -81,7 +81,7 @@ export default function NewWorkspace() {
           toast.error("Could not set active workspace.");
         }
     
-        redirect(`/workspace/${data.workspace.slug}`);
+        redirect(`/dashboard?workspace=${data.org.id}`);
       } finally {
         setLoading(false);
       }

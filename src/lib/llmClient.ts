@@ -1,0 +1,124 @@
+import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+type UserPrompt = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  prompt: string;
+  created_at: string;
+};
+
+export async function runLLMs(prompts: UserPrompt[]) {
+  try {
+    const allResults = await Promise.all( 
+      prompts.map(async (promptObj) => {
+        const { id, prompt } = promptObj;
+
+        const [gptRes] = await Promise.all([
+          queryOpenAI(prompt),
+          // queryClaude(prompt),
+        ]);
+
+        return {
+          id,
+          results: [
+            { modelProvider: "OpenAI GPT", output: gptRes },
+            // { modelProvider: "Anthropic Claude", output: claudeRes },
+          ],
+        };
+      })
+    );
+
+    return allResults;
+  } catch (err) {
+    console.error("Error running LLMs or analyzing results:", err);
+    return [];
+  }
+}
+
+export async function queryOpenAI(userQuery: string) {
+  const response = await openai.responses.create({
+    model: "gpt-5",
+    tools: [{ type: "web_search" }],
+    input: userQuery,
+  });
+
+  const metrics = response.output
+    .filter((o: any) => o.type === "message")
+    .map((o: any) => ({
+      id: response.id,
+      response: o.text || "",
+      citations: Array.isArray(o.annotations)
+        ? o.annotations.map((r: any) => ({
+            title: r.title || "",
+            url: r.url || "",
+            start_index: r.start_index ?? null,
+            end_index: r.end_index ?? null,
+          }))
+        : [],
+    }));
+
+  return {
+    model: "gpt-5",
+    metrics,
+  };
+}
+export async function queryClaude(userQuery: string) {
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-1-20250805",
+    max_tokens: 1024,
+    messages: [
+      {
+        role: "user",
+        content: userQuery
+      }
+    ],
+    tools: [
+      {
+        type: "web_search_20250305",
+        name: "web_search",
+        max_uses: 5
+      }
+    ]
+  });
+
+  if (!Array.isArray(response.content)) {
+    return { model: "claude-opus-4-1-20250805", metrics: [], rawResponse: response };
+  }
+
+  const metrics = response.content.flatMap((item: any) => {
+    if (item.type === "text" && Array.isArray(item.citations) && item.citations.length > 0) {
+      return {
+        id: response.id,
+        response: item.text || "",
+        citations: item.citations.map((r: any) => ({
+          title: r.title || "",
+          cited_text: r.cited_text || "",
+          url: r.url || "",
+        })),
+        sources: [] as any[]
+      };
+    } else if (item.type === "web_search_tool_result" && Array.isArray(item.content)) {
+      return {
+        id: response.id,
+        response: "",
+        citations: [] as any[],
+        sources: item.content.map((r: any) => ({
+          title: r.title || "",
+          url: r.url || "",
+          page_age: r.page_age || null
+        }))
+      };
+    }
+    return [];
+  });
+
+  return {
+    model: "claude-opus-4-1-20250805",
+    metrics
+  };
+}

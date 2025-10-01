@@ -1,4 +1,7 @@
+version: '3.9'
+
 services:
+  # PostgreSQL service (existing)
   db:
     image: postgres:latest
     container_name: postgres_db
@@ -12,5 +15,22 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
+  # ClickHouse service
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse_db
+    restart: always
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: password
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse-init/:/docker-entrypoint-initdb.d/
+
 volumes:
   db_data:
+  clickhouse_data:

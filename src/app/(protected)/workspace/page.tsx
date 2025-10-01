@@ -8,5 +8,5 @@ export default async function Home() {
     return redirect("/workspace/new")
   }
   
-  return redirect(`/workspace/${workspace.id}`)
+  return redirect(`/dashboard?workspace=${workspace.id}`)
 }
