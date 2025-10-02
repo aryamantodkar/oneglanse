@@ -157,8 +157,8 @@ export default function PromptsDataTable() {
       </div>
 
       {/* Data Table */}
-      <div className="overflow-auto w-full">
-        <Table className="w-full border border-gray-200 rounded-xl table-auto min-w-[800px] mx-auto">
+      <div className="w-full">
+      <Table className="w-full border border-gray-200 rounded-xl table-auto">
           <TableHeader className="bg-gray-50">
             <TableRow>
               <TableHead className="pl-4 w-12">
@@ -169,7 +169,7 @@ export default function PromptsDataTable() {
                       setSelectedRows(new Set(prompts.map((_, idx) => idx)));
                     } else {
                       setSelectedRows(new Set());
-                    }
+                    } 
                   }}
                 />
               </TableHead>
@@ -190,7 +190,7 @@ export default function PromptsDataTable() {
                 <TableCell className="pl-4">
                   <Checkbox checked={selectedRows.has(idx)} />
                 </TableCell>
-                <TableCell>{prompt}</TableCell>
+                <TableCell className="max-w-[400px] whitespace-normal break-words">{prompt}</TableCell>
                 <TableCell>Public</TableCell>
                 <TableCell>Neutral</TableCell>
               </TableRow>
