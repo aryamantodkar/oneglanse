@@ -102,31 +102,80 @@ export const promptRouter = createTRPCRouter({
       if (!userId) {
         throw new Error("Unauthorized");
       }
-  
+
       try {
-        const nonEmptyPrompts = prompts.filter(p => p.trim() !== "");
-  
-        const values = nonEmptyPrompts.map(p => ({
-          id: uuidv4(),
-          user_id: userId,
-          workspace_id: workspaceId,
-          prompt: p.replace(/'/g, "''"),
-          created_at: formatDateToClickHouse(new Date()),
-        }));
-  
-        await clickhouse.insert({
-          table: "user_prompts",
-          values,
-          format: "JSONEachRow", 
+        // Normalize prompts
+        const nonEmptyPrompts = prompts
+          .map((p) => p.trim())
+          .filter((p) => p !== "");
+
+        // 1. Fetch existing prompts for this user/workspace
+        const existing = await clickhouse.query({
+          query: `
+            SELECT prompt 
+            FROM analytics.user_prompts 
+            WHERE user_id = {userId:String} 
+              AND workspace_id = {workspaceId:String}
+          `,
+          query_params: { userId, workspaceId },
+          format: "JSONEachRow",
         });
+
+        const existingRows = (await existing.json()) as Array<{ prompt: string }>;
+        const existingPrompts = new Set(existingRows.map((r) => r.prompt));
+
+        // 2. Find prompts to insert (in input but not in DB)
+        const promptsToInsert = nonEmptyPrompts.filter((p) => !existingPrompts.has(p));
+
+        // 3. Find prompts to delete (in DB but not in input)
+        const promptsToDelete = existingRows
+          .map((r) => r.prompt)
+          .filter((p) => !nonEmptyPrompts.includes(p));
+
+        // 4. Insert new prompts
+        if (promptsToInsert.length > 0) {
+          const values = promptsToInsert.map((p) => ({
+            id: uuidv4(),
+            user_id: userId,
+            workspace_id: workspaceId,
+            prompt: p,
+            created_at: formatDateToClickHouse(new Date()),
+          }));
+
+          await clickhouse.insert({
+            table: "analytics.user_prompts",
+            values,
+            format: "JSONEachRow",
+          });
+        }
+
+        // 5. Delete removed prompts
+        if (promptsToDelete.length > 0) {
+          await clickhouse.command({
+            query: `
+              ALTER TABLE analytics.user_prompts 
+              DELETE WHERE user_id = {userId:String} 
+                AND workspace_id = {workspaceId:String} 
+                AND prompt IN ({promptsToDelete:Array(String)})
+            `,
+            query_params: {
+              userId,
+              workspaceId,
+              promptsToDelete,
+            },
+          });
+        }
 
         return {
           success: true,
-          inserted: values.length,
-          prompts: values,
+          inserted: promptsToInsert.length,
+          deleted: promptsToDelete.length,
+          kept: nonEmptyPrompts.length - promptsToInsert.length,
+          prompts: nonEmptyPrompts,
         };
       } catch (err) {
-        console.error("Failed to store prompts in ClickHouse:", err);
+        console.error("Failed to sync prompts in ClickHouse:", err);
+        throw err;
       }
     }),
   fetchPromptResponses: protectedProcedure

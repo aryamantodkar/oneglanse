@@ -1,25 +1,42 @@
 "use client";
-import { api } from "@/trpc/react";
+
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { X, ArrowRight, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Plus, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
-export default function Prompts() {
+export default function PromptsDataTable() {
   const [prompts, setPrompts] = useState<string[]>([]);
+  const [initialPrompts, setInitialPrompts] = useState<string[]>([]);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [dialogOpen, setDialogOpen] = useState(false);
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const router = useRouter();
   const storePromptMutation = api.prompt.store.useMutation();
-  const askPromptMutation = api.prompt.ask.useMutation();
 
+  // Fetch user prompts
   const { data } = api.prompt.fetchUserPrompts.useQuery(
     { workspaceId },
     { retry: 2, refetchOnWindowFocus: false }
@@ -28,109 +45,159 @@ export default function Prompts() {
   useEffect(() => {
     if (data?.prompts) {
       setPrompts(data.prompts);
+      setInitialPrompts(data.prompts);
     }
   }, [data]);
 
-  const addPromptField = () => {
-    if (!currentPrompt.trim() || prompts.length >= 5) return;
-    setPrompts([...prompts, currentPrompt.trim()]);
-    setCurrentPrompt("");
+  const addPrompt = (prompt: string) => {
+    if (!prompt.trim()) return;
+    setPrompts([...prompts, prompt.trim()]);
   };
 
-  const removePromptField = (index: number) => {
-    setPrompts(prompts.filter((_, i) => i !== index));
+  const toggleRow = (idx: number) => {
+    setSelectedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(idx)) newSet.delete(idx);
+      else newSet.add(idx);
+      return newSet;
+    });
   };
 
-  const handleNext = async () => {
+  const handleSave = async () => {
     setLoading(true);
-    setSuccess(false);
     try {
-      if (prompts.length > 0) {
-        await storePromptMutation.mutateAsync({
-          prompts,
-          workspaceId,
-        });
+      await storePromptMutation.mutateAsync({ prompts, workspaceId });
+      setInitialPrompts(prompts);
+      setSelectedRows(new Set());
 
-        await askPromptMutation.mutateAsync({
-          workspaceId,
-        });
-      }
-      setSuccess(true);
-      setPrompts([]);
-      router.push(`/prompts?workspaceId=${workspaceId}`);
+      toast.success("Prompts saved successfully!");
     } catch (err) {
       console.error("Failed to save prompts:", err);
+
+      toast.error("Failed to save prompts");
     } finally {
       setLoading(false);
     }
   };
 
+  const newChanges =
+    prompts.length !== initialPrompts.length ||
+    prompts.some((p, idx) => p !== initialPrompts[idx]);
+
+  const handleAddPrompt = () => {
+    addPrompt(currentPrompt);
+    setCurrentPrompt("");
+    setDialogOpen(false);
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Prompts list */}
-      <main className="flex-grow flex flex-col items-center justify-center px-6 py-8 w-full max-w-5xl space-y-4 relative">
-        {prompts.length > 0 && (
-          <div className="flex flex-col gap-4 w-full">
-            {prompts.map((prompt, idx) => (
-              <Card key={idx} className="p-2 relative rounded-xl shadow-md hover:shadow-lg transition w-full">
-                <CardContent className="p-3 text-gray-800 relative">
-                  <p className="text-sm text-gray-500 mb-1 font-medium">Prompt {idx + 1}</p>
-                  {prompt}
-                  <button
-                    type="button"
-                    onClick={() => removePromptField(idx)}
-                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={18} />
-                  </button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
+    <div className="flex flex-col min-h-screen px-6 py-4">
+      {/* Top Add, Delete & Save Buttons */}
+      <div className="flex justify-between items-center w-full mb-4">
+        {/* Left buttons: Add & Delete */}
+        <div className="flex gap-2 items-center">
+          {/* Add Prompt Dialog */}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="p-2 rounded-xl">
+                <Plus size={20} />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Prompt</DialogTitle>
+              </DialogHeader>
+              <Textarea
+                placeholder="Type your prompt..."
+                className="w-full mt-2"
+                rows={4}
+                value={currentPrompt}
+                onChange={(e) => setCurrentPrompt(e.target.value)}
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddPrompt}>Add</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-      {/* Next button vertically centered right */}
-      <div className="absolute top-1/2 right-8 -translate-y-1/2">
-        <Button
-          type="button"
-          onClick={handleNext}
-          disabled={loading || prompts.length === 0}
-          className="rounded-xl px-6 py-2 bg-gray-900 text-white hover:bg-gray-800 transition disabled:opacity-50"
-        >
-          {loading ? "Saving..." : <ArrowRight size={48} />}
-        </Button>
-      </div>
-
-      {/* Bottom input */}
-      <div className="sticky bottom-8 w-full p-4 flex items-center gap-3 max-w-6xl mx-auto">
-        <Textarea
-          value={currentPrompt}
-          onChange={(e) => setCurrentPrompt(e.target.value)}
-          placeholder="Type your prompt..."
-          className="flex-1 min-w-[600px] bg-white resize-none rounded-xl transition px-4 py-2 text-lg focus:outline-none focus:ring-0 focus:border-none"
-          rows={3}
-        />
-        <div className="flex gap-2">
-          {prompts.length < 5 && (
+          {/* Delete Selected */}
+          {selectedRows.size > 0 && (
             <Button
-              type="button"
               variant="outline"
-              onClick={addPromptField}
-              className="rounded-xl px-4 py-2 flex items-center justify-center"
-              disabled={!currentPrompt.trim()}
+              className="p-2 rounded-xl hover:bg-red-50 text-red-600 transition"
+              onClick={() => {
+                setPrompts((prev) =>
+                  prev.filter((_, idx) => !selectedRows.has(idx))
+                );
+                setSelectedRows(new Set());
+              }}
             >
-              <Plus size={20} />
+              <Trash2 size={20} />
             </Button>
           )}
         </div>
+
+        {/* Save Button at extreme right */}
+        <div className="ml-auto">
+          <Button
+            onClick={handleSave}
+            disabled={loading || !newChanges}
+            className={`py-2 rounded-xl transition ${
+              loading || !newChanges
+                ? "bg-transparent text-gray-400 border border-gray-300 cursor-not-allowed"
+                : "bg-gray-900 text-white hover:bg-gray-800"
+            }`}
+          >
+            {loading ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </div>
 
-      {success && (
-        <p className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 px-5 py-2 rounded-full shadow-md font-medium select-none">
-          Prompts saved successfully! ✅
-        </p>
-      )}
+      {/* Data Table */}
+      <div className="overflow-auto w-full">
+        <Table className="w-full border border-gray-200 rounded-xl table-auto min-w-[800px] mx-auto">
+          <TableHeader className="bg-gray-50">
+            <TableRow>
+              <TableHead className="pl-4 w-12">
+                <Checkbox
+                  checked={selectedRows.size === prompts.length && prompts.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedRows(new Set(prompts.map((_, idx) => idx)));
+                    } else {
+                      setSelectedRows(new Set());
+                    }
+                  }}
+                />
+              </TableHead>
+              <TableHead>Prompt</TableHead>
+              <TableHead>Visibility</TableHead>
+              <TableHead>Sentiment</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {prompts.map((prompt, idx) => (
+              <TableRow
+                key={idx}
+                className={`hover:bg-gray-50 cursor-pointer ${
+                  selectedRows.has(idx) ? "bg-gray-100" : ""
+                }`}
+                onClick={() => toggleRow(idx)}
+              >
+                <TableCell className="pl-4">
+                  <Checkbox checked={selectedRows.has(idx)} />
+                </TableCell>
+                <TableCell>{prompt}</TableCell>
+                <TableCell>Public</TableCell>
+                <TableCell>Neutral</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

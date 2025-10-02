@@ -1,14 +1,14 @@
 CREATE DATABASE IF NOT EXISTS analytics;
 
 CREATE TABLE IF NOT EXISTS analytics.user_prompts (
-    id String,
+    id String,  -- still useful for tracking
     user_id String,
     workspace_id String,
     prompt String,
-    created_at DateTime DEFAULT now(),
-    PRIMARY KEY (id)
-) ENGINE = MergeTree()
-ORDER BY (id, created_at, user_id);
+    created_at DateTime DEFAULT now()
+) ENGINE = ReplacingMergeTree()
+PRIMARY KEY (user_id, workspace_id, prompt)
+ORDER BY (user_id, workspace_id, prompt, created_at);
 
 CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
     id String, 

@@ -2,14 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
+// import { useSearchParams } from "next/navigation";
 
 export default function Dashboard() {
-  const searchParams = useSearchParams();
-  const workspaceId = searchParams.get("workspace") ?? "";
+  // const searchParams = useSearchParams();
+  // const workspaceId = searchParams.get("workspace") ?? "";
   
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen p-8">
       {/* Header */}
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
