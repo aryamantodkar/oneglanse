@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
-import { getWorkspace } from "@lib/getWorkspace";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { authClient } from "@/lib/auth-client";
+import { getWorkspace } from "@/lib/getWorkspace";
 
 export default async function Home() {
   const session = await auth.api.getSession({
@@ -13,12 +13,10 @@ export default async function Home() {
 		return redirect("/login")
 	}
 
-  const workspace = await getWorkspace()
+  const workspace = await getWorkspace();
 
-  if(!workspace){
-    return redirect("/workspace/new")
-  }
-
+  if (!workspace) return redirect("/workspace/new");
+  
   const { data: organizations, error } = await authClient.organization.list();
   if (error) {
     console.error("Failed to fetch organizations:", error);

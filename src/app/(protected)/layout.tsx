@@ -37,10 +37,11 @@ export default async function RootLayout({
         return redirect("/login")
     }
 
-	const workspace = await getWorkspace();
-
-	if (!workspace) {
-		return redirect("/workspace/new");
+	let workspace = null;
+	try {
+		workspace = await getWorkspace();
+	} catch {
+		// workspace remains null
 	}
 
 	return (

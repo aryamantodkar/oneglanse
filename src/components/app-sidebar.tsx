@@ -1,5 +1,5 @@
 "use client"
-import { Calendar, ChevronDown, ChevronUp, Globe, Home, LayoutGrid, Inbox, MessageSquare, Search, Settings, User2, Tag, Users, TrendingUp, Shield, Zap, Building, Briefcase, Loader2 } from "lucide-react"
+import { Clock, ChevronDown, ChevronUp, Globe, Home, LayoutGrid, Inbox, MessageSquare, Search, Settings, User2, Tag, Users, TrendingUp, Shield, Zap, Building, Briefcase, Loader2 } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -56,7 +56,7 @@ const SettingsItems = [
     }
 ];
 
-export function AppSidebar({ workspace } : { workspace: Workspace }) {
+export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
@@ -77,6 +77,11 @@ export function AppSidebar({ workspace } : { workspace: Workspace }) {
           title: "Sources",
           url: `/sources?workspace=${workspace?.id ?? ""}`,
           icon: Globe,
+        },
+        {
+          title: "Cron Jobs",
+          url: `/cron?workspace=${workspace?.id ?? ""}`,
+          icon: Clock,
         },
       ];
 
@@ -171,7 +176,7 @@ export function AppSidebar({ workspace } : { workspace: Workspace }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel>Preferences</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -187,9 +192,9 @@ export function AppSidebar({ workspace } : { workspace: Workspace }) {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup> */}
         <SidebarGroup>
-          <SidebarGroupLabel>Preferences</SidebarGroupLabel>
+          <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {SettingsItems.map((item) => (

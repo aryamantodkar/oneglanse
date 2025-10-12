@@ -1,9 +1,25 @@
-version: '3.9'
-
 services:
   # PostgreSQL service (existing)
+  # web:
+  #   build: .
+  #   container_name: onescopeAI
+  #   restart: always
+  #   ports:
+  #     - "3000:3000"
+  #   env_file: .env
+  #   depends_on:
+  #     - db
+  #     - clickhouse
+  #   environment:
+  #     DATABASE_URL: postgresql://user:password@db:5432/mydb
+  #     CLICKHOUSE_URL: http://clickhouse:8123
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
   db:
-    image: postgres:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     container_name: postgres_db
     restart: always
     environment:
@@ -14,6 +30,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
 
   # ClickHouse service
   clickhouse:
@@ -30,6 +47,20 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse-init/:/docker-entrypoint-initdb.d/
+
+  cron-worker:
+    container_name: cron_worker
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    depends_on:
+      - db
+      - clickhouse
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/mydb
+    volumes:
+      - .:/app
+      - /app/node_modules
 
 volumes:
   db_data:

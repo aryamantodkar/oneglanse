@@ -1,5 +1,6 @@
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 import type * as schema from "./schema";
+import type { db } from ".";
 
 export type User = InferSelectModel<typeof schema.user>;
 export type InsertUser = InferInsertModel<typeof schema.user>;

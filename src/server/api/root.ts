@@ -1,10 +1,12 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { workspaceRouter } from "./routers/workspace/workspace";
 import { promptRouter } from "./routers/prompt/prompt";
+import { cronRouter } from "./routers/cron/cron";
 
 export const appRouter = createTRPCRouter({
     workspace: workspaceRouter,
-    prompt: promptRouter
+    prompt: promptRouter,
+    cron: cronRouter
 });
 
 export type AppRouter = typeof appRouter;

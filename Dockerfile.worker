@@ -1,0 +1,16 @@
+FROM node:20-alpine
+WORKDIR /app
+
+# Install dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Install postgres client for pg_isready
+RUN apk add --no-cache postgresql-client bash
+
+# Run migrations then start worker after DB is ready
+CMD sh -c "while ! pg_isready -h db -p 5432; do echo Waiting for Postgres...; sleep 1; done && echo Postgres is up! && pnpm drizzle-kit migrate && npx tsx src/server/worker/cronWorker.ts"
