@@ -57,6 +57,15 @@ export const promptRouter = createTRPCRouter({
 
       const promptsArray: UserPrompt[] = await prompts.json();
 
+      if (!promptsArray || promptsArray.length === 0) {
+        return {
+          success: false,
+          message: "No prompts found for this workspace.",
+          inserted: 0,
+          prompts: [],
+        };
+      }
+      
       const results = await runLLMs(promptsArray);
 
       const values = results.flatMap((r) =>

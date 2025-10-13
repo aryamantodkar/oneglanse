@@ -37,9 +37,9 @@ export default function PromptsDataTable() {
   const storePromptMutation = api.prompt.store.useMutation();
 
   // Fetch user prompts
-  const { data } = api.prompt.fetchUserPrompts.useQuery(
+  const { data, isLoading: loadingPrompts } = api.prompt.fetchUserPrompts.useQuery(
     { workspaceId },
-    { retry: 2, refetchOnWindowFocus: false }
+    { retry: 2, refetchOnWindowFocus: false, enabled: !!workspaceId }
   );
 
   useEffect(() => {
@@ -90,6 +90,14 @@ export default function PromptsDataTable() {
     setDialogOpen(false);
   };
 
+  if (loadingPrompts) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] text-gray-500">
+        Loading prompts...
+      </div>
+    );
+  }
+  
   return (
     <div className="flex flex-col min-h-screen px-6 py-4">
       {/* Top Add, Delete & Save Buttons */}

@@ -3,10 +3,13 @@ import { pool } from "@/server/db/pg";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { env } from "@/env";
+import { api } from "@/trpc/react";
 
 // Optional Drizzle client for logging
 const rawConn = postgres(env.DATABASE_URL);
 const db = drizzle(rawConn);
+
+const askPromptMutation = api.prompt.ask.useMutation();
 
 // ----------------------------
 // Atomically claim next job
@@ -37,11 +40,9 @@ async function processJob(job: any) {
   if (!job) return;
 
   try {
-    // Example: Internal type job
     if (job.payload?.type === "runPrompts") {
       const { workspace_id } = job;
-      // Call your internal function directly
-      // e.g., runPromptsForWorkspace(workspaceId)
+      await askPromptMutation.mutateAsync({ workspaceId: workspace_id });
       console.log("Running prompts for workspace:", workspace_id);
     }
 
@@ -51,7 +52,6 @@ async function processJob(job: any) {
     //   await fetch(url, { method, body: JSON.stringify(body) });
     // }
 
-    // Success: Insert job_run and mark processed
     await pool.query(
       `INSERT INTO public.job_runs (job_id, workspace_id, started_at, finished_at, status, output)
        VALUES ($1, $2, now(), now(), 'success', $3::jsonb)`,
