@@ -1,27 +1,30 @@
 services:
-  # PostgreSQL service (existing)
-  # web:
-  #   build: .
-  #   container_name: onescopeAI
-  #   restart: always
-  #   ports:
-  #     - "3000:3000"
-  #   env_file: .env
-  #   depends_on:
-  #     - db
-  #     - clickhouse
-  #   environment:
-  #     DATABASE_URL: postgresql://user:password@db:5432/mydb
-  #     CLICKHOUSE_URL: http://clickhouse:8123
-  #   volumes:
-  #     - .:/app
-  #     - /app/node_modules
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: onescopeAI
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file: .env
+    depends_on:
+      - db
+      - clickhouse
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/mydb
+      CLICKHOUSE_URL: http://clickhouse:8123
+      NEXT_PUBLIC_API_URL: http://web:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
   db:
     build:
       context: .
       dockerfile: Dockerfile.postgres
     container_name: postgres_db
     restart: always
+    env_file: .env
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -37,6 +40,7 @@ services:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse_db
     restart: always
+    env_file: .env
     environment:
       CLICKHOUSE_DB: analytics
       CLICKHOUSE_USER: default
@@ -56,6 +60,7 @@ services:
     depends_on:
       - db
       - clickhouse
+    env_file: .env
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
     volumes:

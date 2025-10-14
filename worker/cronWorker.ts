@@ -1,15 +1,25 @@
-// src/server/worker/cronWorker.ts
 import { pool } from "@/server/db/pg";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { env } from "@/env";
-import { api } from "@/trpc/react";
+import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
+import { type AppRouter } from "@/server/api/root";
+import SuperJSON from "superjson";
 
 // Optional Drizzle client for logging
 const rawConn = postgres(env.DATABASE_URL);
 const db = drizzle(rawConn);
 
-const askPromptMutation = api.prompt.ask.useMutation();
+const trpc = createTRPCProxyClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: process.env.APP_URL
+        ? `${process.env.APP_URL}/api/trpc`
+        : "http://localhost:3000/api/trpc",
+      transformer: SuperJSON,
+    }),
+  ],
+});
 
 // ----------------------------
 // Atomically claim next job
@@ -42,7 +52,8 @@ async function processJob(job: any) {
   try {
     if (job.payload?.type === "runPrompts") {
       const { workspace_id } = job;
-      await askPromptMutation.mutateAsync({ workspaceId: workspace_id });
+      const res = await trpc.prompt.ask.mutate({ workspaceId: workspace_id });
+      console.log("Response:", res);
       console.log("Running prompts for workspace:", workspace_id);
     }
 

@@ -7,9 +7,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
-    "outDir": "dist/server/worker",
+    "outDir": "dist/worker",
     "noEmit": false,
     "verbatimModuleSyntax": false
   },
-  "include": ["src/server/worker/**/*", "src/env.ts", "src/server/db/**/*"]
+  "include": ["worker/**/*", "src/env.ts", "src/server/db/**/*"]
 }

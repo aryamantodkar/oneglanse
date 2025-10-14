@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { runLLMs } from "@/lib/llmClient"; 
-import { clickhouse } from "@/server/db/index";
+import { clickhouse, db } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
+import { cronJobs } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
+import { pool } from "@/server/db/pg";
 
 function formatDateToClickHouse(dt: Date) {
   return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -65,7 +68,7 @@ export const promptRouter = createTRPCRouter({
           prompts: [],
         };
       }
-      
+
       const results = await runLLMs(promptsArray);
 
       const values = results.flatMap((r) =>
@@ -173,6 +176,44 @@ export const promptRouter = createTRPCRouter({
               promptsToDelete,
             },
           });
+        }
+
+        const existingCron = await db
+          .select()
+          .from(cronJobs)
+          .where(eq(cronJobs.workspaceId, workspaceId));
+
+        if (existingCron.length === 0) {
+          console.log("Calling LLMs for the first time.")
+          const [jobRow] = await db
+            .insert(cronJobs)
+            .values({
+              workspaceId,
+              name: "Auto Run Prompts",
+              cronExpression: "0 */12 * * *", // every 12 hours
+              timezone: "UTC",
+              targetType: "internal",
+              targetPayload: { type: "runPrompts" },
+              maxAttempts: 3,
+            })
+            .returning();
+
+          if (!jobRow) throw new Error("Failed to insert cron job");
+
+          await pool.query(
+            `INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
+              VALUES ($1, $2, $3::jsonb, $4);`,
+            [jobRow.id, workspaceId, JSON.stringify({ type: "runPrompts" }), 3]
+          );
+        
+          const scheduledSQL = `
+            INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
+            VALUES ('${jobRow.id}', '${workspaceId}', '{"type":"runPrompts"}'::jsonb, 3);
+          `;
+          await pool.query(
+            `SELECT cron.schedule($1, $2, $3);`,
+            [`auto_run_prompts_${workspaceId}`, "0 */12 * * *", scheduledSQL]
+          );
         }
 
         return {

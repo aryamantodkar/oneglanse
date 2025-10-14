@@ -13,4 +13,4 @@ COPY . .
 RUN apk add --no-cache postgresql-client bash
 
 # Run migrations then start worker after DB is ready
-CMD sh -c "while ! pg_isready -h db -p 5432; do echo Waiting for Postgres...; sleep 1; done && echo Postgres is up! && pnpm drizzle-kit migrate && npx tsx src/server/worker/cronWorker.ts"
+CMD sh -c "while ! pg_isready -h db -p 5432; do echo Waiting for Postgres...; sleep 1; done && echo Postgres is up! && pnpm drizzle-kit migrate && npx tsx worker/cronWorker.ts"

@@ -38,7 +38,7 @@ export default function Sources() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const { data, isLoading } = api.prompt.fetchPromptResponses.useQuery(
+  const { data, isLoading: loadingSources } = api.prompt.fetchPromptResponses.useQuery(
     { workspaceId },
     { retry: 2, refetchOnWindowFocus: false }
   );
@@ -127,7 +127,7 @@ export default function Sources() {
     }));
   }, [combinedResponses]);
 
-  if (isLoading || loading) {
+  if (loadingSources || loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <p className="text-gray-500 text-lg mb-2">Loading prompt responses...</p>
@@ -138,9 +138,11 @@ export default function Sources() {
 
   if (!responses.length) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <p className="text-gray-500 text-lg mb-4">No prompt responses yet.</p>
-        <Button onClick={() => router.back()}>← Go Back</Button>
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
+        <p className="text-gray-500 text-lg mb-2">No prompt responses yet.</p>
+        <p className="text-gray-400 text-sm mb-4">
+          If you’ve just added prompts, please check back in some time — processing can take a few minutes.
+        </p>
       </div>
     );
   }
