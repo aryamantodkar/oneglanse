@@ -15,9 +15,11 @@ services:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
       CLICKHOUSE_URL: http://clickhouse:8123
       NEXT_PUBLIC_API_URL: http://web:3000
+    # REMOVE volumes in production
     volumes:
       - .:/app
       - /app/node_modules
+    command: ["pnpm", "dev", "-H", "0.0.0.0"]
   db:
     build:
       context: .
@@ -63,9 +65,6 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
-    volumes:
-      - .:/app
-      - /app/node_modules
 
 volumes:
   db_data:

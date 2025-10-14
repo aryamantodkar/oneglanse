@@ -11,5 +11,5 @@
     "noEmit": false,
     "verbatimModuleSyntax": false
   },
-  "include": ["worker/**/*", "src/env.ts", "src/server/db/**/*"]
+  "include": ["worker/**/*"]
 }
