@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { runLLMs } from "@/lib/llmClient"; 
 import { clickhouse, db } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
@@ -35,18 +35,23 @@ interface PromptResponse {
 
 
 export const promptRouter = createTRPCRouter({
-  ask: protectedProcedure
+  ask: publicProcedure
     .input(
       z.object({
         workspaceId: z.string(),
+        userId: z.string().optional()
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { workspaceId } = input;
-      const userId = ctx.session?.user.id;
+      const { workspaceId, userId: inputUserId } = input;
+      const userId = inputUserId ?? ctx.session?.user.id;
 
       if (!userId) {
         throw new Error("Unauthorized");
+      }
+
+      if (!workspaceId || workspaceId.trim() === "") {
+        throw new Error("Missing workspaceId");
       }
 
       const prompts = await clickhouse.query({
@@ -71,22 +76,27 @@ export const promptRouter = createTRPCRouter({
 
       const results = await runLLMs(promptsArray);
 
-      const values = results.flatMap((r) =>
-        r.results.flatMap((modelOutput: { modelProvider: string; output: any }) =>
-          (modelOutput.output.metrics || []).map((metric: any) => ({
+      // console.log("results:", JSON.stringify(results, null, 2));
+
+      const values = results.flatMap((r: any) =>
+        (r.results || []).flatMap((modelOutput: any) => {
+          const metrics = modelOutput?.output?.metrics || [];
+          return metrics.map((metric: any) => ({
             id: uuidv4(),
             prompt_id: r.id,
             user_id: userId,
             workspace_id: workspaceId,
-            model: modelOutput.output.model || "",
-            modelProvider: modelOutput.modelProvider,
-            response: metric.response || "",
-            citations: metric.citations || [],
-            sources: metric.sources || [],
+            model: modelOutput?.output?.model || "",
+            modelProvider: modelOutput?.modelProvider || "",
+            response: metric?.response || "",
+            citations: metric?.citations || [],
+            sources: metric?.sources || [],
             created_at: formatDateToClickHouse(new Date()),
-          }))
-        )
+          }));
+        })
       );
+
+      // console.log(JSON.stringify(values, null, 2));
 
       await clickhouse.insert({
         table: "prompt_responses",
@@ -113,6 +123,10 @@ export const promptRouter = createTRPCRouter({
 
       if (!userId) {
         throw new Error("Unauthorized");
+      }
+
+      if (!workspaceId || workspaceId.trim() === "") {
+        throw new Error("Missing workspaceId");
       }
 
       try {
@@ -189,26 +203,26 @@ export const promptRouter = createTRPCRouter({
             .insert(cronJobs)
             .values({
               workspaceId,
+              userId, // 👈 Save the owner user ID
               name: "Auto Run Prompts",
               cronExpression: "0 */12 * * *", // every 12 hours
               timezone: "UTC",
               targetType: "internal",
-              targetPayload: { type: "runPrompts" },
+              targetPayload: { type: "runPrompts", userId }, // 👈 also embed owner ID in payload
               maxAttempts: 3,
             })
             .returning();
 
           if (!jobRow) throw new Error("Failed to insert cron job");
 
-          await pool.query(
-            `INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-              VALUES ($1, $2, $3::jsonb, $4);`,
-            [jobRow.id, workspaceId, JSON.stringify({ type: "runPrompts" }), 3]
-          );
+          await pool.query(`
+            INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
+            VALUES ('${jobRow.id}', '${workspaceId}', '{"type":"runPrompts","userId":"${userId}"}'::jsonb, 3);
+          `);
         
           const scheduledSQL = `
             INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-            VALUES ('${jobRow.id}', '${workspaceId}', '{"type":"runPrompts"}'::jsonb, 3);
+            VALUES ('${jobRow.id}', '${workspaceId}', '{"type":"runPrompts","userId":"${userId}"}'::jsonb, 3);
           `;
           await pool.query(
             `SELECT cron.schedule($1, $2, $3);`,
@@ -228,7 +242,7 @@ export const promptRouter = createTRPCRouter({
         throw err;
       }
     }),
-  fetchPromptResponses: protectedProcedure
+    fetchPromptResponses: protectedProcedure
     .input(
       z.object({
         workspaceId: z.string(),
@@ -237,11 +251,51 @@ export const promptRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const { workspaceId } = input;
       const userId = ctx.session?.user.id;
-
+  
       if (!userId) {
         throw new Error("Unauthorized");
       }
 
+      if (!workspaceId || workspaceId.trim() === "") {
+        throw new Error("Missing workspaceId");
+      }
+  
+      // --- Helper to extract all URLs ---
+      const extractUrlsFromResponse = (r: PromptResponse) => {
+        const urls = new Set<string>();
+  
+        // 1️⃣ Citations — can be JSON or stringified tuples
+        if (Array.isArray(r.citations)) {
+          r.citations.forEach((c: any) => {
+            if (typeof c === "string") {
+              const match = c.match(/https?:\/\/[^\s')"]+/g);
+              if (match) match.forEach(url => urls.add(url));
+            } else if (c?.url) {
+              urls.add(c.url);
+            }
+          });
+        } else if (typeof r.citations === "string") {
+          const match = (r.citations as string).match(/https?:\/\/[^\s')"]+/g);
+          if (match) (match as string[]).forEach((url: string) => urls.add(url));
+        }
+
+        // 2️⃣ Sources — usually structured as array of {url,title}
+        if (Array.isArray(r.sources)) {
+          r.sources.forEach((s: any) => {
+            if (s?.url) urls.add(s.url);
+          });
+        }
+  
+        // 3️⃣ Inline links in response text
+        if (r.response) {
+          const match = r.response.match(/https?:\/\/[^\s)]+/g);
+          if (match) match.forEach(url => urls.add(url));
+        }
+  
+        // Filter out invalid/duplicate ones
+        return Array.from(urls).filter(u => /^https?:\/\/.+\..+/.test(u));
+      };
+  
       try {
         const result = await clickhouse.query({
           query: `
@@ -251,12 +305,18 @@ export const promptRouter = createTRPCRouter({
           `,
           format: "JSONEachRow",
         });
-
+  
         const data: PromptResponse[] = (await result.json()) as PromptResponse[];
-
+  
+        // ✅ Add extractedUrls field for each response
+        const enriched = data.map(r => ({
+          ...r,
+          extractedUrls: extractUrlsFromResponse(r),
+        }));
+  
         return {
           success: true,
-          result: data,
+          result: enriched,
         };
       } catch (err) {
         console.error("Failed to fetch prompts from ClickHouse:", err);

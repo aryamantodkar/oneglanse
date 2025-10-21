@@ -32,6 +32,8 @@ export async function runLLMs(prompts: UserPrompt[]) {
         };
       })
     );
+    
+    console.log("All LLM results:", JSON.stringify(allResults, null, 2));
 
     return allResults;
   } catch (err) {
@@ -47,26 +49,54 @@ export async function queryOpenAI(userQuery: string) {
     input: userQuery,
   });
 
-  const metrics = response.output
-    .filter((o: any) => o.type === "message")
-    .map((o: any) => ({
+  console.log("OpenAI response:", JSON.stringify(response, null, 2));
+  
+  // Extract all message-type outputs
+  const messages = response.output.filter((o: any) => o.type === "message");
+
+  // Extract all web_search outputs
+  const allSources = response.output
+    .filter((o: any) => o.type === "web_search")
+    .flatMap((o: any) =>
+      o.content?.map((s: any) => ({
+        url: s.url,
+        title: s.title ?? "",
+      })) || []
+    );
+
+  // Build metrics: one metric per message, each with all sources
+  const metrics = messages.flatMap((m: any) =>
+    (m.content || []).map((c: any) => ({
       id: response.id,
-      response: o.text || "",
-      citations: Array.isArray(o.annotations)
-        ? o.annotations.map((r: any) => ({
+      response: c.text || "",
+      citations: Array.isArray(c.annotations)
+        ? c.annotations.map((r: any) => ({
             title: r.title || "",
             url: r.url || "",
             start_index: r.start_index ?? null,
             end_index: r.end_index ?? null,
           }))
         : [],
-    }));
+      sources: [], // attach web_search sources later
+    }))
+  );
+
+  // If no message output, create a single metric placeholder
+  if (metrics.length === 0) {
+    metrics.push({
+      id: response.id,
+      response: response.output_text || "",
+      citations: [],
+      sources: allSources,
+    });
+  }
 
   return {
     model: "gpt-5",
     metrics,
   };
 }
+
 export async function queryClaude(userQuery: string) {
   const response = await anthropic.messages.create({
     model: "claude-opus-4-1-20250805",

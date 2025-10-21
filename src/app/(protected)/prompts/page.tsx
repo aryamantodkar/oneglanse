@@ -64,6 +64,11 @@ export default function PromptsDataTable() {
   };
 
   const handleSave = async () => {
+    if (!workspaceId) {
+      toast.error("Workspace ID not available yet. Please try refreshing the page.");
+      return;
+    }
+    
     setLoading(true);
     try {
       await storePromptMutation.mutateAsync({ prompts, workspaceId });

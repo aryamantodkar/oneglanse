@@ -72,7 +72,15 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
 }
 
 function getBaseUrl() {
+	// 1️⃣ Running in the browser → use the current origin
 	if (typeof window !== "undefined") return window.location.origin;
+  
+	// 2️⃣ Running in Vercel (production)
 	if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  
+	// 3️⃣ Running inside Docker
+	if (process.env.DOCKER_ENV === "true") return "http://web:3000";
+  
+	// 4️⃣ Default: local dev (not in Docker)
 	return `http://localhost:${process.env.PORT ?? 3000}`;
 }

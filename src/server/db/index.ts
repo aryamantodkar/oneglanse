@@ -19,7 +19,7 @@ if (env.NODE_ENV !== "production") globalForDb.conn = conn;
 
 export const db = drizzle(conn, { schema });
 export const clickhouse = createClient({
-  url: process.env.CLICKHOUSE_HOST || 'http://localhost:8123',
+  url: process.env.CLICKHOUSE_URL || 'http://clickhouse:8123',
   username: process.env.CLICKHOUSE_USER || 'default',
   password: process.env.CLICKHOUSE_PASSWORD || 'password',
   database: process.env.CLICKHOUSE_DB || 'analytics',

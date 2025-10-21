@@ -19,7 +19,6 @@ export const workspaceRouter = createTRPCRouter({
         const userId = ctx.session?.user.id
 
         if(!headers || !userId){
-            console.log(headers, userId)
             throw new TRPCError({
                 code: "UNAUTHORIZED",
                 message:

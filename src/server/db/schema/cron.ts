@@ -13,6 +13,7 @@ import {
 export const cronJobs = pgTable("cron_jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
   workspaceId: text("workspace_id").notNull(),
+  userId: text("user_id").notNull(),
   name: text("name"),
   cronExpression: text("cron_expression").notNull(),
   timezone: text("timezone").default("UTC"),
@@ -24,6 +25,7 @@ export const cronJobs = pgTable("cron_jobs", {
     body?: unknown;
     type?: string;
     params?: Record<string, unknown>;
+    userId?: string;
   }>(),
   enabled: boolean("enabled").default(true),
   maxAttempts: integer("max_attempts").default(3),

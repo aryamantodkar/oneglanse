@@ -14,7 +14,8 @@ services:
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
       CLICKHOUSE_URL: http://clickhouse:8123
-      NEXT_PUBLIC_API_URL: http://web:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      DOCKER_ENV: "true"
     # REMOVE volumes in production
     volumes:
       - .:/app
@@ -65,6 +66,8 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
+      CLICKHOUSE_URL: http://clickhouse:8123
+      DOCKER_ENV: "true"
 
 volumes:
   db_data:

@@ -92,6 +92,7 @@ CREATE TABLE "workspaces" (
 CREATE TABLE "cron_jobs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"workspace_id" text NOT NULL,
+	"user_id" text NOT NULL,
 	"name" text,
 	"cron_expression" text NOT NULL,
 	"timezone" text DEFAULT 'UTC',

@@ -41,6 +41,7 @@ export const cronRouter = createTRPCRouter({
         .insert(cronJobs)
         .values({
           workspaceId: input.workspaceId,
+          userId,
           name: input.name ?? null,
           cronExpression: input.cronExpression,
           timezone: input.timezone ?? "UTC",
@@ -56,8 +57,9 @@ export const cronRouter = createTRPCRouter({
       if (!jobRow) throw new Error("Failed to insert cron job");
       
       // We insert into `cron_queue` when the cron triggers.
-      const scheduledSQL = `INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-      VALUES ('${jobRow.id}', '${jobRow.workspaceId}', '${JSON.stringify(input.targetPayload).replace(/'/g, "''")}'::jsonb, ${input.maxAttempts});`;
+      const scheduledSQL = `
+        INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
+        VALUES ('${jobRow.id}','${jobRow.workspaceId}','${JSON.stringify({ ...input.targetPayload, userId }).replace(/'/g, "''")}'::jsonb,${input.maxAttempts});`;
 
       // 4️⃣ Schedule with pg_cron (runs on Postgres server side)
       await pool.query(
@@ -102,7 +104,7 @@ export const cronRouter = createTRPCRouter({
 
         // Reschedule with new cron expression
         const scheduledSQL = `INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-          VALUES ('${existingJob.id}', '${existingJob.workspaceId}', '${JSON.stringify(existingJob.targetPayload).replace(/'/g, "''")}'::jsonb, ${input.maxAttempts});`;
+          VALUES ('${existingJob.id}', '${existingJob.workspaceId}', '${JSON.stringify({ ...existingJob.targetPayload, userId }).replace(/'/g, "''")}'::jsonb, ${input.maxAttempts});`;
 
         await pool.query(
           `SELECT cron.schedule($1, $2, $3);`,
