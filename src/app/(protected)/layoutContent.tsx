@@ -20,18 +20,18 @@ export default function LayoutContent({ children, workspace }: { children: React
     }
   }, [workspace, router]);
   
-  // if (!workspace) {
-  //   return (
-  //     <div className="flex items-center justify-center h-screen">
-  //       <p className="text-gray-500">Redirecting to create a workspace...</p>
-  //     </div>
-  //   );
-  // }
+  if (!workspace) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-500">Redirecting to create a workspace...</p>
+      </div>
+    );
+  }
   
   return (
     <div className="flex w-full h-screen">
       <AppSidebar workspace={workspace}/>
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between p-2 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="text-gray-700 hover:text-gray-900" />
@@ -40,7 +40,7 @@ export default function LayoutContent({ children, workspace }: { children: React
         </div>
 
         {/* Page content */}
-        <div className="flex-1 overflow-auto p-4">{children}</div>
+        <div className="flex-1 overflow-auto min-h-0 px-6">{children}</div>
       </main>
     </div>
   );

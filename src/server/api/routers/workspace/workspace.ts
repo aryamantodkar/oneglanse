@@ -5,6 +5,7 @@ import { auth } from "@lib/auth";
 import { db, schema } from "@/server/db";
 import type { Workspace } from "@/server/db/types";
 import { newId } from "@lib/id";
+import { eq, isNull, and } from "drizzle-orm";
 
 export const workspaceRouter = createTRPCRouter({
     create: protectedProcedure
@@ -78,5 +79,40 @@ export const workspaceRouter = createTRPCRouter({
           workspace,
           org: orgData,
         };
+      }),
+    getById: protectedProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().min(1),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        const userId = ctx.session?.user.id;
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User must be logged in to access workspace.",
+          });
+        }
+  
+        const workspace = await db
+          .select()
+          .from(schema.workspaces)
+          .where(
+            and(
+              eq(schema.workspaces.id, input.workspaceId),
+              isNull(schema.workspaces.deletedAt)
+            )
+          )
+          .execute();
+
+        if (!workspace || workspace.length === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Workspace with ID ${input.workspaceId} not found.`,
+          });
+        }
+  
+        return workspace[0]; // workspace object
       }),
   });

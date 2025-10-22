@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { runLLMs } from "@/lib/llmClient"; 
-import { clickhouse, db } from "@/server/db/index";
+import { clickhouse, db, schema } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
 import { cronJobs } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { pool } from "@/server/db/pg";
+import { TRPCError } from "@trpc/server";
 
 function formatDateToClickHouse(dt: Date) {
   return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -54,6 +55,26 @@ export const promptRouter = createTRPCRouter({
         throw new Error("Missing workspaceId");
       }
 
+      const workspace = await db
+        .select()
+        .from(schema.workspaces)
+        .where(
+          and(
+            eq(schema.workspaces.id, workspaceId),
+            isNull(schema.workspaces.deletedAt)
+          )
+        )
+        .execute();
+
+      if (!workspace || workspace.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Workspace with ID ${workspaceId} not found.`,
+        });
+      }
+
+      const workspaceData = workspace[0]; 
+    
       const prompts = await clickhouse.query({
         query: `
           SELECT * 

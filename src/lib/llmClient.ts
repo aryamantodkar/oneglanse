@@ -12,14 +12,19 @@ type UserPrompt = {
   created_at: string;
 };
 
-export async function runLLMs(prompts: UserPrompt[]) {
+export interface WorkspaceLocation {
+  workspaceCountry: string;
+  workspaceRegion?: string | null;
+}
+
+export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
   try {
     const allResults = await Promise.all( 
       prompts.map(async (promptObj) => {
         const { id, prompt } = promptObj;
 
         const [gptRes] = await Promise.all([
-          queryOpenAI(prompt),
+          queryOpenAI(prompt, workspaceLocation),
           // queryClaude(prompt),
         ]);
 
@@ -42,10 +47,25 @@ export async function runLLMs(prompts: UserPrompt[]) {
   }
 }
 
-export async function queryOpenAI(userQuery: string) {
+export async function queryOpenAI(userQuery: string, workspaceLocation?: WorkspaceLocation) {
+  const tools: any[] = [
+    {
+      type: "web_search",
+      ...(workspaceLocation && workspaceLocation.workspaceCountry !== "GLOBAL"
+        ? {
+            user_location: {
+              type: "approximate",
+              country: workspaceLocation.workspaceCountry,
+              region: workspaceLocation.workspaceRegion ?? undefined,
+            },
+          }
+        : {}),
+    },
+  ];
+
   const response = await openai.responses.create({
     model: "gpt-5",
-    tools: [{ type: "web_search" }],
+    tools,
     input: userQuery,
   });
 

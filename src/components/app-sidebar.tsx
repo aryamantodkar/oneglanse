@@ -133,7 +133,7 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
     }
 
   return (
-    <Sidebar>
+    <Sidebar className="flex flex-col h-screen">
         <SidebarHeader>
             <SidebarMenu>
             <SidebarMenuItem>
@@ -158,7 +158,7 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
             </SidebarMenuItem>
             </SidebarMenu>
         </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="flex-1 overflow-y-auto">
         <SidebarGroup>
           <SidebarGroupLabel>General</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -176,23 +176,6 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {/* <SidebarGroup>
-          <SidebarGroupLabel>Preferences</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {preferenceItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup> */}
         <SidebarGroup>
           <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -211,7 +194,7 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="flex-shrink-0">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
