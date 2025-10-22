@@ -7,69 +7,76 @@ import type { Workspace } from "@/server/db/types";
 import { newId } from "@lib/id";
 
 export const workspaceRouter = createTRPCRouter({
-  create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(2).max(50),
-        slug: z.string().min(2).max(50),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-        const headers = ctx.headers
-        const userId = ctx.session?.user.id
-
-        if(!headers || !userId){
-            throw new TRPCError({
-                code: "UNAUTHORIZED",
-                message:
-                "Unable to authenticate the user. Please make sure you are logged in and try again",
-            });
+    create: protectedProcedure
+      .input(
+        z.object({
+          name: z.string().min(2).max(50),
+          slug: z.string().min(2).max(50),
+          country: z.string().min(2), // ISO2 code or "Global"
+          region: z.string().nullable().optional(), // optional region
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const headers = ctx.headers;
+        const userId = ctx.session?.user.id;
+  
+        if (!headers || !userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message:
+              "Unable to authenticate the user. Please make sure you are logged in and try again",
+          });
         }
-
-        const orgData = await auth.api.createOrganization({
+  
+        // Create org
+        const orgData = await auth.api
+          .createOrganization({
             body: {
-                name: input.name, 
-                slug: input.slug, 
-                keepCurrentActiveOrganization: true,
+              name: input.name,
+              slug: input.slug,
+              keepCurrentActiveOrganization: true,
             },
-            headers
-        })
-        .catch((err) => {
+            headers,
+          })
+          .catch((err) => {
             throw new TRPCError({
-                code: "INTERNAL_SERVER_ERROR",
-                message: `Could not create an Organization ${err} `
-            })
-        })
-
-        if(!orgData?.id){
-            throw new TRPCError({
-                code: "INTERNAL_SERVER_ERROR",
-                message: "No Org ID found"
-            })
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Could not create an Organization: ${err}`,
+            });
+          });
+  
+        if (!orgData?.id) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "No Org ID found",
+          });
         }
-
+  
+        // Create workspace with country and region
         const workspace: Workspace = {
-            id: newId("workspace"),
-            name: input.name,
-            slug: input.slug,
-            tenantId: orgData.id,
-            createdAt: new Date(),
-            deletedAt: null,
+          id: newId("workspace"),
+          name: input.name,
+          slug: input.slug,
+          tenantId: orgData.id,
+          country: input.country, // new field
+          region: input.region || null, // new field
+          createdAt: new Date(),
+          deletedAt: null,
         };
-
-        await db.insert(schema.workspaces).values(workspace)
-        .catch((err) => {
+  
+        await db
+          .insert(schema.workspaces)
+          .values(workspace)
+          .catch((err) => {
             throw new TRPCError({
-                code: "INTERNAL_SERVER_ERROR",
-                message: `Unable to create a workspace ${err}`
-            })
-        })
-
-        return (
-            {
-                workspace: workspace,
-                org: orgData
-            }
-        )
-    }),
-});
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Unable to create a workspace: ${err}`,
+            });
+          });
+  
+        return {
+          workspace,
+          org: orgData,
+        };
+      }),
+  });

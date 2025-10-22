@@ -81,13 +81,16 @@ CREATE TABLE "verification" (
 );
 --> statement-breakpoint
 CREATE TABLE "workspaces" (
-	"id" varchar(256) PRIMARY KEY NOT NULL,
-	"name" varchar(256) NOT NULL,
-	"slug" varchar(256) NOT NULL,
-	"tenant_id" varchar(256) NOT NULL,
-	"created_at" timestamp NOT NULL,
-	"deleted_at" timestamp
+    "id" varchar(256) PRIMARY KEY NOT NULL,
+    "name" varchar(256) NOT NULL,
+    "slug" varchar(256) NOT NULL,
+    "tenant_id" varchar(256) NOT NULL,
+    "country" varchar(64) NOT NULL,
+    "region" varchar(128),
+    "created_at" timestamp NOT NULL,
+    "deleted_at" timestamp
 );
+
 --> statement-breakpoint
 CREATE TABLE "cron_jobs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,

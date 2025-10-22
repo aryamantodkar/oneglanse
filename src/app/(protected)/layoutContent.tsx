@@ -20,13 +20,13 @@ export default function LayoutContent({ children, workspace }: { children: React
     }
   }, [workspace, router]);
   
-  if (!workspace) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-500">Redirecting to create a workspace...</p>
-      </div>
-    );
-  }
+  // if (!workspace) {
+  //   return (
+  //     <div className="flex items-center justify-center h-screen">
+  //       <p className="text-gray-500">Redirecting to create a workspace...</p>
+  //     </div>
+  //   );
+  // }
   
   return (
     <div className="flex w-full h-screen">

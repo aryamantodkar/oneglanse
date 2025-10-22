@@ -1,6 +1,7 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,93 +9,115 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { authClient } from "@lib/auth-client"
-import { toast } from "sonner"
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
-import { redirect } from "next/navigation"
-import { api } from "@/trpc/react"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { redirect } from "next/navigation";
+import { api } from "@/trpc/react";
+import { authClient } from "@lib/auth-client";
+import { LocationSelector } from "@/components/location/locationSelector";
 
+export default function NewWorkspace() {
+  const [formData, setFormData] = useState({
+    workspaceName: "",
+    workspaceSlug: "",
+  });
 
-export default function NewWorkspace() {  
-    const [formData, setFormData] = useState({
-      workspaceName: "",
-      workspaceSlug: "",
-    })
-    const [loading, setLoading] = useState(false)
-    const [error] = useState<string | null>(null)
-    const [success] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<{
+    country: string;
+    countryName: string;
+    region?: string;
+    regionName?: string;
+  }>({ country: "Global", countryName: "Global" });
 
-    const createWorkspaceMutation = api.workspace.create.useMutation({
-      onSuccess: async (data) => {
-        try {
-          await authClient.organization.setActive({
-            organizationId: data.org.id,
-            organizationSlug: data.workspace.slug,
-          });
-        } catch (err) {
-          console.error("Error setting active organization", err);
-          toast.error("Could not set active workspace.");
-        }
+  const [loading, setLoading] = useState(false);
+
+  // Fetch countries first
+  const countriesQuery = api.location.fetchCountries.useQuery();
   
-        toast.success("Workspace created successfully!");
-      },
-      onError: (error) => {
-        console.error("Workspace creation failed", error);
-        toast.error("Workspace creation failed");
-      },
-    })
-   
-    const handleComplete = async () => {
-      if (!formData.workspaceSlug || !formData.workspaceName) {
-        toast.error("Please fill in all fields");
-        return;
-      }
-    
-      setLoading(true);
+  // Consider loading if countries are not yet fetched
+  const formReady = !!countriesQuery.data;
+
+  const createWorkspaceMutation = api.workspace.create.useMutation({
+    onSuccess: async (data) => {
       try {
-        const { data: uniqueSlug, error: slugError } =
-          await authClient.organization.checkSlug({
-            slug: formData.workspaceSlug,
-          });
-    
-        if (slugError || !uniqueSlug) {
-          toast.error("Workspace slug already exists. Please choose another.");
-          return;
-        }
-    
-        const data = await createWorkspaceMutation.mutateAsync({
-          name: formData.workspaceName,
+        await authClient.organization.setActive({
+          organizationId: data.org.id,
+          organizationSlug: data.workspace.slug,
+        });
+      } catch (err) {
+        console.error("Error setting active organization", err);
+        toast.error("Could not set active workspace.");
+      }
+      toast.success("Workspace created successfully!");
+    },
+    onError: (error) => {
+      console.error("Workspace creation failed", error);
+      toast.error("Workspace creation failed");
+    },
+  });
+
+  const handleComplete = async () => {
+    if (!formData.workspaceSlug || !formData.workspaceName) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: uniqueSlug, error: slugError } =
+        await authClient.organization.checkSlug({
           slug: formData.workspaceSlug,
         });
-    
-        try {
-          await authClient.organization.setActive({
-            organizationId: data.org.id,
-            organizationSlug: data.workspace.slug,
-          });
-        } catch (err) {
-          console.error("Error setting active organization", err);
-          toast.error("Could not set active workspace.");
-        }
-    
-        redirect(`/dashboard?workspace=${data.org.id}`);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      if (slugError || !uniqueSlug) {
+        toast.error("Workspace slug already exists. Please choose another.");
+        return;
+      }
+
+      const data = await createWorkspaceMutation.mutateAsync({
+        name: formData.workspaceName,
+        slug: formData.workspaceSlug,
+        country: selectedLocation.country,
+        region: selectedLocation.regionName || null,
+      });
+
+      console.log("form data", data)
+      // try {
+      //   await authClient.organization.setActive({
+      //     organizationId: data.org.id,
+      //     organizationSlug: data.workspace.slug,
+      //   });
+      // } catch (err) {
+      //   console.error("Error setting active organization", err);
+      //   toast.error("Could not set active workspace.");
+      // }
+
+      // redirect(`/dashboard?workspace=${data.org.id}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLocationSelect = (loc: any) => {
+    if (loc.country === "GLOBAL") {
+      setSelectedLocation({ country: "GLOBAL", countryName: "Global" });
+    } else {
+      setSelectedLocation(loc);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {formReady ? (
         <div className="w-full max-w-md">
           <Card>
             <CardHeader>
               <CardTitle>Workspace Setup</CardTitle>
               <CardDescription>
-                Create your new workspace with a name and slug.
+                Create your new workspace with a name, slug, and location.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -113,6 +136,7 @@ export default function NewWorkspace() {
                   }
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="workspace-slug">Workspace Slug</Label>
                 <Input
@@ -127,29 +151,41 @@ export default function NewWorkspace() {
                   }
                 />
               </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              {success && (
-                <p className="text-green-500 flex items-center gap-1 text-sm">
-                      Workspace created!
-                </p>
-              )}
-            </CardContent>
-          <CardFooter>
-          <Button
-              onClick={handleComplete}
-              disabled={loading}
-              className="w-full flex items-center gap-2 cursor-pointer"
-          >
-              {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-              "Create Workspace"
-              )}
-          </Button>
-          </CardFooter>
 
+              <div className="space-y-2">
+                <Label htmlFor="workspace-location">Workspace Location</Label>
+                <LocationSelector onSelect={handleLocationSelect} />
+                <p className="text-sm text-gray-500 mt-1">
+                  {selectedLocation?.country === "GLOBAL"
+                    ? "Prompts in this workspace will run globally."
+                    : selectedLocation?.regionName
+                    ? `Prompts in this workspace will run inside ${selectedLocation.regionName}, ${selectedLocation.countryName}.`
+                    : `Prompts in this workspace will run inside ${selectedLocation.countryName}.`}
+                </p>
+              </div>
+            </CardContent>
+
+            <CardFooter>
+              <Button
+                onClick={handleComplete}
+                disabled={
+                  loading ||
+                  !formData.workspaceName.trim() ||
+                  !formData.workspaceSlug.trim()
+                }
+                className="w-full flex items-center gap-2 cursor-pointer"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Workspace"}
+              </Button>
+            </CardFooter>
           </Card>
         </div>
-      </div>
-      )
+      ) : (
+        <div className="flex flex-col items-center justify-center h-screen gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading Workspace Setup</span>
+        </div>
+      )}
+    </div>
+  );
 }
