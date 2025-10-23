@@ -95,7 +95,10 @@ export const promptRouter = createTRPCRouter({
         };
       }
 
-      const results = await runLLMs(promptsArray);
+      const results = await runLLMs(promptsArray, {
+        workspaceCountry: workspaceData?.country ?? "",
+        workspaceRegion: workspaceData?.region ?? "",
+      });
 
       // console.log("results:", JSON.stringify(results, null, 2));
 
