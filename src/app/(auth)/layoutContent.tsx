@@ -6,6 +6,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import type { Workspace } from "@/server/db/types";
 import { useEffect } from "react";
+import { Logout } from "@/components/forms/logout";
 
 export default function LayoutContent({ children, workspace }: { children: React.ReactNode, workspace: Workspace | null}) {
   const pathname = usePathname();
@@ -22,8 +23,23 @@ export default function LayoutContent({ children, workspace }: { children: React
   
   if (!workspace) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-500">Redirecting to create a workspace...</p>
+      <div className="flex w-full h-screen">
+        <main className="flex-1 flex flex-col min-h-0">
+          {/* Header */}
+          <div className="flex items-center justify-between p-2 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <h1 className="text-sm font-semibold text-gray-900">New Workspace</h1>
+            </div>
+
+            {/* Logout button */}
+            <div>
+              <Logout />
+            </div>
+          </div>
+
+          {/* Page content */}
+          <div className="flex-1 overflow-auto min-h-0 px-6">{children}</div>
+        </main>
       </div>
     );
   }
@@ -37,6 +53,7 @@ export default function LayoutContent({ children, workspace }: { children: React
             <SidebarTrigger className="text-gray-700 hover:text-gray-900" />
             <h1 className="text-sm font-semibold text-gray-900">{capitalizedTitle}</h1>
           </div>
+          <Logout/>
         </div>
 
         {/* Page content */}

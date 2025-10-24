@@ -246,49 +246,28 @@ export default function Sources() {
                   onClick={() => setExpandedUrl(expandedUrl === url ? null : url)}
                 >
                   <TableCell className="p-4 break-words">
-                    <div className="flex flex-row items-center gap-4">
-                      <img
-                        src={`https://www.google.com/s2/favicons?domain=${
-                          new URL(url).hostname
-                        }&sz=32`}
-                        alt="favicon"
-                        className="w-5 h-5 rounded-sm"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                      <div className="flex flex-col gap-1">
-                        {/* Title */}
-                        <span className="text-sm font-medium text-gray-800">
+                  <div className="flex flex-col gap-1 break-words">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col gap-1 hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2 break-words">
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`}
+                          alt="favicon"
+                          className="w-5 h-5 rounded-sm"
+                          onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                        />
+                        <span className="text-sm font-medium text-gray-800 break-words max-w-[750px] truncate">
                           {title || "(No title available)"}
                         </span>
-
-                        {/* URL */}
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-gray-500 hover:underline break-words"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {url}
-                        </a>
-
-                        {/* Expand citations if any */}
-                        {expandedUrl === url && resp.citations?.length ? (
-                          <Card className="bg-gray-50 p-2 mt-1 text-sm">
-                            {resp.citations.map(
-                              (c: any, i: number) =>
-                                c.cited_text && (
-                                  <p key={i} className="mb-1">
-                                    {c.cited_text}
-                                  </p>
-                                )
-                            )}
-                          </Card>
-                        ) : null}
                       </div>
-                    </div>
+                      <span className="text-xs text-gray-500 break-all max-w-[600px] truncate">{url}</span>
+                    </a>
+                  </div>
                   </TableCell>
                   <TableCell>{resp.model}</TableCell>
                 </TableRow>

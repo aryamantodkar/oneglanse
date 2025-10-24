@@ -25,66 +25,90 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Globe } from "lucide-react";
 
+interface PromptWithSentiment {
+  text: string;
+  sentiment: number;
+}
+
 export default function PromptsDataTable() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const [prompts, setPrompts] = useState<string[]>([]);
-  const [initialPrompts, setInitialPrompts] = useState<string[]>([]);
+  const [prompts, setPrompts] = useState<PromptWithSentiment[]>([]);
+  const [initialPrompts, setInitialPrompts] = useState<PromptWithSentiment[]>([]);
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Fetch workspace details
-  const {
-    data: workspace,
-    isLoading: loadingWorkspace,
-    error: workspaceError,
-  } = api.workspace.getById.useQuery({ workspaceId }, { enabled: !!workspaceId });
+  const { data: workspace, isLoading: loadingWorkspace, error: workspaceError } =
+    api.workspace.getById.useQuery({ workspaceId }, { enabled: !!workspaceId });
 
-  // Fetch user prompts
   const { data, isLoading: loadingPrompts } = api.prompt.fetchUserPrompts.useQuery(
     { workspaceId },
     { retry: 2, refetchOnWindowFocus: false, enabled: !!workspaceId }
   );
 
   const { data: countries } = api.location.fetchCountries.useQuery();
+  const storePromptMutation = api.prompt.store.useMutation();
+  const analyzeSentimentMutation = api.sentiment.analyzeSentiment.useMutation();
 
+  // Load prompts and sentiment
   useEffect(() => {
     if (data?.prompts) {
-      setPrompts(data.prompts);
-      setInitialPrompts(data.prompts);
+      const initial: PromptWithSentiment[] = data.prompts.map((p: any) => ({
+        text: p.prompt,
+        sentiment: p.sentiment ?? 50,
+      }));
+      setPrompts(initial);
+      setInitialPrompts(initial);
     }
   }, [data]);
 
   const addPrompt = (prompt: string) => {
     if (!prompt.trim()) return;
-    setPrompts([...prompts, prompt.trim()]);
+    setPrompts([...prompts, { text: prompt.trim(), sentiment: 50 }]);
   };
 
   const toggleRow = (idx: number) => {
     setSelectedRows((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(idx)) newSet.delete(idx);
-      else newSet.add(idx);
+      newSet.has(idx) ? newSet.delete(idx) : newSet.add(idx);
       return newSet;
     });
   };
 
-  const storePromptMutation = api.prompt.store.useMutation();
   const handleSave = async () => {
-    if (!workspaceId) {
-      toast.error("Workspace ID not available yet. Please try refreshing the page.");
-      return;
-    }
+    if (!workspaceId) return toast.error("Workspace ID not available");
 
     setLoading(true);
     try {
-      await storePromptMutation.mutateAsync({ prompts, workspaceId });
-      setInitialPrompts(prompts);
+      // Save prompts
+      await storePromptMutation.mutateAsync({
+        prompts: prompts.map((p) => p.text),
+        workspaceId,
+      });
+
+      setInitialPrompts([...prompts]);
       setSelectedRows(new Set());
       toast.success("Prompts saved successfully!");
+
+      // Trigger async sentiment analysis
+      analyzeSentimentMutation.mutate(
+        { workspaceId },
+        {
+          onSuccess: (res) => {
+            const updatedPrompts = prompts.map((p) => {
+              const sentimentObj = res.prompts.find((sp: any) => sp.prompt === p.text);
+              return { ...p, sentiment: sentimentObj?.sentiment ?? 50 };
+            });
+            setPrompts(updatedPrompts);
+          },
+          onError: (err) => {
+            console.error("Sentiment analysis failed:", err);
+          },
+        }
+      );
     } catch (err) {
       console.error("Failed to save prompts:", err);
       toast.error("Failed to save prompts");
@@ -95,12 +119,30 @@ export default function PromptsDataTable() {
 
   const newChanges =
     prompts.length !== initialPrompts.length ||
-    prompts.some((p, idx) => p !== initialPrompts[idx]);
+    prompts.some((p, idx) => p.text !== initialPrompts[idx]?.text);
 
   const handleAddPrompt = () => {
     addPrompt(currentPrompt);
     setCurrentPrompt("");
     setDialogOpen(false);
+  };
+
+  const workspaceLocationMsg =
+    workspace && countries
+      ? workspace.region
+        ? `This workspace runs prompts in ${workspace.region}, ${countries.find(c => c.iso2 === workspace.country)?.name}.`
+        : `This workspace runs prompts in ${countries.find(c => c.iso2 === workspace.country)?.name}.`
+      : "Loading location...";
+
+  const getFlag = () => {
+    if (!workspace || !countries) return null;
+
+    const country = countries.find(c => c.iso2 === workspace.country);
+    return country ? (
+      <span className="text-lg w-5 h-5 flex items-center justify-center">{country.emoji}</span>
+    ) : (
+      null
+    );
   };
 
   if (loadingWorkspace || loadingPrompts) {
@@ -119,29 +161,11 @@ export default function PromptsDataTable() {
     );
   }
 
-  const workspaceLocationMsg = workspace && countries
-  ? workspace.country === "GLOBAL"
-    ? "This workspace runs prompts globally."
-    : workspace.region
-    ? `This workspace runs prompts in ${workspace.region}, ${countries.find(c => c.iso2 === workspace.country)?.name}.`
-    : `This workspace runs prompts in ${countries.find(c => c.iso2 === workspace.country)?.name}.`
-  : "Loading location...";
-
-  const getFlagOrGlobe = () => {
-    if (!workspace || !countries) return null;
-    if (workspace.country === "GLOBAL") return <Globe className="w-5 h-5 text-gray-500" />;
-    const country = countries.find(c => c.iso2 === workspace.country);
-    if (!country) return <Globe className="w-5 h-5 text-gray-500" />;
-    return <span className="text-lg w-5 h-5 flex items-center justify-center">{country.emoji}</span>;
-  };
-  
-
   return (
     <div className="flex flex-col h-screen">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-4">
         <div className="flex justify-between items-center w-full mb-4">
           <div className="flex gap-2 items-center">
-
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="p-2 rounded-xl">
@@ -184,7 +208,6 @@ export default function PromptsDataTable() {
             )}
           </div>
 
-          {/* Save Button */}
           <div className="ml-auto">
             <Button
               onClick={handleSave}
@@ -222,20 +245,35 @@ export default function PromptsDataTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {prompts.map((prompt, idx) => (
+              {prompts.map((p, idx) => (
                 <TableRow
                   key={idx}
-                  className={`hover:bg-gray-50 cursor-pointer ${
-                    selectedRows.has(idx) ? "bg-gray-100" : ""
-                  }`}
+                  className={`hover:bg-gray-50 cursor-pointer ${selectedRows.has(idx) ? "bg-gray-100" : ""}`}
                   onClick={() => toggleRow(idx)}
                 >
                   <TableCell className="pl-4">
                     <Checkbox checked={selectedRows.has(idx)} />
                   </TableCell>
-                  <TableCell className="max-w-[400px] whitespace-normal break-words">{prompt}</TableCell>
+                  <TableCell className="max-w-[400px] whitespace-normal break-words">{p.text}</TableCell>
                   <TableCell>Public</TableCell>
-                  <TableCell>Neutral</TableCell>
+                  <TableCell className="p-2">
+                    <div
+                      className={`
+                        flex items-center gap-2 px-2 py-1 rounded-full w-[70px] justify-center
+                        ${p.sentiment < 40 ? "bg-red-100" : p.sentiment < 70 ? "bg-yellow-100" : "bg-green-100"}
+                      `}
+                    >
+                      <span
+                        className={`
+                          w-3 h-3 rounded-full
+                          ${p.sentiment < 40 ? "bg-red-600" : p.sentiment < 70 ? "bg-yellow-500" : "bg-green-600"}
+                        `}
+                      ></span>
+                      <span className="text-xs font-medium">
+                        {p.sentiment}
+                      </span>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -244,7 +282,7 @@ export default function PromptsDataTable() {
       </div>
 
       <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm mx-6 mb-4 flex-shrink-0 mb-16">
-        {getFlagOrGlobe()}
+        {getFlag()}
         <div className="flex flex-col">
           <span className="text-sm text-gray-700">{workspaceLocationMsg}</span>
           <span className="text-xs text-gray-400">You can change it in settings.</span>

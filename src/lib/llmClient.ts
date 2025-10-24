@@ -1,8 +1,10 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import Perplexity from '@perplexity-ai/perplexity_ai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const perplexity = new Perplexity({ apiKey: process.env.PERPLEXITY_API_KEY! });
 
 type UserPrompt = {
   id: string;
@@ -25,7 +27,8 @@ export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: Workspa
 
         const [gptRes] = await Promise.all([
           queryOpenAI(prompt, workspaceLocation),
-          // queryClaude(prompt),
+          // queryClaude(prompt, workspaceLocation),
+          //queryPerplexity(prompt, workspaceLocation),
         ]);
 
         return {
@@ -49,27 +52,23 @@ export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: Workspa
 
 export async function queryOpenAI(userQuery: string, workspaceLocation?: WorkspaceLocation) {
   const tools: any[] = [
-    {
-      type: "web_search",
-      ...(workspaceLocation && workspaceLocation.workspaceCountry !== "GLOBAL"
-        ? {
-            user_location: {
-              type: "approximate",
-              country: workspaceLocation.workspaceCountry,
-              region: workspaceLocation.workspaceRegion ?? undefined,
-            },
-          }
-        : {}),
-    },
+    
   ];
 
   const response = await openai.responses.create({
     model: "gpt-5",
-    tools,
+    tools: [
+      {
+        type: "web_search",
+        user_location: {
+          type: "approximate",
+          country: workspaceLocation?.workspaceCountry,
+          region: workspaceLocation?.workspaceRegion ?? undefined,
+        }
+      }
+    ],
     input: userQuery,
   });
-
-  console.log("OpenAI response:", JSON.stringify(response, null, 2));
   
   // Extract all message-type outputs
   const messages = response.output.filter((o: any) => o.type === "message");
@@ -117,7 +116,7 @@ export async function queryOpenAI(userQuery: string, workspaceLocation?: Workspa
   };
 }
 
-export async function queryClaude(userQuery: string) {
+export async function queryClaude(userQuery: string, workspaceLocation?: WorkspaceLocation) {
   const response = await anthropic.messages.create({
     model: "claude-opus-4-1-20250805",
     max_tokens: 1024,
@@ -131,7 +130,12 @@ export async function queryClaude(userQuery: string) {
       {
         type: "web_search_20250305",
         name: "web_search",
-        max_uses: 5
+        max_uses: 5,
+        user_location: {
+          type: "approximate",
+          region: workspaceLocation?.workspaceRegion ?? undefined,
+          country: workspaceLocation?.workspaceCountry,
+        }
       }
     ]
   });
@@ -170,5 +174,43 @@ export async function queryClaude(userQuery: string) {
   return {
     model: "claude-opus-4-1-20250805",
     metrics
+  };
+}
+
+export async function queryPerplexity(userQuery: string, workspaceLocation?: WorkspaceLocation) {
+  const response = await perplexity.search.create({
+    query: userQuery,
+    country: workspaceLocation?.workspaceCountry,
+    maxResults: 5
+  } as any );
+
+  const metrics = response.results.flatMap((queryResults: any, i: number) =>
+    (queryResults as any[]).map((result, j) => ({
+      id: `${i+1}-${j+1}`,
+      response: result.snippet ?? "",
+      citations: [
+        {
+          title: result.title ?? `Result ${j + 1}`,
+          url: result.url ?? "",
+          cited_text: result.snippet ?? ""
+        },
+      ],
+      sources: [],
+    }))
+  );
+
+  // Fallback if no results
+  if (metrics.length === 0) {
+    metrics.push({
+      id: response.id,
+      response: "No search results found.",
+      citations: [],
+      sources: [],
+    });
+  }
+
+  return {
+    model: "Perplexity",
+    metrics,
   };
 }

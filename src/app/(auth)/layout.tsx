@@ -25,10 +25,9 @@ const geist = Geist({
 
 export default async function RootLayout({
 	children,
-}: Readonly<{ children: React.ReactNode }>) {
-	const cookieStore = await cookies()
-  	const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
-
+}: {
+	children: React.ReactNode;
+  }) {
 	const session = await auth.api.getSession({
 		headers: await headers()
 	})
@@ -36,6 +35,9 @@ export default async function RootLayout({
 	if (!session) {
         return redirect("/login")
     }
+
+	const cookieStore = await cookies()
+  	const defaultOpen = cookieStore.get("sidebar_state")?.value === "true" || true;
 
 	let workspace = null;
 	try {
@@ -45,16 +47,13 @@ export default async function RootLayout({
 	}
 
 	return (
-		<html lang="en" className={`${geist.variable}`}>
-			<body>
-				<TRPCReactProvider>
+		<>
+			<TRPCReactProvider>
 				<SidebarProvider defaultOpen={defaultOpen}>
 					<LayoutContent workspace={workspace}>{children}</LayoutContent>
 				</SidebarProvider>
-				<Toaster />
-				</TRPCReactProvider>
-			</body>
-		</html>
+			</TRPCReactProvider>
+		</>
 	);
 }
 

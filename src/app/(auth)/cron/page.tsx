@@ -49,7 +49,8 @@ export default function CronPage() {
 
   useEffect(() => {
     if (promptsArray?.prompts) {
-      setPrompts(promptsArray.prompts);
+      const initial = promptsArray.prompts.map((p: any) => p.prompt);
+      setPrompts(initial);
     }
   }, [promptsArray]);
   

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { authClient } from "@lib/auth-client";
 import { LocationSelector } from "@/components/location/locationSelector";
@@ -30,10 +30,11 @@ export default function NewWorkspace() {
     countryName: string;
     region?: string;
     regionName?: string;
-  }>({ country: "Global", countryName: "Global" });
+  }>({ country: "", countryName: "" });
 
   const [loading, setLoading] = useState(false);
-
+  const router = useRouter();
+  
   // Fetch countries first
   const countriesQuery = api.location.fetchCountries.useQuery();
   
@@ -84,29 +85,24 @@ export default function NewWorkspace() {
         region: selectedLocation.regionName || null,
       });
 
-      console.log("form data", data)
-      // try {
-      //   await authClient.organization.setActive({
-      //     organizationId: data.org.id,
-      //     organizationSlug: data.workspace.slug,
-      //   });
-      // } catch (err) {
-      //   console.error("Error setting active organization", err);
-      //   toast.error("Could not set active workspace.");
-      // }
+      try {
+        await authClient.organization.setActive({
+          organizationId: data.org.id,
+          organizationSlug: data.workspace.slug,
+        });
+      } catch (err) {
+        console.error("Error setting active organization", err);
+        toast.error("Could not set active workspace.");
+      }
 
-      // redirect(`/dashboard?workspace=${data.org.id}`);
+      return router.push(`/brand?workspace=${data.workspace.id}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLocationSelect = (loc: any) => {
-    if (loc.country === "GLOBAL") {
-      setSelectedLocation({ country: "GLOBAL", countryName: "Global" });
-    } else {
-      setSelectedLocation(loc);
-    }
+    setSelectedLocation(loc);
   };
 
   return (
@@ -156,9 +152,7 @@ export default function NewWorkspace() {
                 <Label htmlFor="workspace-location">Workspace Location</Label>
                 <LocationSelector onSelect={handleLocationSelect} />
                 <p className="text-sm text-gray-500 mt-1">
-                  {selectedLocation?.country === "GLOBAL"
-                    ? "Prompts in this workspace will run globally."
-                    : selectedLocation?.regionName
+                  { selectedLocation?.regionName
                     ? `Prompts in this workspace will run inside ${selectedLocation.regionName}, ${selectedLocation.countryName}.`
                     : `Prompts in this workspace will run inside ${selectedLocation.countryName}.`}
                 </p>

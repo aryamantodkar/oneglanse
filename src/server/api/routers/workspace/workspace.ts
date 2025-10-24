@@ -13,7 +13,7 @@ export const workspaceRouter = createTRPCRouter({
         z.object({
           name: z.string().min(2).max(50),
           slug: z.string().min(2).max(50),
-          country: z.string().min(2), // ISO2 code or "Global"
+          country: z.string().min(2), 
           region: z.string().nullable().optional(), // optional region
         })
       )

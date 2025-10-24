@@ -13,7 +13,7 @@ function formatDateToClickHouse(dt: Date) {
   // => "2025-09-28 15:32:45"
 }
 
-type UserPrompt = {
+export type UserPrompt = {
   id: string;
   user_id: string;
   workspace_id: string;
@@ -21,7 +21,7 @@ type UserPrompt = {
   created_at: string;
 };
 
-interface PromptResponse {
+export interface PromptResponse {
   id: string;
   prompt_id: string;
   user_id: string;
@@ -266,7 +266,7 @@ export const promptRouter = createTRPCRouter({
         throw err;
       }
     }),
-    fetchPromptResponses: protectedProcedure
+  fetchPromptResponses: protectedProcedure
     .input(
       z.object({
         workspaceId: z.string(),
@@ -376,7 +376,10 @@ export const promptRouter = createTRPCRouter({
 
         const data = await result.json();
 
-        const promptsArray: string[] = data.map((row: any) => row.prompt);
+        const promptsArray = data.map((row: any) => ({
+          prompt: row.prompt,
+          sentiment: row.sentiment ?? 50,
+        }));
 
         return {
           success: true,

@@ -6,21 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export function LocationSelector({ onSelect }: { onSelect: (loc: any) => void }) {
   const [countries, setCountries] = useState<{ iso2: string; name: string; emoji?: string }[]>([]);
   const [regions, setRegions] = useState<{ iso2: string; name: string }[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState("GLOBAL"); // default
+  const [selectedCountry, setSelectedCountry] = useState(""); // default
   const [selectedRegion, setSelectedRegion] = useState("");
 
   const countriesQuery = api.location.fetchCountries.useQuery();
   const statesQuery = api.location.fetchStates.useQuery(
     { countryIso2: selectedCountry },
-    { enabled: !!selectedCountry && selectedCountry !== "GLOBAL" } // skip for GLOBAL
+    { enabled: !!selectedCountry } 
   );
 
-  // Set countries once, prepend GLOBAL
   useEffect(() => {
     if (countriesQuery.data) {
-      const globalOption = { iso2: "GLOBAL", name: "Global", emoji: "🌐" };
-      const others = countriesQuery.data.filter(c => c.iso2 !== "GLOBAL");
-      setCountries([globalOption, ...others]);
+      setCountries(countriesQuery.data);
     }
   }, [countriesQuery.data]);
 

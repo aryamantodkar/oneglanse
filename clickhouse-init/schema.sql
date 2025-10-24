@@ -1,10 +1,11 @@
 CREATE DATABASE IF NOT EXISTS analytics;
 
 CREATE TABLE IF NOT EXISTS analytics.user_prompts (
-    id String,  -- still useful for tracking
+    id String,                
     user_id String,
     workspace_id String,
     prompt String,
+    sentiment Float32 DEFAULT 0,  
     created_at DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree()
 PRIMARY KEY (user_id, workspace_id, prompt)
