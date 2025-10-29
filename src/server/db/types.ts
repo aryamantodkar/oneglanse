@@ -25,4 +25,46 @@ export type InsertInvitation = InferInsertModel<typeof schema.invitation>;
 
 export type Workspace = InferSelectModel<typeof schema.workspaces>;
 export type InsertWorkspace = InferInsertModel<typeof schema.workspaces>;
+
 export type Competitor = { id: string; name: string; website?: string };
+
+export type UserPrompt = {
+    id: string;
+    user_id: string;
+    workspace_id: string;
+    prompt: string;
+    per_model: Record<
+      string,
+      {
+        sentiment: number;
+        position: number;
+        visibility: number;
+        topFavicons: string[];
+      }
+    >;
+    created_at: string;
+  };
+  
+  // Represents a response to a prompt
+  export interface PromptResponse {
+    id: string;
+    prompt_id: string;
+    user_id: string;
+    workspace_id: string;
+    model: string;
+    modelProvider: string;
+    response: string;
+    citations: Array<{
+      title: string;
+      url: string;
+      start_index?: number | null;
+      end_index?: number | null;
+      cited_text: string;
+    }>;
+    sources: Array<{
+      title: string;
+      url: string;
+      page_age?: string | null;
+    }>;
+    created_at: string;
+  }

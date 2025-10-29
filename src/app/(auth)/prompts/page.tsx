@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, type JSX } from "react";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,51 +23,108 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Globe } from "lucide-react";
-
-interface PromptWithSentiment {
-  text: string;
-  sentiment: number;
-}
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function PromptsDataTable() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const [prompts, setPrompts] = useState<PromptWithSentiment[]>([]);
-  const [initialPrompts, setInitialPrompts] = useState<PromptWithSentiment[]>([]);
+  const [prompts, setPrompts] = useState<string[]>([]);
+  const [initialPrompts, setInitialPrompts] = useState<string[]>([]);
+  const [perModelData, setPerModelData] = useState<
+    Record<
+      string,
+      {
+        [model: string]: {
+          sentiment: number;
+          position: number;
+          visibility: number;
+          topFavicons: string[];
+          brandMetrics?: Record<
+            string,
+            { sentiment: number; visibility: number; position: number }
+          >;
+        };
+      }
+    >
+  >({});
+  const [modelFilter, setModelFilter] = useState("All Models");
+  const [brandFilter, setBrandFilter] = useState("All Brands");
   const [currentPrompt, setCurrentPrompt] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(false);
 
-  const { data: workspace, isLoading: loadingWorkspace, error: workspaceError } =
-    api.workspace.getById.useQuery({ workspaceId }, { enabled: !!workspaceId });
-
-  const { data, isLoading: loadingPrompts } = api.prompt.fetchUserPrompts.useQuery(
+  const { data } = api.prompt.fetchUserPrompts.useQuery(
     { workspaceId },
-    { retry: 2, refetchOnWindowFocus: false, enabled: !!workspaceId }
+    { enabled: !!workspaceId }
   );
 
-  const { data: countries } = api.location.fetchCountries.useQuery();
   const storePromptMutation = api.prompt.store.useMutation();
-  const analyzeSentimentMutation = api.sentiment.analyzeSentiment.useMutation();
+  const analyzeMetricsMutation = api.analysis.analyzeMetrics.useMutation();
 
-  // Load prompts and sentiment
+  // Load prompts and per-model data
   useEffect(() => {
     if (data?.prompts) {
-      const initial: PromptWithSentiment[] = data.prompts.map((p: any) => ({
-        text: p.prompt,
-        sentiment: p.sentiment ?? 50,
-      }));
-      setPrompts(initial);
-      setInitialPrompts(initial);
+      const fetchedPrompts = data.prompts.map((p) => p.prompt);
+      setPrompts(fetchedPrompts);
+      setInitialPrompts(fetchedPrompts);
+      const modelMap: typeof perModelData = {};
+      data.prompts.forEach((p) => (modelMap[p.prompt] = p.per_model ?? {}));
+      setPerModelData(modelMap);
     }
+
+    analyzeMetricsMutation.mutate(
+      { workspaceId },
+      {
+        onSuccess: (res) => {
+          const newMap: typeof perModelData = {};
+          res.prompts.forEach((rp: any) => {
+            newMap[rp.prompt] = rp.per_model ?? {};
+          });
+          setPerModelData(newMap);
+          console.log("Background analysis complete");
+        },
+        onError: (err) => console.error("Background analysis failed", err),
+      }
+    );
   }, [data]);
 
-  const addPrompt = (prompt: string) => {
-    if (!prompt.trim()) return;
-    setPrompts([...prompts, { text: prompt.trim(), sentiment: 50 }]);
+  const isModified = useMemo(() => {
+    if (prompts.length !== initialPrompts.length) return true;
+    return prompts.some((p, i) => p !== initialPrompts[i]);
+  }, [prompts, initialPrompts]);
+
+  // Models and brands for filters
+  const models = useMemo(() => {
+    const set = new Set<string>();
+    Object.values(perModelData).forEach((m) =>
+      Object.keys(m).forEach((k) => set.add(k))
+    );
+    return ["All Models", ...Array.from(set)];
+  }, [perModelData]);
+
+  const brands = useMemo(() => {
+    const set = new Set<string>();
+    Object.values(perModelData).forEach((m) =>
+      Object.values(m).forEach((metrics) => {
+        Object.keys(metrics.brandMetrics ?? {}).forEach((b) => set.add(b));
+      })
+    );
+    return ["All Brands", ...Array.from(set)];
+  }, [perModelData]);
+
+  const handleAddPrompt = () => {
+    if (!currentPrompt.trim()) return;
+    setPrompts([...prompts, currentPrompt.trim()]);
+    setCurrentPrompt("");
+    setDialogOpen(false);
   };
 
   const toggleRow = (idx: number) => {
@@ -83,209 +140,232 @@ export default function PromptsDataTable() {
 
     setLoading(true);
     try {
-      // Save prompts
       await storePromptMutation.mutateAsync({
-        prompts: prompts.map((p) => p.text),
+        prompts,
         workspaceId,
       });
-
-      setInitialPrompts([...prompts]);
-      setSelectedRows(new Set());
+      setInitialPrompts(prompts);
       toast.success("Prompts saved successfully!");
-
-      // Trigger async sentiment analysis
-      analyzeSentimentMutation.mutate(
-        { workspaceId },
-        {
-          onSuccess: (res) => {
-            const updatedPrompts = prompts.map((p) => {
-              const sentimentObj = res.prompts.find((sp: any) => sp.prompt === p.text);
-              return { ...p, sentiment: sentimentObj?.sentiment ?? 50 };
-            });
-            setPrompts(updatedPrompts);
-          },
-          onError: (err) => {
-            console.error("Sentiment analysis failed:", err);
-          },
-        }
-      );
     } catch (err) {
-      console.error("Failed to save prompts:", err);
+      console.error(err);
       toast.error("Failed to save prompts");
     } finally {
       setLoading(false);
     }
   };
 
-  const newChanges =
-    prompts.length !== initialPrompts.length ||
-    prompts.some((p, idx) => p.text !== initialPrompts[idx]?.text);
+  const filteredPrompts = useMemo(() => {
+    return prompts.filter((p) => {
+      if (modelFilter !== "All Models" && !perModelData[p]?.[modelFilter]) return false;
+      if (brandFilter === "All Brands") return true;
 
-  const handleAddPrompt = () => {
-    addPrompt(currentPrompt);
-    setCurrentPrompt("");
-    setDialogOpen(false);
-  };
-
-  const workspaceLocationMsg =
-    workspace && countries
-      ? workspace.region
-        ? `This workspace runs prompts in ${workspace.region}, ${countries.find(c => c.iso2 === workspace.country)?.name}.`
-        : `This workspace runs prompts in ${countries.find(c => c.iso2 === workspace.country)?.name}.`
-      : "Loading location...";
-
-  const getFlag = () => {
-    if (!workspace || !countries) return null;
-
-    const country = countries.find(c => c.iso2 === workspace.country);
-    return country ? (
-      <span className="text-lg w-5 h-5 flex items-center justify-center">{country.emoji}</span>
-    ) : (
-      null
-    );
-  };
-
-  if (loadingWorkspace || loadingPrompts) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] text-gray-500">
-        Loading...
-      </div>
-    );
-  }
-
-  if (workspaceError) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] text-red-500">
-        Failed to load workspace
-      </div>
-    );
-  }
+      const modelsForPrompt = Object.values(perModelData[p] ?? {});
+      return modelsForPrompt.some((m) =>
+        Object.keys(m.brandMetrics ?? {}).includes(brandFilter)
+      );
+    });
+  }, [prompts, perModelData, modelFilter, brandFilter]);
 
   return (
     <div className="flex flex-col h-screen">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-4">
-        <div className="flex justify-between items-center w-full mb-4">
-          <div className="flex gap-2 items-center">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="p-2 rounded-xl">
-                  <Plus size={20} />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Prompt</DialogTitle>
-                </DialogHeader>
-                <Textarea
-                  placeholder="Type your prompt..."
-                  className="w-full mt-2"
-                  rows={4}
-                  value={currentPrompt}
-                  onChange={(e) => setCurrentPrompt(e.target.value)}
-                />
-                <div className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddPrompt}>Add</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {selectedRows.size > 0 && (
-              <Button
-                variant="outline"
-                className="p-2 rounded-xl hover:bg-red-50 text-red-600 transition"
-                onClick={() => {
-                  setPrompts((prev) =>
-                    prev.filter((_, idx) => !selectedRows.has(idx))
-                  );
-                  setSelectedRows(new Set());
-                }}
-              >
-                <Trash2 size={20} />
+        <div className="flex justify-between items-center mb-4 gap-2">
+          {/* Add Prompt Dialog */}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="p-2 rounded-xl">
+                <Plus size={20} />
               </Button>
-            )}
-          </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Prompt</DialogTitle>
+              </DialogHeader>
+              <Textarea
+                placeholder="Type your prompt..."
+                rows={4}
+                value={currentPrompt}
+                onChange={(e) => setCurrentPrompt(e.target.value)}
+                className="w-full mt-2"
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddPrompt}>Add</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-          <div className="ml-auto">
+          {/* Delete */}
+          {selectedRows.size > 0 && (
             <Button
-              onClick={handleSave}
-              disabled={loading || !newChanges}
-              className={`py-2 rounded-xl transition ${
-                loading || !newChanges
-                  ? "bg-transparent text-gray-400 border border-gray-300 cursor-not-allowed"
-                  : "bg-gray-900 text-white hover:bg-gray-800"
-              }`}
+              variant="outline"
+              className="p-2 rounded-xl text-red-600 hover:bg-red-50"
+              onClick={() => {
+                setPrompts((prev) =>
+                  prev.filter((_, idx) => !selectedRows.has(idx))
+                );
+                setSelectedRows(new Set());
+              }}
             >
-              {loading ? "Saving..." : "Save"}
+              <Trash2 size={20} />
             </Button>
-          </div>
+          )}
+
+          {/* Model Filter */}
+          <Select value={modelFilter} onValueChange={setModelFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select model" />
+            </SelectTrigger>
+            <SelectContent>
+              {models.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Brand Filter */}
+          <Select value={brandFilter} onValueChange={setBrandFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select brand" />
+            </SelectTrigger>
+            <SelectContent>
+              {brands.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Save */}
+          <Button
+            onClick={handleSave}
+            disabled={loading || !isModified}
+            className={`py-2 rounded-xl transition ${
+              loading || !isModified
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-gray-900 text-white hover:bg-gray-800"
+            }`}
+          >
+            {loading ? "Saving..." : "Save"}
+          </Button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <Table className="w-full border border-gray-200 rounded-xl table-auto">
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead className="pl-4 w-12">
-                  <Checkbox
-                    checked={selectedRows.size === prompts.length && prompts.length > 0}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedRows(new Set(prompts.map((_, idx) => idx)));
-                      } else {
-                        setSelectedRows(new Set());
+          {filteredPrompts.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No prompts added yet. Click <Plus className="inline w-4 h-4 mx-1" /> to add one.
+            </div>
+          ) : (
+            <Table className="w-full border border-gray-200 rounded-xl table-auto">
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="pl-4 w-12">
+                    <Checkbox
+                      checked={
+                        selectedRows.size === filteredPrompts.length &&
+                        filteredPrompts.length > 0
                       }
-                    }}
-                  />
-                </TableHead>
-                <TableHead>Prompt</TableHead>
-                <TableHead>Visibility</TableHead>
-                <TableHead>Sentiment</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {prompts.map((p, idx) => (
-                <TableRow
-                  key={idx}
-                  className={`hover:bg-gray-50 cursor-pointer ${selectedRows.has(idx) ? "bg-gray-100" : ""}`}
-                  onClick={() => toggleRow(idx)}
-                >
-                  <TableCell className="pl-4">
-                    <Checkbox checked={selectedRows.has(idx)} />
-                  </TableCell>
-                  <TableCell className="max-w-[400px] whitespace-normal break-words">{p.text}</TableCell>
-                  <TableCell>Public</TableCell>
-                  <TableCell className="p-2">
-                    <div
-                      className={`
-                        flex items-center gap-2 px-2 py-1 rounded-full w-[70px] justify-center
-                        ${p.sentiment < 40 ? "bg-red-100" : p.sentiment < 70 ? "bg-yellow-100" : "bg-green-100"}
-                      `}
-                    >
-                      <span
-                        className={`
-                          w-3 h-3 rounded-full
-                          ${p.sentiment < 40 ? "bg-red-600" : p.sentiment < 70 ? "bg-yellow-500" : "bg-green-600"}
-                        `}
-                      ></span>
-                      <span className="text-xs font-medium">
-                        {p.sentiment}
-                      </span>
-                    </div>
-                  </TableCell>
+                      onCheckedChange={(checked) => {
+                        if (checked)
+                          setSelectedRows(new Set(filteredPrompts.map((_, idx) => idx)));
+                        else setSelectedRows(new Set());
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>Prompt</TableHead>
+                  <TableHead>Model</TableHead>
+                  <TableHead>Brand</TableHead>
+                  <TableHead>Sentiment</TableHead>
+                  <TableHead>Visibility</TableHead>
+                  <TableHead>Position</TableHead>
+                  <TableHead>Top</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+              </TableHeader>
 
-      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm mx-6 mb-4 flex-shrink-0 mb-16">
-        {getFlag()}
-        <div className="flex flex-col">
-          <span className="text-sm text-gray-700">{workspaceLocationMsg}</span>
-          <span className="text-xs text-gray-400">You can change it in settings.</span>
+              <TableBody>
+                {filteredPrompts.map((prompt, idx) => {
+                  const perModel = perModelData[prompt] ?? {};
+                  const modelEntries = Object.entries(perModel);
+
+                  // If no metrics exist, render a single row for the prompt
+                  if (modelEntries.length === 0) {
+                    return (
+                      <TableRow key={prompt} className="hover:bg-gray-50 cursor-pointer">
+                        <TableCell className="pl-4">
+                          <Checkbox checked={selectedRows.has(idx)} />
+                        </TableCell>
+                        <TableCell>{prompt}</TableCell>
+                        <TableCell colSpan={6} className="text-gray-400">
+                          No metrics yet
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  // If metrics exist, render per model & per brand
+                  const rows: JSX.Element[] = [];
+                  modelEntries.forEach(([modelName, metrics]) => {
+                    const brandMetrics = metrics.brandMetrics ?? {};
+                    // If no brand metrics, render model-level row
+                    if (Object.keys(brandMetrics).length === 0) {
+                      rows.push(
+                        <TableRow key={`${prompt}-${modelName}`} className="hover:bg-gray-50 cursor-pointer">
+                          <TableCell className="pl-4">
+                            <Checkbox checked={selectedRows.has(idx)} />
+                          </TableCell>
+                          <TableCell>{prompt}</TableCell>
+                          <TableCell>{modelName}</TableCell>
+                          <TableCell colSpan={4} className="text-gray-400">
+                            No brand metrics yet
+                          </TableCell>
+                          <TableCell className="flex gap-1">
+                            {metrics.topFavicons?.map((f) => (
+                              <img key={f} src={f} className="w-5 h-5 rounded-sm" />
+                            ))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                      return;
+                    }
+
+                    // Render rows per brand
+                    Object.entries(brandMetrics).forEach(([brandName, brandMetric]) => {
+                      if (brandFilter !== "All Brands" && brandName !== brandFilter) return;
+
+                      rows.push(
+                        <TableRow
+                          key={`${prompt}-${modelName}-${brandName}`}
+                          className="hover:bg-gray-50 cursor-pointer"
+                        >
+                          <TableCell className="pl-4">
+                            <Checkbox checked={selectedRows.has(idx)} />
+                          </TableCell>
+                          <TableCell>{prompt}</TableCell>
+                          <TableCell>{modelName}</TableCell>
+                          <TableCell>{brandName}</TableCell>
+                          <TableCell>{brandMetric.sentiment}</TableCell>
+                          <TableCell>{brandMetric.visibility}%</TableCell>
+                          <TableCell>{brandMetric.position}</TableCell>
+                          <TableCell className="flex gap-1">
+                            {metrics.topFavicons?.map((f) => (
+                              <img key={f} src={f} className="w-5 h-5 rounded-sm" />
+                            ))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    });
+                  });
+
+                  return rows;
+                })}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </div>
