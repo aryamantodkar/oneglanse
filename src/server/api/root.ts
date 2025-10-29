@@ -3,7 +3,7 @@ import { workspaceRouter } from "./routers/workspace/workspace";
 import { promptRouter } from "./routers/prompt/prompt";
 import { cronRouter } from "./routers/cron/cron";
 import { locationRouter } from "./routers/location/location";
-import { sentimentRouter } from "./routers/sentiment/sentiment";
+import { analysisRouter } from "./routers/analysis/analysis";
 import { brandRouter } from "./routers/brand/brand";
 
 export const appRouter = createTRPCRouter({
@@ -11,7 +11,7 @@ export const appRouter = createTRPCRouter({
     prompt: promptRouter,
     cron: cronRouter,
     location: locationRouter,
-    sentiment: sentimentRouter,
+    analysis: analysisRouter,
     brand: brandRouter
 });
 

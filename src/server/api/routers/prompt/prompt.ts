@@ -7,33 +7,14 @@ import { cronJobs } from "@/server/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { pool } from "@/server/db/pg";
 import { TRPCError } from "@trpc/server";
+import type { PromptResponse, UserPrompt } from "@/server/db/types";
+import fs from "fs";
+import path from "path";
 
 function formatDateToClickHouse(dt: Date) {
   return dt.toISOString().slice(0, 19).replace("T", " "); 
   // => "2025-09-28 15:32:45"
 }
-
-export type UserPrompt = {
-  id: string;
-  user_id: string;
-  workspace_id: string;
-  prompt: string;
-  created_at: string;
-};
-
-export interface PromptResponse {
-  id: string;
-  prompt_id: string;
-  user_id: string;
-  workspace_id: string;
-  model: string;
-  modelProvider: string;
-  response: string;
-  citations: any[];
-  sources: any[];
-  created_at: string;
-}
-
 
 export const promptRouter = createTRPCRouter({
   ask: publicProcedure
@@ -95,16 +76,62 @@ export const promptRouter = createTRPCRouter({
         };
       }
 
-      const results = await runLLMs(promptsArray, {
-        workspaceCountry: workspaceData?.country ?? "",
-        workspaceRegion: workspaceData?.region ?? "",
-      });
+      // MOCK DATA
+      const filePath = path.join(process.cwd(), "llm_results.json");
+      const rawData = fs.readFileSync(filePath, "utf8");
+      const results = JSON.parse(rawData);
+
+      // REAL DATA
+
+      // const results = await runLLMs(promptsArray, {
+      //   workspaceCountry: workspaceData?.country ?? "",
+      //   workspaceRegion: workspaceData?.region ?? "",
+      // });
 
       // console.log("results:", JSON.stringify(results, null, 2));
 
       const values = results.flatMap((r: any) =>
         (r.results || []).flatMap((modelOutput: any) => {
           const metrics = modelOutput?.output?.metrics || [];
+      
+          if (modelOutput?.modelProvider === "Anthropic Claude") {
+            const combinedResponse = metrics
+              .map((m: any) => m.response?.trim())
+              .filter(Boolean)
+              .join("\n\n");
+      
+            const combinedCitations = [
+              ...new Map(
+                metrics
+                  .flatMap((m: any) => m.citations || [])
+                  .map((c: any) => [c.url, c])
+              ).values(),
+            ];
+      
+            const combinedSources = [
+              ...new Map(
+                metrics
+                  .flatMap((m: any) => m.sources || [])
+                  .map((s: any) => [s.url, s])
+              ).values(),
+            ];
+      
+            return [
+              {
+                id: uuidv4(),
+                prompt_id: r.id,
+                user_id: userId,
+                workspace_id: workspaceId,
+                model: modelOutput?.output?.model || "",
+                modelProvider: modelOutput?.modelProvider || "",
+                response: combinedResponse || "",
+                citations: combinedCitations,
+                sources: combinedSources,
+                created_at: formatDateToClickHouse(new Date()),
+              },
+            ];
+          }
+      
           return metrics.map((metric: any) => ({
             id: uuidv4(),
             prompt_id: r.id,
@@ -119,8 +146,6 @@ export const promptRouter = createTRPCRouter({
           }));
         })
       );
-
-      // console.log(JSON.stringify(values, null, 2));
 
       await clickhouse.insert({
         table: "prompt_responses",
@@ -189,6 +214,7 @@ export const promptRouter = createTRPCRouter({
             user_id: userId,
             workspace_id: workspaceId,
             prompt: p,
+            per_model: {},
             created_at: formatDateToClickHouse(new Date()),
           }));
 
@@ -359,11 +385,11 @@ export const promptRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const { workspaceId } = input;
       const userId = ctx.session?.user.id;
-
+  
       if (!userId) {
         throw new Error("Unauthorized");
       }
-
+  
       try {
         const result = await clickhouse.query({
           query: `
@@ -373,14 +399,18 @@ export const promptRouter = createTRPCRouter({
           `,
           format: "JSONEachRow",
         });
-
+  
         const data = await result.json();
-
+  
         const promptsArray = data.map((row: any) => ({
+          id: row.id,
+          user_id: row.user_id,
+          workspace_id: row.workspace_id,
           prompt: row.prompt,
-          sentiment: row.sentiment ?? 50,
+          per_model: row.per_model ?? {}, // include per-model metrics
+          created_at: row.created_at,
         }));
-
+  
         return {
           success: true,
           prompts: promptsArray,

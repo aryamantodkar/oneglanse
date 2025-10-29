@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -69,7 +69,7 @@ export default function Sources() {
 
   // ✅ Flatten all URLs across responses
   const uniqueUrlRows = useMemo(() => {
-    const urlMap = new Map<string, { resp: PromptResponse; title?: string }>();
+    const urlMap = new Map<string, { resp: PromptResponse; title?: string, citedTexts: string[]  }>();
   
     displayedResponses.forEach(resp => {
       resp.extractedUrls.forEach(url => {
@@ -78,18 +78,23 @@ export default function Sources() {
           const sourceTitle =
             resp.sources?.find(s => s.url === url)?.title ||
             resp.citations?.find(c => c.url === url)?.title ||
-            resp.citations?.find(c => c.url === url)?.cited_text ||
             null;
   
-          urlMap.set(url, { resp, title: sourceTitle });
+            const citedTexts =
+              resp.citations
+                ?.filter((c) => c.url === url && c.cited_text)
+                .map((c) => c.cited_text as string) || [];
+
+          urlMap.set(url, { resp, title: sourceTitle, citedTexts });
         }
       });
     });
   
-    return Array.from(urlMap.entries()).map(([url, { resp, title }]) => ({
+    return Array.from(urlMap.entries()).map(([url, { resp, title, citedTexts }]) => ({
       url,
       resp,
       title,
+      citedTexts
     }));
   }, [displayedResponses]);
 
@@ -104,7 +109,7 @@ export default function Sources() {
             domainMap.set(domain, { urls: new Set(), citationCount: 0 });
           }
           domainMap.get(domain)!.urls.add(url);
-          domainMap.get(domain)!.citationCount += resp.citations?.length || 0;
+          domainMap.get(domain)!.citationCount += 1;
         } catch {
           // ignore invalid URLs
         }
@@ -116,8 +121,15 @@ export default function Sources() {
       0
     );
 
+    const totalCitations = Array.from(domainMap.values())
+    .reduce((acc, d) => acc + d.citationCount, 0);
+
     return Array.from(domainMap.entries()).map(([domain, entry]) => ({
       domain,
+      citationShare:
+        totalCitations > 0
+          ? ((entry.citationCount / totalCitations) * 100).toFixed(1)
+          : "0",
       avgCitations:
         entry.urls.size > 0
           ? (entry.citationCount / entry.urls.size).toFixed(1)
@@ -158,16 +170,50 @@ export default function Sources() {
         <Select value={selectedProvider} onValueChange={setSelectedProvider}>
           <SelectTrigger className="w-[220px]">
             <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-gray-500" />
+              {
+                selectedProvider === "All Models"
+                ?
+                <Bot className="h-4 w-4 text-gray-500" />
+                : 
+                null
+              }
               <SelectValue placeholder="Select Provider" />
             </div>
           </SelectTrigger>
           <SelectContent>
-            {providers.map(prov => (
-              <SelectItem key={prov} value={prov}>
-                {prov}
-              </SelectItem>
-            ))}
+            {providers.map(prov => {
+              const getIcon = (prov: string) => {
+                switch (prov.toLowerCase()) {
+                  case "perplexity":
+                    return "https://www.google.com/s2/favicons?domain=perplexity.ai&sz=64";
+                  case "gpt":
+                  case "openai gpt":
+                    return "https://openai.com/favicon.ico";
+                  case "anthropic claude":
+                    return "https://claude.ai/favicon.ico";
+                  default:
+                    return null;
+                }
+              };
+
+              const icon = getIcon(prov);
+
+              return (
+                <SelectItem key={prov} value={prov}>
+                  <div className="flex items-center gap-2">
+                    {icon && (
+                      <img
+                        src={icon}
+                        alt={`${prov} icon`}
+                        className="w-4 h-4 rounded-sm"
+                        onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                      />
+                    )}
+                    <span>{prov}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
@@ -204,7 +250,8 @@ export default function Sources() {
               <TableRow>
                 <TableHead>Domain</TableHead>
                 <TableHead>Used (%)</TableHead>
-                <TableHead>Avg Citations</TableHead>
+                <TableHead>Average Citations per Link</TableHead>
+                <TableHead>Share of Citations</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,13 +270,13 @@ export default function Sources() {
                   </TableCell>
                   <TableCell>{d.usedPercent}%</TableCell>
                   <TableCell>{d.avgCitations}</TableCell>
+                  <TableCell>{d.citationShare}%</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       ) : (
-        // URLs Table
         <div className="overflow-x-auto">
           <Table className="w-full">
             <TableHeader>
@@ -239,37 +286,64 @@ export default function Sources() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {uniqueUrlRows.map(({ url, title, resp }) => (
+              {uniqueUrlRows.map(({ url, title, resp, citedTexts }) => (
                 <TableRow
                   key={url}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setExpandedUrl(expandedUrl === url ? null : url)}
+                  className="hover:bg-gray-50 transition-colors"
                 >
-                  <TableCell className="p-4 break-words">
-                  <div className="flex flex-col gap-1 break-words">
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex flex-col gap-1 hover:underline"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center gap-2 break-words">
+                  <TableCell className="p-4 align-top">
+                    <div className="flex flex-col gap-2">
+                      {/* Title + Favicon */}
+                      <div className="flex items-center gap-2">
                         <img
                           src={`https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`}
                           alt="favicon"
                           className="w-5 h-5 rounded-sm"
-                          onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                          onError={(e) =>
+                            ((e.target as HTMLImageElement).style.display = "none")
+                          }
                         />
-                        <span className="text-sm font-medium text-gray-800 break-words max-w-[750px] truncate">
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-gray-800 hover:underline truncate max-w-[750px]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {title || "(No title available)"}
-                        </span>
+                        </a>
                       </div>
-                      <span className="text-xs text-gray-500 break-all max-w-[600px] truncate">{url}</span>
-                    </a>
-                  </div>
+
+                      {/* URL */}
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-500 hover:underline break-all truncate max-w-[600px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {url}
+                      </a>
+
+                      {/* Inline Cited Texts */}
+                      {citedTexts && citedTexts.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {citedTexts.map((text, idx) => (
+                            <div
+                              key={idx}
+                              className="text-xs text-gray-700 bg-gray-100 rounded-md p-2 border border-gray-200"
+                            >
+                              “{text}”
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
-                  <TableCell>{resp.model}</TableCell>
+
+                  <TableCell className="whitespace-nowrap align-top">
+                    <span className="text-sm text-gray-800">{resp.model}</span>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
