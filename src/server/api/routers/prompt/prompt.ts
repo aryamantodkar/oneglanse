@@ -77,7 +77,7 @@ export const promptRouter = createTRPCRouter({
       }
 
       // MOCK DATA
-      const filePath = path.join(process.cwd(), "llm_results.json");
+      const filePath = path.join(process.cwd(), "mockData", "llm_results.json");
       const rawData = fs.readFileSync(filePath, "utf8");
       const results = JSON.parse(rawData);
 
@@ -94,7 +94,7 @@ export const promptRouter = createTRPCRouter({
         (r.results || []).flatMap((modelOutput: any) => {
           const metrics = modelOutput?.output?.metrics || [];
       
-          if (modelOutput?.modelProvider === "Anthropic Claude") {
+          if (modelOutput?.modelProvider === "Anthropic") {
             const combinedResponse = metrics
               .map((m: any) => m.response?.trim())
               .filter(Boolean)

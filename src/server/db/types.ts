@@ -28,6 +28,7 @@ export type InsertWorkspace = InferInsertModel<typeof schema.workspaces>;
 
 export type Competitor = { id: string; name: string; website?: string };
 
+// API
 export type UserPrompt = {
     id: string;
     user_id: string;
@@ -43,10 +44,10 @@ export type UserPrompt = {
       }
     >;
     created_at: string;
-  };
+};
   
-  // Represents a response to a prompt
-  export interface PromptResponse {
+// Represents a response to a prompt
+export interface PromptResponse {
     id: string;
     prompt_id: string;
     user_id: string;
@@ -67,4 +68,49 @@ export type UserPrompt = {
       page_age?: string | null;
     }>;
     created_at: string;
-  }
+}
+
+export interface PromptAnalysis {
+  id: string;
+  prompt_id: string;
+  user_id: string;
+  workspace_id: string;
+  model: string;
+  modelProvider: string;
+  response: string;
+}
+
+// UI
+export type Metric = {
+  mentions: number | string;
+  sentiment: number | string;
+  visibility: number | string;
+  position: number | string;
+  website?: string;
+};
+
+export type PerModelData = Record<string, Record<string, Metric>>;
+
+export type PromptMetric = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  workspace_id: string;
+  prompt: string;
+  per_model: PerModelData;
+  responses: Record<string, string>;
+};
+
+export interface PromptResponseClient {
+  id: string;
+  prompt_id: string;
+  user_id: string;
+  workspace_id: string;
+  model: string;
+  modelProvider: string;
+  response: string;
+  citations: any[];
+  sources: any[];
+  extractedUrls: string[];
+  created_at: string;
+}
