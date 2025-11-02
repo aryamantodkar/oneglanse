@@ -1,0 +1,424 @@
+{
+  "6b0860b0-8699-4e11-9a69-4441948e92e9": {
+    "Anthropic": {
+      "brandMetrics": {
+        "HubSpot": {
+          "mentions": 1,
+          "sentiment": 85,
+          "visibility": 25,
+          "position": 0,
+          "website": "https://www.hubspot.com"
+        },
+        "Freshsales": {
+          "mentions": 1,
+          "sentiment": 85,
+          "visibility": 25,
+          "position": 0.3333333333,
+          "website": "https://www.freshsales.io"
+        },
+        "Zoho": {
+          "mentions": 1,
+          "sentiment": 85,
+          "visibility": 25,
+          "position": 0.6666666667,
+          "website": "https://www.zoho.com"
+        },
+        "Pipedrive": {
+          "mentions": 1,
+          "sentiment": 85,
+          "visibility": 25,
+          "position": 1,
+          "website": "https://www.pipedrive.com"
+        }
+      },
+      "response": "HubSpot offers one of the best cost-effective solutions with a free CRM that includes:\n- Free plans for CRM, Marketing, Sales, and Service hubs\n- Unlimited users and contacts\n- Completely free forever\n\nFreshsales is an all-in-one CRM that:\n- Unites sales and marketing\n- Uses an intelligent Freddy AI assistant\n- Provides an intuitive, user-friendly interface on both desktop and mobile\n\nZoho offers:\n- Absolute control over fields, automation triggers, and customer journeys\n- An AI assistant (Zia) that can predict deals and recommend workflow improvements\n- An affordable system with extensive customization options\n\nPipedrive is a sales-first CRM that:\n- Helps sales teams focus on actions that close deals\n- Creates a highly visual, intuitive experience\n- Focuses on sales process visibility\n- Provides clarity on deal standings\n\nA simple, affordable, and user-friendly solution designed specifically for small businesses. It removes clutter found in larger CRM platforms, offering a clean interface that focuses on core features without being overwhelming.\n\nFor most small businesses, the ideal CRM should:\n- Focus on necessary functionalities\n- Include productivity tools\n- Have a user-friendly design\n- Offer excellent customer support\n- Cost less than $20 per user/month\n\nCRMs help small businesses by:\n- Tracking leads\n- Nurturing customers\n- Reducing administrative work\n- Automating follow-ups\n- Logging emails\n- Centralizing client information\n\nThe good news is that CRMs are no longer just for big enterprises. Affordable, lightweight options now make it possible for even small two-person businesses to use powerful client-tracking tools.\n\nMost of these CRMs offer free trials, so take your time exploring to find the best fit for you and your team."
+    },
+    "Perplexity": {
+      "brandMetrics": {
+        "HubSpot CRM": {
+          "mentions": 4,
+          "sentiment": 90,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://www.hubspot.com"
+        },
+        "Zoho CRM": {
+          "mentions": 3,
+          "sentiment": 75,
+          "visibility": 75,
+          "position": 0.2,
+          "website": "https://www.zoho.com"
+        },
+        "Pipedrive": {
+          "mentions": 3,
+          "sentiment": 80,
+          "visibility": 75,
+          "position": 0.4,
+          "website": "https://www.pipedrive.com"
+        },
+        "OnePageCRM": {
+          "mentions": 1,
+          "sentiment": 70,
+          "visibility": 25,
+          "position": 0.6,
+          "website": "https://www.onepagecrm.com"
+        },
+        "EngageBay": {
+          "mentions": 1,
+          "sentiment": 65,
+          "visibility": 25,
+          "position": 0.8,
+          "website": "https://www.engagebay.com"
+        },
+        "Bitrix24": {
+          "mentions": 1,
+          "sentiment": 65,
+          "visibility": 25,
+          "position": 1,
+          "website": "https://www.bitrix24.com"
+        }
+      },
+      "response": "The most user-friendly CRM software for small businesses in 2025 are **HubSpot CRM**, **Zoho CRM**, and **Pipedrive**, with HubSpot often highlighted as the easiest to use for beginners due to its free tier, intuitive interface, and comprehensive tools for sales, marketing, and customer service[1][2][6].\n\nKey details include:\n\n- **HubSpot CRM** is widely recognized for its *user-friendliness*, offering a free plan that supports contact management, email tracking, live chat, and pipeline management. Its interface is designed to reduce the learning curve for small teams, making it ideal for startups and growing businesses[1][2][4][8].\n\n- **Zoho CRM** is noted for its *customizability* and scalability, with advanced workflow automation and AI features (Zia). While it is more customizable, it may have a steeper learning curve compared to HubSpot but is great for businesses needing flexibility[1][2][6].\n\n- **Pipedrive** is praised for its *ease of use* and visual pipeline management, helping small businesses focus on deal tracking and sales actions. It includes AI-powered insights and integrations with many third-party apps, making it an affordable and straightforward yet powerful option[1][5][6].\n\nOther notable mentions with strong usability but varying features include:\n\n- **OnePageCRM** — very simple interface with workflow automation, ideal for fast-moving sales teams but lacking advanced analytics[3].\n\n- **EngageBay** and **Bitrix24** also offer free or low-cost plans with multi-pipeline views and various CRM tools, suitable for small businesses seeking versatility[5].\n\nIn summary, for the *most user-friendly* CRM for small businesses in 2025:\n\n| CRM Software    | Strengths                           | Considerations                    |\n|-----------------|-----------------------------------|---------------------------------|\n| **HubSpot CRM** | Free plan, easy to use, scalable  | Advanced features require paid plans |\n| **Zoho CRM**    | Highly customizable, AI-powered   | Learning curve for beginners     |\n| **Pipedrive**   | Visual sales pipelines, AI insights | Limited free plan, better as paid|\n\nAmong these, **HubSpot CRM** is generally considered the best starting point for most small businesses seeking an easy-to-use CRM with no initial cost and broad functionality[1][2][6][8]."
+    },
+    "OpenAI": {
+      "brandMetrics": {
+        "Freshsales": {
+          "mentions": 2,
+          "sentiment": 95,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://www.freshsales.io"
+        },
+        "Freshworks": {
+          "mentions": 1,
+          "sentiment": 80,
+          "visibility": 50,
+          "position": 0.125,
+          "website": "https://www.freshworks.com"
+        },
+        "Less Annoying CRM": {
+          "mentions": 2,
+          "sentiment": 90,
+          "visibility": 100,
+          "position": 0.25,
+          "website": "https://www.lessannoyingcrm.com"
+        },
+        "Zendesk Sell": {
+          "mentions": 2,
+          "sentiment": 85,
+          "visibility": 100,
+          "position": 0.375,
+          "website": "https://www.zendesk.com/sell"
+        },
+        "HubSpot CRM": {
+          "mentions": 2,
+          "sentiment": 85,
+          "visibility": 100,
+          "position": 0.5,
+          "website": "https://www.hubspot.com"
+        },
+        "Insightly": {
+          "mentions": 1,
+          "sentiment": 70,
+          "visibility": 50,
+          "position": 0.625,
+          "website": "https://www.insightly.com"
+        },
+        "Pipedrive": {
+          "mentions": 1,
+          "sentiment": 80,
+          "visibility": 50,
+          "position": 0.75,
+          "website": "https://www.pipedrive.com"
+        },
+        "Bigin": {
+          "mentions": 1,
+          "sentiment": 70,
+          "visibility": 50,
+          "position": 0.875,
+          "website": "https://www.zoho.com/bigin"
+        },
+        "Zoho": {
+          "mentions": 1,
+          "sentiment": 75,
+          "visibility": 50,
+          "position": 1,
+          "website": "https://www.zoho.com"
+        }
+      },
+      "response": "Here are the most user-friendly CRM platforms for small businesses in 2025, with Freshsales emerging as the clear leader in ease of use and setup.\n\n## 1. Freshsales by Freshworks  \nWhy it’s the most user-friendly:  \n• Guided onboarding and data import wizard minimize setup friction—even non-technical users can get up and running in minutes.  \n• “Launchpad” in-app search lets you quickly find any feature without digging through menus.  \n• Freddy AI lead scoring automates prioritization, making high-value leads obvious at a glance.  \n• Clean, uncluttered pipeline view and drag-and-drop deal cards keep your focus on selling, not navigating. ([expertmarket.com](https://www.expertmarket.com/crm/best-crm-software?utm_source=openai))\n\nPricing (per user/month, billed annually):  \n• Free plan available  \n• Growth: $9 (annual) / $11 (monthly)  \n• Pro: $39 / $47  \n• Enterprise: $59 / $71 ([expertmarket.com](https://www.expertmarket.com/crm/best-crm-software?utm_source=openai))\n\n## 2. Less Annoying CRM  \nWhy it’s super simple:  \n• Flat $15/user/month pricing (no hidden fees) and a 30-day free trial.  \n• Core CRM focus—contacts, tasks, pipelines and calendar—without overwhelming extras.  \n• Intuitive dashboard with large buttons, responsive design, and straightforward customization (custom fields, pipelines).  \n• Free phone & email support even during trial. ([techradar.com](https://www.techradar.com/pro/software-services/less-annoying-crm-review?utm_source=openai))\n\n## 3. Zendesk Sell  \nWhy it’s easy for beginners:  \n• Fast, modern interface with clear menu labels and minimal clicks to common tasks.  \n• Out-of-the-box reporting and forecasting widgets provide instant insights.  \n• Competitive entry-level pricing and native integrations with Gmail, Outlook, and other email apps. ([tech.co](https://tech.co/crm-software/best-crm-software-small-business?utm_source=openai))\n\nPlans start at $19/user/month (Team) with a 14-day free trial. ([tech.co](https://tech.co/crm-software/best-crm-software-small-business?utm_source=openai))\n\n## 4. HubSpot CRM  \nWhy it’s intuitive:  \n• Generous free-forever tier (unlimited users, up to 1 million contacts).  \n• Visual deal pipelines, drag-and-drop boards, and contextual sidebars showing contact activity.  \n• Built-in chat, meeting scheduler, email sequencing, and reporting dashboards.  \n• Extensive educational resources and a templated “Getting Started” checklist. ([blog.kinfomedia.com](https://blog.kinfomedia.com/best-crm-software-for-small-businesses-2025/?utm_source=openai))\n\nPaid CRM Suite plans start at $45/month for 2 paid users. ([justinashurst.com](https://www.justinashurst.com/post/top-5-crms-for-small-businesses-in-2025-finding-the-perfect-fit?utm_source=openai))\n\n## Honorable Mentions  \n• **Insightly** – Intuitive mobile app and flexible dashboards; ideal for teams needing both CRM and lightweight project management ([techradar.com](https://www.techradar.com/reviews/insightly-crm-review?utm_source=openai))  \n• **Pipedrive** – Visual, activity-based pipelines and easy-to-use mobile app; built around simple sales workflows ([techradar.com](https://www.techradar.com/best/the-best-crm-software?utm_source=openai))  \n• **Bigin by Zoho** – Streamlined feature-set focused on essential sales activities; seamless integration with Zoho ecosystem ([flexiop.com](https://flexiop.com/blog/top-5-crm-systems-for-small-businesses-in-2025/?utm_source=openai))  \n\n### Conclusion  \nFor small businesses in 2025 seeking the absolute easiest CRM experience, **Freshsales** stands out thanks to its guided setup, intuitive interface, and in-app search. If you prefer a no-frills, budget-friendly tool, **Less Annoying CRM** offers unmatched simplicity. For broader ecosystems or free plans, **Zendesk Sell** and **HubSpot CRM** remain top contenders in user-friendliness."
+    }
+  },
+  "4b190c06-0a4c-4bfa-a567-9d2653082796": {
+    "Anthropic": {
+      "brandMetrics": {
+        "HubSpot": {
+          "mentions": 1,
+          "sentiment": 90,
+          "visibility": 95,
+          "position": 0,
+          "website": "https://www.hubspot.com"
+        },
+        "Zoho CRM": {
+          "mentions": 1,
+          "sentiment": 85,
+          "visibility": 75,
+          "position": 0.25,
+          "website": "https://www.zoho.com/crm"
+        },
+        "Salesmate": {
+          "mentions": 1,
+          "sentiment": 88,
+          "visibility": 80,
+          "position": 0.5,
+          "website": "https://www.salesmate.io"
+        },
+        "Nimble": {
+          "mentions": 1,
+          "sentiment": 87,
+          "visibility": 70,
+          "position": 0.75,
+          "website": "https://www.nimble.com"
+        },
+        "HighLevel": {
+          "mentions": 1,
+          "sentiment": 86,
+          "visibility": 85,
+          "position": 1,
+          "website": "https://www.gohighlevel.com"
+        }
+      },
+      "response": "HubSpot is perfect for marketing agencies, offering more than just contact storage. It provides features like:\n- Email engagement tracking\n- Live chat\n- Call logging\n- Ability to start for free and expand features as you grow\n\nZoho CRM is a highly adaptable platform for small business teams with:\n- Modular design\n- Intense automation\n- Workflows that can be customized to match your specific needs\n- Flexibility for various business types, including consulting agencies\n\nSalesmate offers:\n- Exceptional team collaboration features\n- Custom reporting\n- Client management tools\n- Easy platform integrations\n- Visual sales pipeline\n- Intelligent email campaign tracking\n- Built-in calling and follow-up management\n\nNimble is a social CRM that:\n- Pulls contact information, social media activity, and communication history into one dashboard\n- Treats CRM as a living network\n- Helps build and nurture relationships\n- Extends beyond traditional email and call logging to include social interactions\n\nHighLevel is specifically built for small businesses and marketing agencies, offering:\n- Funnels\n- Automations\n- Calendars\n- CRM\n- Forms\n- Ability to automate follow-ups\n- Pipeline tracking\n- Client management\n\nlook for features like:\n- Project management\n- Time tracking\n- Client communication tools\n- Software integration\n- Ease of use\n- Customization options\n- Customer support\n\nIt's recommended to try free trials and do in-depth research to find the CRM that best fits your agency's workflow.\n\nA good CRM can significantly improve your business by:\n- Increasing client retention\n- Automating follow-ups\n- Streamlining workflows\n- Providing a 360-degree view of client interactions"
+    },
+    "OpenAI": {
+      "brandMetrics": {
+        "HubSpot CRM": {
+          "mentions": 3,
+          "sentiment": 95,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://www.hubspot.com"
+        },
+        "Zoho One": {
+          "mentions": 2,
+          "sentiment": 90,
+          "visibility": 67,
+          "position": 0.125,
+          "website": "https://www.zoho.com/one"
+        },
+        "Zoho CRM Plus": {
+          "mentions": 2,
+          "sentiment": 90,
+          "visibility": 67,
+          "position": 0.25,
+          "website": "https://www.zoho.com/crmplus"
+        },
+        "ActiveCampaign": {
+          "mentions": 3,
+          "sentiment": 93,
+          "visibility": 100,
+          "position": 0.375,
+          "website": "https://www.activecampaign.com"
+        },
+        "Apptivo": {
+          "mentions": 2,
+          "sentiment": 88,
+          "visibility": 67,
+          "position": 0.5,
+          "website": "https://www.apptivo.com"
+        },
+        "Keap": {
+          "mentions": 2,
+          "sentiment": 85,
+          "visibility": 67,
+          "position": 0.625,
+          "website": "https://www.keap.com"
+        },
+        "SharpSpring": {
+          "mentions": 1,
+          "sentiment": 80,
+          "visibility": 33,
+          "position": 0.75,
+          "website": "https://www.sharpspring.com"
+        },
+        "EngageBay": {
+          "mentions": 1,
+          "sentiment": 78,
+          "visibility": 33,
+          "position": 0.875,
+          "website": "https://www.engagebay.com"
+        },
+        "Less Annoying CRM": {
+          "mentions": 1,
+          "sentiment": 75,
+          "visibility": 33,
+          "position": 1,
+          "website": "https://www.lessannoyingcrm.com"
+        }
+      },
+      "response": "## Introduction  \nIn today’s competitive landscape, small marketing agencies require an all-in-one CRM that unifies sales pipelines, marketing automation, email campaigns, analytics, and client management—without forcing teams to juggle multiple disconnected tools ([fueler.io](https://fueler.io/blog/best-crm-software-for-agency-owners?utm_source=openai)). A robust, integrated platform not only streamlines workflows but also delivers the visibility and automation needed to scale services and boost client ROI ([brandvm.com](https://www.brandvm.com/post/best-marketing-automation-software-tools-2025?utm_source=openai)).\n\n## Key Selection Criteria  \nWhen evaluating an all-in-one CRM for a small marketing agency, prioritize:  \n- Marketing automation (email, SMS, social) and lead scoring  \n- Built-in CRM with deal pipelines and task management  \n- Project or campaign management features  \n- Prebuilt integrations (Gmail, Slack, Zapier, advertising platforms)  \n- Ease of use and speed of implementation  \n- Affordability and transparent pricing ([capterra.com](https://www.capterra.com/p/79367/ActiveCampaign/?utm_source=openai))  \n\n## Top Recommendations  \n\n### HubSpot CRM: The All-in-One Powerhouse  \nKey Features  \n- Free-forever CRM tier with contact management, deal pipelines, and reporting  \n- Marketing Hub: landing pages, email sequences, social scheduling, ad management  \n- AI-powered “Breeze Agents” for content creation, prospecting, and support ([jasonmoss.org](https://www.jasonmoss.org/best-crm-for-marketing-agencies/?utm_source=openai))  \n- Seamless integration with Gmail, Slack, WordPress, and 1,000+ apps via Zapier  \n- Built-in sales and service tools for end-to-end client lifecycle management  \n\nPricing  \n- Free basic CRM plan; Starter Marketing Hub from \\$50/month for 2 users  \n- Scale to Professional and Enterprise tiers as campaigns and data needs grow ([en.wikipedia.org](https://en.wikipedia.org/wiki/HubSpot?utm_source=openai))  \n\nWhy It Suits Small Agencies  \nHubSpot’s intuitive UI and generous free tier allow small teams to adopt quickly, handle multi-channel campaigns, and grow without replacing the platform later ([jasonmoss.org](https://www.jasonmoss.org/best-crm-for-marketing-agencies/?utm_source=openai)).\n\n### Zoho One & Zoho CRM Plus: Affordable Ecosystem  \nKey Features  \n- Unified suite: CRM, email marketing, social media, analytics, project management  \n- Free tier: up to 3 CRM users and 2,000 emails/month; paid plans from \\~\\$14/user/month  \n- Deep integration with other Zoho apps (Books, Desk, Projects) for an end-to-end solution ([brandvm.com](https://www.brandvm.com/post/best-marketing-automation-software-tools-2025?utm_source=openai))  \n\nPricing  \n- CRM Plus (marketing automation, surveys, social) from \\$50/user/month  \n- Zoho One (complete 45-app bundle) from \\$35/user/month  \n\nWhy It Suits Small Agencies  \nThe Zoho ecosystem is ideal for agencies already using Zoho tools—or those seeking a budget-friendly, fully integrated platform that scales with modest setup efforts ([brandvm.com](https://www.brandvm.com/post/best-marketing-automation-software-tools-2025?utm_source=openai)).\n\n### ActiveCampaign: Best-in-Class Automation  \nKey Features  \n- Powerful, visual automation builder supporting behavioral triggers, conditional logic, and split-testing  \n- Combined CRM and email marketing in one platform; 950+ native integrations  \n- Recognized leader in G2’s Fall 2025 reports (Top-1 in 77 categories) for ROI, implementation speed, and marketing automation ([activecampaign.com](https://www.activecampaign.com/blog/activecampaign-g2s-fall-reports-2025?utm_source=openai))  \n\nPricing  \n- Starts at \\$15/month flat rate for unlimited users; scales by feature set (Lite, Plus, Professional, Enterprise)  \n\nWhy It Suits Small Agencies  \nActiveCampaign’s automation depth lets small teams build complex, multi-step client journeys without coding, while its flat-rate user pricing keeps costs predictable as the team grows ([activecampaign.com](https://www.activecampaign.com/blog/activecampaign-g2s-fall-reports-2025?utm_source=openai)).\n\n### Apptivo: Modular CRM with Project Management  \nKey Features  \n- Over 65 integrated apps: CRM, Projects, Invoicing, Help Desk, HR, and more  \n- True modular design: add only the apps you need, keeping interface lean and costs down  \n- Customizable dashboards, robust reporting, and predictive analytics for forecasting ([techradar.com](https://www.techradar.com/reviews/apptivo-crm-review?utm_source=openai))  \n\nPricing  \n- Plans from \\$15/user/month; higher tiers unlock additional apps and automation capabilities  \n\nWhy It Suits Small Agencies  \nApptivo’s modularity lets marketing agencies pick exactly the tools they need—CRM for prospects, Projects for deliverables, Invoices for billing—without paying for unused features ([techradar.com](https://www.techradar.com/reviews/apptivo-crm-review?utm_source=openai)).\n\n### Keap (Infusionsoft): Sales-Focused Automation  \nKey Features  \n- End-to-end lead management: CRM triggers, email sequences, appointment scheduling, and invoicing  \n- Intuitive drag-and-drop workflow builder for automating repetitive tasks  \n- Dedicated onboarding and support, plus robust mobile app for on-the-go management ([brandvm.com](https://www.brandvm.com/post/best-marketing-automation-software-tools-2025?utm_source=openai))  \n\nPricing  \n- Plans start at \\$249/month (no free tier); 14-day free trial available  \n\nWhy It Suits Small Agencies  \nKeap is ideal if you need a single platform to unite sales and marketing with strong onboarding support—particularly for agencies that handle both lead generation and client billing ([brandvm.com](https://www.brandvm.com/post/best-marketing-automation-software-tools-2025?utm_source=openai)).\n\n## Additional Alternatives  \n- **SharpSpring**: All-in-one marketing automation and CRM at agency-friendly pricing; deeper analytics but steeper onboarding curve ([joinsecret.com](https://www.joinsecret.com/sharpspring-from-constant-contact/reviews?utm_source=openai))  \n- **EngageBay**: Budget “mini-HubSpot” with free CRM and marketing automation; fewer integrations but very affordable ([brandvm.com](https://www.brandvm.com/post/best-marketing-automation-software-tools-2025?utm_source=openai))  \n- **Less Annoying CRM**: Simple, \\$15/user/month flat-rate CRM; excellent for solo entrepreneurs but lacks advanced automation ([techradar.com](https://www.techradar.com/pro/software-services/less-annoying-crm-review?utm_source=openai))  \n\n## Conclusion  \nFor most small marketing agencies, **HubSpot CRM** and **Zoho One** strike the best balance of ease-of-use, breadth of features, and scalability. If deep automation is your priority, **ActiveCampaign** is unmatched. Evaluate your agency’s specific needs, team size, and budget, then take advantage of free trials to find the perfect all-in-one CRM fit."
+    },
+    "Perplexity": {
+      "brandMetrics": {
+        "HubSpot CRM": {
+          "mentions": 2,
+          "sentiment": 95,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://www.hubspot.com"
+        },
+        "Zoho CRM": {
+          "mentions": 2,
+          "sentiment": 85,
+          "visibility": 80,
+          "position": 0.25,
+          "website": "https://www.zoho.com/crm"
+        },
+        "BIGContacts": {
+          "mentions": 2,
+          "sentiment": 80,
+          "visibility": 70,
+          "position": 0.5,
+          "website": "https://www.bigcontacts.com"
+        },
+        "SuiteDash": {
+          "mentions": 2,
+          "sentiment": 75,
+          "visibility": 60,
+          "position": 0.75,
+          "website": "https://www.suitedash.com"
+        },
+        "Bitrix24": {
+          "mentions": 2,
+          "sentiment": 70,
+          "visibility": 50,
+          "position": 1,
+          "website": "https://www.bitrix24.com"
+        }
+      },
+      "response": "The best all-in-one CRM software for a small marketing agency in 2025 is **HubSpot CRM** due to its comprehensive features tailored for marketing agencies, ease of use, and strong integration across marketing, sales, and service functions. It offers a free plan and scalable paid options, making it suitable for small businesses looking for an advanced yet cost-effective solution[1][12][13].\n\nKey reasons why HubSpot CRM stands out for small marketing agencies:\n\n- **All-in-one platform** combining lead management, marketing automation, email marketing, sales pipeline, and customer service tools.\n- **User-friendly interface** with robust free features, ideal for small teams and growing agencies.\n- Strong **integration ecosystem** with Google Workspace, social media, and many other marketing tools.\n- Scalable pricing plans (free to premium) that grow with the business.\n- Highly rated for marketing agencies’ workflows by users and experts alike[1][12][13].\n\nOther notable mentions that suit small marketing agencies and provide all-in-one capabilities:\n\n| CRM          | Strengths                                    | Pricing (Starting)          | Notes                                         |\n|--------------|----------------------------------------------|----------------------------|-----------------------------------------------|\n| Zoho CRM     | Highly customizable, strong automation       | Free (up to 3 users); $14/user/mo | Good for niche/custom workflows                |\n| BIGContacts  | Excellent contact & email marketing management| Free for startups; $9.99/user/mo| User-friendly for SMBs, solid email automation |\n| SuiteDash   | Integrated client communication, project & billing | Paid plans starting at moderate rates | Good for full agency management                   |\n| Bitrix24    | Free for unlimited users, includes project management | Free and paid plans ($49/5 users) | Offers cloud and on-premises deployment options  |\n\nIf your agency needs advanced marketing automation, seamless lead capture, email campaigns, and CRM in one place with scalability, **HubSpot CRM** offers the best balance overall[1][3][12][14].\n\nFor smaller agencies prioritizing affordability and customization, **Zoho CRM** and **BIGContacts** provide strong alternatives with good email marketing integration and contact management[1][3]. For full agency management beyond CRM, including project and billing workflows, platforms like **SuiteDash** and **Bitrix24** are worth considering[2][4].\n\nIn summary, HubSpot CRM is generally recognized as the best all-in-one CRM software for a small marketing agency in 2025, combining ease of use, marketing capabilities, and scalability with a strong free tier and paid plans[1][12][13]."
+    }
+  },
+  "660228c2-5fba-46d5-be34-4bec1193573a": {
+    "OpenAI": {
+      "brandMetrics": {
+        "HubSpot CRM": {
+          "mentions": 2,
+          "sentiment": 90,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://hubspot.com"
+        },
+        "Zoho CRM": {
+          "mentions": 1,
+          "sentiment": 70,
+          "visibility": 50,
+          "position": 0.5,
+          "website": "https://www.zoho.com/crm/"
+        },
+        "Pipedrive": {
+          "mentions": 1,
+          "sentiment": 65,
+          "visibility": 50,
+          "position": 1,
+          "website": "https://www.pipedrive.com/"
+        }
+      },
+      "response": "## 1. HubSpot CRM – Free to Start, Scales Seamlessly  \n\n- **Free forever plan** – Includes core CRM features (contact management, deal tracking, basic reporting) with up to 2 Core Seats at $0/user per month, no time limit ([blog.hubspot.com](https://blog.hubspot.com/sales/hubspot-sales-hub-pricing?utm_source=openai)).  \n- **Starter (Sales Hub)** – $9 per Core Seat/month (billed annually), unlocks deal tags, basic sales automation, and removes user limits ([blog.hubspot.com](https://blog.hubspot.com/sales/hubspot-sales-hub-pricing?utm_source=openai)).  \n- **Professional & Enterprise** –  \n  - Professional: $90 per Seat/month (annual) for advanced workflows (up to 300), custom reporting, teams & permissions.  \n  - Enterprise: $150 per Seat/month for AI-driven features, hierarchical teams, unlimited automation. ([blog.hubspot.com](https://blog.hubspot.com/sales/hubspot-sales-hub-pricing?utm_source=openai))  \n- **Scalability** – Grows from solopreneurs to global enterprises across Sales, Marketing, Service & Operations Hubs within one ecosystem—avoiding tool sprawl and data silos ([saasworthy.com](https://www.saasworthy.com/blog/hubspot-crm-pricing-plans-guide?utm_source=openai)).  \n- **Startup program** – Qualifying startups get 30–90% off first-year pricing, extended trials (60–90 days), free onboarding, and ecosystem credits ([hubspot.com](https://www.hubspot.com/products/crm/startups?utm_source=openai)).  \n\n## 2. Other Budget-Friendly, Scalable Alternatives\n\n- **Zoho CRM** – Free for up to 3 users; paid plans start at $14 per user/month. Offers AI assistant (Zia), workflow automation, and 1,000+ integrations. Scales through Standard → Professional ($23) → Enterprise ($40) → Ultimate ($52) plans. ([manageclientcrm.com](https://manageclientcrm.com/crm-software-pricing-2025?utm_source=openai))  \n- **Pipedrive** – Entry-level pipeline management at ~$15 per user/month; add-ons like LeadBooster available. Scales via Advanced (email automation) → Professional (workflow automation) → Enterprise (customization & API limits) tiers. ([crmsreviewed.com](https://crmsreviewed.com/the-10-best-crms-for-startups-in-2025/?utm_source=openai))  \n\n## Recommendation  \n\nFor startups prioritizing zero-cost entry and a frictionless upgrade path into robust sales, marketing, and service capabilities, **HubSpot CRM** stands out as the most affordable option that truly scales. Its free core tools cover early needs, while low-cost Starter seats and comprehensive Professional/Enterprise tiers ensure you only pay for what you use as you grow."
+    },
+    "Perplexity": {
+      "brandMetrics": {
+        "HubSpot CRM": {
+          "mentions": 2,
+          "sentiment": 90,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://hubspot.com"
+        },
+        "Zoho CRM": {
+          "mentions": 2,
+          "sentiment": 85,
+          "visibility": 90,
+          "position": 0.2,
+          "website": "https://www.zoho.com/crm/"
+        },
+        "Freshsales": {
+          "mentions": 2,
+          "sentiment": 80,
+          "visibility": 80,
+          "position": 0.4,
+          "website": "https://www.freshworks.com/crm/"
+        },
+        "Pipedrive": {
+          "mentions": 2,
+          "sentiment": 80,
+          "visibility": 70,
+          "position": 0.6,
+          "website": "https://www.pipedrive.com/"
+        },
+        "EngageBay": {
+          "mentions": 2,
+          "sentiment": 75,
+          "visibility": 60,
+          "position": 0.8,
+          "website": "https://www.engagebay.com/"
+        },
+        "Bitrix24": {
+          "mentions": 2,
+          "sentiment": 60,
+          "visibility": 50,
+          "position": 1,
+          "website": "https://www.bitrix24.com/"
+        }
+      },
+      "response": "## Most Affordable CRM Options for Startups That Scale\n\nFor startups seeking an **affordable, scalable CRM**, several platforms stand out for their low entry cost, robust free/freemium plans, and the ability to grow with your business.\n\n| CRM         | Best For                                 | Starting Price         | Key Scaling Features                          |\n|-------------|------------------------------------------|-----------------------|------------------------------------------------|\n| **HubSpot CRM** | Free entry, easy setup, basic needs      | Free forever; $15/user/month paid[6] | Integrates with HubSpot’s suite (marketing, sales, service); modular paid plans[6]. |\n| **Zoho CRM**    | Customization, automation, scalability   | Free up to 3 users; $14/user/month[5][6] | Highly modular, workflow automation, AI assistant, extensive integrations[5][6]. |\n| **Freshsales**  | AI-driven insights, sales automation     | $11/user/month[6]      | AI-powered assistant, advanced analytics, customizable pipelines[6]. |\n| **Pipedrive**   | Sales-focused teams, visual pipelines    | $12/user/month[3]      | Kanban pipeline, automation, wide integration ecosystem[3]. |\n| **EngageBay**   | All-in-one, multi-pipeline, marketing    | Free for 15 users, 250 contacts[1] | Marketing automation, live chat, customer service, scalable paid plans[1][4]. |\n| **Bitrix24**    | Team collaboration, on-premises option   | Free unlimited users; $22.90/user/month[1][2] | Project management, inventory, flexible deployment, extensive features[1]. |\n\n## Recommendations\n\n- **HubSpot CRM** is the best free, scalable option for startups that want a market leader with a clear upgrade path and no upfront cost[6].\n- **Zoho CRM** excels for startups needing deep customization, automation, and a robust free tier, with seamless paid scaling[5][6].\n- **Freshsales** and **Pipedrive** are ideal for sales-focused startups that value AI insights and visual deal management at a low monthly cost[3][6].\n- **EngageBay** and **Bitrix24** offer generous free tiers and all-in-one platforms, though Bitrix24’s interface can be overwhelming for some[1].\n\n**Bottom line:**  \nFor most startups, **HubSpot CRM** (free) and **Zoho CRM** (free for small teams) provide the best balance of affordability and scalability, with clear paths to add features and users as you grow[5][6]. If your focus is sales automation and pipeline visualization, **Freshsales** and **Pipedrive** are strong, budget-friendly choices that scale with your team[3][6]."
+    },
+    "Anthropic": {
+      "brandMetrics": {
+        "Freshsales": {
+          "mentions": 3,
+          "sentiment": 80,
+          "visibility": 100,
+          "position": 0,
+          "website": "https://www.freshworks.com/crm/freshsales/"
+        },
+        "Freshworks": {
+          "mentions": 1,
+          "sentiment": 70,
+          "visibility": 83,
+          "position": 0.2,
+          "website": "https://www.freshworks.com/"
+        },
+        "HubSpot": {
+          "mentions": 1,
+          "sentiment": 75,
+          "visibility": 67,
+          "position": 0.4,
+          "website": "https://hubspot.com"
+        },
+        "Zoho CRM": {
+          "mentions": 1,
+          "sentiment": 80,
+          "visibility": 50,
+          "position": 0.6,
+          "website": "https://www.zoho.com/crm/"
+        },
+        "Pipedrive": {
+          "mentions": 1,
+          "sentiment": 80,
+          "visibility": 33,
+          "position": 0.8,
+          "website": "https://www.pipedrive.com/"
+        },
+        "Salesforce Essentials": {
+          "mentions": 1,
+          "sentiment": 70,
+          "visibility": 17,
+          "position": 1,
+          "website": "https://www.salesforce.com/products/essentials/"
+        }
+      },
+      "response": "Freshsales offers a Growth plan for just $9/user/month. They have a forever-free plan with core CRM features, and as your business grows, you can upgrade to plans with additional features and user capacity.\n\nThe CRM provides a 360-degree customer view, sales automation, multiple sales pipelines, and integrates with other Freshworks tools, allowing startups to have a comprehensive platform that can scale with their business needs.\n\nHubSpot offers a free plan to get started, with pricing ranging from $15 to $70 per user/month for basic plans.\n\nIt's designed specifically for startups, prioritizing ease of use, quick implementation, and flexible pricing that grows with your team. You can start with basic contact management and add marketing automation, customer service tools, and advanced analytics as you scale.\n\nZoho CRM is a robust solution that offers a free plan supporting up to three users, with features like lead management, documents, and mobile access.\n\nIt provides over 500 third-party app integrations, affordable pricing options, and features including lead management, sales pipeline tracking, sales automation, and extensive integrations.\n\nPipedrive is specifically built for startups, offering a flexible, affordable, and easy-to-use solution. You can customize your pipeline to fit your unique sales process and add your own sales stages, activities, and team members.\n\nWhile the full Salesforce can be expensive, Salesforce Essentials is a more affordable alternative for startups. It's a limited version that can help you organize customer data, track sales, and is a solid choice for startups expecting to upgrade to the full version as they grow.\n\nconsider these key factors:\n- Determine your budget upfront\n- Prioritize features that directly impact your business operations\n- Look at cost, essential features, automation, scalability, and integrations\n\nThe right time to get a CRM isn't about company age, but complexity. Signs you need a CRM include:\n- Losing track of leads\n- Dropping close rates\n- Difficult onboarding for new team members\n- Inability to quickly answer basic business questions\n\nGenerally, once you have more than 10 active prospects or customers, a CRM typically delivers positive ROI within 30 days."
+    }
+  }
+}

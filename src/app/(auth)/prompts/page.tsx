@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, type JSX } from "react";
+import { useEffect, useState, useMemo, type JSX, useCallback } from "react";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -30,99 +31,199 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { Bot } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatMarkdown, getModelFavicon } from "@/lib/helper/functions";
+import { PositionCell, SentimentCell } from "@/lib/helper/ui";
+import { fetchUserPrompts, useStorePrompt, useAnalyzeMetrics } from "@/lib/helper/mutations";
+import type { PromptMetric, Metric } from "@/server/db/types";
 
 export default function PromptsDataTable() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const [prompts, setPrompts] = useState<string[]>([]);
-  const [initialPrompts, setInitialPrompts] = useState<string[]>([]);
-  const [perModelData, setPerModelData] = useState<
-    Record<
-      string,
-      {
-        [model: string]: {
-          sentiment: number;
-          position: number;
-          visibility: number;
-          topFavicons: string[];
-          brandMetrics?: Record<
-            string,
-            { sentiment: number; visibility: number; position: number }
-          >;
-        };
-      }
-    >
-  >({});
+  const [initialPrompts, setInitialPrompts] = useState<PromptMetric[]>([]);
   const [modelFilter, setModelFilter] = useState("All Models");
-  const [brandFilter, setBrandFilter] = useState("All Brands");
+  const [brandFilter, setBrandFilter] = useState("");
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [promptData, setPromptData] = useState<PromptMetric[]>([]);
+  const [openPrompt, setOpenPrompt] = useState<null | typeof promptData[0]>(null);
 
-  const { data } = api.prompt.fetchUserPrompts.useQuery(
-    { workspaceId },
-    { enabled: !!workspaceId }
-  );
+  const { data, isLoading, error } = fetchUserPrompts(workspaceId);
+  const storePromptMutation = useStorePrompt();
+  const analyzeMetricsMutation = useAnalyzeMetrics();
 
-  const storePromptMutation = api.prompt.store.useMutation();
-  const analyzeMetricsMutation = api.analysis.analyzeMetrics.useMutation();
-
-  // Load prompts and per-model data
   useEffect(() => {
-    if (data?.prompts) {
-      const fetchedPrompts = data.prompts.map((p) => p.prompt);
-      setPrompts(fetchedPrompts);
-      setInitialPrompts(fetchedPrompts);
-      const modelMap: typeof perModelData = {};
-      data.prompts.forEach((p) => (modelMap[p.prompt] = p.per_model ?? {}));
-      setPerModelData(modelMap);
-    }
+    if (data?.prompts?.length) {
+      // analyzeMetricsMutation.mutate(
+      //   { workspaceId },
+      //   {
+      //     onSuccess: (res) => {
+      //       console.log("Background analysis complete ✅");
+      //     },
+      //     onError: (err) => {
+      //       console.error("Background analysis failed ❌", err);
+      //     },
+      //   }
+      // );
 
-    analyzeMetricsMutation.mutate(
-      { workspaceId },
-      {
-        onSuccess: (res) => {
-          const newMap: typeof perModelData = {};
-          res.prompts.forEach((rp: any) => {
-            newMap[rp.prompt] = rp.per_model ?? {};
-          });
-          setPerModelData(newMap);
-          console.log("Background analysis complete");
-        },
-        onError: (err) => console.error("Background analysis failed", err),
-      }
-    );
+      const filteredRows: PromptMetric[] = data.prompts.map((p) => {
+        const perModelRaw =
+          typeof p.per_model === "string"
+            ? JSON.parse(p.per_model)
+            : (p.per_model as any) || {};
+      
+        // Prepare outputs
+        const topPerModel: Record<string, Record<string, Metric>> = {};
+        const modelResponses: Record<string, string> = {};
+      
+        // Step 1: Extract brandMetrics + response
+        Object.entries(perModelRaw).forEach(([model, modelData]) => {
+          if (!modelData || typeof modelData !== "object") return;
+      
+          const brandMetrics = (modelData as { brandMetrics?: Record<string, Metric> })
+            .brandMetrics || {};
+      
+          const response = (modelData as { response?: string }).response || "";
+          modelResponses[model] = response;
+      
+          // Sort brands by position
+          const sortedBrands = Object.entries(brandMetrics).sort(
+            ([_aName, aMetrics], [_bName, bMetrics]) => {
+              const aPos =
+                typeof aMetrics.position === "number"
+                  ? aMetrics.position
+                  : Number(aMetrics.position) || 0;
+              const bPos =
+                typeof bMetrics.position === "number"
+                  ? bMetrics.position
+                  : Number(bMetrics.position) || 0;
+              return aPos - bPos;
+            }
+          );
+      
+          // Rebuild ranked list
+          const ranked = sortedBrands.map(([brand, metrics], index) => [
+            brand,
+            { ...metrics, position: index + 1 },
+          ]);
+      
+          topPerModel[model] = Object.fromEntries(ranked);
+        });
+      
+        // Step 2: Collect all brands across models
+        const allBrands = Array.from(
+          new Set(
+            Object.values(topPerModel)
+              .flatMap((brands) => Object.keys(brands))
+              .filter(Boolean)
+          )
+        );
+      
+        // Step 3: Compute “All Models” averages
+        const brandAverages: Record<string, Metric> = Object.fromEntries(
+          allBrands.map<[string, Metric]>((brand) => {
+            const modelMetrics = Object.values(topPerModel)
+              .map((brands) => brands[brand])
+              .filter((m): m is Metric => Boolean(m));
+        
+            // If no data, initialize with empty Metric
+            if (modelMetrics.length === 0) {
+              return [
+                brand,
+                {
+                  mentions: "-",
+                  sentiment: "-",
+                  visibility: "-",
+                  position: "-",
+                  website: "",
+                },
+              ];
+            }
+        
+            const avg = (key: keyof Metric): number =>
+              modelMetrics.reduce((sum, m) => sum + Number(m?.[key] ?? 0), 0) /
+              modelMetrics.length;
+        
+            return [
+              brand,
+              {
+                mentions: Math.round(avg("mentions")),
+                sentiment: Number(avg("sentiment").toFixed(1)),
+                visibility: Number(avg("visibility").toFixed(1)),
+                position: Number(avg("position").toFixed(1)),
+                website: modelMetrics[0]?.website ?? "",
+              },
+            ];
+          })
+        );
+
+        return {
+          ...p,
+          per_model: {
+            ...topPerModel,
+            "All Models": brandAverages,
+          },
+          responses: modelResponses,
+        };
+      });
+
+      console.log("filteredRows", filteredRows);
+      setPromptData(filteredRows);
+      setInitialPrompts(filteredRows);
+    }
   }, [data]);
 
-  const isModified = useMemo(() => {
-    if (prompts.length !== initialPrompts.length) return true;
-    return prompts.some((p, i) => p !== initialPrompts[i]);
-  }, [prompts, initialPrompts]);
-
-  // Models and brands for filters
+  const allBrands = useMemo(() => {
+    const brands = new Set<string>();
+  
+    data?.prompts.forEach((p) => {
+      Object.values(p.per_model || {}).forEach((modelData: any) => {
+        const brandMetrics = modelData?.brandMetrics || {};
+        Object.keys(brandMetrics).forEach((b) => brands.add(b));
+      });
+    });
+  
+    return Array.from(brands);
+  }, [data]);
+  
   const models = useMemo(() => {
-    const set = new Set<string>();
-    Object.values(perModelData).forEach((m) =>
-      Object.keys(m).forEach((k) => set.add(k))
-    );
-    return ["All Models", ...Array.from(set)];
-  }, [perModelData]);
+    const sample = data?.prompts[0];
+    const perModel = sample?.per_model || {};
+    return ["All Models", ...Object.keys(perModel)];
+  }, [data]);
 
-  const brands = useMemo(() => {
-    const set = new Set<string>();
-    Object.values(perModelData).forEach((m) =>
-      Object.values(m).forEach((metrics) => {
-        Object.keys(metrics.brandMetrics ?? {}).forEach((b) => set.add(b));
-      })
-    );
-    return ["All Brands", ...Array.from(set)];
-  }, [perModelData]);
+  useEffect(() => {
+    if (allBrands.length > 0 && brandFilter === "") {
+      setBrandFilter(allBrands[0] ?? "");
+    }
+  }, [allBrands, brandFilter]);
+
+  const isModified = useMemo(() => {
+    if (promptData.length !== initialPrompts.length) return true;
+    return promptData.some((p, i) => p !== initialPrompts[i]);
+  }, [promptData, initialPrompts]);
 
   const handleAddPrompt = () => {
     if (!currentPrompt.trim()) return;
-    setPrompts([...prompts, currentPrompt.trim()]);
+    
+    setPromptData([
+      ...promptData,
+      {
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        user_id: "",          
+        workspace_id: workspaceId ?? "",   
+        prompt: currentPrompt.trim(),
+        per_model: {},
+        responses: {},      
+      },
+    ]);
+    
     setCurrentPrompt("");
     setDialogOpen(false);
   };
@@ -140,11 +241,9 @@ export default function PromptsDataTable() {
 
     setLoading(true);
     try {
-      await storePromptMutation.mutateAsync({
-        prompts,
-        workspaceId,
-      });
-      setInitialPrompts(prompts);
+      const prompts = promptData.map(metrics => metrics.prompt)
+      await storePromptMutation.mutateAsync({ prompts, workspaceId });
+      setInitialPrompts(promptData);
       toast.success("Prompts saved successfully!");
     } catch (err) {
       console.error(err);
@@ -154,27 +253,33 @@ export default function PromptsDataTable() {
     }
   };
 
-  const filteredPrompts = useMemo(() => {
-    return prompts.filter((p) => {
-      if (modelFilter !== "All Models" && !perModelData[p]?.[modelFilter]) return false;
-      if (brandFilter === "All Brands") return true;
+  const getBrandWebsite = useCallback(
+    (brand: string): string => {
+      if (!promptData || promptData.length === 0) return "";
+  
+      for (const p of promptData) {
+        const perModel = p.per_model || {};
+        for (const [model, brands] of Object.entries(perModel)) {
+          const brandData = (brands as Record<string, Metric | undefined>)[brand];
+          if (brandData?.website) return brandData.website;
+        }
+      }
+  
+      return "";
+    },
+    [promptData]
+  );
 
-      const modelsForPrompt = Object.values(perModelData[p] ?? {});
-      return modelsForPrompt.some((m) =>
-        Object.keys(m.brandMetrics ?? {}).includes(brandFilter)
-      );
-    });
-  }, [prompts, perModelData, modelFilter, brandFilter]);
-
-  return (
+  return(
     <div className="flex flex-col h-screen">
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-6 py-4">
-        <div className="flex justify-between items-center mb-4 gap-2">
-          {/* Add Prompt Dialog */}
+      {/* Header Controls */}
+      <div className="flex justify-between items-center px-6 py-4">
+        <div className="flex gap-3 items-center">
+          {/* Add Prompt */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="p-2 rounded-xl">
-                <Plus size={20} />
+                <Plus size={18} />
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -197,31 +302,56 @@ export default function PromptsDataTable() {
             </DialogContent>
           </Dialog>
 
-          {/* Delete */}
+          {/* Delete Selected */}
           {selectedRows.size > 0 && (
             <Button
               variant="outline"
               className="p-2 rounded-xl text-red-600 hover:bg-red-50"
               onClick={() => {
-                setPrompts((prev) =>
-                  prev.filter((_, idx) => !selectedRows.has(idx))
-                );
+                setPromptData((prev) => prev.filter((_, i) => !selectedRows.has(i)));
                 setSelectedRows(new Set());
               }}
             >
-              <Trash2 size={20} />
+              <Trash2 size={18} />
             </Button>
           )}
+        </div>
 
+        {/* Save */}
+        <Button
+          onClick={handleSave}
+          disabled={loading || !isModified}
+          className={`py-2 px-6 rounded-xl transition ${
+            loading || !isModified
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-gray-900 text-white hover:bg-gray-800"
+          }`}
+        >
+          {loading ? "Saving..." : "Save"}
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-4 py-6">
           {/* Model Filter */}
           <Select value={modelFilter} onValueChange={setModelFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select model" />
+            <SelectTrigger className="w-44 h-10 text-sm border border-gray-200 rounded-lg bg-white dark:bg-transparent dark:border-gray-800">
+              <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
               {models.map((m) => (
                 <SelectItem key={m} value={m}>
-                  {m}
+                  <div className="flex items-center gap-2">
+                    {m === "All Models" ? (
+                      <Bot className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <img
+                        src={getModelFavicon(m)}
+                        alt={m}
+                        className="w-4 h-4 rounded-sm"
+                      />
+                    )}
+                    <span>{m}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -229,145 +359,235 @@ export default function PromptsDataTable() {
 
           {/* Brand Filter */}
           <Select value={brandFilter} onValueChange={setBrandFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select brand" />
+            <SelectTrigger className="w-44 h-10 text-sm border border-gray-200 rounded-lg bg-white dark:bg-transparent dark:border-gray-800">
+              <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
             <SelectContent>
-              {brands.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
+              {allBrands.map((b) => {
+                const website = getBrandWebsite(b);
+                const favicon = website
+                  ? `https://www.google.com/s2/favicons?sz=32&domain=${new URL(
+                      website
+                    ).hostname}`
+                  : "";
+                return (
+                  <SelectItem key={b} value={b}>
+                    <div className="flex items-center gap-2">
+                      {favicon && (
+                        <img src={favicon} alt={b} className="w-4 h-4 rounded" />
+                      )}
+                      <span>{b}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
+      </div>
 
-          {/* Save */}
-          <Button
-            onClick={handleSave}
-            disabled={loading || !isModified}
-            className={`py-2 rounded-xl transition ${
-              loading || !isModified
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-gray-900 text-white hover:bg-gray-800"
-            }`}
-          >
-            {loading ? "Saving..." : "Save"}
-          </Button>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {filteredPrompts.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              No prompts added yet. Click <Plus className="inline w-4 h-4 mx-1" /> to add one.
-            </div>
-          ) : (
-            <Table className="w-full border border-gray-200 rounded-xl table-auto">
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="pl-4 w-12">
-                    <Checkbox
-                      checked={
-                        selectedRows.size === filteredPrompts.length &&
-                        filteredPrompts.length > 0
-                      }
-                      onCheckedChange={(checked) => {
-                        if (checked)
-                          setSelectedRows(new Set(filteredPrompts.map((_, idx) => idx)));
-                        else setSelectedRows(new Set());
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>Prompt</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Sentiment</TableHead>
-                  <TableHead>Visibility</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Top</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {filteredPrompts.map((prompt, idx) => {
-                  const perModel = perModelData[prompt] ?? {};
-                  const modelEntries = Object.entries(perModel);
-
-                  // If no metrics exist, render a single row for the prompt
-                  if (modelEntries.length === 0) {
-                    return (
-                      <TableRow key={prompt} className="hover:bg-gray-50 cursor-pointer">
-                        <TableCell className="pl-4">
-                          <Checkbox checked={selectedRows.has(idx)} />
-                        </TableCell>
-                        <TableCell>{prompt}</TableCell>
-                        <TableCell colSpan={6} className="text-gray-400">
-                          No metrics yet
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }
-
-                  // If metrics exist, render per model & per brand
-                  const rows: JSX.Element[] = [];
-                  modelEntries.forEach(([modelName, metrics]) => {
-                    const brandMetrics = metrics.brandMetrics ?? {};
-                    // If no brand metrics, render model-level row
-                    if (Object.keys(brandMetrics).length === 0) {
-                      rows.push(
-                        <TableRow key={`${prompt}-${modelName}`} className="hover:bg-gray-50 cursor-pointer">
-                          <TableCell className="pl-4">
-                            <Checkbox checked={selectedRows.has(idx)} />
-                          </TableCell>
-                          <TableCell>{prompt}</TableCell>
-                          <TableCell>{modelName}</TableCell>
-                          <TableCell colSpan={4} className="text-gray-400">
-                            No brand metrics yet
-                          </TableCell>
-                          <TableCell className="flex gap-1">
-                            {metrics.topFavicons?.map((f) => (
-                              <img key={f} src={f} className="w-5 h-5 rounded-sm" />
-                            ))}
-                          </TableCell>
-                        </TableRow>
-                      );
-                      return;
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto px-6 pb-10">
+        <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+          <Table className="min-w-full">
+            <TableHeader>
+              <TableRow className="bg-gray-50/70 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-800">
+                <TableHead className="pl-4 w-12">
+                  <Checkbox
+                    checked={
+                      selectedRows.size === promptData.length &&
+                      promptData.length > 0
                     }
+                    onCheckedChange={(checked) => {
+                      if (checked)
+                        setSelectedRows(new Set(promptData.map((_, idx) => idx)));
+                      else setSelectedRows(new Set());
+                    }}
+                  />
+                </TableHead>
+                <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-left">
+                  Prompt
+                </TableHead>
+                <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-center">
+                  Mentions
+                </TableHead>
+                <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-center">
+                  Sentiment
+                </TableHead>
+                <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-center">
+                  Visibility
+                </TableHead>
+                <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-center">
+                  Position
+                </TableHead>
+              </TableRow>
+            </TableHeader>
 
-                    // Render rows per brand
-                    Object.entries(brandMetrics).forEach(([brandName, brandMetric]) => {
-                      if (brandFilter !== "All Brands" && brandName !== brandFilter) return;
+            <TableBody>
+              {promptData.map((prompt, idx) => {
+                let metrics = prompt?.per_model?.[modelFilter]?.[brandFilter];
+                if (!metrics) {
+                  metrics = {
+                    mentions: "-",
+                    sentiment: "-",
+                    visibility: "-",
+                    position: "-",
+                  };
+                }
 
-                      rows.push(
-                        <TableRow
-                          key={`${prompt}-${modelName}-${brandName}`}
-                          className="hover:bg-gray-50 cursor-pointer"
+                return (
+                  <TableRow
+                    key={prompt.id}
+                    onClick={() => setOpenPrompt(prompt)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-100/50 dark:border-gray-800/40 last:border-none"
+                  >
+                    <TableCell className="pl-4">
+                      <Checkbox
+                        checked={selectedRows.has(idx)}
+                        onCheckedChange={() => toggleRow(idx)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </TableCell>
+
+                    <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
+                      {prompt.prompt}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
+                      {metrics.mentions !== "-"
+                        ? (
+                            <span className="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 text-xs font-medium">
+                              {metrics.mentions}
+                            </span>
+                          )
+                        : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-5 text-center">
+                      <SentimentCell sentiment={metrics.sentiment} />
+                    </TableCell>
+
+                    <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
+                      {metrics.visibility !== "-"
+                        ? (
+                            <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2 py-1 text-xs font-medium">
+                              {metrics.visibility}%
+                            </span>
+                          )
+                        : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-5 text-center">
+                      <PositionCell position={metrics.position} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          <Dialog open={!!openPrompt} onOpenChange={() => setOpenPrompt(null)}>
+            <DialogContent
+              className="!max-w-[90vw] !w-[90vw] sm:!max-w-[80vw] sm:!w-[80vw] rounded-2xl px-8 pb-8 sm:px-10 sm:pt-12 sm:pb-10 space-y-4"
+            >
+              <DialogHeader className="mb-4">
+                {/* ✅ Hidden accessible title */}
+                <DialogTitle className="sr-only">
+                  {openPrompt?.prompt || "Prompt Details"}
+                </DialogTitle>
+
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-1 min-w-0 break-words">
+                    {openPrompt?.prompt}
+                  </h2>
+
+                  <Select value={modelFilter} onValueChange={setModelFilter}>
+                    <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
+                      <SelectValue placeholder="Select Model" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[9999]">
+                      {models.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          <div className="flex items-center gap-2">
+                            {m === "All Models" ? (
+                              <Bot className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <img
+                                src={getModelFavicon(m)}
+                                alt={m}
+                                className="w-4 h-4 rounded-sm"
+                              />
+                            )}
+                            <span>{m}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </DialogHeader>
+
+              {/* ✅ Hidden accessible description */}
+              <DialogDescription className="sr-only">
+                This dialog shows AI model responses for the selected prompt.
+              </DialogDescription>
+
+              <ScrollArea className="max-h-[75vh] pr-4">
+                {openPrompt && (
+                  <div className="flex flex-col gap-6">
+                    {modelFilter === "All Models" ? (
+                      Object.entries(openPrompt.responses || {}).map(([model, response]) => (
+                        <div
+                          key={model}
+                          className="flex items-start gap-4 mb-6 last:mb-0"
                         >
-                          <TableCell className="pl-4">
-                            <Checkbox checked={selectedRows.has(idx)} />
-                          </TableCell>
-                          <TableCell>{prompt}</TableCell>
-                          <TableCell>{modelName}</TableCell>
-                          <TableCell>{brandName}</TableCell>
-                          <TableCell>{brandMetric.sentiment}</TableCell>
-                          <TableCell>{brandMetric.visibility}%</TableCell>
-                          <TableCell>{brandMetric.position}</TableCell>
-                          <TableCell className="flex gap-1">
-                            {metrics.topFavicons?.map((f) => (
-                              <img key={f} src={f} className="w-5 h-5 rounded-sm" />
-                            ))}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    });
-                  });
+                          <img
+                            src={getModelFavicon(model)}
+                            alt={model}
+                            className="w-8 h-8 rounded-md flex-shrink-0"
+                          />
 
-                  return rows;
-                })}
-              </TableBody>
-            </Table>
-          )}
+                          <div className="max-w-[75%] p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 shadow-sm">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-gray-800 dark:text-gray-100 text-md tracking-tight">
+                                {model}
+                              </span>
+                            </div>
+                            <div
+                              className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+                              dangerouslySetInnerHTML={{ __html: formatMarkdown(response) }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-start gap-3">
+                        {getModelFavicon(modelFilter) ? (
+                          <img
+                            src={getModelFavicon(modelFilter)}
+                            alt={modelFilter}
+                            className="w-6 h-6 rounded"
+                          />
+                        ) : (
+                          <Bot className="w-6 h-6 text-gray-500" />
+                        )}
+                        <div className="max-w-[70%] bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-4 rounded-2xl shadow-sm">
+                          <div
+                            className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+                            dangerouslySetInnerHTML={{ __html: formatMarkdown(openPrompt.responses?.[modelFilter] ?? "") }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
-  );
+  )
 }

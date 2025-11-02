@@ -3,7 +3,7 @@
     "id": "6b0860b0-8699-4e11-9a69-4441948e92e9",
     "results": [
       {
-        "modelProvider": "OpenAI GPT",
+        "modelProvider": "OpenAI",
         "output": {
           "model": "gpt-5",
           "metrics": [
@@ -78,7 +78,7 @@
         }
       },
       {
-        "modelProvider": "Anthropic Claude",
+        "modelProvider": "Anthropic",
         "output": {
           "model": "claude-3-5-haiku-latest",
           "metrics": [
@@ -336,7 +336,7 @@
     "id": "4b190c06-0a4c-4bfa-a567-9d2653082796",
     "results": [
       {
-        "modelProvider": "OpenAI GPT",
+        "modelProvider": "OpenAI",
         "output": {
           "model": "gpt-5",
           "metrics": [
@@ -453,7 +453,7 @@
         }
       },
       {
-        "modelProvider": "Anthropic Claude",
+        "modelProvider": "Anthropic",
         "output": {
           "model": "claude-3-5-haiku-latest",
           "metrics": [
@@ -707,7 +707,7 @@
     "id": "660228c2-5fba-46d5-be34-4bec1193573a",
     "results": [
       {
-        "modelProvider": "OpenAI GPT",
+        "modelProvider": "OpenAI",
         "output": {
           "model": "gpt-5",
           "metrics": [
@@ -764,7 +764,7 @@
         }
       },
       {
-        "modelProvider": "Anthropic Claude",
+        "modelProvider": "Anthropic",
         "output": {
           "model": "claude-3-5-haiku-latest",
           "metrics": [

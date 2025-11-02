@@ -1,44 +1,23 @@
 "use client";
 
-import { api } from "@/trpc/react";
 import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
 import { Bot } from "lucide-react";
-
-interface PromptResponse {
-  id: string;
-  prompt_id: string;
-  user_id: string;
-  workspace_id: string;
-  model: string;
-  modelProvider: string;
-  response: string;
-  citations: any[];
-  sources: any[];
-  extractedUrls: string[];
-  created_at: string;
-}
+import { fetchPromptResponses } from "@/lib/helper/mutations";
+import type { PromptResponseClient } from "@/server/db/types";
+import { getModelFavicon } from "@/lib/helper/functions";
 
 export default function Sources() {
-  const [responses, setResponses] = useState<PromptResponse[]>([]);
+  const [responses, setResponses] = useState<PromptResponseClient[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
   const [activeTab, setActiveTab] = useState<"domains" | "urls">("domains");
-  const [expandedUrl, setExpandedUrl] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const { data, isLoading, refetch } = api.prompt.fetchPromptResponses.useQuery(
-    { workspaceId },
-    { 
-      retry: 2,
-      refetchOnWindowFocus: false,
-      enabled: !!workspaceId, 
-    }
-  );
+  const { data, refetch, isLoading, error } = fetchPromptResponses(workspaceId);
   
   useEffect(() => {
     if (workspaceId) {
@@ -46,11 +25,10 @@ export default function Sources() {
     }
   }, [workspaceId, refetch]);
 
-  // ✅ Use extractedUrls directly from backend
   useEffect(() => {
     if (!isLoading && data?.result) {
       const filtered = data.result.filter(
-        (r: PromptResponse) => Array.isArray(r.extractedUrls) && r.extractedUrls.length > 0
+        (r: PromptResponseClient) => Array.isArray(r.extractedUrls) && r.extractedUrls.length > 0
       );
       setResponses(filtered);
     }
@@ -69,7 +47,7 @@ export default function Sources() {
 
   // ✅ Flatten all URLs across responses
   const uniqueUrlRows = useMemo(() => {
-    const urlMap = new Map<string, { resp: PromptResponse; title?: string, citedTexts: string[]  }>();
+    const urlMap = new Map<string, { resp: PromptResponseClient; title?: string, citedTexts: string[]  }>();
   
     displayedResponses.forEach(resp => {
       resp.extractedUrls.forEach(url => {
@@ -162,7 +140,6 @@ export default function Sources() {
     );
   }
 
-  // ✅ Render
   return (
     <div className="min-h-screen p-8 space-y-6">
       {/* Provider Select */}
@@ -170,43 +147,23 @@ export default function Sources() {
         <Select value={selectedProvider} onValueChange={setSelectedProvider}>
           <SelectTrigger className="w-[220px]">
             <div className="flex items-center gap-2">
-              {
-                selectedProvider === "All Models"
-                ?
-                <Bot className="h-4 w-4 text-gray-500" />
-                : 
-                null
-              }
               <SelectValue placeholder="Select Provider" />
             </div>
           </SelectTrigger>
           <SelectContent>
-            {providers.map(prov => {
-              const getIcon = (prov: string) => {
-                switch (prov.toLowerCase()) {
-                  case "perplexity":
-                    return "https://www.google.com/s2/favicons?domain=perplexity.ai&sz=64";
-                  case "gpt":
-                  case "openai gpt":
-                    return "https://openai.com/favicon.ico";
-                  case "anthropic claude":
-                    return "https://claude.ai/favicon.ico";
-                  default:
-                    return null;
-                }
-              };
-
-              const icon = getIcon(prov);
+            {providers.map((prov) => {
+              const icon = prov === "All Models" ? "" : getModelFavicon(prov);
 
               return (
                 <SelectItem key={prov} value={prov}>
                   <div className="flex items-center gap-2">
-                    {icon && (
+                  {prov === "All Models" ? (
+                      <Bot className="w-4 h-4 text-muted-foreground" />
+                    ) : (
                       <img
                         src={icon}
-                        alt={`${prov} icon`}
+                        alt={prov}
                         className="w-4 h-4 rounded-sm"
-                        onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
                       />
                     )}
                     <span>{prov}</span>

@@ -2,8 +2,11 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { clickhouse, db } from "@/server/db/index";
 import { eq } from "drizzle-orm";
-import { brands } from "@/server/db/schema/brand";
-import type { PromptResponse } from "@/server/db/types";
+import type { PromptAnalysis, PromptResponse } from "@/server/db/types";
+import fs from "fs";
+import path from "path";
+import { analyzeResponse } from "@/lib/llmClient";
+import { fileURLToPath } from "url";
 
 export const analysisRouter = createTRPCRouter({
   analyzeMetrics: protectedProcedure
@@ -26,91 +29,123 @@ export const analysisRouter = createTRPCRouter({
       const responses: PromptResponse[] = await result.json();
       if (!responses.length) return { success: true, prompts: [] };
 
-      // 2️⃣ Group responses by prompt_id
-      const promptMap: Record<string, { promptText: string; responses: PromptResponse[] }> = {};
-      responses.forEach((resp) => {
-        if (!promptMap[resp.prompt_id])
-          promptMap[resp.prompt_id] = { promptText: resp.prompt_id, responses: [] };
-        promptMap[resp.prompt_id]?.responses.push(resp);
-      });
-
-      // 3️⃣ Extract BRAND_METRICS from LLM response
-      const promptsWithMetrics = Object.entries(promptMap).map(([promptId, p]) => {
-        const perModel: Record<
-          string,
-          {
-            topFavicons: string[];
-            brandMetrics?: Record<
-              string,
-              { sentiment: number; visibility: number; position: number }
-            >;
+      const groupedPrompts = Object.values(
+        responses.reduce((acc, resp) => {
+          const { prompt_id } = resp;
+      
+          if (!acc[prompt_id]) {
+            acc[prompt_id] = {
+              prompt_id,
+              promptResponses: [],
+            };
           }
-        > = {};
       
-        p.responses.forEach((resp) => {
-          const model = resp.model ?? "unknown";
-          if (!perModel[model])
-            perModel[model] = { topFavicons: [], brandMetrics: {} };
+          acc[prompt_id].promptResponses.push({
+            id: resp.id,
+            prompt_id: resp.prompt_id,
+            user_id: resp.user_id,
+            workspace_id: workspaceId,
+            model: resp.model,
+            modelProvider: resp.modelProvider,
+            response: resp.response,
+          });
       
-          const m = perModel[model];
-          const text = resp.response || "";
-      
-          // Extract BRAND_METRICS JSON from response
-          const brandMetricsMatch = text.match(/BRAND_METRICS:\s*(\{[\s\S]*\})/);
-          if (brandMetricsMatch && brandMetricsMatch[1]) {
-            try {
-              const metricsJson: Record<string, { sentiment: number; visibility: number; position: number }> = JSON.parse(brandMetricsMatch[1]);
-      
-              // --- Convert normalized position 0–1 to ranks ---
-              const sortedBrands = Object.entries(metricsJson)
-                .sort(([, a], [, b]) => a.position - b.position)
-                .map(([name], index) => ({ name, rank: index + 1 }));
-      
-              // Top 4 favicons for model
-              m.topFavicons = sortedBrands
-                .slice(0, 4)
-                .map(({ name }) => `https://www.google.com/s2/favicons?sz=32&domain_url=${name.replace(/\s+/g, "").toLowerCase()}.com`);
-      
-              // Store individual brand metrics
-              Object.entries(metricsJson).forEach(([brandName, metric], i) => {
-                m.brandMetrics![brandName] = {
-                  sentiment: metric.sentiment,
-                  visibility: metric.visibility,
-                  position: sortedBrands.find((b) => b.name === brandName)?.rank || i + 1,
-                };
-              });
-      
-              // Optional: average model-level metrics
-              const brandValues = Object.values(m.brandMetrics!);
-            } catch (e) {
-              console.warn("Failed to parse BRAND_METRICS JSON:", e);
-            }
-          }
-        });
-      
-        return {
-          promptId,
-          prompt: p.promptText,
-          per_model: perModel,
-        };
-      });
+          return acc;
+        }, {} as Record<string, { prompt_id: string; promptResponses: PromptAnalysis[] }>)
+      );  
 
-      console.log("Prompt with metrics", JSON.stringify(promptsWithMetrics,null,2));
+      // MOCK DATA
+      const filePath = path.join(process.cwd(), "mockData", "analyzedPrompts.json");
+      const rawData = fs.readFileSync(filePath, "utf8");
+      const analyzedPrompts = JSON.parse(rawData);
 
-      // 4️⃣ Update user_prompts table
-      await Promise.all(
-        promptsWithMetrics.map((p) =>
-          clickhouse.query({
-            query: `
-              ALTER TABLE analytics.user_prompts UPDATE
-                per_model = '${JSON.stringify(p.per_model)}'
-              WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}' AND id = '${p.promptId}'
-            `,
-          })
-        )
+      const updates = analyzedPrompts.reduce(
+        (
+          acc: Record<
+            string,
+            Record<string, { brandMetrics: any; response: any }>
+          >,
+          prompt: { prompt_id: string | number; promptResponses: any[] }
+        ) => {
+          acc[prompt.prompt_id] = prompt.promptResponses.reduce<
+            Record<string, { brandMetrics: any; response: any }>
+          >((models, p: { modelProvider: string | number; brandMetrics: any; response: any }) => {
+            models[p.modelProvider] = {
+              brandMetrics: p.brandMetrics,
+              response: p.response,
+            };
+            return models;
+          }, {});
+          return acc;
+        },
+        {} as Record<string, Record<string, { brandMetrics: any; response: any }>>
       );
 
-      return { success: true, prompts: promptsWithMetrics };
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      const logPath = path.join(__dirname, "..", "mockData", "updates.json");
+
+      fs.writeFileSync(logPath, JSON.stringify(updates, null, 2));
+
+
+      // REAL DATA
+
+      // const analyzedPrompts = await Promise.all(
+      //   groupedPrompts.map(async (prompt) => {
+      //     console.log("Analyzing combined responses...");
+      //     const promptData = prompt.promptResponses.map(p => {
+      //       return {
+      //         modelProvider: p.modelProvider,
+      //         response: p.response
+      //       }
+      //     })
+
+      //     const analysisResults = await analyzeResponse(promptData);
+      
+      //     const analyzedResponses = prompt.promptResponses.map((resp) => {
+      //       const normalizedModel = resp.modelProvider.trim().toLowerCase();
+      //       const analysis = analysisResults[normalizedModel] || {};
+      //       return {
+      //         ...resp,
+      //         brandMetrics: (analysis as any)?.brandMetrics ?? null,
+      //       };
+      //     });
+
+      //     return { ...prompt, promptResponses: analyzedResponses };
+      //   })
+      // );
+
+      // const updates = analyzedPrompts.reduce(
+      //   (acc, prompt) => {
+      //     acc[prompt.prompt_id] = prompt.promptResponses.reduce<
+      //       Record<string, Record<string, any>>
+      //     >((models, p) => {
+      //       models[p.modelProvider] = p.brandMetrics; // ⬅️ direct assignment of metrics
+      //       return models;
+      //     }, {});
+      //     return acc;
+      //   },
+      //   {} as Record<string, Record<string, Record<string, any>>>
+      // );
+
+      for (const [promptId, perModel] of Object.entries(updates)) {
+        await clickhouse.query({
+          query: `
+            ALTER TABLE analytics.user_prompts
+            UPDATE per_model = {per_model:JSON}
+            WHERE id = {id:String}
+              AND user_id = {user_id:String}
+              AND workspace_id = {workspace_id:String}
+          `,
+          query_params: {
+            per_model: JSON.stringify(perModel),
+            id: promptId,
+            user_id: userId,
+            workspace_id: workspaceId,
+          },
+        });
+      }
+
     } catch (err) {
       console.error("Failed to analyze metrics:", err);
       return { success: false, prompts: [] };
