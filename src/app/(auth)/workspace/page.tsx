@@ -1,5 +1,5 @@
 
-import { getWorkspace } from "@lib/getWorkspace";
+import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { redirect } from "next/navigation";
 
 export default async function Home() {

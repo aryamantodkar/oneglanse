@@ -64,6 +64,7 @@
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"react-hook-form": "^7.62.0",
+		"redis": "^5.9.0",
 		"sentiment": "^5.0.2",
 		"server-only": "^0.0.1",
 		"sonner": "^2.0.7",

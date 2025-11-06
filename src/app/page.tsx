@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { authClient } from "@/lib/auth-client";
-import { getWorkspace } from "@/lib/getWorkspace";
+import { auth } from "@/lib/auth/auth";
+import { authClient } from "@/lib/auth/auth-client";
+import { getWorkspace } from "@/lib/workspace/getWorkspace";
 
 export default async function Home() {
   const session = await auth.api.getSession({

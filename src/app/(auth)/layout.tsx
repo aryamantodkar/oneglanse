@@ -8,9 +8,9 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 
 import { TRPCReactProvider } from "@/trpc/react";
 import LayoutContent from "./layoutContent";
-import { getWorkspace } from "@/lib/getWorkspace";
+import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 export const metadata: Metadata = {
 	title: "onescopeAI",

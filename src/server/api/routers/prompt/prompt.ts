@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { runLLMs } from "@/lib/llmClient"; 
+import { runLLMs } from "@/lib/llm/llmClient"; 
 import { clickhouse, db, schema } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
 import { cronJobs } from "@/server/db/schema";
@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import type { PromptResponse, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
+import { rateLimitMiddleware } from "@/server/middleware/rateLimiter";
 
 function formatDateToClickHouse(dt: Date) {
   return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -18,6 +19,7 @@ function formatDateToClickHouse(dt: Date) {
 
 export const promptRouter = createTRPCRouter({
   ask: publicProcedure
+    .use(rateLimitMiddleware)
     .input(
       z.object({
         workspaceId: z.string(),
@@ -90,6 +92,16 @@ export const promptRouter = createTRPCRouter({
 
       // console.log("results:", JSON.stringify(results, null, 2));
 
+      const modelErrors = results.flatMap((r: { results: any; id: any; }) =>
+        (r.results || [])
+          .filter((res: { output: { error: any; }; }) => res.output?.error)
+          .map((res: { modelProvider: any; output: { error: any; }; }) => ({
+            promptId: r.id,
+            model: res.modelProvider,
+            error: res.output.error,
+          }))
+      );
+
       const values = results.flatMap((r: any) =>
         (r.results || []).flatMap((modelOutput: any) => {
           const metrics = modelOutput?.output?.metrics || [];
@@ -157,6 +169,7 @@ export const promptRouter = createTRPCRouter({
         success: true,
         inserted: values.length,
         prompts: values,
+        modelErrors
       };
     }),
   store: protectedProcedure

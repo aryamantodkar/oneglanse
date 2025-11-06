@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { redirect, useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
-import { authClient } from "@lib/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import { LocationSelector } from "@/components/location/locationSelector";
 
 export default function NewWorkspace() {
