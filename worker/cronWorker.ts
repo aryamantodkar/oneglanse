@@ -21,9 +21,6 @@ const trpc = createTRPCProxyClient<AppRouter>({
   ],
 });
 
-// ----------------------------
-// Atomically claim next job
-// ----------------------------
 async function claimNextJob() {
   const client = await pool.connect();
   try {
@@ -64,12 +61,6 @@ async function processJob(job: any) {
     
       console.log("Running prompts for workspace:", workspace_id, "owner:", userId);
     }
-
-    // // Example: Webhook type job
-    // else if (job.payload?.type === "webhook") {
-    //   const { url, method = "POST", body } = job.payload;
-    //   await fetch(url, { method, body: JSON.stringify(body) });
-    // }
 
     await pool.query(
       `INSERT INTO public.job_runs (job_id, workspace_id, started_at, finished_at, status, output)

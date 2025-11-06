@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import type { Organization, Workspace } from "@/server/db/types"
-import { authClient } from "@lib/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import { useEffect, useState } from "react";
 
 import {

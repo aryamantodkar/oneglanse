@@ -11,16 +11,27 @@ services:
     depends_on:
       - db
       - clickhouse
+      - redis
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
       CLICKHOUSE_URL: http://clickhouse:8123
       NEXT_PUBLIC_API_URL: http://localhost:3000
       DOCKER_ENV: "true"
+      REDIS_URL: redis://redis:6379
     # REMOVE volumes in production
     volumes:
       - .:/app
       - /app/node_modules
     command: ["pnpm", "dev", "-H", "0.0.0.0"]
+  redis:
+    image: redis:7-alpine
+    container_name: redis_server
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
   db:
     build:
       context: .
@@ -63,11 +74,13 @@ services:
     depends_on:
       - db
       - clickhouse
+      - redis
     env_file: .env
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
       CLICKHOUSE_URL: http://clickhouse:8123
       DOCKER_ENV: "true"
+      REDIS_URL: redis://redis:6379
 
 volumes:
   db_data:

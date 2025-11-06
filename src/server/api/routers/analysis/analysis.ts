@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import type { PromptAnalysis, PromptResponse } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { analyzeResponse } from "@/lib/llmClient";
+import { analyzeResponse } from "@/lib/llm/analyzeResponse";
 import { fileURLToPath } from "url";
 
 export const analysisRouter = createTRPCRouter({

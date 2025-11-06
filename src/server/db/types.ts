@@ -114,3 +114,8 @@ export interface PromptResponseClient {
   extractedUrls: string[];
   created_at: string;
 }
+
+export interface WorkspaceLocation {
+  workspaceCountry: string;
+  workspaceRegion?: string | null;
+}

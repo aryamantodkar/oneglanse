@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { auth } from "@lib/auth";
+import { auth } from "@lib/auth/auth";
 import { db, schema } from "@/server/db";
 import type { Workspace } from "@/server/db/types";
-import { newId } from "@lib/id";
+import { newId } from "@/lib/workspace/id";
 import { eq, isNull, and } from "drizzle-orm";
 
 export const workspaceRouter = createTRPCRouter({
