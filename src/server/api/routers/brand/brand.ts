@@ -4,7 +4,7 @@ import { db } from "@/server/db"; // your Drizzle client
 import { v4 as uuidv4 } from "uuid";
 import { brands } from "@/server/db/schema/brand";
 import { eq } from "drizzle-orm";
-import { makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
 import { TRPCError } from "@trpc/server";
 
 export const brandRouter = createTRPCRouter({
@@ -64,7 +64,7 @@ export const brandRouter = createTRPCRouter({
             })) ?? [],
           });
 
-          return makeResponse(results, "Created brand successfully.");
+          return makeResponse(results, 200, "Created brand successfully.");
         })
     }),
   get: protectedProcedure
@@ -91,14 +91,10 @@ export const brandRouter = createTRPCRouter({
           .limit(1);
 
         if (!brand || brand.length === 0) {
-          return {
-            success: false,
-            brand: null,
-            error: "No brand found for this workspace",
-          };
+          return makeError("No brand found for this workspace", 404);
         }
 
-        return makeResponse(brand[0], "Fetched brand successfully.");
+        return makeResponse(brand[0], 200, "Fetched brand successfully.");
       })
     }),
   update: protectedProcedure
@@ -162,7 +158,7 @@ export const brandRouter = createTRPCRouter({
           })
           .where(eq(brands.workspaceId, input.workspaceId));
   
-        return makeResponse(result, "Updated brand successfully.");
+        return makeResponse(result, 200, "Updated brand successfully.");
       })
     })
 });

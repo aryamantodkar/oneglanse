@@ -78,7 +78,7 @@ export const promptRouter = createTRPCRouter({
         const promptsArray: UserPrompt[] = await prompts.json();
 
         if (!promptsArray || promptsArray.length === 0) {
-          return makeError("No prompts found for this workspace.");
+          return makeError("No prompts found for this workspace.", 404);
         }
 
         // MOCK DATA
@@ -173,6 +173,7 @@ export const promptRouter = createTRPCRouter({
             response: values,
             modelErrors,
           },
+          200,
           "Called ask procedure successfully."
         );
       })
@@ -303,7 +304,7 @@ export const promptRouter = createTRPCRouter({
             );
           }
 
-          return makeResponse(prompts, "Prompts saved successfully.");
+          return makeResponse(prompts, 200, "Prompts saved successfully.");
       })
     }),
   fetchPromptResponses: protectedProcedure
@@ -383,7 +384,7 @@ export const promptRouter = createTRPCRouter({
           extractedUrls: extractUrlsFromResponse(r),
         }));
   
-        return makeResponse(result, "Fetched prompt responses successfully.");
+        return makeResponse(result, 200, "Fetched prompt responses successfully.");
       })
     }),
   fetchUserPrompts: protectedProcedure
@@ -431,7 +432,7 @@ export const promptRouter = createTRPCRouter({
           created_at: row.created_at,
         }));
   
-        return makeResponse(promptsArray, "Fetched user prompts successfully.");
+        return makeResponse(promptsArray, 200, "Fetched user prompts successfully.");
       })
     }),
 });

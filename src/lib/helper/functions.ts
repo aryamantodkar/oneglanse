@@ -63,3 +63,48 @@ export const getModelFavicon = (model: string): string => {
     const domain = modelDomains[model] || `${model.toLowerCase()}.com`;
     return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 };
+
+export function trpcErrorToHttpCode(code: string): number {
+  switch (code) {
+    case "BAD_REQUEST":
+      return 400;
+    case "UNAUTHORIZED":
+      return 401;
+    case "FORBIDDEN":
+      return 403;
+    case "NOT_FOUND":
+      return 404;
+    case "CONFLICT":
+      return 409;
+    case "TOO_MANY_REQUESTS":
+      return 429;
+    case "INTERNAL_SERVER_ERROR":
+    default:
+      return 500;
+  }
+}
+
+export function parseModelError(error: any, modelName: string): string {
+  if (!error) return `${modelName}: Unknown error`;
+
+  if (error.response?.status === 401) {
+    return `${modelName}: Invalid or missing API key.`;
+  }
+  if (error.response?.status === 429) {
+    return `${modelName}: Rate limit exceeded.`;
+  }
+  if (error.response?.status === 402) {
+    return `${modelName}: Insufficient credits.`;
+  }
+  if (error.code === "ENOTFOUND") {
+    return `${modelName}: Network error, service unreachable.`;
+  }
+  if (typeof error.message === "string" && error.message.includes("timeout")) {
+    return `${modelName}: Request timed out.`;
+  }
+  if (typeof error.message === "string") {
+    return `${modelName}: ${error.message}`;
+  }
+
+  return `${modelName}: An unknown error occurred.`;
+}
