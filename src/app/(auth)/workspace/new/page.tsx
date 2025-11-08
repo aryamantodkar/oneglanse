@@ -42,11 +42,18 @@ export default function NewWorkspace() {
   const formReady = !!countriesQuery.data;
 
   const createWorkspaceMutation = api.workspace.create.useMutation({
-    onSuccess: async (data) => {
+    onSuccess: async (response) => {
       try {
+        if (!response?.success || !response.data) {
+          toast.error(response?.message ?? "Workspace creation failed");
+          return;
+        }
+      
+        const { workspace, org } = response.data;      
+        
         await authClient.organization.setActive({
-          organizationId: data.org.id,
-          organizationSlug: data.workspace.slug,
+          organizationId: org.id,
+          organizationSlug: workspace.slug,
         });
       } catch (err) {
         console.error("Error setting active organization", err);
@@ -78,24 +85,31 @@ export default function NewWorkspace() {
         return;
       }
 
-      const data = await createWorkspaceMutation.mutateAsync({
-        name: formData.workspaceName,
-        slug: formData.workspaceSlug,
+      const response = await createWorkspaceMutation.mutateAsync({
+        name: formData.workspaceName.trim(),
+        slug: formData.workspaceSlug.trim(),
         country: selectedLocation.country,
         region: selectedLocation.regionName || null,
       });
+  
+      if (!response?.success || !response.data) {
+        toast.error(response?.message ?? "Workspace creation failed");
+        return;
+      }
+    
+      const { workspace, org } = response.data;  
 
       try {
         await authClient.organization.setActive({
-          organizationId: data.org.id,
-          organizationSlug: data.workspace.slug,
+          organizationId: org.id,
+          organizationSlug: workspace.slug,
         });
       } catch (err) {
         console.error("Error setting active organization", err);
         toast.error("Could not set active workspace.");
       }
 
-      return router.push(`/brand?workspace=${data.workspace.id}`);
+      return router.push(`/brand?workspace=${workspace.id}`);
     } finally {
       setLoading(false);
     }

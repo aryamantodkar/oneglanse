@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import fs from "fs";
 import path from "path";
+import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
 
 // Load countries JSON once at startup
 const countriesDataPath = path.join(process.cwd(), "countries.json");
@@ -12,24 +13,33 @@ const countriesJson: Record<
 
 export const locationRouter = createTRPCRouter({
   // Fetch all countries
-  fetchCountries: publicProcedure.query(async () => {
-    return Object.entries(countriesJson).map(([iso2, data]) => ({
-      iso2,
-      name: data.name,
-      emoji: data.emoji,
-    }));
+  fetchCountries: publicProcedure
+  .query(async () => {
+    return safeHandler(async () => {
+      let result = Object.entries(countriesJson).map(([iso2, data]) => ({
+        iso2,
+        name: data.name,
+        emoji: data.emoji,
+      }));
+
+      return makeResponse(result, "Fetched all countries successfully.");
+    })
   }),
 
   // Fetch states for a given country
   fetchStates: publicProcedure
     .input(z.object({ countryIso2: z.string() }))
     .query(async ({ input }) => {
-      const iso = input.countryIso2.toUpperCase();
-      const country = countriesJson[iso];
-      if (!country) return []; // no such country
-      return country.states.map((s) => ({
-        iso2: s.iso2,
-        name: s.name,
-      }));
+      return safeHandler(async () => {
+        const iso = input.countryIso2.toUpperCase();
+        const country = countriesJson[iso];
+        if (!country) return makeError("Country not found.");
+        let result = country.states.map((s) => ({
+          iso2: s.iso2,
+          name: s.name,
+        }));
+
+        return makeResponse(result,"Fetched all states successfully.");
+      })
     }),
 });

@@ -4,6 +4,8 @@ import { db } from "@/server/db"; // your Drizzle client
 import { v4 as uuidv4 } from "uuid";
 import { brands } from "@/server/db/schema/brand";
 import { eq } from "drizzle-orm";
+import { makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { TRPCError } from "@trpc/server";
 
 export const brandRouter = createTRPCRouter({
   create: protectedProcedure
@@ -28,47 +30,42 @@ export const brandRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-        const { workspaceId } = input;
-        const userId = ctx.session?.user.id;
+        return safeHandler(async () => {
+          const { workspaceId } = input;
+          const userId = ctx.session?.user.id;
 
-        if (!userId) {
-            throw new Error("Unauthorized");
-        }
+          if (!userId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "User is not logged in.",
+            });
+          }
+          
+          if (!workspaceId || workspaceId.trim() === "") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Missing workspaceId.",
+            });
+          }
 
-        if (!workspaceId || workspaceId.trim() === "") {
-            throw new Error("Missing workspaceId");
-        }
+          const results = await db.insert(brands).values({
+            id: uuidv4(),
+            workspaceId: input.workspaceId,
+            name: input.name,
+            slug: input.slug ?? null,
+            website: input.website ?? null,
+            logoUrl: input.logoUrl ?? null,
+            description: input.description ?? null,
+            industry: input.industry ?? null,
+            competitors: input.competitors?.map(c => ({
+              id: c.id ?? uuidv4(),
+              name: c.name,
+              website: c.website ?? undefined,
+            })) ?? [],
+          });
 
-      try {
-        const results = await db.insert(brands).values({
-          id: uuidv4(),
-          workspaceId: input.workspaceId,
-          name: input.name,
-          slug: input.slug ?? null,
-          website: input.website ?? null,
-          logoUrl: input.logoUrl ?? null,
-          description: input.description ?? null,
-          industry: input.industry ?? null,
-          competitors: input.competitors?.map(c => ({
-            id: c.id ?? uuidv4(),
-            name: c.name,
-            website: c.website ?? undefined,
-          })) ?? [],
-        });
-
-        return {
-          success: true,
-          results,
-          error: null
-        };
-      } catch (err) {
-        console.error("Failed to create brand:", err);
-        return {
-          success: false,
-          results: [],
-          error: "Could not create brand",
-        };
-      }
+          return makeResponse(results, "Created brand successfully.");
+        })
     }),
   get: protectedProcedure
     .input(
@@ -77,13 +74,16 @@ export const brandRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.session?.user.id;
+      return safeHandler(async () => {
+        const userId = ctx.session?.user.id;
 
-      if (!userId) {
-        throw new Error("Unauthorized");
-      }
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User is not logged in.",
+          });
+        }
 
-      try {
         const brand = await db
           .select()
           .from(brands)
@@ -98,19 +98,8 @@ export const brandRouter = createTRPCRouter({
           };
         }
 
-        return {
-          success: true,
-          brand: brand[0],
-          error: null,
-        };
-      } catch (err) {
-        console.error("Failed to fetch brand:", err);
-        return {
-          success: false,
-          brand: null,
-          error: "Could not fetch brand",
-        };
-      }
+        return makeResponse(brand[0], "Fetched brand successfully.");
+      })
     }),
   update: protectedProcedure
     .input(
@@ -134,12 +123,24 @@ export const brandRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.session?.user.id;
-      if (!userId) throw new Error("Unauthorized");
-      if (!input.workspaceId) throw new Error("Missing workspaceId");
-  
-      try {
-        // Prepare competitors with guaranteed IDs
+      return safeHandler(async () => {
+        const userId = ctx.session?.user.id;
+        const { workspaceId } = input
+        
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User is not logged in.",
+          });
+        }
+        
+        if (!workspaceId || workspaceId.trim() === "") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Missing workspaceId.",
+          });
+        }
+
         const competitors = input.competitors?.map((c) => ({
           id: c.id || uuidv4(),
           name: c.name,
@@ -161,10 +162,7 @@ export const brandRouter = createTRPCRouter({
           })
           .where(eq(brands.workspaceId, input.workspaceId));
   
-        return { success: true, result, error: null };
-      } catch (err) {
-        console.error("Failed to update brand:", err);
-        return { success: false, result: null, error: "Could not update brand" };
-      }
+        return makeResponse(result, "Updated brand successfully.");
+      })
     })
 });

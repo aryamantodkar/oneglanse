@@ -85,3 +85,4 @@ services:
 volumes:
   db_data:
   clickhouse_data:
+  redis_data:

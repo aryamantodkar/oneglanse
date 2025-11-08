@@ -53,12 +53,12 @@ export default function PromptsDataTable() {
   const [promptData, setPromptData] = useState<PromptMetric[]>([]);
   const [openPrompt, setOpenPrompt] = useState<null | typeof promptData[0]>(null);
 
-  const { data, isLoading, error } = fetchUserPrompts(workspaceId);
+  const { data: userPrompts, isLoading, error } = fetchUserPrompts(workspaceId);
   const storePromptMutation = useStorePrompt();
   const analyzeMetricsMutation = useAnalyzeMetrics();
 
   useEffect(() => {
-    if (data?.prompts?.length) {
+    if (userPrompts?.data?.length) {
       // analyzeMetricsMutation.mutate(
       //   { workspaceId },
       //   {
@@ -71,7 +71,7 @@ export default function PromptsDataTable() {
       //   }
       // );
 
-      const filteredRows: PromptMetric[] = data.prompts.map((p) => {
+      const filteredRows: PromptMetric[] = userPrompts?.data.map((p) => {
         const perModelRaw =
           typeof p.per_model === "string"
             ? JSON.parse(p.per_model)
@@ -176,12 +176,13 @@ export default function PromptsDataTable() {
       setPromptData(filteredRows);
       setInitialPrompts(filteredRows);
     }
-  }, [data]);
+  }, [userPrompts]);
 
   const allBrands = useMemo(() => {
     const brands = new Set<string>();
+
   
-    data?.prompts.forEach((p) => {
+    userPrompts?.data?.forEach((p) => {
       Object.values(p.per_model || {}).forEach((modelData: any) => {
         const brandMetrics = modelData?.brandMetrics || {};
         Object.keys(brandMetrics).forEach((b) => brands.add(b));
@@ -189,13 +190,13 @@ export default function PromptsDataTable() {
     });
   
     return Array.from(brands);
-  }, [data]);
+  }, [userPrompts]);
   
   const models = useMemo(() => {
-    const sample = data?.prompts[0];
+    const sample = userPrompts?.data?.[0];
     const perModel = sample?.per_model || {};
     return ["All Models", ...Object.keys(perModel)];
-  }, [data]);
+  }, [userPrompts]);
 
   useEffect(() => {
     if (allBrands.length > 0 && brandFilter === "") {

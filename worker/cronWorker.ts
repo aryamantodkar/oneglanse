@@ -65,7 +65,7 @@ async function processJob(job: any) {
     await pool.query(
       `INSERT INTO public.job_runs (job_id, workspace_id, started_at, finished_at, status, output)
        VALUES ($1, $2, now(), now(), 'success', $3::jsonb)`,
-      [job.jobId, job.workspaceId, JSON.stringify({ result: "ok" })]
+      [job.jobId, job.workspaceId, JSON.stringify({ result: "success" })]
     );
 
     await pool.query(

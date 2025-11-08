@@ -41,18 +41,18 @@ export default function CronPage() {
     { enabled: !!workspaceId }
   );
 
-  const { data: promptsArray, isLoading: loadingPrompts } =
+  const { data: userPrompts, isLoading: loadingPrompts } =
     api.prompt.fetchUserPrompts.useQuery(
       { workspaceId },
       { retry: 2, refetchOnWindowFocus: false, enabled: !!workspaceId }
     );
 
   useEffect(() => {
-    if (promptsArray?.prompts) {
-      const initial = promptsArray.prompts.map((p: any) => p.prompt);
+    if (userPrompts?.data) {
+      const initial = userPrompts?.data.map((p: any) => p.prompt);
       setPrompts(initial);
     }
-  }, [promptsArray]);
+  }, [userPrompts]);
   
   const createCron = api.cron.create.useMutation({
     onSuccess: () => {
@@ -218,7 +218,7 @@ export default function CronPage() {
   
       {/* Existing Jobs Table */}
       <div className="w-full overflow-x-auto">
-        {jobs && jobs.length > 0 ? (
+        {jobs?.data && jobs?.data.length > 0 ? (
           <Table className="min-w-full border rounded-md border-gray-200">
             <TableHeader>
               <TableRow className="bg-gray-50">
@@ -229,7 +229,7 @@ export default function CronPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {jobs.map((job: any) => (
+              {jobs.data.map((job: any) => (
                 <TableRow
                   key={job.id}
                   className="hover:bg-gray-50 transition-colors"
