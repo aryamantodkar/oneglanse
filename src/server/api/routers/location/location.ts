@@ -22,7 +22,7 @@ export const locationRouter = createTRPCRouter({
         emoji: data.emoji,
       }));
 
-      return makeResponse(result, "Fetched all countries successfully.");
+      return makeResponse(result, 200, "Fetched all countries successfully.");
     })
   }),
 
@@ -33,13 +33,13 @@ export const locationRouter = createTRPCRouter({
       return safeHandler(async () => {
         const iso = input.countryIso2.toUpperCase();
         const country = countriesJson[iso];
-        if (!country) return makeError("Country not found.");
+        if (!country) return makeError("Country not found.", 404);
         let result = country.states.map((s) => ({
           iso2: s.iso2,
           name: s.name,
         }));
 
-        return makeResponse(result,"Fetched all states successfully.");
+        return makeResponse(result, 200,"Fetched all states successfully.");
       })
     }),
 });

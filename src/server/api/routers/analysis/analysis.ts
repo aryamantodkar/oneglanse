@@ -43,7 +43,7 @@ export const analysisRouter = createTRPCRouter({
         format: "JSONEachRow",
       });
       const responses: PromptResponse[] = await result.json();
-      if (!responses.length) return makeError("Could not fetch prompt responses for analysis.");
+      if (!responses.length) return makeError("Could not fetch prompt responses for analysis.", 404);
 
       const groupedPrompts = Object.values(
         responses.reduce((acc, resp) => {
@@ -162,7 +162,7 @@ export const analysisRouter = createTRPCRouter({
         });
       }
 
-      return makeResponse(null, "Prompt analysis completed successfully.");
+      return makeResponse(null, 200, "Prompt analysis completed successfully.");
     })
   }),
 });

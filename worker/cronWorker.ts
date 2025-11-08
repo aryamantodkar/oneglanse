@@ -62,7 +62,7 @@ async function processJob(job: any) {
       if (res?.success && res.data) {
         console.log("Ask completed successfully, calling analyzeMetrics...");
 
-        const analysisRes = await trpc.analysis.analyzeMetrics.mutate({
+        const analysisRes = await trpc.analysis.analyzeMetrics.mutate({ 
           workspaceId: workspace_id,
         });
 

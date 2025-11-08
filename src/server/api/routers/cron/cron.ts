@@ -81,7 +81,7 @@ export const cronRouter = createTRPCRouter({
           [jobName, input.cronExpression, scheduledSQL]
         );
 
-        return makeResponse(jobRow, "Created cron job successfully.");
+        return makeResponse(jobRow, 200, "Created cron job successfully.");
       })
     }),
 
@@ -152,7 +152,7 @@ export const cronRouter = createTRPCRouter({
           .where(eq(cronJobs.id, input.jobId))
           .returning();
 
-        return makeResponse(updatedJob, "Updated cron job successfully.");
+        return makeResponse(updatedJob, 200, "Updated cron job successfully.");
       })
     }),
 
@@ -175,7 +175,7 @@ export const cronRouter = createTRPCRouter({
         // Delete from cron_jobs table
         await db.delete(cronJobs).where(eq(cronJobs.id, input.jobId));
         await db.delete(cronQueue).where(eq(cronQueue.jobId, input.jobId));
-        return makeResponse(null, "Deleted cron jobs successfully.");
+        return makeResponse(null, 200, "Deleted cron jobs successfully.");
       })
     }),
 
@@ -197,7 +197,7 @@ export const cronRouter = createTRPCRouter({
           .from(cronJobs)
           .where(eq(cronJobs.workspaceId, input.workspaceId));
 
-        return makeResponse(jobs, "Fetched all cron jobs successfully.");
+        return makeResponse(jobs, 200, "Fetched all cron jobs successfully.");
       })
     }),
   fetchFailedJobs: protectedProcedure
@@ -229,7 +229,7 @@ export const cronRouter = createTRPCRouter({
           [workspaceId]
         );
   
-        return makeResponse(result.rows, "Fetched failed cron jobs for this workspace");
+        return makeResponse(result.rows, 200, "Fetched failed cron jobs for this workspace");
       });
     }),
 });

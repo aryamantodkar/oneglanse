@@ -67,6 +67,7 @@ export const workspaceRouter = createTRPCRouter({
     
           return makeResponse(
             { workspace, org: orgData },
+            200,
             "Workspace and organization created successfully."
           );
         })
@@ -107,6 +108,7 @@ export const workspaceRouter = createTRPCRouter({
     
           return makeResponse(
             workspace[0],
+            200,
             "Workspace and organization created successfully."
           );
         })
