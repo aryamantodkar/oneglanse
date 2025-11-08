@@ -200,4 +200,36 @@ export const cronRouter = createTRPCRouter({
         return makeResponse(jobs, "Fetched all cron jobs successfully.");
       })
     }),
+  fetchFailedJobs: protectedProcedure
+    .input(z.object({ workspaceId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      return safeHandler(async () => {
+        const userId = ctx.session?.user.id;
+        const { workspaceId } = input;
+  
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User is not logged in.",
+          });
+        }
+  
+        if (!workspaceId || workspaceId.trim() === "") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Missing workspaceId.",
+          });
+        }
+  
+        const result = await pool.query(
+          `SELECT job_id, workspace_id, error, finished_at
+           FROM public.job_runs
+           WHERE status = 'failed' AND workspace_id = $1
+           ORDER BY finished_at DESC`,
+          [workspaceId]
+        );
+  
+        return makeResponse(result.rows, "Fetched failed cron jobs for this workspace");
+      });
+    }),
 });

@@ -5,21 +5,40 @@ import { usePathname, useRouter } from "next/navigation";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import type { Workspace } from "@/server/db/types";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Logout } from "@/components/forms/logout";
+import { useFailedJobs } from "@/lib/helper/mutations";
+import { toast } from "sonner";
 
 export default function LayoutContent({ children, workspace }: { children: React.ReactNode, workspace: Workspace | null}) {
   const pathname = usePathname();
   const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
+  const shownJobsRef = useRef<Set<string>>(new Set());
 
   const router = useRouter();
+  const { data: failedJobs, isLoading } = useFailedJobs(workspace?.id ?? "");
 
   useEffect(() => {
     if (!workspace) {
       return router.push("/workspace/new");
     }
   }, [workspace, router]);
+
+  useEffect(() => {
+    shownJobsRef.current.clear();
+  }, [workspace?.id]);
+
+  useEffect(() => {
+    if (!failedJobs?.data?.length) return;
+  
+    failedJobs.data.forEach(job => {
+      if (!shownJobsRef.current.has(job.job_id)) {
+        toast.error(`Job failed: ${job.error}`);
+        shownJobsRef.current.add(job.job_id);
+      }
+    });
+  }, [failedJobs]);
   
   if (!workspace) {
     return (

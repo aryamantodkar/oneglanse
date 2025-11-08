@@ -59,6 +59,22 @@ async function processJob(job: any) {
         userId,
       });
     
+      if (res?.success && res.data) {
+        console.log("Ask completed successfully, calling analyzeMetrics...");
+
+        const analysisRes = await trpc.analysis.analyzeMetrics.mutate({
+          workspaceId: workspace_id,
+        });
+
+        if (!analysisRes?.success) {
+          console.error("Analysis failed:", analysisRes?.message);
+        } else {
+          console.log("Analysis completed successfully");
+        }
+      } else {
+        console.error("Ask failed:", res?.message);
+      }
+
       console.log("Running prompts for workspace:", workspace_id, "owner:", userId);
     }
 
