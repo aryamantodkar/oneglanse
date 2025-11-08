@@ -50,7 +50,7 @@ end
 return {count, reset_ms}
 `;
 
-export async function slidingWindowLimiter(
+export async function slidingWindowAlgorithm(
   key: string,
   limit: number,
   windowSeconds: number

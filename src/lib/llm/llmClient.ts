@@ -2,7 +2,7 @@ import type { UserPrompt, WorkspaceLocation } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { safeCall } from "../helper/functions";
+import { safeCall } from "../errorHandling/errorHandling";
 import { queryClaude } from "./models/anthropic";
 import { queryOpenAI } from "./models/openAI";
 import { queryPerplexity } from "./models/perplexity";

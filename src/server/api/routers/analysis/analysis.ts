@@ -7,17 +7,33 @@ import fs from "fs";
 import path from "path";
 import { analyzeResponse } from "@/lib/llm/analyzeResponse";
 import { fileURLToPath } from "url";
+import { fixedWindowRateLimiter } from "@/server/middleware/rateLimiter";
+import { makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { TRPCError } from "@trpc/server";
 
 export const analysisRouter = createTRPCRouter({
   analyzeMetrics: protectedProcedure
+  .use(fixedWindowRateLimiter)
   .input(z.object({ workspaceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
-    const { workspaceId } = input;
-    const userId = ctx.session?.user.id;
-    if (!userId) throw new Error("Unauthorized");
+    return safeHandler(async () => {
+      const { workspaceId } = input;
+      const userId = ctx.session?.user.id;
+      
+      if (!userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User is not logged in.",
+        });
+      }
+      
+      if (!workspaceId || workspaceId.trim() === "") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Missing workspaceId.",
+        });
+      }
 
-    try {
-      // 1️⃣ Fetch all prompt responses
       const result = await clickhouse.query({
         query: `
           SELECT *
@@ -146,10 +162,8 @@ export const analysisRouter = createTRPCRouter({
         });
       }
 
-    } catch (err) {
-      console.error("Failed to analyze metrics:", err);
-      return { success: false, prompts: [] };
-    }
+      return makeResponse(null, "Prompt analysis completed successfully.");
+    })
   }),
 });
 

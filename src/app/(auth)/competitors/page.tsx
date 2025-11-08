@@ -37,10 +37,10 @@ export default function CompetitorsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded && brandData?.brand) {
-      setBrandName(brandData.brand.name || "");
-      setBrandWebsite(brandData.brand.website || "");
-      setBrandDescription(brandData.brand.description || "");
+    if (!isLoaded && brandData?.data) {
+      setBrandName(brandData.data.name || "");
+      setBrandWebsite(brandData.data.website || "");
+      setBrandDescription(brandData.data.description || "");
       setIsLoaded(true); // prevent future overwrites
     }
   }, [brandData, isLoaded]);
@@ -55,14 +55,14 @@ export default function CompetitorsPage() {
       </div>
     );
 
-  if (!brandData || !brandData.brand)
+  if (!brandData || !brandData.data)
     return (
       <div className="flex items-center justify-center h-screen text-gray-500">
         No brand found for this workspace.
       </div>
     );
 
-  const brand = brandData.brand;
+  const brand = brandData.data;
   const competitors: Competitor[] = brand.competitors || [];
 
   const getFaviconUrl = (website?: string) =>

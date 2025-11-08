@@ -17,7 +17,7 @@ export default function Sources() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const { data, refetch, isLoading, error } = fetchPromptResponses(workspaceId);
+  const { data: promptResponses, refetch, isLoading, error } = fetchPromptResponses(workspaceId);
   
   useEffect(() => {
     if (workspaceId) {
@@ -26,13 +26,13 @@ export default function Sources() {
   }, [workspaceId, refetch]);
 
   useEffect(() => {
-    if (!isLoading && data?.result) {
-      const filtered = data.result.filter(
-        (r: PromptResponseClient) => Array.isArray(r.extractedUrls) && r.extractedUrls.length > 0
+    if (!isLoading && Array.isArray(promptResponses?.data)) {
+      const filtered = (promptResponses.data as PromptResponseClient[]).filter(
+        (r) => Array.isArray(r.extractedUrls) && r.extractedUrls.length > 0
       );
       setResponses(filtered);
     }
-  }, [data, isLoading]);
+  }, [promptResponses, isLoading]);
 
   // ✅ Provider dropdown
   const providers = useMemo(() => {

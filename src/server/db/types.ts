@@ -119,3 +119,9 @@ export interface WorkspaceLocation {
   workspaceCountry: string;
   workspaceRegion?: string | null;
 }
+
+export type ApiResponse<T> = {
+  success: boolean;
+  data: T | null;
+  message?: string;
+};

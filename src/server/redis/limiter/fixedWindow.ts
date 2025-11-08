@@ -4,10 +4,10 @@ type FixedResult = {
   allowed: boolean;
   count: number;
   remaining: number;
-  resetSec: number; // Unix timestamp (seconds) when window resets
+  resetMs: number; // Unix timestamp (seconds) when window resets
 };
 
-export async function fixedWindowLimiter(
+export async function fixedWindowAlgorithm(
   key: string,
   limit: number,
   windowSeconds: number
@@ -37,7 +37,7 @@ export async function fixedWindowLimiter(
   const remaining = Math.max(0, limit - count);
 
   // Calculate reset time in Unix seconds (start of next window)
-  const resetSec = (bucket + 1) * windowSeconds;
+  const resetMs = (bucket + 1) * windowSeconds;
 
-  return { allowed, count, remaining, resetSec };
+  return { allowed, count, remaining, resetMs };
 }
