@@ -8,7 +8,7 @@ import path from "path";
 import { analyzeResponse } from "@/lib/llm/analyzeResponse";
 import { fileURLToPath } from "url";
 import { fixedWindowRateLimiter } from "@/server/middleware/rateLimiter";
-import { makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
 import { TRPCError } from "@trpc/server";
 
 export const analysisRouter = createTRPCRouter({
@@ -43,7 +43,7 @@ export const analysisRouter = createTRPCRouter({
         format: "JSONEachRow",
       });
       const responses: PromptResponse[] = await result.json();
-      if (!responses.length) return { success: true, prompts: [] };
+      if (!responses.length) return makeError("Could not fetch prompt responses for analysis.");
 
       const groupedPrompts = Object.values(
         responses.reduce((acc, resp) => {
