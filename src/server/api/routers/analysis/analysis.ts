@@ -1,15 +1,12 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { clickhouse, db } from "@/server/db/index";
-import { eq } from "drizzle-orm";
 import type { PromptAnalysis, PromptResponse } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { analyzeResponse } from "@/lib/llm/analyzeResponse";
 import { fileURLToPath } from "url";
 import { fixedWindowRateLimiter } from "@/server/middleware/rateLimiter";
-import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
-import { TRPCError } from "@trpc/server";
+import { AuthError, fail, ok, safeHandler, ValidationError } from "@/server/error";
 
 export const analysisRouter = createTRPCRouter({
   analyzeMetrics: protectedProcedure
@@ -21,17 +18,11 @@ export const analysisRouter = createTRPCRouter({
       const userId = ctx.session?.user.id;
       
       if (!userId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "User is not logged in.",
-        });
+        throw new AuthError("User Id is undefined.");
       }
       
       if (!workspaceId || workspaceId.trim() === "") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Missing workspaceId.",
-        });
+        throw new ValidationError("Workspace ID is undefined.");
       }
 
       const result = await clickhouse.query({
@@ -43,7 +34,7 @@ export const analysisRouter = createTRPCRouter({
         format: "JSONEachRow",
       });
       const responses: PromptResponse[] = await result.json();
-      if (!responses.length) return makeError("Could not fetch prompt responses for analysis.", 404);
+      if (!responses.length) return fail("Could not fetch prompt responses for analysis.", 404);
 
       const groupedPrompts = Object.values(
         responses.reduce((acc, resp) => {
@@ -162,7 +153,7 @@ export const analysisRouter = createTRPCRouter({
         });
       }
 
-      return makeResponse(null, 200, "Prompt analysis completed successfully.");
+      return ok(null, "Prompt analysis completed successfully.");
     })
   }),
 });

@@ -4,8 +4,7 @@ import { db } from "@/server/db"; // your Drizzle client
 import { v4 as uuidv4 } from "uuid";
 import { brands } from "@/server/db/schema/brand";
 import { eq } from "drizzle-orm";
-import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
-import { TRPCError } from "@trpc/server";
+import { AuthError, fail, ok, safeHandler, ValidationError } from "@/server/error";
 
 export const brandRouter = createTRPCRouter({
   create: protectedProcedure
@@ -35,17 +34,11 @@ export const brandRouter = createTRPCRouter({
           const userId = ctx.session?.user.id;
 
           if (!userId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "User is not logged in.",
-            });
+            throw new AuthError("User Id is undefined.");
           }
           
           if (!workspaceId || workspaceId.trim() === "") {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Missing workspaceId.",
-            });
+            throw new ValidationError("Workspace ID is undefined.");
           }
 
           const results = await db.insert(brands).values({
@@ -64,7 +57,7 @@ export const brandRouter = createTRPCRouter({
             })) ?? [],
           });
 
-          return makeResponse(results, 200, "Created brand successfully.");
+          return ok(results, "Brand created successfully.");
         })
     }),
   get: protectedProcedure
@@ -78,10 +71,7 @@ export const brandRouter = createTRPCRouter({
         const userId = ctx.session?.user.id;
 
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
 
         const brand = await db
@@ -91,10 +81,10 @@ export const brandRouter = createTRPCRouter({
           .limit(1);
 
         if (!brand || brand.length === 0) {
-          return makeError("No brand found for this workspace", 404);
+          return fail("Could not find brands for this workspace", 404);
         }
 
-        return makeResponse(brand[0], 200, "Fetched brand successfully.");
+        return ok(brand[0], "Fetched brand successfully.");
       })
     }),
   update: protectedProcedure
@@ -124,17 +114,11 @@ export const brandRouter = createTRPCRouter({
         const { workspaceId } = input
         
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
         
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
 
         const competitors = input.competitors?.map((c) => ({
@@ -158,7 +142,7 @@ export const brandRouter = createTRPCRouter({
           })
           .where(eq(brands.workspaceId, input.workspaceId));
   
-        return makeResponse(result, 200, "Updated brand successfully.");
+        return ok(result, "Updated brand successfully.");
       })
     })
 });

@@ -1,12 +1,11 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { TRPCError } from "@trpc/server";
 import { auth } from "@lib/auth/auth";
 import { db, schema } from "@/server/db";
 import type { Workspace } from "@/server/db/types";
 import { newId } from "@/lib/workspace/id";
 import { eq, isNull, and } from "drizzle-orm";
-import { makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { AuthError, safeHandler, ValidationError, NotFoundError, ok } from "@/server/error";
 
 export const workspaceRouter = createTRPCRouter({
     create: protectedProcedure
@@ -24,11 +23,7 @@ export const workspaceRouter = createTRPCRouter({
           const userId = ctx.session?.user.id;
     
           if (!headers || !userId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message:
-                "Unable to authenticate the user. Please make sure you are logged in and try again",
-            });
+            throw new AuthError("Headers or userId are undefined.");
           }
     
           // Create org
@@ -43,10 +38,7 @@ export const workspaceRouter = createTRPCRouter({
             })
     
           if (!orgData?.id) {
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "No Org ID found",
-            });
+            throw new ValidationError("Organization ID is undefined.");
           }
     
           // Create workspace with country and region
@@ -65,11 +57,7 @@ export const workspaceRouter = createTRPCRouter({
             .insert(schema.workspaces)
             .values(workspace)
     
-          return makeResponse(
-            { workspace, org: orgData },
-            200,
-            "Workspace and organization created successfully."
-          );
+          return ok({ workspace, org: orgData }, "Workspace created successfully.")
         })
       }),
     getById: protectedProcedure
@@ -82,10 +70,7 @@ export const workspaceRouter = createTRPCRouter({
         return safeHandler(async () => {
           const userId = ctx.session?.user.id;
           if (!userId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "User must be logged in to access workspace.",
-            });
+            throw new AuthError("User Id is undefined.");
           }
     
           const workspace = await db
@@ -100,17 +85,10 @@ export const workspaceRouter = createTRPCRouter({
             .execute();
 
           if (!workspace || workspace.length === 0) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: `Workspace with ID ${input.workspaceId} not found.`,
-            });
+            throw new NotFoundError(`Workspace with ID ${input.workspaceId} not found.`);
           }
     
-          return makeResponse(
-            workspace[0],
-            200,
-            "Workspace and organization created successfully."
-          );
+          return ok(workspace[0], "Successfully fetched workspace by ID.");
         })
       }),
   });
