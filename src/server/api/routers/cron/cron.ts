@@ -6,8 +6,7 @@ import { pool } from "@/server/db/pg"; // pg Pool (Node-Postgres)
 import { db } from "@/server/db";
 import { cronJobs, cronQueue } from "@/server/db/schema/cron";
 import { eq } from "drizzle-orm";
-import { makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
-import { TRPCError } from "@trpc/server";
+import { AuthError, DatabaseError, NotFoundError, ok, safeHandler, ValidationError } from "@/server/error";
 
 export const cronRouter = createTRPCRouter({
   create: protectedProcedure
@@ -28,17 +27,11 @@ export const cronRouter = createTRPCRouter({
         const { workspaceId } = input;
 
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
         
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
 
         try {
@@ -46,10 +39,7 @@ export const cronRouter = createTRPCRouter({
             tz: input.timezone ?? "UTC",
           });
         } catch (err) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Invalid cron expression.",
-          });
+          throw new ValidationError("Invalid cron expression.");
         }
 
         // 2️⃣ Insert job into cron_jobs via Drizzle ORM
@@ -67,6 +57,7 @@ export const cronRouter = createTRPCRouter({
           })
           .returning();
 
+          if (!jobRow) throw new DatabaseError("Failed to insert cron job", { table: "cron_jobs", operation: "insert" });
         // 3️⃣ Prepare pg_cron schedule
         const jobName = `cron_job_${jobRow?.id}`;
         
@@ -81,7 +72,7 @@ export const cronRouter = createTRPCRouter({
           [jobName, input.cronExpression, scheduledSQL]
         );
 
-        return makeResponse(jobRow, 200, "Created cron job successfully.");
+        return ok(jobRow, "Cron job created successfully.");
       })
     }),
 
@@ -98,30 +89,21 @@ export const cronRouter = createTRPCRouter({
       return safeHandler(async () => {
         const userId = ctx.session?.user.id;
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
 
         // 1️⃣ Validate cron expression
         try {
           cronParser.parse(input.cronExpression, { tz: "UTC" });
         } catch {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Invalid cron expression.",
-          });
+          throw new ValidationError("Invalid cron expression.");
         }
 
         const rows = await db.select().from(cronJobs).where(eq(cronJobs.id, input.jobId));
         const existingJob = rows[0];    
 
         if (!existingJob){
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Cron job not found.",
-          });
+          throw new NotFoundError(`Cron job with ID ${input.jobId} not found.`);
         }
 
         // 3️⃣ Update pg_cron schedule if expression changed
@@ -152,7 +134,7 @@ export const cronRouter = createTRPCRouter({
           .where(eq(cronJobs.id, input.jobId))
           .returning();
 
-        return makeResponse(updatedJob, 200, "Updated cron job successfully.");
+        return ok(updatedJob, "Updated cron job successfully.");
       })
     }),
 
@@ -163,10 +145,7 @@ export const cronRouter = createTRPCRouter({
         const userId = ctx.session?.user.id;
 
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
 
         const jobName = `cron_job_${input.jobId}`;
@@ -175,7 +154,7 @@ export const cronRouter = createTRPCRouter({
         // Delete from cron_jobs table
         await db.delete(cronJobs).where(eq(cronJobs.id, input.jobId));
         await db.delete(cronQueue).where(eq(cronQueue.jobId, input.jobId));
-        return makeResponse(null, 200, "Deleted cron jobs successfully.");
+        return ok(null, "Cron jobs deleted successfully.");
       })
     }),
 
@@ -186,10 +165,7 @@ export const cronRouter = createTRPCRouter({
         const userId = ctx.session?.user.id;
 
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
 
         const jobs = await db
@@ -197,7 +173,7 @@ export const cronRouter = createTRPCRouter({
           .from(cronJobs)
           .where(eq(cronJobs.workspaceId, input.workspaceId));
 
-        return makeResponse(jobs, 200, "Fetched all cron jobs successfully.");
+        return ok(jobs, "Fetched all cron jobs successfully.");
       })
     }),
   fetchFailedJobs: protectedProcedure
@@ -208,17 +184,11 @@ export const cronRouter = createTRPCRouter({
         const { workspaceId } = input;
   
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
   
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
   
         const result = await pool.query(
@@ -229,7 +199,7 @@ export const cronRouter = createTRPCRouter({
           [workspaceId]
         );
   
-        return makeResponse(result.rows, 200, "Fetched failed cron jobs for this workspace");
+        return ok(result.rows, "Fetched failed cron jobs for this workspace");
       });
     }),
 });

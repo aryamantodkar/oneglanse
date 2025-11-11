@@ -1,7 +1,6 @@
-import { TRPCError } from "@trpc/server";
 import { slidingWindowAlgorithm } from "../redis/limiter/slidingWindow";
 import { fixedWindowAlgorithm } from "../redis/limiter/fixedWindow";
-import { makeError } from "@/lib/errorHandling/errorHandling";
+import { RateLimitError } from "../error";
 
 const USER_LIMIT = { limit: 5, windowSec: 60 }; 
 const OPENAI_LIMIT = { limit: 60, windowSec: 60 };
@@ -45,7 +44,7 @@ export const slidingWindowRateLimiter = async ({ ctx, next }: any) => {
     if (ctx.res) applyRateLimitHeaders(ctx.res, { limit: USER_LIMIT.limit, remaining, resetMs, allowed });
   
     if (!allowed) {
-      return makeError("API Rate limit exceeded. Try again later.");
+      throw new RateLimitError("API Rate limit exceeded. Try again later.");
     }
   
     return next();
@@ -63,7 +62,7 @@ export const fixedWindowRateLimiter = async ({ ctx, next }: any) => {
     if (ctx.res) applyRateLimitHeaders(ctx.res, { limit: OPENAI_LIMIT.limit, remaining, resetMs, allowed });
   
     if (!allowed) {
-      return makeError("OpenAI capacity reached. Try again later.");
+      throw new RateLimitError("OpenAI capacity reached. Try again later.");
     }
   
     return next();

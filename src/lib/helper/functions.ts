@@ -64,26 +64,6 @@ export const getModelFavicon = (model: string): string => {
     return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 };
 
-export function trpcErrorToHttpCode(code: string): number {
-  switch (code) {
-    case "BAD_REQUEST":
-      return 400;
-    case "UNAUTHORIZED":
-      return 401;
-    case "FORBIDDEN":
-      return 403;
-    case "NOT_FOUND":
-      return 404;
-    case "CONFLICT":
-      return 409;
-    case "TOO_MANY_REQUESTS":
-      return 429;
-    case "INTERNAL_SERVER_ERROR":
-    default:
-      return 500;
-  }
-}
-
 export function parseModelError(error: any, modelName: string): string {
   if (!error) return `${modelName}: Unknown error`;
 

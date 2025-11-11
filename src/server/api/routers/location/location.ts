@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import fs from "fs";
 import path from "path";
-import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { fail, ok, safeHandler } from "@/server/error";
 
 // Load countries JSON once at startup
 const countriesDataPath = path.join(process.cwd(), "countries.json");
@@ -22,7 +22,7 @@ export const locationRouter = createTRPCRouter({
         emoji: data.emoji,
       }));
 
-      return makeResponse(result, 200, "Fetched all countries successfully.");
+      return ok(result, "All countries fetched successfully.");
     })
   }),
 
@@ -33,13 +33,13 @@ export const locationRouter = createTRPCRouter({
       return safeHandler(async () => {
         const iso = input.countryIso2.toUpperCase();
         const country = countriesJson[iso];
-        if (!country) return makeError("Country not found.", 404);
+        if (!country) return fail("Could not fetch country from the list.", 404);
         let result = country.states.map((s) => ({
           iso2: s.iso2,
           name: s.name,
         }));
 
-        return makeResponse(result, 200,"Fetched all states successfully.");
+        return ok(result, "All states fetched successfully.");
       })
     }),
 });

@@ -6,12 +6,11 @@ import { v4 as uuidv4 } from "uuid";
 import { cronJobs } from "@/server/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { pool } from "@/server/db/pg";
-import { TRPCError } from "@trpc/server";
 import type { PromptResponse, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { slidingWindowRateLimiter } from "@/server/middleware/rateLimiter";
-import { makeError, makeResponse, safeHandler } from "@/lib/errorHandling/errorHandling";
+import { AuthError, DatabaseError, fail, NotFoundError, ok, safeHandler, ValidationError } from "@/server/error";
 
 function formatDateToClickHouse(dt: Date) {
   return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -33,17 +32,11 @@ export const promptRouter = createTRPCRouter({
         const userId = inputUserId ?? ctx.session?.user.id;
 
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
         
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
 
         const workspace = await db
@@ -58,10 +51,7 @@ export const promptRouter = createTRPCRouter({
           .execute();
 
         if (!workspace || workspace.length === 0) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Workspace with ID ${workspaceId} not found.`,
-          });
+          throw new NotFoundError(`Workspace with ID ${input.workspaceId} not found.`); 
         }
 
         const workspaceData = workspace[0]; 
@@ -78,7 +68,7 @@ export const promptRouter = createTRPCRouter({
         const promptsArray: UserPrompt[] = await prompts.json();
 
         if (!promptsArray || promptsArray.length === 0) {
-          return makeError("No prompts found for this workspace.", 404);
+          return fail("Could not find prompts for this workspace", 404);
         }
 
         // MOCK DATA
@@ -162,19 +152,23 @@ export const promptRouter = createTRPCRouter({
           })
         );
 
-        await clickhouse.insert({
-          table: "prompt_responses",
-          values,
-          format: "JSONEachRow", 
-        })
+        try{
+          await clickhouse.insert({
+            table: "prompt_responses",
+            values,
+            format: "JSONEachRow", 
+          })
+        }
+        catch(err){
+          throw new DatabaseError("Failed to insert prompt responses.", { table: "prompt_responses", operation: "insert" , values});
+        }
 
-        return makeResponse(
+        return ok(
           {
             response: values,
             modelErrors,
           },
-          200,
-          "Called ask procedure successfully."
+          "Fetched LLM API responses successfully."
         );
       })
     }),
@@ -191,17 +185,11 @@ export const promptRouter = createTRPCRouter({
         const userId = ctx.session?.user.id;
 
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
         
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
 
         const nonEmptyPrompts = prompts
@@ -242,11 +230,16 @@ export const promptRouter = createTRPCRouter({
               created_at: formatDateToClickHouse(new Date()),
             }));
 
-            await clickhouse.insert({
-              table: "analytics.user_prompts",
-              values,
-              format: "JSONEachRow",
-            })
+            try{
+              await clickhouse.insert({
+                table: "analytics.user_prompts",
+                values,
+                format: "JSONEachRow",
+              })
+            }
+            catch(err){
+              throw new DatabaseError("Failed to insert user prompts", { table: "analytics.user_prompts", operation: "insert", values });
+            }
           }
 
           // 5. Delete removed prompts
@@ -273,21 +266,23 @@ export const promptRouter = createTRPCRouter({
 
           if (existingCron.length === 0) {
             console.log("Calling LLMs for the first time.")
+            const values = {
+              workspaceId,
+              userId, // 👈 Save the owner user ID
+              name: "Auto Run Prompts",
+              cronExpression: "0 */12 * * *", // every 12 hours
+              timezone: "UTC",
+              targetType: "internal",
+              targetPayload: { type: "runPrompts", userId }, // 👈 also embed owner ID in payload
+              maxAttempts: 3,
+            };
+
             const [jobRow] = await db
               .insert(cronJobs)
-              .values({
-                workspaceId,
-                userId, // 👈 Save the owner user ID
-                name: "Auto Run Prompts",
-                cronExpression: "0 */12 * * *", // every 12 hours
-                timezone: "UTC",
-                targetType: "internal",
-                targetPayload: { type: "runPrompts", userId }, // 👈 also embed owner ID in payload
-                maxAttempts: 3,
-              })
+              .values(values)
               .returning();
 
-            if (!jobRow) throw new Error("Failed to insert cron job");
+            if (!jobRow) throw new DatabaseError("Failed to insert cron job", { table: "cron_jobs", operation: "insert", values });
 
             await pool.query(`
               INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
@@ -304,7 +299,7 @@ export const promptRouter = createTRPCRouter({
             );
           }
 
-          return makeResponse(prompts, 200, "Prompts saved successfully.");
+          return ok(prompts, "Prompts saved successfully.");
       })
     }),
   fetchPromptResponses: protectedProcedure
@@ -319,17 +314,11 @@ export const promptRouter = createTRPCRouter({
         const userId = ctx.session?.user.id;
     
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
         
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
     
         // --- Helper to extract all URLs ---
@@ -384,7 +373,7 @@ export const promptRouter = createTRPCRouter({
           extractedUrls: extractUrlsFromResponse(r),
         }));
   
-        return makeResponse(result, 200, "Fetched prompt responses successfully.");
+        return ok(enriched, "Fetched prompt responses successfully.");
       })
     }),
   fetchUserPrompts: protectedProcedure
@@ -399,17 +388,11 @@ export const promptRouter = createTRPCRouter({
         const userId = ctx.session?.user.id;
     
         if (!userId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "User is not logged in.",
-          });
+          throw new AuthError("User Id is undefined.");
         }
         
         if (!workspaceId || workspaceId.trim() === "") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Missing workspaceId.",
-          });
+          throw new ValidationError("Workspace ID is undefined.");
         }
     
         const result = await clickhouse.query({
@@ -432,7 +415,7 @@ export const promptRouter = createTRPCRouter({
           created_at: row.created_at,
         }));
   
-        return makeResponse(promptsArray, 200, "Fetched user prompts successfully.");
+        return ok(promptsArray, "Fetched user prompts successfully.");
       })
     }),
 });

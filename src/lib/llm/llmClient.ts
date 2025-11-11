@@ -2,10 +2,11 @@ import type { UserPrompt, WorkspaceLocation } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { safeCall } from "../errorHandling/errorHandling";
 import { queryClaude } from "./models/anthropic";
 import { queryOpenAI } from "./models/openAI";
 import { queryPerplexity } from "./models/perplexity";
+import { safeHandler } from "../../server/error/errorHandling";
+import { ExternalServiceError } from "@/server/error";
 
 export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
   try {
@@ -14,23 +15,43 @@ export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: Workspa
         const { id, prompt } = promptObj;
 
         const [gptRes, claudeRes, perplexityRes] = await Promise.all([
-          safeCall(() => queryOpenAI(prompt, workspaceLocation), "OpenAI"),
-          safeCall(() => queryClaude(prompt, workspaceLocation), "Claude"),
-          safeCall(() => queryPerplexity(prompt, workspaceLocation), "Perplexity"),
+          safeHandler(async () => {
+            try {
+              return await queryOpenAI(prompt, workspaceLocation);
+            } catch (err) {
+              throw new ExternalServiceError("OpenAI", "OpenAI request failed.", 502, { prompt });
+            }
+          }),
+          safeHandler(async () => {
+            try{
+              return await queryClaude(prompt, workspaceLocation)
+            }
+            catch(err){
+              throw new ExternalServiceError("Anthropic", "Anthropic request failed.", 502, { prompt });
+            }
+          }),
+          safeHandler(async () => {
+            try{
+              return await queryPerplexity(prompt, workspaceLocation)
+            }
+            catch(err){
+              throw new ExternalServiceError("Anthropic", "Anthropic request failed.", 502, { prompt });
+            }
+          }),
         ]);
 
         const results = [
           {
             modelProvider: "OpenAI",
-            output: gptRes.success ? gptRes.data : { error: gptRes.error },
+            output: gptRes.data,
           },
           {
             modelProvider: "Anthropic",
-            output: claudeRes.success ? claudeRes.data : { error: claudeRes.error },
+            output: claudeRes.data,
           },
           {
             modelProvider: "Perplexity",
-            output: perplexityRes.success ? perplexityRes.data : { error: perplexityRes.error },
+            output: perplexityRes.data,
           },
         ];
 
