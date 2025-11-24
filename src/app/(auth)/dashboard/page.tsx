@@ -39,16 +39,6 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500">Tracked sources</p>
           </CardContent>
         </Card>
-
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle>Competitors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">5</p>
-            <p className="text-sm text-gray-500">Active competitors</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Recent Activity */}

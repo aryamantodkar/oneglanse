@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import fs from "fs";
 import path from "path";
-import { fail, ok, safeHandler } from "@/server/error";
+import { fail, ok, safeHandler } from "@/lib/error";
 
 // Load countries JSON once at startup
 const countriesDataPath = path.join(process.cwd(), "countries.json");

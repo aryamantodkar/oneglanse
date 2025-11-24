@@ -133,20 +133,6 @@ CREATE TABLE "job_runs" (
 	"output" jsonb
 );
 
-CREATE TABLE "brands" (
-    "id" varchar(256) PRIMARY KEY NOT NULL,
-    "workspace_id" varchar(256) NOT NULL REFERENCES "workspaces"("id") ON DELETE CASCADE,
-    "name" varchar(256) NOT NULL,
-    "slug" varchar(256),
-    "website" varchar(512),
-    "logo_url" varchar(512),
-    "description" text,
-    "industry" varchar(128),
-    "competitors" jsonb DEFAULT '[]'::jsonb, 
-    "created_at" timestamp DEFAULT NOW() NOT NULL,
-    "updated_at" timestamp DEFAULT NOW() NOT NULL,
-    CONSTRAINT "unique_workspace_brand" UNIQUE ("workspace_id")
-);
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

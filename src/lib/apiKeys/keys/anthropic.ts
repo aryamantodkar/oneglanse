@@ -1,4 +1,4 @@
-import { EnvError } from "@/server/error/errors/EnvError";
+import { EnvError } from "@/lib/error/errors/EnvError";
 import Anthropic from "@anthropic-ai/sdk";
 
 const apiKey = process.env.ANTHROPIC_API_KEY;

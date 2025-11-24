@@ -1,4 +1,4 @@
-import { anthropic } from "@/server/apiKeys";
+import { anthropic } from "@/lib/apiKeys";
 import type { WorkspaceLocation } from "@/server/db/types";
 
 export async function queryClaude(userQuery: string, workspaceLocation?: WorkspaceLocation) {

@@ -81,6 +81,7 @@ services:
       CLICKHOUSE_URL: http://clickhouse:8123
       DOCKER_ENV: "true"
       REDIS_URL: redis://redis:6379
+      CRON_SECRET: ${CRON_SECRET}
 
 volumes:
   db_data:

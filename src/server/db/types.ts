@@ -26,8 +26,6 @@ export type InsertInvitation = InferInsertModel<typeof schema.invitation>;
 export type Workspace = InferSelectModel<typeof schema.workspaces>;
 export type InsertWorkspace = InferInsertModel<typeof schema.workspaces>;
 
-export type Competitor = { id: string; name: string; website?: string };
-
 // API
 export type UserPrompt = {
     id: string;

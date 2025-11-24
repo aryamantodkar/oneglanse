@@ -1,5 +1,5 @@
-import { slidingWindowAlgorithm } from "../redis/limiter/slidingWindow";
-import { fixedWindowAlgorithm } from "../redis/limiter/fixedWindow";
+import { slidingWindowAlgorithm } from "../../server/redis/limiter/slidingWindow";
+import { fixedWindowAlgorithm } from "../../server/redis/limiter/fixedWindow";
 import { RateLimitError } from "../error";
 
 const USER_LIMIT = { limit: 5, windowSec: 60 }; 
@@ -29,6 +29,10 @@ function applyRateLimitHeaders(
 }
   
 export const slidingWindowRateLimiter = async ({ ctx, next }: any) => {
+    if (ctx.isCron) {
+      return next(); 
+    }
+
     const userId = ctx.session?.user?.id;
     const ip = (ctx.req?.headers["x-forwarded-for"] as string)?.split(",")[0]
       ?? ctx.req?.socket?.remoteAddress;
@@ -51,6 +55,10 @@ export const slidingWindowRateLimiter = async ({ ctx, next }: any) => {
 };
   
 export const fixedWindowRateLimiter = async ({ ctx, next }: any) => {
+    if (ctx.isCron) {
+      return next(); 
+    }
+
     const vendorKey = "vendor:openai:o4-mini";
   
     const { allowed, remaining, resetMs } = await fixedWindowAlgorithm(
