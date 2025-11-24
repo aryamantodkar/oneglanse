@@ -1,21 +1,28 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { analysisRateLimiter, createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { clickhouse, db } from "@/server/db/index";
 import type { PromptAnalysis, PromptResponse } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { fixedWindowRateLimiter } from "@/server/middleware/rateLimiter";
-import { AuthError, fail, ok, safeHandler, ValidationError } from "@/server/error";
+import { AuthError, fail, ok, safeHandler, ValidationError } from "@/lib/error";
 
 export const analysisRouter = createTRPCRouter({
-  analyzeMetrics: protectedProcedure
-  .use(fixedWindowRateLimiter)
-  .input(z.object({ workspaceId: z.string() }))
+  analyzeMetrics: analysisRateLimiter
+  .input(
+    z.object({
+      workspaceId: z.string(),
+      userId: z.string().optional()
+    })
+  )
   .mutation(async ({ input, ctx }) => {
     return safeHandler(async () => {
-      const { workspaceId } = input;
-      const userId = ctx.session?.user.id;
+      const { workspaceId, userId: inputUserId } = input;
+      const userId = inputUserId ?? ctx.session?.user.id;
+
+      if (!userId) {
+        throw new AuthError("User Id is undefined.");
+      }
       
       if (!userId) {
         throw new AuthError("User Id is undefined.");

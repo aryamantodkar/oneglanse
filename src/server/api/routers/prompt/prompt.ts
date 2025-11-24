@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, llmRateLimiter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { runLLMs } from "@/lib/llm/llmClient"; 
 import { clickhouse, db, schema } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
@@ -9,8 +9,8 @@ import { pool } from "@/server/db/pg";
 import type { PromptResponse, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { slidingWindowRateLimiter } from "@/server/middleware/rateLimiter";
-import { AuthError, DatabaseError, fail, NotFoundError, ok, safeHandler, ValidationError } from "@/server/error";
+import { slidingWindowRateLimiter } from "@/lib/middleware/rateLimiter";
+import { AuthError, DatabaseError, fail, NotFoundError, ok, safeHandler, ValidationError } from "@/lib/error";
 
 function formatDateToClickHouse(dt: Date) {
   return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -18,8 +18,7 @@ function formatDateToClickHouse(dt: Date) {
 }
 
 export const promptRouter = createTRPCRouter({
-  ask: publicProcedure
-    .use(slidingWindowRateLimiter)
+  ask: llmRateLimiter
     .input(
       z.object({
         workspaceId: z.string(),
@@ -268,12 +267,12 @@ export const promptRouter = createTRPCRouter({
             console.log("Calling LLMs for the first time.")
             const values = {
               workspaceId,
-              userId, // 👈 Save the owner user ID
+              userId, 
               name: "Auto Run Prompts",
-              cronExpression: "0 */12 * * *", // every 12 hours
+              cronExpression: "0 */12 * * *", 
               timezone: "UTC",
               targetType: "internal",
-              targetPayload: { type: "runPrompts", userId }, // 👈 also embed owner ID in payload
+              targetPayload: { type: "runPrompts", userId }, 
               maxAttempts: 3,
             };
 

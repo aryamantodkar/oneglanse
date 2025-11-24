@@ -1,3 +1,4 @@
+import 'server-only';
 import { pool } from "@/server/db/pg";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -17,6 +18,9 @@ const trpc = createTRPCProxyClient<AppRouter>({
         ? `${process.env.APP_URL}/api/trpc`
         : "http://localhost:3000/api/trpc",
       transformer: SuperJSON,
+      headers: () => ({
+        "x-cron-secret": process.env.CRON_SECRET!,
+      }),
     }),
   ],
 });
@@ -64,6 +68,7 @@ async function processJob(job: any) {
 
         const analysisRes = await trpc.analysis.analyzeMetrics.mutate({ 
           workspaceId: workspace_id,
+          userId,
         });
 
         if (!analysisRes?.success) {

@@ -6,7 +6,7 @@ import { pool } from "@/server/db/pg"; // pg Pool (Node-Postgres)
 import { db } from "@/server/db";
 import { cronJobs, cronQueue } from "@/server/db/schema/cron";
 import { eq } from "drizzle-orm";
-import { AuthError, DatabaseError, NotFoundError, ok, safeHandler, ValidationError } from "@/server/error";
+import { AuthError, DatabaseError, NotFoundError, ok, safeHandler, ValidationError } from "@/lib/error";
 
 export const cronRouter = createTRPCRouter({
   create: protectedProcedure

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { analyzeQuery } from "./queries/analyzeQuery";
-import { ExternalServiceError, safeHandler, ValidationError } from "@/server/error";
+import { ExternalServiceError, safeHandler, ValidationError } from "@/lib/error";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 

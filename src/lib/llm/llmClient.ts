@@ -5,8 +5,8 @@ import { fileURLToPath } from "url";
 import { queryClaude } from "./models/anthropic";
 import { queryOpenAI } from "./models/openAI";
 import { queryPerplexity } from "./models/perplexity";
-import { safeHandler } from "../../server/error/errorHandling";
-import { ExternalServiceError } from "@/server/error";
+import { safeHandler } from "../error/errorHandling";
+import { ExternalServiceError } from "@/lib/error";
 
 export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
   try {

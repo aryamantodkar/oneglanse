@@ -55,22 +55,9 @@ export default function PromptsDataTable() {
 
   const { data: userPrompts, isLoading, error } = fetchUserPrompts(workspaceId);
   const storePromptMutation = useStorePrompt();
-  const analyzeMetricsMutation = useAnalyzeMetrics();
 
   useEffect(() => {
     if (userPrompts?.data?.length) {
-      // analyzeMetricsMutation.mutate(
-      //   { workspaceId },
-      //   {
-      //     onSuccess: (res) => {
-      //       console.log("Background analysis complete ✅");
-      //     },
-      //     onError: (err) => {
-      //       console.error("Background analysis failed ❌", err);
-      //     },
-      //   }
-      // );
-
       const filteredRows: PromptMetric[] = userPrompts?.data.map((p) => {
         const perModelRaw =
           typeof p.per_model === "string"

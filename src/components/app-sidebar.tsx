@@ -62,29 +62,6 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [currentOrg, setCurrentOrg] = useState(workspace?.name ?? "")
-    const [faviconLoaded, setFaviconLoaded] = useState(false);
-    const [faviconUrl, setfaviconUrl] = useState("");
-
-    const { data: brandData } = api.brand.get.useQuery(
-      { workspaceId: workspace!.id },
-      { retry: 2, refetchOnWindowFocus: false, enabled: !!workspace?.id }
-    );
-
-    useEffect(() => {
-      const url = brandData?.brand?.website
-      ? `https://www.google.com/s2/favicons?sz=32&domain_url=${brandData?.brand?.website}`
-      : null;
-
-      if (url) {
-        setfaviconUrl(url);
-        const img = new window.Image();
-        img.src = url;
-        img.onload = () => setFaviconLoaded(true);
-        img.onerror = () => setFaviconLoaded(false);
-      } else {
-        setFaviconLoaded(false);
-      }
-    }, [brandData]);
 
     const generalItems = [
         {
@@ -106,12 +83,6 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
           title: "Cron Jobs",
           url: `/cron?workspace=${workspace?.id ?? ""}`,
           icon: Clock,
-        },
-        {
-          title: "Competitors",
-          url: `/competitors?workspace=${workspace?.id ?? ""}`,
-          icon: Target
-          ,
         },
       ];
 
@@ -170,13 +141,6 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                     <SidebarMenuButton>
-                        {faviconLoaded && (
-                          <img
-                            src={faviconUrl!}
-                            alt={`${currentOrg} favicon`}
-                            className="w-4 h-4 rounded-sm"
-                          />
-                        )}
                         <>{currentOrg ? currentOrg : "Select Workspace"}</>
                         <ChevronDown className="ml-auto" />
                     </SidebarMenuButton>
@@ -188,13 +152,6 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
                                 onClick={() => handleChangeOrganization(organization.id)}
                                 className="flex items-center gap-2"
                             >
-                              {faviconLoaded && (
-                                <img
-                                  src={faviconUrl!}
-                                  alt={`${organization.name} favicon`}
-                                  className="w-4 h-4 rounded-sm"
-                                />
-                              )}
                                 <span>{organization.name}</span>
                             </DropdownMenuItem>
                         ))}
