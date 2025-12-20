@@ -21,7 +21,7 @@ export async function createNewWorkspace(args: {
         throw new AuthError("Headers or userId are undefined.");
     }
 
-    if (!name || !slug || country) {
+    if (!name || !slug || !country) {
       throw new ValidationError("Name, Region or Country is missing.");
     }
 
