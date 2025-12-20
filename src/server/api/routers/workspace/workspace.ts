@@ -1,11 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { auth } from "@lib/auth/auth";
-import { db, schema } from "@/server/db";
-import type { Workspace } from "@/server/db/types";
-import { newId } from "@/lib/workspace/id";
-import { eq, isNull, and } from "drizzle-orm";
-import { AuthError, safeHandler, ValidationError, NotFoundError, ok } from "@/lib/error";
+import { AuthError, safeHandler, ok, ValidationError } from "@/lib/error";
+import { createNewWorkspace, getWorkspaceById } from "@/server/services/workspace/workspace";
 
 export const workspaceRouter = createTRPCRouter({
     create: protectedProcedure
@@ -14,50 +10,26 @@ export const workspaceRouter = createTRPCRouter({
           name: z.string().min(2).max(50),
           slug: z.string().min(2).max(50),
           country: z.string().min(2), 
-          region: z.string().nullable().optional(), // optional region
+          region: z.string().nullable().optional(), 
         })
       )
       .mutation(async ({ ctx, input }) => {
         return safeHandler(async () => {
           const headers = ctx.headers;
           const userId = ctx.session?.user.id;
-    
+          const { name, slug, country, region } = input;
+
           if (!headers || !userId) {
             throw new AuthError("Headers or userId are undefined.");
           }
-    
-          // Create org
-          const orgData = await auth.api
-            .createOrganization({
-              body: {
-                name: input.name,
-                slug: input.slug,
-                keepCurrentActiveOrganization: true,
-              },
-              headers,
-            })
-    
-          if (!orgData?.id) {
-            throw new ValidationError("Organization ID is undefined.");
+
+          if (!name || !slug || country) {
+            throw new ValidationError("Name, Region or Country is missing.");
           }
     
-          // Create workspace with country and region
-          const workspace: Workspace = {
-            id: newId("workspace"),
-            name: input.name,
-            slug: input.slug,
-            tenantId: orgData.id,
-            country: input.country, // new field
-            region: input.region || null, // new field
-            createdAt: new Date(),
-            deletedAt: null,
-          };
-    
-          await db
-            .insert(schema.workspaces)
-            .values(workspace)
-    
-          return ok({ workspace, org: orgData }, "Workspace created successfully.")
+          const res = createNewWorkspace({name, slug, country, region, userId, headers });
+
+          return ok(res, "Workspace created successfully.");
         })
       }),
     getById: protectedProcedure
@@ -69,26 +41,19 @@ export const workspaceRouter = createTRPCRouter({
       .query(async ({ input, ctx }) => {
         return safeHandler(async () => {
           const userId = ctx.session?.user.id;
+          const { workspaceId } = input;
+
           if (!userId) {
             throw new AuthError("User Id is undefined.");
           }
-    
-          const workspace = await db
-            .select()
-            .from(schema.workspaces)
-            .where(
-              and(
-                eq(schema.workspaces.id, input.workspaceId),
-                isNull(schema.workspaces.deletedAt)
-              )
-            )
-            .execute();
 
-          if (!workspace || workspace.length === 0) {
-            throw new NotFoundError(`Workspace with ID ${input.workspaceId} not found.`);
+          if (!workspaceId || workspaceId.trim() === "") {
+            throw new ValidationError("Workspace ID is undefined.");
           }
     
-          return ok(workspace[0], "Successfully fetched workspace by ID.");
+          const res = getWorkspaceById({ workspaceId, userId });
+    
+          return ok(res, "Successfully fetched workspace by ID.");
         })
       }),
   });
