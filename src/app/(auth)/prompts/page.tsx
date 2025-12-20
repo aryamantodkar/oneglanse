@@ -55,6 +55,7 @@ export default function PromptsDataTable() {
 
   const { data: userPrompts, isLoading, error } = fetchUserPrompts(workspaceId);
   const storePromptMutation = useStorePrompt();
+  const analyzeMetricsMutation = useAnalyzeMetrics();
 
   useEffect(() => {
     if (userPrompts?.data?.length) {
@@ -240,6 +241,21 @@ export default function PromptsDataTable() {
       setLoading(false);
     }
   };
+
+  // useEffect(() => {
+  //   const fetchAnalysis = async () => {
+  //     try {
+  //     const analysisRes = await analyzeMetricsMutation.mutateAsync({ 
+  //         workspaceId: 'workspace_2d88392d-7846-47ce-b09c-5d4b5b2479cc',
+  //         userId: 'jspKl3qIMQNj858PaxZEmYABj9VoSHXF',
+  //       });
+  //       console.log("analysisRes", analysisRes);
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   };
+  //   fetchAnalysis();
+  // }, []);
 
   const getBrandWebsite = useCallback(
     (brand: string): string => {

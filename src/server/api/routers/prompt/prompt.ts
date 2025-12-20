@@ -9,7 +9,6 @@ import { pool } from "@/server/db/pg";
 import type { PromptResponse, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { slidingWindowRateLimiter } from "@/lib/middleware/rateLimiter";
 import { AuthError, DatabaseError, fail, NotFoundError, ok, safeHandler, ValidationError } from "@/lib/error";
 
 function formatDateToClickHouse(dt: Date) {
@@ -320,11 +319,9 @@ export const promptRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
     
-        // --- Helper to extract all URLs ---
         const extractUrlsFromResponse = (r: PromptResponse) => {
           const urls = new Set<string>();
     
-          // 1️⃣ Citations — can be JSON or stringified tuples
           if (Array.isArray(r.citations)) {
             r.citations.forEach((c: any) => {
               if (typeof c === "string") {
@@ -339,21 +336,18 @@ export const promptRouter = createTRPCRouter({
             if (match) (match as string[]).forEach((url: string) => urls.add(url));
           }
   
-          // 2️⃣ Sources — usually structured as array of {url,title}
           if (Array.isArray(r.sources)) {
             r.sources.forEach((s: any) => {
               if (s?.url) urls.add(s.url);
             });
           }
     
-          // 3️⃣ Inline links in response text
           if (r.response) {
             const match = r.response.match(/https?:\/\/[^\s)]+/g);
             if (match) match.forEach(url => urls.add(url));
           }
     
-          // Filter out invalid/duplicate ones
-          return Array.from(urls).filter(u => /^https?:\/\/.+\..+/.test(u));
+          return Array.from(urls);
         };
     
         const result = await clickhouse.query({

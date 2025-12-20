@@ -1,15 +1,8 @@
-import 'server-only';
 import { pool } from "@/server/db/pg";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { env } from "@/env";
 import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
 import { type AppRouter } from "@/server/api/root";
 import SuperJSON from "superjson";
 
-// Optional Drizzle client for logging
-const rawConn = postgres(env.DATABASE_URL);
-const db = drizzle(rawConn);
 
 const trpc = createTRPCProxyClient<AppRouter>({
   links: [
@@ -49,13 +42,11 @@ async function claimNextJob() {
 
 async function processJob(job: any) {
   if (!job) return;
-
+  
   try {
     if (job.payload?.type === "runPrompts") {
-      // workspace_id is a top-level field in cron_queue
       const workspace_id = job.workspace_id;
     
-      // user_id is inside payload (we stored it there when scheduling)
       const { userId } = job.payload;
     
       const res = await trpc.prompt.ask.mutate({

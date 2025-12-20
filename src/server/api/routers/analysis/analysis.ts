@@ -24,10 +24,6 @@ export const analysisRouter = createTRPCRouter({
         throw new AuthError("User Id is undefined.");
       }
       
-      if (!userId) {
-        throw new AuthError("User Id is undefined.");
-      }
-      
       if (!workspaceId || workspaceId.trim() === "") {
         throw new ValidationError("Workspace ID is undefined.");
       }
@@ -97,7 +93,16 @@ export const analysisRouter = createTRPCRouter({
 
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
-      const logPath = path.join(__dirname, "..", "mockData", "updates.json");
+      const logPath = path.join(
+        __dirname,
+        "..", // analysis
+        "..", // routers
+        "..", // api
+        "..", // server
+        "..", // src
+        "mockData",
+        "updates.json"
+      );
 
       fs.writeFileSync(logPath, JSON.stringify(updates, null, 2));
 
