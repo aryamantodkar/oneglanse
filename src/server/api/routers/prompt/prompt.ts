@@ -71,7 +71,7 @@ export const promptRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
 
-        const res = fetchPromptResponsesForWorkspace({ workspaceId: workspaceId!, userId: userId!});
+        const res = await fetchPromptResponsesForWorkspace({ workspaceId: workspaceId!, userId: userId!});
 
         return ok(res, "Fetched prompt responses successfully.");
       })
@@ -95,7 +95,7 @@ export const promptRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
         
-        const res = fetchUserPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
+        const res = await fetchUserPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
 
         return ok(res, "Fetched user prompts successfully.");
       })
