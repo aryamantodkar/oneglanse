@@ -1,22 +1,6 @@
 import { pool } from "@/server/db/pg";
-import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
-import { type AppRouter } from "@/server/api/root";
-import SuperJSON from "superjson";
-
-
-const trpc = createTRPCProxyClient<AppRouter>({
-  links: [
-    httpBatchLink({
-      url: process.env.APP_URL
-        ? `${process.env.APP_URL}/api/trpc`
-        : "http://localhost:3000/api/trpc",
-      transformer: SuperJSON,
-      headers: () => ({
-        "x-cron-secret": process.env.CRON_SECRET!,
-      }),
-    }),
-  ],
-});
+import { analysePromptsForWorkspace } from "@/server/services/analysis/analysis";
+import { askPromptsForWorkspace } from "@/server/services/prompt/prompt";
 
 async function claimNextJob() {
   const client = await pool.connect();
@@ -49,26 +33,27 @@ async function processJob(job: any) {
     
       const { userId } = job.payload;
     
-      const res = await trpc.prompt.ask.mutate({
+      const res = await askPromptsForWorkspace({
         workspaceId: workspace_id,
         userId,
       });
     
-      if (res?.success && res.data) {
-        console.log("Ask completed successfully, calling analyzeMetrics...");
+      if(!res || !res.response){
+        console.error("Ask did not return any results.")
+        return;
+      }
 
-        const analysisRes = await trpc.analysis.analyzeMetrics.mutate({ 
-          workspaceId: workspace_id,
-          userId,
-        });
+      console.log("Ask completed successfully, calling analyzeMetrics...");
 
-        if (!analysisRes?.success) {
-          console.error("Analysis failed:", analysisRes?.message);
-        } else {
-          console.log("Analysis completed successfully");
-        }
+      const analysisRes = await analysePromptsForWorkspace({ 
+        workspaceId: workspace_id,
+        userId,
+      });
+
+      if (analysisRes !== null) {
+        console.error("Unexpected analysis result:", analysisRes);
       } else {
-        console.error("Ask failed:", res?.message);
+        console.log("Analysis completed successfully");
       }
 
       console.log("Running prompts for workspace:", workspace_id, "owner:", userId);

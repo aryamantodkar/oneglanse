@@ -1,12 +1,8 @@
 // src/server/api/routers/cron.ts
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import cronParser from "cron-parser";
-import { pool } from "@/server/db/pg"; // pg Pool (Node-Postgres)
-import { db } from "@/server/db";
-import { cronJobs, cronQueue } from "@/server/db/schema/cron";
-import { eq } from "drizzle-orm";
-import { AuthError, DatabaseError, NotFoundError, ok, safeHandler, ValidationError } from "@/lib/error";
+import { AuthError, ok, safeHandler, ValidationError } from "@/lib/error";
+import { createCronForWorkspace, deleteCronForWorkspace, fetchFailedJobsForWorkspace, listCronForWorkspace, updateCronForWorkspace } from "@/server/services/cron/cron";
 
 export const cronRouter = createTRPCRouter({
   create: protectedProcedure
@@ -24,55 +20,18 @@ export const cronRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
         const userId = ctx.session?.user.id;
-        const { workspaceId } = input;
+        const { workspaceId, name, cronExpression, timezone, targetType, targetPayload, maxAttempts } = input;
 
         if (!userId) {
           throw new AuthError("User Id is undefined.");
         }
-        
+  
         if (!workspaceId || workspaceId.trim() === "") {
           throw new ValidationError("Workspace ID is undefined.");
         }
 
-        try {
-          cronParser.parse(input.cronExpression, {
-            tz: input.timezone ?? "UTC",
-          });
-        } catch (err) {
-          throw new ValidationError("Invalid cron expression.");
-        }
-
-        // 2️⃣ Insert job into cron_jobs via Drizzle ORM
-        const [jobRow] = await db
-          .insert(cronJobs)
-          .values({
-            workspaceId: input.workspaceId,
-            userId,
-            name: input.name ?? null,
-            cronExpression: input.cronExpression,
-            timezone: input.timezone ?? "UTC",
-            targetType: input.targetType,
-            targetPayload: input.targetPayload,
-            maxAttempts: input.maxAttempts,
-          })
-          .returning();
-
-          if (!jobRow) throw new DatabaseError("Failed to insert cron job", { table: "cron_jobs", operation: "insert" });
-        // 3️⃣ Prepare pg_cron schedule
-        const jobName = `cron_job_${jobRow?.id}`;
-        
-        // We insert into `cron_queue` when the cron triggers.
-        const scheduledSQL = `
-          INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-          VALUES ('${jobRow?.id}','${jobRow?.workspaceId}','${JSON.stringify({ ...input.targetPayload, userId }).replace(/'/g, "''")}'::jsonb,${input.maxAttempts});`;
-
-        // 4️⃣ Schedule with pg_cron (runs on Postgres server side)
-        await pool.query(
-          `SELECT cron.schedule($1, $2, $3);`,
-          [jobName, input.cronExpression, scheduledSQL]
-        );
-
-        return ok(jobRow, "Cron job created successfully.");
+        const res = createCronForWorkspace({ workspaceId: workspaceId, userId: userId, name, cronExpression, timezone, targetType, targetPayload, maxAttempts });
+        return ok(res, "Cron job created successfully.");
       })
     }),
 
@@ -88,53 +47,19 @@ export const cronRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
         const userId = ctx.session?.user.id;
+
+        const { jobId, name, cronExpression, maxAttempts } = input;
+
         if (!userId) {
           throw new AuthError("User Id is undefined.");
         }
 
-        // 1️⃣ Validate cron expression
-        try {
-          cronParser.parse(input.cronExpression, { tz: "UTC" });
-        } catch {
-          throw new ValidationError("Invalid cron expression.");
+        if (!jobId) {
+          throw new ValidationError("Job Id is undefined.");
         }
 
-        const rows = await db.select().from(cronJobs).where(eq(cronJobs.id, input.jobId));
-        const existingJob = rows[0];    
-
-        if (!existingJob){
-          throw new NotFoundError(`Cron job with ID ${input.jobId} not found.`);
-        }
-
-        // 3️⃣ Update pg_cron schedule if expression changed
-        const jobName = `cron_job_${existingJob.id}`;
-
-        if (existingJob.cronExpression !== input.cronExpression) {
-          // Unschedule old job
-          await pool.query(`SELECT cron.unschedule($1);`, [jobName]);
-
-          // Reschedule with new cron expression
-          const scheduledSQL = `INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-            VALUES ('${existingJob.id}', '${existingJob.workspaceId}', '${JSON.stringify({ ...existingJob.targetPayload, userId }).replace(/'/g, "''")}'::jsonb, ${input.maxAttempts});`;
-
-          await pool.query(
-            `SELECT cron.schedule($1, $2, $3);`,
-            [jobName, input.cronExpression, scheduledSQL]
-          );
-        }
-
-        // 4️⃣ Update job row
-        const [updatedJob] = await db
-          .update(cronJobs)
-          .set({
-            name: input.name ?? existingJob.name,
-            cronExpression: input.cronExpression,
-            maxAttempts: input.maxAttempts,
-          })
-          .where(eq(cronJobs.id, input.jobId))
-          .returning();
-
-        return ok(updatedJob, "Updated cron job successfully.");
+        const res = updateCronForWorkspace({ userId, jobId, name, cronExpression, maxAttempts });
+        return ok(res, "Cron job updated successfully.");
       })
     }),
 
@@ -143,18 +68,18 @@ export const cronRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
         const userId = ctx.session?.user.id;
+        const { jobId } = input;
 
         if (!userId) {
           throw new AuthError("User Id is undefined.");
         }
 
-        const jobName = `cron_job_${input.jobId}`;
-        // Unschedule the pg_cron job
-        await pool.query(`SELECT cron.unschedule($1);`, [jobName]);
-        // Delete from cron_jobs table
-        await db.delete(cronJobs).where(eq(cronJobs.id, input.jobId));
-        await db.delete(cronQueue).where(eq(cronQueue.jobId, input.jobId));
-        return ok(null, "Cron jobs deleted successfully.");
+        if (!jobId) {
+          throw new ValidationError("Job Id is undefined.");
+        }
+
+        const res = deleteCronForWorkspace({ userId, jobId });
+        return ok(res, "Cron job deleted successfully.");
       })
     }),
 
@@ -163,17 +88,18 @@ export const cronRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       return safeHandler(async () => {
         const userId = ctx.session?.user.id;
+        const { workspaceId } = input;
 
         if (!userId) {
           throw new AuthError("User Id is undefined.");
         }
+  
+        if (!workspaceId || workspaceId.trim() === "") {
+          throw new ValidationError("Workspace ID is undefined.");
+        }
 
-        const jobs = await db
-          .select()
-          .from(cronJobs)
-          .where(eq(cronJobs.workspaceId, input.workspaceId));
-
-        return ok(jobs, "Fetched all cron jobs successfully.");
+        const res = listCronForWorkspace({ workspaceId, userId });
+        return ok(res, "Fetched cron jobs for this workspace successfully.");
       })
     }),
   fetchFailedJobs: protectedProcedure
@@ -191,15 +117,8 @@ export const cronRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
   
-        const result = await pool.query(
-          `SELECT job_id, workspace_id, error, finished_at
-           FROM public.job_runs
-           WHERE status = 'failed' AND workspace_id = $1
-           ORDER BY finished_at DESC`,
-          [workspaceId]
-        );
-  
-        return ok(result.rows, "Fetched failed cron jobs for this workspace");
+        const res = fetchFailedJobsForWorkspace({ workspaceId, userId });
+        return ok(res, "Fetched failed cron jobs for this workspace successfully.");
       });
     }),
 });
