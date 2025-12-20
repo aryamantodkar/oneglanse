@@ -1,14 +1,6 @@
+import type { ApiResponse } from "@/server/db/types";
 import { BaseError } from "./errors/BaseError";
 import { captureException } from "./logger";
-
-export type ApiResponse<T> = {
-    success: boolean;
-    status: number;
-    code?: string;
-    message: string;
-    data?: T | null;
-    meta?: Record<string, unknown>;
-};
   
 export function ok<T>(data: T | null = null, message = "Success"): ApiResponse<T> {
     return { success: true, status: 200, message, data };

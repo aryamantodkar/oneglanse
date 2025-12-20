@@ -39,29 +39,29 @@ const preferenceItems = [
     }
 ];
 
-const SettingsItems = [
-    {
-        title: "People",
-        url: "#",
-        icon: Users, // group of people icon
-    },
-    {
-        title: "Workspace",
-        url: "#",
-        icon: Briefcase, // building icon representing workspace
-    },
-    {
-        title: "Organizations",
-        url: "#",
-        icon: Building, // briefcase icon representing organizations
-    }
-];
-
 export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [currentOrg, setCurrentOrg] = useState(workspace?.name ?? "")
+
+    const SettingsItems = [
+      {
+          title: "People",
+          url: "#",
+          icon: Users, // group of people icon
+      },
+      {
+          title: "Workspace",
+          url: "#",
+          icon: Briefcase, // building icon representing workspace
+      },
+      {
+          title: "Organizations",
+          url: `/organizations?workspace=${workspace?.id ?? ""}`,
+          icon: Building, // briefcase icon representing organizations
+      }
+  ];
 
     const generalItems = [
         {
