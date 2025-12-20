@@ -30,7 +30,7 @@ export const cronRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
 
-        const res = createCronForWorkspace({ workspaceId: workspaceId, userId: userId, name, cronExpression, timezone, targetType, targetPayload, maxAttempts });
+        const res = await createCronForWorkspace({ workspaceId: workspaceId, userId: userId, name, cronExpression, timezone, targetType, targetPayload, maxAttempts });
         return ok(res, "Cron job created successfully.");
       })
     }),
@@ -58,7 +58,7 @@ export const cronRouter = createTRPCRouter({
           throw new ValidationError("Job Id is undefined.");
         }
 
-        const res = updateCronForWorkspace({ userId, jobId, name, cronExpression, maxAttempts });
+        const res = await updateCronForWorkspace({ userId, jobId, name, cronExpression, maxAttempts });
         return ok(res, "Cron job updated successfully.");
       })
     }),
@@ -78,7 +78,7 @@ export const cronRouter = createTRPCRouter({
           throw new ValidationError("Job Id is undefined.");
         }
 
-        const res = deleteCronForWorkspace({ userId, jobId });
+        const res = await deleteCronForWorkspace({ userId, jobId });
         return ok(res, "Cron job deleted successfully.");
       })
     }),
@@ -98,7 +98,7 @@ export const cronRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
 
-        const res = listCronForWorkspace({ workspaceId, userId });
+        const res = await listCronForWorkspace({ workspaceId, userId });
         return ok(res, "Fetched cron jobs for this workspace successfully.");
       })
     }),
@@ -117,7 +117,7 @@ export const cronRouter = createTRPCRouter({
           throw new ValidationError("Workspace ID is undefined.");
         }
   
-        const res = fetchFailedJobsForWorkspace({ workspaceId, userId });
+        const res = await fetchFailedJobsForWorkspace({ workspaceId, userId });
         return ok(res, "Fetched failed cron jobs for this workspace successfully.");
       });
     }),

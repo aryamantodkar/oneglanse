@@ -27,7 +27,7 @@ export const workspaceRouter = createTRPCRouter({
             throw new ValidationError("Name, Region or Country is missing.");
           }
     
-          const res = createNewWorkspace({name, slug, country, region, userId, headers });
+          const res = await createNewWorkspace({name, slug, country, region, userId, headers });
 
           return ok(res, "Workspace created successfully.");
         })
@@ -51,7 +51,7 @@ export const workspaceRouter = createTRPCRouter({
             throw new ValidationError("Workspace ID is undefined.");
           }
     
-          const res = getWorkspaceById({ workspaceId, userId });
+          const res = await getWorkspaceById({ workspaceId, userId });
     
           return ok(res, "Successfully fetched workspace by ID.");
         })
