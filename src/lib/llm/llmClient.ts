@@ -10,6 +10,8 @@ import { ExternalServiceError } from "@/lib/error";
 
 export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
   try {
+    const prompt_run_at = new Date();
+
     const allResults = await Promise.all( 
       prompts.map(async (promptObj) => {
         const { id, prompt } = promptObj;
@@ -42,26 +44,29 @@ export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: Workspa
 
         const results = [
           {
-            modelProvider: "OpenAI",
+            model_provider: "OpenAI",
             output: gptRes.data,
           },
           {
-            modelProvider: "Anthropic",
+            model_provider: "Anthropic",
             output: claudeRes.data,
           },
           {
-            modelProvider: "Perplexity",
+            model_provider: "Perplexity",
             output: perplexityRes.data,
           },
         ];
 
-        return { id, results };
+        return { id, prompt_run_at, results };
       })
     );
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
+    
 
-    const logPath = path.join(__dirname, "..", "mockData", "llm_results.json");
+    const logPath = path.join(
+      process.cwd(),
+      "mockData",
+      "llm_results.json"
+    );
       
     fs.writeFileSync(logPath, JSON.stringify(allResults, null, 2));
 

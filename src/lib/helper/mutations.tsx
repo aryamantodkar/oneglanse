@@ -30,6 +30,17 @@ export function useFailedJobs(workspaceId: string) {
     );
 }
 
+export function getWorkspaceByIdMutation(workspaceId: string){
+    return api.workspace.getById.useQuery(
+        { workspaceId },
+        { 
+          retry: 2,
+          refetchOnWindowFocus: false,
+          enabled: !!workspaceId, 
+        }
+    );
+}
+
 export function useStorePrompt() {
     return api.prompt.store.useMutation();
 }

@@ -4,6 +4,7 @@ export const workspaces = pgTable("workspaces", {
     id: varchar("id", { length: 256 }).primaryKey(),
     name: varchar("name", { length: 256 }).notNull(),
     slug: varchar("slug", { length: 256 }).notNull(),
+    domain: varchar("domain", { length: 256 }).notNull(),
     tenantId: varchar("tenant_id", { length: 256 }).notNull(),
     country: varchar("country", { length: 64 }).notNull(), 
     region: varchar("region", { length: 128 }),             

@@ -1,17 +1,13 @@
 import OpenAI from "openai";
 import { analyzeQuery } from "./queries/analyzeQuery";
 import { ExternalServiceError, safeHandler, ValidationError } from "@/lib/error";
+import type { analysisData } from "@/server/db/types";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export async function analyzeResponse(promptResponses: { modelProvider: string; response: string }[]) {
-    return safeHandler(async () => {
-      const combinedResponses = promptResponses.map((r) => ({
-        model: r.modelProvider,
-        response: r.response,
-      }));
-  
-      const enhancedQuery = analyzeQuery(combinedResponses);
+export async function analyzeResponse(analysisData: analysisData) {
+    return safeHandler(async () => {  
+      const enhancedQuery = analyzeQuery(analysisData);
   
       let response;
       try {
@@ -24,14 +20,14 @@ export async function analyzeResponse(promptResponses: { modelProvider: string; 
           "OpenAI",
           "Failed to analyze responses.",
           502,
-          { enhancedQuery, promptCount: promptResponses.length },
+          { enhancedQuery, promptCount: analysisData.length },
           err
         );
       }
     
       const text = response.output_text?.trim() || "";
     
-      let parsed: any[] = [];
+      let parsed: unknown;
       try {
         parsed = JSON.parse(text);
       } catch (err) {
@@ -40,20 +36,11 @@ export async function analyzeResponse(promptResponses: { modelProvider: string; 
           { rawOutput: text.slice(0, 200) }
         );
       }
-    
-      const results: Record<
-        string,
-        { brandMetrics: any }
-      > = {};
-    
-      for (const item of parsed) {
-        if (item?.model) {
-          results[item.model.trim().toLowerCase()] = {
-            brandMetrics: item.brandMetrics ?? {},
-          };
-        }
+
+      if (typeof parsed !== "object" || parsed === null) {
+        throw new Error("Invalid JSON shape");
       }
     
-      return results;
+      return parsed as analysisData;
     })
   }

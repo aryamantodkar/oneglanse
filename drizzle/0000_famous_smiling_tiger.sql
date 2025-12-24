@@ -84,6 +84,7 @@ CREATE TABLE "workspaces" (
     "id" varchar(256) PRIMARY KEY NOT NULL,
     "name" varchar(256) NOT NULL,
     "slug" varchar(256) NOT NULL,
+	"domain" varchar(256) NOT NULL,
     "tenant_id" varchar(256) NOT NULL,
     "country" varchar(64) NOT NULL,
     "region" varchar(128),

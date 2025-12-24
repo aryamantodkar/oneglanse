@@ -1,9 +1,11 @@
 import { clickhouse, db } from "@/server/db/index";
 import type { PromptAnalysis, PromptResponse } from "@/server/db/types";
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { AuthError, fail, ok, ValidationError } from "@/lib/error";
+import { analyzeResponse } from "@/lib/llm/analyzeResponse";
+import { v4 as uuidv4 } from "uuid";
 
 export async function analysePromptsForWorkspace(args: {
     workspaceId: string;
@@ -19,142 +21,152 @@ export async function analysePromptsForWorkspace(args: {
       throw new ValidationError("Workspace ID is undefined.");
     }
 
-    const result = await clickhouse.query({
-      query: `
-        SELECT *
-        FROM analytics.prompt_responses
-        WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
-      `,
-      format: "JSONEachRow",
-    });
-    const responses: PromptResponse[] = await result.json();
+    // const result = await clickhouse.query({
+    //   query: `
+    //     SELECT *
+    //     FROM analytics.prompt_responses
+    //     WHERE workspace_id = '${workspaceId}'
+    //       AND user_id = '${userId}'
+    //       AND (prompt_id, prompt_run_at) IN (
+    //         SELECT prompt_id, prompt_run_at
+    //         FROM analytics.prompt_responses pr
+    //         LEFT JOIN analytics.prompt_analysis pa
+    //           ON pr.prompt_id = pa.prompt_id
+    //         AND pr.prompt_run_at = pa.prompt_run_at
+    //         AND pr.workspace_id = pa.workspace_id
+    //         WHERE pa.prompt_id IS NULL
+    //           AND pr.workspace_id = '${workspaceId}'
+    //           AND pr.user_id = '${userId}'
+    //       )
+    //   `,
+    //   format: "JSONEachRow",
+    // });
+    // const responses: PromptResponse[] = await result.json();
+
+    const filePath = path.join(process.cwd(), "mockData", "prompt_responses.json");
+    const rawData = fs.readFileSync(filePath, "utf8");
+    const responses: PromptResponse[] = JSON.parse(rawData);
+
     if (!responses.length) return fail("Could not fetch prompt responses for analysis.", 404);
 
     const groupedPrompts = Object.values(
-      responses.reduce((acc, resp) => {
-        const { prompt_id } = resp;
+      responses.reduce(
+        (
+          acc: Record<
+            string,
+            {
+              prompt_id: string;
+              prompt_run_at: string;
+              promptResponses: PromptAnalysis[];
+            }
+          >,
+          resp
+        ) => {
+          const { prompt_id, prompt_run_at } = resp;
     
-        if (!acc[prompt_id]) {
-          acc[prompt_id] = {
-            prompt_id,
-            promptResponses: [],
-          };
-        }
+          const key = `${prompt_id}::${prompt_run_at}`;
     
-        acc[prompt_id].promptResponses.push({
-          id: resp.id,
-          prompt_id: resp.prompt_id,
-          user_id: resp.user_id,
-          workspace_id: workspaceId,
-          model: resp.model,
-          modelProvider: resp.modelProvider,
-          response: resp.response,
-        });
+          if (!acc[key]) {
+            acc[key] = {
+              prompt_id,
+              prompt_run_at,
+              promptResponses: [],
+            };
+          }
     
-        return acc;
-      }, {} as Record<string, { prompt_id: string; promptResponses: PromptAnalysis[] }>)
-    );  
+          acc[key].promptResponses.push({
+            id: resp.id,
+            prompt_id: resp.prompt_id,
+            user_id: resp.user_id,
+            workspace_id: resp.workspace_id,
+            model: resp.model,
+            model_provider: resp.model_provider,
+            response: resp.response,
+          });
+    
+          return acc;
+        },
+        {}
+      )
+    );
 
     // MOCK DATA
-    const filePath = path.join(process.cwd(), "mockData", "analyzedPrompts.json");
-    const rawData = fs.readFileSync(filePath, "utf8");
-    const analyzedPrompts = JSON.parse(rawData);
+    // const filePath = path.join(process.cwd(), "mockData", "analyzedPrompts.json");
+    // const rawData = fs.readFileSync(filePath, "utf8");
+    // const analyzedPrompts = JSON.parse(rawData);
 
-    const updates = analyzedPrompts.reduce(
-      (
-        acc: Record<
-          string,
-          Record<string, { brandMetrics: any; response: any }>
-        >,
-        prompt: { prompt_id: string | number; promptResponses: any[] }
-      ) => {
-        acc[prompt.prompt_id] = prompt.promptResponses.reduce<
-          Record<string, { brandMetrics: any; response: any }>
-        >((models, p: { modelProvider: string | number; brandMetrics: any; response: any }) => {
-          models[p.modelProvider] = {
-            brandMetrics: p.brandMetrics,
-            response: p.response,
-          };
-          return models;
-        }, {});
-        return acc;
-      },
-      {} as Record<string, Record<string, { brandMetrics: any; response: any }>>
-    );
+    //  // LOGGER
+    // const logPath = path.join(process.cwd(), "mockData", "groupedPrompts.json");
 
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const logPath = path.join(
-      __dirname,
-      "..", // analysis
-      "..", // routers
-      "..", // api
-      "..", // server
-      "..", // src
-      "mockData",
-      "updates.json"
-    );
-
-    fs.writeFileSync(logPath, JSON.stringify(updates, null, 2));
+    // fs.writeFileSync(logPath, JSON.stringify(groupedPrompts, null, 2));
 
 
     // REAL DATA
-
-    // const analyzedPrompts = await Promise.all(
-    //   groupedPrompts.map(async (prompt) => {
-    //     console.log("Analyzing combined responses...");
-    //     const promptData = prompt.promptResponses.map(p => {
-    //       return {
-    //         modelProvider: p.modelProvider,
-    //         response: p.response
-    //       }
-    //     })
-
-    //     const analysisResults = await analyzeResponse(promptData);
+    const analysisData = groupedPrompts.reduce(
+      (
+        acc: Record<
+          string,
+          Record<string, { model_provider: string; response: string }[]>
+        >,
+        prompt
+      ) => {
+        const { prompt_id, prompt_run_at, promptResponses } = prompt;
     
-    //     const analyzedResponses = prompt.promptResponses.map((resp) => {
-    //       const normalizedModel = resp.modelProvider.trim().toLowerCase();
-    //       const analysis = analysisResults[normalizedModel] || {};
-    //       return {
-    //         ...resp,
-    //         brandMetrics: (analysis as any)?.brandMetrics ?? null,
-    //       };
-    //     });
+        if (!acc[prompt_id]) acc[prompt_id] = {};
+        if (!acc[prompt_id][prompt_run_at]) acc[prompt_id][prompt_run_at] = [];
+    
+        for (const p of promptResponses) {
+          acc[prompt_id][prompt_run_at].push({
+            model_provider: p.model_provider,
+            response: p.response,
+          });
+        }
+    
+        return acc;
+      },
+      {}
+    );
+  
+    // REAL DATA
+    // const llmResult = await analyzeResponse(analysisData);
 
-    //     return { ...prompt, promptResponses: analyzedResponses };
-    //   })
-    // );
+    // if (!llmResult.data) {
+    //   throw new Error("Analysis failed");
+    // }
 
-    // const updates = analyzedPrompts.reduce(
-    //   (acc, prompt) => {
-    //     acc[prompt.prompt_id] = prompt.promptResponses.reduce<
-    //       Record<string, Record<string, any>>
-    //     >((models, p) => {
-    //       models[p.modelProvider] = p.brandMetrics; // ⬅️ direct assignment of metrics
-    //       return models;
-    //     }, {});
-    //     return acc;
-    //   },
-    //   {} as Record<string, Record<string, Record<string, any>>>
-    // );
+    // const analysisResults = llmResult.data;
 
-    for (const [promptId, perModel] of Object.entries(updates)) {
-      await clickhouse.query({
-        query: `
-          ALTER TABLE analytics.user_prompts
-          UPDATE per_model = {per_model:JSON}
-          WHERE id = {id:String}
-            AND user_id = {user_id:String}
-            AND workspace_id = {workspace_id:String}
-        `,
-        query_params: {
-          per_model: JSON.stringify(perModel),
-          id: promptId,
-          user_id: userId,
-          workspace_id: workspaceId,
-        },
-      });
+    // MOCK DATA
+    const filePath2 = path.join(process.cwd(), "mockData", "metrics.json");
+    const rawData2 = fs.readFileSync(filePath2, "utf8");
+    const analysisResults = JSON.parse(rawData2);
+
+    const rows = [];
+
+    for (const [promptId, runs] of Object.entries(analysisResults)) {
+      if (typeof runs !== "object" || runs === null) continue;
+      for (const [promptRunAt, models] of Object.entries(runs)) {
+        if (!Array.isArray(models)) continue;
+        for (const model of models) {
+          if (!model?.model_provider || !model?.brandMetrics) continue;
+          rows.push({
+            id: uuidv4(),
+            prompt_id: promptId,
+            workspace_id: workspaceId,
+            user_id: userId,
+            model_provider: model.model_provider,
+            brand_metrics: JSON.stringify(model.brandMetrics),
+            prompt_run_at: promptRunAt,
+          });
+        }
+      }
     }
+    
+    await clickhouse.insert({
+      table: "analytics.prompt_analysis",
+      values: rows,
+      format: "JSONEachRow",
+    });
 
-    return null;
+    return analysisResults;
 }

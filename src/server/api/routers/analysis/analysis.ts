@@ -24,7 +24,8 @@ export const analysisRouter = createTRPCRouter({
         throw new ValidationError("Workspace ID is undefined.");
       }
 
-      const res = await analysePromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! })
+      console.log("Calling Analysis service...");
+      const res = await analysePromptsForWorkspace({ workspaceId: workspaceId, userId: userId })
       return ok(res, "Prompts Response analysed successfully.");
     })
   }),

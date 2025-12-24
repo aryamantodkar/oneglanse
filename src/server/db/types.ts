@@ -32,15 +32,6 @@ export type UserPrompt = {
     user_id: string;
     workspace_id: string;
     prompt: string;
-    per_model: Record<
-      string,
-      {
-        sentiment: number;
-        position: number;
-        visibility: number;
-        topFavicons: string[];
-      }
-    >;
     created_at: string;
 };
   
@@ -51,7 +42,7 @@ export interface PromptResponse {
     user_id: string;
     workspace_id: string;
     model: string;
-    modelProvider: string;
+    model_provider: string;
     response: string;
     citations: Array<{
       title: string;
@@ -65,6 +56,7 @@ export interface PromptResponse {
       url: string;
       page_age?: string | null;
     }>;
+    prompt_run_at: string;
     created_at: string;
 }
 
@@ -74,7 +66,7 @@ export interface PromptAnalysis {
   user_id: string;
   workspace_id: string;
   model: string;
-  modelProvider: string;
+  model_provider: string;
   response: string;
 }
 
@@ -87,29 +79,18 @@ export type Metric = {
   website?: string;
 };
 
-export type PerModelData = Record<string, Record<string, Metric>>;
-
-export type PromptMetric = {
-  id: string;
-  created_at: string;
-  user_id: string;
-  workspace_id: string;
-  prompt: string;
-  per_model: PerModelData;
-  responses: Record<string, string>;
-};
-
 export interface PromptResponseClient {
   id: string;
   prompt_id: string;
   user_id: string;
   workspace_id: string;
   model: string;
-  modelProvider: string;
+  model_provider: string;
   response: string;
   citations: any[];
   sources: any[];
-  extractedUrls: string[];
+  extracted_urls: string[];
+  prompt_run_at: string;
   created_at: string;
 }
 
@@ -126,3 +107,14 @@ export type ApiResponse<T> = {
   data?: T | null;
   meta?: Record<string, unknown>;
 };
+
+export type analysisData = Record<
+  string,
+  Record<
+    string,
+    {
+      model_provider: string;
+      response: string;
+    }[]
+  >
+>;

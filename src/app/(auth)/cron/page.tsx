@@ -123,7 +123,7 @@ export default function CronPage() {
   if (loadingPrompts) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-gray-500">
-        Loading cron jobs...
+        Loading Scheduled Jobs...
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function CronPage() {
         <div>
           <p className="text-lg font-medium">You haven’t added any prompts yet.</p>
           <p className="text-gray-400 max-w-md mx-auto">
-            Create prompts first before scheduling cron jobs to automate them.
+            Create prompts first before scheduling jobs to automate them.
           </p>
         </div>
   
@@ -149,11 +149,10 @@ export default function CronPage() {
 
   return (
     <div className="min-h-screen w-full px-8 py-6 space-y-6">
-      {/* Top Create Button */}
       <div className="flex justify-start mb-6">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="default">Create New Cron Job</Button>
+            <Button variant="default">Schedule New Job</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>

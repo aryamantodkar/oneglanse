@@ -1,5 +1,5 @@
 "use client"
-import { Clock, ChevronDown, ChevronUp, Globe, Home, LayoutGrid, Inbox, MessageSquare, Search, Settings, User2, Tag, Users, TrendingUp, Shield, Zap, Building, Briefcase, Loader2, Target } from "lucide-react"
+import { Clock, ChevronDown, ChevronUp, Globe, Home, LayoutGrid, Inbox, MessageSquare, Search, Settings, User2, Tag, Users, TrendingUp, Shield, Zap, Building, Briefcase, Loader2, Target, Bot } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 import type { Organization, Workspace } from "@/server/db/types"
 import { authClient } from "@/lib/auth/auth-client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
     DropdownMenu,
@@ -22,9 +22,11 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
   } from "@/components/ui/dropdown-menu"
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner"
 import { api } from "@/trpc/react";
+import { getWorkspaceByIdMutation } from "@/lib/helper/mutations";
+import { getModelFavicon } from "@/lib/helper/functions";
 
 const preferenceItems = [
     {
@@ -45,6 +47,15 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
     const [isLoading, setIsLoading] = useState(false)
     const [currentOrg, setCurrentOrg] = useState(workspace?.name ?? "")
 
+    const workspaceDomain = useMemo(() => {
+      if (!workspace?.domain) return "";
+  
+      return workspace.domain
+        .replace(/^https?:\/\//, "")
+        .replace(/^www\./, "")
+        .trim();
+    }, [workspace?.domain]);
+    
     const SettingsItems = [
       {
           title: "People",
@@ -104,6 +115,8 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
           };
       
         fetchAllOrganizations();
+
+        console.log("domain", workspaceDomain)
       }, []);
 
     const handleChangeOrganization = async (organizationId: string) => {
@@ -141,7 +154,14 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                     <SidebarMenuButton>
-                        <>{currentOrg ? currentOrg : "Select Workspace"}</>
+                        <div className="flex items-center gap-2">
+                            <img
+                                src={getModelFavicon(workspaceDomain)}
+                                alt={"Favicon"}
+                                className="w-4 h-4 rounded-sm"
+                            />
+                            <span>{currentOrg ? currentOrg : "Select Workspace"}</span>
+                        </div>
                         <ChevronDown className="ml-auto" />
                     </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -152,7 +172,7 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
                                 onClick={() => handleChangeOrganization(organization.id)}
                                 className="flex items-center gap-2"
                             >
-                                <span>{organization.name}</span>
+                              <span>{organization.name}</span>
                             </DropdownMenuItem>
                         ))}
                     </DropdownMenuContent>
