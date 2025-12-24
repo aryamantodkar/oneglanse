@@ -10,19 +10,20 @@ import { AuthError, safeHandler, ValidationError, NotFoundError, ok } from "@/li
 export async function createNewWorkspace(args: {
     name: string;
     slug: string;
+    domain: string;
     country: string;
     region?: string | null;
     userId?: string;           
     headers?: Headers;
 }) {
-    const { name, slug, country, region, userId, headers } = args;
+    const { name, slug, domain, country, region, userId, headers } = args;
 
     if (!headers || !userId) {
         throw new AuthError("Headers or userId are undefined.");
     }
 
-    if (!name || !slug || !country) {
-      throw new ValidationError("Name, Region or Country is missing.");
+    if (!name || !domain || !slug || !country) {
+      throw new ValidationError("Please fill all the mandatory fields.");
     }
 
     const orgData = await auth.api
@@ -43,6 +44,7 @@ export async function createNewWorkspace(args: {
     id: newId("workspace"),
     name: name,
     slug: slug,
+    domain: domain,
     tenantId: orgData.id,
     country: country, // new field
     region: region || null, // new field

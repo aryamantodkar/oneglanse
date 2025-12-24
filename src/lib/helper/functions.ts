@@ -64,27 +64,22 @@ export const getModelFavicon = (model: string): string => {
     return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 };
 
-export function parseModelError(error: any, modelName: string): string {
-  if (!error) return `${modelName}: Unknown error`;
-
-  if (error.response?.status === 401) {
-    return `${modelName}: Invalid or missing API key.`;
+export function getDomain(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
   }
-  if (error.response?.status === 429) {
-    return `${modelName}: Rate limit exceeded.`;
-  }
-  if (error.response?.status === 402) {
-    return `${modelName}: Insufficient credits.`;
-  }
-  if (error.code === "ENOTFOUND") {
-    return `${modelName}: Network error, service unreachable.`;
-  }
-  if (typeof error.message === "string" && error.message.includes("timeout")) {
-    return `${modelName}: Request timed out.`;
-  }
-  if (typeof error.message === "string") {
-    return `${modelName}: ${error.message}`;
-  }
-
-  return `${modelName}: An unknown error occurred.`;
 }
+
+export const cleanUrl = (url: string) => {
+  try {
+    const u = new URL(url);
+    u.searchParams.delete("utm_source"); // remove utm_source
+    u.searchParams.delete("utm_medium"); // optional: remove other tracking params
+    u.searchParams.delete("utm_campaign");
+    return u.toString();
+  } catch {
+    return url; // return as-is if invalid
+  }
+};

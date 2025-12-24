@@ -9,6 +9,7 @@ export const workspaceRouter = createTRPCRouter({
         z.object({
           name: z.string().min(2).max(50),
           slug: z.string().min(2).max(50),
+          domain: z.string().min(2).max(50),
           country: z.string().min(2), 
           region: z.string().nullable().optional(), 
         })
@@ -17,17 +18,17 @@ export const workspaceRouter = createTRPCRouter({
         return safeHandler(async () => {
           const headers = ctx.headers;
           const userId = ctx.session?.user.id;
-          const { name, slug, country, region } = input;
+          const { name, slug, domain, country, region } = input;
 
           if (!headers || !userId) {
             throw new AuthError("Headers or userId are undefined.");
           }
 
-          if (!name || !slug || !country) {
-            throw new ValidationError("Name, Region or Country is missing.");
+          if (!name || !domain || !slug || !country) {
+            throw new ValidationError("Please fill all the mandatory fields.");
           }
     
-          const res = await createNewWorkspace({name, slug, country, region, userId, headers });
+          const res = await createNewWorkspace({name, slug, domain, country, region, userId, headers });
 
           return ok(res, "Workspace created successfully.");
         })

@@ -23,6 +23,7 @@ export default function NewWorkspace() {
   const [formData, setFormData] = useState({
     workspaceName: "",
     workspaceSlug: "",
+    domain: ""
   });
 
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -35,10 +36,8 @@ export default function NewWorkspace() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   
-  // Fetch countries first
   const countriesQuery = api.location.fetchCountries.useQuery();
   
-  // Consider loading if countries are not yet fetched
   const formReady = !!countriesQuery.data;
 
   const createWorkspaceMutation = api.workspace.create.useMutation({
@@ -68,8 +67,8 @@ export default function NewWorkspace() {
   });
 
   const handleComplete = async () => {
-    if (!formData.workspaceSlug || !formData.workspaceName) {
-      toast.error("Please fill in all fields");
+    if (!formData.workspaceSlug || !formData.workspaceName || !formData.domain) {
+      toast.error("Please fill all the mandatory fields.");
       return;
     }
 
@@ -88,6 +87,7 @@ export default function NewWorkspace() {
       const response = await createWorkspaceMutation.mutateAsync({
         name: formData.workspaceName.trim(),
         slug: formData.workspaceSlug.trim(),
+        domain: formData.domain.trim(),
         country: selectedLocation.country,
         region: selectedLocation.regionName || null,
       });
@@ -163,6 +163,21 @@ export default function NewWorkspace() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="workspace-domain">Domain</Label>
+                <Input
+                  id="workspace-domain"
+                  placeholder="example.com"
+                  value={formData.domain}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      domain: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="workspace-location">Workspace Location</Label>
                 <LocationSelector onSelect={handleLocationSelect} />
                 <p className="text-sm text-gray-500 mt-1">
@@ -179,7 +194,8 @@ export default function NewWorkspace() {
                 disabled={
                   loading ||
                   !formData.workspaceName.trim() ||
-                  !formData.workspaceSlug.trim()
+                  !formData.workspaceSlug.trim() ||
+                  !formData.domain.trim()
                 }
                 className="w-full flex items-center gap-2 cursor-pointer"
               >

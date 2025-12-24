@@ -82,6 +82,8 @@ services:
       DOCKER_ENV: "true"
       REDIS_URL: redis://redis:6379
       CRON_SECRET: ${CRON_SECRET}
+    volumes:
+      - ./mockData:/app/mockData
 
 volumes:
   db_data:

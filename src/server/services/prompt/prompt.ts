@@ -7,6 +7,8 @@ import path from "path";
 import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
 import { cronJobs } from "@/server/db/schema";
 import { pool } from "@/server/db/pg";
+import { cleanUrl } from "@/lib/helper/functions";
+import { runLLMs } from "@/lib/llm/llmClient";
 
 function formatDateToClickHouse(dt: Date) {
     return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -58,26 +60,28 @@ export async function askPromptsForWorkspace(args: {
       throw new NotFoundError(`No prompts found for this workspace.`); 
     }
 
-    // MOCK DATA
-    const filePath = path.join(process.cwd(), "mockData", "llm_results.json");
-    const rawData = fs.readFileSync(filePath, "utf8");
-    const results = JSON.parse(rawData);
+     // LOGGER
+    // const filePath = path.join(process.cwd(), "mockData", "llm_results.json");
+    // const rawData = fs.readFileSync(filePath, "utf8");
+    // const results = JSON.parse(rawData);
 
     // REAL DATA
 
-    // const results = await runLLMs(promptsArray, {
-    //   workspaceCountry: workspaceData?.country ?? "",
-    //   workspaceRegion: workspaceData?.region ?? "",
-    // });
+    console.log("Calling run llms...");
 
-    // console.log("results:", JSON.stringify(results, null, 2));
+    const results = await runLLMs(promptsArray, {
+      workspaceCountry: workspaceData?.country ?? "",
+      workspaceRegion: workspaceData?.region ?? "",
+    });
+
+    console.log("results:", JSON.stringify(results, null, 2));
 
     const modelErrors = results.flatMap((r: { results: any; id: any; }) =>
       (r.results || [])
         .filter((res: { output: { error: any; }; }) => res.output?.error)
-        .map((res: { modelProvider: any; output: { error: any; }; }) => ({
+        .map((res: { model_provider: any; output: { error: any; }; }) => ({
           promptId: r.id,
-          model: res.modelProvider,
+          model: res.model_provider,
           error: res.output.error,
         }))
     );
@@ -86,7 +90,7 @@ export async function askPromptsForWorkspace(args: {
       (r.results || []).flatMap((modelOutput: any) => {
         const metrics = modelOutput?.output?.metrics || [];
     
-        if (modelOutput?.modelProvider === "Anthropic") {
+        if (modelOutput?.model_provider === "Anthropic") {
           const combinedResponse = metrics
             .map((m: any) => m.response?.trim())
             .filter(Boolean)
@@ -95,16 +99,38 @@ export async function askPromptsForWorkspace(args: {
           const combinedCitations = [
             ...new Map(
               metrics
-                .flatMap((m: any) => m.citations || [])
-                .map((c: any) => [c.url, c])
+                .flatMap((m: any) =>
+                  (m.citations || []).map((c: any) => {
+                    const clean = cleanUrl(c.url);
+                    return [
+                      `${clean}||${(c.cited_text || "").trim()}`,
+                      {
+                        ...c,
+                        url: clean,
+                        cited_text: c.cited_text?.trim() || "",
+                      },
+                    ];
+                  })
+                )
             ).values(),
           ];
     
           const combinedSources = [
             ...new Map(
               metrics
-                .flatMap((m: any) => m.sources || [])
-                .map((s: any) => [s.url, s])
+                .flatMap((m: any) =>
+                  (m.sources || []).map((s: any) => {
+                    const clean = cleanUrl(s.url);
+                    return [
+                      `${clean}||${(s.title || "").trim()}`,
+                      {
+                        ...s,
+                        url: clean,
+                        title: s.title?.trim() || "",
+                      },
+                    ];
+                  })
+                )
             ).values(),
           ];
     
@@ -115,10 +141,11 @@ export async function askPromptsForWorkspace(args: {
               user_id: userId,
               workspace_id: workspaceId,
               model: modelOutput?.output?.model || "",
-              modelProvider: modelOutput?.modelProvider || "",
+              model_provider: modelOutput?.model_provider || "",
               response: combinedResponse || "",
               citations: combinedCitations,
               sources: combinedSources,
+              prompt_run_at: formatDateToClickHouse(r.prompt_run_at),
               created_at: formatDateToClickHouse(new Date()),
             },
           ];
@@ -130,10 +157,17 @@ export async function askPromptsForWorkspace(args: {
           user_id: userId,
           workspace_id: workspaceId,
           model: modelOutput?.output?.model || "",
-          modelProvider: modelOutput?.modelProvider || "",
+          model_provider: modelOutput?.model_provider || "",
           response: metric?.response || "",
-          citations: metric?.citations || [],
-          sources: metric?.sources || [],
+          citations: (metric?.citations || []).map((c: any) => ({
+            ...c,
+            url: cleanUrl(c.url),
+          })),
+          sources: (metric?.sources || []).map((s: any) => ({
+            ...s,
+            url: cleanUrl(s.url),
+          })),
+          prompt_run_at: formatDateToClickHouse(r.prompt_run_at),
           created_at: formatDateToClickHouse(new Date()),
         }));
       })
@@ -201,7 +235,6 @@ export async function storePromptsForWorkspace(args: {
           user_id: userId,
           workspace_id: workspaceId,
           prompt: p,
-          per_model: {},
           created_at: formatDateToClickHouse(new Date()),
         }));
 
@@ -335,8 +368,13 @@ export async function fetchPromptResponsesForWorkspace(args: {
 
     const enriched = data.map(r => ({
       ...r,
-      extractedUrls: extractUrlsFromResponse(r),
+      extracted_urls: extractUrlsFromResponse(r),
     }));
+
+    // LOGGER
+    const logPath = path.join(process.cwd(), "mockData", "fetchPromptResponses.json");
+
+    fs.writeFileSync(logPath, JSON.stringify(enriched, null, 2));
 
     return enriched;
 }
@@ -371,7 +409,6 @@ export async function fetchUserPromptsForWorkspace(args: {
       user_id: row.user_id,
       workspace_id: row.workspace_id,
       prompt: row.prompt,
-      per_model: row.per_model ?? {},
       created_at: row.created_at,
     }));
 
