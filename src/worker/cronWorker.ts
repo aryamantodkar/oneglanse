@@ -1,6 +1,7 @@
 import { ExternalServiceError, ValidationError } from "@/lib/error";
 import { pool } from "@/server/db/pg";
 import { analysePromptsForWorkspace } from "@/server/services/analysis/analysis";
+import { analyseCompetitorsForWorkspace } from "@/server/services/competitors/competitors";
 import { askPromptsForWorkspace } from "@/server/services/prompt/prompt";
 
 
@@ -108,7 +109,7 @@ async function processJob(job: any) {
     await pool.query(
       `INSERT INTO public.job_runs (job_id, workspace_id, started_at, finished_at, status, output)
        VALUES ($1, $2, now(), now(), 'success', $3::jsonb)`,
-      [job.jobId, job.workspaceId, JSON.stringify({ result: "success" })]
+      [job.jobId, job.workspace_id, JSON.stringify({ result: "success" })]
     );
 
     await pool.query(

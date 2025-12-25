@@ -125,13 +125,28 @@ CREATE TABLE "cron_queue" (
 CREATE TABLE "job_runs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"job_id" uuid,
-	"workspace_id" text,
+	"workspace_id" text NOT NULL,
 	"started_at" timestamp with time zone DEFAULT now(),
 	"finished_at" timestamp with time zone,
 	"status" text,
 	"http_status" integer,
 	"error" text,
 	"output" jsonb
+);
+
+CREATE TABLE "competitors" (
+  "id" uuid NOT NULL,
+  "workspace_id" text NOT NULL
+    REFERENCES workspaces(id)
+    ON DELETE CASCADE,
+  "name" text NOT NULL,
+  "slug" text NOT NULL,
+  "domain" text NOT NULL,
+  "source" text NOT NULL,
+  "status" text NOT NULL,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE ("workspace_id", "domain")
 );
 
 --> statement-breakpoint

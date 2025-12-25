@@ -18,6 +18,7 @@ import { redirect, useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { authClient } from "@/lib/auth/auth-client";
 import { LocationSelector } from "@/components/location/locationSelector";
+import { useAnalyzeCompetitors } from "@/lib/helper/mutations";
 
 export default function NewWorkspace() {
   const [formData, setFormData] = useState({
@@ -37,6 +38,7 @@ export default function NewWorkspace() {
   const router = useRouter();
   
   const countriesQuery = api.location.fetchCountries.useQuery();
+  const analyseCompetitorsMutation = useAnalyzeCompetitors();
   
   const formReady = !!countriesQuery.data;
 
@@ -108,6 +110,8 @@ export default function NewWorkspace() {
         console.error("Error setting active organization", err);
         toast.error("Could not set active workspace.");
       }
+
+      await analyseCompetitorsMutation.mutateAsync({ workspaceId: workspace.id });
 
       return router.push(`/dashboard?workspace=${workspace.id}`);
     } finally {

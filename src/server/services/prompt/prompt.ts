@@ -372,9 +372,9 @@ export async function fetchPromptResponsesForWorkspace(args: {
     }));
 
     // LOGGER
-    const logPath = path.join(process.cwd(), "mockData", "fetchPromptResponses.json");
+    // const logPath = path.join(process.cwd(), "mockData", "fetchPromptResponses.json");
 
-    fs.writeFileSync(logPath, JSON.stringify(enriched, null, 2));
+    // fs.writeFileSync(logPath, JSON.stringify(enriched, null, 2));
 
     return enriched;
 }

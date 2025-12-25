@@ -26,6 +26,9 @@ export type InsertInvitation = InferInsertModel<typeof schema.invitation>;
 export type Workspace = InferSelectModel<typeof schema.workspaces>;
 export type InsertWorkspace = InferInsertModel<typeof schema.workspaces>;
 
+export type Competitor = InferSelectModel<typeof schema.competitors>;
+export type InsertCompetitor= InferInsertModel<typeof schema.competitors>;
+
 // API
 export type UserPrompt = {
     id: string;
@@ -108,13 +111,58 @@ export type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
+export type AnalysisModelResponse = {
+  model_provider: string;
+  response: string;
+};
+
+export type AnalysisModelResponseWithMetrics = {
+  model_provider: string;
+  response: string;
+  brandMetrics?: Record<string, BrandMetric>;
+};
+
 export type analysisData = Record<
   string,
   Record<
     string,
-    {
-      model_provider: string;
-      response: string;
-    }[]
+    AnalysisModelResponse[]
   >
 >;
+
+export type BrandMetric = {
+  mentions: number;
+  sentiment: number; 
+  visibility: number;
+  position: number;    
+  website: string;
+};
+
+export type BrandMetrics = Record<string, BrandMetric>;
+
+export type AnalysedPrompt = {
+  id: string;
+  prompt_id: string;
+  workspace_id: string;
+  user_id: string;
+  model_provider: string;
+  brand_metrics: BrandMetrics; 
+  prompt_run_at: string;              
+  created_at: string;                
+};
+
+export type CompetitorInput = {
+  name: string;
+  slug: string;
+  domain: string;
+};
+
+export type CompetitorsResponse = {
+  competitors: Competitor[];
+};
+
+export type MetricPromptResponses = {
+  model_provider: string;
+  response: string;
+  promptRunAt: string;
+}
