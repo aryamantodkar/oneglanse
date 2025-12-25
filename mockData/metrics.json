@@ -9,21 +9,21 @@
             "mentions": 1,
             "sentiment": 85,
             "visibility": 90,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "Zoho": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 60,
-            "position": 0.3,
+            "position": 2,
             "website": "zoho.com"
           },
           "Function Point": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 40,
-            "position": 0.6,
+            "position": 3,
             "website": "functionpoint.com"
           }
         }
@@ -36,49 +36,49 @@
             "mentions": 5,
             "sentiment": 50,
             "visibility": 80,
-            "position": 0,
+            "position": 1,
             "website": "clickup.com"
           },
           "HubSpot": {
             "mentions": 3,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0.1,
+            "position": 2,
             "website": "hubspot.com"
           },
           "Zoho": {
             "mentions": 3,
             "sentiment": 80,
             "visibility": 75,
-            "position": 0.3,
+            "position": 3,
             "website": "zoho.com"
           },
           "SharpSpring": {
             "mentions": 2,
             "sentiment": 75,
             "visibility": 65,
-            "position": 0.5,
+            "position": 4,
             "website": "sharpspring.com"
           },
           "GoHighLevel": {
             "mentions": 2,
             "sentiment": 70,
             "visibility": 55,
-            "position": 0.7,
+            "position": 5,
             "website": "gohighlevel.com"
           },
           "Apptivo": {
             "mentions": 2,
             "sentiment": 65,
             "visibility": 45,
-            "position": 0.85,
+            "position": 6,
             "website": "apptivo.com"
           },
           "Pipedrive": {
             "mentions": 1,
             "sentiment": 60,
             "visibility": 35,
-            "position": 0.95,
+            "position": 7,
             "website": "pipedrive.com"
           }
         }
@@ -91,48 +91,48 @@
             "mentions": 3,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "EngageBay": {
             "mentions": 1,
             "sentiment": 55,
             "visibility": 50,
-            "position": 0.2,
+            "position": 2,
             "website": "engagebay.com"
           },
           "Zoho": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 80,
-            "position": 0.4,
+            "position": 3,
             "website": "zoho.com"
           },
           "BIGContacts": {
             "mentions": 1,
             "sentiment": 60,
             "visibility": 55,
-            "position": 0.6,
+            "position": 4,
             "website": "bigcontacts.com"
           },
           "Freshworks": {
             "mentions": 1,
             "sentiment": 65,
             "visibility": 70,
-            "position": 0.75,
+            "position": 5,
             "website": "freshworks.com"
           },
           "Salesflare": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 65,
-            "position": 0.9,
+            "position": 6,
             "website": "salesflare.com"
           }
         }
       }
     ],
-    "2025-12-23 17:29:08": [
+    "2025-12-13 17:29:08": [
       {
         "model_provider": "Anthropic",
         "response": "HubSpot offers an all-in-one solution that allows you to manage client relationships, marketing, and sales in one centralized platform, eliminating the need to invest in multiple tools\n\nFunctionality beyond basic contact storage, including email engagement tracking, live chat, and call logging\n- The ability to expand into paid hubs as you grow\n- A flexible approach with no pressure for forced upgrades\n\nNotable email marketing features such as:\n  - Drag-and-drop email builder\n  - Email automation\n  - A/B testing\n  - Integration with sales tools\n\nLimited customization options and more advanced features require upgrading to expensive plans, which might not be suitable for smaller agencies\n\nA modular CRM platform that covers everything from basic lead and pipeline management to complex sales automation, known for its flexibility even at entry-level pricing\n\nAffordable pricing with a good free plan\n- Advanced reporting and AI features\n- Email marketing capabilities\n- Integration with other Zoho apps\n- An AI assistant (Zia) that offers predictive insights\n\nAn excellent affordable option that brings marketing, live chat, and customer service together with core CRM features\n\nIt offers strong email marketing capabilities in a user-friendly interface, with a free plan that allows you to track deals and send 1,000 emails per month\n\nSpecifically built for B2B sales and used by thousands of small and medium-sized businesses, particularly agencies\n\nGmail integration\n- Auto-population of account and contact information\n- Ability to see recent social media posts from contacts\n\nLook for software that:\n  - Integrates seamlessly with other tools\n  - Is adaptable to your agency's unique processes\n  - Can scale with your business\n  - Provides in-depth reporting and analytics\n\nTake advantage of product demos or free trials, involve your team in the decision-making process, and choose a provider that offers robust onboarding support and ongoing customer service\n\nthe most important consideration is whether you'll actually use the CRM, as many CRMs can be overly complex, work-intensive, and difficult to navigate",
@@ -141,21 +141,21 @@
             "mentions": 1,
             "sentiment": 80,
             "visibility": 90,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "Zoho": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 70,
-            "position": 0.3,
+            "position": 2,
             "website": "zoho.com"
           },
           "Freshsales": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 50,
-            "position": 0.6,
+            "position": 3,
             "website": "freshworks.com"
           }
         }
@@ -168,28 +168,28 @@
             "mentions": 3,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "SharpSpring": {
             "mentions": 2,
             "sentiment": 75,
             "visibility": 65,
-            "position": 0.33,
+            "position": 2,
             "website": "sharpspring.com"
           },
           "GoHighLevel": {
             "mentions": 2,
             "sentiment": 70,
             "visibility": 55,
-            "position": 0.66,
+            "position": 3,
             "website": "gohighlevel.com"
           },
           "Zoho": {
             "mentions": 2,
             "sentiment": 80,
             "visibility": 75,
-            "position": 0.9,
+            "position": 4,
             "website": "zoho.com"
           }
         }
@@ -202,42 +202,42 @@
             "mentions": 3,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "EngageBay": {
             "mentions": 1,
             "sentiment": 60,
             "visibility": 55,
-            "position": 0.2,
+            "position": 2,
             "website": "engagebay.com"
           },
           "Zoho": {
             "mentions": 2,
             "sentiment": 80,
             "visibility": 80,
-            "position": 0.4,
+            "position": 3,
             "website": "zoho.com"
           },
           "BIGContacts": {
             "mentions": 1,
             "sentiment": 60,
             "visibility": 55,
-            "position": 0.6,
+            "position": 4,
             "website": "bigcontacts.com"
           },
           "Freshworks": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 65,
-            "position": 0.8,
+            "position": 5,
             "website": "freshworks.com"
           },
           "Salesflare": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 60,
-            "position": 0.95,
+            "position": 6,
             "website": "salesflare.com"
           }
         }
@@ -245,7 +245,7 @@
     ]
   },
   "660228c2-5fba-46d5-be34-4bec1193573a": {
-    "2025-12-23 18:12:41": [
+    "2025-12-13 18:12:41": [
       {
         "model_provider": "Anthropic",
         "response": "Freshsales offers a highly affordable option with a Growth plan at just $9/user/month. They have a forever-free plan with core CRM features, and as your business grows, you can upgrade to plans with additional features and user capacity.\n\nPipedrive is specifically designed for startups, offering a flexible and affordable solution. It's results-oriented and easy to use, with a clear visual interface for tracking sales pipeline. You can customize the pipeline to fit your unique sales process and add your own sales stages.\n\nHubSpot offers a suite of individual tools with flexible pricing plans. You can purchase tools individually or stack them together for an all-in-one CRM solution.\n\nThis is an affordable alternative for startups on a tight budget. It's a more limited version of Salesforce with fewer features, but can help you organize customer data, track sales, and support customers from one centralized dashboard. It also integrates with tools like ActiveCampaign, Zapier, and DocuSign.\n\nZoho offers comprehensive features with powerful automation and customization. It provides over 500 third-party app integrations and can integrate with 700+ business programs. The pricing is affordable for small teams, making it a great option for startups.\n\nInvest early in an affordable CRM that can grow with your business, avoiding expensive upgrades later.\n\nStartups using a CRM are 86% more likely to hit their sales goals.\n\nA good CRM should:\n- Store all contact information in one accessible spot\n- Allow contact segmentation\n- Provide a clear, visual sales pipeline\n- Offer drag-and-drop tools for managing deals\n\nWhile there are free CRM systems available, paid plans often include more than just basic features and might be better for serious growth.",
@@ -254,49 +254,49 @@
             "mentions": 1,
             "sentiment": 75,
             "visibility": 90,
-            "position": 0,
+            "position": 1,
             "website": "freshworks.com"
           },
           "Pipedrive": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 75,
-            "position": 0.14,
+            "position": 2,
             "website": "pipedrive.com"
           },
           "HubSpot": {
             "mentions": 1,
             "sentiment": 65,
             "visibility": 60,
-            "position": 0.28,
+            "position": 3,
             "website": "hubspot.com"
           },
           "Salesforce": {
             "mentions": 1,
             "sentiment": 50,
             "visibility": 55,
-            "position": 0.42,
+            "position": 4,
             "website": "salesforce.com"
           },
           "ActiveCampaign": {
             "mentions": 1,
             "sentiment": 50,
             "visibility": 40,
-            "position": 0.56,
+            "position": 5,
             "website": "activecampaign.com"
           },
           "Zapier": {
             "mentions": 1,
             "sentiment": 50,
             "visibility": 40,
-            "position": 0.7,
+            "position": 6,
             "website": "zapier.com"
           },
           "DocuSign": {
             "mentions": 1,
             "sentiment": 50,
             "visibility": 40,
-            "position": 0.84,
+            "position": 7,
             "website": "docusign.com"
           }
         }
@@ -309,21 +309,21 @@
             "mentions": 2,
             "sentiment": 80,
             "visibility": 55,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "Freshworks": {
             "mentions": 3,
             "sentiment": 75,
             "visibility": 95,
-            "position": 0.33,
+            "position": 2,
             "website": "freshworks.com"
           },
           "Zoho": {
             "mentions": 3,
             "sentiment": 80,
             "visibility": 75,
-            "position": 0.66,
+            "position": 3,
             "website": "zoho.com"
           }
         }
@@ -336,42 +336,42 @@
             "mentions": 3,
             "sentiment": 75,
             "visibility": 90,
-            "position": 0,
+            "position": 1,
             "website": "zoho.com"
           },
           "HubSpot": {
             "mentions": 2,
             "sentiment": 85,
             "visibility": 75,
-            "position": 0.2,
+            "position": 2,
             "website": "hubspot.com"
           },
           "BIGContacts": {
             "mentions": 1,
             "sentiment": 60,
             "visibility": 60,
-            "position": 0.4,
+            "position": 3,
             "website": "bigcontacts.com"
           },
           "Monday CRM": {
             "mentions": 1,
             "sentiment": 65,
             "visibility": 50,
-            "position": 0.6,
+            "position": 4,
             "website": "monday.com"
           },
           "EngageBay": {
             "mentions": 1,
             "sentiment": 55,
             "visibility": 45,
-            "position": 0.8,
+            "position": 5,
             "website": "engagebay.com"
           },
           "Freshworks": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 65,
-            "position": 1,
+            "position": 6,
             "website": "freshworks.com"
           }
         }
@@ -379,7 +379,7 @@
     ]
   },
   "6b0860b0-8699-4e11-9a69-4441948e92e9": {
-    "2025-12-23 18:12:41": [
+    "2025-12-03 18:12:41": [
       {
         "model_provider": "Anthropic",
         "response": "HubSpot stands out for making enterprise-grade CRM functionality accessible to small teams. The free plan provides a generous feature set with unlimited users, up to one million contacts, and full access to key CRM modules. As businesses grow, HubSpot scales with advanced automation, analytics, and AI-powered content tools\n\nIt grows with small businesses, offering additional features like marketing automation and customer service, and integrates seamlessly with HubSpot's suite of tools\n\nThis is a simple CRM offering straightforward sales and customer relationship management tools for small businesses. It's best for those with limited budgets and offers a user-friendly experience without unnecessary complexity, making it ideal for small business owners who need an efficient tool without a steep learning curve\n\nNutshell is highly recommended with a 4.8/5 rating and is considered beginner-friendly with a minimal learning curve\n\nIt's particularly good for field teams, with a full-featured mobile app and project tracking capabilities. The automated follow-up features help capture repeat business from past customers\n\nFreshsales feels like a CRM that can replace multiple tools. When connected to Gmail, it instantly pulls in emails, logs calls, and syncs calendars. For a small business, having communication and CRM in one dashboard is a real time-saver\n\nIt offers various tools to enhance customer communication, is great for tracking and scoring leads, and includes an AI assistant (Freddy) that helps businesses gain insights by analyzing sales data and engagement\n\nBest for small businesses that want highly visual, customizable, and intuitive software. Monday CRM offers a user-friendly interface with boards to organize projects and track customer activities\n\nThe good news is that CRMs are no longer just for big enterprises. Affordable, lightweight options now make it possible for even a two-person shop to use client-tracking tools\n\nCRM software can give small businesses a competitive advantage by increasing reporting accuracy, customer data access, and productivity. It aggregates all your sales and customer data into an easily accessible dashboard, with customizable options to provide instant performance insights\n\nIt's recommended to try free trials to see which CRM fits your specific workflow\n\nLook for a CRM with an intuitive interface that allows users to find information quickly, especially important for sales teams with varying technical skills",
@@ -388,28 +388,28 @@
             "mentions": 2,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "Nutshell": {
             "mentions": 1,
             "sentiment": 80,
             "visibility": 75,
-            "position": 0.25,
+            "position": 2,
             "website": "nutshell.com"
           },
           "Freshworks": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 60,
-            "position": 0.5,
+            "position": 3,
             "website": "freshworks.com"
           },
           "Monday CRM": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 50,
-            "position": 0.75,
+            "position": 4,
             "website": "monday.com"
           }
         }
@@ -422,42 +422,42 @@
             "mentions": 1,
             "sentiment": 75,
             "visibility": 60,
-            "position": 0,
+            "position": 1,
             "website": "capsulecrm.com"
           },
           "Pipedrive": {
             "mentions": 1,
             "sentiment": 80,
             "visibility": 80,
-            "position": 0.2,
+            "position": 2,
             "website": "pipedrive.com"
           },
           "Monday Sales CRM": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 65,
-            "position": 0.4,
+            "position": 3,
             "website": "monday.com"
           },
           "Freshworks": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 70,
-            "position": 0.6,
+            "position": 4,
             "website": "freshworks.com"
           },
           "HubSpot": {
             "mentions": 1,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0.8,
+            "position": 5,
             "website": "hubspot.com"
           },
           "Zoho": {
             "mentions": 1,
             "sentiment": 80,
             "visibility": 75,
-            "position": 1,
+            "position": 6,
             "website": "zoho.com"
           }
         }
@@ -470,42 +470,42 @@
             "mentions": 3,
             "sentiment": 85,
             "visibility": 95,
-            "position": 0,
+            "position": 1,
             "website": "hubspot.com"
           },
           "Freshworks": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 80,
-            "position": 0.2,
+            "position": 2,
             "website": "freshworks.com"
           },
           "Nutshell": {
             "mentions": 1,
             "sentiment": 80,
             "visibility": 75,
-            "position": 0.4,
+            "position": 3,
             "website": "nutshell.com"
           },
           "Zoho": {
             "mentions": 1,
             "sentiment": 70,
             "visibility": 65,
-            "position": 0.6,
+            "position": 4,
             "website": "zoho.com"
           },
           "Less Annoying CRM": {
             "mentions": 1,
             "sentiment": 60,
             "visibility": 50,
-            "position": 0.8,
+            "position": 5,
             "website": "lessannoyingcrm.com"
           },
           "Pipedrive": {
             "mentions": 1,
             "sentiment": 75,
             "visibility": 60,
-            "position": 1,
+            "position": 6,
             "website": "pipedrive.com"
           }
         }

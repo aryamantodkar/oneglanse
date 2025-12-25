@@ -1,9 +1,9 @@
 import { clickhouse, db } from "@/server/db/index";
-import type { PromptAnalysis, PromptResponse } from "@/server/db/types";
+import type { AnalysedPrompt, PromptAnalysis, PromptResponse } from "@/server/db/types";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { AuthError, fail, ok, ValidationError } from "@/lib/error";
+import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
 import { analyzeResponse } from "@/lib/llm/analyzeResponse";
 import { v4 as uuidv4 } from "uuid";
 
@@ -47,7 +47,7 @@ export async function analysePromptsForWorkspace(args: {
     const rawData = fs.readFileSync(filePath, "utf8");
     const responses: PromptResponse[] = JSON.parse(rawData);
 
-    if (!responses.length) return fail("Could not fetch prompt responses for analysis.", 404);
+    if (!responses.length) throw new NotFoundError("Could not fetch prompt responses for analysis.");
 
     const groupedPrompts = Object.values(
       responses.reduce(
@@ -169,4 +169,38 @@ export async function analysePromptsForWorkspace(args: {
     });
 
     return analysisResults;
+}
+
+export async function fetchAnalysedPrompts(args: {
+  workspaceId: string;
+  userId: string;
+}) {
+  const { workspaceId, userId } = args;
+
+  if (!userId) {
+    throw new AuthError("User Id is undefined.");
+  }
+  
+  if (!workspaceId || workspaceId.trim() === "") {
+    throw new ValidationError("Workspace ID is undefined.");
+  }
+
+  // const result = await clickhouse.query({
+  //   query: `
+  //     SELECT *
+  //     FROM analytics.prompt_analysis
+  //     WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+  //   `,
+  //   format: "JSONEachRow",
+  // });
+
+  // const analysedPrompts: AnalysedPrompt[] = (await result.json()) as AnalysedPrompt[];
+
+  // if(!analysedPrompts.length) throw new NotFoundError("Failed to fetch data from prompt_anaysis table.");
+
+  const filePath2 = path.join(process.cwd(), "mockData", "metrics.json");
+  const rawData2 = fs.readFileSync(filePath2, "utf8");
+  const analysedPrompts = JSON.parse(rawData2);
+
+  return analysedPrompts;
 }

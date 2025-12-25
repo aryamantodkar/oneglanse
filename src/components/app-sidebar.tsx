@@ -95,6 +95,11 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
           url: `/cron?workspace=${workspace?.id ?? ""}`,
           icon: Clock,
         },
+        {
+          title: "Competitors",
+          url: `/competitors?workspace=${workspace?.id ?? ""}`,
+          icon: Users,
+        }
       ];
 
     useEffect(() => {

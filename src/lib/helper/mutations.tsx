@@ -48,3 +48,28 @@ export function useStorePrompt() {
 export function useAnalyzeMetrics() {
     return api.analysis.analyzeMetrics.useMutation();
 }
+
+export function useFetchAnalysedPrompts(workspaceId: string) {
+    return api.analysis.fetchAnalysis.useQuery(
+      { workspaceId },
+      {
+        enabled: !!workspaceId,
+      }
+    );
+  }
+
+  
+export function useAnalyzeCompetitors() {
+    return api.competitors.analyseCompetitors.useMutation();
+}
+
+export function getCompetitorsForWorkspace(workspaceId: string){
+  return api.competitors.fetchCompetitors.useQuery(
+      { workspaceId },
+      { 
+        retry: 2,
+        refetchOnWindowFocus: false,
+        enabled: !!workspaceId, 
+      }
+  );
+}

@@ -65,11 +65,15 @@ export function analyzeQuery(analysisData: analysisData) {
         - NEVER assign 100 to all brands.
         - Do NOT use uniform or placeholder values.
 
-      - position (0–1):  
-        Normalized position of the brand’s **first appearance** in the response.
-        - 0 = earliest brand mentioned
-        - 1 = last brand mentioned
-        - Values must reflect real ordering, not evenly spaced placeholders.
+      - position (integer):  
+        The **ranked order** of the brand’s first substantive appearance in the response.
+        - 1 = earliest brand mentioned
+        - 2 = second earliest
+        - 3 = third earliest
+        - etc.
+        - Position MUST be a positive integer.
+        - Do NOT normalize or scale values.
+        - Ordering must reflect the actual sequence of first meaningful mention.
 
       - website:  
         Official homepage domain of the brand.
@@ -116,16 +120,24 @@ export function analyzeQuery(analysisData: analysisData) {
           • a tool used for explanation
         - The brand is NOT evaluated as a solution
 
-      RULES:
+     RULES:
       • Reference-only brands MUST still appear in brandMetrics
       • Reference-only brands MUST:
         - Have lower visibility than evaluated brands
-        - Have position calculated AFTER all evaluated brands
+        - Be assigned positions AFTER all evaluated brands
+
       • Evaluated brands ALWAYS take precedence in ordering and prominence
-      • Position is calculated ONLY among evaluated brands first
-      • Evaluated brands are ordered by their first substantive evaluation
-      • Reference-only brands are positioned AFTER all evaluated brands
-      • Normalize position across the full ordered list
+
+      • Position assignment rules (STRICT):
+        - Positions MUST be positive integers (1, 2, 3, …)
+        - Evaluated brands are assigned positions FIRST
+          • Start at position = 1
+          • Order by first substantive evaluation in the response
+        - Reference-only brands are assigned positions AFTER evaluated brands
+          • Continue integer sequence without gaps
+        - Do NOT normalize, scale, or convert positions to decimals
+        - Do NOT reset positions per role
+        - Do NOT skip or duplicate position values
       
       ---
   
