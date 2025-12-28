@@ -1,3 +1,5 @@
+import type { Citation, CitationGroupResult, DomainStats, GroupedCitation, PromptResponse } from "@/server/db/types";
+
 export function formatMarkdown(text: string) {
   if (!text) return "No response available";
 
@@ -165,6 +167,204 @@ export function getUniqueLinks(
       title: item.title || domain,
       url: item.url,
     });
+  }
+
+  return Array.from(map.values());
+}
+
+export function extractDomainStatsFromResponses(
+  responses: PromptResponse[]
+): {
+  combined: DomainStats[];
+  byModel: Record<string, DomainStats[]>;
+} {
+  const combinedMap = new Map<
+    string,
+    { totalOccurrences: number; citationTextCount: number }
+  >();
+
+  const modelMap = new Map<
+    string,
+    Map<string, { totalOccurrences: number; citationTextCount: number }>
+  >();
+
+  const addDomain = (
+    map: Map<string, { totalOccurrences: number; citationTextCount: number }>,
+    url: string,
+    hasCitationText = false
+  ) => {
+    const domain = getDomain(url);
+    if (!domain) return;
+
+    const entry = map.get(domain) ?? {
+      totalOccurrences: 0,
+      citationTextCount: 0,
+    };
+
+    entry.totalOccurrences += 1;
+    if (hasCitationText) entry.citationTextCount += 1;
+
+    map.set(domain, entry);
+  };
+
+  for (const r of responses) {
+    const model = r.model_provider;
+
+    if (!modelMap.has(model)) {
+      modelMap.set(model, new Map());
+    }
+
+    const perModelMap = modelMap.get(model)!;
+
+    for (const c of r.citations ?? []) {
+      if (c?.url) {
+        addDomain(combinedMap, c.url, Boolean(c.cited_text));
+        addDomain(perModelMap, c.url, Boolean(c.cited_text));
+      }
+    }
+
+    for (const s of r.sources ?? []) {
+      if (s?.url) {
+        addDomain(combinedMap, s.url);
+        addDomain(perModelMap, s.url);
+      }
+    }
+  }
+
+  const normalize = (
+    map: Map<string, { totalOccurrences: number; citationTextCount: number }>
+  ): DomainStats[] => {
+    const total = Array.from(map.values()).reduce(
+      (sum, d) => sum + d.totalOccurrences,
+      0
+    );
+
+    return Array.from(map.entries()).map(([domain, stats]) => ({
+      domain,
+      totalOccurrences: stats.totalOccurrences,
+      citationTextCount: stats.citationTextCount,
+      usedPercentageAcrossAllDomains:
+        total > 0
+          ? Number(((stats.totalOccurrences / total) * 100).toFixed(1))
+          : 0,
+      avgCitationsPerDomain:
+        stats.totalOccurrences > 0
+          ? Number(
+              (stats.citationTextCount / stats.totalOccurrences).toFixed(2)
+            )
+          : 0,
+    }));
+  };
+
+  // 2️⃣ Build outputs
+  const combined = normalize(combinedMap);
+
+  const byModel: Record<string, DomainStats[]> = {};
+  for (const [model, map] of modelMap.entries()) {
+    byModel[model] = normalize(map);
+  }
+
+  return {
+    combined,
+    byModel,
+  };
+}
+
+export function extractCitationStatsFromResponses(
+  responses: PromptResponse[]
+): CitationGroupResult {
+  const combinedCitations: (Citation & { model_provider: string })[] = [];
+  const citationsByModel = new Map<
+    string,
+    (Citation & { model_provider: string })[]
+  >();
+
+  for (const resp of responses) {
+    if (!Array.isArray(resp.citations)) continue;
+
+    const model = resp.model_provider;
+
+    for (const c of resp.citations) {
+      if (
+        !c ||
+        typeof c.url !== "string" ||
+        typeof c.title !== "string" ||
+        typeof c.cited_text !== "string" ||
+        c.cited_text.trim() === ""
+      ) {
+        continue;
+      }
+
+      const citation = {
+        title: c.title,
+        url: c.url,
+        start_index:
+          typeof c.start_index === "number" ? c.start_index : null,
+        end_index:
+          typeof c.end_index === "number" ? c.end_index : null,
+        cited_text: c.cited_text,
+        model_provider: model,
+      };
+
+      // combined
+      combinedCitations.push(citation);
+
+      // per-model
+      if (!citationsByModel.has(model)) {
+        citationsByModel.set(model, []);
+      }
+      citationsByModel.get(model)!.push(citation);
+    }
+  }
+
+  return {
+    combined: groupCitationsByUrl(combinedCitations),
+    byModel: Object.fromEntries(
+      Array.from(citationsByModel.entries()).map(
+        ([model, citations]) => [
+          model,
+          groupCitationsByUrl(citations),
+        ]
+      )
+    ),
+  };
+}
+
+export function groupCitationsByUrl(
+  citations: (Citation & { model_provider?: string })[]
+): GroupedCitation[] {
+  const map = new Map<string, GroupedCitation>();
+
+  const seen = new Set<string>();
+
+  for (const c of citations) {
+    if (!c?.url || !c.cited_text?.trim()) continue;
+
+    const uniqueKey = `${c.title}::${c.model_provider}::${c.cited_text}`;
+
+    if (seen.has(uniqueKey)) continue;
+    seen.add(uniqueKey);
+
+    let entry = map.get(c.url);
+
+    if (!entry) {
+      entry = {
+        url: c.url,
+        title: c.title,
+        citations: [],
+        totalCitations: 0,
+      };
+      map.set(c.url, entry);
+    }
+
+    entry.citations.push({
+      cited_text: c.cited_text,
+      start_index: c.start_index ?? null,
+      end_index: c.end_index ?? null,
+      model_provider: c.model_provider,
+    });
+
+    entry.totalCitations += 1;
   }
 
   return Array.from(map.values());

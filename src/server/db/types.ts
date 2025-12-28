@@ -85,9 +85,13 @@ export interface PromptResponseClient {
   response: string;
   citations: any[];
   sources: any[];
-  extracted_urls: string[];
   prompt_run_at: string;
   created_at: string;
+}
+
+export type DomainResponseClient = {
+  responses: PromptResponseClient[],
+  domain_stats: DomainStats[]
 }
 
 export interface WorkspaceLocation {
@@ -110,12 +114,31 @@ export type Source = {
   page_age: string
 };
 
-export type Citation = {
+export interface Citation {
   title: string;
   url: string;
   start_index: number | null;
   end_index: number | null;
   cited_text: string;
+}
+
+export type CitationGroupResult = {
+  combined: GroupedCitation[];
+  byModel: Record<string, GroupedCitation[]>;
+};
+
+export type CitationExcerpt = {
+  cited_text: string;
+  start_index: number | null;
+  end_index: number | null;
+  model_provider?: string;
+};
+
+export type GroupedCitation = {
+  title: string;
+  url: string;
+  citations: CitationExcerpt[];
+  totalCitations: number;
 };
 
 export type AnalysisModelInput = {
@@ -176,10 +199,12 @@ export type CompetitorsResponse = {
   competitors: Competitor[];
 };
 
-export type UrlStats = {
-  url: string;
+export type DomainStats = {
+  domain: string;
   totalOccurrences: number;
   citationTextCount: number;
+  usedPercentageAcrossAllDomains: number;
+  avgCitationsPerDomain: number;
 };
 
 export type SourceCitationLookup = {
@@ -202,4 +227,9 @@ export type Metric = {
   sources: Source[];
   citations: Citation[];
   promptRunAt: string;
+};
+
+export type ModelFilterDomainStats = {
+  combined: DomainStats[];
+  byModel: Record<string, DomainStats[]>;
 };

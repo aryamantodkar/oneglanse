@@ -1,13 +1,13 @@
 import { clickhouse, db, schema } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
-import type { PromptResponse, UrlStats, UserPrompt } from "@/server/db/types";
+import type { PromptResponse, DomainStats, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
 import { cronJobs } from "@/server/db/schema";
 import { pool } from "@/server/db/pg";
-import { cleanUrl } from "@/lib/helper/functions";
+import { cleanUrl, extractCitationStatsFromResponses, extractDomainStatsFromResponses, getDomain } from "@/lib/helper/functions";
 import { runLLMs } from "@/lib/llm/llmClient";
 
 function formatDateToClickHouse(dt: Date) {
@@ -323,65 +323,6 @@ export async function fetchPromptResponsesForWorkspace(args: {
     if (!workspaceId || workspaceId.trim() === "") {
       throw new ValidationError("Workspace ID is undefined.");
     }
-  
-    const extractUrlStatsFromResponse = (r: PromptResponse): UrlStats[] => {
-      const urlMap = new Map<
-        string,
-        { totalOccurrences: number; citationTextCount: number }
-      >();
-    
-      const addUrl = (url: string, hasCitationText = false) => {
-        const entry = urlMap.get(url) ?? {
-          totalOccurrences: 0,
-          citationTextCount: 0,
-        };
-    
-        entry.totalOccurrences += 1;
-    
-        if (hasCitationText) {
-          entry.citationTextCount += 1;
-        }
-    
-        urlMap.set(url, entry);
-      };
-    
-      const extractFromText = (text: string) => {
-        const matches = text.match(/https?:\/\/[^\s')"]+/g);
-        if (matches) {
-          matches.forEach((url) => addUrl(url));
-        }
-      };
-    
-      if (Array.isArray(r.citations)) {
-        r.citations.forEach((c: any) => {
-          if (typeof c === "string") {
-            extractFromText(c);
-          } else if (c?.url) {
-            addUrl(c.url, Boolean(c.cited_text));
-          }
-        });
-      } else if (typeof r.citations === "string") {
-        extractFromText(r.citations);
-      }
-    
-      if (Array.isArray(r.sources)) {
-        r.sources.forEach((s: any) => {
-          if (s?.url) {
-            addUrl(s.url);
-          }
-        });
-      }
-    
-      if (r.response) {
-        extractFromText(r.response);
-      }
-    
-      return Array.from(urlMap.entries()).map(([url, stats]) => ({
-        url,
-        totalOccurrences: stats.totalOccurrences,
-        citationTextCount: stats.citationTextCount,
-      }));
-    };
 
     // const result = await clickhouse.query({
     //   query: `
@@ -398,17 +339,19 @@ export async function fetchPromptResponsesForWorkspace(args: {
     const rawData = fs.readFileSync(filePath, "utf8");
     const data: PromptResponse[] = JSON.parse(rawData);
 
-    const enriched = data.map(r => ({
-      ...r,
-      extracted_urls: extractUrlStatsFromResponse(r),
-    }));
+    const domainStats = extractDomainStatsFromResponses(data);
+    const citationStats = extractCitationStatsFromResponses(data);
 
     // LOGGER
     // const logPath = path.join(process.cwd(), "mockData", "fetchPromptResponses.json");
 
     // fs.writeFileSync(logPath, JSON.stringify(enriched, null, 2));
 
-    return enriched;
+    return {
+      responses: data,
+      domain_stats: domainStats,
+      citationStats: citationStats
+    };
 }
 
 export async function fetchUserPromptsForWorkspace(args: {
