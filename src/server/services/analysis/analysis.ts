@@ -1,5 +1,5 @@
 import { clickhouse, db } from "@/server/db/index";
-import type { AnalysedPrompt, PromptAnalysis, PromptResponse } from "@/server/db/types";
+import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMetrics, PromptAnalysis, PromptResponse, Source, SourceCitationLookup } from "@/server/db/types";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -74,6 +74,22 @@ export async function analysePromptsForWorkspace(args: {
             };
           }
     
+          let sourcesArray: Source[] = resp.sources.map(source => {
+            return {
+              title: source.title ?? "",
+              url: source.url ?? "",
+              page_age: source.page_age ?? ""
+            }
+          });
+
+          const citationsArray: Citation[] = resp.citations.map(citation => ({
+            title: citation.title ?? "",
+            url: citation.url ?? "",
+            start_index: citation.start_index ?? null,
+            end_index: citation.end_index ?? null,
+            cited_text: citation.cited_text ?? ""
+          }));
+
           acc[key].promptResponses.push({
             id: resp.id,
             prompt_id: resp.prompt_id,
@@ -82,6 +98,8 @@ export async function analysePromptsForWorkspace(args: {
             model: resp.model,
             model_provider: resp.model_provider,
             response: resp.response,
+            sources: sourcesArray,
+            citations: citationsArray
           });
     
           return acc;
@@ -95,7 +113,6 @@ export async function analysePromptsForWorkspace(args: {
     // const rawData = fs.readFileSync(filePath, "utf8");
     // const analyzedPrompts = JSON.parse(rawData);
 
-    //  // LOGGER
     // const logPath = path.join(process.cwd(), "mockData", "groupedPrompts.json");
 
     // fs.writeFileSync(logPath, JSON.stringify(groupedPrompts, null, 2));
@@ -104,10 +121,7 @@ export async function analysePromptsForWorkspace(args: {
     // REAL DATA
     const analysisData = groupedPrompts.reduce(
       (
-        acc: Record<
-          string,
-          Record<string, { model_provider: string; response: string }[]>
-        >,
+        acc: AnalysisInput,
         prompt
       ) => {
         const { prompt_id, prompt_run_at, promptResponses } = prompt;
@@ -118,7 +132,7 @@ export async function analysePromptsForWorkspace(args: {
         for (const p of promptResponses) {
           acc[prompt_id][prompt_run_at].push({
             model_provider: p.model_provider,
-            response: p.response,
+            response: p.response
           });
         }
     
@@ -126,7 +140,7 @@ export async function analysePromptsForWorkspace(args: {
       },
       {}
     );
-  
+
     // REAL DATA
     // const llmResult = await analyzeResponse(analysisData);
 
@@ -134,12 +148,31 @@ export async function analysePromptsForWorkspace(args: {
     //   throw new Error("Analysis failed");
     // }
 
-    // const analysisResults = llmResult.data;
+    // const analysisResults: AnalysisOutput  = llmResult.data;
 
     // MOCK DATA
+    // const logPath2 = path.join(process.cwd(), "mockData", "metrics.json");
+
+    // fs.writeFileSync(logPath2, JSON.stringify(analysisResults, null, 2));
+
     const filePath2 = path.join(process.cwd(), "mockData", "metrics.json");
     const rawData2 = fs.readFileSync(filePath2, "utf8");
-    const analysisResults = JSON.parse(rawData2);
+    const analysisResults: AnalysisOutput = JSON.parse(rawData2);
+
+    const responseLookup = new Map<string, SourceCitationLookup>();
+
+    for (const prompt of groupedPrompts) {
+      const { prompt_id, prompt_run_at, promptResponses } = prompt;
+
+      for (const p of promptResponses) {
+        const key = `${prompt_id}::${prompt_run_at}::${p.model_provider}`;
+
+        responseLookup.set(key, {
+          sources: p.sources,
+          citations: p.citations,
+        });
+      }
+    }
 
     const rows = [];
 
@@ -148,20 +181,45 @@ export async function analysePromptsForWorkspace(args: {
       for (const [promptRunAt, models] of Object.entries(runs)) {
         if (!Array.isArray(models)) continue;
         for (const model of models) {
-          if (!model?.model_provider || !model?.brandMetrics) continue;
-          rows.push({
+          if (
+            !model?.model_provider ||
+            !model?.brandMetrics ||
+            typeof model.brandMetrics !== "object" ||
+            Array.isArray(model.brandMetrics)
+          ) {
+            continue;
+          }
+
+          const key = `${promptId}::${promptRunAt}::${model.model_provider}`;
+
+          const matched = responseLookup.get(key);
+
+          if (!matched) {
+            console.log("No sources/citations match found for", {
+              promptId,
+              promptRunAt,
+              modelProvider: model.model_provider,
+            });
+          }
+
+          let obj = {
             id: uuidv4(),
             prompt_id: promptId,
             workspace_id: workspaceId,
             user_id: userId,
             model_provider: model.model_provider,
-            brand_metrics: JSON.stringify(model.brandMetrics),
+            response: model.response,
+            brand_metrics: model.brandMetrics,
+            sources: matched?.sources ?? [],
+            citations: matched?.citations ?? [],
             prompt_run_at: promptRunAt,
-          });
+          };
+
+          rows.push(obj);
         }
       }
     }
-    
+
     await clickhouse.insert({
       table: "analytics.prompt_analysis",
       values: rows,
@@ -198,9 +256,44 @@ export async function fetchAnalysedPrompts(args: {
 
   // if(!analysedPrompts.length) throw new NotFoundError("Failed to fetch data from prompt_anaysis table.");
 
-  const filePath2 = path.join(process.cwd(), "mockData", "metrics.json");
+  const filePath2 = path.join(process.cwd(), "mockData", "promptAnalysis.json");
   const rawData2 = fs.readFileSync(filePath2, "utf8");
   const analysedPrompts = JSON.parse(rawData2);
 
-  return analysedPrompts;
+  const result: GroupedMetrics = {};
+  
+  for (const row of analysedPrompts) {
+    const {
+      prompt_id,
+      prompt_run_at,
+      model_provider,
+      response,
+      brand_metrics,
+      sources,
+      citations,
+    } = row;
+
+    if (!result[prompt_id]) {
+      result[prompt_id] = {};
+    }
+
+    if (!result[prompt_id][prompt_run_at]) {
+      result[prompt_id][prompt_run_at] = [];
+    }
+
+    result[prompt_id][prompt_run_at].push({
+      model_provider,
+      response,
+      brandMetrics: brand_metrics,
+      sources,
+      citations,
+      promptRunAt: prompt_run_at
+    });
+  }
+
+  const logPath2 = path.join(process.cwd(), "mockData", "finalMetrics.json");
+
+  fs.writeFileSync(logPath2, JSON.stringify(result, null, 2));
+
+  return result;
 }

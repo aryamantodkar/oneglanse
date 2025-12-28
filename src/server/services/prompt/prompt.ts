@@ -1,7 +1,7 @@
 import { clickhouse, db, schema } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
-import type { PromptResponse, UserPrompt } from "@/server/db/types";
+import type { PromptResponse, UrlStats, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
@@ -324,51 +324,83 @@ export async function fetchPromptResponsesForWorkspace(args: {
       throw new ValidationError("Workspace ID is undefined.");
     }
   
-    const extractUrlsFromResponse = (r: PromptResponse) => {
-      const urls = new Set<string>();
-
+    const extractUrlStatsFromResponse = (r: PromptResponse): UrlStats[] => {
+      const urlMap = new Map<
+        string,
+        { totalOccurrences: number; citationTextCount: number }
+      >();
+    
+      const addUrl = (url: string, hasCitationText = false) => {
+        const entry = urlMap.get(url) ?? {
+          totalOccurrences: 0,
+          citationTextCount: 0,
+        };
+    
+        entry.totalOccurrences += 1;
+    
+        if (hasCitationText) {
+          entry.citationTextCount += 1;
+        }
+    
+        urlMap.set(url, entry);
+      };
+    
+      const extractFromText = (text: string) => {
+        const matches = text.match(/https?:\/\/[^\s')"]+/g);
+        if (matches) {
+          matches.forEach((url) => addUrl(url));
+        }
+      };
+    
       if (Array.isArray(r.citations)) {
         r.citations.forEach((c: any) => {
           if (typeof c === "string") {
-            const match = c.match(/https?:\/\/[^\s')"]+/g);
-            if (match) match.forEach(url => urls.add(url));
+            extractFromText(c);
           } else if (c?.url) {
-            urls.add(c.url);
+            addUrl(c.url, Boolean(c.cited_text));
           }
         });
       } else if (typeof r.citations === "string") {
-        const match = (r.citations as string).match(/https?:\/\/[^\s')"]+/g);
-        if (match) (match as string[]).forEach((url: string) => urls.add(url));
+        extractFromText(r.citations);
       }
-
+    
       if (Array.isArray(r.sources)) {
         r.sources.forEach((s: any) => {
-          if (s?.url) urls.add(s.url);
+          if (s?.url) {
+            addUrl(s.url);
+          }
         });
       }
-
+    
       if (r.response) {
-        const match = r.response.match(/https?:\/\/[^\s)]+/g);
-        if (match) match.forEach(url => urls.add(url));
+        extractFromText(r.response);
       }
-
-      return Array.from(urls);
+    
+      return Array.from(urlMap.entries()).map(([url, stats]) => ({
+        url,
+        totalOccurrences: stats.totalOccurrences,
+        citationTextCount: stats.citationTextCount,
+      }));
     };
 
-    const result = await clickhouse.query({
-      query: `
-        SELECT *
-        FROM analytics.prompt_responses
-        WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
-      `,
-      format: "JSONEachRow",
-    });
+    // const result = await clickhouse.query({
+    //   query: `
+    //     SELECT *
+    //     FROM analytics.prompt_responses
+    //     WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+    //   `,
+    //   format: "JSONEachRow",
+    // });
 
-    const data: PromptResponse[] = (await result.json()) as PromptResponse[];
+    // const data: PromptResponse[] = (await result.json()) as PromptResponse[];
+
+    const filePath = path.join(process.cwd(), "mockData", "prompt_responses.json");
+    const rawData = fs.readFileSync(filePath, "utf8");
+    const data: PromptResponse[] = JSON.parse(rawData);
 
     const enriched = data.map(r => ({
       ...r,
-      extracted_urls: extractUrlsFromResponse(r),
+      extracted_urls: extractUrlStatsFromResponse(r),
     }));
 
     // LOGGER
