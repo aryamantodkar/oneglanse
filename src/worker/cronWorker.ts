@@ -89,14 +89,14 @@ async function processJob(job: any) {
       //   throw new ExternalServiceError("askPromptsForWorkspace returned empty response");
       // }
 
-      // console.log("Ask completed successfully, calling analyzeMetrics...");
+      console.log("Ask completed successfully, calling analyzeMetrics...");
 
-      // const analyseRes = await analysePromptsForWorkspace({ 
-      //   workspaceId: workspace_id,
-      //   userId,
-      // });
+      const analyseRes = await analysePromptsForWorkspace({ 
+        workspaceId: workspace_id,
+        userId,
+      });
 
-      // console.log("Analyse Res", analyseRes);
+      console.log("Analyse Res", analyseRes);
       
       // console.log(
       //   "Successfully processed prompts for workspace:",

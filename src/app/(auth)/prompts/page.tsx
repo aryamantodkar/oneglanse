@@ -34,10 +34,10 @@ import {
 import { Card } from "@/components/ui/card";
 import { Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDate, formatMarkdown, getFaviconUrls, getModelFavicon, isWithinRange } from "@/lib/helper/functions";
+import { formatDate, formatMarkdown, getDomain, getFaviconUrls, getModelFavicon, getUniqueLinks, isWithinRange } from "@/lib/helper/functions";
 import { PositionCell, SentimentCell } from "@/lib/helper/ui";
 import { fetchUserPrompts, useStorePrompt, useAnalyzeMetrics, useFetchAnalysedPrompts } from "@/lib/helper/mutations";
-import type { AnalysisModelResponseWithMetrics, BrandMetric, MetricPromptResponses, UserPrompt } from "@/server/db/types";
+import type { AnalysisModelOutput, AnalysisOutput, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@/server/db/types";
 import { Pencil } from "lucide-react";
 
 type BrandFilter = {
@@ -69,15 +69,11 @@ export default function Prompts() {
   const [editPromptValue, setEditPromptValue] = useState("");
   const [expandedResponses, setExpandedResponses] = useState<Set<number>>(new Set());
 
-  const [openPromptResponses, setOpenPromptResponses] = useState<MetricPromptResponses[]>([]);
+  const [openPromptResponses, setOpenPromptResponses] = useState<Metric[]>([]);
 
-  const [originalMetricData, setOriginalMetricData] = useState<
-    Record<string, Record<string, AnalysisModelResponseWithMetrics[]>>
-  >({});
+  const [originalMetricData, setOriginalMetricData] = useState<GroupedMetrics>({});
 
-  const [metrics, setMetrics] = useState<
-    Record<string, Record<string, AnalysisModelResponseWithMetrics[]>>
-  >({});
+  const [metrics, setMetrics] = useState<GroupedMetrics>({});
 
   const {
     data: userPrompts,
@@ -92,7 +88,7 @@ export default function Prompts() {
   } = useFetchAnalysedPrompts(workspaceId);
   
   const storePromptMutation = useStorePrompt();
-  // const analyzeMetricsMutation = useAnalyzeMetrics();
+  const analyzeMetricsMutation = useAnalyzeMetrics();
 
   useEffect(() => {
     if (userPrompts?.data?.length) {
@@ -106,33 +102,30 @@ export default function Prompts() {
     const brands = new Map<string, string>();
 
     if (analysedPromptData?.data && typeof analysedPromptData.data === "object") {
-      for (const [promptId, runs] of Object.entries(analysedPromptData.data)) {
-        if (runs && typeof runs === "object") {
-          if (typeof runs !== "object" || runs === null) continue;
-          for (const [promptRunAt, modelProviders] of Object.entries(runs as Record<string, any>)) {
-            if (!Array.isArray(modelProviders)) continue;
-            for(const model of modelProviders){
-              if (!model?.model_provider) continue;
-              models.add(model.model_provider);
-
-              if (model.brandMetrics && typeof model.brandMetrics === "object") {
-                for (const [brandName, metrics] of Object.entries(model.brandMetrics)) {
-                  if (
-                    metrics &&
-                    typeof metrics === "object" &&
-                    "website" in metrics &&
-                    typeof (metrics as { website?: unknown }).website === "string"
-                  ) {
-                    brands.set(brandName, (metrics as { website: string }).website);
-                  }
-                }
+      for (const runs of Object.values(analysedPromptData.data)) {
+        if (!runs || typeof runs !== "object") continue;
+      
+        for (const modelProviders of Object.values(runs)) {
+          if (!Array.isArray(modelProviders)) continue;
+      
+          for (const model of modelProviders) {
+            if (!model?.model_provider) continue;
+      
+            models.add(model.model_provider);
+      
+            const brandMetrics = model.brandMetrics;
+            if (!brandMetrics || typeof brandMetrics !== "object") continue;
+      
+            for (const [brandName, metrics] of Object.entries(brandMetrics)) {
+              if (typeof metrics?.website === "string") {
+                brands.set(brandName, metrics.website);
               }
             }
           }
         }
       }
 
-      setOriginalMetricData(analysedPromptData.data);
+      setOriginalMetricData(analysedPromptData?.data);
       setMetrics(analysedPromptData?.data);
     }
 
@@ -153,7 +146,6 @@ export default function Prompts() {
   
     for (const [promptId, runs] of Object.entries(metrics)) {
       for (const [promptRunAt, models] of Object.entries(runs)) {
-  
         if (timeFilter !== "all") {
           const days =
             timeFilter === "7d" ? 7 :
@@ -163,7 +155,7 @@ export default function Prompts() {
           if (!isWithinRange(promptRunAt, days)) continue;
         }
   
-        const filteredModels: AnalysisModelResponseWithMetrics[] = [];
+        const filteredModels: Metric[] = [];
 
         for (const model of models) {
           if (
@@ -207,6 +199,7 @@ export default function Prompts() {
   useEffect(() => {
     if (!openPrompt) {
       setOpenPromptResponses([]);
+      setExpandedResponses(new Set());
       return;
     }
   
@@ -216,13 +209,16 @@ export default function Prompts() {
       return;
     }
   
-    const collectedResponses: MetricPromptResponses[] = [];
+    const collectedResponses: Metric[] = [];
   
     Object.entries(promptRuns).forEach(([promptRunAt, models]) => {
       models.forEach((model) => {
         collectedResponses.push({
           model_provider: model.model_provider,
           response: model.response,
+          brandMetrics: model.brandMetrics,
+          sources: model.sources,
+          citations: model.citations,
           promptRunAt,
         });
       });
@@ -269,7 +265,7 @@ export default function Prompts() {
           mentions: mentionsSum, 
           sentiment: Math.round(sentimentSum / count),
           visibility: Math.round(visibilitySum / count),
-          position: Math.round(positionSum / count),
+          position: Number((positionSum / count).toFixed(1)),
           website,
         };
       }
@@ -349,9 +345,10 @@ export default function Prompts() {
   // useEffect(() => {
   //   const fetchAnalysis = async () => {
   //     try {
+  //     console.log("Testing analyse procedure.")
   //     const analysisRes = await analyzeMetricsMutation.mutateAsync({ 
-  //         workspaceId: 'workspace_67db1cf7-1a07-4253-ae26-e325258854e7',
-  //         userId: '0njwwM0EkmAhFu1gtoJZDtu1QMdaUe5O',
+          // workspaceId: 'workspace_e9e4e069-869b-495a-b46c-1e67776b76cf',
+  //         userId: '5AZXvT4txgQ21c4CbihNbsHrdSWQgk90',
   //       });
   //       console.log("analysisRes", analysisRes);
   //     } catch (err) {
@@ -695,9 +692,15 @@ export default function Prompts() {
                   </DialogTitle>
   
                   <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-1 min-w-0 break-words">
+                  <div className="flex flex-col gap-0.5">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-snug">
                       {openPrompt?.prompt}
                     </h2>
+
+                    <span className="text-[11px] text-gray-400">
+                      {openPromptResponses.length} total response{openPromptResponses.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
   
                     <Select value={modelFilter} onValueChange={setModelFilter}>
                       <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
@@ -793,7 +796,7 @@ export default function Prompts() {
                     ?
                     openPromptResponses.map((resp, index) => {
                       const isExpanded = expandedResponses.has(index);
-                    
+
                       return (
                         <div
                           key={index}
@@ -853,7 +856,7 @@ export default function Prompts() {
                             `}
                             dangerouslySetInnerHTML={{ __html: formatMarkdown(resp.response) }}
                           />
-                    
+
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -868,8 +871,13 @@ export default function Prompts() {
                               opacity-70 group-hover:opacity-100
                             "
                           >
-                            {isExpanded ? "Show less" : "Show more"}
-                          </button>
+                            {isExpanded ? "Show less" : "View full response"}
+                          </button> 
+
+                          <SourcesCard
+                            key={index}
+                            resp={resp}
+                          />
                         </div>
                       );
                     })
@@ -911,4 +919,139 @@ export default function Prompts() {
       }
     </div>
   )
+}
+
+function SourcesCard({
+  resp,
+}: {
+  resp: Metric;
+}) {
+  const MAX_VISIBLE = 5;
+  const [showAllLinks, setShowAllLinks] = useState(false);
+
+  const linksToShow = useMemo(() => {
+    const sources = getUniqueLinks(resp.sources);
+    const citations = getUniqueLinks(resp.citations);
+    return sources.length > 0 ? sources : citations;
+  }, [resp.sources, resp.citations]);
+
+  const visibleLinks = showAllLinks
+    ? linksToShow
+    : linksToShow.slice(0, MAX_VISIBLE);
+
+  const remainingCount = linksToShow.length - MAX_VISIBLE;
+
+  if (linksToShow.length === 0) return null;
+
+  return (
+    <div
+      className="mt-3 flex flex-wrap gap-2 group"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {visibleLinks.map((item, i) => {
+        const faviconUrls = getFaviconUrls(item.url, "");
+        const domain = getDomain(item.url);
+
+        return (
+          <a
+            key={`${item.url}-${i}`}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={item.title}
+            className="
+              relative
+              inline-flex items-start gap-2
+
+              h-[36px]
+              group-hover:h-[52px]
+
+              overflow-hidden
+
+              rounded-md
+              border border-gray-200/60 dark:border-gray-800/60
+              bg-gray-50/50 dark:bg-gray-900/50
+
+              px-2.5 py-2
+              text-[11px]
+              text-gray-600 dark:text-gray-400
+
+              transition-all
+              duration-200
+              ease-out
+            "
+          >
+            {/* Icon column */}
+            {faviconUrls[0] && (
+              <img
+                src={faviconUrls[0]}
+                alt=""
+                className="
+                  mt-0.5
+                  h-3.5 w-3.5
+                  rounded-sm
+                  opacity-75
+                  group-hover:opacity-100
+                  transition-opacity
+                  flex-shrink-0
+                "
+              />
+            )}
+
+            <div className="flex flex-col gap-0.5 overflow-hidden">
+              <span className="line-clamp-2 leading-snug">
+                {item.title}
+              </span>
+
+              {domain && (
+                <span
+                  className="
+                    text-[10px]
+                    text-gray-400
+                    truncate
+
+                    opacity-0
+                    translate-y-1
+
+                    group-hover:opacity-100
+                    group-hover:translate-y-0
+
+                    transition-all
+                    duration-200
+                    delay-75
+                    ease-out
+                  "
+                >
+                  {domain}
+                </span>
+              )}
+            </div>
+          </a>
+        );
+      })}
+
+      {!showAllLinks && remainingCount > 0 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAllLinks(true);
+          }}
+          className="
+            inline-flex items-center
+            rounded-md
+            border border-dashed border-gray-300/70 dark:border-gray-700/70
+            px-2.5 py-1.5
+            text-[11px]
+            text-gray-500 dark:text-gray-400
+            hover:text-gray-700 dark:hover:text-gray-200
+            hover:border-gray-400 dark:hover:border-gray-600
+            transition
+          "
+        >
+          +{remainingCount} more
+        </button>
+      )}
+    </div>
+  );
 }

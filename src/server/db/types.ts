@@ -71,16 +71,9 @@ export interface PromptAnalysis {
   model: string;
   model_provider: string;
   response: string;
+  sources: Source[];
+  citations: Citation[];
 }
-
-// UI
-export type Metric = {
-  mentions: number | string;
-  sentiment: number | string;
-  visibility: number | string;
-  position: number | string;
-  website?: string;
-};
 
 export interface PromptResponseClient {
   id: string;
@@ -111,22 +104,44 @@ export type ApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
-export type AnalysisModelResponse = {
+export type Source = {
+  title: string;
+  url: string;
+  page_age: string
+};
+
+export type Citation = {
+  title: string;
+  url: string;
+  start_index: number | null;
+  end_index: number | null;
+  cited_text: string;
+};
+
+export type AnalysisModelInput = {
   model_provider: string;
   response: string;
 };
 
-export type AnalysisModelResponseWithMetrics = {
+export type AnalysisModelOutput = {
   model_provider: string;
   response: string;
-  brandMetrics?: Record<string, BrandMetric>;
+  brandMetrics: Record<string, BrandMetric>;
 };
 
-export type analysisData = Record<
+export type AnalysisInput = Record<
   string,
   Record<
     string,
-    AnalysisModelResponse[]
+    AnalysisModelInput[]
+  >
+>;
+
+export type AnalysisOutput= Record<
+  string,
+  Record<
+    string,
+    AnalysisModelOutput[]
   >
 >;
 
@@ -161,8 +176,30 @@ export type CompetitorsResponse = {
   competitors: Competitor[];
 };
 
-export type MetricPromptResponses = {
+export type UrlStats = {
+  url: string;
+  totalOccurrences: number;
+  citationTextCount: number;
+};
+
+export type SourceCitationLookup = {
+  sources: Source[];
+  citations: Citation[];
+};
+
+export type GroupedMetrics = Record<
+  string,
+  Record<
+    string,
+    Metric[]
+  >
+>;
+
+export type Metric = {
   model_provider: string;
   response: string;
+  brandMetrics: Record<string, BrandMetric>;
+  sources: Source[];
+  citations: Citation[];
   promptRunAt: string;
-}
+};
