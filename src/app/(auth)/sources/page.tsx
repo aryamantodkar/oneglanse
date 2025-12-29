@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bot, ChevronRight, Info, Link, SearchX } from "lucide-react";
+import { Bot, ChevronRight, ExternalLink, Info, Link, SearchX } from "lucide-react";
 import { fetchPromptResponses } from "@/lib/helper/mutations";
 import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponseClient } from "@/server/db/types";
 import { getDomain, getFaviconUrls, getModelFavicon } from "@/lib/helper/functions";
@@ -166,12 +166,10 @@ export default function Sources() {
               <SearchX className="w-5 h-5 text-gray-400" strokeWidth={1.5} />
             </div>
 
-            {/* Title */}
             <h3 className="text-md font-medium text-gray-900">
               No results found
             </h3>
 
-            {/* Subtitle */}
             <p className="mt-1.5 text-sm text-gray-500 max-w-xs">
               {activeTab === "domains"
                 ? "Try adjusting your filters to see source data."
@@ -221,18 +219,54 @@ export default function Sources() {
                                 ((e.target as HTMLImageElement).style.display = "none")
                               }
                             />
-                            <span className="text-sm font-medium text-gray-900">
+                            <a
+                              href={`https://${d.domain}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="
+                                text-sm font-medium text-gray-900
+                                hover:text-gray-700
+                                transition-colors
+                              "
+                            >
                               {d.domain}
-                            </span>
+                            </a>
                           </div>
                         </TableCell>
     
                         <TableCell className="px-6 py-5 align-middle text-sm text-gray-700">
                           {d.usedPercentageAcrossAllDomains}%
                         </TableCell>
-    
+
                         <TableCell className="px-6 py-5 align-middle text-sm text-gray-700">
-                          {d.avgCitationsPerDomain}
+                          {d.citationTextCount === 0 ? (
+                            <div className="relative inline-block group">
+                              <span className="text-xs text-gray-500 cursor-default">
+                                Referenced by {selectedProvider}
+                              </span>
+
+                              <div
+                                className="
+                                  pointer-events-none
+                                  absolute left-1/2 bottom-full z-20 mt-1
+                                  -translate-x-1/2
+                                  whitespace-nowrap
+                                  rounded-md
+                                  bg-gray-900
+                                  px-3 py-2
+                                  text-[11px]
+                                  text-white
+                                  opacity-0
+                                  group-hover:opacity-100
+                                  transition-opacity
+                                "
+                              >
+                                This source was referenced, but no cited text was provided.
+                              </div>
+                            </div>
+                          ) : (
+                            d.avgCitationsPerDomain
+                          )}
                         </TableCell>
                       </TableRow>
                     )
@@ -257,6 +291,10 @@ export default function Sources() {
                   const providers = Array.from(
                     new Set(c.citations.map((r) => r.model_provider))
                   );
+
+                  const hasOnlyReferences =
+                      c.totalCitations ===
+                      c.citations.filter(c => !c.cited_text?.trim()).length;
   
                   return (
                     <React.Fragment key={c.url}>
@@ -280,14 +318,53 @@ export default function Sources() {
                               {c.title || "Untitled source"}
                             </span>
   
-                            <span className="text-xs text-gray-500 break-all">
-                              {c.url}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-500 break-all">
+                                {c.url}
+                              </span>
+
+                              <a
+                                href={c.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="
+                                  inline-flex
+                                  items-center
+                                  justify-center
+                                  rounded
+                                  text-gray-400
+                                  hover:text-gray-600
+                                  transition-colors
+                                "
+                                title="Open source"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.75} />
+                              </a>
+                            </div>
   
                             <div className="flex gap-2 mt-1">
-                              <span className="bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                                {c.totalCitations} citation{c.totalCitations > 1 ? "s" : ""}
-                              </span>
+                              {hasOnlyReferences ? (
+                                <span
+                                  className="
+                                    bg-gray-50
+                                    text-gray-500
+                                    text-[10px]
+                                    font-medium
+                                    px-2 py-0.5
+                                    rounded-full
+                                    border border-dashed border-gray-200
+                                  "
+                                >
+                                  {c.totalCitations} Reference{c.totalCitations > 1 ? "s" : ""}
+                                </span>
+                              ) : (
+                                <span
+                                  className="bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5 rounded-full"
+                                >
+                                  {c.totalCitations} Citation{c.totalCitations > 1 ? "s" : ""}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -363,12 +440,20 @@ export default function Sources() {
                                 </div>
   
                                 <div className="pl-6 flex flex-col gap-3">
-                                  <p className="text-[14px] leading-[1.65] text-gray-800">
-                                    <span className="text-gray-300 mr-1">“</span>
-                                    {cited_text}
-                                    <span className="text-gray-300 ml-1">”</span>
-                                  </p>
-  
+                                  {
+                                    hasOnlyReferences
+                                    ?
+                                    <div className="text-[14px] leading-[1.65] italic text-gray-500">
+                                      This source was referenced by the model, but no cited text was provided.
+                                    </div>
+                                    :
+                                    <p className="text-[14px] leading-[1.65] italic text-gray-600">
+                                      <span className="text-gray-300 mr-1">“</span>
+                                      {cited_text}
+                                      <span className="text-gray-300 ml-1">”</span>
+                                    </p>
+                                  }
+
                                   {model_provider && (
                                     <div className="flex items-center gap-2 text-[11px] text-gray-400">
                                       <img
