@@ -289,8 +289,7 @@ export function extractCitationStatsFromResponses(
         !c ||
         typeof c.url !== "string" ||
         typeof c.title !== "string" ||
-        typeof c.cited_text !== "string" ||
-        c.cited_text.trim() === ""
+        typeof c.cited_text !== "string"
       ) {
         continue;
       }
@@ -338,9 +337,11 @@ export function groupCitationsByUrl(
   const seen = new Set<string>();
 
   for (const c of citations) {
-    if (!c?.url || !c.cited_text?.trim()) continue;
+    if (!c?.url) continue;
 
-    const uniqueKey = `${c.title}::${c.model_provider}::${c.cited_text}`;
+    const uniqueKey = c.cited_text?.trim()
+      ? `${c.title}::${c.model_provider}::${c.cited_text}`
+      : `${c.title}::${c.model_provider}::${c.url}`;
 
     if (seen.has(uniqueKey)) continue;
     seen.add(uniqueKey);
