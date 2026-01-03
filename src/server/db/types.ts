@@ -32,6 +32,14 @@ export type InsertWorkspaceMember = InferInsertModel<typeof schema.workspaceMemb
 export type Competitor = InferSelectModel<typeof schema.competitors>;
 export type InsertCompetitor= InferInsertModel<typeof schema.competitors>;
 
+export type NestedRecord<T> = Record<
+  string,
+  Record<
+    string,
+    T[]
+  >
+>;
+
 // API
 export type UserPrompt = {
     id: string;
@@ -50,18 +58,8 @@ export interface PromptResponse {
     model: string;
     model_provider: string;
     response: string;
-    citations: Array<{
-      title: string;
-      url: string;
-      start_index?: number | null;
-      end_index?: number | null;
-      cited_text: string;
-    }>;
-    sources: Array<{
-      title: string;
-      url: string;
-      page_age?: string | null;
-    }>;
+    citations: Citation[];
+    sources: Source[];
     prompt_run_at: string;
     created_at: string;
 }
@@ -78,22 +76,8 @@ export interface PromptAnalysis {
   citations: Citation[];
 }
 
-export interface PromptResponseClient {
-  id: string;
-  prompt_id: string;
-  user_id: string;
-  workspace_id: string;
-  model: string;
-  model_provider: string;
-  response: string;
-  citations: any[];
-  sources: any[];
-  prompt_run_at: string;
-  created_at: string;
-}
-
 export type DomainResponseClient = {
-  responses: PromptResponseClient[],
+  responses: PromptResponse[],
   domain_stats: DomainStats[]
 }
 
@@ -155,21 +139,9 @@ export type AnalysisModelOutput = {
   brandMetrics: Record<string, BrandMetric>;
 };
 
-export type AnalysisInput = Record<
-  string,
-  Record<
-    string,
-    AnalysisModelInput[]
-  >
->;
+export type AnalysisInput = NestedRecord<AnalysisModelInput>;
 
-export type AnalysisOutput= Record<
-  string,
-  Record<
-    string,
-    AnalysisModelOutput[]
-  >
->;
+export type AnalysisOutput= NestedRecord<AnalysisModelOutput>;
 
 export type BrandMetric = {
   mentions: number;
@@ -215,13 +187,7 @@ export type SourceCitationLookup = {
   citations: Citation[];
 };
 
-export type GroupedMetrics = Record<
-  string,
-  Record<
-    string,
-    Metric[]
-  >
->;
+export type GroupedMetrics = NestedRecord<Metric>;
 
 export type Metric = {
   model_provider: string;
@@ -235,4 +201,15 @@ export type Metric = {
 export type ModelFilterDomainStats = {
   combined: DomainStats[];
   byModel: Record<string, DomainStats[]>;
+};
+
+export type BrandFilter = {
+  name: string;
+  website: string;
+};
+
+export type FilterMetricsParams = {
+  modelFilter: string;
+  timeFilter: "all" | "7d" | "14d" | "30d";
+  brandFilter?: BrandFilter | null;
 };

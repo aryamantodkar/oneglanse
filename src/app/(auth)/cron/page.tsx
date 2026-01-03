@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Edit, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function CronPage() {
   const searchParams = useSearchParams();
@@ -139,9 +140,9 @@ export default function CronPage() {
         </div>
   
         <Button asChild>
-          <a href={`/prompts?workspace=${workspaceId}`} className="text-white">
+          <Link href={`/prompts?workspace=${workspaceId}`} className="text-white">
             Go to Prompts
-          </a>
+          </Link>
         </Button>
       </div>
     );

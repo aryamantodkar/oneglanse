@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth/auth-client"
+import Link from "next/link"
  
 const formSchema = z.object({
   email: z.string().email(),
@@ -146,9 +147,9 @@ export function LoginForm({
                 </div>
                 <div className="text-center text-sm">
                   Don&apos;t have an account?{" "}
-                  <a href="/signup" className="underline underline-offset-4">
+                  <Link href="/signup" className="underline underline-offset-4">
                     Sign up
-                  </a>
+                  </Link>
                 </div>
               </div>
             </form>

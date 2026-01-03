@@ -5,14 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bot, ChevronRight, ExternalLink, Info, Link, SearchX } from "lucide-react";
-import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponseClient } from "@/server/db/types";
+import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponse } from "@/server/db/types";
 import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
 import React from "react";
 import { usePromptResponses } from "../prompts/_lib/queries/prompt.queries";
 
 export default function Sources() {
-  const [responses, setResponses] = useState<PromptResponseClient[]>([]);
-  const [originalPromptResponses, setOriginalPromptResponses] = useState<PromptResponseClient[]>([]);
+  const [responses, setResponses] = useState<PromptResponse[]>([]);
+  const [originalPromptResponses, setOriginalPromptResponses] = useState<PromptResponse[]>([]);
   const [domainStats, setDomainStats] = useState<ModelFilterDomainStats | null>(null);
   const [citationStats, setCitationStats] = useState<CitationGroupResult | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
