@@ -3,10 +3,10 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getFaviconUrls, getModelFavicon } from "@/lib/helper/functions";
+import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
 import { api } from "@/trpc/react";
-import { getCompetitorsForWorkspace } from "@/lib/helper/mutations";
 import type { Competitor } from "@/server/db/types";
+import { useCompetitors } from "./_lib/competitors.queries";
 
 export default function Page() {
   const searchParams = useSearchParams();
@@ -14,7 +14,7 @@ export default function Page() {
 
   const [competitorsData, setCompetitorsData] = useState<Competitor[]>([]);
 
-  const { data: competitors, refetch, isLoading, error } = getCompetitorsForWorkspace(workspaceId);
+  const { data: competitors, refetch, isLoading, error } = useCompetitors(workspaceId);
 
   useEffect(() => {
     if (competitors?.data?.length) {

@@ -1,4 +1,4 @@
-import { EnvError } from '@/lib/error/errors/EnvError';
+import { EnvError } from '@/server/error/errors/EnvError';
 import Perplexity from '@perplexity-ai/perplexity_ai';
 
 const apiKey = process.env.PERPLEXITY_API_KEY;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, safeHandler, ok, ValidationError } from "@/lib/error";
+import { AuthError, safeHandler, ok, ValidationError } from "@/server/error";
 import { runPromptPipeline } from "@/server/services/runner/runner";
 import { internalProcedure } from "../../procedures";
 

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-import { ExternalServiceError, safeHandler, ValidationError } from "@/lib/error";
+import { ExternalServiceError, safeHandler, ValidationError } from "@/server/error";
 import { competitorsPrompt } from "./competitorsPrompt";
 import type { CompetitorInput, CompetitorsResponse } from "@/server/db/types";
 

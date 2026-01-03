@@ -25,8 +25,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner"
 import { api } from "@/trpc/react";
-import { getWorkspaceByIdMutation } from "@/lib/helper/mutations";
-import { getModelFavicon } from "@/lib/helper/functions";
+import { getModelFavicon } from "@/lib/ui/favicon";
 
 const preferenceItems = [
     {

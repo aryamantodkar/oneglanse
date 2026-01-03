@@ -1,4 +1,4 @@
-import { AuthError } from "@/lib/error";
+import { AuthError } from "@/server/error";
 import { t } from "../trpc";
 
 export const isAuthenticated = t.middleware(async ({ next, ctx }) => {

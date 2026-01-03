@@ -1,9 +1,7 @@
-import { AuthError } from "@/lib/error";
+import { AuthError } from "@/server/error";
 import { t } from "../trpc";
 
-export const isInternal = t.middleware((opts) => {
-	const { next, ctx } = opts;
-	
+export const isInternal = t.middleware(({ next, ctx }) => {
 	const auth = ctx.headers.get("Authorization");
   
 	if (auth !== `Bearer ${process.env.INTERNAL_CRON_SECRET}`) {
