@@ -1,3 +1,5 @@
+import "server-only";
+
 import { clickhouse, db, schema } from "@/server/db/index";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
@@ -10,10 +12,7 @@ import { runWebSearch } from "@/server/services/prompt/_lib/pipeline/runWebSearc
 import { extractDomainStatsFromResponses } from "./_lib/stats/extractDomainStats";
 import { extractCitationStatsFromResponses } from "./_lib/stats/extractCitationStats";
 import { getCleanUrl } from "./_lib/format/getCleanUrl";
-
-function formatDateToClickHouse(dt: Date) {
-    return dt.toISOString().slice(0, 19).replace("T", " "); 
-  }
+import { formatDateToClickHouse } from "./_lib/format/formatDateToClickhouse";
 
 export async function askPromptsForWorkspace(args: {
     workspaceId: string;

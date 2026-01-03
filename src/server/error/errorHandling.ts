@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { ApiResponse } from "@/server/db/types";
 import { BaseError } from "./errors/BaseError";
 import { captureException } from "./logger";

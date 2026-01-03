@@ -1,3 +1,5 @@
+import "server-only";
+
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { auth } from "@lib/auth/auth";

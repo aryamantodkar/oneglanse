@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { PromptResponse, CitationGroupResult, Citation } from "@/server/db/types";
 import { groupCitationsByUrl } from "./groupCitationsByUrl";
 

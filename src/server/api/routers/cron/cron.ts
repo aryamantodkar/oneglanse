@@ -1,4 +1,6 @@
 // src/server/api/routers/cron.ts
+import "server-only";
+
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, ok, safeHandler, ValidationError } from "@/server/error";
@@ -9,7 +11,6 @@ export const cronRouter = createTRPCRouter({
   create: authorizedWorkspaceProcedure
     .input(
       z.object({
-        workspaceId: z.string(),
         name: z.string().optional(),
         cronExpression: z.string(),
         timezone: z.string().optional(),
@@ -75,7 +76,6 @@ export const cronRouter = createTRPCRouter({
     }),
 
   list: authorizedWorkspaceProcedure
-    .input(z.object({ workspaceId: z.string() }))
     .query(async ({ ctx }) => {
       return safeHandler(async () => {
         const {
@@ -88,7 +88,6 @@ export const cronRouter = createTRPCRouter({
       })
     }),
   fetchFailedJobs: authorizedWorkspaceProcedure
-    .input(z.object({ workspaceId: z.string() }))
     .query(async ({ ctx }) => {
       return safeHandler(async () => {
         const {

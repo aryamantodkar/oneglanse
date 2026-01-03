@@ -1,3 +1,5 @@
+import "server-only";
+
 import { clickhouse, db } from "@/server/db/index";
 import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMetrics, PromptAnalysis, PromptResponse, Source, SourceCitationLookup } from "@/server/db/types";
 import fs from "fs";

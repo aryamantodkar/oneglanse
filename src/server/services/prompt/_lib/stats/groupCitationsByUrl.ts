@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { Citation, GroupedCitation } from "@/server/db/types";
 
 export function groupCitationsByUrl(

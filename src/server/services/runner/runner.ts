@@ -1,3 +1,5 @@
+import "server-only";
+
 import { analysePromptsForWorkspace } from "../analysis/analysis";
 import { fetchPromptResponsesForWorkspace } from "../prompt/prompt";
 

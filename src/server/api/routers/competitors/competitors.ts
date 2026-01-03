@@ -1,3 +1,5 @@
+import "server-only";
+
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, ok, safeHandler, ValidationError } from "@/server/error";
@@ -6,11 +8,6 @@ import { analysisRateLimiter } from "../../procedures";
 
 export const competitorsRouter = createTRPCRouter({
   analyseCompetitors: analysisRateLimiter
-  .input(
-    z.object({
-      workspaceId: z.string()
-    })
-  )
   .mutation(async ({ ctx }) => {
     return safeHandler(async () => {
       const {
@@ -23,11 +20,6 @@ export const competitorsRouter = createTRPCRouter({
     })
   }),
   fetchCompetitors: analysisRateLimiter
-  .input(
-    z.object({
-      workspaceId: z.string()
-    })
-  )
   .query(async ({ ctx }) => {
     return safeHandler(async () => {
       const {

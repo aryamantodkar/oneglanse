@@ -1,3 +1,5 @@
+import "server-only";
+
 export const getCleanUrl = (url: string) => {
     try {
       const u = new URL(url);

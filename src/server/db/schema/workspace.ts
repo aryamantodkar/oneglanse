@@ -1,3 +1,5 @@
+import "server-only";
+
 import { pgTable, text, timestamp, boolean, varchar, uuid, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { schema } from "..";
 import { sql } from "drizzle-orm";

@@ -1,3 +1,5 @@
+import "server-only";
+
 import { BaseError } from "./BaseError";
 
 export class EnvError extends BaseError {

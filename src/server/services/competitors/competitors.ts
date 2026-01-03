@@ -1,3 +1,5 @@
+import "server-only";
+
 import { clickhouse, db, schema } from "@/server/db/index";
 import type { CompetitorInput } from "@/server/db/types";
 import fs from "fs";
