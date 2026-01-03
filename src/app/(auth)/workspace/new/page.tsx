@@ -18,7 +18,7 @@ import { redirect, useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { authClient } from "@/lib/auth/auth-client";
 import { LocationSelector } from "@/components/location/locationSelector";
-import { useAnalyzeCompetitors } from "@/lib/helper/mutations";
+import { useAnalyzeCompetitors } from "../../competitors/_lib/competitors.mutations";
 
 export default function NewWorkspace() {
   const [formData, setFormData] = useState({

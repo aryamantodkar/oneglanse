@@ -1,3 +1,5 @@
+import "server-only";
+
 export * from "./errors/BaseError";
 export * from "./errors/ValidationError";
 export * from "./errors/NotFoundError";

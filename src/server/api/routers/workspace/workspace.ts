@@ -1,3 +1,5 @@
+import "server-only";
+
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, safeHandler, ok, ValidationError } from "@/server/error";
@@ -34,11 +36,6 @@ export const workspaceRouter = createTRPCRouter({
         })
       }),
     getById: authorizedWorkspaceProcedure
-      .input(
-        z.object({
-          workspaceId: z.string().min(1),
-        })
-      )
       .query(async ({ ctx }) => {
         return safeHandler(async () => {
           const {

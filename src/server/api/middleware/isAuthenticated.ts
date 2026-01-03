@@ -1,3 +1,5 @@
+import "server-only";
+
 import { AuthError } from "@/server/error";
 import { t } from "../trpc";
 

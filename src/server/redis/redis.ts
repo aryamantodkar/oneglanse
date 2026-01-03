@@ -1,4 +1,6 @@
 // src/server/redis/redis.ts
+import "server-only";
+
 import { createClient } from "redis";
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";

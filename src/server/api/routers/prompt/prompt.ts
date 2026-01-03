@@ -1,3 +1,5 @@
+import "server-only";
+
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, ok, safeHandler, ValidationError } from "@/server/error";
@@ -6,11 +8,6 @@ import { authorizedWorkspaceProcedure, llmRateLimiter, protectedProcedure } from
 
 export const promptRouter = createTRPCRouter({
   ask: llmRateLimiter
-    .input(
-      z.object({
-        workspaceId: z.string()
-      })
-    )
     .mutation(async ({ ctx }) => {
       return safeHandler(async () => {
         const {
@@ -25,8 +22,7 @@ export const promptRouter = createTRPCRouter({
   store: authorizedWorkspaceProcedure
     .input(
       z.object({
-        prompts: z.array(z.string()),
-        workspaceId: z.string(),
+        prompts: z.array(z.string())
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -43,11 +39,6 @@ export const promptRouter = createTRPCRouter({
       })
     }),
   fetchPromptResponses: authorizedWorkspaceProcedure
-    .input(
-      z.object({
-        workspaceId: z.string(),
-      })
-    )
     .query(async ({ ctx }) => {
       return safeHandler(async () => {
         const {
@@ -61,11 +52,6 @@ export const promptRouter = createTRPCRouter({
       })
     }),
   fetchUserPrompts: authorizedWorkspaceProcedure
-    .input(
-      z.object({
-        workspaceId: z.string(),
-      })
-    )
     .query(async ({ ctx }) => {
       return safeHandler(async () => {
         const {

@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { AnalysisInput } from "@/server/db/types";
 
 export function analysisPrompt(analysisData: AnalysisInput) {

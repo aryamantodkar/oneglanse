@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { CompetitorInput } from "@/server/db/types";
 
 export function competitorsPrompt(brandData: CompetitorInput) {

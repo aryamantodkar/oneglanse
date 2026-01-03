@@ -1,3 +1,5 @@
+import "server-only";
+
 import { BaseError } from "./BaseError";
 
 export class ExternalServiceError extends BaseError {

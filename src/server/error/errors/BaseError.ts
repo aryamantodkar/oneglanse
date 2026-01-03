@@ -1,3 +1,5 @@
+import "server-only";
+
 export class BaseError extends Error {
     public readonly code: string;
     public readonly status: number;

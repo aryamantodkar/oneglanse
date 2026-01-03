@@ -1,3 +1,5 @@
+import "server-only";
+
 import { getDomain } from "@/app/(auth)/prompts/_lib/url/getDomain";
 import type { DomainStats, PromptResponse } from "@/server/db/types";
 

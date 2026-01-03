@@ -1,4 +1,6 @@
 // Procedures
+import "server-only";
+
 import { t } from "./trpc";
 import { isAuthenticated } from "./middleware/isAuthenticated";
 import { isInternal } from "./middleware/isInternal";

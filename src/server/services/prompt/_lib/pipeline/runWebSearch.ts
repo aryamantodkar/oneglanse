@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { UserPrompt, WorkspaceLocation } from "@/server/db/types";
 import fs from "fs";
 import path from "path";

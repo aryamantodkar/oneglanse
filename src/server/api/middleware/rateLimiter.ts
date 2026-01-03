@@ -1,3 +1,4 @@
+import "server-only";
 
 import { fixedWindowAlgorithm } from "@/server/redis/limiter/fixedWindow";
 import { slidingWindowAlgorithm } from "@/server/redis/limiter/slidingWindow";
