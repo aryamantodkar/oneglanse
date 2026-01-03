@@ -92,6 +92,15 @@ CREATE TABLE "workspaces" (
     "deleted_at" timestamp
 );
 
+CREATE TABLE "workspace_members" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "workspace_id" text NOT NULL,
+    "user_id" text NOT NULL,
+    "role" text NOT NULL DEFAULT 'owner',
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "deleted_at" TIMESTAMPTZ
+);
+
 --> statement-breakpoint
 CREATE TABLE "cron_jobs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -158,3 +167,8 @@ ALTER TABLE "member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("us
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cron_queue" ADD CONSTRAINT "cron_queue_job_id_cron_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."cron_jobs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "job_runs" ADD CONSTRAINT "job_runs_job_id_cron_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."cron_jobs"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace_members" ADD CONSTRAINT "workspace_members_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "workspace_members" ADD CONSTRAINT "workspace_members_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+CREATE UNIQUE INDEX "workspace_members_unique_active" ON "public"."workspace_members" ("workspace_id", "user_id") WHERE "deleted_at" IS NULL;
+CREATE INDEX "workspace_members_workspace_id_idx" ON "public"."workspace_members" ("workspace_id");
+CREATE INDEX "workspace_members_user_id_idx" ON "public"."workspace_members" ("user_id");

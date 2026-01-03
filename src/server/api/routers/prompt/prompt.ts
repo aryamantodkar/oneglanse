@@ -1,34 +1,28 @@
 import { z } from "zod";
-import { createTRPCRouter, llmRateLimiter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, ok, safeHandler, ValidationError } from "@/lib/error";
 import { askPromptsForWorkspace, fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace } from "@/server/services/prompt/prompt";
+import { authorizedWorkspaceProcedure, llmRateLimiter, protectedProcedure } from "../../procedures";
 
 export const promptRouter = createTRPCRouter({
   ask: llmRateLimiter
     .input(
       z.object({
-        workspaceId: z.string(),
-        userId: z.string().optional()
+        workspaceId: z.string()
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ ctx }) => {
       return safeHandler(async () => {
-        const { workspaceId, userId: inputUserId } = input;
-        const userId = inputUserId ?? ctx.session?.user.id;
-
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-        
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
 
         const res = await askPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
         return ok(res, "Prompts asked successfully.");
       })
     }),
-  store: protectedProcedure
+  store: authorizedWorkspaceProcedure
     .input(
       z.object({
         prompts: z.array(z.string()),
@@ -37,64 +31,48 @@ export const promptRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
-        const { prompts, workspaceId } = input;
-        const userId = ctx.session?.user.id;
+        const { prompts } = input;
 
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-        
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
 
         const res = await storePromptsForWorkspace({ prompts: prompts!, workspaceId: workspaceId!, userId: userId! });
         return ok(res, "Prompts stored successfully.");
       })
     }),
-  fetchPromptResponses: protectedProcedure
+  fetchPromptResponses: authorizedWorkspaceProcedure
     .input(
       z.object({
         workspaceId: z.string(),
       })
     )
-    .query(async ({ input, ctx }) => {
+    .query(async ({ ctx }) => {
       return safeHandler(async () => {
-        const { workspaceId } = input;
-        const userId = ctx.session?.user.id;
-    
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-        
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
 
         const res = await fetchPromptResponsesForWorkspace({ workspaceId: workspaceId!, userId: userId!});
 
         return ok(res, "Fetched prompt responses successfully.");
       })
     }),
-  fetchUserPrompts: protectedProcedure
+  fetchUserPrompts: authorizedWorkspaceProcedure
     .input(
       z.object({
         workspaceId: z.string(),
       })
     )
-    .query(async ({ input, ctx }) => {
+    .query(async ({ ctx }) => {
       return safeHandler(async () => {
-        const { workspaceId } = input;
-        const userId = ctx.session?.user.id;
-    
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-        
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
-        
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
+  
         const res = await fetchUserPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
 
         return ok(res, "Fetched user prompts successfully.");

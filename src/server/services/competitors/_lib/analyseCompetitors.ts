@@ -1,14 +1,14 @@
 import OpenAI from "openai";
 
 import { ExternalServiceError, safeHandler, ValidationError } from "@/lib/error";
-import { competitorsQuery } from "./queries/competitorsQuery";
+import { competitorsPrompt } from "./competitorsPrompt";
 import type { CompetitorInput, CompetitorsResponse } from "@/server/db/types";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export async function getCompetitors(brandData : CompetitorInput) {
+export async function analyseCompetitors(brandData : CompetitorInput) {
     return safeHandler(async () => {  
-      const enhancedQuery = competitorsQuery(brandData);
+      const enhancedQuery = competitorsPrompt(brandData);
   
       let response;
       try {

@@ -2,13 +2,13 @@ import type { UserPrompt, WorkspaceLocation } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { queryClaude } from "./models/anthropic";
-import { queryOpenAI } from "./models/openAI";
-import { queryPerplexity } from "./models/perplexity";
-import { safeHandler } from "../error/errorHandling";
+import { queryClaude } from "../../../../lib/llm/providers/anthropic";
+import { queryOpenAI } from "../../../../lib/llm/providers/openAI";
+import { queryPerplexity } from "../../../../lib/llm/providers/perplexity";
+import { safeHandler } from "../../../../lib/error/errorHandling";
 import { ExternalServiceError } from "@/lib/error";
 
-export async function runLLMs(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
+export async function runWebSearch(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
   try {
     const prompt_run_at = new Date();
 

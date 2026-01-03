@@ -1,6 +1,6 @@
 import type { AnalysisInput } from "@/server/db/types";
 
-export function analyzeQuery(analysisData: AnalysisInput) {
+export function analysisPrompt(analysisData: AnalysisInput) {
     return `
       You are an expert **market and brand intelligence analyst**.
 

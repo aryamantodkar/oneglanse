@@ -5,10 +5,9 @@ import type { PromptResponse, DomainStats, UserPrompt } from "@/server/db/types"
 import fs from "fs";
 import path from "path";
 import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
-import { cronJobs } from "@/server/db/schema";
 import { pool } from "@/server/db/pg";
 import { cleanUrl, extractCitationStatsFromResponses, extractDomainStatsFromResponses, getDomain } from "@/lib/helper/functions";
-import { runLLMs } from "@/lib/llm/llmClient";
+import { runWebSearch } from "@/server/services/prompt/_lib/runWebSearch";
 
 function formatDateToClickHouse(dt: Date) {
     return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -19,14 +18,6 @@ export async function askPromptsForWorkspace(args: {
     userId: string;
 }) {
     const { workspaceId, userId } = args;
-
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
     const workspace = await db
       .select()
@@ -69,7 +60,7 @@ export async function askPromptsForWorkspace(args: {
 
     console.log("Calling run llms...");
 
-    const results = await runLLMs(promptsArray, {
+    const results = await runWebSearch(promptsArray, {
       workspaceCountry: workspaceData?.country ?? "",
       workspaceRegion: workspaceData?.region ?? "",
     });
@@ -197,15 +188,7 @@ export async function storePromptsForWorkspace(args: {
 }) {
     const { prompts, workspaceId, userId } = args;
 
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-      
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
-
-    const nonEmptyPrompts = prompts
+      const nonEmptyPrompts = prompts
         .map((p) => p.trim())
         .filter((p) => p !== "");
 
@@ -266,47 +249,49 @@ export async function storePromptsForWorkspace(args: {
         })
       }
 
-      const existingCron = await db
-        .select()
-        .from(cronJobs)
-        .where(eq(cronJobs.workspaceId, workspaceId));
-
-      if (existingCron.length === 0) {
-        console.log("Calling LLMs for the first time.")
-        const values = {
-          workspaceId,
-          userId, 
-          name: "Auto Run Prompts",
-          cronExpression: "0 */12 * * *", 
-          timezone: "UTC",
-          targetType: "internal",
-          targetPayload: { type: "runPrompts", userId }, 
-          maxAttempts: 3,
-        };
-
-        const [jobRow] = await db
-          .insert(cronJobs)
-          .values(values)
-          .returning();
-
-        if (!jobRow) throw new DatabaseError("Failed to insert cron job", { table: "cron_jobs", operation: "insert", values });
-
-        await pool.query(`
-          INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-          VALUES ('${jobRow.id}', '${workspaceId}', '{"type":"runPrompts","userId":"${userId}"}'::jsonb, 3);
-        `);
-      
-        const scheduledSQL = `
-          INSERT INTO public.cron_queue ("job_id", "workspace_id", "payload", "max_attempts")
-          VALUES ('${jobRow.id}', '${workspaceId}', '{"type":"runPrompts","userId":"${userId}"}'::jsonb, 3);
-        `;
-        await pool.query(
-          `SELECT cron.schedule($1, $2, $3);`,
-          [`auto_run_prompts_${workspaceId}`, "0 */12 * * *", scheduledSQL]
-        );
-      }
+      // scheduleCronForPrompts({ workspaceId, userId });
 
       return prompts;
+}
+
+export async function scheduleCronForPrompts(args: {
+  workspaceId: string;
+  userId: string;
+}) {
+      const { workspaceId, userId } = args;
+
+      const scheduleName = `auto_run_prompts_${workspaceId}`;
+      const cronExpression = "0 */12 * * *";
+
+      const scheduledSQL = `
+        SELECT http_post(
+          '${process.env.API_BASE_URL}/api/trpc/internal.runPrompts?batch=1',
+          jsonb_build_object(
+            '0',
+            jsonb_build_object(
+              'json',
+              jsonb_build_object(
+                'workspaceId', '${workspaceId}',
+                'userId', '${userId}'
+              )
+            )
+          ),
+          jsonb_build_object(
+            'Authorization', 'Bearer ${process.env.INTERNAL_CRON_SECRET}',
+            'Content-Type', 'application/json'
+          )
+        );
+      `;
+
+      await pool.query(
+        `SELECT cron.unschedule($1);`,
+        [scheduleName]
+      );
+
+      await pool.query(
+        `SELECT cron.schedule($1, $2, $3);`,
+        [scheduleName, cronExpression, scheduledSQL]
+      );
 }
 
 
@@ -315,14 +300,6 @@ export async function fetchPromptResponsesForWorkspace(args: {
     userId: string;
 }) {
     const { workspaceId, userId } = args;
-
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
     // const result = await clickhouse.query({
     //   query: `
@@ -359,14 +336,6 @@ export async function fetchUserPromptsForWorkspace(args: {
     userId: string;
 }) {
     const { workspaceId, userId } = args;
-
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
     const result = await clickhouse.query({
       query: `

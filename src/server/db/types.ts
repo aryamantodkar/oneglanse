@@ -26,6 +26,9 @@ export type InsertInvitation = InferInsertModel<typeof schema.invitation>;
 export type Workspace = InferSelectModel<typeof schema.workspaces>;
 export type InsertWorkspace = InferInsertModel<typeof schema.workspaces>;
 
+export type WorkspaceMember = InferSelectModel<typeof schema.workspaceMembers>;
+export type InsertWorkspaceMember = InferInsertModel<typeof schema.workspaceMembers>;
+
 export type Competitor = InferSelectModel<typeof schema.competitors>;
 export type InsertCompetitor= InferInsertModel<typeof schema.competitors>;
 

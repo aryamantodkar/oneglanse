@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { analyzeQuery } from "./queries/analyzeQuery";
+import { analysisPrompt } from "./analysisPrompt";
 import { ExternalServiceError, safeHandler, ValidationError } from "@/lib/error";
 import type { AnalysisInput, AnalysisOutput } from "@/server/db/types";
 import fs from "fs";
@@ -7,9 +7,9 @@ import path from "path";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-export async function analyzeResponse(analysisData: AnalysisInput) {
+export async function runAnalysis(analysisData: AnalysisInput) {
     return safeHandler(async () => {  
-      const enhancedQuery = analyzeQuery(analysisData);
+      const enhancedQuery = analysisPrompt(analysisData);
   
       let response;
       try {

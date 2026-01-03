@@ -22,7 +22,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: ["pnpm", "dev", "-H", "0.0.0.0"]
+    command: sh -c "pnpm drizzle-kit migrate && pnpm dev -H 0.0.0.0"
   redis:
     image: redis:7-alpine
     container_name: redis_server
@@ -65,25 +65,6 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse-init/:/docker-entrypoint-initdb.d/
-
-  cron-worker:
-    container_name: cron_worker
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    depends_on:
-      - db
-      - clickhouse
-      - redis
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql://user:password@db:5432/mydb
-      CLICKHOUSE_URL: http://clickhouse:8123
-      DOCKER_ENV: "true"
-      REDIS_URL: redis://redis:6379
-      CRON_SECRET: ${CRON_SECRET}
-    volumes:
-      - ./mockData:/app/mockData
 
 volumes:
   db_data:

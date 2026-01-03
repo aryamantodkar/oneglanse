@@ -1,11 +1,12 @@
 // src/server/api/routers/cron.ts
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, ok, safeHandler, ValidationError } from "@/lib/error";
 import { createCronForWorkspace, deleteCronForWorkspace, fetchFailedJobsForWorkspace, listCronForWorkspace, updateCronForWorkspace } from "@/server/services/cron/cron";
+import { authorizedWorkspaceProcedure, protectedProcedure } from "../../procedures";
 
 export const cronRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: authorizedWorkspaceProcedure
     .input(
       z.object({
         workspaceId: z.string(),
@@ -19,16 +20,12 @@ export const cronRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
-        const userId = ctx.session?.user.id;
-        const { workspaceId, name, cronExpression, timezone, targetType, targetPayload, maxAttempts } = input;
-
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-  
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
+        
+        const { name, cronExpression, timezone, targetType, targetPayload, maxAttempts } = input;
 
         const res = await createCronForWorkspace({ workspaceId: workspaceId, userId: userId, name, cronExpression, timezone, targetType, targetPayload, maxAttempts });
         return ok(res, "Cron job created successfully.");
@@ -46,13 +43,11 @@ export const cronRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
-        const userId = ctx.session?.user.id;
+        const {
+          user: { id: userId }
+        } = ctx;
 
         const { jobId, name, cronExpression, maxAttempts } = input;
-
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
 
         if (!jobId) {
           throw new ValidationError("Job Id is undefined.");
@@ -67,12 +62,8 @@ export const cronRouter = createTRPCRouter({
     .input(z.object({ jobId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       return safeHandler(async () => {
-        const userId = ctx.session?.user.id;
+        const userId = ctx.user.id;
         const { jobId } = input;
-
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
 
         if (!jobId) {
           throw new ValidationError("Job Id is undefined.");
@@ -83,39 +74,27 @@ export const cronRouter = createTRPCRouter({
       })
     }),
 
-  list: protectedProcedure
+  list: authorizedWorkspaceProcedure
     .input(z.object({ workspaceId: z.string() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ ctx }) => {
       return safeHandler(async () => {
-        const userId = ctx.session?.user.id;
-        const { workspaceId } = input;
-
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-  
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
 
         const res = await listCronForWorkspace({ workspaceId, userId });
         return ok(res, "Fetched cron jobs for this workspace successfully.");
       })
     }),
-  fetchFailedJobs: protectedProcedure
+  fetchFailedJobs: authorizedWorkspaceProcedure
     .input(z.object({ workspaceId: z.string() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ ctx }) => {
       return safeHandler(async () => {
-        const userId = ctx.session?.user.id;
-        const { workspaceId } = input;
-  
-        if (!userId) {
-          throw new AuthError("User Id is undefined.");
-        }
-  
-        if (!workspaceId || workspaceId.trim() === "") {
-          throw new ValidationError("Workspace ID is undefined.");
-        }
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
   
         const res = await fetchFailedJobsForWorkspace({ workspaceId, userId });
         return ok(res, "Fetched failed cron jobs for this workspace successfully.");

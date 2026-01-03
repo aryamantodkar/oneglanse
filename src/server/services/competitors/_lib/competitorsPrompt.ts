@@ -1,6 +1,6 @@
 import type { CompetitorInput } from "@/server/db/types";
 
-export function competitorsQuery(brandData: CompetitorInput) {
+export function competitorsPrompt(brandData: CompetitorInput) {
     const { name, slug, domain } = brandData;
   
     return `

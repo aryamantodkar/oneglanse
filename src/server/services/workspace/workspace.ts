@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter } from "@/server/api/trpc";
 import { auth } from "@lib/auth/auth";
 import { db, schema } from "@/server/db";
-import type { Workspace } from "@/server/db/types";
+import type { Workspace, WorkspaceMember } from "@/server/db/types";
 import { newId } from "@/lib/workspace/id";
 import { eq, isNull, and } from "drizzle-orm";
 import { AuthError, safeHandler, ValidationError, NotFoundError, ok } from "@/lib/error";
+import { uuidv4 } from "better-auth";
 
 export async function createNewWorkspace(args: {
     name: string;
@@ -13,18 +14,10 @@ export async function createNewWorkspace(args: {
     domain: string;
     country: string;
     region?: string | null;
-    userId?: string;           
-    headers?: Headers;
+    userId: string;           
+    headers: Headers;
 }) {
     const { name, slug, domain, country, region, userId, headers } = args;
-
-    if (!headers || !userId) {
-        throw new AuthError("Headers or userId are undefined.");
-    }
-
-    if (!name || !domain || !slug || !country) {
-      throw new ValidationError("Please fill all the mandatory fields.");
-    }
 
     const orgData = await auth.api
     .createOrganization({
@@ -56,37 +49,39 @@ export async function createNewWorkspace(args: {
     .insert(schema.workspaces)
     .values(workspace)
 
+  await db.insert(schema.workspaceMembers).values({
+    workspaceId: workspace.id,
+    userId,
+    role: "owner",
+  });
+
   return { workspace, org: orgData };
 }
 
 export async function getWorkspaceById(args: {
-    workspaceId: string;
-    userId: string;
+  workspaceId: string;
 }) {
-    const { workspaceId, userId } = args;
+  const { workspaceId } = args;
 
-    if (!userId) {
-        throw new AuthError("User Id is undefined.");
-    }
+  if (!workspaceId || workspaceId.trim() === "") {
+    throw new ValidationError("Workspace ID is undefined.");
+  }
 
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
+  const [workspace] = await db
+    .select()
+    .from(schema.workspaces)
+    .where(
+      and(
+        eq(schema.workspaces.id, workspaceId),
+        isNull(schema.workspaces.deletedAt)
+      )
+    )
+    .execute();
 
-    const workspace = await db
-        .select()
-        .from(schema.workspaces)
-        .where(
-            and(
-                eq(schema.workspaces.id, workspaceId),
-                isNull(schema.workspaces.deletedAt)
-            )
-        )
-        .execute();
+  if (!workspace) {
+    throw new NotFoundError(`Workspace with ID ${workspaceId} not found.`);
+  }
 
-    if (!workspace || workspace.length === 0) {
-        throw new NotFoundError(`Workspace with ID ${workspaceId} not found.`);
-    }
-
-    return workspace[0];
+  return workspace;
 }
+

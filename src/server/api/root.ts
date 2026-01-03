@@ -5,6 +5,7 @@ import { cronRouter } from "./routers/cron/cron";
 import { locationRouter } from "./routers/location/location";
 import { analysisRouter } from "./routers/analysis/analysis";
 import { competitorsRouter } from "./routers/competitors/competitors";
+import { internalRouter } from "./routers/internal/internal";
 
 export const appRouter = createTRPCRouter({
     workspace: workspaceRouter,
@@ -12,7 +13,8 @@ export const appRouter = createTRPCRouter({
     cron: cronRouter,
     location: locationRouter,
     analysis: analysisRouter,
-    competitors: competitorsRouter
+    competitors: competitorsRouter,
+    internal: internalRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -7,7 +7,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import type { Workspace } from "@/server/db/types";
 import { useEffect, useRef } from "react";
 import { Logout } from "@/components/forms/logout";
-import { useFailedJobs } from "@/lib/helper/mutations";
 import { toast } from "sonner";
 
 export default function LayoutContent({ children, workspace }: { children: React.ReactNode, workspace: Workspace | null}) {
@@ -17,7 +16,6 @@ export default function LayoutContent({ children, workspace }: { children: React
   const shownJobsRef = useRef<Set<string>>(new Set());
 
   const router = useRouter();
-  const { data: failedJobs, isLoading } = useFailedJobs(workspace?.id ?? "");
 
   useEffect(() => {
     if (!workspace) {
@@ -28,17 +26,6 @@ export default function LayoutContent({ children, workspace }: { children: React
   useEffect(() => {
     shownJobsRef.current.clear();
   }, [workspace?.id]);
-
-  useEffect(() => {
-    if (!failedJobs?.data?.length) return;
-  
-    failedJobs.data.forEach(job => {
-      if (!shownJobsRef.current.has(job.job_id)) {
-        toast.error(`Job failed: ${job.error}`);
-        shownJobsRef.current.add(job.job_id);
-      }
-    });
-  }, [failedJobs]);
   
   if (!workspace) {
     return (
