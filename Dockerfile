@@ -38,4 +38,4 @@ COPY --from=builder /app/.env ./.env
 
 EXPOSE 3000
 
-CMD ["pnpm", "start", "-H", "0.0.0.0"]
+CMD sh -c "pnpm drizzle-kit migrate && pnpm start -H 0.0.0.0"

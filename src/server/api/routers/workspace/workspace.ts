@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter } from "@/server/api/trpc";
 import { AuthError, safeHandler, ok, ValidationError } from "@/lib/error";
 import { createNewWorkspace, getWorkspaceById } from "@/server/services/workspace/workspace";
+import { authorizedWorkspaceProcedure, protectedProcedure } from "../../procedures";
 
 export const workspaceRouter = createTRPCRouter({
     create: protectedProcedure
@@ -14,15 +15,14 @@ export const workspaceRouter = createTRPCRouter({
           region: z.string().nullable().optional(), 
         })
       )
-      .mutation(async ({ ctx, input }) => {
+      .mutation(async ({ input, ctx }) => {
         return safeHandler(async () => {
-          const headers = ctx.headers;
-          const userId = ctx.session?.user.id;
-          const { name, slug, domain, country, region } = input;
+          const {
+            user: { id: userId },
+            headers,
+          } = ctx;
 
-          if (!headers || !userId) {
-            throw new AuthError("Headers or userId are undefined.");
-          }
+          const { name, slug, domain, country, region } = input;
 
           if (!name || !domain || !slug || !country) {
             throw new ValidationError("Please fill all the mandatory fields.");
@@ -33,26 +33,19 @@ export const workspaceRouter = createTRPCRouter({
           return ok(res, "Workspace created successfully.");
         })
       }),
-    getById: protectedProcedure
+    getById: authorizedWorkspaceProcedure
       .input(
         z.object({
           workspaceId: z.string().min(1),
         })
       )
-      .query(async ({ input, ctx }) => {
+      .query(async ({ ctx }) => {
         return safeHandler(async () => {
-          const userId = ctx.session?.user.id;
-          const { workspaceId } = input;
-
-          if (!userId) {
-            throw new AuthError("User Id is undefined.");
-          }
-
-          if (!workspaceId || workspaceId.trim() === "") {
-            throw new ValidationError("Workspace ID is undefined.");
-          }
+          const {
+            workspaceId,
+          } = ctx;
     
-          const res = await getWorkspaceById({ workspaceId, userId });
+          const res = await getWorkspaceById({ workspaceId });
     
           return ok(res, "Successfully fetched workspace by ID.");
         })

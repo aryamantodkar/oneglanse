@@ -4,31 +4,18 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
-import { analyzeResponse } from "@/lib/llm/analyzeResponse";
 import { v4 as uuidv4 } from "uuid";
 import { eq, isNull, and } from "drizzle-orm";
 import { getWorkspaceById } from "../workspace/workspace";
-import { getCompetitors } from "@/lib/llm/getCompetitors";
+import { analyseCompetitors } from "@/server/services/competitors/_lib/analyseCompetitors";
 
 export async function analyseCompetitorsForWorkspace(args: {
     workspaceId: string;
     userId: string;
   }) {
     const { workspaceId, userId } = args;
-  
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
-    const workspace = await getWorkspaceById({ workspaceId, userId });
-
-    if (!workspace) {
-        throw new NotFoundError(`Workspace with ID ${workspaceId} not found.`);
-    }
+    const workspace = await getWorkspaceById({ workspaceId });
 
     const brandData: CompetitorInput = {
         name: workspace.name,
@@ -36,7 +23,7 @@ export async function analyseCompetitorsForWorkspace(args: {
         domain: workspace.domain
     }
   
-    // const competitorsResult = await getCompetitors(brandData);
+    // const competitorsResult = await analyseCompetitors(brandData);
 
     // if (!competitorsResult.data) {
     //     throw new Error("Analysis failed");
@@ -74,14 +61,6 @@ export async function analyseCompetitorsForWorkspace(args: {
     userId: string;
   }) {
     const { workspaceId, userId } = args;
-  
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
     const competitors = await db
         .select()

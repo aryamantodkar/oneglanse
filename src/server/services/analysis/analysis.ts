@@ -4,7 +4,7 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
-import { analyzeResponse } from "@/lib/llm/analyzeResponse";
+import { runAnalysis } from "./_lib/runAnalysis";
 import { v4 as uuidv4 } from "uuid";
 
 export async function analysePromptsForWorkspace(args: {
@@ -12,14 +12,6 @@ export async function analysePromptsForWorkspace(args: {
     userId: string;
 }) {
     const { workspaceId, userId } = args;
-
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
     // const result = await clickhouse.query({
     //   query: `
@@ -142,7 +134,7 @@ export async function analysePromptsForWorkspace(args: {
     );
 
     // REAL DATA
-    // const llmResult = await analyzeResponse(analysisData);
+    // const llmResult = await runAnalysis(analysisData);
 
     // if (!llmResult.data) {
     //   throw new Error("Analysis failed");
@@ -234,14 +226,6 @@ export async function fetchAnalysedPrompts(args: {
   userId: string;
 }) {
   const { workspaceId, userId } = args;
-
-  if (!userId) {
-    throw new AuthError("User Id is undefined.");
-  }
-  
-  if (!workspaceId || workspaceId.trim() === "") {
-    throw new ValidationError("Workspace ID is undefined.");
-  }
 
   // const result = await clickhouse.query({
   //   query: `

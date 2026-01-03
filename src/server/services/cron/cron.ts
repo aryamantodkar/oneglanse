@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter } from "@/server/api/trpc";
 import cronParser from "cron-parser";
 import { pool } from "@/server/db/pg"; // pg Pool (Node-Postgres)
 import { db } from "@/server/db";
@@ -27,14 +27,6 @@ export async function createCronForWorkspace(args: {
       targetPayload,
       maxAttempts = 3, 
     } = args;
-  
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-    
-    if (!workspaceId || workspaceId.trim() === "") {
-      throw new ValidationError("Workspace ID is undefined.");
-    }
 
     try {
       cronParser.parse(cronExpression, {
@@ -93,14 +85,6 @@ export async function createCronForWorkspace(args: {
       maxAttempts = 3, 
     } = args;
 
-    if (!userId) {
-      throw new AuthError("User Id is undefined.");
-    }
-
-    if (!jobId) {
-      throw new ValidationError("Job ID is undefined.");
-    }
-
     try {
       cronParser.parse(cronExpression, { tz: "UTC" });
     } catch {
@@ -149,15 +133,7 @@ export async function createCronForWorkspace(args: {
     userId: string;
     jobId: string;
   }) {
-    const { userId, jobId } = args;
-
-    if (!userId) {
-        throw new AuthError("User Id is undefined.");
-    }
-
-    if (!jobId) {
-      throw new ValidationError("Job ID is undefined.");
-    }
+    const { jobId } = args;
     
     const jobName = `cron_job_${jobId}`;
 
@@ -173,15 +149,7 @@ export async function createCronForWorkspace(args: {
     workspaceId: string;
     userId: string;
   }) {
-    const { workspaceId, userId } = args;
-
-    if (!userId) {
-        throw new AuthError("User Id is undefined.");
-    }
-
-    if (!workspaceId || workspaceId.trim() === "") {
-        throw new ValidationError("Workspace ID is undefined.");
-    }
+    const { workspaceId } = args;
 
     const jobs = await db
         .select()
@@ -196,14 +164,6 @@ export async function createCronForWorkspace(args: {
     userId: string;
   }) {
     const { workspaceId, userId } = args;
-
-    if (!userId) {
-        throw new AuthError("User Id is undefined.");
-    }
-
-    if (!workspaceId || workspaceId.trim() === "") {
-        throw new ValidationError("Workspace ID is undefined.");
-    }
 
     const result = await pool.query(
         `SELECT job_id, workspace_id, error, finished_at
