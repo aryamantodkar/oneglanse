@@ -26,6 +26,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner"
 import { api } from "@/trpc/react";
 import { getModelFavicon } from "@/lib/ui/favicon";
+import Link from "next/link";
 
 const preferenceItems = [
     {
@@ -192,10 +193,10 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
               {generalItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -209,10 +210,10 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
               {SettingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

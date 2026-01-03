@@ -35,7 +35,7 @@ import { Card } from "@/components/ui/card";
 import { Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
-import type { AnalysisModelOutput, AnalysisOutput, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@/server/db/types";
+import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@/server/db/types";
 import { Pencil } from "lucide-react";
 import { formatMarkdown } from "./_lib/format/formatMarkdown";
 import { getDomain } from "./_lib/url/getDomain";
@@ -46,11 +46,8 @@ import { PositionMetricCell } from "./_components/PositionMetricCell";
 import { SentimentMetricCell } from "./_components/SentimentMetricCell";
 import { useAnalyzeMetrics, useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import { useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
-
-type BrandFilter = {
-  name: string;
-  website: string;
-};
+import { filterMetrics } from "./_lib/metrics/filterMetrics";
+import { aggregatePromptMetrics } from "./_lib/metrics/aggregatePromptMetrics";
 
 export default function Prompts() {
   const searchParams = useSearchParams();
@@ -149,58 +146,11 @@ export default function Prompts() {
   }, [analysedPromptData]);
 
   const filteredMetrics = useMemo(() => {
-    let result: typeof metrics = {};
-  
-    for (const [promptId, runs] of Object.entries(metrics)) {
-      for (const [promptRunAt, models] of Object.entries(runs)) {
-        if (timeFilter !== "all") {
-          const days =
-            timeFilter === "7d" ? 7 :
-            timeFilter === "14d" ? 14 :
-            30;
-  
-          if (!isWithinRange(promptRunAt, days)) continue;
-        }
-  
-        const filteredModels: Metric[] = [];
-
-        for (const model of models) {
-          if (
-            modelFilter !== "All Models" &&
-            model.model_provider !== modelFilter
-          ) {
-            continue;
-          }
-  
-          let brandMetrics: Record<string, BrandMetric> | undefined = model.brandMetrics;
-
-          if (brandFilter?.name && brandMetrics) {
-            const selected = brandMetrics[brandFilter.name];
-
-            if (!selected) {
-              continue;
-            }
-
-            brandMetrics = {
-              [brandFilter.name]: selected,
-            };
-          }
-  
-          filteredModels.push({
-            ...model,
-            brandMetrics,
-          });
-        }
-  
-        if (filteredModels.length > 0) {
-          if (!result[promptId]) result[promptId] = {};
-          result[promptId][promptRunAt] = filteredModels;
-        }
-      }
-    }
-
-    console.log("filtered",result);
-    return result;
+    return filterMetrics(metrics, {
+      modelFilter,
+      timeFilter,
+      brandFilter,
+    })
   }, [metrics, modelFilter, timeFilter, brandFilter]);
 
   useEffect(() => {
@@ -235,50 +185,7 @@ export default function Prompts() {
   }, [openPrompt, filteredMetrics]);
 
   const aggregatedPromptMetrics = useMemo(() => {
-    const result: Record<
-      string,
-      BrandMetric
-    > = {};
-  
-    for (const [promptId, runs] of Object.entries(filteredMetrics)) {
-      let count = 0;
-  
-      let mentionsSum = 0;
-      let sentimentSum = 0;
-      let visibilitySum = 0;
-      let positionSum = 0;
-      let website = "";
-  
-      for (const models of Object.values(runs)) {
-        for (const model of models) {
-          const brandMetrics = model.brandMetrics;
-          if (!brandMetrics) continue;
-  
-          const metric = Object.values(brandMetrics)[0];
-          if (!metric) continue;
-  
-          mentionsSum += metric.mentions;
-          sentimentSum += metric.sentiment;
-          visibilitySum += metric.visibility;
-          positionSum += metric.position;
-  
-          website = metric.website;
-          count++;
-        }
-      }
-  
-      if (count > 0) {
-        result[promptId] = {
-          mentions: mentionsSum, 
-          sentiment: Math.round(sentimentSum / count),
-          visibility: Math.round(visibilitySum / count),
-          position: Number((positionSum / count).toFixed(1)),
-          website,
-        };
-      }
-    }
-  
-    return result;
+    return aggregatePromptMetrics(filteredMetrics);
   }, [filteredMetrics]);
 
   const isModified = useMemo(() => {
