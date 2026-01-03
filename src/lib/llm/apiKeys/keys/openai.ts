@@ -1,4 +1,4 @@
-import { EnvError } from "@/lib/error/errors/EnvError";
+import { EnvError } from "@/server/error/errors/EnvError";
 import OpenAI from "openai";
 
 const apiKey = process.env.OPENAI_API_KEY;

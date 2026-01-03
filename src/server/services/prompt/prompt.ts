@@ -4,10 +4,12 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { PromptResponse, DomainStats, UserPrompt } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
+import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/server/error";
 import { pool } from "@/server/db/pg";
-import { cleanUrl, extractCitationStatsFromResponses, extractDomainStatsFromResponses, getDomain } from "@/lib/helper/functions";
-import { runWebSearch } from "@/server/services/prompt/_lib/runWebSearch";
+import { runWebSearch } from "@/server/services/prompt/_lib/pipeline/runWebSearch";
+import { extractDomainStatsFromResponses } from "./_lib/stats/extractDomainStats";
+import { extractCitationStatsFromResponses } from "./_lib/stats/extractCitationStats";
+import { getCleanUrl } from "./_lib/format/getCleanUrl";
 
 function formatDateToClickHouse(dt: Date) {
     return dt.toISOString().slice(0, 19).replace("T", " "); 
@@ -92,7 +94,7 @@ export async function askPromptsForWorkspace(args: {
               metrics
                 .flatMap((m: any) =>
                   (m.citations || []).map((c: any) => {
-                    const clean = cleanUrl(c.url);
+                    const clean = getCleanUrl(c.url);
                     return [
                       `${clean}||${(c.cited_text || "").trim()}`,
                       {
@@ -111,7 +113,7 @@ export async function askPromptsForWorkspace(args: {
               metrics
                 .flatMap((m: any) =>
                   (m.sources || []).map((s: any) => {
-                    const clean = cleanUrl(s.url);
+                    const clean = getCleanUrl(s.url);
                     return [
                       `${clean}||${(s.title || "").trim()}`,
                       {
@@ -152,11 +154,11 @@ export async function askPromptsForWorkspace(args: {
           response: metric?.response || "",
           citations: (metric?.citations || []).map((c: any) => ({
             ...c,
-            url: cleanUrl(c.url),
+            url: getCleanUrl(c.url),
           })),
           sources: (metric?.sources || []).map((s: any) => ({
             ...s,
-            url: cleanUrl(s.url),
+            url: getCleanUrl(s.url),
           })),
           prompt_run_at: formatDateToClickHouse(r.prompt_run_at),
           created_at: formatDateToClickHouse(new Date()),

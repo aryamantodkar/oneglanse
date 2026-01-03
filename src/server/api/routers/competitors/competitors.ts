@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, ok, safeHandler, ValidationError } from "@/lib/error";
+import { AuthError, ok, safeHandler, ValidationError } from "@/server/error";
 import { analyseCompetitorsForWorkspace, fetchCompetitorsForWorkspace } from "@/server/services/competitors/competitors";
 import { analysisRateLimiter } from "../../procedures";
 

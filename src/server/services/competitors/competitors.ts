@@ -3,7 +3,7 @@ import type { CompetitorInput } from "@/server/db/types";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
+import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/server/error";
 import { v4 as uuidv4 } from "uuid";
 import { eq, isNull, and } from "drizzle-orm";
 import { getWorkspaceById } from "../workspace/workspace";

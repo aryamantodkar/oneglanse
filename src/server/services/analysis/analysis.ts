@@ -3,7 +3,7 @@ import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMe
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/lib/error";
+import { AuthError, fail, NotFoundError, ok, ValidationError } from "@/server/error";
 import { runAnalysis } from "./_lib/runAnalysis";
 import { v4 as uuidv4 } from "uuid";
 

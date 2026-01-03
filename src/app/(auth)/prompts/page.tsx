@@ -34,11 +34,18 @@ import {
 import { Card } from "@/components/ui/card";
 import { Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDate, formatMarkdown, getDomain, getFaviconUrls, getModelFavicon, getUniqueLinks, isWithinRange } from "@/lib/helper/functions";
-import { PositionCell, SentimentCell } from "@/lib/helper/ui";
-import { fetchUserPrompts, useStorePrompt, useAnalyzeMetrics, useFetchAnalysedPrompts } from "@/lib/helper/mutations";
+import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
 import type { AnalysisModelOutput, AnalysisOutput, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@/server/db/types";
 import { Pencil } from "lucide-react";
+import { formatMarkdown } from "./_lib/format/formatMarkdown";
+import { getDomain } from "./_lib/url/getDomain";
+import { getUniqueLinks } from "./_lib/url/getUniqueLinks";
+import { isWithinRange } from "./_lib/date/dateFilter";
+import { formatDate } from "./_lib/format/formatDate";
+import { PositionMetricCell } from "./_components/PositionMetricCell";
+import { SentimentMetricCell } from "./_components/SentimentMetricCell";
+import { useAnalyzeMetrics, useStorePrompt } from "./_lib/mutations/prompt.mutations";
+import { useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
 
 type BrandFilter = {
   name: string;
@@ -79,7 +86,7 @@ export default function Prompts() {
     data: userPrompts,
     isLoading: isUserPromptsLoading,
     error: userPromptsError,
-  } = fetchUserPrompts(workspaceId);
+  } = useUserPrompts(workspaceId);
   
   const {
     data: analysedPromptData,
@@ -652,7 +659,7 @@ export default function Prompts() {
                       </TableCell>
   
                       <TableCell className="px-6 py-5 text-center">
-                        <SentimentCell sentiment={metrics.sentiment} />
+                        <SentimentMetricCell sentiment={metrics.sentiment} />
                       </TableCell>
   
                       <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
@@ -668,7 +675,7 @@ export default function Prompts() {
                       </TableCell>
   
                       <TableCell className="px-6 py-5 text-center">
-                        <PositionCell position={metrics.position} />
+                        <PositionMetricCell position={metrics.position} />
                       </TableCell>
                     </TableRow>
                   );

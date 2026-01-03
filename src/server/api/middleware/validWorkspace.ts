@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { t } from "../trpc";
-import { AuthError, ValidationError } from "@/lib/error";
+import { AuthError, ValidationError } from "@/server/error";
 import { workspaceInput } from "@/server/db/schema";
 
 export const validWorkspace = t.middleware(async ({ ctx, input, next }) => {

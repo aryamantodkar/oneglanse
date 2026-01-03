@@ -1,0 +1,57 @@
+export function formatMarkdown(text: string) {
+    if (!text) return "No response available";
+  
+    let html = text;
+  
+    // Convert **bold**
+    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  
+    // Convert *italic*
+    html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+  
+    // Convert URLs to clickable links
+    html = html.replace(
+      /(https?:\/\/[^\s)]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 underline hover:opacity-80">$1</a>'
+    );
+  
+    // Convert - bullets to • (non-destructive)
+    html = html.replace(/^- (.*)$/gm, "• $1");
+  
+    // Basic markdown table support
+    html = html.replace(
+      /^\|(.+)\|\n\|[-| ]+\|\n((\|.*\|\n?)*)/gm,
+      (_, headers, rows) => {
+        const headerCells = headers
+          .split("|")
+          .map((h: string) => `<th>${h.trim()}</th>`)
+          .join("");
+  
+        const rowHtml = rows
+          .trim()
+          .split("\n")
+          .map((row: string) => {
+            const cells = row
+              .split("|")
+              .map((c: string) => `<td>${c.trim()}</td>`)
+              .join("");
+            return `<tr>${cells}</tr>`;
+          })
+          .join("");
+  
+        return `
+          <table class="table-auto border-collapse border border-gray-300 dark:border-gray-700 my-3 text-sm">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-gray-800">${headerCells}</tr>
+            </thead>
+            <tbody>${rowHtml}</tbody>
+          </table>
+        `;
+      }
+    );
+  
+    // Convert newlines to <br>
+    html = html.replace(/\n/g, "<br>");
+  
+    return html;
+  }

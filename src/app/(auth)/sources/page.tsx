@@ -5,10 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bot, ChevronRight, ExternalLink, Info, Link, SearchX } from "lucide-react";
-import { fetchPromptResponses } from "@/lib/helper/mutations";
 import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponseClient } from "@/server/db/types";
-import { getDomain, getFaviconUrls, getModelFavicon } from "@/lib/helper/functions";
+import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
 import React from "react";
+import { usePromptResponses } from "../prompts/_lib/queries/prompt.queries";
 
 export default function Sources() {
   const [responses, setResponses] = useState<PromptResponseClient[]>([]);
@@ -22,7 +22,7 @@ export default function Sources() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const { data: promptResponses, refetch, isLoading, error } = fetchPromptResponses(workspaceId);
+  const { data: promptResponses, refetch, isLoading, error } = usePromptResponses(workspaceId);
   
   useEffect(() => {
     if (workspaceId) {

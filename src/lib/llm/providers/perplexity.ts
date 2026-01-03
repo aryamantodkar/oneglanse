@@ -1,4 +1,4 @@
-import { perplexity } from '@/lib/apiKeys';
+import { perplexity } from '@/lib/llm/apiKeys';
 import type { WorkspaceLocation } from '@/server/db/types';
 
 export async function queryPerplexity(userQuery: string, workspaceLocation?: WorkspaceLocation) {

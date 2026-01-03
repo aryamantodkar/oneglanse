@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { analysisPrompt } from "./analysisPrompt";
-import { ExternalServiceError, safeHandler, ValidationError } from "@/lib/error";
+import { ExternalServiceError, safeHandler, ValidationError } from "@/server/error";
 import type { AnalysisInput, AnalysisOutput } from "@/server/db/types";
 import fs from "fs";
 import path from "path";

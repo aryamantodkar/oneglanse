@@ -1,4 +1,4 @@
-import { openai } from "@/lib/apiKeys";
+import { openai } from "@/lib/llm/apiKeys";
 import type { WorkspaceLocation } from "@/server/db/types";
 
 export async function queryOpenAI(userQuery: string, workspaceLocation?: WorkspaceLocation) {

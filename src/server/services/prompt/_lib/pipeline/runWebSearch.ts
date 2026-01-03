@@ -1,12 +1,10 @@
 import type { UserPrompt, WorkspaceLocation } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-import { queryClaude } from "../../../../lib/llm/providers/anthropic";
-import { queryOpenAI } from "../../../../lib/llm/providers/openAI";
-import { queryPerplexity } from "../../../../lib/llm/providers/perplexity";
-import { safeHandler } from "../../../../lib/error/errorHandling";
-import { ExternalServiceError } from "@/lib/error";
+import { ExternalServiceError, safeHandler } from "@/server/error";
+import { queryClaude } from "@/lib/llm/providers/anthropic";
+import { queryOpenAI } from "@/lib/llm/providers/openAI";
+import { queryPerplexity } from "@/lib/llm/providers/perplexity";
 
 export async function runWebSearch(prompts: UserPrompt[], workspaceLocation?: WorkspaceLocation) {
   try {
