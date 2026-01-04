@@ -1,7 +1,7 @@
 import "server-only";
 
 import { clickhouse, db } from "@/server/db/index";
-import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMetrics, PromptAnalysis, PromptResponse, Source, SourceCitationLookup } from "@/server/db/types";
+import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMetrics, PromptAnalysisWithSources, PromptResponse, Source, SourceCitationLookup } from "@/server/db/types";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -51,7 +51,7 @@ export async function analysePromptsForWorkspace(args: {
             {
               prompt_id: string;
               prompt_run_at: string;
-              promptResponses: PromptAnalysis[];
+              promptResponses: PromptAnalysisWithSources[];
             }
           >,
           resp
