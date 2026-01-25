@@ -3,19 +3,15 @@ import "server-only";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { workspaceRouter } from "./routers/workspace/workspace";
 import { promptRouter } from "./routers/prompt/prompt";
-import { cronRouter } from "./routers/cron/cron";
 import { locationRouter } from "./routers/location/location";
 import { analysisRouter } from "./routers/analysis/analysis";
-import { competitorsRouter } from "./routers/competitors/competitors";
 import { internalRouter } from "./routers/internal/internal";
 
 export const appRouter = createTRPCRouter({
     workspace: workspaceRouter,
     prompt: promptRouter,
-    cron: cronRouter,
     location: locationRouter,
     analysis: analysisRouter,
-    competitors: competitorsRouter,
     internal: internalRouter,
 });
 
