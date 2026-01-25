@@ -8,11 +8,11 @@ import { logger } from "../utils/logger.js";
 
 playwrightChromium.use(StealthPlugin());
 
-if (!process.env.AUTH_PROFILE_PATH) {
+if (!process.env.VPS_AUTH_PROFILE_PATH) {
   throw new Error("AUTH_VPS_PATH is not set");
 }
 
-const USER_DATA_DIR = path.resolve(process.env.AUTH_PROFILE_PATH);
+const USER_DATA_DIR = path.resolve(process.env.VPS_AUTH_PROFILE_PATH);
 
 export async function launchContext(provider: Provider) {
   const providerDir = path.join(USER_DATA_DIR, provider);
