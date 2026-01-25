@@ -1,22 +1,127 @@
 # onescopeAI
 
-An open-source alternative to PeecAI — built with the [T3 Stack](https://create.t3.gg/) (Next.js, tRPC, Tailwind, Drizzle ORM, PostgreSQL) and [Better Auth](https://better-auth.com/) for authentication.
+A monorepo for AI-powered analytics and monitoring.
 
-## Features
+## Structure
 
-- 🔐 Authentication with [Better Auth](https://better-auth.com/) (Email/Password + OAuth support)
-- ⚡ API with [tRPC](https://trpc.io/)
-- 🎨 UI with [Tailwind CSS](https://tailwindcss.com/)
-- 🗄️ Database with [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL
-- 📦 Fully typed end-to-end with TypeScript
-- 🚀 Open-source alternative to PeecAI
+```
+onescopeAI/
+├── apps/
+│   ├── web/          # Next.js web application
+│   └── agent/        # Browser automation agent
+├── packages/
+│   ├── db/           # Database schema and connection (Drizzle ORM)
+│   ├── types/        # Shared TypeScript types
+│   ├── ui/           # Shared React UI components
+│   └── utils/        # Shared utilities
+├── package.json      # Root package.json
+├── pnpm-workspace.yaml
+├── turbo.json        # Turborepo configuration
+└── tsconfig.json     # Base TypeScript config
+```
 
-## Tech Stack
+## Getting Started
 
-- [Next.js](https://nextjs.org/) (App Router)
-- [tRPC](https://trpc.io/) for API
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [Drizzle ORM](https://orm.drizzle.team/) for database schema & migrations
-- [PostgreSQL](https://www.postgresql.org/) as database
-- [Better Auth](https://better-auth.com/) for authentication
-- [Docker](https://www.docker.com/) for local development
+### Prerequisites
+
+- Node.js >= 20
+- pnpm 10.16.0+
+
+### Installation
+
+```bash
+pnpm install
+```
+
+### Development
+
+```bash
+# Run all apps in development mode
+pnpm dev
+
+# Run only the web app
+pnpm dev:web
+
+# Run only the agent
+pnpm dev:agent
+```
+
+### Database
+
+```bash
+# Generate migrations
+pnpm db:generate
+
+# Run migrations
+pnpm db:migrate
+
+# Push schema changes
+pnpm db:push
+
+# Open Drizzle Studio
+pnpm db:studio
+```
+
+### Build
+
+```bash
+pnpm build
+```
+
+### Type Checking
+
+```bash
+pnpm typecheck
+```
+
+## Packages
+
+### @onescope/types
+
+Shared TypeScript type definitions used across all apps.
+
+```typescript
+import type { UserPrompt, PromptResponse } from "@onescope/types";
+```
+
+### @onescope/db
+
+Database schema, connection utilities, and entity types.
+
+```typescript
+import { db, schema } from "@onescope/db";
+import type { User, Workspace } from "@onescope/db";
+```
+
+### @onescope/ui
+
+Shared React UI components built with Radix UI and Tailwind CSS.
+
+```typescript
+import { Button, Card, Dialog } from "@onescope/ui";
+```
+
+### @onescope/utils
+
+Shared utility functions.
+
+```typescript
+import { cn } from "@onescope/utils";
+```
+
+## Apps
+
+### @onescope/web
+
+Next.js 15 web application with:
+- tRPC API
+- better-auth authentication
+- Drizzle ORM with PostgreSQL
+- Tailwind CSS 4
+
+### @onescope/agent
+
+Browser automation agent with:
+- Playwright for browser control
+- BullMQ job queue
+- Multi-provider LLM support (OpenAI, Anthropic, Perplexity)
