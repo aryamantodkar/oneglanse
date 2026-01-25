@@ -12,12 +12,7 @@ services:
       - db
       - clickhouse
       - redis
-    environment:
-      DATABASE_URL: postgresql://user:password@db:5432/mydb
-      CLICKHOUSE_URL: http://clickhouse:8123
-      NEXT_PUBLIC_API_URL: http://localhost:3000
-      DOCKER_ENV: "true"
-      REDIS_URL: redis://redis:6379
+
     # REMOVE volumes in production
     volumes:
       - .:/app
@@ -39,10 +34,6 @@ services:
     container_name: postgres_db
     restart: always
     env_file: .env
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydb
     ports:
       - "5432:5432"
     volumes:
@@ -55,10 +46,6 @@ services:
     container_name: clickhouse_db
     restart: always
     env_file: .env
-    environment:
-      CLICKHOUSE_DB: analytics
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: password
     ports:
       - "9000:9000"
       - "8123:8123"
