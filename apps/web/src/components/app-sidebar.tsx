@@ -86,16 +86,6 @@ export function AppSidebar({ workspace } : { workspace: Workspace | null}) {
           title: "Sources",
           url: `/sources?workspace=${workspace?.id ?? ""}`,
           icon: Globe,
-        },
-        {
-          title: "Cron Jobs",
-          url: `/cron?workspace=${workspace?.id ?? ""}`,
-          icon: Clock,
-        },
-        {
-          title: "Competitors",
-          url: `/competitors?workspace=${workspace?.id ?? ""}`,
-          icon: Users,
         }
       ];
 
