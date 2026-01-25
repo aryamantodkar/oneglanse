@@ -6,7 +6,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { PromptResponse, DomainStats, UserPrompt, Workspace } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "@/server/error";
+import { AuthError, DatabaseError, fail, NotFoundError, ok, ValidationError } from "../../../../../../packages/error";
 import { pool } from "@/server/db/pg";
 import { runWebSearch } from "@/server/services/prompt/_lib/pipeline/runWebSearch";
 import { extractDomainStatsFromResponses } from "./_lib/stats/extractDomainStats";

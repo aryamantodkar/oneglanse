@@ -3,7 +3,7 @@ import "server-only";
 import type { UserPrompt, WorkspaceLocation } from "@/server/db/types";
 import fs from "fs";
 import path from "path";
-import { ExternalServiceError, safeHandler } from "@/server/error";
+import { ExternalServiceError, safeHandler } from "../../../../../../../../packages/error";
 import { queryClaude } from "@/lib/llm/providers/anthropic";
 import { queryOpenAI } from "@/lib/llm/providers/openAI";
 import { queryPerplexity } from "@/lib/llm/providers/perplexity";

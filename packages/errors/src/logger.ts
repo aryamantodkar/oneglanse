@@ -1,5 +1,3 @@
-import "server-only";
-
 export const Logger = {
     info: (...args: unknown[]) => console.info("[INFO]", ...args),
     warn: (...args: unknown[]) => console.warn("[WARN]", ...args),
