@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Salesforce",
+    "slug": "salesforce",
+    "domain": "salesforce.com"
+  },
+  {
+    "name": "Adobe",
+    "slug": "adobe",
+    "domain": "adobe.com"
+  },
+  {
+    "name": "Oracle",
+    "slug": "oracle",
+    "domain": "oracle.com"
+  },
+  {
+    "name": "Microsoft",
+    "slug": "microsoft",
+    "domain": "microsoft.com"
+  },
+  {
+    "name": "Zoho",
+    "slug": "zoho",
+    "domain": "zoho.com"
+  },
+  {
+    "name": "Freshworks",
+    "slug": "freshworks",
+    "domain": "freshworks.com"
+  },
+  {
+    "name": "ActiveCampaign",
+    "slug": "activecampaign",
+    "domain": "activecampaign.com"
+  },
+  {
+    "name": "Keap",
+    "slug": "keap",
+    "domain": "keap.com"
+  },
+  {
+    "name": "Pipedrive",
+    "slug": "pipedrive",
+    "domain": "pipedrive.com"
+  },
+  {
+    "name": "Brevo",
+    "slug": "brevo",
+    "domain": "brevo.com"
+  }
+]

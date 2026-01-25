@@ -1,0 +1,40 @@
+{
+  "name": "@onescope/agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local agent that runs a real browser to execute LLM prompts",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/agent.ts",
+    "start": "pm2 start pm2.config.cjs",
+    "stop": "pm2 stop onescope-agent-worker",
+    "restart": "pm2 restart onescope-agent-worker",
+    "logs": "pm2 logs onescope-agent-worker",
+    "status": "pm2 status",
+    "save": "pm2 save",
+    "startup": "pm2 startup",
+    "auth": "node --loader ts-node/esm src/auth/auth.ts",
+    "login": "RUN_INTERACTIVE_LOGIN=true node --loader ts-node/esm src/auth/login.ts",
+    "upload-session": "node --loader ts-node/esm src/auth/upload-session.ts",
+    "upload-session-http": "node --loader ts-node/esm src/auth/upload-session-http.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@onescope/types": "workspace:*",
+    "bullmq": "^5.66.4",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "ioredis": "^5.9.1",
+    "playwright": "^1.57.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "tar": "^7.5.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

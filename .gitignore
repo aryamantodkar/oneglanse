@@ -1,46 +1,43 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
+.pnpm-store/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Build outputs
+dist/
+.next/
+out/
+build/
 
-# testing
-/coverage
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# database
-/prisma/db.sqlite
-/prisma/db.sqlite-journal
-db.sqlite
-
-# next.js
-/.next/
-/out/
-next-env.d.ts
-
-# production
-/build
-
-# misc
+# OS
 .DS_Store
-*.pem
+Thumbs.db
 
-# debug
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
-# local env files
-# do not commit any .env files to git, except for the .env.example file. https://create.t3.gg/en/usage/env-variables#using-environment-variables
-.env
-.env*.local
+# Testing
+coverage/
 
-# vercel
-.vercel
+# Turbo
+.turbo/
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-# idea files
-.idea
+# Misc
+*.pem
