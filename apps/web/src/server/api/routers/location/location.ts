@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import fs from "fs";
 import path from "path";
-import { fail, ok, safeHandler } from "../../../../../../../packages/error";
+import { fail, ok, safeHandler } from "@onescope/errors";
 import { publicProcedure } from "../../procedures";
 
 // Load countries JSON once at startup

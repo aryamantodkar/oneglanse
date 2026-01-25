@@ -2,12 +2,12 @@ import "server-only";
 
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, ok, safeHandler, ValidationError } from "../../../../../../../packages/error";
-import { runPromptsForWorkspace, fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace } from "@/server/services/prompt/prompt";
-import { authorizedWorkspaceProcedure, llmRateLimiter, protectedProcedure } from "../../procedures";
+import { ok, safeHandler } from "@onescope/errors";
+import { runPromptsForWorkspace, fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace } from "@onescope/services";
+import { authorizedWorkspaceProcedure } from "../../procedures";
 
 export const promptRouter = createTRPCRouter({
-  run: llmRateLimiter
+  run: authorizedWorkspaceProcedure
     .mutation(async ({ ctx }) => {
       return safeHandler(async () => {
         const {

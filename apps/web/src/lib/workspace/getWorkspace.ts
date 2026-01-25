@@ -1,9 +1,5 @@
-import { redirect } from "next/navigation";
-import { db } from "@/server/db";
+import { db } from "@onescope/db";
 import { getTenant } from "./getTenant";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-
 
 export async function getWorkspace() {
     const orgId = await getTenant();

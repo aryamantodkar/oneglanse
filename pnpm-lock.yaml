@@ -81,6 +81,12 @@ importers:
       '@onescope/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@onescope/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@onescope/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       '@onescope/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -132,6 +138,9 @@ importers:
       date-fns-tz:
         specifier: ^3.2.0
         version: 3.2.0(date-fns@4.1.0)
+      drizzle-orm:
+        specifier: ^0.41.0
+        version: 0.41.0(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(gel@2.2.0)(kysely@0.28.10)(pg@8.17.2)(postgres@3.4.8)
       lucide-react:
         specifier: ^0.544.0
         version: 0.544.0(react@19.2.3)
@@ -262,6 +271,43 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
+  packages/services:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.63.1
+        version: 0.63.1(zod@4.3.6)
+      '@onescope/db':
+        specifier: workspace:*
+        version: link:../db
+      '@onescope/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@onescope/types':
+        specifier: workspace:*
+        version: link:../types
+      '@onescope/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@perplexity-ai/perplexity_ai':
+        specifier: ^0.12.0
+        version: 0.12.0
+      better-auth:
+        specifier: ^1.4.17
+        version: 1.4.17(drizzle-kit@0.30.6)(drizzle-orm@0.41.0(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(gel@2.2.0)(kysely@0.28.10)(pg@8.17.2)(postgres@3.4.8))(next@15.5.9(@opentelemetry/api@1.9.0)(@playwright/test@1.58.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(pg@8.17.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      drizzle-orm:
+        specifier: ^0.41.0
+        version: 0.41.0(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(gel@2.2.0)(kysely@0.28.10)(pg@8.17.2)(postgres@3.4.8)
+      openai:
+        specifier: ^5.23.2
+        version: 5.23.2(zod@4.3.6)
+      uuid:
+        specifier: ^13.0.0
+        version: 13.0.0
+    devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   packages/types:
     devDependencies:
       typescript:
@@ -337,13 +383,22 @@ importers:
 
   packages/utils:
     dependencies:
+      '@onescope/types':
+        specifier: workspace:*
+        version: link:../types
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      crypto:
+        specifier: ^1.0.1
+        version: 1.0.1
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.4.0
     devDependencies:
+      '@types/node':
+        specifier: ^25.0.10
+        version: 25.0.10
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
@@ -2255,6 +2310,10 @@ packages:
     resolution: {integrity: sha512-T3S35zmD0Ai2B4ko6+mEM+k9C6tipe2nB9RLiGT6QL2Wn0Vsn2cCZAC8Oeuf4CaE00GZWVdpYitbpWCNlIWqdA==}
     hasBin: true
 
+  crypto@1.0.1:
+    resolution: {integrity: sha512-VxBKmeNcqQdiUQUW2Tzq0t377b54N2bMtXO/qiLa+6eRRmmC4qT3D4OnTGoT/U6O9aklQ/jTwbOtRMTTY8G0Ig==}
+    deprecated: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
+
   css-select@5.2.2:
     resolution: {integrity: sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==}
 
@@ -3680,9 +3739,15 @@ snapshots:
     optionalDependencies:
       zod: 3.25.76
 
+  '@anthropic-ai/sdk@0.63.1(zod@4.3.6)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 4.3.6
+
   '@babel/runtime@7.28.6': {}
 
-  '@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@3.25.76))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)':
+  '@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)':
     dependencies:
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.21
@@ -3693,9 +3758,9 @@ snapshots:
       nanostores: 1.1.0
       zod: 4.3.6
 
-  '@better-auth/telemetry@1.4.17(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@3.25.76))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))':
+  '@better-auth/telemetry@1.4.17(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))':
     dependencies:
-      '@better-auth/core': 1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@3.25.76))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)
+      '@better-auth/core': 1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.21
 
@@ -4930,8 +4995,8 @@ snapshots:
 
   better-auth@1.4.17(drizzle-kit@0.30.6)(drizzle-orm@0.41.0(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(gel@2.2.0)(kysely@0.28.10)(pg@8.17.2)(postgres@3.4.8))(next@15.5.9(@opentelemetry/api@1.9.0)(@playwright/test@1.58.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(pg@8.17.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
-      '@better-auth/core': 1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@3.25.76))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)
-      '@better-auth/telemetry': 1.4.17(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@3.25.76))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))
+      '@better-auth/core': 1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)
+      '@better-auth/telemetry': 1.4.17(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.21
       '@noble/ciphers': 2.1.1
@@ -5099,6 +5164,8 @@ snapshots:
       luxon: 3.7.2
 
   cronstrue@3.9.0: {}
+
+  crypto@1.0.1: {}
 
   css-select@5.2.2:
     dependencies:
@@ -5784,6 +5851,10 @@ snapshots:
   openai@5.23.2(zod@3.25.76):
     optionalDependencies:
       zod: 3.25.76
+
+  openai@5.23.2(zod@4.3.6):
+    optionalDependencies:
+      zod: 4.3.6
 
   parse5-htmlparser2-tree-adapter@7.1.0:
     dependencies:

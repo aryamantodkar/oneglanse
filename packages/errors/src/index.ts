@@ -2,6 +2,7 @@ export * from "./error/BaseError";
 export * from "./error/ValidationError";
 export * from "./error/NotFoundError";
 export * from "./error/AuthError";
+export * from "./error/EnvError";
 export * from "./error/ExternalServiceError";
 export * from "./error/RateLimitError";
 export * from "./error/DatabaseError";

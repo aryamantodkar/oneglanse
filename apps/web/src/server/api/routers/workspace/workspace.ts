@@ -2,9 +2,10 @@ import "server-only";
 
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, safeHandler, ok, ValidationError } from "../../../../../../../packages/error";
-import { createNewWorkspace, getWorkspaceById } from "@/server/services/workspace/workspace";
+import { safeHandler, ok, ValidationError } from "@onescope/errors";
+import { getWorkspaceById } from "@onescope/services";
 import { authorizedWorkspaceProcedure, protectedProcedure } from "../../procedures";
+import { createNewWorkspace } from "@/server/services/workspace/workspace";
 
 export const workspaceRouter = createTRPCRouter({
     create: protectedProcedure

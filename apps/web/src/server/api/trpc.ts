@@ -3,7 +3,7 @@ import "server-only";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { db } from "@/server/db";
+import { db } from "@onescope/db";
 import { auth } from "@lib/auth/auth";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {

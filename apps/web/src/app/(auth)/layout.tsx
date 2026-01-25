@@ -2,14 +2,12 @@ import "@/styles/globals.css";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cookies, headers } from "next/headers"
- 
-import { SidebarProvider, Toaster } from "@onescope/ui"
-
+import { SidebarProvider } from "@onescope/ui"
 import { TRPCReactProvider } from "@/trpc/react";
 import LayoutContent from "./layoutContent";
-import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
+import { getWorkspace } from "@/lib/workspace/getWorkspace";
 
 export const metadata: Metadata = {
 	title: "onescopeAI",

@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, safeHandler, ok, ValidationError } from "../../../../../../../packages/error";
+import { AuthError, safeHandler } from "@onescope/errors";
 import { runPromptPipeline } from "@/server/services/runner/runner";
 import { internalProcedure } from "../../procedures";
 

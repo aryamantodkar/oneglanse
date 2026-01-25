@@ -38,6 +38,6 @@
 		"**/*.cjs",
 		"**/*.js",
 		".next/types/**/*.ts"
-, "../../packages/types/src/types/analysis.ts", "../../packages/types/src/types/api.ts", "../../packages/types/src/types/core.ts", "../../packages/types/src/types/entities.ts", "../../packages/types/src/types/metrics.ts", "../../packages/types/src/types/prompts.ts", "../../packages/types/src/types/sources.ts", "../../packages/db/src/schema/auth.ts", "../../packages/db/src/schema/competitors.ts", "../../packages/db/src/schema/cron.ts", "../../packages/db/src/schema/index.ts", "../../packages/db/src/schema/workspace.ts"	],
+, "../../packages/services/src/organization/getActiveOrganization.ts", "src/lib/workspace/getWorkspace.ts", "../../packages/utils/src/format/formatDate.ts", "../../packages/utils/src/format/formatMarkdown.ts", "../../packages/utils/src/format/dateFilter.ts"	],
 	"exclude": ["node_modules"]
 }
