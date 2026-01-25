@@ -12,7 +12,8 @@
     "db:generate": "pnpm --filter @onescope/db db:generate",
     "db:migrate": "pnpm --filter @onescope/db db:migrate",
     "db:push": "pnpm --filter @onescope/db db:push",
-    "db:studio": "pnpm --filter @onescope/db db:studio"
+    "db:studio": "pnpm --filter @onescope/db db:studio",
+    "auth": "pnpm --filter=@onescope/agent auth"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
