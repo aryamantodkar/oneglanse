@@ -4,7 +4,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { SidebarTrigger } from "@onescope/ui";
 import { AppSidebar } from "@/components/app-sidebar";
-import type { Workspace } from "@/server/db/types";
+import type { Workspace } from "@onescope/db";
 import { useEffect, useRef } from "react";
 import { Logout } from "@/components/forms/logout";
 

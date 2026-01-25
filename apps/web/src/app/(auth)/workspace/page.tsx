@@ -1,4 +1,3 @@
-
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { redirect } from "next/navigation";
 

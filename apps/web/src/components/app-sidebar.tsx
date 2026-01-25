@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   toast
 } from "@onescope/ui"
-import type { Organization, Workspace } from "@onescope/types"
+import type { Organization, Workspace } from "@onescope/db"
 import { authClient } from "@/lib/auth/auth-client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

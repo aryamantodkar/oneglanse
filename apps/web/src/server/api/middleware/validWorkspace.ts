@@ -1,8 +1,8 @@
 import "server-only";
 
 import { t } from "../trpc";
-import { AuthError, ValidationError } from "../../../../../../packages/error";
-import { workspaceInput } from "@onescope/db/schema";
+import { AuthError, ValidationError } from "@onescope/errors";
+import { schema } from "@onescope/db";
 
 export const validWorkspace = t.middleware(async ({ ctx, input, next }) => {
   const user = ctx.session?.user;
@@ -11,7 +11,7 @@ export const validWorkspace = t.middleware(async ({ ctx, input, next }) => {
 		throw new AuthError("User Id is undefined.");
 	}
 
-  const parsed = workspaceInput.safeParse(input);
+  const parsed = schema.workspaceInput.safeParse(input);
   
   if (!parsed.success) {
     throw new ValidationError("Workspace ID is missing or undefined.");

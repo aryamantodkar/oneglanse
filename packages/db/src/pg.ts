@@ -1,7 +1,6 @@
-import { Pool } from "pg";
-import { env } from "@/env"; // your DATABASE_URL
+import { Pool } from "pg"; // your DATABASE_URL
 
 export const pool = new Pool({
-  connectionString: env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
   max: 5, 
 });

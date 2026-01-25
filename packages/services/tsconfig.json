@@ -1,0 +1,12 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "declaration": true,
+      "declarationMap": true
+    },
+    "include": ["src/**/*.ts", "../../apps/web/src/lib/workspace/getWorkspace.ts"],
+    "exclude": ["node_modules", "dist"]
+}
+  

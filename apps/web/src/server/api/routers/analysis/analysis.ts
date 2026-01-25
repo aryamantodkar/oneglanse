@@ -1,13 +1,12 @@
 import "server-only";
 
-import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, ok, safeHandler, ValidationError } from "../../../../../../../packages/error";
-import { analysePromptsForWorkspace, fetchAnalysedPrompts } from "@/server/services/analysis/analysis";
-import { analysisRateLimiter } from "../../procedures";
+import { ok, safeHandler } from "@onescope/errors";
+import { analysePromptsForWorkspace, fetchAnalysedPrompts } from "@onescope/services";
+import { authorizedWorkspaceProcedure } from "../../procedures";
 
 export const analysisRouter = createTRPCRouter({
-  analyzeMetrics: analysisRateLimiter
+  analyzeMetrics: authorizedWorkspaceProcedure
   .mutation(async ({ ctx }) => {
     return safeHandler(async () => {
       const {
@@ -19,7 +18,7 @@ export const analysisRouter = createTRPCRouter({
       return ok(res, "Prompts Response analysed successfully.");
     })
   }),
-  fetchAnalysis: analysisRateLimiter
+  fetchAnalysis: authorizedWorkspaceProcedure
     .query(async ({ ctx }) => {
       return safeHandler(async () => {
         const {

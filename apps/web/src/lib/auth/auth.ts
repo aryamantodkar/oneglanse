@@ -1,11 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/server/db/index"; // your drizzle instance
+import { db } from "@onescope/db";
 import { nextCookies } from "better-auth/next-js";
-import * as schema from "@onescope/db/schema";
+import { schema } from "@onescope/db";
 import * as authSchema from "../../../../../packages/db/src/schema/auth";
 import { organization } from "better-auth/plugins";
-import { getActiveOrganization } from "../workspace/getActiveOrganization";
+import { getActiveOrganization } from "@onescope/services";
 
 export const auth = betterAuth({
     socialProviders: {
