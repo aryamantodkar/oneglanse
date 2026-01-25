@@ -1,26 +1,24 @@
 "use client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { cn } from "@lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@onescope/utils"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+  Input,
+  toast,
+  useForm,
+  Button
+} from "@onescope/ui"
 import { z } from "zod"
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"

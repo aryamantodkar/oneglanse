@@ -1,5 +1,5 @@
 import "@/styles/globals.css";
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@onescope/ui"
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";

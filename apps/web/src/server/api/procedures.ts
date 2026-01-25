@@ -7,7 +7,7 @@ import { isInternal } from "./middleware/isInternal";
 import { slidingWindowRateLimiter, fixedWindowRateLimiter } from "./middleware/rateLimiter";
 import { timingMiddleware } from "./middleware/timingMiddleware";
 import { validWorkspace } from "./middleware/validWorkspace";
-import { workspaceInput } from "../db/schema";
+import { workspaceInput } from "@onescope/db/schema";
 
 export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure.use(isAuthenticated);

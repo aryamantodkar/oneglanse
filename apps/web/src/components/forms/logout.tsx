@@ -1,7 +1,6 @@
 "use client"
-import { Button } from "../ui/button"
+import { Button, toast } from "@onescope/ui"
 import { Loader2, LogOut } from "lucide-react"
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { authClient } from "@/lib/auth/auth-client"

@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { member, organization } from "@/server/db/schema";
+import { member, organization } from "@onescope/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getActiveOrganization(userId: string) {

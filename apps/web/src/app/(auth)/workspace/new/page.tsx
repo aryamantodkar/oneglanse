@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,11 +8,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  Input,
+  Label,
+  toast,
+  Button
+} from "@onescope/ui";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { redirect, useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { authClient } from "@/lib/auth/auth-client";
