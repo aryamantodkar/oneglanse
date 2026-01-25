@@ -249,6 +249,19 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
+  packages/errors:
+    dependencies:
+      '@onescope/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^25.0.10
+        version: 25.0.10
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   packages/types:
     devDependencies:
       typescript:
@@ -4834,7 +4847,7 @@ snapshots:
 
   '@types/node-fetch@2.6.13':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
       form-data: 4.0.5
 
   '@types/node@20.19.30':

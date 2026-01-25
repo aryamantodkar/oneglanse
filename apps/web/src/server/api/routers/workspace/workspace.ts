@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { AuthError, safeHandler, ok, ValidationError } from "@/server/error";
+import { AuthError, safeHandler, ok, ValidationError } from "../../../../../../../packages/error";
 import { createNewWorkspace, getWorkspaceById } from "@/server/services/workspace/workspace";
 import { authorizedWorkspaceProcedure, protectedProcedure } from "../../procedures";
 

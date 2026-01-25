@@ -7,7 +7,7 @@ import { db, schema } from "@/server/db";
 import type { Workspace, WorkspaceMember } from "@/server/db/types";
 import { newId } from "@/lib/workspace/id";
 import { eq, isNull, and } from "drizzle-orm";
-import { AuthError, safeHandler, ValidationError, NotFoundError, ok } from "@/server/error";
+import { AuthError, safeHandler, ValidationError, NotFoundError, ok } from "../../../../../../packages/error";
 import { uuidv4 } from "better-auth";
 
 export async function createNewWorkspace(args: {

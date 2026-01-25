@@ -2,7 +2,7 @@ import "server-only";
 
 import { fixedWindowAlgorithm } from "@/server/redis/limiter/fixedWindow";
 import { slidingWindowAlgorithm } from "@/server/redis/limiter/slidingWindow";
-import { AuthError, RateLimitError } from "@/server/error";
+import { AuthError, RateLimitError } from "../../../../../../packages/error";
 import { t } from "../trpc";
 
 const USER_LIMIT = { limit: 5, windowSec: 60 }; 

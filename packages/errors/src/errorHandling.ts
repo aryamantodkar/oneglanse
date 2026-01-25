@@ -1,7 +1,5 @@
-import "server-only";
-
-import type { ApiResponse } from "@/server/db/types";
-import { BaseError } from "./errors/BaseError";
+import type { ApiResponse } from "@onescope/types";
+import { BaseError } from "./error/BaseError";
 import { captureException } from "./logger";
   
 export function ok<T>(data: T | null = null, message = "Success"): ApiResponse<T> {
