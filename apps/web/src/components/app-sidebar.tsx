@@ -11,21 +11,18 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import type { Organization, Workspace } from "@/server/db/types"
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  toast
+} from "@onescope/ui"
+import type { Organization, Workspace } from "@onescope/types"
 import { authClient } from "@/lib/auth/auth-client";
 import { useEffect, useMemo, useState } from "react";
-
-import {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-    DropdownMenuItem,
-  } from "@/components/ui/dropdown-menu"
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner"
 import { api } from "@/trpc/react";
-import { getModelFavicon } from "@/lib/ui/favicon";
+import { getModelFavicon } from "@onescope/utils";
 import Link from "next/link";
 
 const preferenceItems = [

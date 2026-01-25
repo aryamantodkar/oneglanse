@@ -2,7 +2,7 @@ import "server-only";
 
 import { t } from "../trpc";
 import { AuthError, ValidationError } from "@/server/error";
-import { workspaceInput } from "@/server/db/schema";
+import { workspaceInput } from "@onescope/db/schema";
 
 export const validWorkspace = t.middleware(async ({ ctx, input, next }) => {
   const user = ctx.session?.user;

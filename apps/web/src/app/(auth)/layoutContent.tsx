@@ -2,12 +2,11 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@onescope/ui";
 import { AppSidebar } from "@/components/app-sidebar";
 import type { Workspace } from "@/server/db/types";
 import { useEffect, useRef } from "react";
 import { Logout } from "@/components/forms/logout";
-import { toast } from "sonner";
 
 export default function LayoutContent({ children, workspace }: { children: React.ReactNode, workspace: Workspace | null}) {
   const pathname = usePathname();

@@ -1,7 +1,7 @@
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";
-import type { Organization } from "@/server/db/types";
+import type { Organization } from "@onescope/db";
 import { useEffect, useState } from "react";
 
 export default function OrganizationsPage() {

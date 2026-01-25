@@ -1,13 +1,12 @@
 "use client";
 
+import React from "react";
 import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
 import { Bot, ChevronRight, ExternalLink, Info, Link, SearchX } from "lucide-react";
-import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponse } from "@/server/db/types";
-import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
-import React from "react";
+import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponse } from "@onescope/types";
+import { getFaviconUrls, getModelFavicon } from "@onescope/utils";
 import { usePromptResponses } from "../prompts/_lib/queries/prompt.queries";
 
 export default function Sources() {

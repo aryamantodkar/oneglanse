@@ -6,18 +6,10 @@ import {
   boolean,
   integer,
   timestamp,
+  index,
 } from "drizzle-orm/pg-core";
 
-export type CronTargetPayload = {
-  url?: string;
-  method?: string;
-  headers?: Record<string, string>;
-  body?: unknown;
-  type?: string;
-  params?: Record<string, unknown>;
-  userId?: string;
-};
-
+// ---------- cron_jobs ----------
 export const cronJobs = pgTable("cron_jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
   workspaceId: text("workspace_id").notNull(),
@@ -26,12 +18,21 @@ export const cronJobs = pgTable("cron_jobs", {
   cronExpression: text("cron_expression").notNull(),
   timezone: text("timezone").default("UTC"),
   targetType: text("target_type").notNull(), // 'webhook' | 'internal'
-  targetPayload: jsonb("target_payload").$type<CronTargetPayload>(),
+  targetPayload: jsonb("target_payload").$type<{
+    url?: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+    type?: string;
+    params?: Record<string, unknown>;
+    userId?: string;
+  }>(),
   enabled: boolean("enabled").default(true),
   maxAttempts: integer("max_attempts").default(3),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
+
 
 export const cronQueue = pgTable("cron_queue", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -47,9 +48,11 @@ export const cronQueue = pgTable("cron_queue", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// ---------- job_runs ----------
 export const jobRuns = pgTable("job_runs", {
   id: uuid("id").defaultRandom().primaryKey(),
-  jobId: uuid("job_id").references(() => cronJobs.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id")
+    .references(() => cronJobs.id, { onDelete: "cascade" }),
   workspaceId: text("workspace_id"),
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow(),
   finishedAt: timestamp("finished_at", { withTimezone: true }),

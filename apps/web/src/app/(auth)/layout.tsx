@@ -1,10 +1,9 @@
 import "@/styles/globals.css";
-import { Toaster } from "@/components/ui/sonner"
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cookies, headers } from "next/headers"
  
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider, Toaster } from "@onescope/ui"
 
 import { TRPCReactProvider } from "@/trpc/react";
 import LayoutContent from "./layoutContent";

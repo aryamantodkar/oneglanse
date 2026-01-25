@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@onescope/ui/button";
 import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
 import { api } from "@/trpc/react";
 import type { Competitor } from "@/server/db/types";

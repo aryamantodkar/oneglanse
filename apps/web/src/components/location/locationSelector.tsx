@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/trpc/react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@onescope/ui/select";
 
 export function LocationSelector({ onSelect }: { onSelect: (loc: any) => void }) {
   const [countries, setCountries] = useState<{ iso2: string; name: string; emoji?: string }[]>([]);

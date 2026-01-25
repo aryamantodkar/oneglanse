@@ -2,48 +2,41 @@
 
 import { useEffect, useState, useMemo, type JSX, useCallback } from "react";
 import { api } from "@/trpc/react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, FilterX, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, FilterX, Plus, Trash2, Bot, Pencil } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import {
+  Button,
+  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  toast,
+  Checkbox,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
-import { Bot } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFaviconUrls, getModelFavicon } from "@/lib/ui/favicon";
-import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@/server/db/types";
-import { Pencil } from "lucide-react";
+  Card,
+  ScrollArea
+} from "@onescope/ui";
+import { getFaviconUrls, getModelFavicon } from "@onescope/utils";
+import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@onescope/types";
 import { formatMarkdown } from "./_lib/format/formatMarkdown";
 import { getDomain } from "./_lib/url/getDomain";
 import { getUniqueLinks } from "./_lib/url/getUniqueLinks";
 import { isWithinRange } from "./_lib/date/dateFilter";
 import { formatDate } from "./_lib/format/formatDate";
-import { PositionMetricCell } from "./_components/PositionMetricCell";
-import { SentimentMetricCell } from "./_components/SentimentMetricCell";
+import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import { useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
 import { filterMetrics } from "./_lib/metrics/filterMetrics";
