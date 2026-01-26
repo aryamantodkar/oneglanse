@@ -16,6 +16,8 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    environment:
+      - CI=true
     command: sh -c "pnpm install && pnpm drizzle-kit migrate && pnpm dev -H 0.0.0.0"
   db:
     build:
