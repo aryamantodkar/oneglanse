@@ -9,6 +9,14 @@ const config = {
 		// Pass SKIP_ENV_VALIDATION to the runtime so it's not inlined as undefined
 		SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
 	},
+	transpilePackages: [
+		"@onescope/ui",
+		"@onescope/utils",
+		"@onescope/db",
+		"@onescope/errors",
+		"@onescope/services",
+		"@onescope/types",
+	],
 };
 
 export default config;

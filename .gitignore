@@ -41,3 +41,5 @@ coverage/
 
 # Misc
 *.pem
+
+claude/
