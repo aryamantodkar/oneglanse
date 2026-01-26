@@ -4,6 +4,11 @@
  */
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+	env: {
+		// Pass SKIP_ENV_VALIDATION to the runtime so it's not inlined as undefined
+		SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
+	},
+};
 
 export default config;
