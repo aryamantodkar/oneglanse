@@ -14,8 +14,11 @@ COPY apps ./apps
 # Install all deps (workspace-aware)
 RUN pnpm install --frozen-lockfile
 
-# Build (skip env validation - env vars provided at runtime)
-RUN SKIP_ENV_VALIDATION=1 pnpm turbo build
+# Skip env validation during build (env vars provided at runtime)
+ENV SKIP_ENV_VALIDATION=1
+
+# Build
+RUN pnpm turbo build
 
 # ----------------------------
 # Stage 2 — Runtime
