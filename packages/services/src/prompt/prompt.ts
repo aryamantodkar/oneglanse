@@ -5,7 +5,6 @@ import type { PromptResponse, DomainStats, UserPrompt } from "@onescope/types";
 import fs from "fs";
 import path from "path";
 import { DatabaseError, NotFoundError } from "@onescope/errors";
-import { runWebSearch } from "@onescope/services";
 import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractCitationStats } from "@onescope/utils";
 
 export async function runPromptsForWorkspace(args: {
