@@ -4,7 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { db, schema } from "@onescope/db";
 import * as authSchema from "../../../../../packages/db/src/schema/auth";
 import { organization } from "better-auth/plugins";
-import { getActiveOrganization } from "@onescope/services";
+import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
 export const auth = betterAuth({
     socialProviders: {
