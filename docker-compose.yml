@@ -13,10 +13,15 @@ services:
       - clickhouse
 
     # Uncomment below for development (mounts local code, uses pnpm dev)
-    # volumes:
-    #   - .:/app
-    #   - /app/node_modules
-    # command: sh -c "pnpm drizzle-kit migrate && pnpm dev -H 0.0.0.0"
+    environment:
+      CI: "true"
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+      pnpm install &&
+      pnpm --filter @onescope/web dev -H 0.0.0.0
+      "
   db:
     build:
       context: .
@@ -43,6 +48,16 @@ services:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse-init/:/docker-entrypoint-initdb.d/
 
+  migrate:
+    image: onescopeai-web
+    env_file: .env
+    depends_on:
+      - db
+    command: >
+      sh -c "
+      pnpm install &&
+      pnpm --filter @onescope/db db:migrate
+      "
 volumes:
   db_data:
   clickhouse_data:
