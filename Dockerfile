@@ -30,13 +30,15 @@ ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy only what runtime needs
-COPY --from=builder /app/node_modules ./node_modules
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Copy workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY packages ./packages
 COPY apps ./apps
 
-# Copy built output
+# Install all deps (including devDeps for drizzle-kit migrations)
+RUN pnpm install --frozen-lockfile
+
+# Copy built output from builder
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
