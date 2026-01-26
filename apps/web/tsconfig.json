@@ -38,6 +38,6 @@
 		"**/*.cjs",
 		"**/*.js",
 		".next/types/**/*.ts"
-, "../../packages/services/src/organization/getActiveOrganization.ts", "src/lib/workspace/getWorkspace.ts", "../../packages/utils/src/format/formatDate.ts", "../../packages/utils/src/format/formatMarkdown.ts", "../../packages/utils/src/format/dateFilter.ts"	],
+	],
 	"exclude": ["node_modules"]
 }
