@@ -15,8 +15,7 @@ COPY apps ./apps
 RUN pnpm install --frozen-lockfile
 
 # Build
-ENV SKIP_ENV_VALIDATION=true
-RUN pnpm build
+RUN pnpm turbo build
 
 # ----------------------------
 # Stage 2 — Runtime
@@ -28,12 +27,10 @@ ENV NODE_ENV=production
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy only what runtime needs
+COPY --from=builder /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages ./packages
 COPY apps ./apps
-
-# Install ONLY production deps
-RUN pnpm install --prod --frozen-lockfile
 
 # Copy built output
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
