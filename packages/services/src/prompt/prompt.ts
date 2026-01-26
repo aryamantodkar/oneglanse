@@ -1,11 +1,10 @@
-import { clickhouse, db, schema } from "@onescope/db";
+import { getClickhouse, getPgPool , getDb, schema } from "@onescope/db";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
 import type { PromptResponse, DomainStats, UserPrompt } from "@onescope/types";
 import fs from "fs";
 import path from "path";
 import { DatabaseError, NotFoundError } from "@onescope/errors";
-import { pool } from "@onescope/db";
 import { runWebSearch } from "@onescope/services";
 import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractCitationStats } from "@onescope/utils";
 
@@ -13,6 +12,9 @@ export async function runPromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
+    const db = getDb();
+    const clickhouse = getClickhouse();
+
     const { workspaceId, userId } = args;
 
     const workspace = await db
@@ -189,6 +191,8 @@ export async function storePromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
+    const clickhouse = getClickhouse();
+
     const { prompts, workspaceId, userId } = args;
 
       const nonEmptyPrompts = prompts
@@ -262,6 +266,7 @@ export async function scheduleCronForPrompts(args: {
   workspaceId: string;
   userId: string;
 }) {
+      const pool = getPgPool();
       const { workspaceId, userId } = args;
 
       const scheduleName = `auto_run_prompts_${workspaceId}`;
@@ -303,6 +308,8 @@ export async function fetchPromptResponsesForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
+    const clickhouse = getClickhouse();
+
     const { workspaceId, userId } = args;
 
     // const result = await clickhouse.query({
@@ -339,6 +346,8 @@ export async function fetchUserPromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
+    const clickhouse = getClickhouse();
+
     const { workspaceId, userId } = args;
 
     const result = await clickhouse.query({
