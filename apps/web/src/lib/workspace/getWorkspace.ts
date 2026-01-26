@@ -1,7 +1,8 @@
-import { db } from "@onescope/db";
+import { db as database } from "@/server/db";
 import { getTenant } from "./getTenant";
 
 export async function getWorkspace() {
+    const db = database();
     const orgId = await getTenant();
     if (!orgId) return null; // don't redirect
   
