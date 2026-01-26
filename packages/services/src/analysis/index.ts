@@ -3,11 +3,9 @@ import { ExternalServiceError, safeHandler, ValidationError } from "@onescope/er
 import type { AnalysisInput, AnalysisOutput } from "@onescope/types";
 import fs from "fs";
 import path from "path";
-import { getOpenai } from "../llm";
+import { openai } from "../llm";
 
 export async function runAnalysis(analysisData: AnalysisInput) {
-    const openai = getOpenai();
-    
     return safeHandler(async () => {  
       const enhancedQuery = analysisPrompt(analysisData);
   

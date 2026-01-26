@@ -1,4 +1,4 @@
-import { getDb, schema } from "@onescope/db";
+import { db, schema } from "@onescope/db";
 import type { Workspace } from "@onescope/db";
 import { eq, isNull, and } from "drizzle-orm";
 import { ValidationError, NotFoundError } from "@onescope/errors";
@@ -13,8 +13,6 @@ export async function createWorkspaceForTenant(args: {
   region?: string | null;
   userId: string;
 }) {
-  const db = getDb();
-
   const { name, slug, domain, tenantId, country, region, userId } = args;
 
   const workspace: Workspace = {
@@ -45,8 +43,6 @@ export async function createWorkspaceForTenant(args: {
 export async function getWorkspaceById(args: {
   workspaceId: string;
 }) {
-  const db = getDb();
-  
   const { workspaceId } = args;
 
   if (!workspaceId || workspaceId.trim() === "") {

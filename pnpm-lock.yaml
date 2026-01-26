@@ -238,6 +238,9 @@ importers:
       drizzle-orm:
         specifier: ^0.41.0
         version: 0.41.0(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(gel@2.2.0)(kysely@0.28.10)(pg@8.17.2)(postgres@3.4.8)
+      env:
+        specifier: link:@/env
+        version: link:@/env
       pg:
         specifier: ^8.16.3
         version: 8.17.2

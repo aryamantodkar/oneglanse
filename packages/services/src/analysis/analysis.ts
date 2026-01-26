@@ -1,4 +1,4 @@
-import { getClickhouse, getDb } from "@onescope/db";
+import { clickhouse, db } from "@onescope/db";
 import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMetrics, PromptAnalysisWithSources, PromptResponse, Source, SourceCitationLookup } from "@onescope/types";
 import fs from "fs";
 import path, { dirname } from "path";
@@ -11,8 +11,6 @@ export async function analysePromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
-    const clickhouse = getClickhouse();
-
     const { workspaceId, userId } = args;
 
     // const result = await clickhouse.query({
