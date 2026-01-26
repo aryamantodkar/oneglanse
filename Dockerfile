@@ -15,7 +15,8 @@ COPY apps ./apps
 RUN pnpm install --frozen-lockfile
 
 # Skip env validation during build (env vars provided at runtime)
-ENV SKIP_ENV_VALIDATION=1
+ENV SKIP_ENV_VALIDATION=true
+ENV DATABASE_URL=postgres://stub/stub
 
 # Build
 RUN pnpm turbo build
