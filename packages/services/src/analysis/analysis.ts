@@ -4,7 +4,7 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { AuthError, fail, NotFoundError, ok, ValidationError } from "@onescope/errors";
-import { runAnalysis } from ".";
+import { runAnalysis } from "./runAnalysis";
 import { v4 as uuidv4 } from "uuid";
 
 export async function analysePromptsForWorkspace(args: {

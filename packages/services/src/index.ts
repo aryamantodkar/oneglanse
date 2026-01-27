@@ -1,3 +1,4 @@
-export * from './analysis/analysis';
-export * from './prompt/prompt';
-export * from './workspace/workspace';
+export * from './analysis';
+export * from './prompt';
+export * from './workspace';
+export * from './agent';

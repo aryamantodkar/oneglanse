@@ -2,7 +2,7 @@ import "dotenv/config";
 import { Job, Worker } from "bullmq";
 import { launchAgents } from "./agent.js";
 import { AgentConfig } from "./types/types.js";
-import { redis, waitForRedis } from "./redis.js";
+import { redis, waitForRedis } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 
 async function startWorker() {
@@ -48,5 +48,5 @@ async function startWorker() {
 
 startWorker().catch((err) => {
   logger.error("Worker failed to start:", err);
-  process.exit(1); // PM2 will restart
+  process.exit(1);  // Container will restart
 });
