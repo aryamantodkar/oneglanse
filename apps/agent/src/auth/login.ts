@@ -15,11 +15,11 @@ if (existsSync(".env.local")) {
   throw new Error(".env.local not found - run 'make setup-env' first");
 }
 
-if (!process.env.AUTH_PROFILE_PATH) {
-  throw new Error("AUTH_PROFILE_PATH is not set");
+if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
+  throw new Error("LOCAL_AUTH_PROFILE_PATH is not set");
 }
 
-const USER_DATA_DIR = path.resolve(process.env.AUTH_PROFILE_PATH);
+const USER_DATA_DIR = path.resolve(process.env.LOCAL_AUTH_PROFILE_PATH);
 
 export async function loginToProvider(provider: Provider): Promise<void> {
   const config = PROVIDERS[provider];
