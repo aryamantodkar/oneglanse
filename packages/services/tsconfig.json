@@ -6,7 +6,7 @@
       "declaration": true,
       "declarationMap": true
     },
-    "include": ["src/**/*.ts", "../../apps/web/src/lib/workspace/getActiveOrganization.ts"],
+    "include": ["src/**/*.ts"],
     "exclude": ["node_modules", "dist"]
 }
   
