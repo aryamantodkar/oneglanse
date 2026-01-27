@@ -33,7 +33,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - .packages/db/init-scripts:/docker-entrypoint-initdb.d
 
   # ClickHouse service
   clickhouse:
@@ -46,7 +46,7 @@ services:
       - "8123:8123"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./clickhouse-init/:/docker-entrypoint-initdb.d/
+      - .packages/db/clickhouse-init/:/docker-entrypoint-initdb.d/
 
   migrate:
     image: onescopeai-web
