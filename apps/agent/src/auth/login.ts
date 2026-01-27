@@ -9,8 +9,8 @@ import { Provider } from "../types/types.js";
 import { logger } from "../lib/utils/logger.js";
 
 // Load .env.local for local authentication
-if (existsSync(".env.local")) {
-  dotenv.config({ path: ".env.local" });
+if (existsSync(".env")) {
+  dotenv.config({ path: ".env" });
 } else {
   throw new Error(".env.local not found - run 'make setup-env' first");
 }
