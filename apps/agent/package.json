@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@onescope/services": "workspace:*",
     "@onescope/types": "workspace:*",
     "bullmq": "^5.66.4",
     "dotenv": "^17.2.3",
