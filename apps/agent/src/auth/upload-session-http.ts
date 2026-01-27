@@ -5,15 +5,15 @@ import { existsSync } from "node:fs";
 import { logger } from "../lib/utils/logger.js";
 
 // Load .env.local for local authentication
-if (existsSync(".env.local")) {
-  dotenv.config({ path: ".env.local" });
+if (existsSync(".env")) {
+  dotenv.config({ path: ".env" });
 } else {
   throw new Error(".env.local not found - run 'make setup-env' first");
 }
 
 const VPS_API_URL = process.env.VPS_API_URL || `http://${process.env.VPS_IP}:3333`;
 const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN;
-const AUTH_PROFILE_PATH = process.env.AUTH_PROFILE_PATH || "./storage";
+const AUTH_PROFILE_PATH = process.env.LOCAL_AUTH_PROFILE_PATH || "./storage";
 
 interface SessionData {
   anthropic?: any;

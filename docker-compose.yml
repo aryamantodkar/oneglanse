@@ -1,4 +1,33 @@
 services:
+  agent-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: onescope-agent-api
+    restart: unless-stopped
+    env_file: .env
+    command: pnpm start:api
+
+  agent-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: onescope-agent-worker
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - redis
+      - agent-api
+    shm_size: "1gb"
+    command: pnpm start:worker
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
   web:
     build:
       context: .
@@ -11,6 +40,7 @@ services:
     depends_on:
       - db
       - clickhouse
+      - redis
 
     # Uncomment below for development (mounts local code, uses pnpm dev)
     environment:
@@ -61,3 +91,4 @@ services:
 volumes:
   db_data:
   clickhouse_data:
+  redis_data:

@@ -1,0 +1,52 @@
+FROM node:20-bookworm
+
+# ----------------------------
+# Playwright system deps
+# ----------------------------
+RUN apt-get update && apt-get install -y \
+  libnss3 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libdrm2 \
+  libxkbcommon0 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxrandr2 \
+  libgbm1 \
+  libasound2 \
+  libpangocairo-1.0-0 \
+  libgtk-3-0 \
+  ca-certificates \
+  fonts-liberation \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# ----------------------------
+# Copy monorepo
+# ----------------------------
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+COPY apps/agent ./apps/agent
+
+# ----------------------------
+# Install deps
+# ----------------------------
+RUN pnpm install --frozen-lockfile
+
+# ----------------------------
+# Install Playwright browser
+# ----------------------------
+RUN pnpm --filter @onescope/agent exec playwright install chromium
+
+# ----------------------------
+# Build agent
+# ----------------------------
+RUN pnpm --filter @onescope/agent build
+
+WORKDIR /app/apps/agent
+ENV NODE_ENV=production
