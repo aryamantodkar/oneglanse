@@ -18,19 +18,12 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
     model String,
     model_provider String,
     response String,
-
-    citations Array(Tuple(
-        title String,
-        url String,
-        start_index Nullable(Int32),
-        end_index Nullable(Int32),
-        cited_text String
-    )),
-
     sources Array(Tuple(
         title String,
+        cited_text String
         url String,
-        page_age Nullable(String)
+        domain Nullable(String),
+        favicon Nullable(String)
     )),
 
     prompt_run_at DateTime,
