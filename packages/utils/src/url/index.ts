@@ -1,2 +1,2 @@
-export * from "./getDomain.js"
-export * from "./getUniqueLinks.js"
+export * from "./getDomain"
+export * from "./getUniqueLinks"
