@@ -8,6 +8,7 @@
     "isolatedModules": false,
 
     /* Output */
+    "jsx": "react-jsx",
     "rootDir": "./src",
     "outDir": "./dist",
     "declaration": true,

@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { createClient } from '@clickhouse/client';
 
-import * as schema from "./schema";
+import * as schema from "./schema/index.js";
 
 const globalForDb = globalThis as unknown as {
 	conn: postgres.Sql | undefined;
@@ -36,5 +36,5 @@ export const clickhouse = createClient({
 });
 
 export { schema };
-export * from "./pg"
-export * from "./types"
+export * from "./pg.js"
+export * from "./types.js"

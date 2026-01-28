@@ -1,5 +1,5 @@
-import type { ByModel } from "./metrics";
-import type { PromptResponse } from "./prompts";
+import type { ByModel } from "./metrics.js";
+import type { PromptResponse } from "./prompts.js";
 
 export interface Source {
     title: string;

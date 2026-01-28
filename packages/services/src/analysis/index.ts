@@ -1,3 +1,3 @@
-export * from "./analysis";
-export * from "./analysisPrompt";
-export * from "./runAnalysis"
+export * from "./analysis.js";
+export * from "./analysisPrompt.js";
+export * from "./runAnalysis.js"

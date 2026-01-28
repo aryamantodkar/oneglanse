@@ -1,4 +1,4 @@
-import { BaseError } from "./BaseError";
+import { BaseError } from "./BaseError.js";
 
 export class ValidationError extends BaseError {
   constructor(message = "Validation failed", meta?: Record<string, unknown>, cause?: unknown) {

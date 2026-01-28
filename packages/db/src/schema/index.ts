@@ -1,2 +1,2 @@
-export * from "./auth";
-export * from "./workspace"
+export * from "./auth.js";
+export * from "./workspace.js"

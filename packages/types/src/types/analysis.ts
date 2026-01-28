@@ -1,5 +1,5 @@
-import type { BrandMetricMap } from "./metrics";
-import type { PromptRunMap, PromptDetails } from "./prompts";
+import type { BrandMetricMap } from "./metrics.js";
+import type { PromptRunMap, PromptDetails } from "./prompts.js";
 
 
 export interface AnalysisModelInput {

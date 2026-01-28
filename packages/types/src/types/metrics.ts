@@ -1,6 +1,6 @@
-import type { AnalysisModelInput } from "./analysis";
-import type { PromptRunMap } from "./prompts";
-import type { SourceCitationLookup } from "./sources";
+import type { AnalysisModelInput } from "./analysis.js";
+import type { PromptRunMap } from "./prompts.js";
+import type { SourceCitationLookup } from "./sources.js";
 
 
 /** model_provider -> items[] */

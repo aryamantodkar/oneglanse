@@ -1,4 +1,4 @@
-import { getDomain } from "./getDomain";
+import { getDomain } from "./getDomain.js";
 
 export function getUniqueLinks(
     items: { title?: string; url?: string }[] = []

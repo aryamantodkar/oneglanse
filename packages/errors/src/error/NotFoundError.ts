@@ -1,4 +1,4 @@
-import { BaseError } from "./BaseError";
+import { BaseError } from "./BaseError.js";
 
 export class NotFoundError extends BaseError {
   constructor(resource = "Resource", meta?: Record<string, unknown>, cause?: unknown) {

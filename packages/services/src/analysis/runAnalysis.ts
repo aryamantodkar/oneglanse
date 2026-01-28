@@ -1,9 +1,9 @@
-import { analysisPrompt } from "./analysisPrompt";
+import { analysisPrompt } from "./analysisPrompt.js";
 import { ExternalServiceError, safeHandler, ValidationError } from "@onescope/errors";
 import type { AnalysisInput, AnalysisOutput } from "@onescope/types";
 import fs from "fs";
 import path from "path";
-import { openai } from "../llm";
+import { openai } from "../llm/index.js";
 
 export async function runAnalysis(analysisData: AnalysisInput) {
     return safeHandler(async () => {  
