@@ -1,2 +1,2 @@
-export * from "./providers.js"
-export * from "./constants.js"
+export * from "./providers"
+export * from "./constants"

@@ -1,2 +1,2 @@
-export * from "./aggregatePromptMetrics.js"
-export * from "./filterMetrics.js"
+export * from "./aggregatePromptMetrics"
+export * from "./filterMetrics"

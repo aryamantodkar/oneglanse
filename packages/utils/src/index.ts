@@ -1,8 +1,8 @@
-export * from "./cn.js";
-export * from "./favicon.js";
-export * from "./id.js";
+export * from "./cn";
+export * from "./favicon";
+export * from "./id";
 
-export * from "./format/index.js";
-export * from "./extract/index.js";
-export * from "./url/index.js";
-export * from "./agent/index.js";
+export * from "./format/index";
+export * from "./extract/index";
+export * from "./url/index";
+export * from "./agent/index";
