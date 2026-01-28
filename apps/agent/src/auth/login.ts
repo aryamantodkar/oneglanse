@@ -12,7 +12,7 @@ import { PROVIDERS } from "@onescope/utils";
 if (existsSync(".env")) {
   dotenv.config({ path: ".env" });
 } else {
-  throw new Error(".env.local not found - run 'make setup-env' first");
+  throw new Error(".env not found");
 }
 
 if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
