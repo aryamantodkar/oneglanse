@@ -1,4 +1,4 @@
-import { getDomain } from "../url/getDomain.js";
+import { getDomain } from "../url/getDomain";
 import type { DomainStats, PromptResponse } from "@onescope/types";
 
 export function extractDomainStats(
