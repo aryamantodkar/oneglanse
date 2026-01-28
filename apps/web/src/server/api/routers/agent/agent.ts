@@ -28,13 +28,23 @@ export const agentRouter = createTRPCRouter({
     }),
   status: authorizedWorkspaceProcedure
     .input(z.object({ jobId: z.string() }))
+    .output(z.object({
+      status: z.literal("completed"),
+      response: z.unknown(), // or a proper schema if you want
+    }))
     .query(async ({ input }) => {
       const result = await redis.get(`job:${input.jobId}:result`);
   
       if (!result) {
-        return { status: "running" };
+        return { 
+          status: "completed",
+          response: null
+        };
       }
   
-      return JSON.parse(result);
+      return {
+        status: "completed",
+        response: JSON.parse(result)
+      };
     })
 });

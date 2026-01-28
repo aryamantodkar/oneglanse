@@ -32,8 +32,8 @@ import {
 import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@onescope/types";
 import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon } from "@onescope/utils";
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
-import { useAnalyzeMetrics, useStorePrompt } from "./_lib/mutations/prompt.mutations";
-import { useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
+import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
+import { useAgentStatus, useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
 import { filterMetrics } from "../../../../../../packages/utils/src/metrics/filterMetrics";
 import { aggregatePromptMetrics } from "../../../../../../packages/utils/src/metrics/aggregatePromptMetrics";
 
@@ -64,6 +64,7 @@ export default function Prompts() {
   const [openPromptResponses, setOpenPromptResponses] = useState<Metric[]>([]);
 
   const [originalMetricData, setOriginalMetricData] = useState<GroupedMetrics>({});
+  const [jobId, setJobId] = useState<string | null>(null);
 
   const [metrics, setMetrics] = useState<GroupedMetrics>({});
 
@@ -78,9 +79,16 @@ export default function Prompts() {
     isLoading: isAnalysedPromptsLoading,
     error: analysedPromptsError,
   } = useFetchAnalysedPrompts(workspaceId);
+
+  const {
+    data: agentResponse,
+    isLoading: isAgentResponseLoading,
+    error: agentResponseError,
+  } = useAgentStatus(workspaceId, jobId ?? "");
   
   const storePromptMutation = useStorePrompt();
   const analyzeMetricsMutation = useAnalyzeMetrics();
+  const runAgentMutation = useRunAgents();
 
   useEffect(() => {
     if (userPrompts?.data?.length) {
@@ -243,6 +251,30 @@ export default function Prompts() {
       return next;
     });
   };
+
+  const handleRunAgents = async () => {
+    if (!workspaceId) return toast.error("Workspace ID is undefined.");
+
+    setLoading(true);
+    try {
+      const jobDetails = await runAgentMutation.mutateAsync({ workspaceId });
+
+      setJobId(jobDetails?.data?.jobId ?? null);
+      toast.success("Prompts ran successfully using agents!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to run prompts with agents");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (agentResponse?.status === "completed") {
+      toast.success("Agent job completed!");
+      console.log(agentResponse.response);
+    }
+  }, [agentResponse?.status]);
 
   // useEffect(() => {
   //   const fetchAnalysis = async () => {
@@ -470,6 +502,11 @@ export default function Prompts() {
           }`}
         >
           {loading ? "Saving..." : "Save"}
+        </Button>
+        <Button
+          onClick={handleRunAgents}
+        >
+          Run Prompts
         </Button>
       </div>
 
