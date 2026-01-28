@@ -1,6 +1,6 @@
 import type { ApiResponse } from "@onescope/types";
-import { BaseError } from "./error/BaseError";
-import { captureException } from "./logger";
+import { BaseError } from "./error/BaseError.js";
+import { captureException } from "./logger.js";
   
 export function ok<T>(data: T | null = null, message = "Success"): ApiResponse<T> {
     return { success: true, status: 200, message, data };

@@ -1,4 +1,4 @@
-import { BaseError } from "./BaseError";
+import { BaseError } from "./BaseError.js";
 
 export class RateLimitError extends BaseError {
   constructor(namespace = "global", message?: string) {

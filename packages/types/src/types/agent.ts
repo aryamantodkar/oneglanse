@@ -1,4 +1,4 @@
-import type { Source } from "./sources";
+import type { Source } from "./sources.js";
 
 // Agent-specific types shared between web and agent apps
 export interface AgentCitation {

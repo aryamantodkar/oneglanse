@@ -1,4 +1,4 @@
-import { BaseError } from "./BaseError";
+import { BaseError } from "./BaseError.js";
 
 export class EnvError extends BaseError {
     constructor(variable: string, message = "Missing or invalid environment variable", meta?: Record<string, unknown>) {

@@ -1,5 +1,5 @@
-import type { AnalysisModelInput } from "./analysis";
-import type { SourceCitationLookup } from "./sources";
+import type { AnalysisModelInput } from "./analysis.js";
+import type { SourceCitationLookup } from "./sources.js";
 
 export type UserPrompt = {
     id: string;
