@@ -6,8 +6,8 @@
   "description": "Local agent that runs a real browser to execute LLM prompts",
   "scripts": {
     "dev": "node --loader ts-node/esm src/index.ts",
-    "start:api": "node dist/api.js",
-    "start:worker": "node dist/worker.js",
+    "start:api": "node dist/src/api.js",
+    "start:worker": "node dist/src/worker.js",
     "build": "tsc",
     "auth": "node --loader ts-node/esm src/auth/auth.ts",
     "login": "RUN_INTERACTIVE_LOGIN=true node --loader ts-node/esm src/auth/login.ts",
