@@ -1,11 +1,11 @@
 import { Locator, Page } from "playwright";
 import { findLastAssistantBox } from "../../../lib/input/getLastAssistantText.js";
-import { SOURCES_SELECTORS } from "../../../../../../packages/utils/src/agent/constants.js";
 import { extractSourcesFromAnthropic } from "../../anthropic/lib/extractSources.js";
 import { exractSoucesFromOpenai } from "../../openai/lib/extractSources.js";
 import { exractSoucesFromPerplexity } from "../../perplexity/lib/extractSources.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider, Source } from "@onescope/types";
+import { SOURCES_SELECTORS } from "@onescope/utils";
 
 export async function checkAndExtractSources(page: Page, provider: Provider): Promise<Source[]> {
     let sources: Source[] = [];
