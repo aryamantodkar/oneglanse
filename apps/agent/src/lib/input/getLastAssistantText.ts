@@ -1,6 +1,6 @@
 import { Locator, Page } from "playwright";
-import { MODEL_RESPONSE_SELECTORS, RESPONSE_GENERATION_SELECTORS } from "../utils/constants.js";
-import { Provider } from "../../types/types.js";
+import { Provider } from "@onescope/types";
+import { MODEL_RESPONSE_SELECTORS, RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 
 export async function getLastAssistantText(
   page: Page,

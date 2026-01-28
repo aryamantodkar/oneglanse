@@ -2,10 +2,10 @@ import { Page } from "playwright";
 import { runPrompts } from "./runPrompts.js";
 import { warmUpEditor } from "../../lib/input/warmUpEditor.js";
 import { runStep } from "../../lib/utils/runStep.js";
-import { UserPrompt, Provider, AskPromptResult } from "../../types/types.js";
 import { ensureNewChat } from "../openai/lib/newChat.js";
+import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 
-export async function runAgents(prompts: UserPrompt[], page: Page, provider: Provider): Promise<AskPromptResult[]> {
+export async function runAgents(prompts: PromptPayload, page: Page, provider: Provider): Promise<AskPromptResult[]> {
     if(provider=="openai"){
       await runStep("Ensuring new chat is created.", page, async () => {
         await ensureNewChat(page);

@@ -1,7 +1,7 @@
 import { Page, Locator } from "playwright";
-import { EDITOR_SELECTORS } from "../utils/constants.js";
-import { Provider } from "../../types/types.js";
+import { Provider } from "@onescope/types";
 import { logger } from "../utils/logger.js";
+import { EDITOR_SELECTORS } from "@onescope/utils";
 
 export async function findActiveEditor(page: Page): Promise<Locator> {
     for (const selector of EDITOR_SELECTORS) {

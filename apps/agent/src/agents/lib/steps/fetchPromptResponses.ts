@@ -1,8 +1,8 @@
 import { Page } from "playwright";
 import { getLastAssistantText } from "../../../lib/input/getLastAssistantText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToFinish.js";
-import { Provider } from "../../../types/types.js";
 import { logger } from "../../../lib/utils/logger.js";
+import { Provider } from "@onescope/types";
 
 export async function fetchPromptResponses(
     page: Page,

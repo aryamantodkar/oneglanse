@@ -2,9 +2,9 @@ import path from "path";
 import fs from "fs";
 import { chromium as playwrightChromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { AgentAuthError } from "../../error/error.js";
-import { Provider } from "../../types/types.js";
 import { logger } from "../utils/logger.js";
+import { Provider } from "@onescope/types";
+import { AuthError } from "@onescope/errors";
 
 playwrightChromium.use(StealthPlugin());
 
@@ -18,7 +18,7 @@ export async function launchContext(provider: Provider) {
   const providerDir = path.join(USER_DATA_DIR, provider);
     
   if (!fs.existsSync(providerDir)) {
-    throw new AgentAuthError(provider);
+    throw new AuthError(`${provider} not authenticated`);
   }
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);

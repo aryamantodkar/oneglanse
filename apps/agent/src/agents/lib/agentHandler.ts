@@ -1,7 +1,7 @@
 import { Browser, BrowserContext, Page } from "playwright";
-import { UserPrompt, Provider, AskPromptResult } from "../../types/types.js";
 import { runAgents } from "./runAgents.js";
 import { logger } from "../../lib/utils/logger.js";
+import { UserPrompt, Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 
 export async function agentHandler<T>(
     label: string,
@@ -11,7 +11,7 @@ export async function agentHandler<T>(
       page: Page;
       auth: boolean;
     }>,
-    prompts: UserPrompt[],
+    payload: PromptPayload,
     provider: Provider
   ): Promise<AskPromptResult[]> {
     const { browser, context, page, auth } = await agentFactory();
@@ -20,7 +20,7 @@ export async function agentHandler<T>(
   
     try {
       if (!auth) return [];
-      return await runAgents(prompts, page, provider);
+      return await runAgents(payload, page, provider);
     } finally {
       await context.close().catch(() => {});
       await browser.close().catch(() => {});

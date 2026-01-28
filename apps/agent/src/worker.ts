@@ -1,18 +1,30 @@
 import "dotenv/config";
 import { Job, Worker } from "bullmq";
 import { launchAgents } from "./agent.js";
-import { AgentConfig } from "./types/types.js";
 import { redis, waitForRedis } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
+import { PromptPayload, UserPrompt } from "@onescope/types";
 
 async function startWorker() {
   await waitForRedis();
 
   const worker = new Worker(
     "onescope-agent",
-    async (job: Job<AgentConfig>) => {
-      const data = job.data as AgentConfig;
-      const results = await launchAgents(data);
+    async (job: Job<UserPrompt[]>) => {
+      const data = job.data as UserPrompt[];
+      const { user_id, workspace_id, created_at } = data[0];
+
+      const PromptPayload: PromptPayload = {
+        user_id,
+        workspace_id,
+        prompts: data.map(({ id, prompt }) => ({
+          id,
+          prompt,
+        })),
+        created_at
+      };
+
+      const results = await launchAgents(PromptPayload);
 
       await redis.set(
         `job:${job.id}:result`,

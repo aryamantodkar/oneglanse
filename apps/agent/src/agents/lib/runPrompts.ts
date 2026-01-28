@@ -2,11 +2,13 @@ import { Page } from "playwright";
 import { askPrompt } from "./steps/askPrompt.js";
 import { fetchPromptResponses } from "./steps/fetchPromptResponses.js";
 import { checkAndExtractSources } from "./steps/extractSources.js";
-import { UserPrompt, Provider, AskPromptResult, Source } from "../../types/types.js";
+import { Provider, AskPromptResult, Source } from "@onescope/types";
 import { logger } from "../../lib/utils/logger.js";
+import { PromptPayload } from "@onescope/types";
 
-export async function runPrompts(prompts: UserPrompt[], page: Page, provider: Provider): Promise<AskPromptResult[]> {
+export async function runPrompts(payload: PromptPayload, page: Page, provider: Provider): Promise<AskPromptResult[]> {
     logger.debug("🤖 Running prompts...\n");
+    const { user_id: userId, workspace_id: workspaceId, prompts: promptsArray } = payload;
 
     await page
       .waitForLoadState("domcontentloaded", { timeout: 30000 })
@@ -15,11 +17,12 @@ export async function runPrompts(prompts: UserPrompt[], page: Page, provider: Pr
   
     let promptMetrics: AskPromptResult[] = [];
     
-    for (let i = 0; i < prompts.length; i++) {
-      const prompt = prompts[i];
+    for (let i = 0; i < promptsArray.length; i++) {
+      const promptId = promptsArray[i].id;
+      const prompt = promptsArray[i].prompt;
   
       logger.debug(`\n${"=".repeat(70)}`);
-      logger.debug(`Prompt ${i + 1}/${prompts.length}`);
+      logger.debug(`Prompt ${i + 1}/${promptsArray.length}`);
       logger.debug(`${"=".repeat(70)}`);
       logger.debug(`📝 ${prompt}\n`);
   
@@ -39,8 +42,10 @@ export async function runPrompts(prompts: UserPrompt[], page: Page, provider: Pr
         logger.success(`Saved result ${i + 1}`);
   
         promptMetrics.push({
-          promptId: prompt.id,
-          prompt: prompt.prompt,
+          userId,
+          workspaceId,
+          promptId,
+          prompt,
           response,
           sources
         });
@@ -48,8 +53,10 @@ export async function runPrompts(prompts: UserPrompt[], page: Page, provider: Pr
         logger.error(`Error processing prompt ${i + 1}: ${err.message}`);
         
         promptMetrics.push({
-          promptId: prompt.id,
-          prompt: prompt.prompt,
+          userId,
+          workspaceId,
+          promptId,
+          prompt,
           response: "",
           sources: []
         });

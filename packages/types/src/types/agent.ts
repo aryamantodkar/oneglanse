@@ -1,15 +1,6 @@
+import type { Source } from "./sources";
+
 // Agent-specific types shared between web and agent apps
-
-export type AgentUserPrompt = {
-  id: string;
-  prompt: string;
-};
-
-export interface AgentConfig {
-  headless?: boolean;
-  prompts: AgentUserPrompt[];
-}
-
 export interface AgentCitation {
   text: string;
   href?: string | null;
@@ -24,29 +15,38 @@ export interface ContentBlock {
   citations?: AgentCitation[];
 }
 
-export interface AgentSource {
-  title: string;
-  citedText: string;
-  url: string;
-  domain: string | null;
-  favicon?: string | null;
-}
-
 export interface ExtractionResult {
   response: string;
   contentBlocks: ContentBlock[];
   inlineCitations: AgentCitation[];
-  sources: AgentSource[];
+  sources: Source[];
   hasSourcesButton: boolean;
   extractionErrors: string[];
 }
 
 export interface AskPromptResult {
+  userId: string;
+  workspaceId: string;
   promptId: string;
   prompt: string;
   response: string;
-  sources: AgentSource[];
+  sources: Source[];
 }
+
+export type ErrorPayload =
+  | {
+      type: "AUTH";
+      message: string;
+      status: 401;
+      retryable: false;
+    }
+  | {
+      type: "UNKNOWN";
+      message: string;
+      code?: string;
+      status?: number;
+      retryable?: boolean;
+    };
 
 export type AgentSuccess = {
   status: "fulfilled";
@@ -55,16 +55,18 @@ export type AgentSuccess = {
 
 export type AgentFailure = {
   status: "rejected";
-  error: Error;
+  error: ErrorPayload;
 };
 
 export type AgentAuthErrorResult = {
   status: "auth_error";
-  error: Error;
+  error: ErrorPayload;
 };
 
-export type AgentResult = AgentSuccess | AgentFailure | AgentAuthErrorResult;
-
 export type Provider = "openai" | "anthropic" | "perplexity";
+
+export type AgentResult =
+  | { status: "fulfilled"; data: AskPromptResult[] }
+  | { status: "rejected"; error: ErrorPayload };
 
 export type ModelResult = Record<Provider, AgentResult>;

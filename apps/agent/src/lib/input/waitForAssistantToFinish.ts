@@ -1,6 +1,6 @@
 import { Page } from "playwright";
 import { getLastAssistantText, isGenerating } from "./getLastAssistantText.js";
-import { Provider } from "../../types/types.js";
+import { Provider } from "@onescope/types";
 import { logger } from "../utils/logger.js";
 
 export async function waitForAssistantToFinish(page: Page, provider: Provider): Promise<void> {

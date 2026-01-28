@@ -2,11 +2,10 @@ import { Page } from "playwright";
 import { waitForEditorReady } from "../../../lib/input/findActiveEditor.js";
 import { findEnabledSendButton } from "../../../lib/input/findEnabledSendButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToFinish.js";
-import { UserPrompt, Provider } from "../../../types/types.js";
 import { logger } from "../../../lib/utils/logger.js";
+import { Provider } from "@onescope/types";
 
-export async function askPrompt(page: Page, promptData: UserPrompt, provider: Provider): Promise<void> {
-    let prompt = promptData.prompt;
+export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
     logger.debug(`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
   
     await waitForAssistantToFinish(page, provider);
