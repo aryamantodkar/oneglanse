@@ -1,5 +1,5 @@
 import type { PromptResponse, CitationGroupResult, Citation } from "@onescope/types";
-import { groupCitationsByUrl } from "./groupCitationsByUrl";
+import { groupCitationsByUrl } from "./groupCitationsByUrl.js";
 
 export function extractCitationStats(
     responses: PromptResponse[]
