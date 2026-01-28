@@ -8,7 +8,7 @@ import { logger } from "../lib/utils/logger.js";
 if (existsSync(".env")) {
   dotenv.config({ path: ".env" });
 } else {
-  throw new Error(".env.local not found - run 'make setup-env' first");
+  throw new Error(".env not found");
 }
 
 const VPS_API_URL = process.env.VPS_API_URL || `http://${process.env.VPS_IP}:3333`;
