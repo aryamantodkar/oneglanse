@@ -1,13 +1,30 @@
-import { EnvError } from "@onescope/errors";
 import OpenAI from "openai";
+import { EnvError } from "@onescope/errors";
 
-const apiKey = process.env.OPENAI_API_KEY;
+let client: OpenAI | null = null;
 
-if (!apiKey) {
-  throw new EnvError(
-    "OPENAI_API_KEY",
-    "Missing OpenAI API key. Please set OPENAI_API_KEY in your environment."
-  );
+function init(): OpenAI {
+  if (client) return client;
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new EnvError(
+      "OPENAI_API_KEY",
+      "Missing OpenAI API key. Please set OPENAI_API_KEY in your environment."
+    );
+  }
+
+  client = new OpenAI({ apiKey });
+  return client;
 }
 
-export const openai = new OpenAI({ apiKey });
+/**
+ * Proxy defers OpenAI creation until first actual usage
+ */
+export const openai = new Proxy({} as OpenAI, {
+  get(_target, prop) {
+    const instance = init();
+    // @ts-expect-error – dynamic proxy passthrough
+    return instance[prop];
+  },
+});
