@@ -3,8 +3,10 @@ import type { PromptResponse } from "./prompts";
 
 export interface Source {
     title: string;
+    citedText: string;
     url: string;
-    page_age: string;
+    domain: string | null;
+    favicon?: string | null;
 }
 
 export interface Citation {

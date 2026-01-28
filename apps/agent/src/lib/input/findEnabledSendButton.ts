@@ -1,5 +1,5 @@
+import { SUBMIT_BTN_SELECTORS } from "@onescope/utils";
 import { Locator, Page } from "playwright";
-import { SUBMIT_BTN_SELECTORS } from "../utils/constants.js";
 
 export async function findEnabledSendButton(page: Page): Promise<Locator | null> {
     for (const selector of SUBMIT_BTN_SELECTORS) {

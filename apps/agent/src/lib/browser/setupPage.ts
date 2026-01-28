@@ -1,6 +1,6 @@
 import { Page } from "playwright";
-import { Provider } from "../../types/types.js";
 import { logger } from "../utils/logger.js";
+import { Provider } from "@onescope/types";
 
 export function setupPage(
     page: Page,

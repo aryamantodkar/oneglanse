@@ -17,12 +17,18 @@ importers:
 
   apps/agent:
     dependencies:
+      '@onescope/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@onescope/services':
         specifier: workspace:*
         version: link:../../packages/services
       '@onescope/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@onescope/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       bullmq:
         specifier: ^5.66.4
         version: 5.67.0

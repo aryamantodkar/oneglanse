@@ -4,9 +4,9 @@ import path from "path";
 import fs from "fs";
 import { existsSync } from "fs";
 import { waitForUserLogin } from "../lib/auth/waitForUserLogin.js";
-import { PROVIDERS } from "./config.js";
-import { Provider } from "../types/types.js";
 import { logger } from "../lib/utils/logger.js";
+import { Provider } from "@onescope/types";
+import { PROVIDERS } from "@onescope/utils";
 
 // Load .env.local for local authentication
 if (existsSync(".env")) {

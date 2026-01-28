@@ -15,11 +15,7 @@ export const agentRouter = createTRPCRouter({
 
             const prompts = await fetchUserPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
         
-            const job = await agentQueue.add("run-agent", {
-                userId,
-                workspaceId,
-                prompts
-            });
+            const job = await agentQueue.add("run-agent", prompts);
     
             const jobDetails = {
                 jobId: job.id,

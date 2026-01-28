@@ -1,6 +1,6 @@
 import { Page, Locator } from "playwright";
-import { Source } from "../../../types/types.js";
 import { logger } from "../../../lib/utils/logger.js";
+import { Source } from "@onescope/types";
 
 export async function exractSoucesFromOpenai(page: Page, sourcesButton: Locator): Promise<Source[]>{
     const sources = await page.evaluate(() => {  

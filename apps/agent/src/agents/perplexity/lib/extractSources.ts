@@ -1,5 +1,5 @@
+import { Source } from "@onescope/types";
 import { Page } from "playwright";
-import { Source } from "../../../types/types.js";
 
 export async function exractSoucesFromPerplexity(page: Page): Promise<Source[]>{
     const sources = await page.evaluate(() => {

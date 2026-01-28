@@ -9,6 +9,17 @@ export type UserPrompt = {
     created_at: string;
 };
 
+export type PromptPayload = {
+    user_id: string;
+    workspace_id: string;
+    prompts: {
+      id: string;
+      prompt: string;
+    }[];
+    created_at: string;
+};
+  
+
 export interface PromptDetails {
     id: string;
     prompt_id: string;
