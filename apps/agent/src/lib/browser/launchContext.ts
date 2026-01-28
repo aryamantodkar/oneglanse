@@ -36,7 +36,7 @@ export async function launchContext(provider: Provider) {
   };
 
   contextOptions.proxy = {
-    server: process.env.PROXY_SERVER || 'socks5://127.0.0.1:1080'
+    server: process.env.PROXY_SERVER
   };
   logger.debug(`Using proxy: ${contextOptions.proxy.server}`);
 

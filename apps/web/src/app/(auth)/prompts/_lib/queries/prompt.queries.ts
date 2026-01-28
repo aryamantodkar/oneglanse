@@ -26,3 +26,12 @@ export function useFetchAnalysedPrompts(workspaceId: string) {
       }
     );
   }
+
+  export function useAgentStatus(workspaceId: string, jobId: string) {
+    return api.agent.status.useQuery(
+      { workspaceId, jobId },
+      {
+        enabled: !!workspaceId && !!jobId,
+      }
+    );
+  }

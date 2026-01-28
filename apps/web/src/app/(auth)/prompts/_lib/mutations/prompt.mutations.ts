@@ -7,3 +7,7 @@ export function useStorePrompt() {
 export function useAnalyzeMetrics() {
     return api.analysis.analyzeMetrics.useMutation();
 }
+
+export function useRunAgents() {
+    return api.agent.run.useMutation();
+}
