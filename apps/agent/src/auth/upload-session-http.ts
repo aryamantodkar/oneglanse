@@ -26,13 +26,13 @@ async function uploadSessions() {
 
   if (!API_AUTH_TOKEN) {
     logger.error("API_AUTH_TOKEN not set in environment");
-    logger.error("Please set API_AUTH_TOKEN in your .env.local file");
+    logger.error("Please set API_AUTH_TOKEN in your .env file");
     process.exit(1);
   }
 
   if (!VPS_API_URL) {
     logger.error("VPS_API_URL or VPS_IP not set in environment");
-    logger.error("Please set VPS_IP in your .env.local file");
+    logger.error("Please set VPS_IP in your .env file");
     process.exit(1);
   }
 

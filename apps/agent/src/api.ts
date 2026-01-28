@@ -1,8 +1,14 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { createServer } from "node:http";
-import fs from "node:fs";
+import fs, { existsSync } from "node:fs";
 import path from "node:path";
 import { logger } from "./lib/utils/logger.js";
+
+if (existsSync(".env")) {
+  dotenv.config({ path: ".env" });
+} else {
+  throw new Error(".env not found");
+}
 
 const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN || "";
 

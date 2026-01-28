@@ -5,7 +5,9 @@ services:
       dockerfile: Dockerfile.agent
     container_name: onescope-agent-api
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - apps/agent/.env
     command: pnpm start:api
 
   agent-worker:
