@@ -15,8 +15,8 @@ RUN pnpm install --frozen-lockfile
 ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 
-# Build ONLY the web app (but deps are built via turbo)
-RUN pnpm --filter @onescope/web build
+# Build the web app AND its dependencies via turbo
+RUN pnpm turbo build --filter=@onescope/web
 
 
 # ----------------------------
