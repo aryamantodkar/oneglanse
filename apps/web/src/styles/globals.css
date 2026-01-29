@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Scan UI package for Tailwind classes (required for monorepo in Tailwind v4) */
+@source "../../../packages/ui/src";
+@source "../../../packages/ui/dist";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
