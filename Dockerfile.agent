@@ -29,7 +29,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # ----------------------------
 # Copy monorepo
 # ----------------------------
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
 COPY packages ./packages
 COPY apps/agent ./apps/agent
 
