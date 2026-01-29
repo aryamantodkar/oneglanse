@@ -12,7 +12,13 @@ async function startWorker() {
     "onescope-agent",
     async (job: Job<UserPrompt[]>) => {
       const data = job.data as UserPrompt[];
-      const { user_id, workspace_id, created_at } = data[0];
+
+      const first = data[0];
+      if (!first) {
+        throw new Error("Agent job received no prompts");
+      }
+
+      const { user_id, workspace_id, created_at } = first;
 
       const PromptPayload: PromptPayload = {
         user_id,
