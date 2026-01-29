@@ -4,10 +4,9 @@ import fs, { existsSync } from "node:fs";
 import path from "node:path";
 import { logger } from "./lib/utils/logger.js";
 
+// Load .env file if it exists (for local dev), otherwise rely on environment variables
 if (existsSync(".env")) {
   dotenv.config({ path: ".env" });
-} else {
-  throw new Error(".env not found");
 }
 
 const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN || "";

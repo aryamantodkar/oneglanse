@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     env_file:
       - apps/agent/.env
+    environment:
+      - NODE_ENV=production
     command: pnpm start:api
 
   agent-worker:
@@ -15,7 +17,9 @@ services:
       dockerfile: Dockerfile.agent
     container_name: onescope-agent-worker
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - apps/agent/.env
     depends_on:
       - redis
     shm_size: "1gb"
@@ -79,6 +83,8 @@ services:
   migrate:
     image: onescopeai-web
     env_file: .env
+    environment:
+      - CI=true
     depends_on:
       - db
     command: >
