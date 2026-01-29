@@ -6,7 +6,7 @@
     "moduleResolution": "NodeNext",
     "noEmit": false,
     "isolatedModules": false,
-
+    
     /* Output */
     "rootDir": "./src",
     "outDir": "./dist",
