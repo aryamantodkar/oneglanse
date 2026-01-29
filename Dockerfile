@@ -15,8 +15,8 @@ RUN pnpm install --frozen-lockfile
 ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 
-RUN pnpm turbo build --filter=@onescope/web
-RUN pnpm deploy --filter @onescope/web --prod /out --legacy
+# Build ONLY the web app (but deps are built via turbo)
+RUN pnpm --filter @onescope/web build
 
 
 # ----------------------------
@@ -26,7 +26,20 @@ FROM node:20-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /out /app
+# pnpm IS REQUIRED for next start
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy everything needed to run
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+COPY --from=builder /app/apps ./apps
+COPY --from=builder /app/packages ./packages
+
+# Install production deps only
+RUN pnpm install --prod --frozen-lockfile
 
 EXPOSE 3000
-CMD node apps/web/server.js
+
+CMD pnpm --filter @onescope/web start -H 0.0.0.0
