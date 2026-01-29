@@ -1,7 +1,7 @@
 import { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "./runAgents.js";
 import { logger } from "../../lib/utils/logger.js";
-import { UserPrompt, Provider, AskPromptResult, PromptPayload } from "@onescope/types";
+import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 
 export async function agentHandler<T>(
     label: string,
