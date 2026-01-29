@@ -2,6 +2,7 @@ import "../styles/globals.css";
 import { Toaster } from "@onescope/ui"
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
@@ -19,12 +20,14 @@ export default async function RootLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
-        <html lang="en" className={`${geist.variable}`}>
+        <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
             <body>
-                <TRPCReactProvider>
-                    {children}
-                    <Toaster />
-                </TRPCReactProvider>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                    <TRPCReactProvider>
+                        {children}
+                        <Toaster />
+                    </TRPCReactProvider>
+                </ThemeProvider>
             </body>
         </html>
     );
