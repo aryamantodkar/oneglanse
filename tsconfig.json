@@ -1,16 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "strict": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-    "noUncheckedIndexedAccess": true
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+
+    /* Typechecking only */
+    "noEmit": true
   }
 }

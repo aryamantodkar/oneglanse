@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, boolean, varchar, uuid, uniqueIndex, index } from "drizzle-orm/pg-core";
-import { schema } from "../index";
+import { schema } from "../index.js";
 import { sql } from "drizzle-orm";
 import z from "zod";
 

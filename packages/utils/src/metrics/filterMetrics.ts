@@ -1,5 +1,5 @@
 import type { BrandMetric, FilterMetricsParams, GroupedMetrics, Metric } from "@onescope/types";
-import { isWithinRange } from "../format/dateFilter";
+import { isWithinRange } from "../format/dateFilter.js";
 
 export function filterMetrics(
     metrics: GroupedMetrics,
