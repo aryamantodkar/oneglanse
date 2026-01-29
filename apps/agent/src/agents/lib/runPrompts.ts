@@ -16,11 +16,16 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
     await page.waitForTimeout(2000);
   
     let promptMetrics: AskPromptResult[] = [];
-    
+
     for (let i = 0; i < promptsArray.length; i++) {
-      const promptId = promptsArray[i].id;
-      const prompt = promptsArray[i].prompt;
-  
+      const promptEntry = promptsArray[i];
+      if (!promptEntry) {
+        logger.error(`Prompt at index ${i} is undefined.`);
+        continue;
+      }
+      const promptId = promptEntry.id;
+      const prompt = promptEntry.prompt;
+
       logger.debug(`\n${"=".repeat(70)}`);
       logger.debug(`Prompt ${i + 1}/${promptsArray.length}`);
       logger.debug(`${"=".repeat(70)}`);
