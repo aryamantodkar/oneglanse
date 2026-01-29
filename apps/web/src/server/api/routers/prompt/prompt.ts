@@ -3,22 +3,10 @@ import "server-only";
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { ok, safeHandler } from "@onescope/errors";
-import { runPromptsForWorkspace, fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace } from "@onescope/services";
+import { fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace } from "@onescope/services";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 
 export const promptRouter = createTRPCRouter({
-  run: authorizedWorkspaceProcedure
-    .mutation(async ({ ctx }) => {
-      return safeHandler(async () => {
-        const {
-          user: { id: userId },
-          workspaceId,
-        } = ctx;
-
-        const res = await runPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
-        return ok(res, "Prompts run successfully.");
-      })
-    }),
   store: authorizedWorkspaceProcedure
     .input(
       z.object({
