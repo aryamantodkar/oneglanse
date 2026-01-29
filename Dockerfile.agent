@@ -50,3 +50,6 @@ RUN pnpm turbo build --filter=@onescope/agent...
 
 WORKDIR /app/apps/agent
 ENV NODE_ENV=production
+
+# Default command (can be overridden in docker-compose)
+CMD ["pnpm", "start:api"]

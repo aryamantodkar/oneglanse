@@ -25,7 +25,7 @@
 		"incremental": true,
 
 		/* Path Aliases */
-		"baseUrl": "",
+		"baseUrl": ".",
 		"paths": {
 			"@/*": ["src/*"],
 			"@lib/*": ["src/lib/*"] 

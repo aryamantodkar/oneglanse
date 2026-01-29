@@ -5,8 +5,12 @@ export async function getTenant() {
 	const session = await auth.api.getSession({
 	  headers: await headers(),
 	});
-  
-	if (!session) return null; 
-  
-	return session.session.activeOrganizationId ?? null;
-  }
+
+	if (!session) return null;
+
+	// activeOrganizationId is added via databaseHooks in auth config
+	const sessionWithOrg = session.session as typeof session.session & {
+		activeOrganizationId?: string | null
+	};
+	return sessionWithOrg.activeOrganizationId ?? null;
+}
