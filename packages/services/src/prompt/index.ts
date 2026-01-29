@@ -2,185 +2,8 @@ import { clickhouse, pool , db, schema } from "@onescope/db";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
 import type { PromptResponse, DomainStats, UserPrompt } from "@onescope/types";
-import fs from "fs";
-import path from "path";
 import { DatabaseError, NotFoundError } from "@onescope/errors";
 import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractCitationStats } from "@onescope/utils";
-
-export async function runPromptsForWorkspace(args: {
-    workspaceId: string;
-    userId: string;
-}) {
-    const { workspaceId, userId } = args;
-
-    const workspace = await db
-      .select()
-      .from(schema.workspaces)
-      .where(
-        and(
-          eq(schema.workspaces.id, workspaceId),
-          isNull(schema.workspaces.deletedAt)
-        )
-      )
-      .execute();
-
-    if (!workspace || workspace.length === 0) {
-      throw new NotFoundError(`Workspace with ID ${workspaceId} not found.`); 
-    }
-
-    const workspaceData = workspace[0]; 
-  
-    const prompts = await clickhouse.query({
-      query: `
-        SELECT * 
-        FROM analytics.user_prompts 
-        WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
-      `,
-      format: 'JSONEachRow',
-    });
-
-    const promptsArray: UserPrompt[] = await prompts.json();
-
-    if (!promptsArray || promptsArray.length === 0) {
-      throw new NotFoundError(`No prompts found for this workspace.`); 
-    }
-
-     // LOGGER
-    const filePath = path.join(process.cwd(), "mockData", "llm_results.json");
-    const rawData = fs.readFileSync(filePath, "utf8");
-    const results = JSON.parse(rawData);
-
-    // REAL DATA
-
-    console.log("Calling run llms...");
-
-    // const results = await runWebSearch(promptsArray, {
-    //   workspaceCountry: workspaceData?.country ?? "",
-    //   workspaceRegion: workspaceData?.region ?? "",
-    // });
-
-    // LOGGER
-    // const logPath = path.join(process.cwd(), "mockData", "llm_results.json");
-    // fs.writeFileSync(logPath, JSON.stringify(results, null, 2));
-    // console.log("results:", JSON.stringify(results, null, 2));
-
-    const modelErrors = results.flatMap((r: { results: any; id: any; }) =>
-      (r.results || [])
-        .filter((res: { output: { error: any; }; }) => res.output?.error)
-        .map((res: { model_provider: any; output: { error: any; }; }) => ({
-          promptId: r.id,
-          model: res.model_provider,
-          error: res.output.error,
-        }))
-    );
-
-    const values = results.flatMap((r: any) =>
-      (r.results || []).flatMap((modelOutput: any) => {
-        const metrics = modelOutput?.output?.metrics || [];
-    
-        if (modelOutput?.model_provider === "Anthropic") {
-          const combinedResponse = metrics
-            .map((m: any) => m.response?.trim())
-            .filter(Boolean)
-            .join("\n\n");
-    
-          const combinedCitations = [
-            ...new Map(
-              metrics
-                .flatMap((m: any) =>
-                  (m.citations || []).map((c: any) => {
-                    const clean = getCleanUrl(c.url);
-                    return [
-                      `${clean}||${(c.cited_text || "").trim()}`,
-                      {
-                        ...c,
-                        url: clean,
-                        cited_text: c.cited_text?.trim() || "",
-                      },
-                    ];
-                  })
-                )
-            ).values(),
-          ];
-    
-          const combinedSources = [
-            ...new Map(
-              metrics
-                .flatMap((m: any) =>
-                  (m.sources || []).map((s: any) => {
-                    const clean = getCleanUrl(s.url);
-                    return [
-                      `${clean}||${(s.title || "").trim()}`,
-                      {
-                        ...s,
-                        url: clean,
-                        title: s.title?.trim() || "",
-                      },
-                    ];
-                  })
-                )
-            ).values(),
-          ];
-    
-          return [
-            {
-              id: uuidv4(),
-              prompt_id: r.id,
-              user_id: userId,
-              workspace_id: workspaceId,
-              model: modelOutput?.output?.model || "",
-              model_provider: modelOutput?.model_provider || "",
-              response: combinedResponse || "",
-              citations: combinedCitations,
-              sources: combinedSources,
-              prompt_run_at: formatDateToClickHouse(r.prompt_run_at),
-              created_at: formatDateToClickHouse(new Date()),
-            },
-          ];
-        }
-    
-        return metrics.map((metric: any) => ({
-          id: uuidv4(),
-          prompt_id: r.id,
-          user_id: userId,
-          workspace_id: workspaceId,
-          model: modelOutput?.output?.model || "",
-          model_provider: modelOutput?.model_provider || "",
-          response: metric?.response || "",
-          citations: (metric?.citations || []).map((c: any) => ({
-            ...c,
-            url: getCleanUrl(c.url),
-          })),
-          sources: (metric?.sources || []).map((s: any) => ({
-            ...s,
-            url: getCleanUrl(s.url),
-          })),
-          prompt_run_at: formatDateToClickHouse(r.prompt_run_at),
-          created_at: formatDateToClickHouse(new Date()),
-        }));
-      })
-    );
-
-    // LOGGER
-    const logPath2 = path.join(process.cwd(), "mockData", "prompt_responses.json");
-    fs.writeFileSync(logPath2, JSON.stringify(values, null, 2));
-
-    try{
-      await clickhouse.insert({
-        table: "prompt_responses",
-        values,
-        format: "JSONEachRow", 
-      })
-    }
-    catch(err){
-      throw new DatabaseError("Failed to insert prompt responses.", { table: "prompt_responses", operation: "insert" , values});
-    }
-
-    return {
-      response: values,
-      modelErrors,
-    };
-}
 
 export async function storePromptsForWorkspace(args: {
     prompts: string[];
@@ -251,8 +74,7 @@ export async function storePromptsForWorkspace(args: {
       }
 
       // scheduleCronForPrompts({ workspaceId, userId });
-      runPromptsForWorkspace({ workspaceId, userId });
-
+      
       return prompts;
 }
 
@@ -303,20 +125,20 @@ export async function fetchPromptResponsesForWorkspace(args: {
 }) {
     const { workspaceId, userId } = args;
 
-    // const result = await clickhouse.query({
-    //   query: `
-    //     SELECT *
-    //     FROM analytics.prompt_responses
-    //     WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
-    //   `,
-    //   format: "JSONEachRow",
-    // });
+    const result = await clickhouse.query({
+      query: `
+        SELECT *
+        FROM analytics.prompt_responses
+        WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+      `,
+      format: "JSONEachRow",
+    });
 
-    // const data: PromptResponse[] = (await result.json()) as PromptResponse[];
+    const data: PromptResponse[] = (await result.json()) as PromptResponse[];
 
-    const filePath = path.join(process.cwd(), "mockData", "prompt_responses.json");
-    const rawData = fs.readFileSync(filePath, "utf8");
-    const data: PromptResponse[] = JSON.parse(rawData);
+    // const filePath = path.join(process.cwd(), "mockData", "prompt_responses.json");
+    // const rawData = fs.readFileSync(filePath, "utf8");
+    // const data: PromptResponse[] = JSON.parse(rawData);
 
     const domainStats = extractDomainStats(data);
     const citationStats = extractCitationStats(data);
