@@ -17,6 +17,7 @@ ENV DATABASE_URL=postgres://stub/stub
 
 RUN pnpm turbo build
 
+
 # ----------------------------
 # Stage 2 — Runtime
 # ----------------------------
@@ -26,15 +27,8 @@ ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY packages ./packages
-COPY apps ./apps
-
-# 🔒 production deps only
-RUN pnpm install --frozen-lockfile
-
-COPY --from=builder /app/apps/web/.next ./apps/web/.next
-COPY --from=builder /app/apps/web/public ./apps/web/public
+# ✅ COPY EVERYTHING FROM BUILDER (including dist/)
+COPY --from=builder /app /app
 
 EXPOSE 3000
 
