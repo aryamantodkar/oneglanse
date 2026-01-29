@@ -4,9 +4,11 @@
 FROM node:20-bookworm AS builder
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Copy package.json first so we can read packageManager version
+COPY package.json ./
+RUN corepack enable && corepack prepare $(node -e "console.log(require('./package.json').packageManager)") --activate
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
 COPY packages ./packages
 COPY apps ./apps
 
@@ -26,11 +28,11 @@ FROM node:20-bookworm AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# pnpm IS REQUIRED for next start
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Copy package.json first so we can read packageManager version
+COPY --from=builder /app/package.json ./package.json
+RUN corepack enable && corepack prepare $(node -e "console.log(require('./package.json').packageManager)") --activate
 
 # Copy everything needed to run
-COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 

@@ -24,12 +24,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Copy package.json first so we can read packageManager version
+COPY package.json ./
+RUN corepack enable && corepack prepare $(node -e "console.log(require('./package.json').packageManager)") --activate
 
 # ----------------------------
 # Copy monorepo
 # ----------------------------
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
 COPY packages ./packages
 COPY apps/agent ./apps/agent
 
