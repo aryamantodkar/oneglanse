@@ -7,33 +7,32 @@ import { organization } from "better-auth/plugins";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
 export const auth = betterAuth({
-    secret: process.env.BETTER_AUTH_SECRET,
     socialProviders: {
-        google: {
-            clientId: process.env.GOOGLE_CLIENT_ID as string,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-        },
+        google: { 
+            clientId: process.env.GOOGLE_CLIENT_ID as string, 
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
+        }, 
     },
     emailAndPassword: {
-        enabled: true,
-    },
+        enabled: true, 
+    }, 
     databaseHooks: {
         session: {
             create: {
-                before: async (session) => {
-                    const org = await getActiveOrganization(session?.userId);
-                    return {
-                        data: {
-                            ...session,
-                            activeOrganizationId: org?.id ?? null,
-                        },
-                    };
+            before: async (session) => {
+                const organization = await getActiveOrganization(session?.userId);
+                return {
+                data: {
+                    ...session,
+                    activeOrganizationId: organization?.id ?? null,
                 },
+                };
+            },
             },
         },
     },
     database: drizzleAdapter(db, {
-        provider: "pg",
+        provider: "pg", // or "mysql", "sqlite"
         schema: {
             ...schema,
             ...authSchema
