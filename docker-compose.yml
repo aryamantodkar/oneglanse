@@ -45,15 +45,16 @@ services:
       - redis
 
     # Uncomment below for development (mounts local code, uses pnpm dev)
-    environment:
-      CI: "true"
-    volumes:
-      - .:/app
-    command: >
-      sh -c "
-      pnpm install &&
-      pnpm --filter @onescope/web dev -H 0.0.0.0
-      "
+    # environment:
+    #   CI: "true"
+    # volumes:
+    #   - .:/app
+    # command: >
+    #   sh -c "
+    #   pnpm install &&
+    #   pnpm turbo build --filter='./packages/*' &&
+    #   pnpm --filter @onescope/web dev -H 0.0.0.0
+    #   "
   db:
     build:
       context: .
