@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { AnalysisInput } from "@onescope/types";
 
 export function analysisPrompt(analysisData: AnalysisInput) {
