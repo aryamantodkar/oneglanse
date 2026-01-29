@@ -32,4 +32,4 @@ COPY --from=builder /app /app
 
 EXPOSE 3000
 
-CMD pnpm --filter @onescope/web start -H 0.0.0.0
+CMD pnpm --filter @onescope/web start -- -H 0.0.0.0

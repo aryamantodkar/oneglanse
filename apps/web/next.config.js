@@ -17,6 +17,16 @@ const config = {
 		"@onescope/services",
 		"@onescope/types",
 	],
+	webpack: (config) => {
+		// Ensure webpack follows symlinks for workspace packages
+		config.resolve.symlinks = true;
+		// Ensure webpack resolves modules from node_modules
+		config.resolve.modules = [
+			...config.resolve.modules,
+			"node_modules",
+		];
+		return config;
+	},
 };
 
 export default config;
