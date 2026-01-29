@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "deploy:web": "pnpm deploy --filter @onescope/web --prod /app/out",
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=@onescope/web",
     "dev:agent": "turbo dev --filter=@onescope/agent",
