@@ -16,7 +16,7 @@ ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 
 RUN pnpm turbo build --filter=@onescope/web
-RUN pnpm deploy --filter @onescope/web --prod /out
+RUN pnpm deploy --filter @onescope/web --prod /out --legacy
 
 
 # ----------------------------
