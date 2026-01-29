@@ -17,6 +17,14 @@ const config = {
 		"@onescope/services",
 		"@onescope/types",
 	],
+	// Prevent Next.js from bundling these server-only packages during static analysis
+	serverExternalPackages: [
+		"ioredis",
+		"bullmq",
+		"better-auth",
+		"postgres",
+		"@clickhouse/client",
+	],
 	webpack: (config) => {
 		// Ensure webpack follows symlinks for workspace packages
 		config.resolve.symlinks = true;

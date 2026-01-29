@@ -8,11 +8,18 @@
     "outDir": "dist",
 
     "noEmit": false,
-    "isolatedModules": false,
+    "isolatedModules": true,
+    "composite": true,
 
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../packages/types" },
+    { "path": "../../packages/errors" },
+    { "path": "../../packages/utils" },
+    { "path": "../../packages/services" }
+  ]
 }

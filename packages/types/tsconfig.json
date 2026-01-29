@@ -5,7 +5,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": false,
-    "isolatedModules": false,
+    "isolatedModules": true,
+    "composite": true,
 
     /* Output */
     "rootDir": "./src",

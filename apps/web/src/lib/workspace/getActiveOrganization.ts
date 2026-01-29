@@ -1,7 +1,7 @@
 import { db, schema } from "@onescope/db";
 import { eq } from "drizzle-orm";
 
-export async function getActiveOrganization(userId: string) {
+export async function getActiveOrganization(userId: string | undefined) {
     if(!userId) return null;
 
     const memberUser = await db.query.member.findFirst({

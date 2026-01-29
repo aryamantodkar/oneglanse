@@ -9,7 +9,16 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@onescope/*": ["packages/*/dist"]
+      "@onescope/*": ["packages/*/src", "packages/*/dist"]
     }
-  }
+  },
+  "references": [
+    { "path": "packages/types" },
+    { "path": "packages/errors" },
+    { "path": "packages/utils" },
+    { "path": "packages/db" },
+    { "path": "packages/services" },
+    { "path": "packages/ui" },
+    { "path": "apps/agent" }
+  ]
 }

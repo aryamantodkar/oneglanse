@@ -5,7 +5,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": false,
-    "isolatedModules": false,
+    "isolatedModules": true,
+    "composite": true,
 
     /* Output */
     "jsx": "react-jsx",
@@ -14,6 +15,9 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../utils" }
+  ]
 }
