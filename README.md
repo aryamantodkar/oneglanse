@@ -125,3 +125,5 @@ Browser automation agent with:
 - Playwright for browser control
 - BullMQ job queue
 - Multi-provider LLM support (OpenAI, Anthropic, Perplexity)
+
+Add vps to oauth
