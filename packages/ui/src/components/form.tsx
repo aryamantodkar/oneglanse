@@ -15,7 +15,7 @@ import {
 } from "react-hook-form"
 
 import { cn } from "@onescope/utils"
-import { Label } from "./label"
+import { Label } from "./label.js"
 
 const Form = FormProvider
 

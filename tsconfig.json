@@ -6,6 +6,10 @@
     "noUncheckedIndexedAccess": true,
 
     /* Typechecking only */
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@onescope/*": ["packages/*/dist"]
+    }
   }
 }

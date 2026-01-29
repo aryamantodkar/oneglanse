@@ -34,8 +34,7 @@ import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, 
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import { useAgentStatus, useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
-import { filterMetrics } from "../../../../../../packages/utils/src/metrics/filterMetrics";
-import { aggregatePromptMetrics } from "../../../../../../packages/utils/src/metrics/aggregatePromptMetrics";
+import { filterMetrics, aggregatePromptMetrics } from "@onescope/utils";
 
 export default function Prompts() {
   const searchParams = useSearchParams();

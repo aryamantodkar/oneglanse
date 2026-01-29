@@ -3,22 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
+
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
+
   "dependencies": {
     "clsx": "^2.1.1",
-    "crypto": "^1.0.1",
     "tailwind-merge": "^3.3.1",
     "@onescope/types": "workspace:*"
   },
+
   "devDependencies": {
     "@types/node": "^25.0.10",
     "typescript": "^5.8.2"

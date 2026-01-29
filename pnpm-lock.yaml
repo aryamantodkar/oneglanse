@@ -410,9 +410,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      crypto:
-        specifier: ^1.0.1
-        version: 1.0.1
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.4.0
@@ -2330,10 +2327,6 @@ packages:
   cronstrue@3.9.0:
     resolution: {integrity: sha512-T3S35zmD0Ai2B4ko6+mEM+k9C6tipe2nB9RLiGT6QL2Wn0Vsn2cCZAC8Oeuf4CaE00GZWVdpYitbpWCNlIWqdA==}
     hasBin: true
-
-  crypto@1.0.1:
-    resolution: {integrity: sha512-VxBKmeNcqQdiUQUW2Tzq0t377b54N2bMtXO/qiLa+6eRRmmC4qT3D4OnTGoT/U6O9aklQ/jTwbOtRMTTY8G0Ig==}
-    deprecated: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
 
   css-select@5.2.2:
     resolution: {integrity: sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==}
@@ -5184,8 +5177,6 @@ snapshots:
       luxon: 3.7.2
 
   cronstrue@3.9.0: {}
-
-  crypto@1.0.1: {}
 
   css-select@5.2.2:
     dependencies:
