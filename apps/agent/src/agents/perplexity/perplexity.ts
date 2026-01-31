@@ -10,7 +10,7 @@ export async function launchPerplexity() {
     
     logger.log("📍 Navigating to https://www.perplexity.ai");
     
-    await page.goto("https://www.perplexity.ai", { waitUntil: "domcontentloaded" });
+    await page.goto("https://www.perplexity.ai", { timeout: 60_000 });
 
     await page.waitForTimeout(5000);
     
