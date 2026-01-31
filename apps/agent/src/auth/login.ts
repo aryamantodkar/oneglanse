@@ -40,14 +40,10 @@ export async function loginToProvider(provider: Provider): Promise<void> {
     viewport: null,
   };
   
-  const proxyUsername = `${process.env.PROXY_USERNAME}-session-${process.env.PROXY_SESSION_ID}`;
-
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
     contextOptions.proxy = {
-      server: process.env.PROXY_SERVER as string,
-      username: proxyUsername,
-      password: process.env.PROXY_PASSWORD,
+      server: process.env.PROXY_SERVER as string
     }
   }
   
@@ -55,6 +51,15 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   try {
     const loginPage = await loginContext.newPage();
+
+    const ipInfo = await loginPage.evaluate(async () => {
+        const res = await fetch("https://api.ipify.org?format=json", {
+            cache: "no-store",
+        });
+        return res.json();
+    });
+    
+    logger.log("🌐 Runtime IP:", ipInfo);
 
     await loginPage.goto(config.url, {
       waitUntil: "domcontentloaded",

@@ -20,8 +20,6 @@ export async function launchContext(provider: Provider) {
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
   
-  const proxyUsername = `${process.env.PROXY_USERNAME}-session-${process.env.PROXY_SESSION_ID}`;
-
   const browser = await playwrightChromium.launch(
     { 
       headless: true,
@@ -37,9 +35,7 @@ export async function launchContext(provider: Provider) {
       viewport: { width: 1920, height: 1080 },
       proxy: process.env.PROXY_SERVER
         ? {
-            server: process.env.PROXY_SERVER as string,
-            username: proxyUsername,
-            password: process.env.PROXY_PASSWORD,
+            server: process.env.PROXY_SERVER as string
           }
         : undefined,
     });
