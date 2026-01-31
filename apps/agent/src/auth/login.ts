@@ -8,11 +8,10 @@ import { logger } from "../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 import { PROVIDERS } from "@onescope/utils";
 
-// Load .env.local for local authentication
-if (existsSync(".env")) {
-  dotenv.config({ path: ".env" });
-} else {
-  throw new Error(".env not found");
+if (fs.existsSync("apps/agent/.env")) {
+  dotenv.config({ path: "apps/agent/.env" });
+} else if (fs.existsSync(".env")) {
+  dotenv.config();
 }
 
 if (!process.env.LOCAL_AUTH_PROFILE_PATH) {

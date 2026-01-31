@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./env.js";
 import { Job, Worker } from "bullmq";
 import { launchAgents } from "./agent.js";
 import { redis, waitForRedis } from "@onescope/services";

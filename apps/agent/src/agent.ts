@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { anthropicAgent } from "./agents/anthropic/anthropicAgent.js";
 import { agentHandler } from "./agents/lib/agentHandler.js";
 import { openaiAgent } from "./agents/openai/openaiAgent.js";

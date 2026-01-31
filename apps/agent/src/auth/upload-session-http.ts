@@ -4,11 +4,10 @@ import dotenv from "dotenv";
 import { existsSync } from "node:fs";
 import { logger } from "../lib/utils/logger.js";
 
-// Load .env.local for local authentication
-if (existsSync(".env")) {
-  dotenv.config({ path: ".env" });
-} else {
-  throw new Error(".env not found");
+if (fs.existsSync("apps/agent/.env")) {
+  dotenv.config({ path: "apps/agent/.env" });
+} else if (fs.existsSync(".env")) {
+  dotenv.config();
 }
 
 interface SessionData {

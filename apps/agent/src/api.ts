@@ -1,14 +1,9 @@
-import dotenv from "dotenv";
+import "./env.js";
 import { createServer } from "node:http";
-import fs, { existsSync } from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import { logger } from "./lib/utils/logger.js";
 import { redis } from "@onescope/services";
-
-// Load .env file if it exists (for local dev), otherwise rely on environment variables
-if (existsSync(".env")) {
-  dotenv.config({ path: ".env" });
-}
 
 const server = createServer(async (req, res) => {
   const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN || "";
