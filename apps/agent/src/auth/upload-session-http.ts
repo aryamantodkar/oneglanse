@@ -11,10 +11,6 @@ if (existsSync(".env")) {
   throw new Error(".env not found");
 }
 
-const VPS_API_URL = process.env.VPS_API_URL || `http://${process.env.VPS_IP}:3333`;
-const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN;
-const AUTH_PROFILE_PATH = process.env.LOCAL_AUTH_PROFILE_PATH || "./storage";
-
 interface SessionData {
   anthropic?: any;
   openai?: any;
@@ -22,6 +18,10 @@ interface SessionData {
 }
 
 async function uploadSessions() {
+  const VPS_API_URL = process.env.VPS_API_URL;
+  const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN;
+  const AUTH_PROFILE_PATH = process.env.LOCAL_AUTH_PROFILE_PATH || "./storage";
+
   logger.log("📤 Starting session upload via HTTP...");
 
   if (!API_AUTH_TOKEN) {
@@ -31,8 +31,8 @@ async function uploadSessions() {
   }
 
   if (!VPS_API_URL) {
-    logger.error("VPS_API_URL or VPS_IP not set in environment");
-    logger.error("Please set VPS_IP in your .env file");
+    logger.error("VPS_API_URL not set in environment");
+    logger.error("Please set VPS_API_URL in your .env file");
     process.exit(1);
   }
 
