@@ -1,34 +1,53 @@
-import dotenv from "dotenv";
-import fs, { existsSync } from "node:fs";
+const DEBUG_ENABLED =
+  process.env.DEBUG === "true" ||
+  process.env.NODE_ENV !== "production";
 
-if (existsSync(".env")) {
-  dotenv.config({ path: ".env" });
+function formatArgs(args: any[]) {
+  return args.map(arg =>
+    arg instanceof Error
+      ? arg.stack || arg.message
+      : arg
+  );
 }
 
-const DEBUG_ENABLED = process.env.DEBUG_ENABLED === 'true';
-
 export const logger = {
-  // Always visible
   error: (...args: any[]) => {
-    console.error("❌ ", ...args);
+    console.error(
+      "❌",
+      new Date().toISOString(),
+      ...formatArgs(args)
+    );
   },
 
   warn: (...args: any[]) => {
-    console.warn("⚠️ ", ...args);
+    console.warn(
+      "⚠️",
+      new Date().toISOString(),
+      ...formatArgs(args)
+    );
   },
 
   success: (...args: any[]) => {
-    console.log("✅ ", ...args);
+    console.log(
+      "✅",
+      new Date().toISOString(),
+      ...formatArgs(args)
+    );
   },
 
-  // Normal logs (default)
   log: (...args: any[]) => {
-    console.log(...args);
+    console.log(
+      new Date().toISOString(),
+      ...formatArgs(args)
+    );
   },
 
-  // Extra noisy logs (optional)
   debug: (...args: any[]) => {
     if (!DEBUG_ENABLED) return;
-    console.log(...args);
+    console.log(
+      "🐛",
+      new Date().toISOString(),
+      ...formatArgs(args)
+    );
   },
 };
