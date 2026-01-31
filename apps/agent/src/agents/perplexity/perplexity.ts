@@ -1,8 +1,8 @@
 import { launchContext } from "../../lib/browser/launchContext.js";
 import { logger } from "../../lib/utils/logger.js";
 
-export async function launchPerplexity(sessionId: string) {
-    const { browser, context } = await launchContext("perplexity", sessionId);
+export async function launchPerplexity() {
+    const { browser, context } = await launchContext("perplexity");
     
     let page = null;
     
