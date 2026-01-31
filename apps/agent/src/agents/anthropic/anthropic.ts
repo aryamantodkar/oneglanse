@@ -18,10 +18,15 @@ export async function launchAnthropic() {
     
     logger.log("📍 Navigating to https://claude.ai/login");
 
-    await page.goto('https://claude.ai/login', { waitUntil: "domcontentloaded" });
-    
-    await page.waitForTimeout(5000);
-    
+    await page.goto('https://claude.ai/login', { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    // Wait for redirect away from /login (up to 15s), or timeout if session is invalid
+    try {
+      await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 15000 });
+    } catch {
+      // Still on /login after 15s — session is likely invalid
+    }
+
     const url = page.url();
     logger.log('Logged in url:', url);
 
