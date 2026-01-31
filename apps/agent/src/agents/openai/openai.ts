@@ -10,7 +10,7 @@ export async function launchOpenAI() {
 
     logger.log("📍 Navigating to https://chatgpt.com/auth/login");
 
-    await page.goto('https://chatgpt.com/auth/login', { waitUntil: "domcontentloaded" });
+    await page.goto('https://chatgpt.com/auth/login', { timeout: 60_000 });
     
     await page.waitForTimeout(5000);
     
