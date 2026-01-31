@@ -1,8 +1,8 @@
 import { launchContext } from "../../lib/browser/launchContext.js";
 import { logger } from "../../lib/utils/logger.js";
 
-export async function launchAnthropic() {
-    const { browser, context } = await launchContext("anthropic");
+export async function launchAnthropic(sessionId: string) {
+    const { browser, context } = await launchContext("anthropic", sessionId);
     let page = null;
     
     page = await context.newPage();

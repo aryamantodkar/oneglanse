@@ -30,7 +30,9 @@ async function startWorker() {
         created_at
       };
 
-      const results = await launchAgents(PromptPayload);
+      const sessionId = crypto.randomUUID();
+
+      const results = await launchAgents(PromptPayload, sessionId);
 
       await redis.set(
         `job:${job.id}:result`,
