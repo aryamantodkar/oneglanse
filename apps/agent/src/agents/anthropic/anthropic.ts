@@ -6,6 +6,15 @@ export async function launchAnthropic() {
     let page = null;
     
     page = await context.newPage();
+
+    const ipInfo = await page.evaluate(async () => {
+        const res = await fetch("https://api.ipify.org?format=json", {
+            cache: "no-store",
+        });
+        return res.json();
+    });
+    
+    logger.log("🌐 Runtime IP:", ipInfo);
     
     logger.log("📍 Navigating to https://claude.ai/login");
 
