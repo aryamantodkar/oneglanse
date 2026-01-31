@@ -42,9 +42,10 @@ export async function loginToProvider(provider: Provider): Promise<void> {
   
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
-    contextOptions.proxy = {
-      server: process.env.PROXY_SERVER as string
-    }
+  }
+  
+  contextOptions.proxy = {
+    server: process.env.PROXY_SERVER as string
   }
   
   const loginContext = await browser.newContext(contextOptions);
