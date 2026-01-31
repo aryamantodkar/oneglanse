@@ -9,11 +9,9 @@ import { AuthError } from "@onescope/errors";
 playwrightChromium.use(StealthPlugin());
 
 export async function launchContext(provider: Provider) {
-  if (!process.env.VPS_AUTH_PROFILE_PATH) {
-    throw new Error("VPS_AUTH_PROFILE_PATH is not set");
-  }
-
-  const USER_DATA_DIR = path.resolve(process.env.VPS_AUTH_PROFILE_PATH);
+  const USER_DATA_DIR = path.resolve(
+    process.env.VPS_AUTH_PROFILE_PATH ?? "/storage"
+  );
   const providerDir = path.join(USER_DATA_DIR, provider);
     
   if (!fs.existsSync(providerDir)) {
