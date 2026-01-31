@@ -6,6 +6,7 @@ import { waitForUserLogin } from "../lib/auth/waitForUserLogin.js";
 import { logger } from "../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 import { PROVIDERS } from "@onescope/utils";
+import { BROWSER_USER_AGENT } from "../lib/browser/launchContext.js";
 
 if (fs.existsSync("apps/agent/.env")) {
   dotenv.config({ path: "apps/agent/.env" });
@@ -38,6 +39,7 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   const contextOptions: Parameters<typeof browser.newContext>[0] = {
     viewport: null,
+    userAgent: BROWSER_USER_AGENT,
   };
   
   if (fs.existsSync(authFile)) {
