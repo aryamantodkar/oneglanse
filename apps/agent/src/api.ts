@@ -3,15 +3,15 @@ import { createServer } from "node:http";
 import fs, { existsSync } from "node:fs";
 import path from "node:path";
 import { logger } from "./lib/utils/logger.js";
+import { redis } from "@onescope/services";
 
 // Load .env file if it exists (for local dev), otherwise rely on environment variables
 if (existsSync(".env")) {
   dotenv.config({ path: ".env" });
 }
 
-const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN || "";
-
 const server = createServer(async (req, res) => {
+  const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN || "";
 
   if (req.method === "POST" && req.url === "/upload-sessions") {
     const authHeader = req.headers["authorization"];
@@ -79,6 +79,33 @@ const server = createServer(async (req, res) => {
       }
     });
 
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/health") {
+    const AUTH_PROFILE_PATH = process.env.VPS_AUTH_PROFILE_PATH || "/home/onescopeAI/apps/agent/storage";
+
+    const healthStatus = {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      redis: false,
+      sessions: {
+        anthropic: fs.existsSync(path.join(AUTH_PROFILE_PATH, "anthropic", "anthropic-auth.json")),
+        openai: fs.existsSync(path.join(AUTH_PROFILE_PATH, "openai", "openai-auth.json")),
+        perplexity: fs.existsSync(path.join(AUTH_PROFILE_PATH, "perplexity", "perplexity-auth.json"))
+      }
+    };
+
+    try {
+      await redis.ping();
+      healthStatus.redis = true;
+    } catch (err) {
+      healthStatus.redis = false;
+    }
+
+    res.setHeader("Content-Type", "application/json");
+    res.statusCode = 200;
+    res.end(JSON.stringify(healthStatus));
     return;
   }
 
