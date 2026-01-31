@@ -44,7 +44,7 @@ const server = createServer(async (req, res) => {
     req.on("end", async () => {
       try {
         const sessions = JSON.parse(body);
-        const VPS_AUTH_PROFILE_PATH = process.env.VPS_AUTH_PROFILE_PATH || "/home/onescopeAI/apps/agent/storage";
+        const VPS_AUTH_PROFILE_PATH = process.env.VPS_AUTH_PROFILE_PATH || "/storage";
 
         const results = {
           anthropic: false,
@@ -83,7 +83,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && req.url === "/health") {
-    const AUTH_PROFILE_PATH = process.env.VPS_AUTH_PROFILE_PATH || "/home/onescopeAI/apps/agent/storage";
+    const AUTH_PROFILE_PATH = process.env.VPS_AUTH_PROFILE_PATH || "/storage";
 
     const healthStatus = {
       status: "ok",

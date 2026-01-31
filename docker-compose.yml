@@ -12,7 +12,7 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      - /home/onescopeAI/apps/agent/storage:/storage
+      - /home/onescopeAI/apps/agent/storage:${VPS_AUTH_PROFILE_PATH}
     command: pnpm start:api
 
   agent-worker:
@@ -28,7 +28,7 @@ services:
       - redis
     shm_size: "1gb"
     volumes:
-      - /home/onescopeAI/apps/agent/storage:/storage
+      - /home/onescopeAI/apps/agent/storage:${VPS_AUTH_PROFILE_PATH}
     command: pnpm start:worker
   redis:
     image: redis:7-alpine
@@ -103,4 +103,3 @@ volumes:
   db_data:
   clickhouse_data:
   redis_data:
-  agent_storage:
