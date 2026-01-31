@@ -1,5 +1,4 @@
 import { Page, Locator } from "playwright";
-import { logger } from "../../../lib/utils/logger.js";
 import { Source } from "@onescope/types";
 
 export async function exractSoucesFromOpenai(page: Page, sourcesButton: Locator): Promise<Source[]>{
@@ -31,8 +30,6 @@ export async function exractSoucesFromOpenai(page: Page, sourcesButton: Locator)
         if (!flyout) return results;
       
         const headers = Array.from(flyout.querySelectorAll("li"));
-
-        logger.debug("headers length", headers.length);
       
         for (const header of headers) {
             const label = header.textContent?.trim().toLowerCase();
