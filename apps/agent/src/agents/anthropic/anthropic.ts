@@ -38,24 +38,17 @@ export async function launchAnthropic() {
     });
     logger.log("🌐 Runtime IP:", ipInfo);
 
-    logger.log("📍 Navigating to https://claude.ai/login");
-    const response = await page.goto('https://claude.ai/login', { waitUntil: "domcontentloaded", timeout: 30000 });
-    logger.log(`🔍 DEBUG: Initial response status: ${response?.status()}`);
-    logger.log(`🔍 DEBUG: URL after goto: ${page.url()}`);
+    // Navigate to /new directly — /login serves the marketing page to headless browsers
+    logger.log("📍 Navigating to https://claude.ai/new");
+    const response = await page.goto('https://claude.ai/new', { waitUntil: "networkidle", timeout: 60000 });
+    logger.log(`🔍 DEBUG: Response status: ${response?.status()}`);
+    logger.log(`🔍 DEBUG: URL after navigation: ${page.url()}`);
 
-    // Wait for redirect away from /login (up to 15s)
-    try {
-      await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 15000 });
-      logger.log(`🔍 DEBUG: Redirected to: ${page.url()}`);
-    } catch {
-      logger.log(`🔍 DEBUG: No redirect after 15s, still on: ${page.url()}`);
-
-      // Dump page title and visible text for clues
-      const title = await page.title();
-      logger.log(`🔍 DEBUG: Page title: "${title}"`);
-
+    // If we got redirected to login, the session is invalid
+    if (page.url().includes('/login')) {
+      logger.log(`🔍 DEBUG: Redirected to login — session invalid`);
       const bodyText = await page.evaluate(() => document.body?.innerText?.substring(0, 500) || "empty");
-      logger.log(`🔍 DEBUG: Page body (first 500 chars): ${bodyText}`);
+      logger.log(`🔍 DEBUG: Page body: ${bodyText}`);
     }
 
     const url = page.url();
