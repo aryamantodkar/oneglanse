@@ -9,7 +9,7 @@ export async function launchAnthropic() {
     
     logger.log("📍 Navigating to https://claude.ai/login");
 
-    await page.goto('https://claude.ai/login', { timeout: 60_000 });
+    await page.goto('https://claude.ai/login', { waitUntil: "domcontentloaded" });
     
     await page.waitForTimeout(5000);
     
