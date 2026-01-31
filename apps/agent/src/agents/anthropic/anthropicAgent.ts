@@ -3,8 +3,8 @@ import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchAnthropic } from "./anthropic.js";
 
 
-export async function anthropicAgent() {
-    const anthropic = await launchAnthropic();
+export async function anthropicAgent(sessionId: string) {
+    const anthropic = await launchAnthropic(sessionId);
     
     setupPage(anthropic.page, "anthropic");
 

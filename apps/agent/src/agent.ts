@@ -5,26 +5,26 @@ import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
 import { logger } from "./lib/utils/logger.js";
 import { ModelResult, PromptPayload } from "@onescope/types";
 
-export async function launchAgents(payload: PromptPayload): Promise<ModelResult> {
+export async function launchAgents(payload: PromptPayload, sessionId: string): Promise<ModelResult> {
   logger.log("🚀 Starting Agents");
 
   // const openaiResult = await agentHandler(
   //   "OpenAI",
-  //   openaiAgent,
+  //   () => openaiAgent(sessionId),
   //   payload,
   //   "openai"
   // );
 
   const anthropicResult = await agentHandler(
     "Anthropic",
-    anthropicAgent,
+    () => anthropicAgent(sessionId),
     payload,
-    "anthropic"
+    "anthropic",
   );
 
   // const perplexityResult = await agentHandler(
   //   "Perplexity",
-  //   perplexityAgent,
+  //   () => perplexityAgent(sessionId),
   //   payload,
   //   "perplexity"
   // );

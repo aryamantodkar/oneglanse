@@ -3,8 +3,8 @@ import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchOpenAI } from "./openai.js";
 
 
-export async function openaiAgent() {
-    const openai = await launchOpenAI();
+export async function openaiAgent(sessionId: string) {
+    const openai = await launchOpenAI(sessionId);
 
     setupPage(openai.page, "openai");
 
