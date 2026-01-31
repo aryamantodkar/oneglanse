@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile.agent
     container_name: onescope-agent-api
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:3333:3333"
     env_file:
       - apps/agent/.env
     environment:
