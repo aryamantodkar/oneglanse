@@ -8,7 +8,7 @@ import { AuthError } from "@onescope/errors";
 
 playwrightChromium.use(StealthPlugin());
 
-export async function launchContext(provider: Provider, sessionId: string) {
+export async function launchContext(provider: Provider) {
   const USER_DATA_DIR = path.resolve(
     process.env.VPS_AUTH_PROFILE_PATH ?? "/storage"
   );
@@ -20,7 +20,7 @@ export async function launchContext(provider: Provider, sessionId: string) {
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
   
-  const proxyUsername = `${process.env.PROXY_USERNAME}-session-${sessionId}`;
+  const proxyUsername = `${process.env.PROXY_USERNAME}-session-${process.env.PROXY_SESSION_ID}`;
 
   const browser = await playwrightChromium.launch(
     { 

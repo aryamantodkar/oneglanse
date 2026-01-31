@@ -40,8 +40,15 @@ export async function loginToProvider(provider: Provider): Promise<void> {
     viewport: null,
   };
   
+  const proxyUsername = `${process.env.PROXY_USERNAME}-session-${process.env.PROXY_SESSION_ID}`;
+
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
+    contextOptions.proxy = {
+      server: process.env.PROXY_SERVER as string,
+      username: proxyUsername,
+      password: process.env.PROXY_PASSWORD,
+    }
   }
   
   const loginContext = await browser.newContext(contextOptions);

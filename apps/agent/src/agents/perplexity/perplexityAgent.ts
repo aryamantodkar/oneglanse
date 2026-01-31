@@ -2,8 +2,8 @@ import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchPerplexity } from "./perplexity.js";
 
-export async function perplexityAgent(sessionId: string) {
-    const perplexity = await launchPerplexity(sessionId);
+export async function perplexityAgent() {
+    const perplexity = await launchPerplexity();
     
     setupPage(perplexity.page, "perplexity");
 

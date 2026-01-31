@@ -1,8 +1,8 @@
 import { launchContext } from "../../lib/browser/launchContext.js";
 import { logger } from "../../lib/utils/logger.js";
 
-export async function launchOpenAI(sessionId: string) {
-    const { browser, context } = await launchContext("openai", sessionId);
+export async function launchOpenAI() {
+    const { browser, context } = await launchContext("openai");
     
     let page = null;
     
