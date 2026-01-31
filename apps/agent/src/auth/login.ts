@@ -40,16 +40,6 @@ export async function loginToProvider(provider: Provider): Promise<void> {
     viewport: null,
   };
   
-  if (process.env.PROXY_SERVER) {
-    contextOptions.proxy = {
-      server: process.env.PROXY_SERVER,
-      username: process.env.PROXY_USERNAME,
-      password: process.env.PROXY_PASSWORD,
-    };
-  
-    logger.log(`🌐 Using proxy for login: ${process.env.PROXY_SERVER}`);
-  }
-  
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
   }
