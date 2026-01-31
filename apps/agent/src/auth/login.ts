@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import { chromium } from "playwright-extra";
 import path from "path";
 import fs from "fs";
-import { existsSync } from "fs";
 import { waitForUserLogin } from "../lib/auth/waitForUserLogin.js";
 import { logger } from "../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
@@ -40,6 +39,16 @@ export async function loginToProvider(provider: Provider): Promise<void> {
   const contextOptions: Parameters<typeof browser.newContext>[0] = {
     viewport: null,
   };
+  
+  if (process.env.PROXY_SERVER) {
+    contextOptions.proxy = {
+      server: process.env.PROXY_SERVER,
+      username: process.env.PROXY_USERNAME,
+      password: process.env.PROXY_PASSWORD,
+    };
+  
+    logger.log(`🌐 Using proxy for login: ${process.env.PROXY_SERVER}`);
+  }
   
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
