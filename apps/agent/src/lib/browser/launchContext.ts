@@ -23,13 +23,6 @@ export async function launchContext(provider: Provider) {
   const browser = await playwrightChromium.launch(
     { 
       headless: true,
-      proxy: process.env.PROXY_SERVER
-        ? {
-            server: process.env.PROXY_SERVER,
-            username: process.env.PROXY_USERNAME,
-            password: process.env.PROXY_PASSWORD,
-          }
-        : undefined,
       args: [
         "--disable-blink-features=AutomationControlled",
         "--no-sandbox",
@@ -40,6 +33,13 @@ export async function launchContext(provider: Provider) {
     const context = await browser.newContext({
       storageState: path.join(providerDir, `${provider}-auth.json`),
       viewport: { width: 1920, height: 1080 },
+      proxy: process.env.PROXY_SERVER
+        ? {
+            server: process.env.PROXY_SERVER as string,
+            username: process.env.PROXY_USERNAME,
+            password: process.env.PROXY_PASSWORD,
+          }
+        : undefined,
     });
     
     return { browser, context };
