@@ -11,6 +11,8 @@ services:
       - apps/agent/.env
     environment:
       - NODE_ENV=production
+    volumes:
+      - agent_storage:/app/apps/agent/storage
     command: pnpm start:api
 
   agent-worker:
@@ -25,6 +27,8 @@ services:
     depends_on:
       - redis
     shm_size: "1gb"
+    volumes:
+      - agent_storage:/app/apps/agent/storage
     command: pnpm start:worker
   redis:
     image: redis:7-alpine
@@ -99,3 +103,4 @@ volumes:
   db_data:
   clickhouse_data:
   redis_data:
+  agent_storage:
