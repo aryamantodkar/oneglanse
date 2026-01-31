@@ -31,25 +31,33 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   logger.log(`\n🚀 Starting ${provider} login...`);
 
-  const browser = await chromium.launch({ headless: false, args: [
-    "--disable-blink-features=AutomationControlled",
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-  ]});
+  const launchOptions: any = {
+    headless: false,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+    ],
+  };
+
+  // Proxy must be set at browser level in Playwright
+  if (process.env.PROXY_SERVER) {
+    launchOptions.proxy = {
+      server: process.env.PROXY_SERVER,
+    };
+  }
+
+  const browser = await chromium.launch(launchOptions);
 
   const contextOptions: Parameters<typeof browser.newContext>[0] = {
     viewport: null,
     userAgent: BROWSER_USER_AGENT,
   };
-  
+
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
   }
-  
-  contextOptions.proxy = {
-    server: process.env.PROXY_SERVER as string
-  }
-  
+
   const loginContext = await browser.newContext(contextOptions);
 
   try {
