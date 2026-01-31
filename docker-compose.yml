@@ -12,7 +12,7 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      - agent_storage:/app/apps/agent/storage
+      - /home/onescopeAI/apps/agent/storage:/storage
     command: pnpm start:api
 
   agent-worker:
@@ -28,7 +28,7 @@ services:
       - redis
     shm_size: "1gb"
     volumes:
-      - agent_storage:/app/apps/agent/storage
+      - /home/onescopeAI/apps/agent/storage:/storage
     command: pnpm start:worker
   redis:
     image: redis:7-alpine
