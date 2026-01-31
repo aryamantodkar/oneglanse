@@ -20,33 +20,29 @@ export async function launchContext(provider: Provider) {
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
     
-  const browser = await playwrightChromium.launch({ headless: true, args: [
-    "--disable-blink-features=AutomationControlled",
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-  ]});
+  const browser = await playwrightChromium.launch(
+    { 
+      headless: true,
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+      ]
+    });
 
-  // Only use proxy if USE_PROXY env var is set to true
-  const contextOptions: any = {
-    storageState: path.join(providerDir, `${provider}-auth.json`),
-    viewport: { width: 1920, height: 1080 }
-  };
-
-  if (process.env.PROXY_SERVER) {
-    contextOptions.proxy = {
-      server: process.env.PROXY_SERVER,
-      username: process.env.PROXY_USERNAME,
-      password: process.env.PROXY_PASSWORD,
-    };
-  
-    logger.debug(
-      `Using proxy ${process.env.PROXY_SERVER} with auth`
-    );
-  }
-  
-  logger.debug(`Using proxy: ${contextOptions.proxy.server}`);
-
-  const context = await browser.newContext(contextOptions);
-  
-  return { browser, context };
+    const context = await browser.newContext({
+      storageState: path.join(providerDir, `${provider}-auth.json`),
+      viewport: { width: 1920, height: 1080 },
+      ...(process.env.PROXY_SERVER
+        ? {
+            proxy: {
+              server: process.env.PROXY_SERVER,
+              username: process.env.PROXY_USERNAME,
+              password: process.env.PROXY_PASSWORD,
+            },
+          }
+        : {}),
+    });
+    
+    return { browser, context };
 }
