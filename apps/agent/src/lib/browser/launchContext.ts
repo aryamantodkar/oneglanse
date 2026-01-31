@@ -32,9 +32,18 @@ export async function launchContext(provider: Provider) {
     viewport: { width: 1920, height: 1080 }
   };
 
-  contextOptions.proxy = {
-    server: process.env.PROXY_SERVER
-  };
+  if (process.env.PROXY_SERVER) {
+    contextOptions.proxy = {
+      server: process.env.PROXY_SERVER,
+      username: process.env.PROXY_USERNAME,
+      password: process.env.PROXY_PASSWORD,
+    };
+  
+    logger.debug(
+      `Using proxy ${process.env.PROXY_SERVER} with auth`
+    );
+  }
+  
   logger.debug(`Using proxy: ${contextOptions.proxy.server}`);
 
   const context = await browser.newContext(contextOptions);

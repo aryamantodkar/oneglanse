@@ -1,6 +1,10 @@
-// DEBUG_ENABLED is read from environment variables
-// In development: set in .env.local
-// In production: set in .env.vps (loaded by Docker)
+import dotenv from "dotenv";
+import fs, { existsSync } from "node:fs";
+
+if (existsSync(".env")) {
+  dotenv.config({ path: ".env" });
+}
+
 const DEBUG_ENABLED = process.env.DEBUG_ENABLED === 'true';
 
 export const logger = {
