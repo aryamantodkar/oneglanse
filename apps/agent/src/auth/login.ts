@@ -87,13 +87,20 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 export async function loginToAll(): Promise<void> {
   logger.log("🔐 Starting login process for all providers...\n");
 
-  for (const provider of Object.keys(PROVIDERS) as Provider[]) {
-    try {
-      await loginToProvider(provider);
-      logger.log(`\n${"=".repeat(50)}\n`);
-    } catch (err) {
-      logger.error(`Failed to complete ${provider} login. Continuing...\n`);
-    }
+  // for (const provider of Object.keys(PROVIDERS) as Provider[]) {
+  //   try {
+  //     await loginToProvider(provider);
+  //     logger.log(`\n${"=".repeat(50)}\n`);
+  //   } catch (err) {
+  //     logger.error(`Failed to complete ${provider} login. Continuing...\n`);
+  //   }
+  // }
+
+  try {
+    await loginToProvider("anthropic");
+    logger.log(`\n${"=".repeat(50)}\n`);
+  } catch (err) {
+    logger.error(`Failed to complete anthropic login. Continuing...\n`);
   }
 
   logger.success("All logins complete!");
