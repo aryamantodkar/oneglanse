@@ -33,8 +33,6 @@ export async function launchContext(provider: Provider) {
     proxy: process.env.PROXY_SERVER
       ? {
           server: process.env.PROXY_SERVER as string,
-          username: proxyUsername,
-          password: process.env.PROXY_PASSWORD,
         }
       : undefined,
     args: [
