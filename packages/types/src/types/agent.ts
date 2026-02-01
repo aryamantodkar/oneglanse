@@ -33,40 +33,9 @@ export interface AskPromptResult {
   sources: Source[];
 }
 
-export type ErrorPayload =
-  | {
-      type: "AUTH";
-      message: string;
-      status: 401;
-      retryable: false;
-    }
-  | {
-      type: "UNKNOWN";
-      message: string;
-      code?: string;
-      status?: number;
-      retryable?: boolean;
-    };
-
-export type AgentSuccess = {
-  status: "fulfilled";
-  data: AskPromptResult[];
-};
-
-export type AgentFailure = {
-  status: "rejected";
-  error: ErrorPayload;
-};
-
-export type AgentAuthErrorResult = {
-  status: "auth_error";
-  error: ErrorPayload;
-};
-
 export type Provider = "openai" | "anthropic" | "perplexity";
 
 export type AgentResult =
-  | { status: "fulfilled"; data: AskPromptResult[] }
-  | { status: "rejected"; error: ErrorPayload };
+  | { status: "fulfilled" | "rejected"; data: AskPromptResult[] };
 
 export type ModelResult = Record<Provider, AgentResult>;
