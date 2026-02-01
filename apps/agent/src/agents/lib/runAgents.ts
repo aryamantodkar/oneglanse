@@ -6,6 +6,8 @@ import { ensureNewChat } from "../openai/lib/newChat.js";
 import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 
 export async function runAgents(prompts: PromptPayload, page: Page, provider: Provider): Promise<AskPromptResult[]> {
+    await page.waitForTimeout(5000);
+    
     if(provider=="openai"){
       await runStep("Ensuring new chat is created.", page, async () => {
         await ensureNewChat(page);
