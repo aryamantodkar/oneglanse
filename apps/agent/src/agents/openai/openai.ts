@@ -8,9 +8,9 @@ export async function launchOpenAI() {
     
     page = await context.newPage();
 
-    logger.log("📍 Navigating to https://chatgpt.com");
+    logger.log("📍 Navigating to https://chatgpt.com/auth/login");
 
-    await page.goto('https://chatgpt.com', { waitUntil: "domcontentloaded" });
+    await page.goto('https://chatgpt.com/auth/login', { waitUntil: "domcontentloaded" });
     
     await page.waitForTimeout(5000);
     
