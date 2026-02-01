@@ -11,7 +11,7 @@
     "build": "tsc",
     "auth": "node --loader ts-node/esm src/auth/auth.ts",
     "login": "RUN_INTERACTIVE_LOGIN=true node --loader ts-node/esm src/auth/login.ts",
-    "upload-session-http": "node --loader ts-node/esm src/auth/upload-session-http.ts",
+    "upload-session": "node --loader ts-node/esm src/auth/upload-session.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
