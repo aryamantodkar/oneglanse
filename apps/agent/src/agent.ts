@@ -32,15 +32,15 @@ export async function launchAgents(payload: PromptPayload): Promise<ModelResult>
 
   return {
     openai: {
-      status: "fulfilled",
+      status: openaiResult.length > 0 ? "fulfilled" : "rejected",
       data: openaiResult
     },
     anthropic: {
-      status: "fulfilled",
+      status: anthropicResult.length > 0 ? "fulfilled" : "rejected",
       data: anthropicResult
     },
     perplexity: {
-      status: "fulfilled",
+      status: perplexityResult.length > 0 ? "fulfilled" : "rejected",
       data: perplexityResult
     },
   }
