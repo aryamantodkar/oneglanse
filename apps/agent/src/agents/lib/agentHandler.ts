@@ -25,6 +25,7 @@ export async function agentHandler(
       logger.log(`${label} authentication status: ${agent.auth}`);
 
       if (!agent.auth) return [];
+      
       return await runAgents(payload, agent.page, provider);
     } catch (err) {
       logger.error(`${label} agent failed:`, err);
