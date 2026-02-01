@@ -13,7 +13,7 @@ export function setupPage(
 
     page.on("console", msg =>
         {
-            console.log(`[${provider.toUpperCase()} PAGE]`, msg.text())
+            // console.log(`[${provider.toUpperCase()} PAGE]`, msg.text())
         }
     );
 }
