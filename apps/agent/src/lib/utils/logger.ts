@@ -1,5 +1,5 @@
 const DEBUG_ENABLED =
-  process.env.DEBUG === "true" ||
+  process.env.DEBUG_ENABLED === "true" ||
   process.env.NODE_ENV !== "production";
 
 function formatArgs(args: any[]) {
