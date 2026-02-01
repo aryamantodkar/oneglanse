@@ -1,7 +1,7 @@
 import "./env.js";
 import { Job, Worker } from "bullmq";
 import { launchAgents } from "./agent.js";
-import { redis, waitForRedis } from "@onescope/services";
+import { redis, waitForRedis, storePromptResponses } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 import { PromptPayload, UserPrompt } from "@onescope/types";
 
@@ -31,6 +31,21 @@ async function startWorker() {
       };
 
       const results = await launchAgents(PromptPayload);
+
+      const allFailed = Object.values(results).every(
+        (r) => r.status === "rejected"
+      );
+
+      if (allFailed) {
+        throw new Error("All providers failed");
+      }
+
+      await storePromptResponses({
+        results,
+        userId: user_id,
+        workspaceId: workspace_id,
+        promptRunAt: created_at,
+      });
 
       await redis.set(
         `job:${job.id}:result`,
