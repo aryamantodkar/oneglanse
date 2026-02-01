@@ -25,25 +25,24 @@ export async function launchContext(provider: Provider) {
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
 
-  const launchOptions: any = {
+  const sessionId = crypto.randomUUID();
+  const proxyUsername = `${process.env.PROXY_USERNAME}-session-${sessionId}`;
+
+  const browser = await playwrightChromium.launch({
     headless: true,
+    proxy: process.env.PROXY_SERVER
+      ? {
+          server: process.env.PROXY_SERVER as string,
+          username: proxyUsername,
+          password: process.env.PROXY_PASSWORD,
+        }
+      : undefined,
     args: [
       "--disable-blink-features=AutomationControlled",
       "--no-sandbox",
       "--disable-setuid-sandbox",
     ],
-  };
-
-  // Proxy must be set at browser level in Playwright
-  if (process.env.PROXY_SERVER) {
-    launchOptions.proxy = {
-      server: process.env.PROXY_SERVER as string,
-      username: process.env.PROXY_USERNAME,
-      password: process.env.PROXY_PASSWORD
-    };
-  }
-
-  const browser = await playwrightChromium.launch(launchOptions);
+  });
 
   const context = await browser.newContext({
     storageState: authFile,
