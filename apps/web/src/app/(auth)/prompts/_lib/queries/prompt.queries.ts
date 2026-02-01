@@ -32,6 +32,9 @@ export function useFetchAnalysedPrompts(workspaceId: string) {
       { workspaceId, jobId },
       {
         enabled: !!workspaceId && !!jobId,
+        refetchInterval: (query) => {
+          return query.state.data?.status === "completed" ? false : 3000;
+        },
       }
     );
   }

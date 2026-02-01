@@ -1,7 +1,7 @@
 import { clickhouse, pool , db, schema } from "@onescope/db";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
-import type { PromptResponse, DomainStats, UserPrompt } from "@onescope/types";
+import type { PromptResponse, DomainStats, UserPrompt, ModelResult, Provider } from "@onescope/types";
 import { DatabaseError, NotFoundError } from "@onescope/errors";
 import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractCitationStats } from "@onescope/utils";
 
@@ -118,6 +118,59 @@ export async function scheduleCronForPrompts(args: {
       );
 }
 
+
+export async function storePromptResponses(args: {
+    results: ModelResult;
+    userId: string;
+    workspaceId: string;
+    promptRunAt: string;
+}) {
+    const { results, userId, workspaceId, promptRunAt } = args;
+
+    const values: Array<{
+        id: string;
+        prompt_id: string;
+        user_id: string;
+        workspace_id: string;
+        model: string;
+        model_provider: string;
+        response: string;
+        sources: Array<[string, string, string, string | null, string | null]>;
+        prompt_run_at: string;
+    }> = [];
+
+    for (const [provider, result] of Object.entries(results) as [Provider, ModelResult[Provider]][]) {
+        if (result.status !== "fulfilled") continue;
+
+        for (const item of result.data) {
+            values.push({
+                id: uuidv4(),
+                prompt_id: item.promptId,
+                user_id: userId,
+                workspace_id: workspaceId,
+                model: provider,
+                model_provider: provider,
+                response: item.response,
+                sources: item.sources.map((s) => [
+                    s.title ?? "",
+                    s.citedText ?? "",
+                    s.url ?? "",
+                    s.domain ?? null,
+                    s.favicon ?? null,
+                ]),
+                prompt_run_at: formatDateToClickHouse(new Date(promptRunAt)),
+            });
+        }
+    }
+
+    if (values.length === 0) return;
+
+    await clickhouse.insert({
+        table: "analytics.prompt_responses",
+        values,
+        format: "JSONEachRow",
+    });
+}
 
 export async function fetchPromptResponsesForWorkspace(args: {
     workspaceId: string;

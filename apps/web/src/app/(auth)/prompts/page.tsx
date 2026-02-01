@@ -259,7 +259,7 @@ export default function Prompts() {
       const jobDetails = await runAgentMutation.mutateAsync({ workspaceId });
 
       setJobId(jobDetails?.data?.jobId ?? null);
-      toast.success("Prompts ran successfully using agents!");
+      toast.success("Agents started! Polling for results...");
     } catch (err) {
       console.error(err);
       toast.error("Failed to run prompts with agents");
@@ -269,11 +269,11 @@ export default function Prompts() {
   };
 
   useEffect(() => {
-    if (agentResponse?.status === "completed") {
+    if (agentResponse?.status === "completed" && agentResponse.response) {
       toast.success("Agent job completed!");
-      console.log(agentResponse.response);
+      setJobId(null);
     }
-  }, [agentResponse?.status]);
+  }, [agentResponse?.status, agentResponse?.response]);
 
   // useEffect(() => {
   //   const fetchAnalysis = async () => {

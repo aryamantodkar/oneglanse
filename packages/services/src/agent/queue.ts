@@ -7,11 +7,7 @@ export const agentQueue = new Queue("onescope-agent", {
         password: process.env.REDIS_PASSWORD,
     },
     defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: "exponential",
-            delay: 30000,
-        },
+        attempts: 1,
         removeOnComplete: true,
         removeOnFail: false,
     },
