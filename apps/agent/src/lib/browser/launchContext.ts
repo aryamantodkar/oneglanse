@@ -42,11 +42,11 @@ export async function launchContext(provider: Provider) {
 
   const browser = await playwrightChromium.launch(launchOptions);
 
-    const context = await browser.newContext({
-      storageState: path.join(providerDir, `${provider}-auth.json`),
-      viewport: { width: 1920, height: 1080 },
-      userAgent: BROWSER_USER_AGENT,
-    });
-    
-    return { browser, context };
+  const context = await browser.newContext({
+    storageState: path.join(providerDir, `${provider}-auth.json`),
+    viewport: { width: 1920, height: 1080 },
+    userAgent: BROWSER_USER_AGENT,
+  });
+  
+  return { browser, context };
 }

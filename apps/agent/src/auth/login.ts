@@ -18,6 +18,10 @@ if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
   throw new Error("LOCAL_AUTH_PROFILE_PATH is not set");
 }
 
+if (!process.env.PROXY_SERVER) {
+  throw new Error("PROXY_SERVER is not set");
+}
+
 const USER_DATA_DIR = path.resolve(process.env.LOCAL_AUTH_PROFILE_PATH);
 
 export async function loginToProvider(provider: Provider): Promise<void> {
@@ -31,25 +35,33 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   logger.log(`\n🚀 Starting ${provider} login...`);
 
-  const browser = await chromium.launch({ headless: false, args: [
-    "--disable-blink-features=AutomationControlled",
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-  ]});
+  const launchOptions: any = {
+    headless: false,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+    ],
+  };
 
-  const contextOptions: Parameters<typeof browser.newContext>[0] = {
+  if (process.env.PROXY_SERVER) {
+    launchOptions.proxy = {
+      server: process.env.PROXY_SERVER,
+    };
+    logger.debug(`Using proxy: ${process.env.PROXY_SERVER}`);
+  }
+  
+  const browser = await chromium.launch(launchOptions);
+
+  const contextOptions: any = {
     viewport: null,
     userAgent: BROWSER_USER_AGENT,
   };
-  
+
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
   }
-  
-  contextOptions.proxy = {
-    server: process.env.PROXY_SERVER as string
-  }
-  
+
   const loginContext = await browser.newContext(contextOptions);
 
   try {
