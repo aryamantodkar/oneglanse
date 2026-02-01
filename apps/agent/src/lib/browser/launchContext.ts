@@ -36,7 +36,9 @@ export async function launchContext(provider: Provider) {
 
   if (process.env.PROXY_SERVER) {
     contextOptions.proxy = {
-      server: process.env.PROXY_SERVER,
+      server: process.env.PROXY_SERVER as string,
+      username: process.env.PROXY_USERNAME,
+      password: process.env.PROXY_PASSWORD
     };
     logger.debug(`Using proxy: ${process.env.PROXY_SERVER}`);
   }
