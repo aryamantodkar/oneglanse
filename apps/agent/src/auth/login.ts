@@ -36,13 +36,6 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   const browser = await chromium.launch({
     headless: false,
-    proxy: process.env.PROXY_SERVER
-      ? {
-          server: process.env.PROXY_SERVER as string,
-          username: process.env.PROXY_USERNAME,
-          password: process.env.PROXY_PASSWORD,
-        }
-      : undefined,
     args: [
       "--disable-blink-features=AutomationControlled",
       "--no-sandbox",
