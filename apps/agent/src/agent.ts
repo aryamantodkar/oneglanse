@@ -8,12 +8,12 @@ import { ModelResult, PromptPayload } from "@onescope/types";
 export async function launchAgents(payload: PromptPayload): Promise<ModelResult> {
   logger.log("🚀 Starting Agents");
 
-  // const openaiResult = await agentHandler(
-  //   "OpenAI",
-  //   openaiAgent,
-  //   payload,
-  //   "openai"
-  // );
+  const openaiResult = await agentHandler(
+    "OpenAI",
+    openaiAgent,
+    payload,
+    "openai"
+  );
 
   const anthropicResult = await agentHandler(
     "Anthropic",
@@ -22,18 +22,18 @@ export async function launchAgents(payload: PromptPayload): Promise<ModelResult>
     "anthropic",
   );
 
-  // const perplexityResult = await agentHandler(
-  //   "Perplexity",
-  //   perplexityAgent,
-  //   payload,
-  //   "perplexity"
-  // );
+  const perplexityResult = await agentHandler(
+    "Perplexity",
+    perplexityAgent,
+    payload,
+    "perplexity"
+  );
 
 
   return {
     openai: {
       status: "fulfilled",
-      data: []
+      data: openaiResult
     },
     anthropic: {
       status: "fulfilled",
@@ -41,7 +41,7 @@ export async function launchAgents(payload: PromptPayload): Promise<ModelResult>
     },
     perplexity: {
       status: "fulfilled",
-      data: []
+      data: perplexityResult
     },
   }
 }

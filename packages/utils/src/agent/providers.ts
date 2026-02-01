@@ -1,11 +1,11 @@
 export const PROVIDERS = {
     openai: {
       name: "openai",
-      url: "https://chatgpt.com/auth/login"
+      url: "https://chatgpt.com"
     },
     anthropic: {
       name: "anthropic",
-      url: "https://claude.ai/login"
+      url: "https://claude.ai/new"
     },
     perplexity: {
       name: "perplexity",
