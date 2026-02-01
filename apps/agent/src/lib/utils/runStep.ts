@@ -30,7 +30,5 @@ export async function runStep(
       const url = page.url();
       logger.error(`URL at failure: ${url}`);
     } catch {}
-
-    throw err; // ❗ rethrow so caller knows it failed
   }
 }
