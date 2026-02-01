@@ -6,6 +6,7 @@ import { waitForUserLogin } from "../lib/auth/waitForUserLogin.js";
 import { logger } from "../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 import { PROVIDERS } from "@onescope/utils";
+import { BROWSER_USER_AGENT } from "../lib/browser/launchContext.js";
 
 if (fs.existsSync("apps/agent/.env")) {
   dotenv.config({ path: "apps/agent/.env" });
@@ -34,14 +35,28 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   logger.log(`\n🚀 Starting ${provider} login...`);
 
-  const browser = await chromium.launch({ headless: false, args: [
-    "--disable-blink-features=AutomationControlled",
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-  ]});
+  const launchOptions: any = {
+    headless: false,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+    ],
+  };
+
+  if (process.env.PROXY_SERVER) {
+    launchOptions.proxy = {
+      server: process.env.PROXY_SERVER as string,
+      username: process.env.PROXY_USERNAME,
+      password: process.env.PROXY_PASSWORD
+    };
+  }
+
+  const browser = await chromium.launch(launchOptions);
 
   const contextOptions: Parameters<typeof browser.newContext>[0] = {
     viewport: null,
+    userAgent: BROWSER_USER_AGENT
   };
 
   if (fs.existsSync(authFile)) {

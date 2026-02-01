@@ -8,6 +8,9 @@ import { AuthError } from "@onescope/errors";
 
 playwrightChromium.use(StealthPlugin());
 
+export const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0 Safari/537.36";
+
 export async function launchContext(provider: Provider) {
   const USER_DATA_DIR = path.resolve(
     process.env.VPS_AUTH_PROFILE_PATH ?? "/storage"
@@ -48,6 +51,7 @@ export async function launchContext(provider: Provider) {
   const context = await browser.newContext({
     storageState: authFile,
     viewport: { width: 1920, height: 1080 },
+    userAgent: BROWSER_USER_AGENT
   });
 
   return { browser, context };
