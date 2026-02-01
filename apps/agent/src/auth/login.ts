@@ -31,46 +31,29 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
   logger.log(`\n🚀 Starting ${provider} login...`);
 
-  const launchOptions: any = {
-    headless: false,
-    args: [
-      "--disable-blink-features=AutomationControlled",
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-    ],
-  };
-
-  // Proxy must be set at browser level in Playwright
-  if (process.env.PROXY_SERVER) {
-    launchOptions.proxy = {
-      server: process.env.PROXY_SERVER,
-    };
-  }
-
-  const browser = await chromium.launch(launchOptions);
+  const browser = await chromium.launch({ headless: false, args: [
+    "--disable-blink-features=AutomationControlled",
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+  ]});
 
   const contextOptions: Parameters<typeof browser.newContext>[0] = {
     viewport: null,
     userAgent: BROWSER_USER_AGENT,
   };
-
+  
   if (fs.existsSync(authFile)) {
     contextOptions.storageState = authFile;
   }
-
+  
+  contextOptions.proxy = {
+    server: process.env.PROXY_SERVER as string
+  }
+  
   const loginContext = await browser.newContext(contextOptions);
 
   try {
     const loginPage = await loginContext.newPage();
-
-    const ipInfo = await loginPage.evaluate(async () => {
-        const res = await fetch("https://api.ipify.org?format=json", {
-            cache: "no-store",
-        });
-        return res.json();
-    });
-    
-    logger.log("🌐 Runtime IP:", ipInfo);
 
     await loginPage.goto(config.url, {
       waitUntil: "domcontentloaded",
@@ -95,20 +78,13 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 export async function loginToAll(): Promise<void> {
   logger.log("🔐 Starting login process for all providers...\n");
 
-  // for (const provider of Object.keys(PROVIDERS) as Provider[]) {
-  //   try {
-  //     await loginToProvider(provider);
-  //     logger.log(`\n${"=".repeat(50)}\n`);
-  //   } catch (err) {
-  //     logger.error(`Failed to complete ${provider} login. Continuing...\n`);
-  //   }
-  // }
-
-  try {
-    await loginToProvider("anthropic");
-    logger.log(`\n${"=".repeat(50)}\n`);
-  } catch (err) {
-    logger.error(`Failed to complete anthropic login. Continuing...\n`);
+  for (const provider of Object.keys(PROVIDERS) as Provider[]) {
+    try {
+      await loginToProvider(provider);
+      logger.log(`\n${"=".repeat(50)}\n`);
+    } catch (err) {
+      logger.error(`Failed to complete ${provider} login. Continuing...\n`);
+    }
   }
 
   logger.success("All logins complete!");
