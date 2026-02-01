@@ -9,7 +9,7 @@ export function setupPage(
     logger.debug("Current URL:", page.url());
 
     page.setDefaultTimeout(0);
-    page.setDefaultNavigationTimeout(0);
+    page.setDefaultNavigationTimeout(120_000);
 
     page.on("console", msg =>
         {
