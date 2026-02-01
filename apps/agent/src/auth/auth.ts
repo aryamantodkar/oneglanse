@@ -10,7 +10,7 @@ async function main() {
   logger.log("🔐 Starting authentication flow");
 
   run("pnpm run login");         // headed, user logs in
-  run("pnpm run upload-session-http"); // send to VPS
+  run("pnpm run upload-session"); // send to VPS
 
   logger.log("✅ Authentication flow complete");
   logger.log("👉 You can now start/restart the agent on the VPS");
