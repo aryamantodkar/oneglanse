@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
     response String,
     sources Array(Tuple(
         title String,
-        cited_text String
+        cited_text String,
         url String,
         domain Nullable(String),
         favicon Nullable(String)
