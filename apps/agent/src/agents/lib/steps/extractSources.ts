@@ -94,19 +94,11 @@ export async function extractSourcesFromPanel(page: Page, provider: Provider): P
     
     await page.waitForTimeout(1000);
 
-    await page.screenshot({ path: `debug-sources-${provider}-after-click.png`, fullPage: true });
-    logger.debug(`📸 Screenshot saved: debug-sources-${provider}-after-click.png`);
-
     if(provider=="openai"){
         sources = await exractSoucesFromOpenai(page, sourcesButton);
     }
     else if(provider=="perplexity"){
         sources = await exractSoucesFromPerplexity(page);
-    }
-
-    if (sources.length === 0) {
-        await page.screenshot({ path: `debug-sources-${provider}-zero-results.png`, fullPage: true });
-        logger.debug(`📸 Zero sources screenshot: debug-sources-${provider}-zero-results.png`);
     }
 
     logger.debug(`✅ Extracted ${sources.length} sources`);

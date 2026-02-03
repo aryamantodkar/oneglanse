@@ -135,7 +135,7 @@ export async function storePromptResponses(args: {
         model: string;
         model_provider: string;
         response: string;
-        sources: Array<[string, string, string, string | null, string | null]>;
+        sources: Array<{ title: string; cited_text: string; url: string; domain: string | null; favicon: string | null }>;
         prompt_run_at: string;
     }> = [];
 
@@ -151,13 +151,13 @@ export async function storePromptResponses(args: {
                 model: provider,
                 model_provider: provider,
                 response: item.response,
-                sources: item.sources.map((s) => [
-                    s.title ?? "",
-                    s.citedText ?? "",
-                    s.url ?? "",
-                    s.domain ?? null,
-                    s.favicon ?? null,
-                ]),
+                sources: item.sources.map((s) => ({
+                    title: s.title ?? "",
+                    cited_text: s.citedText ?? "",
+                    url: s.url ?? "",
+                    domain: s.domain ?? null,
+                    favicon: s.favicon ?? null,
+                })),
                 prompt_run_at: formatDateToClickHouse(new Date(promptRunAt)),
             });
         }
