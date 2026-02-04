@@ -3,27 +3,24 @@ import { agentHandler } from "./agents/lib/agentHandler.js";
 import { openaiAgent } from "./agents/openai/openaiAgent.js";
 import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
 import { logger } from "./lib/utils/logger.js";
-import { AskPromptResult, ModelResult, PromptPayload } from "@onescope/types";
+import { ModelResult, PromptPayload } from "@onescope/types";
 
 export async function launchAgents(payload: PromptPayload): Promise<ModelResult> {
   logger.log("🚀 Starting Agents");
 
-  // const openaiResult = await agentHandler(
-  //   "OpenAI",
-  //   openaiAgent,
-  //   payload,
-  //   "openai"
-  // );
+  const openaiResult = await agentHandler(
+    "OpenAI",
+    openaiAgent,
+    payload,
+    "openai"
+  );
 
-  const openaiResult: AskPromptResult[] = [];
-  const anthropicResult: AskPromptResult[] = [];
-  
-  // const anthropicResult = await agentHandler(
-  //   "Anthropic",
-  //   anthropicAgent,
-  //   payload,
-  //   "anthropic",
-  // );
+  const anthropicResult = await agentHandler(
+    "Anthropic",
+    anthropicAgent,
+    payload,
+    "anthropic",
+  );
 
   const perplexityResult = await agentHandler(
     "Perplexity",
