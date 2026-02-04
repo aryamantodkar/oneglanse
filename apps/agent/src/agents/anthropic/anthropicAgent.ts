@@ -12,5 +12,5 @@ export async function anthropicAgent() {
 
     const auth = await isAuthenticated(anthropic.page, "anthropic");
 
-    return { browser: anthropic.browser, context: anthropic.context, page: anthropic.page, auth }
+    return { browser: anthropic.browser, context: anthropic.context, page: anthropic.page, auth, proxy: anthropic.proxy }
 }

@@ -3,7 +3,7 @@ import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
 export async function launchAnthropic() {
-    const { browser, context } = await launchContext("anthropic");
+    const { browser, context, proxy } = await launchContext("anthropic");
     const page = await context.newPage();
 
     logger.log("📍 Navigating to https://claude.ai/new");
@@ -12,5 +12,5 @@ export async function launchAnthropic() {
     const url = page.url();
     logger.log('Logged in url:', url);
 
-    return { browser, context, page };
+    return { browser, context, page, proxy };
 }

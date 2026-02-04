@@ -12,5 +12,5 @@ export async function openaiAgent() {
 
     const auth = await isAuthenticated(openai.page, "openai");
 
-    return { browser: openai.browser, context: openai.context, page: openai.page, auth }
+    return { browser: openai.browser, context: openai.context, page: openai.page, auth, proxy: openai.proxy }
 }

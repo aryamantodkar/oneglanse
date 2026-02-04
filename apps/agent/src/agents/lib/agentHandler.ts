@@ -2,9 +2,10 @@ import { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "./runAgents.js";
 import { logger } from "../../lib/utils/logger.js";
 import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
+import { markProxyBad } from "../../lib/browser/proxyPool.js";
 
 const PROVIDER_TIMEOUT = 8 * 60 * 1000; // 8 minutes
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 5;
 const RETRY_DELAY = 5000; // 5 seconds
 
 export async function agentHandler(
@@ -14,15 +15,17 @@ export async function agentHandler(
       context: BrowserContext;
       page: Page;
       auth: boolean;
+      proxy?: string | null;
     }>,
     payload: PromptPayload,
     provider: Provider
   ): Promise<AskPromptResult[]> {
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      const refs: { browser: Browser | null; context: BrowserContext | null } = {
+      const refs: { browser: Browser | null; context: BrowserContext | null; proxy: string | null } = {
         browser: null,
         context: null,
+        proxy: null,
       };
 
       try {
@@ -31,6 +34,7 @@ export async function agentHandler(
             const agent = await agentFactory();
             refs.browser = agent.browser;
             refs.context = agent.context;
+            refs.proxy = agent.proxy ?? null;
 
             logger.log(`${label} authentication status: ${agent.auth}`);
 
@@ -46,6 +50,10 @@ export async function agentHandler(
         return result;
       } catch (err: any) {
         logger.error(`${label} agent failed (attempt ${attempt}/${MAX_RETRIES}):`, err?.message ?? err);
+
+        if (refs.proxy) {
+          markProxyBad(refs.proxy);
+        }
 
         if (attempt < MAX_RETRIES) {
           logger.warn(`Retrying ${label} in ${RETRY_DELAY / 1000}s...`);

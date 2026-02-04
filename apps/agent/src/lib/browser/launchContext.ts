@@ -5,6 +5,7 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { logger } from "../utils/logger.js";
 import { Provider } from "@onescope/types";
 import { AuthError } from "@onescope/errors";
+import { getNextProxy, fetchProxies } from "./proxyPool.js";
 
 playwrightChromium.use(StealthPlugin());
 
@@ -14,7 +15,7 @@ export async function launchContext(provider: Provider) {
   );
   const providerDir = path.join(USER_DATA_DIR, provider);
   const authFile = path.join(providerDir, `${provider}-auth.json`);
-    
+
   if (!fs.existsSync(providerDir)) {
     throw new AuthError(`${provider} not authenticated`);
   }
@@ -25,14 +26,28 @@ export async function launchContext(provider: Provider) {
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
 
+  let proxy = getNextProxy();
+
+  if (!proxy) {
+    logger.warn("Proxy pool exhausted, refreshing...");
+    try {
+      await fetchProxies();
+      proxy = getNextProxy();
+    } catch (err: any) {
+      logger.error("Failed to refresh proxy pool:", err?.message);
+    }
+  }
+
+  if (proxy) {
+    logger.log(`Using proxy: ${proxy}`);
+  } else {
+    logger.warn("No proxies available, launching without proxy");
+  }
+
   const browser = await playwrightChromium.launch({
     headless: true,
-    proxy: process.env.PROXY_SERVER
-      ? {
-          server: process.env.PROXY_SERVER as string,
-          username: process.env.PROXY_USERNAME,
-          password: process.env.PROXY_PASSWORD,
-        }
+    proxy: proxy
+      ? { server: proxy }
       : undefined,
     args: [
       "--disable-blink-features=AutomationControlled",
@@ -46,5 +61,5 @@ export async function launchContext(provider: Provider) {
     viewport: { width: 1920, height: 1080 },
   });
 
-  return { browser, context };
+  return { browser, context, proxy };
 }

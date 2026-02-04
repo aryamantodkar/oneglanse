@@ -3,7 +3,7 @@ import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
 export async function launchPerplexity() {
-    const { browser, context } = await launchContext("perplexity");
+    const { browser, context, proxy } = await launchContext("perplexity");
 
     let page = null;
 
@@ -18,5 +18,5 @@ export async function launchPerplexity() {
     const url = page.url();
     logger.log('Logged in url:', url);
 
-    return { browser, context, page };
+    return { browser, context, page, proxy };
 }
