@@ -3,7 +3,7 @@ import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
 export async function launchOpenAI() {
-    const { browser, context } = await launchContext("openai");
+    const { browser, context, proxy } = await launchContext("openai");
 
     let page = null;
 
@@ -18,5 +18,5 @@ export async function launchOpenAI() {
     const url = page.url();
     logger.log('Logged in url:', url);
     
-    return { browser, context, page };
+    return { browser, context, page, proxy };
 }

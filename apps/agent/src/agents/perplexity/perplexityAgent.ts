@@ -11,5 +11,5 @@ export async function perplexityAgent() {
 
     const auth = await isAuthenticated(perplexity.page, "perplexity");
 
-    return { browser: perplexity.browser, context: perplexity.context, page: perplexity.page, auth }
+    return { browser: perplexity.browser, context: perplexity.context, page: perplexity.page, auth, proxy: perplexity.proxy }
 }

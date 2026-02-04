@@ -4,9 +4,11 @@ import { launchAgents } from "./agent.js";
 import { redis, waitForRedis, storePromptResponses } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 import { PromptPayload, UserPrompt } from "@onescope/types";
+import { fetchProxies } from "./lib/browser/proxyPool.js";
 
 async function startWorker() {
   await waitForRedis();
+  await fetchProxies();
 
   const worker = new Worker(
     "onescope-agent",
