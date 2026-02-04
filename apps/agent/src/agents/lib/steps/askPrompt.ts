@@ -5,11 +5,21 @@ import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToF
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    }),
+  ]).finally(() => clearTimeout(timer!));
+}
+
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
     logger.debug(`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
-  
+
     await waitForAssistantToFinish(page, provider);
-  
+
     const input = await waitForEditorReady(page, provider);
 
     logger.debug("Typing Prompt");
@@ -27,7 +37,7 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
     await page.keyboard.up(isMac ? "Meta" : "Control");
     await page.keyboard.press("Backspace");
     await page.waitForTimeout(200);
-  
+
     for (const char of prompt) {
       if (char === "\n") {
         await page.keyboard.down("Shift");
@@ -38,13 +48,13 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       }
       await page.waitForTimeout(10);
     }
-    
+
     await page.waitForTimeout(500);
-    
+
     const typed = await input.evaluate(el =>
       (el.textContent || "").trim()
     );
-    
+
     if (!typed || typed.length < Math.min(10, prompt.length / 3)) {
       throw new Error("Typing failed: editor did not receive prompt");
     }
@@ -53,27 +63,11 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
     await page.keyboard.press("Enter");
     await page.waitForTimeout(1000);
 
-    const generationStarted = await page.waitForFunction(
-      () =>
-        Boolean(
-          document.querySelector(
-            '[aria-label*="stop" i], [class*="loading"], [class*="typing"]'
-          )
-        ),
-      { timeout: 5000 }
-    ).then(() => true).catch(() => false);
-  
-    if (!generationStarted) {
-      logger.warn("Enter did not start generation, using send button");
-  
-      const sendButton = await findEnabledSendButton(page);
-      if (!sendButton) {
-        throw new Error(`[${provider}] Send failed — no send button`);
-      }
-  
-      await sendButton.click();
-  
-      const fallbackStarted = await page.waitForFunction(
+    // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 }).catch(() => {});
+
+    const generationStarted = await withTimeout(
+      page.waitForFunction(
         () =>
           Boolean(
             document.querySelector(
@@ -81,8 +75,35 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
             )
           ),
         { timeout: 5000 }
-      ).then(() => true).catch(() => false);
-  
+      ).then(() => true).catch(() => false),
+      7000,
+      false
+    );
+
+    if (!generationStarted) {
+      logger.warn("Enter did not start generation, using send button");
+
+      const sendButton = await findEnabledSendButton(page);
+      if (!sendButton) {
+        throw new Error(`[${provider}] Send failed — no send button`);
+      }
+
+      await sendButton.click();
+
+      const fallbackStarted = await withTimeout(
+        page.waitForFunction(
+          () =>
+            Boolean(
+              document.querySelector(
+                '[aria-label*="stop" i], [class*="loading"], [class*="typing"]'
+              )
+            ),
+          { timeout: 5000 }
+        ).then(() => true).catch(() => false),
+        7000,
+        false
+      );
+
       if (!fallbackStarted) {
         throw new Error(`[${provider}] Send failed — no generation after click`);
       }
