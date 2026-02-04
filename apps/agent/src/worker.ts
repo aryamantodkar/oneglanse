@@ -66,7 +66,8 @@ async function startWorker() {
         password: process.env.REDIS_PASSWORD,
       },
       concurrency: 1, // 🔒 single Chrome profile
-      lockDuration: 10 * 60 * 1000,
+      lockDuration: 60 * 60 * 1000, // 1 hour — must exceed worst-case job duration to prevent stall re-queues
+      stalledInterval: 60 * 60 * 1000,
     }
   );
 
