@@ -6,8 +6,9 @@ import { logger } from "../utils/logger.js";
 export async function waitForAssistantToFinish(page: Page, provider: Provider): Promise<void> {
   logger.debug("⏳ Waiting for assistant to finish…");
 
-  const MAX_WAIT = 20 * 60 * 1000;
-  const STABLE_WINDOW = 1500;
+  const MAX_WAIT = 20 * 60 * 1000; // 20 minutes
+  const STABLE_WINDOW = 1500; // 1.5s — normal exit when generation indicators are gone
+  const FORCE_STABLE_WINDOW = 15_000; // 15s — force exit even if isGenerating() is still true
   const POLL = 300;
 
   const start = Date.now();
@@ -34,13 +35,18 @@ export async function waitForAssistantToFinish(page: Page, provider: Provider): 
       continue;
     }
 
-    // ✅ Exit condition (THIS is the important part)
-    if (
-      seenOutput &&
-      !generating &&
-      Date.now() - lastChange >= STABLE_WINDOW
-    ) {
+    const stableFor = Date.now() - lastChange;
+
+    // Normal exit: generation done + text stable for 1.5s
+    if (seenOutput && !generating && stableFor >= STABLE_WINDOW) {
       logger.debug("✅ Assistant finished");
+      return;
+    }
+
+    // Force exit: text has been stable for 15s even though isGenerating() is still true
+    // This handles false-positive generation detection (e.g. a persistent loading class)
+    if (seenOutput && stableFor >= FORCE_STABLE_WINDOW) {
+      logger.warn("Assistant text stable for 15s but generation indicator still present — forcing exit");
       return;
     }
 

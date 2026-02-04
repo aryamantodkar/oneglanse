@@ -4,7 +4,7 @@ import { logger } from "../../lib/utils/logger.js";
 import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 import { markProxyBad } from "../../lib/browser/proxyPool.js";
 
-const PROVIDER_TIMEOUT = 8 * 60 * 1000; // 8 minutes
+const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 5000; // 5 seconds
 
@@ -38,7 +38,9 @@ export async function agentHandler(
 
             logger.log(`${label} authentication status: ${agent.auth}`);
 
-            if (!agent.auth) return [];
+            if (!agent.auth) {
+              throw new Error(`${label} authentication failed`);
+            }
 
             return await runAgents(payload, agent.page, provider);
           })(),
