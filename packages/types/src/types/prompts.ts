@@ -1,5 +1,5 @@
 import type { AnalysisModelInput } from "./analysis.js";
-import type { SourceCitationLookup } from "./sources.js";
+import type { SourceLookup } from "./sources.js";
 
 export type UserPrompt = {
     id: string;
@@ -37,7 +37,7 @@ export interface PromptAnalysisBase extends PromptDetails, AnalysisModelInput {
     model: string;
 }
 
-export interface PromptAnalysisWithSources extends PromptAnalysisBase, SourceCitationLookup {}
+export interface PromptAnalysisWithSources extends PromptAnalysisBase, SourceLookup {}
 
 export interface PromptResponse extends PromptAnalysisWithSources {
     prompt_run_at: string;

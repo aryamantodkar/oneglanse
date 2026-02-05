@@ -170,7 +170,6 @@ export default function Prompts() {
           response: model.response,
           brandMetrics: model.brandMetrics,
           sources: model.sources,
-          citations: model.citations,
           promptRunAt,
         });
       });
@@ -868,10 +867,8 @@ function SourcesCard({
   const [showAllLinks, setShowAllLinks] = useState(false);
 
   const linksToShow = useMemo(() => {
-    const sources = getUniqueLinks(resp.sources);
-    const citations = getUniqueLinks(resp.citations);
-    return sources.length > 0 ? sources : citations;
-  }, [resp.sources, resp.citations]);
+    return getUniqueLinks(resp.sources);
+  }, [resp.sources]);
 
   const visibleLinks = showAllLinks
     ? linksToShow

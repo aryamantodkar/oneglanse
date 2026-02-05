@@ -1,5 +1,5 @@
 import { clickhouse, db } from "@onescope/db";
-import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, Citation, GroupedMetrics, PromptAnalysisWithSources, PromptResponse, Source, SourceCitationLookup } from "@onescope/types";
+import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, GroupedMetrics, PromptAnalysisWithSources, PromptResponse, Source, SourceLookup } from "@onescope/types";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -254,7 +254,6 @@ export async function fetchAnalysedPrompts(args: {
       response,
       brand_metrics,
       sources,
-      citations,
     } = row;
 
     if (!result[prompt_id]) {
@@ -270,7 +269,6 @@ export async function fetchAnalysedPrompts(args: {
       response,
       brandMetrics: brand_metrics,
       sources,
-      citations,
       promptRunAt: prompt_run_at
     });
   }

@@ -1,3 +1,3 @@
-export * from "./extractCitationStats.js";
+export * from "./extractSourceStats.js";
 export * from "./extractDomainStats.js";
-export * from "./groupCitationsByUrl.js";
+export * from "./groupSourcesByUrl.js";
