@@ -18,7 +18,7 @@ export function extractSourceStats(
       const source: Source & { modelProvider: string } = {
         title: s.title,
         url: s.url,
-        citedText: s.citedText ?? "",
+        cited_text: s.cited_text ?? "",
         domain: s.domain ?? null,
         favicon: s.favicon ?? null,
         modelProvider: model,

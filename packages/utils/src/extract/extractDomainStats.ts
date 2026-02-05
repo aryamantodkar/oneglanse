@@ -36,7 +36,7 @@ export function extractDomainStats(
 
     for (const s of r.sources ?? []) {
       if (s?.url) {
-        const hasText = !!s.citedText;
+        const hasText = !!s.cited_text;
         addDomain(combinedMap, s.url, hasText);
         addDomain(perModelMap, s.url, hasText);
       }

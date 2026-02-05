@@ -153,7 +153,7 @@ export async function storePromptResponses(args: {
                 response: item.response,
                 sources: item.sources.map((s) => ({
                     title: s.title ?? "",
-                    cited_text: s.citedText ?? "",
+                    cited_text: s.cited_text ?? "",
                     url: s.url ?? "",
                     domain: s.domain ?? null,
                     favicon: s.favicon ?? null,

@@ -68,7 +68,7 @@ export async function exractSoucesFromPerplexity(page: Page): Promise<Source[]>{
       
           results.push({
             title,
-            citedText,
+            cited_text: citedText,
             url: href,
             domain,
             favicon
