@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
 import { Bot, ChevronRight, ExternalLink, Info, Link, SearchX } from "lucide-react";
-import type { Citation, CitationGroupResult, DomainResponseClient, DomainStats, GroupedCitation, ModelFilterDomainStats, PromptResponse } from "@onescope/types";
+import type { SourceGroupResult, DomainResponseClient, DomainStats, GroupedSource, ModelFilterDomainStats, PromptResponse } from "@onescope/types";
 import { getFaviconUrls, getModelFavicon } from "@onescope/utils";
 import { usePromptResponses } from "../prompts/_lib/queries/prompt.queries";
 
@@ -13,7 +13,7 @@ export default function Sources() {
   const [responses, setResponses] = useState<PromptResponse[]>([]);
   const [originalPromptResponses, setOriginalPromptResponses] = useState<PromptResponse[]>([]);
   const [domainStats, setDomainStats] = useState<ModelFilterDomainStats | null>(null);
-  const [citationStats, setCitationStats] = useState<CitationGroupResult | null>(null);
+  const [sourceStats, setSourceStats] = useState<SourceGroupResult | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
   const [activeTab, setActiveTab] = useState<"domains" | "urls">("domains");
   const [openUrl, setOpenUrl] = useState<string | null>(null);
@@ -22,10 +22,10 @@ export default function Sources() {
   const workspaceId = searchParams.get("workspace") ?? "";
 
   const { data: promptResponses, refetch, isLoading, error } = usePromptResponses(workspaceId);
-  
+
   useEffect(() => {
     if (workspaceId) {
-      refetch(); 
+      refetch();
     }
   }, [workspaceId, refetch]);
 
@@ -36,22 +36,19 @@ export default function Sources() {
       !Array.isArray(promptResponses.data.responses) ||
       !promptResponses.data.domain_stats ||
       !Array.isArray(promptResponses.data.domain_stats.combined) ||
-      !promptResponses.data.citationStats ||
-      !Array.isArray(promptResponses.data.citationStats.combined)
+      !promptResponses.data.sourceStats ||
+      !Array.isArray(promptResponses.data.sourceStats.combined)
     ) {
       return;
     }
-    
+
     const domainStatistics: ModelFilterDomainStats = promptResponses?.data.domain_stats;
-    const citationStatistics: CitationGroupResult = promptResponses?.data.citationStats;
-      
-    console.log("citationStatistics",citationStatistics);
+    const sourceStatistics: SourceGroupResult = promptResponses?.data.sourceStats;
 
     setResponses(promptResponses?.data?.responses);
     setOriginalPromptResponses(promptResponses?.data?.responses);
     setDomainStats(domainStatistics);
-    setCitationStats(citationStatistics);
-    // console.log("promptResponses",promptResponses.data);
+    setSourceStats(sourceStatistics);
   }, [promptResponses, isLoading]);
 
   const providers = useMemo(() => {
@@ -69,10 +66,10 @@ export default function Sources() {
     return domainStats?.byModel[selectedProvider];
   }, [domainStats, selectedProvider]);
 
-  const displayedCitationStats = useMemo(() => {
-    if (selectedProvider === "All Models") return citationStats?.combined;
-    return citationStats?.byModel[selectedProvider];
-  }, [citationStats, selectedProvider]);
+  const displayedSourceStats = useMemo(() => {
+    if (selectedProvider === "All Models") return sourceStats?.combined;
+    return sourceStats?.byModel[selectedProvider];
+  }, [sourceStats, selectedProvider]);
 
   if (isLoading) {
     return (
@@ -88,7 +85,7 @@ export default function Sources() {
       <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
         <p className="text-gray-500 text-lg mb-2">No prompt responses yet.</p>
         <p className="text-gray-400 text-sm mb-4">
-          If you’ve just added prompts, please check back in some time — processing can take a few minutes.
+          If you've just added prompts, please check back in some time — processing can take a few minutes.
         </p>
       </div>
     );
@@ -152,7 +149,7 @@ export default function Sources() {
       </div>
 
       {
-        (activeTab === "domains" && !displayedDomainStats) || (activeTab === "urls" && !displayedCitationStats)
+        (activeTab === "domains" && !displayedDomainStats) || (activeTab === "urls" && !displayedSourceStats)
         ?
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
           <div className="
@@ -172,7 +169,7 @@ export default function Sources() {
             <p className="mt-1.5 text-sm text-gray-500 max-w-xs">
               {activeTab === "domains"
                 ? "Try adjusting your filters to see source data."
-                : "Try adjusting your filters to see citation data."}
+                : "Try adjusting your filters to see source data."}
             </p>
         </div>
         :
@@ -189,16 +186,16 @@ export default function Sources() {
                     Used (%)
                   </TableHead>
                   <TableHead className="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Avg citations / link
+                    Avg sources / link
                   </TableHead>
                 </TableRow>
               </TableHeader>
-        
+
               <TableBody>
                 {displayedDomainStats &&
                   displayedDomainStats.map((d, idx) => {
                     const faviconUrls = getFaviconUrls(d.domain ?? "", "");
-                    
+
                     return (
                       <TableRow
                         key={d.domain}
@@ -207,7 +204,7 @@ export default function Sources() {
                         <TableCell className="px-4 py-5 align-middle text-xs text-gray-400 w-[40px]">
                           {idx + 1}
                         </TableCell>
-    
+
                         <TableCell className="px-6 py-5 align-middle">
                           <div className="flex items-center gap-4">
                             <img
@@ -232,13 +229,13 @@ export default function Sources() {
                             </a>
                           </div>
                         </TableCell>
-    
+
                         <TableCell className="px-6 py-5 align-middle text-sm text-gray-700">
                           {d.usedPercentageAcrossAllDomains}%
                         </TableCell>
 
                         <TableCell className="px-6 py-5 align-middle text-sm text-gray-700">
-                          {d.citationTextCount === 0 ? (
+                          {d.sourceTextCount === 0 ? (
                             <div className="relative inline-block group">
                               <span className="text-xs text-gray-500 cursor-default">
                                 Referenced by {selectedProvider}
@@ -264,7 +261,7 @@ export default function Sources() {
                               </div>
                             </div>
                           ) : (
-                            d.avgCitationsPerDomain
+                            d.avgSourcesPerDomain
                           )}
                         </TableCell>
                       </TableRow>
@@ -283,25 +280,25 @@ export default function Sources() {
               </TableRow>
             </TableHeader>
               <TableBody>
-                {displayedCitationStats && displayedCitationStats.map((c, idx) => {
-                  const faviconUrls = getFaviconUrls(c.url ?? "", "");
-                  const isOpen = openUrl === c.url;
-  
+                {displayedSourceStats && displayedSourceStats.map((s, idx) => {
+                  const faviconUrls = getFaviconUrls(s.url ?? "", "");
+                  const isOpen = openUrl === s.url;
+
                   const providers = Array.from(
-                    new Set(c.citations.map((r) => r.model_provider))
+                    new Set(s.excerpts.map((r) => r.model_provider))
                   );
 
                   const hasOnlyReferences =
-                      c.totalCitations ===
-                      c.citations.filter(c => !c.cited_text?.trim()).length;
-  
+                      s.totalSources ===
+                      s.excerpts.filter(e => !e.cited_text?.trim()).length;
+
                   return (
-                    <React.Fragment key={c.url}>
+                    <React.Fragment key={s.url}>
                       <TableRow
                         className="cursor-pointer hover:bg-gray-50 transition-colors"
-                        onClick={() => setOpenUrl(isOpen ? null : c.url)}
+                        onClick={() => setOpenUrl(isOpen ? null : s.url)}
                       >
-  
+
                       <TableCell colSpan={1} className="px-6 py-5 w-full">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
@@ -311,19 +308,19 @@ export default function Sources() {
                               alt=""
                             />
                           </div>
-  
+
                           <div className="flex flex-col gap-1">
                             <span className="text-sm font-medium text-gray-900 line-clamp-1">
-                              {c.title || "Untitled source"}
+                              {s.title || "Untitled source"}
                             </span>
-  
+
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs text-gray-500 break-all">
-                                {c.url}
+                                {s.url}
                               </span>
 
                               <a
-                                href={c.url}
+                                href={s.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
@@ -341,7 +338,7 @@ export default function Sources() {
                                 <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.75} />
                               </a>
                             </div>
-  
+
                             <div className="flex gap-2 mt-1">
                               {hasOnlyReferences ? (
                                 <span
@@ -355,20 +352,20 @@ export default function Sources() {
                                     border border-dashed border-gray-200
                                   "
                                 >
-                                  {c.totalCitations} Reference{c.totalCitations > 1 ? "s" : ""}
+                                  {s.totalSources} Reference{s.totalSources > 1 ? "s" : ""}
                                 </span>
                               ) : (
                                 <span
                                   className="bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5 rounded-full"
                                 >
-                                  {c.totalCitations} Citation{c.totalCitations > 1 ? "s" : ""}
+                                  {s.totalSources} Source{s.totalSources > 1 ? "s" : ""}
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
                       </TableCell>
-  
+
                         <TableCell className="w-[220px] px-6 py-5 align-middle">
                           <div className="flex items-center justify-end gap-3">
                             {!isOpen &&
@@ -380,13 +377,13 @@ export default function Sources() {
                                   className="w-5 h-5 rounded-sm"
                                 />
                               ))}
-  
+
                             {providers.length > 4 && !isOpen && (
                               <span className="text-xs text-gray-400">
                                 +{providers.length - 4}
                               </span>
                             )}
-  
+
                             <ChevronRight
                               className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                                 isOpen ? "rotate-90" : ""
@@ -395,11 +392,11 @@ export default function Sources() {
                           </div>
                         </TableCell>
                       </TableRow>
-  
+
                       {isOpen &&
-                        c.citations.map(({ cited_text, model_provider }, index) => (
+                        s.excerpts.map(({ cited_text, model_provider }, index) => (
                           <TableRow
-                            key={`${c.url}-citation-${index}`}
+                            key={`${s.url}-excerpt-${index}`}
                             className="bg-transparent"
                           >
                             <TableCell className="px-6 py-6 pl-16 align-top w-full">
@@ -418,17 +415,17 @@ export default function Sources() {
                                     to-transparent
                                   "
                                 />
-  
+
                                 <div
                                   className="
                                     absolute
                                     left-[-30px]
                                     top-1/2
                                     -translate-y-1/2
-  
+
                                     w-5
                                     text-center
-  
+
                                     text-[12px]
                                     font-medium
                                     text-gray-500
@@ -437,7 +434,7 @@ export default function Sources() {
                                 >
                                   {index + 1}
                                 </div>
-  
+
                                 <div className="pl-6 flex flex-col gap-3">
                                   {
                                     hasOnlyReferences
@@ -447,9 +444,9 @@ export default function Sources() {
                                     </div>
                                     :
                                     <p className="text-[14px] leading-[1.65] italic text-gray-600">
-                                      <span className="text-gray-300 mr-1">“</span>
+                                      <span className="text-gray-300 mr-1">"</span>
                                       {cited_text}
-                                      <span className="text-gray-300 ml-1">”</span>
+                                      <span className="text-gray-300 ml-1">"</span>
                                     </p>
                                   }
 
@@ -468,7 +465,7 @@ export default function Sources() {
                                 </div>
                               </div>
                             </TableCell>
-  
+
                             <TableCell className="w-[220px]" />
                           </TableRow>
                         ))}

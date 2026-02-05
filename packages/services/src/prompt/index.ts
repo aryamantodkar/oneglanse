@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
 import type { PromptResponse, DomainStats, UserPrompt, ModelResult, Provider } from "@onescope/types";
 import { DatabaseError, NotFoundError } from "@onescope/errors";
-import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractCitationStats } from "@onescope/utils";
+import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractSourceStats } from "@onescope/utils";
 
 export async function storePromptsForWorkspace(args: {
     prompts: string[];
@@ -194,7 +194,7 @@ export async function fetchPromptResponsesForWorkspace(args: {
     // const data: PromptResponse[] = JSON.parse(rawData);
 
     const domainStats = extractDomainStats(data);
-    const citationStats = extractCitationStats(data);
+    const sourceStats = extractSourceStats(data);
 
     // LOGGER
     // const logPath = path.join(process.cwd(), "mockData", "fetchPromptResponses.json");
@@ -204,7 +204,7 @@ export async function fetchPromptResponsesForWorkspace(args: {
     return {
       responses: data,
       domain_stats: domainStats,
-      citationStats: citationStats
+      sourceStats: sourceStats
     };
 }
 

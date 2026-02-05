@@ -9,17 +9,8 @@ export interface Source {
     favicon?: string | null;
 }
 
-export interface Citation {
-    title: string;
-    url: string;
-    start_index: number | null;
-    end_index: number | null;
-    cited_text: string;
-}
-
-export interface SourceCitationLookup {
+export interface SourceLookup {
     sources: Source[];
-    citations: Citation[];
 }
 
 // Sources page UI
@@ -27,9 +18,9 @@ export interface SourceCitationLookup {
 export type DomainStats = {
     domain: string;
     totalOccurrences: number;
-    citationTextCount: number;
+    sourceTextCount: number;
     usedPercentageAcrossAllDomains: number;
-    avgCitationsPerDomain: number;
+    avgSourcesPerDomain: number;
 };
 
 export type ModelFilterDomainStats = {
@@ -42,23 +33,19 @@ export type DomainResponseClient = {
     domain_stats: DomainStats[]
 }
 
-export type CitationExcerpt = {
+export type SourceExcerpt = {
     cited_text: string;
-    start_index: number | null;
-    end_index: number | null;
     model_provider?: string;
 };
 
-export type GroupedCitation = {
+export type GroupedSource = {
     title: string;
     url: string;
-    citations: CitationExcerpt[];
-    totalCitations: number;
+    excerpts: SourceExcerpt[];
+    totalSources: number;
 };
 
-export type CitationGroupResult = {
-    combined: GroupedCitation[];
-    byModel: ByModel<GroupedCitation>;
+export type SourceGroupResult = {
+    combined: GroupedSource[];
+    byModel: ByModel<GroupedSource>;
 };
-
-

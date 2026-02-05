@@ -1,6 +1,6 @@
 import type { AnalysisModelInput } from "./analysis.js";
 import type { PromptRunMap } from "./prompts.js";
-import type { SourceCitationLookup } from "./sources.js";
+import type { SourceLookup } from "./sources.js";
 
 
 /** model_provider -> items[] */
@@ -9,7 +9,7 @@ export type ByModel<T> = Record<string, T[]>;
 /** brand_name -> metric */
 export type BrandMetricMap = Record<string, BrandMetric>;
 
-export interface Metric extends AnalysisModelInput, SourceCitationLookup {
+export interface Metric extends AnalysisModelInput, SourceLookup {
     brandMetrics: BrandMetricMap;
     promptRunAt: string;
 };
