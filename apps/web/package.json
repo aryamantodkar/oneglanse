@@ -66,6 +66,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@tailwindcss/postcss": "^4.0.15",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.14.10",
     "@types/node-fetch": "^2.6.13",
     "@types/react": "^19.0.0",
