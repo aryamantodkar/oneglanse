@@ -29,8 +29,8 @@ import {
   Card,
   ScrollArea
 } from "@onescope/ui";
-import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, PromptResponse, UserPrompt } from "@onescope/types";
-import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon } from "@onescope/utils";
+import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, PromptResponse, UserPrompt } from "@onescope/types";
+import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon, filterPromptResponses } from "@onescope/utils";
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import { useAgentStatus, useFetchAnalysedPrompts, usePromptResponses, useUserPrompts } from "./_lib/queries/prompt.queries";
@@ -60,7 +60,7 @@ export default function Prompts() {
   const [editPromptValue, setEditPromptValue] = useState("");
   const [expandedResponses, setExpandedResponses] = useState<Set<number>>(new Set());
 
-  const [openPromptResponses, setOpenPromptResponses] = useState<Metric[]>([]);
+  const [openPromptResponses, setOpenPromptResponses] = useState<PromptResponse[]>([]);
   const [allPromptResponses, setAllPromptResponses] = useState<PromptResponse[]>([]);
 
   const [originalMetricData, setOriginalMetricData] = useState<GroupedMetrics>({});
@@ -151,13 +151,20 @@ export default function Prompts() {
     setBrandFilter(randomBrand);
   }, [analysedPromptData]);
 
+  const filteredResponses = useMemo(() => {
+    return filterPromptResponses(allPromptResponses, {
+      modelFilter,
+      timeFilter,
+    })
+  }, [allPromptResponses, modelFilter, timeFilter]);
+
   const filteredMetrics = useMemo(() => {
     return filterMetrics(metrics, {
       modelFilter,
       timeFilter,
       brandFilter,
     })
-  }, [metrics, modelFilter, timeFilter, brandFilter, promptResponses]);
+  }, [metrics, modelFilter, timeFilter, brandFilter]);
 
   useEffect(() => {
     if (!openPrompt) {
@@ -165,29 +172,13 @@ export default function Prompts() {
       setExpandedResponses(new Set());
       return;
     }
-  
-    const promptRuns = filteredMetrics?.[openPrompt.id];
-    if (!promptRuns) {
-      setOpenPromptResponses([]);
-      return;
-    }
-  
-    const collectedResponses: Metric[] = [];
-  
-    Object.entries(promptRuns).forEach(([promptRunAt, models]) => {
-      models.forEach((model) => {
-        collectedResponses.push({
-          model_provider: model.model_provider,
-          response: model.response,
-          brandMetrics: model.brandMetrics,
-          sources: model.sources,
-          promptRunAt,
-        });
-      });
-    });
-  
-    setOpenPromptResponses(collectedResponses);
-  }, [openPrompt, filteredMetrics]);
+
+    const responses = filteredResponses.filter(
+      (r) => r.prompt_id === openPrompt.id
+    );
+
+    setOpenPromptResponses(responses);
+  }, [openPrompt, filteredResponses]);
 
   const aggregatedPromptMetrics = useMemo(() => {
     return aggregatePromptMetrics(filteredMetrics);
@@ -779,7 +770,7 @@ export default function Prompts() {
                                 </span>
                     
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {formatDate(resp.promptRunAt)}
+                                  {formatDate(resp.prompt_run_at)}
                                 </span>
                               </div>
                             </div>
@@ -872,7 +863,7 @@ export default function Prompts() {
 function SourcesCard({
   resp,
 }: {
-  resp: Metric;
+  resp: PromptResponse;
 }) {
   const MAX_VISIBLE = 5;
   const [showAllLinks, setShowAllLinks] = useState(false);
