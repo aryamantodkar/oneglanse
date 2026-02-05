@@ -1,42 +1,6 @@
 import { Locator, Page } from "playwright";
 import { Provider } from "@onescope/types";
 import { MODEL_RESPONSE_SELECTORS, RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
-import TurndownService from "turndown";
-
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-  bulletListMarker: "-",
-});
-
-// Preserve table formatting
-turndown.addRule("table", {
-  filter: "table",
-  replacement(_content, node) {
-    const table = node as HTMLTableElement;
-    const rows = Array.from(table.querySelectorAll("tr"));
-    if (rows.length === 0) return "";
-
-    const result: string[] = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      const cells = Array.from(rows[i]!.querySelectorAll("th, td"));
-      const line = cells.map((c) => (c.textContent ?? "").trim()).join(" | ");
-      result.push(`| ${line} |`);
-
-      // Add separator after header row
-      if (i === 0) {
-        result.push(`| ${cells.map(() => "---").join(" | ")} |`);
-      }
-    }
-
-    return "\n\n" + result.join("\n") + "\n\n";
-  },
-});
-
-function htmlToMarkdown(html: string): string {
-  return turndown.turndown(html).trim();
-}
 
 export async function getLastAssistantText(
   page: Page,
@@ -54,29 +18,33 @@ export async function getLastAssistantText(
       try {
         if (!(await el.isVisible())) continue;
 
-        let html: string = "";
+        let text: string = "";
 
         if(!fetchingResponses){
-          html = await el.evaluate(el => {
+          text = await el.evaluate(el => {
             if (!(el instanceof HTMLElement)) return "";
-            return el.innerHTML?.trim() || "";
+            return el.innerText?.trim() || el.textContent?.trim() || "";
           });
         }
         else{
-          html = await el.evaluate(
+          text = await el.evaluate(
             (root, provider) => {
               if (!(root instanceof HTMLElement)) return "";
 
               if (provider === "anthropic") {
+                // Find all standard-markdown blocks
                 const blocks = Array.from(
                   root.querySelectorAll<HTMLElement>(".standard-markdown")
                 );
 
+                // Filter to only visible blocks (not inside collapsed/hidden containers)
                 const visibleBlocks = blocks.filter((block) => {
+                  // Check if block is inside a hidden overflow container
                   let parent = block.parentElement;
                   while (parent && parent !== root) {
                     const style = window.getComputedStyle(parent);
 
+                    // Skip if parent is hidden
                     if (
                       style.opacity === "0" ||
                       style.height === "0px" ||
@@ -92,19 +60,20 @@ export async function getLastAssistantText(
                   return true;
                 });
 
+                // Return the text from visible blocks only
                 return visibleBlocks
-                  .map((b) => b.innerHTML?.trim() || "")
+                  .map((b) => b.innerText?.trim() || b.textContent?.trim() || "")
                   .filter(Boolean)
-                  .join("<br><br>");
+                  .join("\n\n");
               }
 
-              return root.innerHTML?.trim() || "";
+              return root.innerText?.trim() || root.textContent?.trim() || "";
             },
             provider
           );
         }
 
-        if (html.length > 0) return htmlToMarkdown(html);
+        if (text.length > 0) return text;
       } catch {
         continue;
       }
