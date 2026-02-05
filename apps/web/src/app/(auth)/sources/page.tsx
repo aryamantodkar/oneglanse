@@ -207,7 +207,7 @@ export default function Sources() {
                     Used (%)
                   </TableHead>
                   <TableHead className="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Avg Citations / link
+                    Avg Citations / Domain
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -231,7 +231,11 @@ export default function Sources() {
                             <img
                               src={faviconUrls[0]}
                               alt=""
-                              className="w-6 h-6 rounded-md"
+                              className="
+                                w-[1.25em] h-[1.25em]
+                                rounded-md
+                                shrink-0
+                              "
                               onError={(e) =>
                                 ((e.target as HTMLImageElement).style.display = "none")
                               }
@@ -325,8 +329,15 @@ export default function Sources() {
                           <div className="flex items-center gap-2">
                             <img
                               src={faviconUrls[0]}
-                              className="w-6 h-6 rounded-md"
                               alt=""
+                              className="
+                                w-[1.25em] h-[1.25em]
+                                rounded-md
+                                shrink-0
+                              "
+                              onError={(e) =>
+                                ((e.target as HTMLImageElement).style.display = "none")
+                              }
                             />
                           </div>
 
