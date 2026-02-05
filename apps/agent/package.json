@@ -15,10 +15,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@onescope/services": "workspace:*",
     "@onescope/errors": "workspace:*",
-    "@onescope/utils": "workspace:*",
+    "@onescope/services": "workspace:*",
     "@onescope/types": "workspace:*",
+    "@onescope/utils": "workspace:*",
     "bullmq": "^5.66.4",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
@@ -26,12 +26,14 @@
     "playwright": "^1.57.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "tar": "^7.5.2"
+    "tar": "^7.5.2",
+    "turndown": "^7.2.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
+    "@types/turndown": "^5.0.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
