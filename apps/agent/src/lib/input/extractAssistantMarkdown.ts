@@ -7,6 +7,45 @@ const turndown = new TurndownService({
   headingStyle: "atx",
   codeBlockStyle: "fenced",
   bulletListMarker: "-",
+  br: "\n",
+});
+
+// Ensure paragraphs have proper spacing
+turndown.addRule("paragraph", {
+  filter: "p",
+  replacement(content) {
+    return "\n\n" + content + "\n\n";
+  },
+});
+
+// Preserve div blocks as paragraphs
+turndown.addRule("div", {
+  filter: "div",
+  replacement(content) {
+    return "\n\n" + content.trim() + "\n\n";
+  },
+});
+
+// Headings with proper spacing
+turndown.addRule("heading", {
+  filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
+  replacement(content, node) {
+    const level = Number(node.nodeName.charAt(1));
+    return "\n\n" + "#".repeat(level) + " " + content + "\n\n";
+  },
+});
+
+// Lists with proper spacing
+turndown.addRule("list", {
+  filter: ["ul", "ol"],
+  replacement(content, node) {
+    const parent = node.parentNode;
+    // Don't add extra spacing for nested lists
+    if (parent && (parent.nodeName === "LI" || parent.nodeName === "UL" || parent.nodeName === "OL")) {
+      return "\n" + content;
+    }
+    return "\n\n" + content + "\n\n";
+  },
 });
 
 turndown.addRule("table", {
@@ -88,7 +127,9 @@ export async function extractAssistantMarkdown(
         );
 
         if (html.length > 0) {
-          return turndown.turndown(html).trim();
+          // Convert and normalize multiple newlines to double newlines
+          const markdown = turndown.turndown(html);
+          return markdown.replace(/\n{3,}/g, "\n\n").trim();
         }
       } catch {
         continue;
