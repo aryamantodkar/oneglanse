@@ -78,7 +78,7 @@ export async function extractSourcesFromAnthropic(
 
           results.push({
             title,
-            citedText,
+            cited_text: citedText,
             url: anchor.href,
             domain,
             favicon: domain

@@ -81,7 +81,7 @@ export async function exractSoucesFromOpenai(page: Page, sourcesButton: Locator)
         
               results.push({
                 title,
-                citedText,
+                cited_text: citedText,
                 url: href,
                 domain,
                 favicon

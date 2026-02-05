@@ -9,8 +9,8 @@ export function groupSourcesByUrl(
   for (const s of sources) {
     if (!s?.url) continue;
 
-    const key = s.citedText?.trim()
-      ? `${s.title}::${s.modelProvider}::${s.citedText}`
+    const key = s.cited_text?.trim()
+      ? `${s.title}::${s.modelProvider}::${s.cited_text}`
       : `${s.title}::${s.modelProvider}::${s.url}`;
 
     if (seen.has(key)) continue;
@@ -29,7 +29,7 @@ export function groupSourcesByUrl(
     }
 
     entry.excerpts.push({
-      cited_text: s.citedText ?? "",
+      cited_text: s.cited_text ?? "",
       model_provider: s.modelProvider,
     });
 

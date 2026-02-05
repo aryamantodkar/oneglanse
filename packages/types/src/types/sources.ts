@@ -3,7 +3,7 @@ import type { PromptResponse } from "./prompts.js";
 
 export interface Source {
     title: string;
-    citedText: string;
+    cited_text: string;
     url: string;
     domain: string | null;
     favicon?: string | null;
