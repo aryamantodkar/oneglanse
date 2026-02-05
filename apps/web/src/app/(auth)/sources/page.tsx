@@ -4,24 +4,28 @@ import React from "react";
 import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
-import { Bot, ChevronRight, ExternalLink, Info, Link, SearchX } from "lucide-react";
-import type { SourceGroupResult, DomainResponseClient, DomainStats, GroupedSource, ModelFilterDomainStats, PromptResponse } from "@onescope/types";
+import { Bot, ChevronRight, ExternalLink, SearchX } from "lucide-react";
+import type { SourceGroupResult, ModelFilterDomainStats } from "@onescope/types";
 import { getFaviconUrls, getModelFavicon } from "@onescope/utils";
-import { usePromptResponses } from "../prompts/_lib/queries/prompt.queries";
+import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
 
 export default function Sources() {
-  const [responses, setResponses] = useState<PromptResponse[]>([]);
-  const [originalPromptResponses, setOriginalPromptResponses] = useState<PromptResponse[]>([]);
   const [domainStats, setDomainStats] = useState<ModelFilterDomainStats | null>(null);
   const [sourceStats, setSourceStats] = useState<SourceGroupResult | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
   const [activeTab, setActiveTab] = useState<"domains" | "urls">("domains");
   const [openUrl, setOpenUrl] = useState<string | null>(null);
+  const providers = [
+    { value: "All Models", label: "All Models" },
+    { value: "openai", label: "OpenAI" },
+    { value: "perplexity", label: "Perplexity" },
+    { value: "anthropic", label: "Anthropic" },
+  ] as const;
 
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
-  const { data: promptResponses, refetch, isLoading, error } = usePromptResponses(workspaceId);
+  const { data: promptSources, refetch, isLoading, error } = usePromptSources(workspaceId);
 
   useEffect(() => {
     if (workspaceId) {
@@ -32,34 +36,21 @@ export default function Sources() {
   useEffect(() => {
     if (
       isLoading ||
-      !promptResponses?.data ||
-      !Array.isArray(promptResponses.data.responses) ||
-      !promptResponses.data.domain_stats ||
-      !Array.isArray(promptResponses.data.domain_stats.combined) ||
-      !promptResponses.data.sourceStats ||
-      !Array.isArray(promptResponses.data.sourceStats.combined)
+      !promptSources?.data ||
+      !promptSources.data.domain_stats ||
+      !Array.isArray(promptSources.data.domain_stats.combined) ||
+      !promptSources.data.sourceStats ||
+      !Array.isArray(promptSources.data.sourceStats.combined)
     ) {
       return;
     }
 
-    const domainStatistics: ModelFilterDomainStats = promptResponses?.data.domain_stats;
-    const sourceStatistics: SourceGroupResult = promptResponses?.data.sourceStats;
+    const domainStatistics: ModelFilterDomainStats = promptSources?.data.domain_stats;
+    const sourceStatistics: SourceGroupResult = promptSources?.data.sourceStats;
 
-    setResponses(promptResponses?.data?.responses);
-    setOriginalPromptResponses(promptResponses?.data?.responses);
     setDomainStats(domainStatistics);
     setSourceStats(sourceStatistics);
-  }, [promptResponses, isLoading]);
-
-  const providers = useMemo(() => {
-    const set = new Set(responses.map(r => r.model_provider));
-    return ["All Models", ...Array.from(set)];
-  }, [responses]);
-
-  const displayedResponses = useMemo(() => {
-    if (selectedProvider === "All Models") return responses;
-    return responses.filter(r => r.model_provider === selectedProvider);
-  }, [responses, selectedProvider]);
+  }, [promptSources, isLoading]);
 
   const displayedDomainStats = useMemo(() => {
     const stats =
@@ -101,7 +92,14 @@ export default function Sources() {
     );
   }
 
-  if (!responses.length) {
+  if (
+    isLoading ||
+    !promptSources?.data ||
+    !promptSources.data.domain_stats ||
+    !Array.isArray(promptSources.data.domain_stats.combined) ||
+    !promptSources.data.sourceStats ||
+    !Array.isArray(promptSources.data.sourceStats.combined)
+  ) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
         <p className="text-gray-500 text-lg mb-2">No prompt responses yet.</p>
@@ -122,22 +120,22 @@ export default function Sources() {
             </div>
           </SelectTrigger>
           <SelectContent>
-            {providers.map((prov) => {
-              const icon = prov === "All Models" ? "" : getModelFavicon(prov);
+            {providers.map(({ value, label }) => {
+              const icon = value === "All Models" ? "" : getModelFavicon(value);
 
               return (
-                <SelectItem key={prov} value={prov}>
+                <SelectItem key={value} value={value}>
                   <div className="flex items-center gap-2">
-                  {prov === "All Models" ? (
+                  {value === "All Models" ? (
                       <Bot className="w-4 h-4 text-muted-foreground" />
                     ) : (
                       <img
                         src={icon}
-                        alt={prov}
+                        alt={value}
                         className="w-4 h-4 rounded-sm"
                       />
                     )}
-                    <span>{prov}</span>
+                    <span>{label}</span>
                   </div>
                 </SelectItem>
               );

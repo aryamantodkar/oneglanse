@@ -118,7 +118,6 @@ export async function scheduleCronForPrompts(args: {
       );
 }
 
-
 export async function storePromptResponses(args: {
     results: ModelResult;
     userId: string;
@@ -187,25 +186,26 @@ export async function fetchPromptResponsesForWorkspace(args: {
       format: "JSONEachRow",
     });
 
-    const data: PromptResponse[] = (await result.json()) as PromptResponse[];
+    const responses: PromptResponse[] = (await result.json()) as PromptResponse[];
 
-    // const filePath = path.join(process.cwd(), "mockData", "prompt_responses.json");
-    // const rawData = fs.readFileSync(filePath, "utf8");
-    // const data: PromptResponse[] = JSON.parse(rawData);
+    return responses;
+}
 
-    const domainStats = extractDomainStats(data);
-    const sourceStats = extractSourceStats(data);
+export async function fetchPromptSourcesForWorkspace(args: {
+  workspaceId: string;
+  userId: string;
+}) {
+  const { workspaceId, userId } = args;
 
-    // LOGGER
-    // const logPath = path.join(process.cwd(), "mockData", "fetchPromptResponses.json");
+  const promptResponses = await fetchPromptResponsesForWorkspace({ workspaceId, userId });
 
-    // fs.writeFileSync(logPath, JSON.stringify(enriched, null, 2));
+  const domainStats = extractDomainStats(promptResponses);
+  const sourceStats = extractSourceStats(promptResponses);
 
-    return {
-      responses: data,
-      domain_stats: domainStats,
-      sourceStats: sourceStats
-    };
+  return {
+    domain_stats: domainStats,
+    sourceStats: sourceStats
+  }
 }
 
 export async function fetchUserPromptsForWorkspace(args: {

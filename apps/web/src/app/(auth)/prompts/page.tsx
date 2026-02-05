@@ -29,11 +29,11 @@ import {
   Card,
   ScrollArea
 } from "@onescope/ui";
-import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, UserPrompt } from "@onescope/types";
+import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, Metric, PromptResponse, UserPrompt } from "@onescope/types";
 import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon } from "@onescope/utils";
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
-import { useAgentStatus, useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
+import { useAgentStatus, useFetchAnalysedPrompts, usePromptResponses, useUserPrompts } from "./_lib/queries/prompt.queries";
 import { filterMetrics, aggregatePromptMetrics } from "@onescope/utils";
 
 export default function Prompts() {
@@ -61,6 +61,7 @@ export default function Prompts() {
   const [expandedResponses, setExpandedResponses] = useState<Set<number>>(new Set());
 
   const [openPromptResponses, setOpenPromptResponses] = useState<Metric[]>([]);
+  const [allPromptResponses, setAllPromptResponses] = useState<PromptResponse[]>([]);
 
   const [originalMetricData, setOriginalMetricData] = useState<GroupedMetrics>({});
   const [jobId, setJobId] = useState<string | null>(null);
@@ -72,6 +73,12 @@ export default function Prompts() {
     isLoading: isUserPromptsLoading,
     error: userPromptsError,
   } = useUserPrompts(workspaceId);
+
+  const {
+    data: promptResponses,
+    isLoading: isPromptResponsesLoading,
+    error: promptResponsesError,
+  } = usePromptResponses(workspaceId);
   
   const {
     data: analysedPromptData,
@@ -94,7 +101,11 @@ export default function Prompts() {
       setPromptData(userPrompts.data);
       setInitialPrompts(userPrompts.data);
     }
-  }, [userPrompts]);
+
+    if(promptResponses?.data?.length){
+      setAllPromptResponses(promptResponses.data);
+    }
+  }, [userPrompts, promptResponses]);
 
   useEffect(() => {
     const models = new Set<string>();
@@ -146,7 +157,7 @@ export default function Prompts() {
       timeFilter,
       brandFilter,
     })
-  }, [metrics, modelFilter, timeFilter, brandFilter]);
+  }, [metrics, modelFilter, timeFilter, brandFilter, promptResponses]);
 
   useEffect(() => {
     if (!openPrompt) {

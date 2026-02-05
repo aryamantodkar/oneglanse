@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { ok, safeHandler } from "@onescope/errors";
-import { fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace } from "@onescope/services";
+import { fetchPromptResponsesForWorkspace, fetchUserPromptsForWorkspace, storePromptsForWorkspace, fetchPromptSourcesForWorkspace } from "@onescope/services";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 
 export const promptRouter = createTRPCRouter({
@@ -39,6 +39,21 @@ export const promptRouter = createTRPCRouter({
         return ok(res, "Fetched prompt responses successfully.");
       })
     }),
+
+  fetchPromptSources: authorizedWorkspaceProcedure
+    .query(async ({ ctx }) => {
+      return safeHandler(async () => {
+        const {
+          user: { id: userId },
+          workspaceId,
+        } = ctx;
+
+        const res = await fetchPromptSourcesForWorkspace({ workspaceId: workspaceId!, userId: userId!});
+
+        return ok(res, "Fetched prompt sources successfully.");
+      })
+    }),
+
   fetchUserPrompts: authorizedWorkspaceProcedure
     .query(async ({ ctx }) => {
       return safeHandler(async () => {
