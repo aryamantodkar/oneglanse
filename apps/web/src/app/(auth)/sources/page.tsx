@@ -62,13 +62,34 @@ export default function Sources() {
   }, [responses, selectedProvider]);
 
   const displayedDomainStats = useMemo(() => {
-    if (selectedProvider === "All Models") return domainStats?.combined;
-    return domainStats?.byModel[selectedProvider];
+    const stats =
+      selectedProvider === "All Models"
+        ? domainStats?.combined
+        : domainStats?.byModel[selectedProvider];
+  
+    if (!stats) return [];
+  
+    return [...stats].sort(
+      (a, b) =>
+        (b.usedPercentageAcrossAllDomains ?? 0) -
+        (a.usedPercentageAcrossAllDomains ?? 0)
+    );
   }, [domainStats, selectedProvider]);
 
   const displayedSourceStats = useMemo(() => {
-    if (selectedProvider === "All Models") return sourceStats?.combined;
-    return sourceStats?.byModel[selectedProvider];
+    const stats =
+      selectedProvider === "All Models"
+          ? sourceStats?.combined
+          : sourceStats?.byModel[selectedProvider];
+
+    if (!stats) return [];
+
+    return [...stats].sort(
+      (a, b) =>
+        (b.totalSources ?? 0) -
+        (a.totalSources ?? 0)
+    );
+
   }, [sourceStats, selectedProvider]);
 
   if (isLoading) {
@@ -186,7 +207,7 @@ export default function Sources() {
                     Used (%)
                   </TableHead>
                   <TableHead className="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Avg sources / link
+                    Avg Citations / link
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -358,7 +379,7 @@ export default function Sources() {
                                 <span
                                   className="bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5 rounded-full"
                                 >
-                                  {s.totalSources} Source{s.totalSources > 1 ? "s" : ""}
+                                  {s.totalSources} Citation{s.totalSources > 1 ? "s" : ""}
                                 </span>
                               )}
                             </div>

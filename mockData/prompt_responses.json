@@ -1,404 +1,151 @@
 [
   {
-    "id": "2f5f3d2e-7baf-495e-8357-25fff5406281",
+    "id": "6ce25773-41e4-4c24-b098-f7b9ae7d9be8",
     "prompt_id": "7af96448-dc82-430a-ad16-64d94d0773c6",
     "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
     "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
-    "model": "perplexity",
-    "model_provider": "perplexity",
-    "response": "For a bootstrapped startup that needs to start at (or near) zero and grow without switching tools, HubSpot CRM Free is usually the most affordable option that truly scales, with Zoho CRM and Freshsales as strong low-cost alternatives once you outgrow “free.”\nhubspot+3\n\nWhat “most affordable and scales” looks like\n\nFor your use case (solo founder → small team, lots of integrations, API-first mindset), you want:\n\nFree or near-free base cost for the first 6–12 months.\nmethod+2\n\nNo or very high user limits on the free tier.\nclaritysoft+2\n\nClear, incremental paid tiers (no “gotcha” jump to 4-figure contracts).\ncrm+2\n\nA path up to automation, custom pipelines, and stronger reporting.\nauthencio+3\n\nTop options for startups\n1. HubSpot CRM\n\nPrice: Free forever core CRM; paid Starter from low tens per month depending on hubs and seats.\nemailtooltester+4\n\nScale characteristics:\n\nUnlimited contacts on free plan (storage, not necessarily marketing usage).\nclaritysoft\n​\n\nEffectively unlimited users, but most are view-only; paid “core seats” needed for full edit rights.\ncargas+1\n\nFree includes contact & deal management, basic email tracking, meeting links, and simple reporting.\nhubspot+1\n\nTradeoffs:\n\nFree tier lacks automation workflows, lead scoring, and advanced reports, so serious scaling pushes you into paid hubs.\nmethod+2\n\nSeat-based pricing can add up as your core sales/CS team grows.\ncargas+1\n\nWhen it’s “most affordable”: If you’re solo or a micro-team and mainly need a system of record plus a basic pipeline, HubSpot lets you go quite far before you have to pay, while keeping a strong upgrade path once you can afford it.\nemailtooltester+2\n\n2. Zoho CRM\n\nPrice: Free for up to 3 users; paid tiers from around 14 USD/user/month annually for Standard.\nzenatta+2\n\nScale characteristics:\n\nFree plan: 3 users, 1 pipeline, basic contacts/leads/deals, 1 GB storage; no mass email or automation.\nmethod+1\n\nPaid Standard/Professional introduce automation, custom dashboards, and more reporting.\nauthencio+2\n\nTradeoffs:\n\nPer-seat pricing means costs grow linearly with your team.\nmethod\n​\n\nFree plan is solid but you will likely need to upgrade once you need automation or more sophisticated reporting.\nauthencio+1\n\nWhen it’s “most affordable”: If you expect a small, focused sales team (≤5–10 reps) and want inexpensive automation sooner than HubSpot’s paid tiers, Zoho can be cheaper than HubSpot at equivalent feature levels.\nzenatta+2\n\n3. Freshsales (Freshworks CRM)\n\nPrice: Free for up to 3 users; Growth plan from about 9 USD/user/month annually.\nbusinessnewsdaily+2\n\nScale characteristics:\n\nFree plan: up to 3 users with contact management, deals, built‑in email/phone.\ncrm\n​\n\nGrowth and Pro tiers add lead scoring, workflows, multi-pipelines, AI insights, and better reporting.\ncrm\n​\n\nTradeoffs:\n\nYou hit the free plan’s ceiling quickly if you need automation or more users.\ncapsulecrm+1\n\nAs you climb to Pro/Enterprise, pricing starts to resemble other mid-market CRMs.\ncapsulecrm+1\n\nWhen it’s “most affordable”: If you want a modern UX and AI features at relatively low per-seat cost for a 2–5 person sales team, Freshsales can be cheaper than HubSpot Pro/Enterprise while still scaling nicely.\nbusinessnewsdaily+2\n\nCost and scaling at a glance\nCRM\tFree users\tNotable free limits\tEntry paid pricing (approx)\tHow it scales cost-wise\nHubSpot\tUnlimited (mostly view-only) \nclaritysoft\n​\tNo workflows, limited reporting, 1 pipeline \nclaritysoft\n​\tStarter seats from low tens USD/month, per seat \nemailtooltester+2\n\tCheap to start, jumps as you add core seats and hubs \nclaritysoft+2\n\nZoho CRM\t3 users \nmethod+1\n\t1 pipeline, no mass email/automation \nmethod\n​\tStandard ~14 USD/user/month annually \nmethod+2\n\tPredictable per-user growth; still relatively low at small scale \nmethod+1\n\nFreshsales\t3 users \ncrm\n​\tBasic CRM only; AI/automation locked higher \ncrm\n​\tGrowth 9 USD/user/month annually \ncrm+1\n\tLow per-seat early; higher features cost more but stay linear \ncrm+1\nConcrete recommendation for you\n\nGiven you’re a technical founder likely integrating CRM with your own stack:\n\nStart in HubSpot Free to centralize contacts, deals, and basic emails while you’re solo or with a tiny team.\nhubspot+1\n\nAs soon as you need serious automation or want to control per-seat spend, re-evaluate Zoho Standard/Professional and Freshsales Growth; both give workflows and scoring at relatively low per-user prices.\nzenatta+3\n\nIf you tell me your expected team size in the next 18–24 months and whether you care more about automation vs. marketing email vs. reporting, I can narrow this down to a single best pick and a migration path.",
+    "model": "anthropic",
+    "model_provider": "anthropic",
+    "response": "Based on the 2025 data I just reviewed, here are the best affordable CRMs that scale with startups:\n\nHubSpot CRM is unbeatable for startups on a budget. The free version provides unlimited users and contacts with no time limits \nAI Frontdesk\n, and you can easily upgrade to paid tiers as your business expands to access advanced features like marketing automation and sales reporting \nAI Frontdesk\n. The Starter Bundle is only $15/month when you're ready to upgrade.\n\nZoho CRM offers the best value for paid features, with a free plan available and paid plans starting at just $14/user/month \nGoHighLevel\n. It includes AI forecasting, workflow automation, and multichannel contact management \nGoHighLevel\n, giving you enterprise-level features at startup prices.\n\nEngageBay is another budget option at $11/month with marketing automation included \nNutshell\n, making it ideal if you need CRM plus marketing tools from day one.\n\nNutshell provides strong features at $13-19/month per user \nNutshell\n and scales well without the pricing jumps you see with some platforms.\n\nThe smartest approach? Start with HubSpot's free tier to validate your CRM needs without spending anything. Once you hit its limitations or need automation, switch to Zoho CRM for the best feature-to-price ratio as you scale. This path keeps costs near zero early on but gives you a clear upgrade path that won't require a complete platform migration later.\n\nThe key advantage: simple CRMs can be implemented in 1-2 weeks versus months for enterprise solutions \nNutshell\n, so you're not losing momentum during critical early-stage growth.",
     "sources": [
       {
-        "title": "HubSpot's CRM has everything you need to organize, track, and build better relationships with leads and customers. Yes, it's 100% free. Forever.",
-        "cited_text": "hubspotFree Tools | HubSpotHubSpot's CRM has everything you need to organize, track, and build better relationships with leads and customers. Yes, it's 100% free. Forever.",
-        "url": "https://www.hubspot.com/pricing/crm",
-        "domain": "hubspot.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=hubspot.com"
+        "title": "AI Frontdesk",
+        "cited_text": "HubSpot CRM is unbeatable for startups on a budget. The free version provides unlimited users and contacts with no time limits",
+        "url": "https://www.myaifrontdesk.com/blogs/2025-s-best-crm-for-small-business-solutions",
+        "domain": "myaifrontdesk.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=myaifrontdesk.com&sz=32"
       },
       {
-        "title": "Think HubSpot CRM Is Really Free? Here's What No One Tells You ...",
-        "cited_text": "claritysoftThink HubSpot CRM Is Really Free? Here's What No One Tells You ...Learn what HubSpot CRM Free really offers, its limits, and when growing teams should upgrade, insights for smarter CRM choices in 2026.",
-        "url": "https://claritysoft.com/hubspot-free-plan-limitations/",
-        "domain": "claritysoft.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=claritysoft.com"
+        "title": "AI Frontdesk",
+        "cited_text": ", and you can easily upgrade to paid tiers as your business expands to access advanced features like marketing automation and sales reporting",
+        "url": "https://www.myaifrontdesk.com/blogs/2025-s-best-crm-for-small-business-solutions",
+        "domain": "myaifrontdesk.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=myaifrontdesk.com&sz=32"
       },
       {
-        "title": "How much does Zoho CRM cost? (2026 pricing breakdown)",
-        "cited_text": "methodHow much does Zoho CRM cost? (2026 pricing breakdown)Learn everything you need know about Zoho CRM costs and whether the software solution is right for your business.",
-        "url": "https://www.method.me/blog/zoho-crm-cost/",
-        "domain": "method.me",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=method.me"
+        "title": "GoHighLevel",
+        "cited_text": "Zoho CRM offers the best value for paid features, with a free plan available and paid plans starting at just $14/user/month",
+        "url": "https://www.gohighlevel.com/post/top-10-crm-platforms-for-small-businesses",
+        "domain": "gohighlevel.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=gohighlevel.com&sz=32"
       },
       {
-        "title": "Freshsales CRM Review 2026: Pricing, Features, and Ease of Use",
-        "cited_text": "crmFreshsales CRM Review 2026: Pricing, Features, and Ease of UseRead our full Freshsales CRM review & see Freshworks CRM offerings pros & cons. Is Freshworks worth it, or are pricing plans too high for the features included?",
-        "url": "https://crm.org/news/freshworks-freshsales-crm-review",
-        "domain": "crm.org",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=crm.org"
+        "title": "GoHighLevel",
+        "cited_text": ". It includes AI forecasting, workflow automation, and multichannel contact management",
+        "url": "https://www.gohighlevel.com/post/top-10-crm-platforms-for-small-businesses",
+        "domain": "gohighlevel.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=gohighlevel.com&sz=32"
       },
       {
-        "title": "Hubspot Pricing 2026: How to Avoid Paying Too Much",
-        "cited_text": "emailtooltesterHubspot Pricing 2026: How to Avoid Paying Too MuchHubspot has a lot to offer SMEs and big companies (CRM and sales tools, email marketing, customer support, etc.). But how much does it cost? Find out here.",
-        "url": "https://www.emailtooltester.com/en/crm/hubspot-review/pricing/",
-        "domain": "emailtooltester.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=emailtooltester.com"
-      },
-      {
-        "title": "Zoho CRM Guide 2026: Features, Pricing, Pros & Cons ... - AuthenCIO",
-        "cited_text": "authencioZoho CRM Guide 2026: Features, Pricing, Pros & Cons ... - AuthenCIOPlanPrice Range (per user/month)Best ForKey Features IncludedNotes Free (up to 3 users)Startups and very small teamsLead & contact managementGenuine free-forever plan ~$14–$20Small teams starting with CRMScoring rules, workflow automation, custom dashboardsAffordable entry plan with essential automation",
-        "url": "https://www.authencio.com/blog/zoho-crm-guide-features-pricing-pros-cons-and-alternatives",
-        "domain": "authencio.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=authencio.com"
-      },
-      {
-        "title": "HubSpot Pricing (2026 Guide) – Forbes Advisor",
-        "cited_text": "forbesHubSpot Pricing (2026 Guide) – Forbes Advisor",
-        "url": "https://www.forbes.com/advisor/business/hubspot-crm-pricing/",
-        "domain": "forbes.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=forbes.com"
-      },
-      {
-        "title": "2026 HubSpot Pricing Guide - Cargas",
-        "cited_text": "cargas2026 HubSpot Pricing Guide - Cargas",
-        "url": "https://cargas.com/software/hubspot/pricing/",
-        "domain": "cargas.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=cargas.com"
-      },
-      {
-        "title": "How much does HubSpot cost? (2026 pricing breakdown) — Method",
-        "cited_text": "methodHow much does HubSpot cost? (2026 pricing breakdown) — MethodHow much does HubSpot cost? To avoid costly surprises, we break down its Hubs pricing, plus hidden onboarding fees, seat types, and add‑ons.",
-        "url": "https://www.method.me/blog/how-much-does-hubspot-cost/",
-        "domain": "method.me",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=method.me"
-      },
-      {
-        "title": "Zoho Pricing Guide (2026) - Zenatta Consulting",
-        "cited_text": "zenattaZoho Pricing Guide (2026) - Zenatta ConsultingSave big with Zoho! Here is a complete Zoho pricing guide for 2026 including all key applications and more!",
-        "url": "https://zenatta.com/zoho-pricing-guide-2025/",
-        "domain": "zenatta.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=zenatta.com"
-      },
-      {
-        "title": "Freshsales CRM Review and Pricing in 2026",
-        "cited_text": "businessnewsdailyFreshsales CRM Review and Pricing in 2026Learn what makes Freshsales CRM unique in a competitive customer relationship management platform market.",
-        "url": "https://www.businessnewsdaily.com/16144-freshworks-crm.html/1000",
-        "domain": "businessnewsdaily.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=businessnewsdaily.com"
-      },
-      {
-        "title": "Freshworks CRM Pricing – is it worth the cost?",
-        "cited_text": "capsulecrmFreshworks CRM Pricing – is it worth the cost?How much is Freshsales CRM in 2025 – and what are your alternatives? Read on.",
-        "url": "https://capsulecrm.com/blog/freshsales-crm-pricing/",
-        "domain": "capsulecrm.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=capsulecrm.com"
-      },
-      {
-        "title": "Streamline Your Entire Business With a Free CRM - HubSpot",
-        "cited_text": "hubspotStreamline Your Entire Business With a Free CRM - HubSpotHubSpot’s free CRM powers your customer support, sales, and marketing with easy-to-use features like live chat, meeting scheduling, and email tracking.",
-        "url": "https://www.hubspot.com/products/crm",
-        "domain": "hubspot.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=hubspot.com"
-      },
-      {
-        "title": "Understand HubSpot Credits and billing",
-        "cited_text": "knowledge.hubspotUnderstand HubSpot Credits and billingManage and track your HubSpot Credits efficiently to optimize usage and control your budget. Learn about included credits, purchasing options, and setting limits.",
-        "url": "https://knowledge.hubspot.com/account-management/understand-hubspot-credits-and-billing",
-        "domain": "knowledge.hubspot.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=knowledge.hubspot.com"
-      },
-      {
-        "title": "Zoho CRM Pricing and Editions - Free for 3 users",
-        "cited_text": "zohoZoho CRM Pricing and Editions - Free for 3 usersAffordable Online CRM software for managing organization-wide sales and marketing activities in a single system. Free for 3 users",
-        "url": "https://www.zoho.com/crm/zohocrm-pricing.html",
-        "domain": "zoho.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=zoho.com"
-      }
-    ],
-    "prompt_run_at": "2026-02-04 01:31:53",
-    "created_at": "2026-02-04 02:54:50"
-  },
-  {
-    "id": "0d645021-fdf3-4699-b0cf-a38b4ef06f83",
-    "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
-    "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
-    "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
-    "model": "perplexity",
-    "model_provider": "perplexity",
-    "response": "For 2025, the CRMs most consistently praised as user friendly for small businesses are HubSpot CRM, Pipedrive, Freshsales, and “simple-first” tools like Nutshell and Less Annoying CRM.\npcmag+8\n\nStandout “easy to use” options\n\nHubSpot CRM – Often called out as very intuitive, with a clean interface and minimal learning curve, especially good if you don’t have internal IT support.\nnimble+2\n\nPipedrive – Frequently highlighted for its visual, drag‑and‑drop pipeline that small teams pick up quickly; popular with sales-focused small businesses.\nmonday+3\n\nFreshsales – Noted in multiple reviews as having an intuitive UI and smooth onboarding, with helpful in-app guidance and AI assistant.\nzixflow+2\n\nNutshell – Positioned explicitly as an “easy-to-use CRM” with fast implementation and strong support, designed for SMBs wanting simplicity plus automation.\nnutshell\n​\n\nLess Annoying CRM – Consistently recommended when “simplest possible CRM” is the priority over deep features.\nnutshell\n​\n\nQuick comparison for small biz friendliness\nCRM\tEase-of-use angle\tBest fit in practice\nHubSpot CRM\tClean UI, low learning curve, large ecosystem \nnimble+2\n\tSmall teams wanting modern UI + marketing/sales in one\nPipedrive\tDrag‑and‑drop visual pipeline, fast setup \nmonday+3\n\tSales-led small businesses that live in the pipeline\nFreshsales\tIntuitive dashboards, guided setup, AI helper \npcmag+2\n\tTeams wanting ease + AI features without heavy admin\nNutshell\tBuilt for SMBs, “next‑action” workflow, strong support \nnutshell\n​\tGrowing teams needing simple but structured sales process\nLess Annoying CRM\tUltra-simple interface, minimal configuration \nnutshell\n​\tVery small or non-technical teams just leaving spreadsheets\n\nIf you tell me your priority (sales-only vs sales+marketing, and how non-technical your users are), I can narrow this to one “default” choice plus a backup.",
-    "sources": [
-      {
-        "title": "The Best Small Business CRM Software for 2026 - PCMag",
-        "cited_text": "pcmagThe Best Small Business CRM Software for 2026 - PCMagCustomer relationship management (CRM) doesn't have to be costly and complicated. Start with the best small-business-friendly CRM software we've tested.",
-        "url": "https://www.pcmag.com/picks/the-best-small-business-crm-software",
-        "domain": "pcmag.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=pcmag.com"
-      },
-      {
-        "title": "Best CRM for Small Business in 2025 - Nimble Blog",
-        "cited_text": "nimbleBest CRM for Small Business in 2025 - Nimble BlogIf you own a small business, then you're familiar with CRM (Customer Relationship Management) tools. In 2025, CRM software is no longer a luxury for large",
-        "url": "https://www.nimble.com/blog/best-crm-for-small-business-in-2025/",
-        "domain": "nimble.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=nimble.com"
-      },
-      {
-        "title": "Best Easy-to-Use CRMs for Small Businesses in 2025 - Nutshell CRM",
-        "cited_text": "nutshellBest Easy-to-Use CRMs for Small Businesses in 2025 - Nutshell CRMCompare the 8 best easy-to-use CRMs for small businesses in 2025. See detailed reviews, pricing, and side-by-side comparisons to find the right CRM for your team.",
+        "title": "Nutshell",
+        "cited_text": "EngageBay is another budget option at $11/month with marketing automation included",
         "url": "https://www.nutshell.com/blog/easy-to-use-crms",
         "domain": "nutshell.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=nutshell.com"
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
       },
       {
-        "title": "Top 10 simple CRM platforms for any business [2026] - Monday.com",
-        "cited_text": "mondayTop 10 simple CRM platforms for any business [2026] - Monday.comLearn about the most important features of a simple CRM, our top picks for simple solutions, and why monday CRM is the most flexible option.",
-        "url": "https://monday.com/blog/crm-and-sales/simple-crm/",
-        "domain": "monday.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=monday.com"
+        "title": "Nutshell",
+        "cited_text": "Nutshell provides strong features at $13-19/month per user",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
       },
       {
-        "title": "The 10 best CRMs for small businesses to choose from in 2025",
-        "cited_text": "textmagicThe 10 best CRMs for small businesses to choose from in 2025Discover the best CRM for small businesses, designed to boost customer relationships, streamline operations, and drive growth.",
-        "url": "https://www.textmagic.com/blog/best-crm-small-businesses/",
-        "domain": "textmagic.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=textmagic.com"
-      },
-      {
-        "title": "HubSpot vs. the Competition: Assessing the Best CRM for Small ...",
-        "cited_text": "peddlingHubSpot vs. the Competition: Assessing the Best CRM for Small ...Compare HubSpot with top CRM competitors in 2025 to find the best solution for your small business. Discover key features, benefits, and what sets HubSpot apart",
-        "url": "https://peddling.io/blog/hubspot-vs-competition",
-        "domain": "peddling.io",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=peddling.io"
-      },
-      {
-        "title": "Top 10 CRM for Small Businesses - Monday.com",
-        "cited_text": "mondayTop 10 CRM for Small Businesses - Monday.comA CRM for small business is essential. Learn why, what our top 10 picks are, key features to look out for, and how to leverage monday CRM for your team.",
-        "url": "https://monday.com/blog/crm-and-sales/crm-for-small-business/",
-        "domain": "monday.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=monday.com"
-      },
-      {
-        "title": "The Best CRM Software We've Tested for 2026 | PCMag",
-        "cited_text": "pcmagThe Best CRM Software We've Tested for 2026 | PCMagCustomers are vital to any business, and customer relation management (CRM) systems can help you maximize every interaction. We help you choose the best CRM for your business among our top-tested picks.",
-        "url": "https://www.pcmag.com/picks/the-best-crm-software",
-        "domain": "pcmag.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=pcmag.com"
-      },
-      {
-        "title": "Freshsales vs Zoho CRM: Which CRM Is Better for You in 2025?",
-        "cited_text": "zixflowFreshsales vs Zoho CRM: Which CRM Is Better for You in 2025?The comprehensive guide comparing Freshsales vs Zoho CRM delves into their lead management, sales automation, marketing, pricing, and other crucial features.",
-        "url": "https://zixflow.com/blog/freshsales-vs-zoho-crm/",
-        "domain": "zixflow.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=zixflow.com"
-      },
-      {
-        "title": "What is the best CRM for a small business in 2025 : r/sales - Reddit",
-        "cited_text": "redditWhat is the best CRM for a small business in 2025 : r/sales - RedditWhat is the best CRM for a small business in 2025",
-        "url": "https://www.reddit.com/r/sales/comments/1iv34pb/what_is_the_best_crm_for_a_small_business_in_2025/",
-        "domain": "reddit.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=reddit.com"
-      },
-      {
-        "title": "Pipedrive vs Monday: Best CRM & Project Tool for 2025 - Advaiya",
-        "cited_text": "advaiyaPipedrive vs Monday: Best CRM & Project Tool for 2025 - AdvaiyaCompare Pipedrive vs monday.com features, pricing, and capabilities. Find the best CRM and project management solution for your business needs in 2025.",
-        "url": "https://advaiya.com/pipedrive-vs-monday/",
-        "domain": "advaiya.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=advaiya.com"
-      },
-      {
-        "title": "Budget-Friendly AI CRM Solutions: Comparing Zoho CRM, HubSpot ...",
-        "cited_text": "superagiBudget-Friendly AI CRM Solutions: Comparing Zoho CRM, HubSpot ...In today's fast-paced business landscape, small to medium-sized businesses are constantly looking for ways to streamline their sales and marketing efforts while staying within their budget. With the rise of Artificial Intelligence (AI) in Customer Relationship Management (CRM) solutions, businesses can now automate tasks, analyze customer data, and make informed decisions. According to recent research,",
-        "url": "https://superagi.com/budget-friendly-ai-crm-solutions-comparing-zoho-crm-hubspot-and-freshsales-for-small-to-medium-businesses/",
-        "domain": "superagi.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=superagi.com"
-      },
-      {
-        "title": "5 Best CRM for Small Business in 2025 - YouTube",
-        "cited_text": "youtube5 Best CRM for Small Business in 2025 - YouTube5 Best CRM for Small Business in 2025. Are you looking for the best CRM for your small business? We analyze five leading platforms, including Thryv, Zoho CRM, Pipedrive, Monday CRM, and GoHighLevel. We will explore the specific features, pricing, and best-use cases to help you find the right solution for your team. Not sure which CRM tool suits your team? Take this short quiz to find out: http://quotes.expertmarket.com/crm/?cid=68e4ec75e342f Best CRM Software for Small Business List: (Paid...",
-        "url": "https://www.youtube.com/watch?v=_JtqxZuxwXY",
-        "domain": "youtube.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=youtube.com"
-      },
-      {
-        "title": "Best crm for small business: Top 7 picks for smarter growth in 2025",
-        "cited_text": "cloudvaraBest crm for small business: Top 7 picks for smarter growth in 2025Looking for the best crm for small business? Compare top platforms, pricing, and integrations in our 2025 guide to find your perfect fit.",
-        "url": "https://cloudvara.com/best-crm-for-small-business/",
-        "domain": "cloudvara.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=cloudvara.com"
-      },
-      {
-        "title": "10 Best Small Business CRM Software Of 2026 - Forbes",
-        "cited_text": "forbes10 Best Small Business CRM Software Of 2026 - Forbes",
-        "url": "https://www.forbes.com/advisor/personal-finance/best-crm-small-business/",
-        "domain": "forbes.com",
-        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=forbes.com"
+        "title": "Nutshell",
+        "cited_text": "The key advantage: simple CRMs can be implemented in 1-2 weeks versus months for enterprise solutions",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
       }
     ],
-    "prompt_run_at": "2026-02-04 01:31:53",
-    "created_at": "2026-02-04 02:54:50"
+    "prompt_run_at": "2026-02-04 01:27:03",
+    "created_at": "2026-02-05 10:20:22"
   },
   {
-    "id": "c1494f03-a3a7-4faa-99b6-6fa61c6c11bd",
+    "id": "baa3a8a3-b1a8-4fea-8b1a-1b7abfa1ce6c",
     "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
     "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
     "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
     "model": "anthropic",
     "model_provider": "anthropic",
-    "response": "Based on recent reviews, here are the most user-friendly CRM options for small businesses in 2025:\n\nHubSpot CRM consistently ranks as the easiest to use, with an intuitive interface that requires minimal training. The free version is remarkably generous with unlimited users and contacts, making it perfect if you're just starting out. You get core features like contact management, email tracking, sales pipeline visualization, and live chat. Paid plans start at $15-50/month if you need marketing automation or advanced reporting.\n\nLess Annoying CRM lives up to its name with the simplest interface available. It costs just $15/user/month with no feature tiers or hidden costs. Multiple sources highlight it as having essentially zero learning curve, making it ideal if you want something straightforward without complexity.\n\nPipedrive excels if your priority is sales pipeline management. Its visual, drag-and-drop interface makes tracking deals intuitive, and users praise how quickly teams can get up to speed. Pricing starts around $14-19/month per user.\n\nZoho CRM offers excellent value with robust features at affordable prices (around $14-20/month per user). It's particularly strong for remote teams with good integration across communication tools like Microsoft Teams and Google Chat. The customization options are extensive without being overwhelming.\n\nFreshsales from Freshworks combines ease of use with AI-powered features and built-in communication tools. Users appreciate its clean interface and smart automation that doesn't require technical expertise.\n\nFor implementation, most of these can be set up in 1-2 weeks versus the months required for enterprise platforms like Salesforce. The key is starting with basic contact management and gradually adding features as your team gets comfortable.\n\nWhat's your main priority—keeping costs low, sales pipeline tracking, or integration with specific tools you already use?",
-    "sources": [],
+    "response": "Based on 2025 reviews, here are the most user-friendly CRM options for small businesses:\n\nHubSpot CRM stands out as the most popular choice for ease of use. It offers a generous free version with unlimited users and contacts, an intuitive interface that requires minimal training, and integrates well with marketing and sales tools \nBest Easy-to-Use CRMs for Small Businesses in 2025 | Nutshell +2\n. The free tier has no time limits, making it ideal for businesses just starting out.\n\nLess Annoying CRM lives up to its name with the simplest interface at just $15/month \nNutshell\n. It's specifically designed for small businesses that want straightforward contact management without complexity.\n\nNutshell is highly rated with a 4.8/5 score for overall user experience and costs $13-19/user/month \nNutshell\n. It balances powerful features with an approachable interface.\n\nZoho CRM provides excellent value starting at $14/user/month with AI features, automation, and a free plan option \nBusiness News Daily\nGoHighLevel\n. It's particularly good for remote teams since it integrates well with communication tools like Microsoft Teams and Google Chat.\n\nPipedrive excels if you're sales-focused, offering an intuitive visual pipeline design that requires minimal training \nAI Frontdesk\n. It strikes a balance between simplicity and sales-specific functionality.\n\nFor most small businesses, I'd recommend starting with HubSpot's free tier to test CRM waters, or Nutshell if you want affordable paid features from day one. The key is that most easy-to-use CRMs can be implemented in just 1-2 weeks \nNutshell\n, so you're not facing a lengthy setup process.",
+    "sources": [
+      {
+        "title": "Best Easy-to-Use CRMs for Small Businesses in 2025 | Nutshell +2",
+        "cited_text": "HubSpot CRM stands out as the most popular choice for ease of use. It offers a generous free version with unlimited users and contacts, an intuitive interface that requires minimal training, and integrates well with marketing and sales tools",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
+      },
+      {
+        "title": "Nutshell",
+        "cited_text": "Less Annoying CRM lives up to its name with the simplest interface at just $15/month",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
+      },
+      {
+        "title": "Nutshell",
+        "cited_text": "Nutshell is highly rated with a 4.8/5 score for overall user experience and costs $13-19/user/month",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
+      },
+      {
+        "title": "Business News Daily",
+        "cited_text": "Zoho CRM provides excellent value starting at $14/user/month with AI features, automation, and a free plan option",
+        "url": "https://www.businessnewsdaily.com/7839-best-crm-software.html",
+        "domain": "businessnewsdaily.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=businessnewsdaily.com&sz=32"
+      },
+      {
+        "title": "GoHighLevel",
+        "cited_text": "Zoho CRM provides excellent value starting at $14/user/month with AI features, automation, and a free plan option",
+        "url": "https://www.gohighlevel.com/post/top-10-crm-platforms-for-small-businesses",
+        "domain": "gohighlevel.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=gohighlevel.com&sz=32"
+      },
+      {
+        "title": "AI Frontdesk",
+        "cited_text": "Pipedrive excels if you're sales-focused, offering an intuitive visual pipeline design that requires minimal training",
+        "url": "https://www.myaifrontdesk.com/blogs/2025-s-best-crm-for-small-business-solutions",
+        "domain": "myaifrontdesk.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=myaifrontdesk.com&sz=32"
+      },
+      {
+        "title": "Nutshell",
+        "cited_text": "For most small businesses, I'd recommend starting with HubSpot's free tier to test CRM waters, or Nutshell if you want affordable paid features from day one. The key is that most easy-to-use CRMs can be implemented in just 1-2 weeks",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
+      }
+    ],
     "prompt_run_at": "2026-02-04 01:27:03",
-    "created_at": "2026-02-04 01:29:00"
+    "created_at": "2026-02-05 10:20:22"
   },
   {
-    "id": "c2ae316b-0f9a-4fd1-89f7-995aaee0501a",
+    "id": "e3f6282e-14af-4657-a665-c32924cd1622",
+    "prompt_id": "7af96448-dc82-430a-ad16-64d94d0773c6",
+    "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
+    "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
+    "model": "openai",
+    "model_provider": "openai",
+    "response": "ChatGPT said:",
+    "sources": [],
+    "prompt_run_at": "2026-02-04 01:27:03",
+    "created_at": "2026-02-05 10:20:22"
+  },
+  {
+    "id": "d816b49b-0bf8-47d0-8cb5-d2f40f756aec",
     "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
     "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
     "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
     "model": "openai",
     "model_provider": "openai",
-    "response": "Here’s a roundup of the most user-friendly CRM software for small businesses in 2025, based on recent expert reviews and industry lists. These options are both easy to adopt for beginners and powerful enough to support growth: \nNimble\n+2\nZapier\n+2\n\n🌟 Top User-Friendly CRM Software for Small Businesses (2025)\n✅ HubSpot CRM – Best Overall for Ease of Use\n\nOne of the most intuitive CRMs around with a clean interface and drag-and-drop tools.\n\nFree forever plan with contact/deal management, email tracking, and meeting scheduling — great for startups and small teams.\n\nScales into paid plans as needs grow. \nNimble\n+1\n\nBest for: New businesses, solo founders, teams new to CRM\n\n🟢 Pipedrive – Top for Simple Sales Pipeline Management\n\nKnown for its visual pipeline and straightforward design that’s easy to learn.\n\nFocuses on moving deals through stages with minimal setup.\n\nStrong automation and integrations with tools like Zapier. \nZapier\n+1\n\nBest for: Sales-focused small teams that want clarity and speed\n\n📇 OnePageCRM – Built for Small Business Simplicity\n\nLightweight, minimal learning curve with a single-page workflow that keeps everything easy to manage.\n\nSyncs with email and automates follow-ups with a straightforward layout. \nOnePageCRM\n+1\n\nBest for: Solo founders and very small teams\n\n🧠 Zoho CRM – Simple Yet Flexible\n\nEasy interface with core CRM features and AI tools to help with insights and automation.\n\nMore scalable than most simple CRMs if you plan to grow. \nZapier\n+1\n\nBest for: Small businesses that want both simplicity and room to grow\n\n⭐ Less Annoying CRM – Simple and Inexpensive\n\nAs the name suggests, it’s ultra-simple with minimal setup.\n\nQuick onboarding and straightforward contact/lead management. \nU.S. Chamber of Commerce\n\nBest for: Budget-conscious beginners or very small teams\n\n🧪 Other Notable Mentions\n\nFreshsales (Freshworks) – Easy UI with AI assistance and basic CRM tools. \nForbes\n\nCopper CRM – Works well for Google Workspace users with clean Gmail integration. \nZapier\n\n🧠 Quick Tips for Choosing a User-Friendly CRM\n\nTry free plans first – Most offer no-risk trials or free tiers so you can test ease of use before committing.\n\nMatch to your workflow – Simpler CRMs that focus on contacts and pipelines are easier to adopt than full enterprise suites. \nFaye\n\nConsider integrations – Easy syncing with email, calendar, and other tools keeps the experience seamless.\n\nIf you’d like, I can tailor this list further to your specific industry or business size (e.g., service-based, retail, field sales), which might help you pick the best fit.",
-    "sources": [
-      {
-        "title": "Best CRM for Small Business in 2025 - Nimble Blog",
-        "cited_text": "May 27, 2025 — HubSpot CRM is the best pick for those who want an advanced, easy-to-use CRM for operating a small business, and with no cost at all. It ...Read more",
-        "url": "https://www.nimble.com/blog/best-crm-for-small-business-in-2025/?utm_source=chatgpt.com",
-        "domain": "nimble.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=https://www.nimble.com&sz=32"
-      },
-      {
-        "title": "The 12 best CRM software in 2025",
-        "cited_text": "15 May 2025 — Salesforce Sales Cloud for extensibility. HubSpot for versatility. Zoho CRM for AI features. Pipedrive for ease of use.Read more",
-        "url": "https://zapier.com/blog/best-crm-app/?utm_source=chatgpt.com",
-        "domain": "zapier.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=https://zapier.com&sz=32"
-      },
-      {
-        "title": "17 Best CRM Software for Small Business (2026 Review)",
-        "cited_text": "That's why OnePageCRM is the best CRM for small businesses, solo founders, and sales professionals. Editor's Note. These CRM reviews were conducted in July 2025 ...Read more",
-        "url": "https://www.onepagecrm.com/blog/best-small-business-crms/?utm_source=chatgpt.com",
-        "domain": "onepagecrm.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=https://www.onepagecrm.com&sz=32"
-      },
-      {
-        "title": "10 Free or Low-Cost CRM Tools for Small Businesses",
-        "cited_text": "Apr 30, 2025 — Less Annoying CRM: best simple CRM for beginners. Less Annoying CRM is a straightforward, low-cost CRM with a quick setup process and minimal ...Read more",
-        "url": "https://www.uschamber.com/co/start/strategy/low-cost-crm-tools?utm_source=chatgpt.com",
-        "domain": "uschamber.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=uschamber.com&sz=32"
-      },
-      {
-        "title": "10 Best Simple CRMs of 2025",
-        "cited_text": "Jul 25, 2025 — Zoho CRM offers everything SMBs need in a simple CRM with user-friendly tools, an easy-to-navigate interface and prices that won't scare you.Read more",
-        "url": "https://www.forbes.com/advisor/business/software/best-simple-crm/?utm_source=chatgpt.com",
-        "domain": "forbes.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=forbes.com&sz=32"
-      },
-      {
-        "title": "Best CRM Software for Small Business: A Simple Guide",
-        "cited_text": "Sep 30, 2025 — Find the best CRM for small business with this simple guide. Compare features, benefits, and leading platforms to boost sales and growth.",
-        "url": "https://fayedigital.com/blog/best-crm-for-small-business/?utm_source=chatgpt.com",
-        "domain": "fayedigital.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=fayedigital.com&sz=32"
-      },
-      {
-        "title": "The 10 Best CRM Platforms of 2025",
-        "cited_text": "Dec 16, 2025 — Explore our guide to 10 of the best CRM platforms on the market. We cover their features, pricing, and more, to help you make the right ...",
-        "url": "https://www.salesforce.com/au/crm/crm-pricing-guide/?utm_source=chatgpt.com",
-        "domain": "salesforce.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=salesforce.com&sz=32"
-      },
-      {
-        "title": "OnePageCRM | Simple & Easy-to-Use CRM for Small Business",
-        "cited_text": "Simple, lightweight, easy-to-use CRM tool for small businesses. Rated as the best CRM to track leads, stay organized, and follow up. Try free.",
-        "url": "https://www.onepagecrm.com/?utm_source=chatgpt.com",
-        "domain": "onepagecrm.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=https://www.onepagecrm.com&sz=32"
-      },
-      {
-        "title": "10 Best CRM Software Of 2026",
-        "cited_text": "Jan 21, 2026 — Agile CRM offers the best free plan in the CRM space. With support for 10 users, and myriad tools, small teams can get the job done without ...Read more",
-        "url": "https://www.forbes.com/advisor/business/software/best-crm-software/?utm_source=chatgpt.com",
-        "domain": "forbes.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=forbes.com&sz=32"
-      },
-      {
-        "title": "Top 10 simple CRM platforms for any business [2025]",
-        "cited_text": "Nov 6, 2025 — Learn about the most important features of a simple CRM, our top picks for simple solutions, and why monday CRM is the most flexible option.",
-        "url": "https://monday.com/blog/crm-and-sales/simple-crm/?utm_source=chatgpt.com",
-        "domain": "monday.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=monday.com&sz=32"
-      },
-      {
-        "title": "10 Best CRM Software to Grow Your Small Business in 2025",
-        "cited_text": "Keap is cloud-based CRM software that offers a sale and marketing solution for small businesses, including marketing automation and eCommerce functionalities.Read more",
-        "url": "https://www.cloudeagle.ai/blogs/10-best-crm-software-to-grow-your-small-business-in-2021?utm_source=chatgpt.com",
-        "domain": "cloudeagle.ai",
-        "favicon": "https://www.google.com/s2/favicons?domain=cloudeagle.ai&sz=32"
-      },
-      {
-        "title": "Best Affordable CRM Software for Small Businesses 2025",
-        "cited_text": "Nov 19, 2025 — HubSpot's free CRM has become the go-to starting point for many small businesses, and for good reason. It offers robust features at no cost, ...Read more",
-        "url": "https://www.nutshell.com/blog/best-affordable-crm?utm_source=chatgpt.com",
-        "domain": "nutshell.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
-      },
-      {
-        "title": "Top 11 CRM Software in 2025 (Features, Pricing & Reviews)",
-        "cited_text": "Oct 17, 2025 — Explore the best CRM software, including Dynamics 365, Salesforce, HubSpot, and more. Compare features, pricing, and find the right CRM.",
-        "url": "https://erpsoftwareblog.com/2025/10/top-crm-software/?utm_source=chatgpt.com",
-        "domain": "erpsoftwareblog.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=erpsoftwareblog.com&sz=32"
-      },
-      {
-        "title": "10 Best CRM Software for Small Business 2025",
-        "cited_text": "10 Best CRM Software for Small Business 2025 · 1. HubSpot CRM: Best Free All-in-One Starter · 2. Pipedrive: Best for Sales Teams · 3. Zoho CRM: ...Read more",
-        "url": "https://www.linkedin.com/pulse/10-best-crm-software-small-business-2025-routine-automation-dwewf?utm_source=chatgpt.com",
-        "domain": "linkedin.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=linkedin.com&sz=32"
-      },
-      {
-        "title": "Best crm for small business: Top 7 picks for smarter growth ...",
-        "cited_text": "User-Friendly Interface: HubSpot is renowned for its intuitive design, making it simple for non-technical users to adopt and use effectively from the start.Read more",
-        "url": "https://cloudvara.com/best-crm-for-small-business/?utm_source=chatgpt.com",
-        "domain": "cloudvara.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=cloudvara.com&sz=32"
-      },
-      {
-        "title": "10 Best CRM Tools for Small Businesses in 2025",
-        "cited_text": "Pipedrive is a sales-focused CRM known for its user-friendly interface, powerful automation, and seamless integration with apps like Zapier. It's ideal for ...Read more",
-        "url": "https://www.textmagic.com/blog/best-crm-small-businesses/?utm_source=chatgpt.com",
-        "domain": "textmagic.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=textmagic.com&sz=32"
-      },
-      {
-        "title": "Best CRM Solutions for Small Business: 2025 Comparison",
-        "cited_text": "Best CRM Solutions for Small Business: 2025 Comparison · 1. HubSpot CRM · 2. Salesforce Essentials · 3. Zoho CRM · 4. CRM Experts Online · 5. Freshsales.Read more",
-        "url": "https://crmexpertsonline.com/best-crm-solutions-for-small-business-2025-comparison/?utm_source=chatgpt.com",
-        "domain": "crmexpertsonline.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=crmexpertsonline.com&sz=32"
-      },
-      {
-        "title": "10 Best CRM Software Of 2025",
-        "cited_text": "Jun 18, 2025 — My testing shows that Zoho CRM is the best option for most small businesses. However, many other platforms deserve your attention. Read on ...Read more",
-        "url": "https://morriscountyedc.org/10-best-crm-software-of-2025/?utm_source=chatgpt.com",
-        "domain": "morriscountyedc.org",
-        "favicon": "https://www.google.com/s2/favicons?domain=morriscountyedc.org&sz=32"
-      },
-      {
-        "title": "What is the best CRM for a small business in 2025 : r/sales",
-        "cited_text": "Personally I like Hubspot. Easy to use, offer lots of integration and has a large ecosystem. But the list above lets you filter and read reviews from users.Read more",
-        "url": "https://www.reddit.com/r/sales/comments/1iv34pb/what_is_the_best_crm_for_a_small_business_in_2025/?utm_source=chatgpt.com",
-        "domain": "reddit.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=reddit.com&sz=32"
-      },
-      {
-        "title": "Top CRM Software Features Every Small Business Needs",
-        "cited_text": "Aug 4, 2025 — Top CRM Software Features Every Small Business Needs in 2025 · 1. Contact Management · 2. Automated Lead Capture · 3. Segmentation · 4. Automated ...Read more",
-        "url": "https://keap.com/small-business-automation-blog/business-management/top-crm-software-features-every-small-business-needs-2025?utm_source=chatgpt.com",
-        "domain": "keap.com",
-        "favicon": "https://www.google.com/s2/favicons?domain=keap.com&sz=32"
-      }
-    ],
+    "response": "ChatGPT said:",
+    "sources": [],
     "prompt_run_at": "2026-02-04 01:27:03",
-    "created_at": "2026-02-04 01:29:00"
+    "created_at": "2026-02-05 10:20:22"
   },
   {
     "id": "e74874c9-d928-4955-a597-b1164d041b21",
@@ -433,6 +180,18 @@
     ],
     "prompt_run_at": "2026-02-04 01:27:03",
     "created_at": "2026-02-04 01:34:32"
+  },
+  {
+    "id": "c1494f03-a3a7-4faa-99b6-6fa61c6c11bd",
+    "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
+    "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
+    "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
+    "model": "anthropic",
+    "model_provider": "anthropic",
+    "response": "Based on recent reviews, here are the most user-friendly CRM options for small businesses in 2025:\n\nHubSpot CRM consistently ranks as the easiest to use, with an intuitive interface that requires minimal training. The free version is remarkably generous with unlimited users and contacts, making it perfect if you're just starting out. You get core features like contact management, email tracking, sales pipeline visualization, and live chat. Paid plans start at $15-50/month if you need marketing automation or advanced reporting.\n\nLess Annoying CRM lives up to its name with the simplest interface available. It costs just $15/user/month with no feature tiers or hidden costs. Multiple sources highlight it as having essentially zero learning curve, making it ideal if you want something straightforward without complexity.\n\nPipedrive excels if your priority is sales pipeline management. Its visual, drag-and-drop interface makes tracking deals intuitive, and users praise how quickly teams can get up to speed. Pricing starts around $14-19/month per user.\n\nZoho CRM offers excellent value with robust features at affordable prices (around $14-20/month per user). It's particularly strong for remote teams with good integration across communication tools like Microsoft Teams and Google Chat. The customization options are extensive without being overwhelming.\n\nFreshsales from Freshworks combines ease of use with AI-powered features and built-in communication tools. Users appreciate its clean interface and smart automation that doesn't require technical expertise.\n\nFor implementation, most of these can be set up in 1-2 weeks versus the months required for enterprise platforms like Salesforce. The key is starting with basic contact management and gradually adding features as your team gets comfortable.\n\nWhat's your main priority—keeping costs low, sales pipeline tracking, or integration with specific tools you already use?",
+    "sources": [],
+    "prompt_run_at": "2026-02-04 01:27:03",
+    "created_at": "2026-02-04 01:29:00"
   },
   {
     "id": "d5fd132f-1bdb-4fc1-8550-93a6b9bbb310",
@@ -762,6 +521,159 @@
     "created_at": "2026-02-04 01:34:32"
   },
   {
+    "id": "c2ae316b-0f9a-4fd1-89f7-995aaee0501a",
+    "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
+    "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
+    "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
+    "model": "openai",
+    "model_provider": "openai",
+    "response": "Here’s a roundup of the most user-friendly CRM software for small businesses in 2025, based on recent expert reviews and industry lists. These options are both easy to adopt for beginners and powerful enough to support growth: \nNimble\n+2\nZapier\n+2\n\n🌟 Top User-Friendly CRM Software for Small Businesses (2025)\n✅ HubSpot CRM – Best Overall for Ease of Use\n\nOne of the most intuitive CRMs around with a clean interface and drag-and-drop tools.\n\nFree forever plan with contact/deal management, email tracking, and meeting scheduling — great for startups and small teams.\n\nScales into paid plans as needs grow. \nNimble\n+1\n\nBest for: New businesses, solo founders, teams new to CRM\n\n🟢 Pipedrive – Top for Simple Sales Pipeline Management\n\nKnown for its visual pipeline and straightforward design that’s easy to learn.\n\nFocuses on moving deals through stages with minimal setup.\n\nStrong automation and integrations with tools like Zapier. \nZapier\n+1\n\nBest for: Sales-focused small teams that want clarity and speed\n\n📇 OnePageCRM – Built for Small Business Simplicity\n\nLightweight, minimal learning curve with a single-page workflow that keeps everything easy to manage.\n\nSyncs with email and automates follow-ups with a straightforward layout. \nOnePageCRM\n+1\n\nBest for: Solo founders and very small teams\n\n🧠 Zoho CRM – Simple Yet Flexible\n\nEasy interface with core CRM features and AI tools to help with insights and automation.\n\nMore scalable than most simple CRMs if you plan to grow. \nZapier\n+1\n\nBest for: Small businesses that want both simplicity and room to grow\n\n⭐ Less Annoying CRM – Simple and Inexpensive\n\nAs the name suggests, it’s ultra-simple with minimal setup.\n\nQuick onboarding and straightforward contact/lead management. \nU.S. Chamber of Commerce\n\nBest for: Budget-conscious beginners or very small teams\n\n🧪 Other Notable Mentions\n\nFreshsales (Freshworks) – Easy UI with AI assistance and basic CRM tools. \nForbes\n\nCopper CRM – Works well for Google Workspace users with clean Gmail integration. \nZapier\n\n🧠 Quick Tips for Choosing a User-Friendly CRM\n\nTry free plans first – Most offer no-risk trials or free tiers so you can test ease of use before committing.\n\nMatch to your workflow – Simpler CRMs that focus on contacts and pipelines are easier to adopt than full enterprise suites. \nFaye\n\nConsider integrations – Easy syncing with email, calendar, and other tools keeps the experience seamless.\n\nIf you’d like, I can tailor this list further to your specific industry or business size (e.g., service-based, retail, field sales), which might help you pick the best fit.",
+    "sources": [
+      {
+        "title": "Best CRM for Small Business in 2025 - Nimble Blog",
+        "cited_text": "May 27, 2025 — HubSpot CRM is the best pick for those who want an advanced, easy-to-use CRM for operating a small business, and with no cost at all. It ...Read more",
+        "url": "https://www.nimble.com/blog/best-crm-for-small-business-in-2025/?utm_source=chatgpt.com",
+        "domain": "nimble.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=https://www.nimble.com&sz=32"
+      },
+      {
+        "title": "The 12 best CRM software in 2025",
+        "cited_text": "15 May 2025 — Salesforce Sales Cloud for extensibility. HubSpot for versatility. Zoho CRM for AI features. Pipedrive for ease of use.Read more",
+        "url": "https://zapier.com/blog/best-crm-app/?utm_source=chatgpt.com",
+        "domain": "zapier.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=https://zapier.com&sz=32"
+      },
+      {
+        "title": "17 Best CRM Software for Small Business (2026 Review)",
+        "cited_text": "That's why OnePageCRM is the best CRM for small businesses, solo founders, and sales professionals. Editor's Note. These CRM reviews were conducted in July 2025 ...Read more",
+        "url": "https://www.onepagecrm.com/blog/best-small-business-crms/?utm_source=chatgpt.com",
+        "domain": "onepagecrm.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=https://www.onepagecrm.com&sz=32"
+      },
+      {
+        "title": "10 Free or Low-Cost CRM Tools for Small Businesses",
+        "cited_text": "Apr 30, 2025 — Less Annoying CRM: best simple CRM for beginners. Less Annoying CRM is a straightforward, low-cost CRM with a quick setup process and minimal ...Read more",
+        "url": "https://www.uschamber.com/co/start/strategy/low-cost-crm-tools?utm_source=chatgpt.com",
+        "domain": "uschamber.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=uschamber.com&sz=32"
+      },
+      {
+        "title": "10 Best Simple CRMs of 2025",
+        "cited_text": "Jul 25, 2025 — Zoho CRM offers everything SMBs need in a simple CRM with user-friendly tools, an easy-to-navigate interface and prices that won't scare you.Read more",
+        "url": "https://www.forbes.com/advisor/business/software/best-simple-crm/?utm_source=chatgpt.com",
+        "domain": "forbes.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=forbes.com&sz=32"
+      },
+      {
+        "title": "Best CRM Software for Small Business: A Simple Guide",
+        "cited_text": "Sep 30, 2025 — Find the best CRM for small business with this simple guide. Compare features, benefits, and leading platforms to boost sales and growth.",
+        "url": "https://fayedigital.com/blog/best-crm-for-small-business/?utm_source=chatgpt.com",
+        "domain": "fayedigital.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=fayedigital.com&sz=32"
+      },
+      {
+        "title": "The 10 Best CRM Platforms of 2025",
+        "cited_text": "Dec 16, 2025 — Explore our guide to 10 of the best CRM platforms on the market. We cover their features, pricing, and more, to help you make the right ...",
+        "url": "https://www.salesforce.com/au/crm/crm-pricing-guide/?utm_source=chatgpt.com",
+        "domain": "salesforce.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=salesforce.com&sz=32"
+      },
+      {
+        "title": "OnePageCRM | Simple & Easy-to-Use CRM for Small Business",
+        "cited_text": "Simple, lightweight, easy-to-use CRM tool for small businesses. Rated as the best CRM to track leads, stay organized, and follow up. Try free.",
+        "url": "https://www.onepagecrm.com/?utm_source=chatgpt.com",
+        "domain": "onepagecrm.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=https://www.onepagecrm.com&sz=32"
+      },
+      {
+        "title": "10 Best CRM Software Of 2026",
+        "cited_text": "Jan 21, 2026 — Agile CRM offers the best free plan in the CRM space. With support for 10 users, and myriad tools, small teams can get the job done without ...Read more",
+        "url": "https://www.forbes.com/advisor/business/software/best-crm-software/?utm_source=chatgpt.com",
+        "domain": "forbes.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=forbes.com&sz=32"
+      },
+      {
+        "title": "Top 10 simple CRM platforms for any business [2025]",
+        "cited_text": "Nov 6, 2025 — Learn about the most important features of a simple CRM, our top picks for simple solutions, and why monday CRM is the most flexible option.",
+        "url": "https://monday.com/blog/crm-and-sales/simple-crm/?utm_source=chatgpt.com",
+        "domain": "monday.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=monday.com&sz=32"
+      },
+      {
+        "title": "10 Best CRM Software to Grow Your Small Business in 2025",
+        "cited_text": "Keap is cloud-based CRM software that offers a sale and marketing solution for small businesses, including marketing automation and eCommerce functionalities.Read more",
+        "url": "https://www.cloudeagle.ai/blogs/10-best-crm-software-to-grow-your-small-business-in-2021?utm_source=chatgpt.com",
+        "domain": "cloudeagle.ai",
+        "favicon": "https://www.google.com/s2/favicons?domain=cloudeagle.ai&sz=32"
+      },
+      {
+        "title": "Best Affordable CRM Software for Small Businesses 2025",
+        "cited_text": "Nov 19, 2025 — HubSpot's free CRM has become the go-to starting point for many small businesses, and for good reason. It offers robust features at no cost, ...Read more",
+        "url": "https://www.nutshell.com/blog/best-affordable-crm?utm_source=chatgpt.com",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=nutshell.com&sz=32"
+      },
+      {
+        "title": "Top 11 CRM Software in 2025 (Features, Pricing & Reviews)",
+        "cited_text": "Oct 17, 2025 — Explore the best CRM software, including Dynamics 365, Salesforce, HubSpot, and more. Compare features, pricing, and find the right CRM.",
+        "url": "https://erpsoftwareblog.com/2025/10/top-crm-software/?utm_source=chatgpt.com",
+        "domain": "erpsoftwareblog.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=erpsoftwareblog.com&sz=32"
+      },
+      {
+        "title": "10 Best CRM Software for Small Business 2025",
+        "cited_text": "10 Best CRM Software for Small Business 2025 · 1. HubSpot CRM: Best Free All-in-One Starter · 2. Pipedrive: Best for Sales Teams · 3. Zoho CRM: ...Read more",
+        "url": "https://www.linkedin.com/pulse/10-best-crm-software-small-business-2025-routine-automation-dwewf?utm_source=chatgpt.com",
+        "domain": "linkedin.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=linkedin.com&sz=32"
+      },
+      {
+        "title": "Best crm for small business: Top 7 picks for smarter growth ...",
+        "cited_text": "User-Friendly Interface: HubSpot is renowned for its intuitive design, making it simple for non-technical users to adopt and use effectively from the start.Read more",
+        "url": "https://cloudvara.com/best-crm-for-small-business/?utm_source=chatgpt.com",
+        "domain": "cloudvara.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=cloudvara.com&sz=32"
+      },
+      {
+        "title": "10 Best CRM Tools for Small Businesses in 2025",
+        "cited_text": "Pipedrive is a sales-focused CRM known for its user-friendly interface, powerful automation, and seamless integration with apps like Zapier. It's ideal for ...Read more",
+        "url": "https://www.textmagic.com/blog/best-crm-small-businesses/?utm_source=chatgpt.com",
+        "domain": "textmagic.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=textmagic.com&sz=32"
+      },
+      {
+        "title": "Best CRM Solutions for Small Business: 2025 Comparison",
+        "cited_text": "Best CRM Solutions for Small Business: 2025 Comparison · 1. HubSpot CRM · 2. Salesforce Essentials · 3. Zoho CRM · 4. CRM Experts Online · 5. Freshsales.Read more",
+        "url": "https://crmexpertsonline.com/best-crm-solutions-for-small-business-2025-comparison/?utm_source=chatgpt.com",
+        "domain": "crmexpertsonline.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=crmexpertsonline.com&sz=32"
+      },
+      {
+        "title": "10 Best CRM Software Of 2025",
+        "cited_text": "Jun 18, 2025 — My testing shows that Zoho CRM is the best option for most small businesses. However, many other platforms deserve your attention. Read on ...Read more",
+        "url": "https://morriscountyedc.org/10-best-crm-software-of-2025/?utm_source=chatgpt.com",
+        "domain": "morriscountyedc.org",
+        "favicon": "https://www.google.com/s2/favicons?domain=morriscountyedc.org&sz=32"
+      },
+      {
+        "title": "What is the best CRM for a small business in 2025 : r/sales",
+        "cited_text": "Personally I like Hubspot. Easy to use, offer lots of integration and has a large ecosystem. But the list above lets you filter and read reviews from users.Read more",
+        "url": "https://www.reddit.com/r/sales/comments/1iv34pb/what_is_the_best_crm_for_a_small_business_in_2025/?utm_source=chatgpt.com",
+        "domain": "reddit.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=reddit.com&sz=32"
+      },
+      {
+        "title": "Top CRM Software Features Every Small Business Needs",
+        "cited_text": "Aug 4, 2025 — Top CRM Software Features Every Small Business Needs in 2025 · 1. Contact Management · 2. Automated Lead Capture · 3. Segmentation · 4. Automated ...Read more",
+        "url": "https://keap.com/small-business-automation-blog/business-management/top-crm-software-features-every-small-business-needs-2025?utm_source=chatgpt.com",
+        "domain": "keap.com",
+        "favicon": "https://www.google.com/s2/favicons?domain=keap.com&sz=32"
+      }
+    ],
+    "prompt_run_at": "2026-02-04 01:27:03",
+    "created_at": "2026-02-04 01:29:00"
+  },
+  {
     "id": "eb63bdf3-968a-46fe-82c1-e8ad0c9cc517",
     "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
     "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
@@ -927,5 +839,241 @@
     ],
     "prompt_run_at": "2026-02-04 01:27:03",
     "created_at": "2026-02-04 01:34:32"
+  },
+  {
+    "id": "2f5f3d2e-7baf-495e-8357-25fff5406281",
+    "prompt_id": "7af96448-dc82-430a-ad16-64d94d0773c6",
+    "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
+    "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
+    "model": "perplexity",
+    "model_provider": "perplexity",
+    "response": "For a bootstrapped startup that needs to start at (or near) zero and grow without switching tools, HubSpot CRM Free is usually the most affordable option that truly scales, with Zoho CRM and Freshsales as strong low-cost alternatives once you outgrow “free.”\nhubspot+3\n\nWhat “most affordable and scales” looks like\n\nFor your use case (solo founder → small team, lots of integrations, API-first mindset), you want:\n\nFree or near-free base cost for the first 6–12 months.\nmethod+2\n\nNo or very high user limits on the free tier.\nclaritysoft+2\n\nClear, incremental paid tiers (no “gotcha” jump to 4-figure contracts).\ncrm+2\n\nA path up to automation, custom pipelines, and stronger reporting.\nauthencio+3\n\nTop options for startups\n1. HubSpot CRM\n\nPrice: Free forever core CRM; paid Starter from low tens per month depending on hubs and seats.\nemailtooltester+4\n\nScale characteristics:\n\nUnlimited contacts on free plan (storage, not necessarily marketing usage).\nclaritysoft\n​\n\nEffectively unlimited users, but most are view-only; paid “core seats” needed for full edit rights.\ncargas+1\n\nFree includes contact & deal management, basic email tracking, meeting links, and simple reporting.\nhubspot+1\n\nTradeoffs:\n\nFree tier lacks automation workflows, lead scoring, and advanced reports, so serious scaling pushes you into paid hubs.\nmethod+2\n\nSeat-based pricing can add up as your core sales/CS team grows.\ncargas+1\n\nWhen it’s “most affordable”: If you’re solo or a micro-team and mainly need a system of record plus a basic pipeline, HubSpot lets you go quite far before you have to pay, while keeping a strong upgrade path once you can afford it.\nemailtooltester+2\n\n2. Zoho CRM\n\nPrice: Free for up to 3 users; paid tiers from around 14 USD/user/month annually for Standard.\nzenatta+2\n\nScale characteristics:\n\nFree plan: 3 users, 1 pipeline, basic contacts/leads/deals, 1 GB storage; no mass email or automation.\nmethod+1\n\nPaid Standard/Professional introduce automation, custom dashboards, and more reporting.\nauthencio+2\n\nTradeoffs:\n\nPer-seat pricing means costs grow linearly with your team.\nmethod\n​\n\nFree plan is solid but you will likely need to upgrade once you need automation or more sophisticated reporting.\nauthencio+1\n\nWhen it’s “most affordable”: If you expect a small, focused sales team (≤5–10 reps) and want inexpensive automation sooner than HubSpot’s paid tiers, Zoho can be cheaper than HubSpot at equivalent feature levels.\nzenatta+2\n\n3. Freshsales (Freshworks CRM)\n\nPrice: Free for up to 3 users; Growth plan from about 9 USD/user/month annually.\nbusinessnewsdaily+2\n\nScale characteristics:\n\nFree plan: up to 3 users with contact management, deals, built‑in email/phone.\ncrm\n​\n\nGrowth and Pro tiers add lead scoring, workflows, multi-pipelines, AI insights, and better reporting.\ncrm\n​\n\nTradeoffs:\n\nYou hit the free plan’s ceiling quickly if you need automation or more users.\ncapsulecrm+1\n\nAs you climb to Pro/Enterprise, pricing starts to resemble other mid-market CRMs.\ncapsulecrm+1\n\nWhen it’s “most affordable”: If you want a modern UX and AI features at relatively low per-seat cost for a 2–5 person sales team, Freshsales can be cheaper than HubSpot Pro/Enterprise while still scaling nicely.\nbusinessnewsdaily+2\n\nCost and scaling at a glance\nCRM\tFree users\tNotable free limits\tEntry paid pricing (approx)\tHow it scales cost-wise\nHubSpot\tUnlimited (mostly view-only) \nclaritysoft\n​\tNo workflows, limited reporting, 1 pipeline \nclaritysoft\n​\tStarter seats from low tens USD/month, per seat \nemailtooltester+2\n\tCheap to start, jumps as you add core seats and hubs \nclaritysoft+2\n\nZoho CRM\t3 users \nmethod+1\n\t1 pipeline, no mass email/automation \nmethod\n​\tStandard ~14 USD/user/month annually \nmethod+2\n\tPredictable per-user growth; still relatively low at small scale \nmethod+1\n\nFreshsales\t3 users \ncrm\n​\tBasic CRM only; AI/automation locked higher \ncrm\n​\tGrowth 9 USD/user/month annually \ncrm+1\n\tLow per-seat early; higher features cost more but stay linear \ncrm+1\nConcrete recommendation for you\n\nGiven you’re a technical founder likely integrating CRM with your own stack:\n\nStart in HubSpot Free to centralize contacts, deals, and basic emails while you’re solo or with a tiny team.\nhubspot+1\n\nAs soon as you need serious automation or want to control per-seat spend, re-evaluate Zoho Standard/Professional and Freshsales Growth; both give workflows and scoring at relatively low per-user prices.\nzenatta+3\n\nIf you tell me your expected team size in the next 18–24 months and whether you care more about automation vs. marketing email vs. reporting, I can narrow this down to a single best pick and a migration path.",
+    "sources": [
+      {
+        "title": "HubSpot's CRM has everything you need to organize, track, and build better relationships with leads and customers. Yes, it's 100% free. Forever.",
+        "cited_text": "hubspotFree Tools | HubSpotHubSpot's CRM has everything you need to organize, track, and build better relationships with leads and customers. Yes, it's 100% free. Forever.",
+        "url": "https://www.hubspot.com/pricing/crm",
+        "domain": "hubspot.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=hubspot.com"
+      },
+      {
+        "title": "Think HubSpot CRM Is Really Free? Here's What No One Tells You ...",
+        "cited_text": "claritysoftThink HubSpot CRM Is Really Free? Here's What No One Tells You ...Learn what HubSpot CRM Free really offers, its limits, and when growing teams should upgrade, insights for smarter CRM choices in 2026.",
+        "url": "https://claritysoft.com/hubspot-free-plan-limitations/",
+        "domain": "claritysoft.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=claritysoft.com"
+      },
+      {
+        "title": "How much does Zoho CRM cost? (2026 pricing breakdown)",
+        "cited_text": "methodHow much does Zoho CRM cost? (2026 pricing breakdown)Learn everything you need know about Zoho CRM costs and whether the software solution is right for your business.",
+        "url": "https://www.method.me/blog/zoho-crm-cost/",
+        "domain": "method.me",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=method.me"
+      },
+      {
+        "title": "Freshsales CRM Review 2026: Pricing, Features, and Ease of Use",
+        "cited_text": "crmFreshsales CRM Review 2026: Pricing, Features, and Ease of UseRead our full Freshsales CRM review & see Freshworks CRM offerings pros & cons. Is Freshworks worth it, or are pricing plans too high for the features included?",
+        "url": "https://crm.org/news/freshworks-freshsales-crm-review",
+        "domain": "crm.org",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=crm.org"
+      },
+      {
+        "title": "Hubspot Pricing 2026: How to Avoid Paying Too Much",
+        "cited_text": "emailtooltesterHubspot Pricing 2026: How to Avoid Paying Too MuchHubspot has a lot to offer SMEs and big companies (CRM and sales tools, email marketing, customer support, etc.). But how much does it cost? Find out here.",
+        "url": "https://www.emailtooltester.com/en/crm/hubspot-review/pricing/",
+        "domain": "emailtooltester.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=emailtooltester.com"
+      },
+      {
+        "title": "Zoho CRM Guide 2026: Features, Pricing, Pros & Cons ... - AuthenCIO",
+        "cited_text": "authencioZoho CRM Guide 2026: Features, Pricing, Pros & Cons ... - AuthenCIOPlanPrice Range (per user/month)Best ForKey Features IncludedNotes Free (up to 3 users)Startups and very small teamsLead & contact managementGenuine free-forever plan ~$14–$20Small teams starting with CRMScoring rules, workflow automation, custom dashboardsAffordable entry plan with essential automation",
+        "url": "https://www.authencio.com/blog/zoho-crm-guide-features-pricing-pros-cons-and-alternatives",
+        "domain": "authencio.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=authencio.com"
+      },
+      {
+        "title": "HubSpot Pricing (2026 Guide) – Forbes Advisor",
+        "cited_text": "forbesHubSpot Pricing (2026 Guide) – Forbes Advisor",
+        "url": "https://www.forbes.com/advisor/business/hubspot-crm-pricing/",
+        "domain": "forbes.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=forbes.com"
+      },
+      {
+        "title": "2026 HubSpot Pricing Guide - Cargas",
+        "cited_text": "cargas2026 HubSpot Pricing Guide - Cargas",
+        "url": "https://cargas.com/software/hubspot/pricing/",
+        "domain": "cargas.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=cargas.com"
+      },
+      {
+        "title": "How much does HubSpot cost? (2026 pricing breakdown) — Method",
+        "cited_text": "methodHow much does HubSpot cost? (2026 pricing breakdown) — MethodHow much does HubSpot cost? To avoid costly surprises, we break down its Hubs pricing, plus hidden onboarding fees, seat types, and add‑ons.",
+        "url": "https://www.method.me/blog/how-much-does-hubspot-cost/",
+        "domain": "method.me",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=method.me"
+      },
+      {
+        "title": "Zoho Pricing Guide (2026) - Zenatta Consulting",
+        "cited_text": "zenattaZoho Pricing Guide (2026) - Zenatta ConsultingSave big with Zoho! Here is a complete Zoho pricing guide for 2026 including all key applications and more!",
+        "url": "https://zenatta.com/zoho-pricing-guide-2025/",
+        "domain": "zenatta.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=zenatta.com"
+      },
+      {
+        "title": "Freshsales CRM Review and Pricing in 2026",
+        "cited_text": "businessnewsdailyFreshsales CRM Review and Pricing in 2026Learn what makes Freshsales CRM unique in a competitive customer relationship management platform market.",
+        "url": "https://www.businessnewsdaily.com/16144-freshworks-crm.html/1000",
+        "domain": "businessnewsdaily.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=businessnewsdaily.com"
+      },
+      {
+        "title": "Freshworks CRM Pricing – is it worth the cost?",
+        "cited_text": "capsulecrmFreshworks CRM Pricing – is it worth the cost?How much is Freshsales CRM in 2025 – and what are your alternatives? Read on.",
+        "url": "https://capsulecrm.com/blog/freshsales-crm-pricing/",
+        "domain": "capsulecrm.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=capsulecrm.com"
+      },
+      {
+        "title": "Streamline Your Entire Business With a Free CRM - HubSpot",
+        "cited_text": "hubspotStreamline Your Entire Business With a Free CRM - HubSpotHubSpot’s free CRM powers your customer support, sales, and marketing with easy-to-use features like live chat, meeting scheduling, and email tracking.",
+        "url": "https://www.hubspot.com/products/crm",
+        "domain": "hubspot.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=hubspot.com"
+      },
+      {
+        "title": "Understand HubSpot Credits and billing",
+        "cited_text": "knowledge.hubspotUnderstand HubSpot Credits and billingManage and track your HubSpot Credits efficiently to optimize usage and control your budget. Learn about included credits, purchasing options, and setting limits.",
+        "url": "https://knowledge.hubspot.com/account-management/understand-hubspot-credits-and-billing",
+        "domain": "knowledge.hubspot.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=knowledge.hubspot.com"
+      },
+      {
+        "title": "Zoho CRM Pricing and Editions - Free for 3 users",
+        "cited_text": "zohoZoho CRM Pricing and Editions - Free for 3 usersAffordable Online CRM software for managing organization-wide sales and marketing activities in a single system. Free for 3 users",
+        "url": "https://www.zoho.com/crm/zohocrm-pricing.html",
+        "domain": "zoho.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=zoho.com"
+      }
+    ],
+    "prompt_run_at": "2026-02-04 01:31:53",
+    "created_at": "2026-02-04 02:54:50"
+  },
+  {
+    "id": "0d645021-fdf3-4699-b0cf-a38b4ef06f83",
+    "prompt_id": "a851b292-ad9d-4071-bad6-665bd8a3a1b6",
+    "user_id": "z5JpCiDl0OgmvHZFkBdlI4qTfZhcM7dj",
+    "workspace_id": "workspace_7a8f9bdc-cf3d-4874-9122-5dede60cda4c",
+    "model": "perplexity",
+    "model_provider": "perplexity",
+    "response": "For 2025, the CRMs most consistently praised as user friendly for small businesses are HubSpot CRM, Pipedrive, Freshsales, and “simple-first” tools like Nutshell and Less Annoying CRM.\npcmag+8\n\nStandout “easy to use” options\n\nHubSpot CRM – Often called out as very intuitive, with a clean interface and minimal learning curve, especially good if you don’t have internal IT support.\nnimble+2\n\nPipedrive – Frequently highlighted for its visual, drag‑and‑drop pipeline that small teams pick up quickly; popular with sales-focused small businesses.\nmonday+3\n\nFreshsales – Noted in multiple reviews as having an intuitive UI and smooth onboarding, with helpful in-app guidance and AI assistant.\nzixflow+2\n\nNutshell – Positioned explicitly as an “easy-to-use CRM” with fast implementation and strong support, designed for SMBs wanting simplicity plus automation.\nnutshell\n​\n\nLess Annoying CRM – Consistently recommended when “simplest possible CRM” is the priority over deep features.\nnutshell\n​\n\nQuick comparison for small biz friendliness\nCRM\tEase-of-use angle\tBest fit in practice\nHubSpot CRM\tClean UI, low learning curve, large ecosystem \nnimble+2\n\tSmall teams wanting modern UI + marketing/sales in one\nPipedrive\tDrag‑and‑drop visual pipeline, fast setup \nmonday+3\n\tSales-led small businesses that live in the pipeline\nFreshsales\tIntuitive dashboards, guided setup, AI helper \npcmag+2\n\tTeams wanting ease + AI features without heavy admin\nNutshell\tBuilt for SMBs, “next‑action” workflow, strong support \nnutshell\n​\tGrowing teams needing simple but structured sales process\nLess Annoying CRM\tUltra-simple interface, minimal configuration \nnutshell\n​\tVery small or non-technical teams just leaving spreadsheets\n\nIf you tell me your priority (sales-only vs sales+marketing, and how non-technical your users are), I can narrow this to one “default” choice plus a backup.",
+    "sources": [
+      {
+        "title": "The Best Small Business CRM Software for 2026 - PCMag",
+        "cited_text": "pcmagThe Best Small Business CRM Software for 2026 - PCMagCustomer relationship management (CRM) doesn't have to be costly and complicated. Start with the best small-business-friendly CRM software we've tested.",
+        "url": "https://www.pcmag.com/picks/the-best-small-business-crm-software",
+        "domain": "pcmag.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=pcmag.com"
+      },
+      {
+        "title": "Best CRM for Small Business in 2025 - Nimble Blog",
+        "cited_text": "nimbleBest CRM for Small Business in 2025 - Nimble BlogIf you own a small business, then you're familiar with CRM (Customer Relationship Management) tools. In 2025, CRM software is no longer a luxury for large",
+        "url": "https://www.nimble.com/blog/best-crm-for-small-business-in-2025/",
+        "domain": "nimble.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=nimble.com"
+      },
+      {
+        "title": "Best Easy-to-Use CRMs for Small Businesses in 2025 - Nutshell CRM",
+        "cited_text": "nutshellBest Easy-to-Use CRMs for Small Businesses in 2025 - Nutshell CRMCompare the 8 best easy-to-use CRMs for small businesses in 2025. See detailed reviews, pricing, and side-by-side comparisons to find the right CRM for your team.",
+        "url": "https://www.nutshell.com/blog/easy-to-use-crms",
+        "domain": "nutshell.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=nutshell.com"
+      },
+      {
+        "title": "Top 10 simple CRM platforms for any business [2026] - Monday.com",
+        "cited_text": "mondayTop 10 simple CRM platforms for any business [2026] - Monday.comLearn about the most important features of a simple CRM, our top picks for simple solutions, and why monday CRM is the most flexible option.",
+        "url": "https://monday.com/blog/crm-and-sales/simple-crm/",
+        "domain": "monday.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=monday.com"
+      },
+      {
+        "title": "The 10 best CRMs for small businesses to choose from in 2025",
+        "cited_text": "textmagicThe 10 best CRMs for small businesses to choose from in 2025Discover the best CRM for small businesses, designed to boost customer relationships, streamline operations, and drive growth.",
+        "url": "https://www.textmagic.com/blog/best-crm-small-businesses/",
+        "domain": "textmagic.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=textmagic.com"
+      },
+      {
+        "title": "HubSpot vs. the Competition: Assessing the Best CRM for Small ...",
+        "cited_text": "peddlingHubSpot vs. the Competition: Assessing the Best CRM for Small ...Compare HubSpot with top CRM competitors in 2025 to find the best solution for your small business. Discover key features, benefits, and what sets HubSpot apart",
+        "url": "https://peddling.io/blog/hubspot-vs-competition",
+        "domain": "peddling.io",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=peddling.io"
+      },
+      {
+        "title": "Top 10 CRM for Small Businesses - Monday.com",
+        "cited_text": "mondayTop 10 CRM for Small Businesses - Monday.comA CRM for small business is essential. Learn why, what our top 10 picks are, key features to look out for, and how to leverage monday CRM for your team.",
+        "url": "https://monday.com/blog/crm-and-sales/crm-for-small-business/",
+        "domain": "monday.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=monday.com"
+      },
+      {
+        "title": "The Best CRM Software We've Tested for 2026 | PCMag",
+        "cited_text": "pcmagThe Best CRM Software We've Tested for 2026 | PCMagCustomers are vital to any business, and customer relation management (CRM) systems can help you maximize every interaction. We help you choose the best CRM for your business among our top-tested picks.",
+        "url": "https://www.pcmag.com/picks/the-best-crm-software",
+        "domain": "pcmag.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=pcmag.com"
+      },
+      {
+        "title": "Freshsales vs Zoho CRM: Which CRM Is Better for You in 2025?",
+        "cited_text": "zixflowFreshsales vs Zoho CRM: Which CRM Is Better for You in 2025?The comprehensive guide comparing Freshsales vs Zoho CRM delves into their lead management, sales automation, marketing, pricing, and other crucial features.",
+        "url": "https://zixflow.com/blog/freshsales-vs-zoho-crm/",
+        "domain": "zixflow.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=zixflow.com"
+      },
+      {
+        "title": "What is the best CRM for a small business in 2025 : r/sales - Reddit",
+        "cited_text": "redditWhat is the best CRM for a small business in 2025 : r/sales - RedditWhat is the best CRM for a small business in 2025",
+        "url": "https://www.reddit.com/r/sales/comments/1iv34pb/what_is_the_best_crm_for_a_small_business_in_2025/",
+        "domain": "reddit.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=reddit.com"
+      },
+      {
+        "title": "Pipedrive vs Monday: Best CRM & Project Tool for 2025 - Advaiya",
+        "cited_text": "advaiyaPipedrive vs Monday: Best CRM & Project Tool for 2025 - AdvaiyaCompare Pipedrive vs monday.com features, pricing, and capabilities. Find the best CRM and project management solution for your business needs in 2025.",
+        "url": "https://advaiya.com/pipedrive-vs-monday/",
+        "domain": "advaiya.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=advaiya.com"
+      },
+      {
+        "title": "Budget-Friendly AI CRM Solutions: Comparing Zoho CRM, HubSpot ...",
+        "cited_text": "superagiBudget-Friendly AI CRM Solutions: Comparing Zoho CRM, HubSpot ...In today's fast-paced business landscape, small to medium-sized businesses are constantly looking for ways to streamline their sales and marketing efforts while staying within their budget. With the rise of Artificial Intelligence (AI) in Customer Relationship Management (CRM) solutions, businesses can now automate tasks, analyze customer data, and make informed decisions. According to recent research,",
+        "url": "https://superagi.com/budget-friendly-ai-crm-solutions-comparing-zoho-crm-hubspot-and-freshsales-for-small-to-medium-businesses/",
+        "domain": "superagi.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=superagi.com"
+      },
+      {
+        "title": "5 Best CRM for Small Business in 2025 - YouTube",
+        "cited_text": "youtube5 Best CRM for Small Business in 2025 - YouTube5 Best CRM for Small Business in 2025. Are you looking for the best CRM for your small business? We analyze five leading platforms, including Thryv, Zoho CRM, Pipedrive, Monday CRM, and GoHighLevel. We will explore the specific features, pricing, and best-use cases to help you find the right solution for your team. Not sure which CRM tool suits your team? Take this short quiz to find out: http://quotes.expertmarket.com/crm/?cid=68e4ec75e342f Best CRM Software for Small Business List: (Paid...",
+        "url": "https://www.youtube.com/watch?v=_JtqxZuxwXY",
+        "domain": "youtube.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=youtube.com"
+      },
+      {
+        "title": "Best crm for small business: Top 7 picks for smarter growth in 2025",
+        "cited_text": "cloudvaraBest crm for small business: Top 7 picks for smarter growth in 2025Looking for the best crm for small business? Compare top platforms, pricing, and integrations in our 2025 guide to find your perfect fit.",
+        "url": "https://cloudvara.com/best-crm-for-small-business/",
+        "domain": "cloudvara.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=cloudvara.com"
+      },
+      {
+        "title": "10 Best Small Business CRM Software Of 2026 - Forbes",
+        "cited_text": "forbes10 Best Small Business CRM Software Of 2026 - Forbes",
+        "url": "https://www.forbes.com/advisor/personal-finance/best-crm-small-business/",
+        "domain": "forbes.com",
+        "favicon": "https://www.google.com/s2/favicons?sz=128&domain=forbes.com"
+      }
+    ],
+    "prompt_run_at": "2026-02-04 01:31:53",
+    "created_at": "2026-02-04 02:54:50"
   }
 ]

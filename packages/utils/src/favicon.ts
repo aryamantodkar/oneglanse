@@ -1,3 +1,5 @@
+import { getDomain } from "./url/getDomain.js";
+
 export const getModelFavicon = (model: string): string => {
     const modelDomains: Record<string, string> = {
       OpenAI: "openai.com",
@@ -16,32 +18,31 @@ export const getModelFavicon = (model: string): string => {
     return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 };
 
-export const getFaviconUrls = (domain?: string, name?: string): string[] => {
-  const cleanDomain =
-    domain?.replace(/^https?:\/\//, "").trim() || "";
+export const getFaviconUrls = (
+  domain?: string,
+  name?: string
+): string[] => {
+  let hostname = getDomain(domain ?? "");
 
   const fallbackName =
     name?.trim() ||
-    cleanDomain.split(".")[0] ||
+    hostname.split(".")[0] ||
     "Brand";
 
   return [
-    // Primary: Google favicon
-    cleanDomain
-      ? `https://www.google.com/s2/favicons?sz=64&domain=${cleanDomain}`
-      : "",
+    // Google favicon (most reliable)
+    hostname &&
+      `https://www.google.com/s2/favicons?sz=64&domain=${hostname}`,
 
-    // Secondary: DuckDuckGo favicon
-    cleanDomain
-      ? `https://icons.duckduckgo.com/ip3/${cleanDomain}.ico`
-      : "",
+    // DuckDuckGo favicon
+    hostname &&
+      `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
 
-    // Tertiary: Clearbit logo
-    cleanDomain
-      ? `https://logo.clearbit.com/${cleanDomain}`
-      : "",
+    // Clearbit logo
+    hostname &&
+      `https://logo.clearbit.com/${hostname}`,
 
-    // Final fallback: Avatar (ALWAYS works)
+    // Guaranteed fallback
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       fallbackName.toUpperCase()
     )}&size=64&background=E5E7EB&color=374151&bold=true`,
