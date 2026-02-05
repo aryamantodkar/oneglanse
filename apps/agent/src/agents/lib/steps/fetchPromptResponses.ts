@@ -1,5 +1,5 @@
 import { Page } from "playwright";
-import { getLastAssistantText } from "../../../lib/input/getLastAssistantText.js";
+import { extractAssistantMarkdown } from "../../../lib/input/extractAssistantMarkdown.js";
 import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
@@ -9,20 +9,20 @@ export async function fetchPromptResponses(
     provider: Provider
   ): Promise<string> {
     logger.log("⏳ Waiting for response to complete...");
-  
+
     // 1️⃣ Wait until model finishes generating
     await waitForAssistantToFinish(page, provider);
-  
+
     logger.log("📄 Extracting response...");
-  
-    // 2️⃣ Single source of truth for extraction
-    const response = await getLastAssistantText(page, provider, true);
-  
+
+    // 2️⃣ Extract response as markdown (innerHTML → turndown)
+    const response = await extractAssistantMarkdown(page, provider);
+
     if (!response) {
       logger.warn("No assistant response found");
       return "";
     }
-  
+
     logger.success(`Got response (${response.length} chars)`);
     return response;
   }
