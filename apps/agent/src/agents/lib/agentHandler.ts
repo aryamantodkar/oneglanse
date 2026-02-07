@@ -86,6 +86,7 @@ export async function agentHandler(
       }
     }
 
-    logger.error(`${label} failed after ${MAX_CYCLES * PROXIES_PER_CYCLE} attempts across ${MAX_CYCLES} cycles`);
-    return [];
+    const totalAttempts = MAX_CYCLES * PROXIES_PER_CYCLE;
+    logger.error(`🔴 ${label} SESSION EXPIRED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles. Please re-login to ${provider}.`);
+    throw new Error(`${provider} session expired — re-login required. Run: pnpm --filter @onescope/agent run auth`);
 }
