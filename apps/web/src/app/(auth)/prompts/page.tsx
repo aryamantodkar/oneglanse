@@ -34,7 +34,7 @@ import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, 
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import { useAgentStatus, useFetchAnalysedPrompts, usePromptResponses, useUserPrompts } from "./_lib/queries/prompt.queries";
-import { filterMetrics, aggregatePromptMetrics } from "@onescope/utils";
+import { filterMetrics, aggregatePromptMetrics, modelSelectors } from "@onescope/utils";
 
 export default function Prompts() {
   const searchParams = useSearchParams();
@@ -415,19 +415,19 @@ export default function Prompts() {
             <SelectValue placeholder="Select Model" />
           </SelectTrigger>
           <SelectContent className="z-[9999]">
-            {availableModels.map((m) => (
-              <SelectItem key={m} value={m}>
+            {modelSelectors.map(({value, label}) => (
+              <SelectItem key={value} value={value}>
                 <div className="flex items-center gap-2">
-                  {m === "All Models" ? (
+                  {value === "All Models" ? (
                     <Bot className="w-4 h-4 text-muted-foreground" />
                   ) : (
                     <img
-                      src={getModelFavicon(m)}
-                      alt={m}
+                      src={getModelFavicon(value)}
+                      alt={value}
                       className="w-4 h-4 rounded-sm"
                     />
                   )}
-                  <span>{m}</span>
+                  <span>{label}</span>
                 </div>
               </SelectItem>
             ))}

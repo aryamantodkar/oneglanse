@@ -1,5 +1,6 @@
 import type { PromptResponse, SourceGroupResult, Source } from "@onescope/types";
 import { groupSourcesByUrl } from "./groupSourcesByUrl.js";
+import { removeUrlParams } from "../url/removeUrlParams.js";
 
 export function extractSourceStats(
   responses: PromptResponse[]
@@ -15,9 +16,11 @@ export function extractSourceStats(
     for (const s of resp.sources) {
       if (!s || typeof s.url !== "string" || typeof s.title !== "string") continue;
 
+      const cleanUrl = removeUrlParams(s.url);
+
       const source: Source & { modelProvider: string } = {
         title: s.title,
-        url: s.url,
+        url: cleanUrl,
         cited_text: s.cited_text ?? "",
         domain: s.domain ?? null,
         favicon: s.favicon ?? null,
