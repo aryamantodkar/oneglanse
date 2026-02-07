@@ -788,8 +788,10 @@ export default function Prompts() {
 
                           <div
                             className={`
-                              prose dark:prose-invert max-w-none
-                              text-[14px] leading-[1.55]
+                              prose prose-sm dark:prose-invert max-w-none
+                              prose-p:my-4 prose-headings:mt-6 prose-headings:mb-3
+                              prose-ul:my-4 prose-ol:my-4 prose-li:my-1
+                              prose-hr:my-6
                               transition-all duration-200 ease-in-out
                               ${isExpanded ? "" : "line-clamp-3 overflow-hidden"}
                             `}
