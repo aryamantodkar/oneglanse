@@ -5,10 +5,10 @@ import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 import { markProxyBad, fetchProxies } from "../../lib/browser/proxyPool.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
-const PROXIES_PER_CYCLE = 3;
-const MAX_CYCLES = 5;
-const INITIAL_BACKOFF = 15_000; // 15 seconds
-const RETRY_DELAY = 5000; // 5 seconds
+const PROXIES_PER_CYCLE = 5;
+const MAX_CYCLES = 10;
+const INITIAL_BACKOFF = 10_000; // 10 seconds
+const RETRY_DELAY = 3000; // 3 seconds
 
 export async function agentHandler(
     label: string,
