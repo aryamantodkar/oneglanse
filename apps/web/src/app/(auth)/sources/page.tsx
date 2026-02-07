@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
 import { Bot, ChevronRight, ExternalLink, SearchX } from "lucide-react";
 import type { SourceGroupResult, ModelFilterDomainStats } from "@onescope/types";
-import { getFaviconUrls, getModelFavicon } from "@onescope/utils";
+import { getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
 
 export default function Sources() {
@@ -15,12 +15,6 @@ export default function Sources() {
   const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
   const [activeTab, setActiveTab] = useState<"domains" | "urls">("domains");
   const [openUrl, setOpenUrl] = useState<string | null>(null);
-  const providers = [
-    { value: "All Models", label: "All Models" },
-    { value: "openai", label: "OpenAI" },
-    { value: "perplexity", label: "Perplexity" },
-    { value: "anthropic", label: "Anthropic" },
-  ] as const;
 
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
@@ -120,7 +114,7 @@ export default function Sources() {
             </div>
           </SelectTrigger>
           <SelectContent>
-            {providers.map(({ value, label }) => {
+            {modelSelectors.map(({ value, label }) => {
               const icon = value === "All Models" ? "" : getModelFavicon(value);
 
               return (
@@ -488,7 +482,7 @@ export default function Sources() {
                                         className="w-4 h-4 rounded-sm opacity-80"
                                       />
                                       <span className="tracking-wide">
-                                        {model_provider}
+                                        {modelSelectors.find(m => m.value === model_provider)?.label || model_provider}
                                       </span>
                                     </div>
                                   )}
