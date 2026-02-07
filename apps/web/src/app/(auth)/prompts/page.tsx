@@ -766,7 +766,7 @@ export default function Prompts() {
                     
                               <div className="flex flex-col">
                                 <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                                  {resp.model_provider}
+                                {modelSelectors.find(m => m.value === resp.model_provider)?.label || resp.model_provider}
                                 </span>
                     
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
