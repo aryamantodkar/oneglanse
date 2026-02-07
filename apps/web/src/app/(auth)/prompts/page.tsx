@@ -769,7 +769,7 @@ export default function Prompts() {
                                 {modelSelectors.find(m => m.value === resp.model_provider)?.label || resp.model_provider}
                                 </span>
                     
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400">
                                   {formatDate(resp.prompt_run_at)}
                                 </span>
                               </div>
