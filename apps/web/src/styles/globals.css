@@ -1,6 +1,7 @@
 @import "tailwindcss";
-@import "@tailwindcss/typography";
 @import "tw-animate-css";
+
+@plugin "@tailwindcss/typography";
 
 /* Scan UI package for Tailwind classes (required for monorepo in Tailwind v4) */
 @source "../../../../packages/ui/src";
