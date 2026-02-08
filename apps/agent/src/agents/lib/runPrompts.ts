@@ -5,6 +5,7 @@ import { checkAndExtractSources } from "./steps/extractSources.js";
 import { Provider, AskPromptResult, Source } from "@onescope/types";
 import { logger } from "../../lib/utils/logger.js";
 import { PromptPayload } from "@onescope/types";
+import { IPRefreshNeededError } from "@onescope/errors";
 
 const MAX_PROMPT_RETRIES = 7; // Increased from 3 to 7 for better resilience
 const INITIAL_RETRY_DELAY = 2000; // 2 seconds for first retry
@@ -90,10 +91,20 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
           logger.error(`❌ Attempt ${attempt}/${MAX_PROMPT_RETRIES} failed for prompt ${i + 1}: [${provider}] ${err.message}`);
 
           if (attempt === MAX_PROMPT_RETRIES) {
-            // Final attempt failed - log comprehensive error
+            // Final attempt failed - throw error to trigger IP refresh
             totalFailedCount++;
             logger.error(`🔴 Prompt ${i + 1} failed after ${MAX_PROMPT_RETRIES} attempts with exponential backoff. Final error: ${lastError?.message}`);
-            logger.error(`🔴 This indicates a persistent issue - check authentication or provider availability.`);
+            logger.error(`🔴 This indicates a persistent issue - triggering IP refresh and will retry this prompt with new IP.`);
+
+            // Get remaining prompts (including the one that failed)
+            const remainingPrompts = promptsArray.slice(i);
+
+            throw new IPRefreshNeededError(
+              `${provider} failed ${MAX_PROMPT_RETRIES} consecutive attempts — refreshing IP. Last error: ${lastError?.message}`,
+              promptMetrics, // partial results (successfully completed prompts)
+              remainingPrompts, // remaining prompts to process
+              i // index of the failed prompt
+            );
           }
           // Continue to next retry attempt
         }

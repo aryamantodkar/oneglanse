@@ -3,6 +3,7 @@ import { runAgents } from "./runAgents.js";
 import { logger } from "../../lib/utils/logger.js";
 import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 import { markProxyBad, fetchProxies } from "../../lib/browser/proxyPool.js";
+import { IPRefreshNeededError } from "@onescope/errors";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const PROXIES_PER_CYCLE = 5;
@@ -22,6 +23,9 @@ export async function agentHandler(
     payload: PromptPayload,
     provider: Provider
   ): Promise<AskPromptResult[]> {
+
+    let accumulatedResults: AskPromptResult[] = [];
+    let currentPayload = payload;
 
     for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
       if (cycle > 0) {
@@ -60,15 +64,45 @@ export async function agentHandler(
                 throw new Error(`${label} authentication failed`);
               }
 
-              return await runAgents(payload, agent.page, provider);
+              return await runAgents(currentPayload, agent.page, provider);
             })(),
             new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error(`${label} timed out after ${PROVIDER_TIMEOUT / 1000}s`)), PROVIDER_TIMEOUT)
             ),
           ]);
 
-          return result;
+          // Success - combine with accumulated results and return
+          accumulatedResults.push(...result);
+          return accumulatedResults;
         } catch (err: any) {
+          // Check if this is an IP refresh request
+          if (err instanceof IPRefreshNeededError) {
+            logger.warn(`${label} needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`);
+
+            // Accumulate the partial results
+            accumulatedResults.push(...err.partialResults);
+
+            // Update payload to only include remaining prompts
+            currentPayload = {
+              ...currentPayload,
+              prompts: err.remainingPrompts,
+            };
+
+            logger.log(`${label} saved ${err.partialResults.length} successful prompts, ${err.remainingPrompts.length} remaining`);
+
+            // Mark proxy as bad and continue to next attempt with new IP
+            if (refs.proxy) {
+              markProxyBad(refs.proxy);
+            }
+
+            // Continue to next attempt (new IP)
+            if (attempt < PROXIES_PER_CYCLE - 1) {
+              await new Promise((r) => setTimeout(r, RETRY_DELAY));
+            }
+            continue;
+          }
+
+          // Regular error - log and mark proxy as bad
           logger.error(`${label} failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}):`, err?.message ?? err);
 
           if (refs.proxy) {
