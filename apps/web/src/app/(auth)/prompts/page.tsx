@@ -783,7 +783,16 @@ export default function Prompts() {
               </TableBody>
             </Table>
             <Dialog open={!!openPrompt} onOpenChange={() => setOpenPrompt(null)}>
-            <DialogContent className="max-w-6xl w-full h-[85vh] rounded-2xl flex flex-col">
+            <DialogContent
+              className="
+                !max-w-[90vw] !w-[90vw]
+                sm:!max-w-[80vw] sm:!w-[80vw]
+                h-[90vh]
+                rounded-2xl
+                px-8 pb-8 sm:px-10 sm:pt-12 sm:pb-10
+                flex flex-col
+              "
+            >
                 <DialogHeader className="pb-4 border-b border-gray-100 dark:border-gray-800">
                   <DialogTitle className="text-xl font-semibold">
                     {openPrompt?.prompt}
