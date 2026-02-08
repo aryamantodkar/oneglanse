@@ -41,7 +41,11 @@ export async function analysePromptResponse(args: {
 export async function analysePromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
-}): Promise<{ analysedCount: number }> {
+}): Promise<{
+    analysedCount: number;
+    failedCount: number;
+    errors: Array<{ responseId: string; modelProvider: string; error: string }>;
+}> {
     const { workspaceId, userId } = args;
 
     const result = await clickhouse.query({
@@ -59,12 +63,12 @@ export async function analysePromptsForWorkspace(args: {
     const responses: PromptResponse[] = await result.json();
 
     if (responses.length === 0) {
-        return { analysedCount: 0 };
+        return { analysedCount: 0, failedCount: 0, errors: [] };
     }
 
     const analysisRows: PromptAnalysis[] = [];
-
     const responseIdsToMark: string[] = [];
+    const errors: Array<{ responseId: string; modelProvider: string; error: string }> = [];
 
     // Analyze each response
     for (const resp of responses) {
@@ -94,8 +98,16 @@ export async function analysePromptsForWorkspace(args: {
             });
 
             responseIdsToMark.push(resp.id);
-        } catch (err) {
-            console.error(`Failed to analyze response ${resp.id}:`, err);
+        } catch (err: any) {
+            const errorMessage = err?.message || String(err);
+            console.error(`Failed to analyze response ${resp.id} (${resp.model_provider}):`, errorMessage);
+
+            // Collect error details for frontend
+            errors.push({
+                responseId: resp.id,
+                modelProvider: resp.model_provider,
+                error: errorMessage,
+            });
         }
     }
 
@@ -118,11 +130,15 @@ export async function analysePromptsForWorkspace(args: {
         });
     }
 
-    return { analysedCount: analysisRows.length };
+    return {
+        analysedCount: analysisRows.length,
+        failedCount: errors.length,
+        errors,
+    };
 }
 
 /**
- * Fetch analysed prompts with metadata
+ * Fetch ALL responses (analyzed and unanalyzed) with metadata
  */
 export async function fetchAnalysedPrompts(args: {
     workspaceId: string;
@@ -130,9 +146,10 @@ export async function fetchAnalysedPrompts(args: {
 }): Promise<AnalysisResponse> {
     const { workspaceId, userId } = args;
 
-    // Single query - get everything in one go
+    // Single optimized query using UNION ALL to get both analyzed and unanalyzed responses
     const result = await clickhouse.query({
         query: `
+            -- Analyzed responses with metrics
             SELECT
                 pa.id,
                 pa.prompt_id,
@@ -143,7 +160,8 @@ export async function fetchAnalysedPrompts(args: {
                 pr.response,
                 pr.sources,
                 pa.brand_metrics,
-                pa.created_at
+                pa.created_at,
+                true as is_analysed
             FROM analytics.prompt_analysis pa
             LEFT JOIN analytics.prompt_responses pr
               ON pa.prompt_id = pr.prompt_id
@@ -152,15 +170,36 @@ export async function fetchAnalysedPrompts(args: {
               AND pa.workspace_id = pr.workspace_id
             WHERE pa.workspace_id = {workspaceId:String}
               AND pa.user_id = {userId:String}
-            ORDER BY pa.prompt_run_at DESC
+
+            UNION ALL
+
+            -- Unanalyzed responses without metrics
+            SELECT
+                id,
+                prompt_id,
+                prompt_run_at,
+                user_id,
+                workspace_id,
+                model_provider,
+                response,
+                sources,
+                '' as brand_metrics,
+                created_at,
+                false as is_analysed
+            FROM analytics.prompt_responses
+            WHERE workspace_id = {workspaceId:String}
+              AND user_id = {userId:String}
+              AND is_analysed = false
+
+            ORDER BY prompt_run_at DESC
         `,
         query_params: { workspaceId, userId },
         format: "JSONEachRow",
     });
 
-    const rows: AnalysisRow[] = await result.json();
+    const rows: any[] = await result.json();
 
-    // Transform to flat array - single pass
+    // Transform to flat array - handle both analyzed and unanalyzed
     const records: AnalysisRecord[] = rows.map((row) => ({
         id: row.id,
         prompt_id: row.prompt_id,
@@ -170,10 +209,14 @@ export async function fetchAnalysedPrompts(args: {
         model_provider: row.model_provider,
         response: row.response || "",
         sources: row.sources || [],
-        brand_metrics: typeof row.brand_metrics === "string"
-            ? JSON.parse(row.brand_metrics)
-            : row.brand_metrics,
+        // Parse brand_metrics if present, otherwise empty object for unanalyzed
+        brand_metrics: row.brand_metrics && row.brand_metrics !== ''
+            ? (typeof row.brand_metrics === "string"
+                ? JSON.parse(row.brand_metrics)
+                : row.brand_metrics)
+            : {},
         created_at: row.created_at,
+        is_analysed: row.is_analysed ?? true,
     }));
 
     // Extract metadata in single pass
@@ -181,10 +224,12 @@ export async function fetchAnalysedPrompts(args: {
     const modelsSet = new Set<string>();
 
     for (const record of records) {
-        // Collect unique brands
-        for (const [brandName, metrics] of Object.entries(record.brand_metrics)) {
-            if (!brandsSet.has(brandName) && metrics.website) {
-                brandsSet.set(brandName, metrics.website);
+        // Collect unique brands (only from analyzed records)
+        if (record.is_analysed && record.brand_metrics) {
+            for (const [brandName, metrics] of Object.entries(record.brand_metrics)) {
+                if (metrics && !brandsSet.has(brandName) && metrics.website) {
+                    brandsSet.set(brandName, metrics.website);
+                }
             }
         }
 
