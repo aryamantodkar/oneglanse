@@ -1,32 +1,42 @@
 import { analysisPrompt } from "./analysisPrompt.js";
 import { ExternalServiceError, safeHandler, ValidationError } from "@onescope/errors";
-import type { AnalysisInput, AnalysisOutput } from "@onescope/types";
-import fs from "fs";
-import path from "path";
+import type { AnalysisInputSingle, AnalysisOutputSingle } from "@onescope/types";
 import { openai } from "../llm/index.js";
 
-export async function runAnalysis(analysisData: AnalysisInput) {
-    return safeHandler(async () => {  
-      const enhancedQuery = analysisPrompt(analysisData);
-  
+export async function runAnalysis(input: AnalysisInputSingle) {
+    return safeHandler(async () => {
+      const prompt = analysisPrompt(input);
+
       let response;
       try {
         response = await openai.responses.create({
-          model: "o4-mini",
-          input: enhancedQuery,
+          model: "gpt-4o-mini",
+          input: [
+            {
+              role: "system",
+              content: "You are a brand intelligence extraction engine. Return only valid JSON matching the requested schema. Do not include any markdown formatting or explanation."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          text: {
+            format: { type: "json_object" }
+          }
         });
       } catch (err) {
         throw new ExternalServiceError(
           "OpenAI",
-          "Failed to analyze responses.",
+          "Failed to analyze response.",
           502,
-          { enhancedQuery, promptCount: analysisData.length },
+          { responseLength: input.response.length, sourcesCount: input.sources.length },
           err
         );
       }
-    
+
       const text = response.output_text?.trim() || "";
-    
+
       let parsed: unknown;
       try {
         parsed = JSON.parse(text);
@@ -40,7 +50,7 @@ export async function runAnalysis(analysisData: AnalysisInput) {
       if (typeof parsed !== "object" || parsed === null) {
         throw new Error("Invalid JSON shape");
       }
-    
-      return parsed as AnalysisOutput;
+
+      return parsed as AnalysisOutputSingle;
     })
   }
