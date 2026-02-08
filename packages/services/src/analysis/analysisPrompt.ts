@@ -42,6 +42,7 @@ export function analysisPrompt(input: AnalysisInputSingle) {
             "brands": [
                     {
                         "brand_name": "string — exact canonical brand name as written in the response",
+                        "brand_website": "string — the brand's official website domain (e.g., 'hubspot.com', 'salesforce.com'). If explicitly mentioned in the response or sources, use it. Otherwise, infer the canonical domain based on the brand name.",
                         "mention_count": "number — how many times this exact brand name appears in the response",
                         "first_mention_position": "number — character index of first appearance in the response",
                         "visibility": {

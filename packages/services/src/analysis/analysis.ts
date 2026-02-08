@@ -24,14 +24,18 @@ export async function analysePromptResponse(args: {
 
         const positionScore = brand.visibility.rank;
 
+        // Normalize the brand website to include https:// if missing
+        let website = brand.brand_website || "";
+        if (website && !website.startsWith("http")) {
+            website = `https://${website}`;
+        }
+
         map[brand.brand_name] = {
             mentions: brand.mention_count,
             sentiment: brand.sentiment.score,
             visibility: visibilityScore,
             position: positionScore,
-            website: brand.source_attributions[0]?.source_url
-                ? new URL(brand.source_attributions[0].source_url).origin
-                : "",
+            website: website,
         };
     }
 
@@ -42,98 +46,119 @@ export async function analysePromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
     batchSize?: number;
+    analyzeAll?: boolean; // New flag to process all batches
 }): Promise<{
     analysedCount: number;
     failedCount: number;
     errors: Array<{ responseId: string; modelProvider: string; error: string }>;
     remainingCount: number;
 }> {
-    const { workspaceId, userId, batchSize = 50 } = args;
+    const { workspaceId, userId, batchSize = 50, analyzeAll = false } = args;
 
-    const result = await clickhouse.query({
-        query: `
-            SELECT *
-            FROM analytics.prompt_responses
-            WHERE workspace_id = {workspaceId:String}
-              AND user_id = {userId:String}
-              AND is_analysed = false
-            LIMIT {batchSize:UInt32}
-        `,
-        query_params: { workspaceId, userId, batchSize },
-        format: "JSONEachRow",
-    });
+    let totalAnalyzed = 0;
+    let totalFailed = 0;
+    let allErrors: Array<{ responseId: string; modelProvider: string; error: string }> = [];
 
-    const responses: PromptResponse[] = await result.json();
+    // If analyzeAll is true, loop until all responses are analyzed
+    let hasMore = true;
+    while (hasMore) {
+        const result = await clickhouse.query({
+            query: `
+                SELECT *
+                FROM analytics.prompt_responses
+                WHERE workspace_id = {workspaceId:String}
+                  AND user_id = {userId:String}
+                  AND is_analysed = false
+                LIMIT {batchSize:UInt32}
+            `,
+            query_params: { workspaceId, userId, batchSize },
+            format: "JSONEachRow",
+        });
 
-    if (responses.length === 0) {
-        return { analysedCount: 0, failedCount: 0, errors: [], remainingCount: 0 };
-    }
+        const responses: PromptResponse[] = await result.json();
 
-    const analysisRows: PromptAnalysis[] = [];
-    const responseIdsToMark: string[] = [];
-    const errors: Array<{ responseId: string; modelProvider: string; error: string }> = [];
+        if (responses.length === 0) {
+            break;
+        }
 
-    // Analyze each response
-    for (const resp of responses) {
-        try {
-            const sources: Source[] = resp.sources.map((s) => ({
-                title: s.title,
-                cited_text: s.cited_text,
-                url: s.url,
-                domain: s.domain,
-                favicon: s.favicon,
-            }));
+        const analysisRows: PromptAnalysis[] = [];
+        const responseIdsToMark: string[] = [];
+        const errors: Array<{ responseId: string; modelProvider: string; error: string }> = [];
 
-            const brandMetrics = await analysePromptResponse({
-                response: resp.response,
-                sources,
+        // Analyze each response
+        for (const resp of responses) {
+            try {
+                const sources: Source[] = resp.sources.map((s) => ({
+                    title: s.title,
+                    cited_text: s.cited_text,
+                    url: s.url,
+                    domain: s.domain,
+                    favicon: s.favicon,
+                }));
+
+                const brandMetrics = await analysePromptResponse({
+                    response: resp.response,
+                    sources,
+                });
+
+                analysisRows.push({
+                    id: uuidv4(),
+                    prompt_id: resp.prompt_id,
+                    workspace_id: resp.workspace_id,
+                    user_id: resp.user_id,
+                    model_provider: resp.model_provider,
+                    brand_metrics: JSON.stringify(brandMetrics),
+                    prompt_run_at: resp.prompt_run_at,
+                    created_at: resp.created_at
+                });
+
+                responseIdsToMark.push(resp.id);
+            } catch (err: any) {
+                const errorMessage = err?.message || String(err);
+                console.error(`Failed to analyze response ${resp.id} (${resp.model_provider}):`, errorMessage);
+
+                // Collect error details for frontend
+                errors.push({
+                    responseId: resp.id,
+                    modelProvider: resp.model_provider,
+                    error: errorMessage,
+                });
+            }
+        }
+
+        if (analysisRows.length > 0) {
+            await clickhouse.insert({
+                table: "analytics.prompt_analysis",
+                values: analysisRows,
+                format: "JSONEachRow",
             });
+        }
 
-            analysisRows.push({
-                id: uuidv4(),
-                prompt_id: resp.prompt_id,
-                workspace_id: resp.workspace_id,
-                user_id: resp.user_id,
-                model_provider: resp.model_provider,
-                brand_metrics: JSON.stringify(brandMetrics),
-                prompt_run_at: resp.prompt_run_at,
-                created_at: resp.created_at
+        if (responseIdsToMark.length > 0) {
+            await clickhouse.command({
+                query: `
+                    ALTER TABLE analytics.prompt_responses
+                    UPDATE is_analysed = true
+                    WHERE id IN ({ids:Array(String)})
+                `,
+                query_params: { ids: responseIdsToMark },
             });
+        }
 
-            responseIdsToMark.push(resp.id);
-        } catch (err: any) {
-            const errorMessage = err?.message || String(err);
-            console.error(`Failed to analyze response ${resp.id} (${resp.model_provider}):`, errorMessage);
+        totalAnalyzed += analysisRows.length;
+        totalFailed += errors.length;
+        allErrors = allErrors.concat(errors);
 
-            // Collect error details for frontend
-            errors.push({
-                responseId: resp.id,
-                modelProvider: resp.model_provider,
-                error: errorMessage,
-            });
+        // If not analyzing all, stop after first batch
+        if (!analyzeAll) {
+            hasMore = false;
+        } else {
+            // Check if there are more to process
+            hasMore = responses.length === batchSize;
         }
     }
 
-    if (analysisRows.length > 0) {
-        await clickhouse.insert({
-            table: "analytics.prompt_analysis",
-            values: analysisRows,
-            format: "JSONEachRow",
-        });
-    }
-
-    if (responseIdsToMark.length > 0) {
-        await clickhouse.command({
-            query: `
-                ALTER TABLE analytics.prompt_responses
-                UPDATE is_analysed = true
-                WHERE id IN ({ids:Array(String)})
-            `,
-            query_params: { ids: responseIdsToMark },
-        });
-    }
-
-    // Check if there are more unanalyzed responses
+    // Check remaining count
     const remainingResult = await clickhouse.query({
         query: `
             SELECT count() as count
@@ -150,9 +175,9 @@ export async function analysePromptsForWorkspace(args: {
     const remainingCount = Number(remainingData[0]?.count || 0);
 
     return {
-        analysedCount: analysisRows.length,
-        failedCount: errors.length,
-        errors,
+        analysedCount: totalAnalyzed,
+        failedCount: totalFailed,
+        errors: allErrors,
         remainingCount,
     };
 }
