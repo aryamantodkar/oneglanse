@@ -22,6 +22,7 @@ export interface AnalysisOutputSingle {
 /** Detailed brand analysis from LLM - matches schema in analysisPrompt */
 export interface LLMBrandAnalysis {
     brand_name: string;
+    brand_website: string;
     mention_count: number;
     first_mention_position: number;
     visibility: {
