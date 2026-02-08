@@ -1,281 +1,207 @@
-import { clickhouse, db } from "@onescope/db";
-import type { AnalysedPrompt, AnalysisInput, AnalysisOutput, GroupedMetrics, PromptAnalysisWithSources, PromptResponse, Source, SourceLookup } from "@onescope/types";
-import fs from "fs";
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
-import { AuthError, fail, NotFoundError, ok, ValidationError } from "@onescope/errors";
+import { clickhouse } from "@onescope/db";
+import type { AnalysisRecord, AnalysisResponse, AnalysisMetadata, BrandMetricMap, PromptAnalysis, PromptResponse, Source, AnalysisRow } from "@onescope/types";
 import { runAnalysis } from "./runAnalysis.js";
 import { v4 as uuidv4 } from "uuid";
+
+export async function analysePromptResponse(args: {
+    response: string;
+    sources: Source[];
+}): Promise<BrandMetricMap> {
+    const result = await runAnalysis({
+        response: args.response,
+        sources: args.sources,
+    });
+
+    if (!result.data) {
+        throw new Error("Analysis failed - no data returned");
+    }
+
+    const map: BrandMetricMap = {};
+    const brands = result.data.brands;
+
+    for (const brand of brands) {
+        const visibilityScore = brand.visibility.visibility_score;
+
+        const positionScore = brand.visibility.rank;
+
+        map[brand.brand_name] = {
+            mentions: brand.mention_count,
+            sentiment: brand.sentiment.score,
+            visibility: visibilityScore,
+            position: positionScore,
+            website: brand.source_attributions[0]?.source_url
+                ? new URL(brand.source_attributions[0].source_url).origin
+                : "",
+        };
+    }
+
+    return map;
+}
 
 export async function analysePromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
-}) {
-    // const { workspaceId, userId } = args;
+}): Promise<{ analysedCount: number }> {
+    const { workspaceId, userId } = args;
 
-    // // const result = await clickhouse.query({
-    // //   query: `
-    // //     SELECT *
-    // //     FROM analytics.prompt_responses
-    // //     WHERE workspace_id = '${workspaceId}'
-    // //       AND user_id = '${userId}'
-    // //       AND (prompt_id, prompt_run_at) IN (
-    // //         SELECT prompt_id, prompt_run_at
-    // //         FROM analytics.prompt_responses pr
-    // //         LEFT JOIN analytics.prompt_analysis pa
-    // //           ON pr.prompt_id = pa.prompt_id
-    // //         AND pr.prompt_run_at = pa.prompt_run_at
-    // //         AND pr.workspace_id = pa.workspace_id
-    // //         WHERE pa.prompt_id IS NULL
-    // //           AND pr.workspace_id = '${workspaceId}'
-    // //           AND pr.user_id = '${userId}'
-    // //       )
-    // //   `,
-    // //   format: "JSONEachRow",
-    // // });
-    // // const responses: PromptResponse[] = await result.json();
+    const result = await clickhouse.query({
+        query: `
+            SELECT *
+            FROM analytics.prompt_responses
+            WHERE workspace_id = {workspaceId:String}
+              AND user_id = {userId:String}
+              AND is_analysed = false
+        `,
+        query_params: { workspaceId, userId },
+        format: "JSONEachRow",
+    });
 
-    // const filePath = path.join(process.cwd(), "mockData", "prompt_responses.json");
-    // const rawData = fs.readFileSync(filePath, "utf8");
-    // const responses: PromptResponse[] = JSON.parse(rawData);
+    const responses: PromptResponse[] = await result.json();
 
-    // if (!responses.length) throw new NotFoundError("Could not fetch prompt responses for analysis.");
+    if (responses.length === 0) {
+        return { analysedCount: 0 };
+    }
 
-    // const groupedPrompts = Object.values(
-    //   responses.reduce(
-    //     (
-    //       acc: Record<
-    //         string,
-    //         {
-    //           prompt_id: string;
-    //           prompt_run_at: string;
-    //           promptResponses: PromptAnalysisWithSources[];
-    //         }
-    //       >,
-    //       resp
-    //     ) => {
-    //       const { prompt_id, prompt_run_at } = resp;
-    
-    //       const key = `${prompt_id}::${prompt_run_at}`;
-    
-    //       if (!acc[key]) {
-    //         acc[key] = {
-    //           prompt_id,
-    //           prompt_run_at,
-    //           promptResponses: [],
-    //         };
-    //       }
-    
-    //       let sourcesArray: Source[] = resp.sources.map(source => {
-    //         return {
-    //           title: source.title ?? "",
-    //           url: source.url ?? "",
-    //           page_age: source.page_age ?? ""
-    //         }
-    //       });
+    const analysisRows: PromptAnalysis[] = [];
 
-    //       const citationsArray: Citation[] = resp.citations.map(citation => ({
-    //         title: citation.title ?? "",
-    //         url: citation.url ?? "",
-    //         start_index: citation.start_index ?? null,
-    //         end_index: citation.end_index ?? null,
-    //         cited_text: citation.cited_text ?? ""
-    //       }));
+    const responseIdsToMark: string[] = [];
 
-    //       acc[key].promptResponses.push({
-    //         id: resp.id,
-    //         prompt_id: resp.prompt_id,
-    //         user_id: resp.user_id,
-    //         workspace_id: resp.workspace_id,
-    //         model: resp.model,
-    //         model_provider: resp.model_provider,
-    //         response: resp.response,
-    //         sources: sourcesArray,
-    //         citations: citationsArray
-    //       });
-    
-    //       return acc;
-    //     },
-    //     {}
-    //   )
-    // );
+    // Analyze each response
+    for (const resp of responses) {
+        try {
+            const sources: Source[] = resp.sources.map((s) => ({
+                title: s.title,
+                cited_text: s.cited_text,
+                url: s.url,
+                domain: s.domain,
+                favicon: s.favicon,
+            }));
 
-    // // MOCK DATA
-    // // const filePath = path.join(process.cwd(), "mockData", "analyzedPrompts.json");
-    // // const rawData = fs.readFileSync(filePath, "utf8");
-    // // const analyzedPrompts = JSON.parse(rawData);
+            const brandMetrics = await analysePromptResponse({
+                response: resp.response,
+                sources,
+            });
 
-    // // const logPath = path.join(process.cwd(), "mockData", "groupedPrompts.json");
+            analysisRows.push({
+                id: uuidv4(),
+                prompt_id: resp.prompt_id,
+                workspace_id: resp.workspace_id,
+                user_id: resp.user_id,
+                model_provider: resp.model_provider,
+                brand_metrics: JSON.stringify(brandMetrics),
+                prompt_run_at: resp.prompt_run_at,
+                created_at: resp.created_at
+            });
 
-    // // fs.writeFileSync(logPath, JSON.stringify(groupedPrompts, null, 2));
+            responseIdsToMark.push(resp.id);
+        } catch (err) {
+            console.error(`Failed to analyze response ${resp.id}:`, err);
+        }
+    }
 
+    if (analysisRows.length > 0) {
+        await clickhouse.insert({
+            table: "analytics.prompt_analysis",
+            values: analysisRows,
+            format: "JSONEachRow",
+        });
+    }
 
-    // // REAL DATA
-    // const analysisData = groupedPrompts.reduce(
-    //   (
-    //     acc: AnalysisInput,
-    //     prompt
-    //   ) => {
-    //     const { prompt_id, prompt_run_at, promptResponses } = prompt;
-    
-    //     if (!acc[prompt_id]) acc[prompt_id] = {};
-    //     if (!acc[prompt_id][prompt_run_at]) acc[prompt_id][prompt_run_at] = [];
-    
-    //     for (const p of promptResponses) {
-    //       acc[prompt_id][prompt_run_at].push({
-    //         model_provider: p.model_provider,
-    //         response: p.response
-    //       });
-    //     }
-    
-    //     return acc;
-    //   },
-    //   {}
-    // );
+    if (responseIdsToMark.length > 0) {
+        await clickhouse.command({
+            query: `
+                ALTER TABLE analytics.prompt_responses
+                UPDATE is_analysed = true
+                WHERE id IN ({ids:Array(String)})
+            `,
+            query_params: { ids: responseIdsToMark },
+        });
+    }
 
-    // // REAL DATA
-    // // const llmResult = await runAnalysis(analysisData);
-
-    // // if (!llmResult.data) {
-    // //   throw new Error("Analysis failed");
-    // // }
-
-    // // const analysisResults: AnalysisOutput  = llmResult.data;
-
-    // // MOCK DATA
-    // // const logPath2 = path.join(process.cwd(), "mockData", "metrics.json");
-
-    // // fs.writeFileSync(logPath2, JSON.stringify(analysisResults, null, 2));
-
-    // const filePath2 = path.join(process.cwd(), "mockData", "metrics.json");
-    // const rawData2 = fs.readFileSync(filePath2, "utf8");
-    // const analysisResults: AnalysisOutput = JSON.parse(rawData2);
-
-    // const responseLookup = new Map<string, SourceCitationLookup>();
-
-    // for (const prompt of groupedPrompts) {
-    //   const { prompt_id, prompt_run_at, promptResponses } = prompt;
-
-    //   for (const p of promptResponses) {
-    //     const key = `${prompt_id}::${prompt_run_at}::${p.model_provider}`;
-
-    //     responseLookup.set(key, {
-    //       sources: p.sources,
-    //       citations: p.citations,
-    //     });
-    //   }
-    // }
-
-    // const rows = [];
-
-    // for (const [promptId, runs] of Object.entries(analysisResults)) {
-    //   if (typeof runs !== "object" || runs === null) continue;
-    //   for (const [promptRunAt, models] of Object.entries(runs)) {
-    //     if (!Array.isArray(models)) continue;
-    //     for (const model of models) {
-    //       if (
-    //         !model?.model_provider ||
-    //         !model?.brandMetrics ||
-    //         typeof model.brandMetrics !== "object" ||
-    //         Array.isArray(model.brandMetrics)
-    //       ) {
-    //         continue;
-    //       }
-
-    //       const key = `${promptId}::${promptRunAt}::${model.model_provider}`;
-
-    //       const matched = responseLookup.get(key);
-
-    //       if (!matched) {
-    //         console.log("No sources/citations match found for", {
-    //           promptId,
-    //           promptRunAt,
-    //           modelProvider: model.model_provider,
-    //         });
-    //       }
-
-    //       let obj = {
-    //         id: uuidv4(),
-    //         prompt_id: promptId,
-    //         workspace_id: workspaceId,
-    //         user_id: userId,
-    //         model_provider: model.model_provider,
-    //         response: model.response,
-    //         brand_metrics: model.brandMetrics,
-    //         sources: matched?.sources ?? [],
-    //         citations: matched?.citations ?? [],
-    //         prompt_run_at: promptRunAt,
-    //       };
-
-    //       rows.push(obj);
-    //     }
-    //   }
-    // }
-
-    // await clickhouse.insert({
-    //   table: "analytics.prompt_analysis",
-    //   values: rows,
-    //   format: "JSONEachRow",
-    // });
-
-    return [];
+    return { analysedCount: analysisRows.length };
 }
 
+/**
+ * Fetch analysed prompts with metadata
+ */
 export async function fetchAnalysedPrompts(args: {
-  workspaceId: string;
-  userId: string;
-}) {
-  const { workspaceId, userId } = args;
+    workspaceId: string;
+    userId: string;
+}): Promise<AnalysisResponse> {
+    const { workspaceId, userId } = args;
 
-  // const result = await clickhouse.query({
-  //   query: `
-  //     SELECT *
-  //     FROM analytics.prompt_analysis
-  //     WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
-  //   `,
-  //   format: "JSONEachRow",
-  // });
-
-  // const analysedPrompts: AnalysedPrompt[] = (await result.json()) as AnalysedPrompt[];
-
-  // if(!analysedPrompts.length) throw new NotFoundError("Failed to fetch data from prompt_anaysis table.");
-
-  const filePath2 = path.join(process.cwd(), "mockData", "promptAnalysis.json");
-  const rawData2 = fs.readFileSync(filePath2, "utf8");
-  const analysedPrompts = JSON.parse(rawData2);
-
-  const result: GroupedMetrics = {};
-  
-  for (const row of analysedPrompts) {
-    const {
-      prompt_id,
-      prompt_run_at,
-      model_provider,
-      response,
-      brand_metrics,
-      sources,
-    } = row;
-
-    if (!result[prompt_id]) {
-      result[prompt_id] = {};
-    }
-
-    if (!result[prompt_id][prompt_run_at]) {
-      result[prompt_id][prompt_run_at] = [];
-    }
-
-    result[prompt_id][prompt_run_at].push({
-      model_provider,
-      response,
-      brandMetrics: brand_metrics,
-      sources,
-      promptRunAt: prompt_run_at
+    // Single query - get everything in one go
+    const result = await clickhouse.query({
+        query: `
+            SELECT
+                pa.id,
+                pa.prompt_id,
+                pa.prompt_run_at,
+                pa.user_id,
+                pa.workspace_id,
+                pa.model_provider,
+                pr.response,
+                pr.sources,
+                pa.brand_metrics,
+                pa.created_at
+            FROM analytics.prompt_analysis pa
+            LEFT JOIN analytics.prompt_responses pr
+              ON pa.prompt_id = pr.prompt_id
+              AND pa.prompt_run_at = pr.prompt_run_at
+              AND pa.model_provider = pr.model_provider
+              AND pa.workspace_id = pr.workspace_id
+            WHERE pa.workspace_id = {workspaceId:String}
+              AND pa.user_id = {userId:String}
+            ORDER BY pa.prompt_run_at DESC
+        `,
+        query_params: { workspaceId, userId },
+        format: "JSONEachRow",
     });
-  }
 
-  const logPath2 = path.join(process.cwd(), "mockData", "finalMetrics.json");
+    const rows: AnalysisRow[] = await result.json();
 
-  fs.writeFileSync(logPath2, JSON.stringify(result, null, 2));
+    // Transform to flat array - single pass
+    const records: AnalysisRecord[] = rows.map((row) => ({
+        id: row.id,
+        prompt_id: row.prompt_id,
+        prompt_run_at: row.prompt_run_at,
+        user_id: row.user_id,
+        workspace_id: row.workspace_id,
+        model_provider: row.model_provider,
+        response: row.response || "",
+        sources: row.sources || [],
+        brand_metrics: typeof row.brand_metrics === "string"
+            ? JSON.parse(row.brand_metrics)
+            : row.brand_metrics,
+        created_at: row.created_at,
+    }));
 
-  return result;
+    // Extract metadata in single pass
+    const brandsSet = new Map<string, string>();
+    const modelsSet = new Set<string>();
+
+    for (const record of records) {
+        // Collect unique brands
+        for (const [brandName, metrics] of Object.entries(record.brand_metrics)) {
+            if (!brandsSet.has(brandName) && metrics.website) {
+                brandsSet.set(brandName, metrics.website);
+            }
+        }
+
+        // Collect unique models
+        modelsSet.add(record.model_provider);
+    }
+
+    const metadata: AnalysisMetadata = {
+        available_brands: Array.from(brandsSet, ([name, website]) => ({
+            name,
+            website,
+        })),
+        available_models: Array.from(modelsSet),
+    };
+
+    return {
+        records,
+        metadata,
+    };
 }

@@ -42,4 +42,5 @@ export interface PromptAnalysisWithSources extends PromptAnalysisBase, SourceLoo
 export interface PromptResponse extends PromptAnalysisWithSources {
     prompt_run_at: string;
     created_at: string;
+    is_analysed: boolean;
 }

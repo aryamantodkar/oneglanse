@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, type JSX, useCallback } from "react";
-import { api } from "@/trpc/react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { ChevronDown, FilterX, Plus, Trash2, Bot, Pencil } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -26,30 +25,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Card,
-  ScrollArea
 } from "@onescope/ui";
-import type { AnalysisModelOutput, AnalysisOutput, BrandFilter, BrandMetric, GroupedMetrics, PromptResponse, UserPrompt } from "@onescope/types";
-import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon, filterPromptResponses } from "@onescope/utils";
+import type { AnalysisRecord, BrandFilter, PromptResponse, UserPrompt } from "@onescope/types";
+import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon, filterAnalysisRecords, modelSelectors } from "@onescope/utils";
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
-import { useAgentStatus, useFetchAnalysedPrompts, usePromptResponses, useUserPrompts } from "./_lib/queries/prompt.queries";
-import { filterMetrics, aggregatePromptMetrics, modelSelectors } from "@onescope/utils";
+import { useAgentStatus, useFetchAnalysedPrompts, useUserPrompts } from "./_lib/queries/prompt.queries";
+import type { Source } from "@onescope/types";
 
 export default function Prompts() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
 
   const [initialPrompts, setInitialPrompts] = useState<UserPrompt[]>([]);
-
   const [modelFilter, setModelFilter] = useState("All Models");
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-
   const [brandFilter, setBrandFilter] = useState<BrandFilter | null>(null);
   const [availableBrandFilters, setAvailableBrandFilters] = useState<BrandFilter[]>([]);
-
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">("all");
-
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -59,37 +51,24 @@ export default function Prompts() {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editPromptValue, setEditPromptValue] = useState("");
   const [expandedResponses, setExpandedResponses] = useState<Set<number>>(new Set());
-
-  const [openPromptResponses, setOpenPromptResponses] = useState<PromptResponse[]>([]);
-  const [allPromptResponses, setAllPromptResponses] = useState<PromptResponse[]>([]);
-
-  const [originalMetricData, setOriginalMetricData] = useState<GroupedMetrics>({});
+  const [analysisRecords, setAnalysisRecords] = useState<AnalysisRecord[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
-
-  const [metrics, setMetrics] = useState<GroupedMetrics>({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const hasCheckedForUnanalysed = useRef(false);
 
   const {
     data: userPrompts,
     isLoading: isUserPromptsLoading,
-    error: userPromptsError,
   } = useUserPrompts(workspaceId);
 
   const {
-    data: promptResponses,
-    isLoading: isPromptResponsesLoading,
-    error: promptResponsesError,
-  } = usePromptResponses(workspaceId);
-  
-  const {
     data: analysedPromptData,
     isLoading: isAnalysedPromptsLoading,
-    error: analysedPromptsError,
+    refetch: refetchAnalysedPrompts,
   } = useFetchAnalysedPrompts(workspaceId);
 
   const {
     data: agentResponse,
-    isLoading: isAgentResponseLoading,
-    error: agentResponseError,
   } = useAgentStatus(workspaceId, jobId ?? "");
   
   const storePromptMutation = useStorePrompt();
@@ -101,88 +80,36 @@ export default function Prompts() {
       setPromptData(userPrompts.data);
       setInitialPrompts(userPrompts.data);
     }
-
-    if(promptResponses?.data?.length){
-      setAllPromptResponses(promptResponses.data);
-    }
-  }, [userPrompts, promptResponses]);
+  }, [userPrompts]);
 
   useEffect(() => {
-    const models = new Set<string>();
-    const brands = new Map<string, string>();
+    if(
+      !analysedPromptData?.data ||
+      !analysedPromptData.data.records ||
+      !analysedPromptData.data.metadata
+    ) return;
 
-    if (analysedPromptData?.data && typeof analysedPromptData.data === "object") {
-      for (const runs of Object.values(analysedPromptData.data)) {
-        if (!runs || typeof runs !== "object") continue;
-      
-        for (const modelProviders of Object.values(runs)) {
-          if (!Array.isArray(modelProviders)) continue;
-      
-          for (const model of modelProviders) {
-            if (!model?.model_provider) continue;
-      
-            models.add(model.model_provider);
-      
-            const brandMetrics = model.brandMetrics;
-            if (!brandMetrics || typeof brandMetrics !== "object") continue;
-      
-            for (const [brandName, metrics] of Object.entries(brandMetrics)) {
-              if (typeof metrics?.website === "string") {
-                brands.set(brandName, metrics.website);
-              }
-            }
-          }
-        }
-      }
+    setAnalysisRecords(analysedPromptData.data.records);
+    setAvailableBrandFilters(analysedPromptData.data.metadata.available_brands);
 
-      setOriginalMetricData(analysedPromptData?.data);
-      setMetrics(analysedPromptData?.data);
-    }
-
-    const brandArray = Array.from(brands, ([name, website]) => ({
-      name,
-      website,
-    }));
-
-    setAvailableModels(["All Models", ...Array.from(models)]);
-    setAvailableBrandFilters(brandArray);
-
-    const randomBrand = brandArray[Math.floor(Math.random() * brandArray.length)] ?? null;
+    const randomBrand = analysedPromptData.data.metadata.available_brands[
+      Math.floor(Math.random() * analysedPromptData.data.metadata.available_brands.length)
+    ] ?? null;
     setBrandFilter(randomBrand);
   }, [analysedPromptData]);
 
-  const filteredResponses = useMemo(() => {
-    return filterPromptResponses(allPromptResponses, {
-      modelFilter,
-      timeFilter,
-    })
-  }, [allPromptResponses, modelFilter, timeFilter]);
-
-  const filteredMetrics = useMemo(() => {
-    return filterMetrics(metrics, {
+  const filteredRecords = useMemo(() => {
+    return filterAnalysisRecords(analysisRecords, {
       modelFilter,
       timeFilter,
       brandFilter,
-    })
-  }, [metrics, modelFilter, timeFilter, brandFilter]);
+    });
+  }, [analysisRecords, modelFilter, timeFilter, brandFilter]);
 
-  useEffect(() => {
-    if (!openPrompt) {
-      setOpenPromptResponses([]);
-      setExpandedResponses(new Set());
-      return;
-    }
-
-    const responses = filteredResponses.filter(
-      (r) => r.prompt_id === openPrompt.id
-    );
-
-    setOpenPromptResponses(responses);
-  }, [openPrompt, filteredResponses]);
-
-  const aggregatedPromptMetrics = useMemo(() => {
-    return aggregatePromptMetrics(filteredMetrics);
-  }, [filteredMetrics]);
+  const openPromptRecords = useMemo(() => {
+    if (!openPrompt) return [];
+    return filteredRecords.filter(record => record.prompt_id === openPrompt.id);
+  }, [openPrompt, filteredRecords]);
 
   const isModified = useMemo(() => {
     if (promptData.length !== initialPrompts.length) return true;
@@ -270,27 +197,64 @@ export default function Prompts() {
   };
 
   useEffect(() => {
-    if (agentResponse?.status === "completed" && agentResponse.response) {
-      toast.success("Agent job completed!");
-      setJobId(null);
-    }
-  }, [agentResponse?.status, agentResponse?.response]);
+    if (!workspaceId || isAnalyzing || isAnalysedPromptsLoading) return;
 
-  // useEffect(() => {
-  //   const fetchAnalysis = async () => {
-  //     try {
-  //     console.log("Testing analyse procedure.")
-  //     const analysisRes = await analyzeMetricsMutation.mutateAsync({ 
-          // workspaceId: 'workspace_e9e4e069-869b-495a-b46c-1e67776b76cf',
-  //         userId: '5AZXvT4txgQ21c4CbihNbsHrdSWQgk90',
-  //       });
-  //       console.log("analysisRes", analysisRes);
-  //     } catch (err) {
-  //       console.error(err);
-  //     }
-  //   };
-  //   fetchAnalysis();
-  // }, []);
+    const agentJustCompleted = agentResponse?.status === "completed" && jobId;
+    const needsInitialCheck = !hasCheckedForUnanalysed.current;
+
+    if (!agentJustCompleted && !needsInitialCheck) return;
+
+    if (needsInitialCheck) {
+      hasCheckedForUnanalysed.current = true;
+    }
+
+    const runAnalysis = async () => {
+      setIsAnalyzing(true);
+      const toastId = toast.loading(
+        agentJustCompleted
+          ? "Analyzing agent responses..."
+          : "Checking for unanalyzed responses..."
+      );
+
+      try {
+        const result = await analyzeMetricsMutation.mutateAsync({ workspaceId });
+        const count = result?.data?.analysedCount ?? 0;
+
+        if (count > 0) {
+          toast.success(
+            `Analyzed ${count} response${count > 1 ? "s" : ""}`,
+            { id: toastId }
+          );
+          await refetchAnalysedPrompts();
+        } else {
+          if (agentJustCompleted) {
+            toast.success("Agent job completed!", { id: toastId });
+          } else {
+            toast.dismiss(toastId);
+          }
+        }
+        
+        if (agentJustCompleted) {
+          setJobId(null);
+        }
+      } catch (err) {
+        console.error("Analysis failed:", err);
+        toast.error("Analysis failed", { id: toastId });
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+
+    runAnalysis();
+  }, [
+    workspaceId,
+    agentResponse?.status,
+    jobId,
+    isAnalyzing,
+    isAnalysedPromptsLoading,
+    analyzeMetricsMutation,
+    refetchAnalysedPrompts
+  ]);
 
   const LoadingState = () => (
     <div className="flex flex-col items-center justify-center h-[60vh] text-center px-6">
@@ -534,6 +498,9 @@ export default function Prompts() {
                   <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-left">
                     Prompt
                   </TableHead>
+                  <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-left">
+                    Model
+                  </TableHead>
                   <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-center">
                     Mentions
                   </TableHead>
@@ -550,62 +517,84 @@ export default function Prompts() {
               </TableHeader>
   
               <TableBody>
-                {promptData.map((prompt, idx) => {
-                  let metrics = aggregatedPromptMetrics[prompt.id] ?? {
-                    mentions: "-",
-                    sentiment: "-",
-                    visibility: "-",
-                    position: "-",
+                {filteredRecords.map((record, idx) => {
+                  const prompt = promptData.find((p) => p.id === record.prompt_id);
+                  if (!prompt) return null;
+
+                  // Check if this is the first row of a new prompt group
+                  const isPreviousPromptDifferent =
+                    idx > 0 && filteredRecords[idx - 1]?.prompt_id !== record.prompt_id;
+
+                  // Get the prompt index for checkbox selection
+                  const promptIdx = promptData.findIndex((p) => p.id === prompt.id);
+
+                  // Get brand metrics for the filtered brand
+                  const brandMetrics = brandFilter
+                    ? record.brand_metrics[brandFilter.name]
+                    : Object.values(record.brand_metrics)[0];
+
+                  const metrics = brandMetrics ?? {
+                    mentions: 0,
+                    sentiment: 0,
+                    visibility: 0,
+                    position: 0,
                   };
 
                   return (
                     <TableRow
-                      key={prompt.id}
+                      key={record.id}
                       onClick={() => {
                         setOpenPrompt(prompt);
                       }}
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-100/50 dark:border-gray-800/40 last:border-none"
+                      className={`
+                        cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors
+                        border-b border-gray-100/50 dark:border-gray-800/40 last:border-none
+                        ${isPreviousPromptDifferent ? "border-t-2 border-t-gray-200 dark:border-t-gray-700" : ""}
+                      `}
                     >
                       <TableCell className="pl-4">
                         <Checkbox
-                          checked={selectedRows.has(idx)}
-                          onCheckedChange={() => toggleRow(idx)}
+                          checked={selectedRows.has(promptIdx)}
+                          onCheckedChange={() => toggleRow(promptIdx)}
                           onClick={(e) => e.stopPropagation()}
                         />
                       </TableCell>
-  
+
                       <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
-                        {prompt.prompt}
+                        {/* Only show prompt text on first row of each group */}
+                        {isPreviousPromptDifferent || idx === 0 ? prompt.prompt : ""}
                       </TableCell>
-  
+
+                      <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={getModelFavicon(record.model_provider)}
+                            alt={record.model_provider}
+                            className="w-4 h-4 rounded-sm"
+                          />
+                          <span>
+                            {modelSelectors.find((m) => m.value === record.model_provider)
+                              ?.label || record.model_provider}
+                          </span>
+                        </div>
+                      </TableCell>
+
                       <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
-                        {metrics.mentions !== "-"
-                          ? (
-                              <span className="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 text-xs font-medium">
-                                {metrics.mentions}
-                              </span>
-                            )
-                          : (
-                              <span className="text-gray-400">-</span>
-                            )}
+                        <span className="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 text-xs font-medium">
+                          {metrics.mentions}
+                        </span>
                       </TableCell>
-  
+
                       <TableCell className="px-6 py-5 text-center">
                         <SentimentMetricCell sentiment={metrics.sentiment} />
                       </TableCell>
-  
+
                       <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
-                        {metrics.visibility !== "-"
-                          ? (
-                              <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2 py-1 text-xs font-medium">
-                                {metrics.visibility}%
-                              </span>
-                            )
-                          : (
-                              <span className="text-gray-400">-</span>
-                            )}
+                        <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2 py-1 text-xs font-medium">
+                          {metrics.visibility}%
+                        </span>
                       </TableCell>
-  
+
                       <TableCell className="px-6 py-5 text-center">
                         <PositionMetricCell position={metrics.position} />
                       </TableCell>
@@ -637,7 +626,7 @@ export default function Prompts() {
                     </h2>
 
                     <span className="text-[11px] text-gray-400">
-                      {openPromptResponses.length} total response{openPromptResponses.length !== 1 ? "s" : ""}
+                      {openPromptRecords.length} total response{openPromptRecords.length !== 1 ? "s" : ""}
                     </span>
                   </div>
   
@@ -731,14 +720,14 @@ export default function Prompts() {
 
                 <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                   {
-                    openPromptResponses.length > 0
+                    openPromptRecords.length > 0
                     ?
-                    openPromptResponses.map((resp, index) => {
+                    openPromptRecords.map((record: AnalysisRecord, index: number) => {
                       const isExpanded = expandedResponses.has(index);
 
                       return (
                         <div
-                          key={index}
+                          key={record.id}
                           onClick={() => toggleResponse(index)}
                           data-expanded={isExpanded}
                           className={`
@@ -759,22 +748,22 @@ export default function Prompts() {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-4">
                               <img
-                                src={getModelFavicon(resp.model_provider)}
-                                alt={resp.model_provider}
+                                src={getModelFavicon(record.model_provider)}
+                                alt={record.model_provider}
                                 className="w-7 h-7 rounded-md"
                               />
-                    
+
                               <div className="flex flex-col">
                                 <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                                {modelSelectors.find(m => m.value === resp.model_provider)?.label || resp.model_provider}
+                                {modelSelectors.find(m => m.value === record.model_provider)?.label || record.model_provider}
                                 </span>
-                    
+
                                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                                  {formatDate(resp.prompt_run_at)}
+                                  {formatDate(record.prompt_run_at)}
                                 </span>
                               </div>
                             </div>
-                    
+
                             <ChevronDown
                               className={`
                                 w-5 h-5
@@ -795,7 +784,7 @@ export default function Prompts() {
                               transition-all duration-200 ease-in-out
                               ${isExpanded ? "" : "line-clamp-3 overflow-hidden"}
                             `}
-                            dangerouslySetInnerHTML={{ __html: formatMarkdown(resp.response) }}
+                            dangerouslySetInnerHTML={{ __html: formatMarkdown(record.response) }}
                           />
 
                           <button
@@ -813,11 +802,11 @@ export default function Prompts() {
                             "
                           >
                             {isExpanded ? "Show less" : "View full response"}
-                          </button> 
+                          </button>
 
                           <SourcesCard
-                            key={index}
-                            resp={resp}
+                            key={record.id}
+                            sources={record.sources}
                           />
                         </div>
                       );
@@ -863,16 +852,16 @@ export default function Prompts() {
 }
 
 function SourcesCard({
-  resp,
+  sources,
 }: {
-  resp: PromptResponse;
+  sources: Source[];
 }) {
   const MAX_VISIBLE = 5;
   const [showAllLinks, setShowAllLinks] = useState(false);
 
   const linksToShow = useMemo(() => {
-    return getUniqueLinks(resp.sources);
-  }, [resp.sources]);
+    return getUniqueLinks(sources);
+  }, [sources]);
 
   const visibleLinks = showAllLinks
     ? linksToShow

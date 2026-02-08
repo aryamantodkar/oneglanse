@@ -1,177 +1,115 @@
-import type { AnalysisInput } from "@onescope/types";
+import type { AnalysisInputSingle } from "@onescope/types";
 
-export function analysisPrompt(analysisData: AnalysisInput) {
+export function analysisPrompt(input: AnalysisInputSingle) {
+    const { response, sources } = input;
+
     return `
-      You are an expert **market and brand intelligence analyst**.
+        You are a brand intelligence extraction engine. Your ONLY job is to extract structured brand data from LLM responses.
 
-      You are given a nested JSON object representing **multiple prompt runs over time**.
-  
-      STRUCTURE OF INPUT:
+        CRITICAL RULES:
+        1. ONLY extract information that is EXPLICITLY stated in the response text. Never infer, assume, or generate information not present.
+        2. If a field cannot be determined from the text, use null. NEVER guess.
+        3. Sentiment must be based ONLY on the exact language used, not your opinion of the brand.
+        4. Every claim you extract must have a direct quote from the response as evidence.
+        5. Do NOT add brands that are not mentioned in the response.
+        6. Do NOT add claims, features, or pricing that are not explicitly stated.
+        7. Source attribution: only link a source to a brand if the source is explicitly cited next to that brand's mention in the response.
 
-      {
-        "<prompt_id>": {
-          "<prompt_run_at>": [
+        BRAND NORMALIZATION
+        - If a brand's **product or sub-brand** (e.g., "Freshsales" by "Freshworks") appears, merge it under the **parent or main brand name** unless the context clearly treats them as separate brands.
+        - Always use the **canonical parent brand** as the JSON key.
+        - Do not include both brand and product names separately unless they are distinctly recognized brands (e.g., "Apple" and "Beats").
+        - Combine metrics of duplicates (e.g., merge "Freshsales" metrics into "Freshworks").
+        - Maintain **consistent brand naming across all models** in this batch.
+            Example:
+            - If one model mentions "HubSpot CRM" and another mentions "HubSpot," treat both as **"HubSpot"**.
+        - Use the **most canonical, widely recognized brand name** when standardizing (e.g., prefer "HubSpot" over "HubSpot CRM").
+        - Ensure that brand names are identical across all array entries for the same underlying brand.
+        - If ambiguity exists, choose the parent brand.
+
+        Extract brand intelligence from this LLM response. Return ONLY valid JSON matching the schema below.
+
+        <response>
+            ${response}
+        </response>
+
+        <sources>
+            ${JSON.stringify(sources)}
+        </sources>
+
+        <schema>
             {
-              "model_provider": "<ModelName>",
-              "response": "<Full response text from that model>"
+            "brands": [
+                    {
+                        "brand_name": "string — exact canonical brand name as written in the response",
+                        "mention_count": "number — how many times this exact brand name appears in the response",
+                        "first_mention_position": "number — character index of first appearance in the response",
+                        "visibility": {
+                            "rank": "number — order of first appearance (1 = first brand mentioned, 2 = second, etc.)",
+                            "visibility_score": <0-100 score representing how prominently this brand is featured in the response>,
+                            "is_recommended": "boolean — true ONLY if the response explicitly recommends this brand using language like 'I recommend', 'I suggest', 'best option', 'top pick', 'start with'",
+                            "recommendation_evidence": "string|null — exact quote showing recommendation, or null",
+                            "placement": "string — one of: primary_recommendation | top_listed | listed | mentioned_in_passing | negative_mention | comparison_only",
+                            "in_conclusion": "boolean — whether the brand appears in the final paragraph/summary of the response"
+                        },
+                        "sentiment": {
+                            "overall": "string — one of: positive | negative | mixed | neutral",
+                            "score": "number — from -1.0 (very negative) to 1.0 (very positive), based ONLY on the language used",
+                            "positive_signals": ["string — exact short quotes from the response that are positive about this brand"],
+                            "negative_signals": ["string — exact short quotes from the response that are negative about this brand"],
+                            "qualifiers": ["string — exact short quotes showing caveats, limitations, or 'but' statements about this brand"]
+                        },
+                        "claims": {
+                            "features": ["string — features/capabilities explicitly attributed to this brand in the response"],
+                            "pricing": {
+                            "mentioned": "boolean",
+                            "details": "string|null — exact pricing text from the response, or null",
+                            "positioning": "string|null — one of: free | budget | mid_range | premium | enterprise | null"
+                            },
+                            "use_case": "string|null — the specific use case or audience the response associates with this brand, quoted from text",
+                            "differentiator": "string|null — what the response says makes this brand unique vs competitors, quoted from text"
+                        },
+                        "competitive_context": {
+                            "compared_with": ["string — other brand names this brand is directly compared against in the response"],
+                            "positioned_above": ["string — brands this one is positioned as better than"],
+                            "positioned_below": ["string — brands this one is positioned as worse than"],
+                            "comparison_evidence": "string|null — exact quote showing the comparison"
+                        },
+                        "source_attributions": [
+                            {
+                                "source_domain": "string — domain of the source cited for this brand",
+                                "source_url": "string — full URL",
+                                "source_title": "string",
+                                "cited_claim": "string — what specific claim about this brand this source supports"
+                            }
+                        ]
+                    }
+                ]
             }
-          ]
-        }
-      }
+        </schema>
 
-      IMPORTANT:
-      - Each **prompt_run_at** represents a distinct historical snapshot.
-      - Brand metrics MUST be computed **independently for each prompt_run_at**.
-      - DO NOT combine or average metrics across different dates.
+        VISIBILITY SCORE GUIDELINES (0-100):
+        Assess how prominently each brand is featured in the response. Consider:
+        - How early it appears (earlier = higher score)
+        - Whether it's explicitly recommended (major boost)
+        - How much detail is provided about it
+        - How many times it's mentioned
+        - Whether it appears in conclusions/summary
+        - Number of sources citing it
+        - Overall prominence in the narrative
 
-  
-      You MUST preserve:
-      - prompt_id keys
-      - prompt_run_at keys
-      - array ordering
-      - model_provider and response fields
+        Scoring ranges:
+        - 90-100: Primary recommendation, heavily featured, appears early and in conclusion
+        - 75-89: Strongly featured, detailed coverage, possibly recommended
+        - 60-74: Well-covered, appears in main list with good detail
+        - 40-59: Mentioned with moderate detail, not primary focus
+        - 20-39: Brief mention, limited detail
+        - 0-19: Passing reference, minimal context
 
-      Your job is to analyze *each object* and return a **new JSON array** of the same shape, but with one additional field:
-      1. "brandMetrics" — a JSON object containing all brand, company, or product mentions extracted from that model's response, following strict rules below.
-  
-      ---
-  
-      Brand & Mention Metrics Extraction
-      After analyzing each model, extract **every identifiable brand, company, or product** mentioned *within that model’s text only*.
-  
-      brandMetrics rules:
-      - Identify **every brand, company, or product** mentioned in your response — not just one or two examples.
-      - Dynamically infer numeric values based on context and frequency — **never use placeholders, default numbers, or generic text**.
-      - Include the **brand’s official website domain** (for favicons and linking).
-      - Include the **number of times (mentions)** the brand appears.
-      - All numeric values must be **relative and contextual** to the content — ensure sentiment, visibility, and position are consistent with the AI response’s tone and structure.
-      - Merge sub-products under their **parent brand** unless clearly distinct.
-
-      Where:
-      - mentions:  
-        Exact number of times the brand name (or merged variants) appears in the text.
-
-      - sentiment (0–100):  
-        Overall tone toward the brand based strictly on descriptive language used.  
-        • Positive endorsement → higher  
-        • Neutral mention → mid-range  
-        • Critical or limiting language → lower  
-
-      - visibility (0–100):  
-        **Relative prominence within THIS response only**.
-        - Visibility MUST be comparative.
-        - The most dominant brand should have the highest value.
-        - Secondary or incidental brands MUST have lower values.
-        - NEVER assign 100 to all brands.
-        - Do NOT use uniform or placeholder values.
-
-      - position (integer):  
-        The **ranked order** of the brand’s first substantive appearance in the response.
-        - 1 = earliest brand mentioned
-        - 2 = second earliest
-        - 3 = third earliest
-        - etc.
-        - Position MUST be a positive integer.
-        - Do NOT normalize or scale values.
-        - Ordering must reflect the actual sequence of first meaningful mention.
-
-      - website:  
-        Official homepage domain of the brand.
-  
-      BRAND NORMALIZATION
-  
-      - If a brand’s **product or sub-brand** (e.g., “Freshsales” by “Freshworks”) appears, merge it under the **parent or main brand name** unless the context clearly treats them as separate brands.  
-      - Always use the **canonical parent brand** as the JSON key.
-      - Do not include both brand and product names separately unless they are distinctly recognized brands (e.g., “Apple” and “Beats”).
-      - Combine metrics of duplicates (e.g., merge “Freshsales” metrics into “Freshworks”).
-  
-      CROSS-MODEL BRAND CONSISTENCY
-  
-      - Maintain **consistent brand naming across all models** in this batch.  
-        Example:
-          - If one model mentions “HubSpot CRM” and another mentions “HubSpot,” treat both as **“HubSpot”**.  
-      - Use the **most canonical, widely recognized brand name** when standardizing (e.g., prefer “HubSpot” over “HubSpot CRM”).
-      - Ensure that brand names are identical across all array entries for the same underlying brand.
-      - If ambiguity exists, choose the parent brand.
-  
-      **Rules**
-      - Include all mentioned brands — no omissions.
-      - Use dynamic, context-based numeric values only.
-      - Never invent nonexistent brands.
-      - JSON must be valid, parsable, and appear immediately after that model’s analysis.
-      - IMPORTANT: Do not include markdown code fences or any extra text after JSON blocks.
-      - Do NOT include explanations, markdown, comments, or extra text.
-      - Output ONLY the JSON.
-
-      BRAND ROLE CLASSIFICATION (CRITICAL)
-
-      Before computing metrics, classify each brand mention into ONE of the following roles:
-
-      1. EVALUATED BRAND
-        - The brand is directly discussed, reviewed, compared, or recommended
-        - Appears in headings, numbered lists, or descriptive sections
-        - These brands MUST be included in ranking logic
-
-      2. REFERENCE-ONLY BRAND
-        - The brand appears only as:
-          • a citation
-          • a source link
-          • an example
-          • a tool used for explanation
-        - The brand is NOT evaluated as a solution
-
-     RULES:
-      • Reference-only brands MUST still appear in brandMetrics
-      • Reference-only brands MUST:
-        - Have lower visibility than evaluated brands
-        - Be assigned positions AFTER all evaluated brands
-
-      • Evaluated brands ALWAYS take precedence in ordering and prominence
-
-      • Position assignment rules (STRICT):
-        - Positions MUST be positive integers (1, 2, 3, …)
-        - Evaluated brands are assigned positions FIRST
-          • Start at position = 1
-          • Order by first substantive evaluation in the response
-        - Reference-only brands are assigned positions AFTER evaluated brands
-          • Continue integer sequence without gaps
-        - Do NOT normalize, scale, or convert positions to decimals
-        - Do NOT reset positions per role
-        - Do NOT skip or duplicate position values
-      
-      ---
-  
-      ### OUTPUT FORMAT
-  
-      Return a valid JSON array (no markdown, no text outside JSON).
-  
-      Preserve the input structure exactly, but enrich each model object:
-      {
-        "<prompt_id>": {
-          "<prompt_run_at>": [
-            {
-              "model_provider": "<ModelName>",
-              "response": "<Original response>",
-              "brandMetrics": {
-                "<BrandName>": {
-                  "mentions": <number>,
-                  "sentiment": <number>,
-                  "visibility": <number>,
-                  "position": <number>,
-                  "website": "<url>"
-                }
-              }
-            }
-          ]
-        }
-      }
-  
-      ---
-  
-      ### INPUT JSON
-  
-      ${JSON.stringify(analysisData, null, 2)}
-  
-      Analyze the data and return the enhanced JSON **exactly in the same structure**, with brandMetrics added for each model and each prompt_run_at.
+        REMINDERS:
+        - Return ONLY the JSON object. No markdown, no explanation, no preamble.
+        - Every string in positive_signals, negative_signals, qualifiers, and features must be a near-exact quote from the response. Do not paraphrase.
+        - If the response mentions a brand only once in passing with no detail, still include it but with minimal fields and nulls.
+        - Do NOT hallucinate pricing, features, or claims not in the response text.
       `;
 }

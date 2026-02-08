@@ -7,17 +7,6 @@ export function useUserPrompts(workspaceId: string){
     );
 }
 
-export function usePromptResponses(workspaceId: string){
-    return api.prompt.fetchPromptResponses.useQuery(
-        { workspaceId },
-        { 
-          retry: 2,
-          refetchOnWindowFocus: false,
-          enabled: !!workspaceId, 
-        }
-    );
-}
-
 export function usePromptSources(workspaceId: string){
   return api.prompt.fetchPromptSources.useQuery(
       { workspaceId },

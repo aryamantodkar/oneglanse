@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
         domain Nullable(String),
         favicon Nullable(String)
     )),
-
+    is_analysed Bool DEFAULT false,
     prompt_run_at DateTime,
-    created_at DateTime DEFAULT now() 
+    created_at DateTime DEFAULT now()
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(prompt_run_at)

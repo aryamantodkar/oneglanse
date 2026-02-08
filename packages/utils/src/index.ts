@@ -7,4 +7,5 @@ export * from "./metrics/index.js";
 export * from "./extract/index.js";
 export * from "./url/index.js";
 export * from "./agent/index.js";
-export * from "./web/index.js"
+export * from "./web/index.js";
+export * from "./analysis/index.js";
