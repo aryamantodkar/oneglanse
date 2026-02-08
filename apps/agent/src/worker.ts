@@ -39,7 +39,7 @@ async function startWorker() {
       );
 
       if (allFailed) {
-        throw new Error("All providers failed");
+        throw new Error("All providers failed - please check authentication and try again");
       }
 
       await storePromptResponses({
@@ -49,11 +49,29 @@ async function startWorker() {
         promptRunAt: created_at,
       });
 
+      // Calculate statistics for logging
+      const totalPromptsRequested = data.length;
+      const expectedResponses = totalPromptsRequested * Object.keys(results).length;
+      const actualResponses = Object.values(results).reduce((sum, r) => sum + r.data.length, 0);
+
+      if (actualResponses < expectedResponses) {
+        logger.warn(
+          `Job ${job.id}: ${actualResponses}/${expectedResponses} responses succeeded (some prompts failed after 7 retries with exponential backoff)`
+        );
+      } else {
+        logger.success(`Job ${job.id}: All ${actualResponses} responses succeeded`);
+      }
+
       await redis.set(
         `job:${job.id}:result`,
         JSON.stringify({
           status: "completed",
           results,
+          stats: {
+            totalPrompts: totalPromptsRequested,
+            expectedResponses,
+            actualResponses,
+          },
         }),
         "EX",
         60 * 60 // 1 hour TTL
