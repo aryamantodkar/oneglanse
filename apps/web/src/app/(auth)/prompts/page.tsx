@@ -106,6 +106,17 @@ export default function Prompts() {
     });
   }, [analysisRecords, modelFilter, timeFilter, brandFilter]);
 
+  // Group prompts with their analysis records for table display
+  const promptsWithRecords = useMemo(() => {
+    return promptData.map(prompt => {
+      const records = filteredRecords.filter(r => r.prompt_id === prompt.id);
+      return {
+        prompt,
+        records,
+      };
+    });
+  }, [promptData, filteredRecords]);
+
   const openPromptRecords = useMemo(() => {
     if (!openPrompt) return [];
     return filteredRecords.filter(record => record.prompt_id === openPrompt.id);
@@ -517,89 +528,109 @@ export default function Prompts() {
               </TableHeader>
   
               <TableBody>
-                {filteredRecords.map((record, idx) => {
-                  const prompt = promptData.find((p) => p.id === record.prompt_id);
-                  if (!prompt) return null;
-
-                  // Check if this is the first row of a new prompt group
-                  const isPreviousPromptDifferent =
-                    idx > 0 && filteredRecords[idx - 1]?.prompt_id !== record.prompt_id;
-
-                  // Get the prompt index for checkbox selection
-                  const promptIdx = promptData.findIndex((p) => p.id === prompt.id);
-
-                  // Get brand metrics for the filtered brand
-                  const brandMetrics = brandFilter
-                    ? record.brand_metrics[brandFilter.name]
-                    : Object.values(record.brand_metrics)[0];
-
-                  const metrics = brandMetrics ?? {
-                    mentions: 0,
-                    sentiment: 0,
-                    visibility: 0,
-                    position: 0,
-                  };
-
-                  return (
-                    <TableRow
-                      key={record.id}
-                      onClick={() => {
-                        setOpenPrompt(prompt);
-                      }}
-                      className={`
-                        cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors
-                        border-b border-gray-100/50 dark:border-gray-800/40 last:border-none
-                        ${isPreviousPromptDifferent ? "border-t-2 border-t-gray-200 dark:border-t-gray-700" : ""}
-                      `}
-                    >
-                      <TableCell className="pl-4">
-                        <Checkbox
-                          checked={selectedRows.has(promptIdx)}
-                          onCheckedChange={() => toggleRow(promptIdx)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </TableCell>
-
-                      <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
-                        {/* Only show prompt text on first row of each group */}
-                        {isPreviousPromptDifferent || idx === 0 ? prompt.prompt : ""}
-                      </TableCell>
-
-                      <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={getModelFavicon(record.model_provider)}
-                            alt={record.model_provider}
-                            className="w-4 h-4 rounded-sm"
+                {promptsWithRecords.flatMap(({ prompt, records }, promptIdx) => {
+                  // If no records, show prompt with empty metrics
+                  if (records.length === 0) {
+                    return (
+                      <TableRow
+                        key={prompt.id}
+                        onClick={() => setOpenPrompt(prompt)}
+                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-100/50 dark:border-gray-800/40 last:border-none"
+                      >
+                        <TableCell className="pl-4">
+                          <Checkbox
+                            checked={selectedRows.has(promptIdx)}
+                            onCheckedChange={() => toggleRow(promptIdx)}
+                            onClick={(e) => e.stopPropagation()}
                           />
-                          <span>
-                            {modelSelectors.find((m) => m.value === record.model_provider)
-                              ?.label || record.model_provider}
+                        </TableCell>
+
+                        <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
+                          {prompt.prompt}
+                        </TableCell>
+
+                        <TableCell className="px-6 py-5 text-sm text-gray-400 dark:text-gray-500 text-center" colSpan={5}>
+                          <span className="italic">No analysis data yet</span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  // If records exist, show one row per record
+                  return records.map((record, recordIdx) => {
+                    const isFirstRecord = recordIdx === 0;
+
+                    // Get brand metrics for the filtered brand
+                    const brandMetrics = brandFilter
+                      ? record.brand_metrics[brandFilter.name]
+                      : Object.values(record.brand_metrics)[0];
+
+                    const metrics = brandMetrics ?? {
+                      mentions: 0,
+                      sentiment: 0,
+                      visibility: 0,
+                      position: 0,
+                    };
+
+                    return (
+                      <TableRow
+                        key={record.id}
+                        onClick={() => setOpenPrompt(prompt)}
+                        className={`
+                          cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors
+                          border-b border-gray-100/50 dark:border-gray-800/40 last:border-none
+                          ${isFirstRecord && promptIdx > 0 ? "border-t-2 border-t-gray-200 dark:border-t-gray-700" : ""}
+                        `}
+                      >
+                        <TableCell className="pl-4">
+                          <Checkbox
+                            checked={selectedRows.has(promptIdx)}
+                            onCheckedChange={() => toggleRow(promptIdx)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </TableCell>
+
+                        <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
+                          {/* Only show prompt text on first record of each prompt */}
+                          {isFirstRecord ? prompt.prompt : ""}
+                        </TableCell>
+
+                        <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={getModelFavicon(record.model_provider)}
+                              alt={record.model_provider}
+                              className="w-4 h-4 rounded-sm"
+                            />
+                            <span>
+                              {modelSelectors.find((m) => m.value === record.model_provider)
+                                ?.label || record.model_provider}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
+                          <span className="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 text-xs font-medium">
+                            {metrics.mentions}
                           </span>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
-                        <span className="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 text-xs font-medium">
-                          {metrics.mentions}
-                        </span>
-                      </TableCell>
+                        <TableCell className="px-6 py-5 text-center">
+                          <SentimentMetricCell sentiment={metrics.sentiment} />
+                        </TableCell>
 
-                      <TableCell className="px-6 py-5 text-center">
-                        <SentimentMetricCell sentiment={metrics.sentiment} />
-                      </TableCell>
+                        <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
+                          <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2 py-1 text-xs font-medium">
+                            {metrics.visibility}%
+                          </span>
+                        </TableCell>
 
-                      <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
-                        <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2 py-1 text-xs font-medium">
-                          {metrics.visibility}%
-                        </span>
-                      </TableCell>
-
-                      <TableCell className="px-6 py-5 text-center">
-                        <PositionMetricCell position={metrics.position} />
-                      </TableCell>
-                    </TableRow>
-                  );
+                        <TableCell className="px-6 py-5 text-center">
+                          <PositionMetricCell position={metrics.position} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
                 })}
               </TableBody>
             </Table>
