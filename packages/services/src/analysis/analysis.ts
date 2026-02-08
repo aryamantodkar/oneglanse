@@ -41,12 +41,14 @@ export async function analysePromptResponse(args: {
 export async function analysePromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
+    batchSize?: number;
 }): Promise<{
     analysedCount: number;
     failedCount: number;
     errors: Array<{ responseId: string; modelProvider: string; error: string }>;
+    remainingCount: number;
 }> {
-    const { workspaceId, userId } = args;
+    const { workspaceId, userId, batchSize = 50 } = args;
 
     const result = await clickhouse.query({
         query: `
@@ -55,15 +57,16 @@ export async function analysePromptsForWorkspace(args: {
             WHERE workspace_id = {workspaceId:String}
               AND user_id = {userId:String}
               AND is_analysed = false
+            LIMIT {batchSize:UInt32}
         `,
-        query_params: { workspaceId, userId },
+        query_params: { workspaceId, userId, batchSize },
         format: "JSONEachRow",
     });
 
     const responses: PromptResponse[] = await result.json();
 
     if (responses.length === 0) {
-        return { analysedCount: 0, failedCount: 0, errors: [] };
+        return { analysedCount: 0, failedCount: 0, errors: [], remainingCount: 0 };
     }
 
     const analysisRows: PromptAnalysis[] = [];
@@ -130,10 +133,27 @@ export async function analysePromptsForWorkspace(args: {
         });
     }
 
+    // Check if there are more unanalyzed responses
+    const remainingResult = await clickhouse.query({
+        query: `
+            SELECT count() as count
+            FROM analytics.prompt_responses
+            WHERE workspace_id = {workspaceId:String}
+              AND user_id = {userId:String}
+              AND is_analysed = false
+        `,
+        query_params: { workspaceId, userId },
+        format: "JSONEachRow",
+    });
+
+    const remainingData: Array<{ count: string }> = await remainingResult.json();
+    const remainingCount = Number(remainingData[0]?.count || 0);
+
     return {
         analysedCount: analysisRows.length,
         failedCount: errors.length,
         errors,
+        remainingCount,
     };
 }
 
