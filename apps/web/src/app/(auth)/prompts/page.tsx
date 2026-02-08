@@ -229,37 +229,63 @@ export default function Prompts() {
           : "Checking for unanalyzed responses..."
       );
 
-      try {
-        const result = await analyzeMetricsMutation.mutateAsync({ workspaceId });
-        const analysedCount = result?.data?.analysedCount ?? 0;
-        const failedCount = result?.data?.failedCount ?? 0;
-        const errors = result?.data?.errors ?? [];
+      let totalAnalyzed = 0;
+      let totalFailed = 0;
+      let allErrors: Array<{ responseId: string; modelProvider: string; error: string }> = [];
 
-        // Show success message if any were analyzed
-        if (analysedCount > 0) {
-          if (failedCount > 0) {
+      try {
+        // Keep analyzing in batches until all responses are processed
+        let hasMore = true;
+        let batchNumber = 0;
+
+        while (hasMore) {
+          batchNumber++;
+          const result = await analyzeMetricsMutation.mutateAsync({ workspaceId });
+          const analysedCount = result?.data?.analysedCount ?? 0;
+          const failedCount = result?.data?.failedCount ?? 0;
+          const remainingCount = result?.data?.remainingCount ?? 0;
+          const errors = result?.data?.errors ?? [];
+
+          totalAnalyzed += analysedCount;
+          totalFailed += failedCount;
+          allErrors = allErrors.concat(errors);
+
+          // Update progress toast
+          if (remainingCount > 0) {
+            toast.loading(
+              `Analyzed ${totalAnalyzed} response${totalAnalyzed !== 1 ? "s" : ""}... ${remainingCount} remaining`,
+              { id: toastId }
+            );
+          }
+
+          hasMore = remainingCount > 0;
+        }
+
+        // Show final result
+        if (totalAnalyzed > 0) {
+          if (totalFailed > 0) {
             // Partial success
             toast.warning(
-              `Analyzed ${analysedCount} response${analysedCount > 1 ? "s" : ""}, ${failedCount} failed`,
+              `Analyzed ${totalAnalyzed} response${totalAnalyzed > 1 ? "s" : ""}, ${totalFailed} failed`,
               { id: toastId, duration: 5000 }
             );
             // Log errors to console for debugging
-            console.error("Analysis errors:", errors);
+            console.error("Analysis errors:", allErrors);
           } else {
             // Full success
             toast.success(
-              `Analyzed ${analysedCount} response${analysedCount > 1 ? "s" : ""}`,
+              `Analyzed ${totalAnalyzed} response${totalAnalyzed > 1 ? "s" : ""}`,
               { id: toastId }
             );
           }
           await refetchAnalysedPrompts();
-        } else if (failedCount > 0) {
+        } else if (totalFailed > 0) {
           // All failed
           toast.error(
-            `Analysis failed for ${failedCount} response${failedCount > 1 ? "s" : ""}. Check console for details.`,
+            `Analysis failed for ${totalFailed} response${totalFailed > 1 ? "s" : ""}. Check console for details.`,
             { id: toastId, duration: 6000 }
           );
-          console.error("Analysis errors:", errors);
+          console.error("Analysis errors:", allErrors);
         } else {
           // Nothing to analyze
           if (agentJustCompleted) {
