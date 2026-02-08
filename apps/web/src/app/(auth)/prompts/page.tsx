@@ -11,6 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
   toast,
   Checkbox,
   Table,
@@ -25,6 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  Separator,
+  Input,
 } from "@onescope/ui";
 import type { AnalysisRecord, BrandFilter, UserPrompt } from "@onescope/types";
 import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon, filterAnalysisRecords, modelSelectors } from "@onescope/utils";
@@ -41,6 +44,7 @@ export default function Prompts() {
   const [modelFilter, setModelFilter] = useState("All Models");
   const [brandFilter, setBrandFilter] = useState<BrandFilter | null>(null);
   const [availableBrandFilters, setAvailableBrandFilters] = useState<BrandFilter[]>([]);
+  const [brandSearchTerm, setBrandSearchTerm] = useState("");
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">("all");
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,11 +95,7 @@ export default function Prompts() {
 
     setAnalysisRecords(analysedPromptData.data.records);
     setAvailableBrandFilters(analysedPromptData.data.metadata.available_brands);
-
-    const randomBrand = analysedPromptData.data.metadata.available_brands[
-      Math.floor(Math.random() * analysedPromptData.data.metadata.available_brands.length)
-    ] ?? null;
-    setBrandFilter(randomBrand);
+    // Keep brandFilter as null initially to show "All Brands" view
   }, [analysedPromptData]);
 
   const filteredRecords = useMemo(() => {
@@ -106,20 +106,27 @@ export default function Prompts() {
     });
   }, [analysisRecords, modelFilter, timeFilter, brandFilter]);
 
+  const filteredBrands = useMemo(() => {
+    if (!brandSearchTerm) return availableBrandFilters;
+    return availableBrandFilters.filter(brand =>
+      brand.name.toLowerCase().includes(brandSearchTerm.toLowerCase())
+    );
+  }, [availableBrandFilters, brandSearchTerm]);
+
   // Calculate metrics for each prompt based on model filter
   const promptsWithMetrics = useMemo(() => {
     return promptData.map(prompt => {
       const records = filteredRecords.filter(r => r.prompt_id === prompt.id);
 
       if (records.length === 0) {
-        return { prompt, metrics: null, recordCount: 0, modelProvider: null };
+        return { prompt, metrics: null, recordCount: 0, modelProvider: null, reason: 'unanalyzed' as const };
       }
 
       // If a specific model is selected, use that model's metrics
       if (modelFilter !== "All Models") {
         const record = records.find(r => r.model_provider === modelFilter);
         if (!record || !record.is_analysed) {
-          return { prompt, metrics: null, recordCount: records.length, modelProvider: modelFilter };
+          return { prompt, metrics: null, recordCount: records.length, modelProvider: modelFilter, reason: 'unanalyzed' as const };
         }
 
         const brandMetrics = brandFilter
@@ -131,6 +138,7 @@ export default function Prompts() {
           metrics: brandMetrics ?? null,
           recordCount: records.length,
           modelProvider: record.model_provider,
+          reason: brandMetrics ? null : 'brand-not-mentioned' as const,
         };
       }
 
@@ -138,19 +146,24 @@ export default function Prompts() {
       const analyzedRecords = records.filter(r => r.is_analysed);
 
       if (analyzedRecords.length === 0) {
-        return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models" };
+        return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models", reason: 'unanalyzed' as const };
       }
 
+      // When brandFilter is null, aggregate across ALL brands
       const allBrandMetrics = analyzedRecords
-        .map(record => {
-          return brandFilter
-            ? record.brand_metrics[brandFilter.name]
-            : Object.values(record.brand_metrics)[0];
+        .flatMap(record => {
+          if (brandFilter) {
+            // Specific brand selected
+            return record.brand_metrics[brandFilter.name] ? [record.brand_metrics[brandFilter.name]] : [];
+          } else {
+            // All brands - aggregate all brand metrics from this record
+            return Object.values(record.brand_metrics);
+          }
         })
-        .filter((m): m is NonNullable<typeof m> => !!m); // Remove undefined/null
+        .filter((m): m is NonNullable<typeof m> => !!m);
 
       if (allBrandMetrics.length === 0) {
-        return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models" };
+        return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models", reason: 'brand-not-mentioned' as const };
       }
 
       // Calculate averages
@@ -175,6 +188,7 @@ export default function Prompts() {
         metrics: avgMetrics,
         recordCount: records.length,
         modelProvider: "All Models",
+        reason: null,
       };
     });
   }, [promptData, filteredRecords, modelFilter, brandFilter]);
@@ -379,195 +393,275 @@ export default function Prompts() {
 
   return(
     <div className="flex flex-col h-screen">
-      <div className="flex justify-between items-center px-6 py-4">
-        <div className="flex gap-3 items-center">
-          <Dialog open={dialogOpen} 
-            onOpenChange={(open) => {
-              setDialogOpen(open);
-          
-              if (!open) {
-                setEditIndex(null);
-                setEditPromptValue("");
-                setCurrentPrompt("");
-              }
-            }}>
-            <DialogTrigger asChild>
-              {
-                selectedRows.size == 0
-                ?
-                <Button variant="outline" className="p-2 rounded-xl">
-                  <Plus size={18} />
-                </Button>
-                :
-                null
-              }
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editIndex !== null ? "Edit Prompt" : "Add New Prompt"}
-                </DialogTitle>
-              </DialogHeader>
-              <Textarea
-                placeholder="Type your prompt..."
-                rows={4}
-                value={editIndex !== null ? editPromptValue : currentPrompt}
-                onChange={(e) =>
-                  editIndex !== null
-                    ? setEditPromptValue(e.target.value)
-                    : setCurrentPrompt(e.target.value)
-                }
-                className="w-full mt-2"
-              />
-              <div className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddOrEditPrompt}>
-                  {editIndex !== null ? "Update" : "Add"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+      <div className="flex flex-col gap-4 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+        {/* Row 1: Actions */}
+        <div className="flex justify-between items-center">
+          {/* Left: Prompt actions */}
+          <div className="flex gap-2 items-center">
+            {selectedRows.size === 0 ? (
+              <Dialog open={dialogOpen}
+                onOpenChange={(open) => {
+                  setDialogOpen(open);
 
-          {selectedRows.size > 0 && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="p-2 rounded-xl"
-                disabled={selectedRows.size !== 1}
-                onClick={() => {
-                  const idx = Array.from(selectedRows)[0];
-
-                  if (typeof idx === "number" && idx >= 0 && idx < promptData.length) {
-                    setEditIndex(idx);
-                    setEditPromptValue(promptData[idx]?.prompt ?? "");
-                  } else {
+                  if (!open) {
                     setEditIndex(null);
                     setEditPromptValue("");
+                    setCurrentPrompt("");
                   }
+                }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Plus size={16} />
+                    <span>Add Prompt</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editIndex !== null ? "Edit Prompt" : "Add New Prompt"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <Textarea
+                    placeholder="Type your prompt..."
+                    rows={4}
+                    value={editIndex !== null ? editPromptValue : currentPrompt}
+                    onChange={(e) =>
+                      editIndex !== null
+                        ? setEditPromptValue(e.target.value)
+                        : setCurrentPrompt(e.target.value)
+                    }
+                    className="w-full mt-2"
+                  />
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddOrEditPrompt}>
+                      {editIndex !== null ? "Update" : "Add"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedRows.size !== 1}
+                  onClick={() => {
+                    const idx = Array.from(selectedRows)[0];
 
-                  setDialogOpen(true);
-                }}
-                title="Edit prompt"
-              >
-                <Pencil size={18} />
-              </Button>
+                    if (typeof idx === "number" && idx >= 0 && idx < promptData.length) {
+                      setEditIndex(idx);
+                      setEditPromptValue(promptData[idx]?.prompt ?? "");
+                    } else {
+                      setEditIndex(null);
+                      setEditPromptValue("");
+                    }
 
-              <Button
-                variant="outline"
-                className="p-2 rounded-xl text-red-600 hover:bg-red-50"
-                onClick={() => {
-                  setPromptData((prev) =>
-                    prev.filter((_, i) => !selectedRows.has(i))
-                  );
-                  setSelectedRows(new Set());
-                }}
-              >
-                <Trash2 size={18} />
-              </Button>
-            </div>
-          )}
+                    setDialogOpen(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Pencil size={16} />
+                  <span>Edit</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setPromptData((prev) =>
+                      prev.filter((_, i) => !selectedRows.has(i))
+                    );
+                    setSelectedRows(new Set());
+                  }}
+                >
+                  <Trash2 size={16} />
+                  <span>Delete ({selectedRows.size})</span>
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Right: Save & Run actions */}
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              onClick={handleSave}
+              disabled={loading || !isModified || editIndex !== null}
+              className="gap-2"
+            >
+              {loading ? "Saving..." : "Save Changes"}
+            </Button>
+            <Button onClick={handleRunAgents} className="gap-2">
+              <Bot size={16} />
+              Run Prompts
+            </Button>
+          </div>
         </div>
 
-        <Select value={modelFilter} onValueChange={setModelFilter}>
-          <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
-            <SelectValue placeholder="Select Model" />
-          </SelectTrigger>
-          <SelectContent className="z-[9999]">
-            {modelSelectors.map(({value, label}) => (
-              <SelectItem key={value} value={value}>
-                <div className="flex items-center gap-2">
-                  {value === "All Models" ? (
-                    <Bot className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <img
-                      src={getModelFavicon(value)}
-                      alt={value}
-                      className="w-4 h-4 rounded-sm"
-                    />
-                  )}
-                  <span>{label}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Row 2: Filters */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Filters
+          </span>
 
-        <Select
-          value={brandFilter?.name}
-          onValueChange={(value) => {
-            const selectedBrand = availableBrandFilters.find(
-              (b) => b.name === value
-            );
-        
-            setBrandFilter(selectedBrand ?? null);
-          }}
-        >
-          <SelectTrigger className="w-40 h-9 text-sm">
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableBrandFilters.map((m,index) => {
-              const faviconUrls = getFaviconUrls(m.website ?? "", m.name);
-              return (
-                <SelectItem key={index} value={m.name}>
+          <Separator orientation="vertical" className="h-4" />
+
+          {/* Model filter */}
+          <Select value={modelFilter} onValueChange={setModelFilter}>
+            <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
+              <SelectValue placeholder="Select Model" />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              {modelSelectors.map(({value, label}) => (
+                <SelectItem key={value} value={value}>
+                  <div className="flex items-center gap-2">
+                    {value === "All Models" ? (
+                      <Bot className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <img
+                        src={getModelFavicon(value)}
+                        alt={value}
+                        className="w-4 h-4 rounded-sm"
+                      />
+                    )}
+                    <span>{label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Brand filter with search */}
+          <Select
+            value={brandFilter?.name ?? "__all__"}
+            onValueChange={(value) => {
+              if (value === "__all__") {
+                setBrandFilter(null);
+              } else {
+                const selectedBrand = availableBrandFilters.find(b => b.name === value);
+                setBrandFilter(selectedBrand ?? null);
+              }
+              setBrandSearchTerm("");
+            }}
+            onOpenChange={(open) => {
+              if (!open) {
+                setBrandSearchTerm("");
+              }
+            }}
+          >
+            <SelectTrigger className="w-48 h-9 text-sm">
+              <SelectValue>
+                {brandFilter ? (
                   <div className="flex items-center gap-2">
                     <img
+                      src={getFaviconUrls(brandFilter.website ?? "", brandFilter.name)[0]}
+                      alt={brandFilter.name}
+                      className="w-4 h-4 rounded-sm"
+                    />
+                    <span>{brandFilter.name}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
+                    <span>All Brands</span>
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <div className="p-2 border-b border-gray-200 dark:border-gray-800">
+                <Input
+                  placeholder="Search brands..."
+                  value={brandSearchTerm}
+                  onChange={(e) => setBrandSearchTerm(e.target.value)}
+                  className="h-8 text-sm"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+
+              <SelectItem value="__all__">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
+                  <span className="font-medium">All Brands</span>
+                </div>
+              </SelectItem>
+
+              <SelectSeparator />
+
+              {filteredBrands.map((m, index) => {
+                const faviconUrls = getFaviconUrls(m.website ?? "", m.name);
+                return (
+                  <SelectItem key={index} value={m.name}>
+                    <div className="flex items-center gap-2">
+                      <img
                         src={faviconUrls[0]}
                         alt={m.name}
                         className="w-4 h-4 rounded-sm bg-gray-100 dark:bg-gray-800"
                         onError={(e) => {
-                            const img = e.currentTarget;
-                            const index = Number(img.dataset.i || 0) + 1;
+                          const img = e.currentTarget;
+                          const index = Number(img.dataset.i || 0) + 1;
 
-                            if (faviconUrls[index]) {
+                          if (faviconUrls[index]) {
                             img.dataset.i = String(index);
                             img.src = faviconUrls[index];
-                            }
+                          }
                         }}
-                    />
-                    <span>{m.name}</span>
-                  </div>
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
+                      />
+                      <span>{m.name}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
 
-        <Select
-          value={timeFilter}
-          onValueChange={(value) =>
-            setTimeFilter(value as "all" | "7d" | "14d" | "30d")
-          }
-        >
-          <SelectTrigger className="w-40 h-9 text-sm">
-            <SelectValue placeholder="Time range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All time</SelectItem>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="14d">Last 14 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-          </SelectContent>
-        </Select>
+              {filteredBrands.length === 0 && (
+                <div className="px-2 py-6 text-center text-sm text-gray-500">
+                  No brands found
+                </div>
+              )}
+            </SelectContent>
+          </Select>
 
-        <Button
-          onClick={handleSave}
-          disabled={loading || !isModified || editIndex!==null}
-          className={`py-2 px-6 rounded-xl transition ${
-            loading || !isModified
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-gray-900 text-white hover:bg-gray-800"
-          }`}
-        >
-          {loading ? "Saving..." : "Save"}
-        </Button>
-        <Button
-          onClick={handleRunAgents}
-        >
-          Run Prompts
-        </Button>
+          {/* Time filter */}
+          <Select
+            value={timeFilter}
+            onValueChange={(value) =>
+              setTimeFilter(value as "all" | "7d" | "14d" | "30d")
+            }
+          >
+            <SelectTrigger className="w-40 h-9 text-sm">
+              <SelectValue placeholder="Time range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="14d">Last 14 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Clear filters button */}
+          {(modelFilter !== "All Models" || brandFilter !== null || timeFilter !== "all") && (
+            <>
+              <Separator orientation="vertical" className="h-4" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setModelFilter("All Models");
+                  setBrandFilter(null);
+                  setTimeFilter("all");
+                }}
+                className="gap-2 text-gray-500 hover:text-gray-700"
+              >
+                <FilterX size={14} />
+                Clear
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {
@@ -613,7 +707,7 @@ export default function Prompts() {
               </TableHeader>
   
               <TableBody>
-                {promptsWithMetrics.map(({ prompt, metrics, modelProvider }, promptIdx) => (
+                {promptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }, promptIdx) => (
                   <TableRow
                     key={prompt.id}
                     onClick={() => setOpenPrompt(prompt)}
@@ -633,7 +727,13 @@ export default function Prompts() {
 
                     {!metrics ? (
                       <TableCell className="px-6 py-5 text-sm text-gray-400 dark:text-gray-500 text-center" colSpan={5}>
-                        <span className="italic">No analysis data yet</span>
+                        <span className="italic">
+                          {reason === 'unanalyzed'
+                            ? 'No analysis data yet'
+                            : reason === 'brand-not-mentioned'
+                            ? 'Brand not mentioned in this prompt'
+                            : 'No data available'}
+                        </span>
                       </TableCell>
                     ) : (
                       <>
@@ -683,115 +783,156 @@ export default function Prompts() {
               </TableBody>
             </Table>
             <Dialog open={!!openPrompt} onOpenChange={() => setOpenPrompt(null)}>
-            <DialogContent
-              className="
-                !max-w-[90vw] !w-[90vw]
-                sm:!max-w-[80vw] sm:!w-[80vw]
-                h-[90vh]
-                rounded-2xl
-                px-8 pb-8 sm:px-10 sm:pt-12 sm:pb-10
-                flex flex-col
-              "
-            >
-                <DialogHeader className="mb-4">
-                  <DialogTitle className="sr-only">
-                    {openPrompt?.prompt || "Prompt Details"}
+            <DialogContent className="max-w-6xl w-full h-[85vh] rounded-2xl flex flex-col">
+                <DialogHeader className="pb-4 border-b border-gray-100 dark:border-gray-800">
+                  <DialogTitle className="text-xl font-semibold">
+                    {openPrompt?.prompt}
                   </DialogTitle>
-  
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex flex-col gap-0.5">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-snug">
-                      {openPrompt?.prompt}
-                    </h2>
+                  <span className="text-sm text-gray-500">
+                    {openPromptRecords.length} response{openPromptRecords.length !== 1 ? "s" : ""}
+                  </span>
+                </DialogHeader>
 
-                    <span className="text-[11px] text-gray-400">
-                      {openPromptRecords.length} total response{openPromptRecords.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-  
-                    <Select value={modelFilter} onValueChange={setModelFilter}>
-                      <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
-                        <SelectValue placeholder="Select Model" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[9999]">
-                        {modelSelectors.map(({value, label}) => (
-                          <SelectItem key={value} value={value}>
+                {/* Sticky filter bar */}
+                <div className="flex items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 -mx-6 px-6">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Filter
+                  </span>
+                  <Separator orientation="vertical" className="h-4" />
+
+                  {/* Model filter */}
+                  <Select value={modelFilter} onValueChange={setModelFilter}>
+                    <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
+                      <SelectValue placeholder="Select Model" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[9999]">
+                      {modelSelectors.map(({value, label}) => (
+                        <SelectItem key={value} value={value}>
+                          <div className="flex items-center gap-2">
+                            {value === "All Models" ? (
+                              <Bot className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <img
+                                src={getModelFavicon(value)}
+                                alt={value}
+                                className="w-4 h-4 rounded-sm"
+                              />
+                            )}
+                            <span>{label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Brand filter with search */}
+                  <Select
+                    value={brandFilter?.name ?? "__all__"}
+                    onValueChange={(value) => {
+                      if (value === "__all__") {
+                        setBrandFilter(null);
+                      } else {
+                        const selectedBrand = availableBrandFilters.find(b => b.name === value);
+                        setBrandFilter(selectedBrand ?? null);
+                      }
+                      setBrandSearchTerm("");
+                    }}
+                    onOpenChange={(open) => {
+                      if (!open) {
+                        setBrandSearchTerm("");
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-48 h-9 text-sm">
+                      <SelectValue>
+                        {brandFilter ? (
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={getFaviconUrls(brandFilter.website ?? "", brandFilter.name)[0]}
+                              alt={brandFilter.name}
+                              className="w-4 h-4 rounded-sm"
+                            />
+                            <span>{brandFilter.name}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
+                            <span>All Brands</span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div className="p-2 border-b border-gray-200 dark:border-gray-800">
+                        <Input
+                          placeholder="Search brands..."
+                          value={brandSearchTerm}
+                          onChange={(e) => setBrandSearchTerm(e.target.value)}
+                          className="h-8 text-sm"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+
+                      <SelectItem value="__all__">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
+                          <span className="font-medium">All Brands</span>
+                        </div>
+                      </SelectItem>
+
+                      <SelectSeparator />
+
+                      {filteredBrands.map((m, index) => {
+                        const faviconUrls = getFaviconUrls(m.website ?? "", m.name);
+                        return (
+                          <SelectItem key={index} value={m.name}>
                             <div className="flex items-center gap-2">
-                              {value === "All Models" ? (
-                                <Bot className="w-4 h-4 text-muted-foreground" />
-                              ) : (
-                                <img
-                                  src={getModelFavicon(value)}
-                                  alt={value}
-                                  className="w-4 h-4 rounded-sm"
-                                />
-                              )}
-                              <span>{label}</span>
+                              <img
+                                src={faviconUrls[0]}
+                                alt={m.name}
+                                className="w-4 h-4 rounded-sm bg-gray-100 dark:bg-gray-800"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  const index = Number(img.dataset.i || 0) + 1;
+
+                                  if (faviconUrls[index]) {
+                                    img.dataset.i = String(index);
+                                    img.src = faviconUrls[index];
+                                  }
+                                }}
+                              />
+                              <span>{m.name}</span>
                             </div>
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={brandFilter?.name}
-                      onValueChange={(value) => {
-                        const selectedBrand = availableBrandFilters.find(
-                          (b) => b.name === value
                         );
-                    
-                        setBrandFilter(selectedBrand ?? null);
-                      }}
-                    >
-                      <SelectTrigger className="w-40 h-9 text-sm">
-                        <SelectValue placeholder="Brand" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableBrandFilters.map((m,index) => {
-                          const faviconUrls = getFaviconUrls(m.website ?? "", m.name);
-                          return (
-                            <SelectItem key={index} value={m.name}>
-                              <div className="flex items-center gap-2">
-                                <img
-                                    src={faviconUrls[0]}
-                                    alt={m.name}
-                                    className="w-4 h-4 rounded-sm bg-gray-100 dark:bg-gray-800"
-                                    onError={(e) => {
-                                        const img = e.currentTarget;
-                                        const index = Number(img.dataset.i || 0) + 1;
+                      })}
 
-                                        if (faviconUrls[index]) {
-                                        img.dataset.i = String(index);
-                                        img.src = faviconUrls[index];
-                                        }
-                                    }}
-                                />
-                                <span>{m.name}</span>
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
+                      {filteredBrands.length === 0 && (
+                        <div className="px-2 py-6 text-center text-sm text-gray-500">
+                          No brands found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
 
-                    <Select
-                      value={timeFilter}
-                      onValueChange={(value) =>
-                        setTimeFilter(value as "all" | "7d" | "14d" | "30d")
-                      }
-                    >
-                      <SelectTrigger className="w-40 h-9 text-sm">
-                        <SelectValue placeholder="Time range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All time</SelectItem>
-                        <SelectItem value="7d">Last 7 days</SelectItem>
-                        <SelectItem value="14d">Last 14 days</SelectItem>
-                        <SelectItem value="30d">Last 30 days</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </DialogHeader>
+                  {/* Time filter */}
+                  <Select
+                    value={timeFilter}
+                    onValueChange={(value) =>
+                      setTimeFilter(value as "all" | "7d" | "14d" | "30d")
+                    }
+                  >
+                    <SelectTrigger className="w-40 h-9 text-sm">
+                      <SelectValue placeholder="Time range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All time</SelectItem>
+                      <SelectItem value="7d">Last 7 days</SelectItem>
+                      <SelectItem value="14d">Last 14 days</SelectItem>
+                      <SelectItem value="30d">Last 30 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
   
                 <DialogDescription className="sr-only">
                   This dialog shows AI model responses for the selected prompt.

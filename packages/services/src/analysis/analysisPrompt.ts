@@ -15,17 +15,59 @@ export function analysisPrompt(input: AnalysisInputSingle) {
         6. Do NOT add claims, features, or pricing that are not explicitly stated.
         7. Source attribution: only link a source to a brand if the source is explicitly cited next to that brand's mention in the response.
 
-        BRAND NORMALIZATION
-        - If a brand's **product or sub-brand** (e.g., "Freshsales" by "Freshworks") appears, merge it under the **parent or main brand name** unless the context clearly treats them as separate brands.
-        - Always use the **canonical parent brand** as the JSON key.
-        - Do not include both brand and product names separately unless they are distinctly recognized brands (e.g., "Apple" and "Beats").
-        - Combine metrics of duplicates (e.g., merge "Freshsales" metrics into "Freshworks").
-        - Maintain **consistent brand naming across all models** in this batch.
-            Example:
-            - If one model mentions "HubSpot CRM" and another mentions "HubSpot," treat both as **"HubSpot"**.
-        - Use the **most canonical, widely recognized brand name** when standardizing (e.g., prefer "HubSpot" over "HubSpot CRM").
-        - Ensure that brand names are identical across all array entries for the same underlying brand.
-        - If ambiguity exists, choose the parent brand.
+        BRAND NORMALIZATION (CRITICAL - ALWAYS FOLLOW):
+        You MUST normalize all brand mentions to their PARENT BRAND NAME only. Do NOT use product names, sub-brands, or variations.
+
+        Examples of correct normalization:
+        - "HubSpot CRM" → "HubSpot"
+        - "HubSpot Marketing Hub" → "HubSpot"
+        - "Zoho CRM" → "Zoho"
+        - "Zoho One" → "Zoho"
+        - "Zoho Books" → "Zoho"
+        - "Salesforce Sales Cloud" → "Salesforce"
+        - "Microsoft Dynamics 365" → "Microsoft Dynamics"
+        - "Freshsales" → "Freshworks"
+        - "Freshdesk" → "Freshworks"
+        - "Pipedrive CRM" → "Pipedrive"
+        - "Monday.com CRM" → "Monday.com"
+
+        Rules for normalization:
+        1. If a brand name contains "CRM", remove it (e.g., "Zoho CRM" → "Zoho")
+        2. If a product name is mentioned (e.g., "Freshsales"), use the parent company name (e.g., "Freshworks")
+        3. If multiple variations appear in the response (e.g., "Zoho" and "Zoho CRM"), merge them into ONE entry under the parent brand
+        4. Combine all metrics (mention_count, sources, etc.) for the normalized brand
+        5. Use the most common, widely-recognized parent brand name
+        6. When in doubt, choose the shorter, more general brand name
+
+        BRAND WEBSITE (MANDATORY - NEVER EMPTY):
+        The brand_website field is REQUIRED and must NEVER be empty or null.
+
+        How to determine brand_website:
+        1. Check if the brand's website is mentioned in the response text
+        2. Check if any source URL belongs to the brand's official domain
+        3. If not explicitly mentioned, use your knowledge to provide the canonical official website domain
+        4. Format: domain only, no protocol (e.g., "hubspot.com" not "https://hubspot.com")
+        5. Use the main .com domain when possible (e.g., "salesforce.com" not "salesforce.co.uk")
+
+        Common brand websites (use these as reference):
+        - HubSpot → "hubspot.com"
+        - Salesforce → "salesforce.com"
+        - Zoho → "zoho.com"
+        - Pipedrive → "pipedrive.com"
+        - Freshworks → "freshworks.com"
+        - Monday.com → "monday.com"
+        - Asana → "asana.com"
+        - ClickUp → "clickup.com"
+        - Notion → "notion.so"
+        - Airtable → "airtable.com"
+        - Microsoft Dynamics → "dynamics.microsoft.com"
+        - Oracle → "oracle.com"
+        - SAP → "sap.com"
+
+        If you encounter a brand you don't recognize:
+        1. Look for patterns in source URLs (e.g., if sources include "example.com/blog", the website is likely "example.com")
+        2. Use the most logical canonical domain based on the brand name
+        3. NEVER leave brand_website empty or null - always provide your best determination
 
         Extract brand intelligence from this LLM response. Return ONLY valid JSON matching the schema below.
 
@@ -41,10 +83,10 @@ export function analysisPrompt(input: AnalysisInputSingle) {
             {
             "brands": [
                     {
-                        "brand_name": "string — exact canonical brand name as written in the response",
-                        "brand_website": "string — the brand's official website domain (e.g., 'hubspot.com', 'salesforce.com'). If explicitly mentioned in the response or sources, use it. Otherwise, infer the canonical domain based on the brand name.",
-                        "mention_count": "number — how many times this exact brand name appears in the response",
-                        "first_mention_position": "number — character index of first appearance in the response",
+                        "brand_name": "string — PARENT BRAND NAME ONLY (e.g., 'Zoho' not 'Zoho CRM', 'HubSpot' not 'HubSpot CRM')",
+                        "brand_website": "string — REQUIRED, NEVER EMPTY. The brand's official website domain (e.g., 'hubspot.com', 'salesforce.com'). Use canonical .com domain.",
+                        "mention_count": "number — total count of ALL variations of this brand (sum 'Zoho' + 'Zoho CRM' + 'Zoho One')",
+                        "first_mention_position": "number — character index of EARLIEST appearance of any variation of this brand",
                         "visibility": {
                             "rank": "number — order of first appearance (1 = first brand mentioned, 2 = second, etc.)",
                             "visibility_score": <0-100 score representing how prominently this brand is featured in the response>,
@@ -55,7 +97,7 @@ export function analysisPrompt(input: AnalysisInputSingle) {
                         },
                         "sentiment": {
                             "overall": "string — one of: positive | negative | mixed | neutral",
-                            "score": "number — from -1.0 (very negative) to 1.0 (very positive), based ONLY on the language used",
+                            "score": "number — from 0 (very negative) to 100 (very positive), based ONLY on the language used in the response",
                             "positive_signals": ["string — exact short quotes from the response that are positive about this brand"],
                             "negative_signals": ["string — exact short quotes from the response that are negative about this brand"],
                             "qualifiers": ["string — exact short quotes showing caveats, limitations, or 'but' statements about this brand"]
@@ -71,9 +113,9 @@ export function analysisPrompt(input: AnalysisInputSingle) {
                             "differentiator": "string|null — what the response says makes this brand unique vs competitors, quoted from text"
                         },
                         "competitive_context": {
-                            "compared_with": ["string — other brand names this brand is directly compared against in the response"],
-                            "positioned_above": ["string — brands this one is positioned as better than"],
-                            "positioned_below": ["string — brands this one is positioned as worse than"],
+                            "compared_with": ["string — other PARENT BRAND NAMES this brand is directly compared against"],
+                            "positioned_above": ["string — PARENT BRAND NAMES this one is positioned as better than"],
+                            "positioned_below": ["string — PARENT BRAND NAMES this one is positioned as worse than"],
                             "comparison_evidence": "string|null — exact quote showing the comparison"
                         },
                         "source_attributions": [
@@ -89,12 +131,30 @@ export function analysisPrompt(input: AnalysisInputSingle) {
             }
         </schema>
 
+        SENTIMENT SCORE GUIDELINES (0-100):
+        Rate the sentiment based ONLY on the language used in the response about this brand:
+        
+        - 0-20: Very negative (major criticism, warnings against using, serious problems highlighted)
+        - 21-40: Negative (more cons than pros, disappointing, not recommended)
+        - 41-49: Slightly negative (some concerns, mild criticism, lukewarm)
+        - 50: Neutral (balanced, factual only, no clear positive or negative lean)
+        - 51-60: Slightly positive (generally favorable, minor praise)
+        - 61-80: Positive (clearly favorable, recommended, multiple strengths highlighted)
+        - 81-100: Very positive (enthusiastic recommendation, standout choice, heavily praised)
+
+        Important:
+        - Base the score ONLY on explicit language in the response
+        - Being mentioned first doesn't mean positive sentiment
+        - More detail doesn't mean positive sentiment
+        - If the response is purely factual with no evaluative language, score = 50 (neutral)
+        - If there are both positive and negative signals, set overall = "mixed" and score based on which sentiment dominates
+
         VISIBILITY SCORE GUIDELINES (0-100):
         Assess how prominently each brand is featured in the response. Consider:
         - How early it appears (earlier = higher score)
         - Whether it's explicitly recommended (major boost)
         - How much detail is provided about it
-        - How many times it's mentioned
+        - How many times it's mentioned (count ALL variations)
         - Whether it appears in conclusions/summary
         - Number of sources citing it
         - Overall prominence in the narrative
@@ -107,10 +167,20 @@ export function analysisPrompt(input: AnalysisInputSingle) {
         - 20-39: Brief mention, limited detail
         - 0-19: Passing reference, minimal context
 
+        FINAL VALIDATION CHECKLIST (Check before returning JSON):
+        ✓ All brand_name values use PARENT BRAND ONLY (no "CRM", no product names)
+        ✓ NO duplicate brands (e.g., both "Zoho" and "Zoho CRM" in the same response)
+        ✓ ALL brand_website fields are populated with valid domains
+        ✓ NO empty strings, NO null values for brand_website
+        ✓ mention_count includes ALL variations of the brand
+        ✓ All competitive_context arrays use normalized parent brand names
+        ✓ All sentiment.score values are between 0-100
+
         REMINDERS:
         - Return ONLY the JSON object. No markdown, no explanation, no preamble.
         - Every string in positive_signals, negative_signals, qualifiers, and features must be a near-exact quote from the response. Do not paraphrase.
         - If the response mentions a brand only once in passing with no detail, still include it but with minimal fields and nulls.
         - Do NOT hallucinate pricing, features, or claims not in the response text.
+        - MERGE all variations of the same brand into ONE entry with the parent brand name.
       `;
 }
