@@ -119,8 +119,10 @@ export default function Prompts() {
 
   const openPromptRecords = useMemo(() => {
     if (!openPrompt) return [];
-    return filteredRecords.filter(record => record.prompt_id === openPrompt.id);
-  }, [openPrompt, filteredRecords]);
+    // Show ALL responses for this prompt, ignoring current filters
+    // User can use the filters inside the dialog if they want to filter
+    return analysisRecords.filter(record => record.prompt_id === openPrompt.id);
+  }, [openPrompt, analysisRecords]);
 
   const isModified = useMemo(() => {
     if (promptData.length !== initialPrompts.length) return true;
@@ -229,22 +231,44 @@ export default function Prompts() {
 
       try {
         const result = await analyzeMetricsMutation.mutateAsync({ workspaceId });
-        const count = result?.data?.analysedCount ?? 0;
+        const analysedCount = result?.data?.analysedCount ?? 0;
+        const failedCount = result?.data?.failedCount ?? 0;
+        const errors = result?.data?.errors ?? [];
 
-        if (count > 0) {
-          toast.success(
-            `Analyzed ${count} response${count > 1 ? "s" : ""}`,
-            { id: toastId }
-          );
+        // Show success message if any were analyzed
+        if (analysedCount > 0) {
+          if (failedCount > 0) {
+            // Partial success
+            toast.warning(
+              `Analyzed ${analysedCount} response${analysedCount > 1 ? "s" : ""}, ${failedCount} failed`,
+              { id: toastId, duration: 5000 }
+            );
+            // Log errors to console for debugging
+            console.error("Analysis errors:", errors);
+          } else {
+            // Full success
+            toast.success(
+              `Analyzed ${analysedCount} response${analysedCount > 1 ? "s" : ""}`,
+              { id: toastId }
+            );
+          }
           await refetchAnalysedPrompts();
+        } else if (failedCount > 0) {
+          // All failed
+          toast.error(
+            `Analysis failed for ${failedCount} response${failedCount > 1 ? "s" : ""}. Check console for details.`,
+            { id: toastId, duration: 6000 }
+          );
+          console.error("Analysis errors:", errors);
         } else {
+          // Nothing to analyze
           if (agentJustCompleted) {
             toast.success("Agent job completed!", { id: toastId });
           } else {
             toast.dismiss(toastId);
           }
         }
-        
+
         if (agentJustCompleted) {
           setJobId(null);
         }

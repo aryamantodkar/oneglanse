@@ -98,8 +98,11 @@ export interface AnalysisRecord {
     response: string;
     sources: Source[];
 
-    // Metrics (already parsed from JSON)
+    // Metrics (already parsed from JSON, empty object if not analyzed)
     brand_metrics: BrandMetricMap;
+
+    // Analysis status
+    is_analysed?: boolean;  // True if analyzed, false if raw response
 
     // Timestamps
     created_at: string;
