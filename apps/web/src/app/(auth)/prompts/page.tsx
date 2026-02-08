@@ -393,7 +393,7 @@ export default function Prompts() {
 
   return(
     <div className="flex flex-col h-screen">
-      <div className="flex flex-col gap-4 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex flex-col gap-6 px-6 py-6">
         {/* Row 1: Actions */}
         <div className="flex justify-between items-center">
           {/* Left: Prompt actions */}
@@ -503,12 +503,6 @@ export default function Prompts() {
 
         {/* Row 2: Filters */}
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Filters
-          </span>
-
-          <Separator orientation="vertical" className="h-4" />
-
           {/* Model filter */}
           <Select value={modelFilter} onValueChange={setModelFilter}>
             <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
@@ -793,7 +787,7 @@ export default function Prompts() {
                 flex flex-col
               "
             >
-                <DialogHeader className="pb-4 border-b border-gray-100 dark:border-gray-800">
+                <DialogHeader className="pb-6">
                   <DialogTitle className="text-xl font-semibold">
                     {openPrompt?.prompt}
                   </DialogTitle>
@@ -802,13 +796,8 @@ export default function Prompts() {
                   </span>
                 </DialogHeader>
 
-                {/* Sticky filter bar */}
-                <div className="flex items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 -mx-6 px-6">
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    Filter
-                  </span>
-                  <Separator orientation="vertical" className="h-4" />
-
+                {/* Filter bar */}
+                <div className="flex items-center gap-3 pb-6">
                   {/* Model filter */}
                   <Select value={modelFilter} onValueChange={setModelFilter}>
                     <SelectTrigger className="w-44 h-9 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 shrink-0">
