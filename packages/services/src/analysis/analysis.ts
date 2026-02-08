@@ -179,7 +179,7 @@ export async function fetchAnalysedPrompts(args: {
                 pa.model_provider,
                 pr.response,
                 pr.sources,
-                ifNull(toString(pa.brand_metrics), '{}') as brand_metrics,
+                pa.brand_metrics,
                 pa.created_at,
                 true as is_analysed
             FROM analytics.prompt_analysis pa
@@ -229,11 +229,8 @@ export async function fetchAnalysedPrompts(args: {
         model_provider: row.model_provider,
         response: row.response || "",
         sources: row.sources || [],
-        // Parse brand_metrics if present, otherwise empty object for unanalyzed
-        brand_metrics: row.brand_metrics && row.brand_metrics !== ''
-            ? (typeof row.brand_metrics === "string"
-                ? JSON.parse(row.brand_metrics)
-                : row.brand_metrics)
+        brand_metrics: row.brand_metrics && row.brand_metrics !== '' && row.brand_metrics !== '{}'
+            ? (typeof row.brand_metrics === "string" ? JSON.parse(row.brand_metrics) : row.brand_metrics)
             : {},
         created_at: row.created_at,
         is_analysed: row.is_analysed ?? true,
