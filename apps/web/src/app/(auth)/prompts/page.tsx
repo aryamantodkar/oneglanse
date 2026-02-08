@@ -106,23 +106,84 @@ export default function Prompts() {
     });
   }, [analysisRecords, modelFilter, timeFilter, brandFilter]);
 
-  // Group prompts with their analysis records for table display
-  const promptsWithRecords = useMemo(() => {
+  // Calculate metrics for each prompt based on model filter
+  const promptsWithMetrics = useMemo(() => {
     return promptData.map(prompt => {
       const records = filteredRecords.filter(r => r.prompt_id === prompt.id);
+
+      if (records.length === 0) {
+        return { prompt, metrics: null, recordCount: 0, modelProvider: null };
+      }
+
+      // If a specific model is selected, use that model's metrics
+      if (modelFilter !== "All Models") {
+        const record = records.find(r => r.model_provider === modelFilter);
+        if (!record || !record.is_analysed) {
+          return { prompt, metrics: null, recordCount: records.length, modelProvider: modelFilter };
+        }
+
+        const brandMetrics = brandFilter
+          ? record.brand_metrics[brandFilter.name]
+          : Object.values(record.brand_metrics)[0];
+
+        return {
+          prompt,
+          metrics: brandMetrics ?? null,
+          recordCount: records.length,
+          modelProvider: record.model_provider,
+        };
+      }
+
+      // "All Models" selected - calculate average metrics across all analyzed records
+      const analyzedRecords = records.filter(r => r.is_analysed);
+
+      if (analyzedRecords.length === 0) {
+        return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models" };
+      }
+
+      const allBrandMetrics = analyzedRecords
+        .map(record => {
+          return brandFilter
+            ? record.brand_metrics[brandFilter.name]
+            : Object.values(record.brand_metrics)[0];
+        })
+        .filter((m): m is NonNullable<typeof m> => !!m); // Remove undefined/null
+
+      if (allBrandMetrics.length === 0) {
+        return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models" };
+      }
+
+      // Calculate averages
+      const avgMetrics = {
+        mentions: Math.round(
+          allBrandMetrics.reduce((sum, m) => sum + (m.mentions || 0), 0) / allBrandMetrics.length
+        ),
+        sentiment: parseFloat(
+          (allBrandMetrics.reduce((sum, m) => sum + (m.sentiment || 0), 0) / allBrandMetrics.length).toFixed(1)
+        ),
+        visibility: Math.round(
+          allBrandMetrics.reduce((sum, m) => sum + (m.visibility || 0), 0) / allBrandMetrics.length
+        ),
+        position: Math.round(
+          allBrandMetrics.reduce((sum, m) => sum + (m.position || 0), 0) / allBrandMetrics.length
+        ),
+        website: allBrandMetrics[0]?.website,
+      };
+
       return {
         prompt,
-        records,
+        metrics: avgMetrics,
+        recordCount: records.length,
+        modelProvider: "All Models",
       };
     });
-  }, [promptData, filteredRecords]);
+  }, [promptData, filteredRecords, modelFilter, brandFilter]);
 
   const openPromptRecords = useMemo(() => {
     if (!openPrompt) return [];
-    // Show ALL responses for this prompt, ignoring current filters
-    // User can use the filters inside the dialog if they want to filter
-    return analysisRecords.filter(record => record.prompt_id === openPrompt.id);
-  }, [openPrompt, analysisRecords]);
+    // Filter responses for this prompt using current filters
+    return filteredRecords.filter(record => record.prompt_id === openPrompt.id);
+  }, [openPrompt, filteredRecords]);
 
   const isModified = useMemo(() => {
     if (promptData.length !== initialPrompts.length) return true;
@@ -578,83 +639,46 @@ export default function Prompts() {
               </TableHeader>
   
               <TableBody>
-                {promptsWithRecords.flatMap(({ prompt, records }, promptIdx) => {
-                  // If no records, show prompt with empty metrics
-                  if (records.length === 0) {
-                    return (
-                      <TableRow
-                        key={prompt.id}
-                        onClick={() => setOpenPrompt(prompt)}
-                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-100/50 dark:border-gray-800/40 last:border-none"
-                      >
-                        <TableCell className="pl-4">
-                          <Checkbox
-                            checked={selectedRows.has(promptIdx)}
-                            onCheckedChange={() => toggleRow(promptIdx)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </TableCell>
+                {promptsWithMetrics.map(({ prompt, metrics, modelProvider }, promptIdx) => (
+                  <TableRow
+                    key={prompt.id}
+                    onClick={() => setOpenPrompt(prompt)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-100/50 dark:border-gray-800/40 last:border-none"
+                  >
+                    <TableCell className="pl-4">
+                      <Checkbox
+                        checked={selectedRows.has(promptIdx)}
+                        onCheckedChange={() => toggleRow(promptIdx)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </TableCell>
 
-                        <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
-                          {prompt.prompt}
-                        </TableCell>
+                    <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
+                      {prompt.prompt}
+                    </TableCell>
 
-                        <TableCell className="px-6 py-5 text-sm text-gray-400 dark:text-gray-500 text-center" colSpan={5}>
-                          <span className="italic">No analysis data yet</span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }
-
-                  // If records exist, show one row per record
-                  return records.map((record, recordIdx) => {
-                    const isFirstRecord = recordIdx === 0;
-
-                    // Get brand metrics for the filtered brand
-                    const brandMetrics = brandFilter
-                      ? record.brand_metrics[brandFilter.name]
-                      : Object.values(record.brand_metrics)[0];
-
-                    const metrics = brandMetrics ?? {
-                      mentions: 0,
-                      sentiment: 0,
-                      visibility: 0,
-                      position: 0,
-                    };
-
-                    return (
-                      <TableRow
-                        key={record.id}
-                        onClick={() => setOpenPrompt(prompt)}
-                        className={`
-                          cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors
-                          border-b border-gray-100/50 dark:border-gray-800/40 last:border-none
-                          ${isFirstRecord && promptIdx > 0 ? "border-t-2 border-t-gray-200 dark:border-t-gray-700" : ""}
-                        `}
-                      >
-                        <TableCell className="pl-4">
-                          <Checkbox
-                            checked={selectedRows.has(promptIdx)}
-                            onCheckedChange={() => toggleRow(promptIdx)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </TableCell>
-
-                        <TableCell className="px-6 py-5 text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-w-2xl">
-                          {/* Only show prompt text on first record of each prompt */}
-                          {isFirstRecord ? prompt.prompt : ""}
-                        </TableCell>
-
+                    {!metrics ? (
+                      <TableCell className="px-6 py-5 text-sm text-gray-400 dark:text-gray-500 text-center" colSpan={5}>
+                        <span className="italic">No analysis data yet</span>
+                      </TableCell>
+                    ) : (
+                      <>
                         <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
                           <div className="flex items-center gap-2">
-                            <img
-                              src={getModelFavicon(record.model_provider)}
-                              alt={record.model_provider}
-                              className="w-4 h-4 rounded-sm"
-                            />
+                            {modelProvider === "All Models" ? (
+                              <Bot className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <img
+                                src={getModelFavicon(modelProvider)}
+                                alt={modelProvider}
+                                className="w-4 h-4 rounded-sm"
+                              />
+                            )}
                             <span>
-                              {modelSelectors.find((m) => m.value === record.model_provider)
-                                ?.label || record.model_provider}
+                              {modelProvider === "All Models"
+                                ? "Average"
+                                : modelSelectors.find((m) => m.value === modelProvider)?.label || modelProvider
+                              }
                             </span>
                           </div>
                         </TableCell>
@@ -678,10 +702,10 @@ export default function Prompts() {
                         <TableCell className="px-6 py-5 text-center">
                           <PositionMetricCell position={metrics.position} />
                         </TableCell>
-                      </TableRow>
-                    );
-                  });
-                })}
+                      </>
+                    )}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
             <Dialog open={!!openPrompt} onOpenChange={() => setOpenPrompt(null)}>
