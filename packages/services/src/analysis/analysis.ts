@@ -179,7 +179,7 @@ export async function fetchAnalysedPrompts(args: {
                 pa.model_provider,
                 pr.response,
                 pr.sources,
-                pa.brand_metrics,
+                if(pa.brand_metrics = '', '{}', pa.brand_metrics) as brand_metrics,
                 pa.created_at,
                 true as is_analysed
             FROM analytics.prompt_analysis pa
@@ -203,7 +203,7 @@ export async function fetchAnalysedPrompts(args: {
                 model_provider,
                 response,
                 sources,
-                '{}' as brand_metrics,
+                if(brand_metrics = '', '{}', brand_metrics) as brand_metrics,
                 created_at,
                 false as is_analysed
             FROM analytics.prompt_responses
