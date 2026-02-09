@@ -1,6 +1,6 @@
 import { analysisPrompt } from "./analysisPrompt.js";
 import { ExternalServiceError, safeHandler, ValidationError } from "@onescope/errors";
-import type { AnalysisInputSingle, AnalysisOutputSingle } from "@onescope/types";
+import type { AnalysisInputSingle, LLMBrandAnalysis } from "@onescope/types";
 import { openai } from "../llm/index.js";
 
 export async function runAnalysis(input: AnalysisInputSingle) {
@@ -51,6 +51,6 @@ export async function runAnalysis(input: AnalysisInputSingle) {
         throw new Error("Invalid JSON shape");
       }
 
-      return parsed as AnalysisOutputSingle;
+      return parsed as LLMBrandAnalysis;
     })
   }

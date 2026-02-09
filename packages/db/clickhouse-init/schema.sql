@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_analysis (
     user_id String,
     model_provider LowCardinality(String),
     brand_metrics String,
+    full_analysis String DEFAULT '',
     prompt_run_at DateTime,
     created_at DateTime DEFAULT now()
 )
