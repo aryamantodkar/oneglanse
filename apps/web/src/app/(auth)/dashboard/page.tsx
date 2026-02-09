@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, Button, Skeleton } from "@onescope/ui";
 import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { api } from "@/trpc/react";
 import {
   useFetchAnalysedPrompts,
   usePromptSources,
@@ -31,16 +30,16 @@ import {
 function DashboardSkeleton() {
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="mb-8">
-          <Skeleton className="h-9 w-64 mb-3" />
-          <Skeleton className="h-5 w-96" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <header className="mb-6">
+          <Skeleton className="h-6 w-48 mb-2" />
+          <Skeleton className="h-3 w-64" />
         </header>
-        <div className="space-y-6">
-          <Skeleton className="h-64 rounded-2xl" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Skeleton className="h-56 rounded-2xl" />
-            <Skeleton className="h-56 rounded-2xl" />
+        <div className="space-y-4">
+          <Skeleton className="h-48 rounded-xl" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Skeleton className="h-40 rounded-xl" />
+            <Skeleton className="h-40 rounded-xl" />
           </div>
         </div>
       </div>
@@ -50,22 +49,7 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const workspaceIdFromUrl = searchParams.get("workspace");
-
-  // Fetch default workspace if not in URL
-  const { data: defaultWorkspace } = api.workspace.fetchUserWorkspace.useQuery(undefined, {
-    enabled: !workspaceIdFromUrl,
-  });
-
-  const workspaceId = workspaceIdFromUrl || defaultWorkspace?.data?.id || "";
-
-  // Redirect to add workspace to URL if missing
-  useEffect(() => {
-    if (!workspaceIdFromUrl && defaultWorkspace?.data?.id) {
-      router.replace(`/dashboard?workspace=${defaultWorkspace.data.id}`);
-    }
-  }, [workspaceIdFromUrl, defaultWorkspace, router]);
+  const workspaceId = searchParams.get("workspace") ?? "";
 
   const {
     data: analysedPromptData,
@@ -77,7 +61,7 @@ export default function Dashboard() {
     isLoading: isPromptSourcesLoading,
   } = usePromptSources(workspaceId);
 
-  const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading || (!workspaceIdFromUrl && !defaultWorkspace);
+  const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
 
   // Aggregate data using memoization for performance
   const dashboardData = useMemo(() => {
@@ -100,6 +84,38 @@ export default function Dashboard() {
     };
   }, [analysedPromptData, promptSourcesData]);
 
+  // Show message if no workspace in URL
+  if (!workspaceId) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <header className="mb-8">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Brand Intelligence
+            </h1>
+            <p className="text-gray-500 mt-1 text-xs">
+              AI-powered insights from LLM responses
+            </p>
+          </header>
+
+          <Card className="rounded-xl shadow-sm border border-gray-200 max-w-2xl mx-auto">
+            <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+              <div className="rounded-full bg-gray-100 p-4 mb-4">
+                <Sparkles className="h-8 w-8 text-gray-700" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                No Workspace Selected
+              </h3>
+              <p className="text-xs text-gray-600 text-center mb-6 max-w-md leading-relaxed">
+                Please navigate to the dashboard from the sidebar to select a workspace.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -108,25 +124,25 @@ export default function Dashboard() {
   if (!dashboardData.hasData) {
     return (
       <div className="min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <header className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <header className="mb-8">
+            <h1 className="text-xl font-semibold text-gray-900">
               Brand Intelligence
             </h1>
-            <p className="text-gray-600 mt-3 text-lg">
+            <p className="text-gray-500 mt-1 text-xs">
               Get actionable insights from LLM responses
             </p>
           </header>
 
           <Card className="rounded-xl shadow-sm border border-gray-200 max-w-2xl mx-auto">
-            <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-              <div className="rounded-full bg-gray-100 p-6 mb-6">
-                <Sparkles className="h-12 w-12 text-gray-700" />
+            <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+              <div className="rounded-full bg-gray-100 p-4 mb-4">
+                <Sparkles className="h-8 w-8 text-gray-700" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
                 Get Started with Brand Intelligence
               </h3>
-              <p className="text-sm text-gray-600 text-center mb-8 max-w-md leading-relaxed">
+              <p className="text-xs text-gray-600 text-center mb-6 max-w-md leading-relaxed">
                 Run your first prompt analysis to unlock insights about brand health and competitive positioning.
               </p>
               <Link href={`/prompts?workspace=${workspaceId}`}>
@@ -144,28 +160,28 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <header className="mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+        <header className="mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">
             Brand Intelligence
           </h1>
-          <p className="text-gray-600 mt-3 text-lg">
+          <p className="text-gray-500 mt-1 text-xs">
             AI-powered insights from LLM responses
           </p>
         </header>
 
         {/* Show notice if no full analysis data yet */}
         {!dashboardData.hasFullAnalysis && (
-          <Card className="rounded-xl shadow-sm border-l-4 border-gray-900 mb-6">
-            <CardContent className="py-4">
-              <div className="flex items-start gap-3">
-                <Sparkles className="h-5 w-5 text-gray-700 mt-0.5 flex-shrink-0" />
+          <Card className="rounded-xl shadow-sm border-l-2 border-gray-900 mb-4">
+            <CardContent className="py-3">
+              <div className="flex items-start gap-2">
+                <Sparkles className="h-4 w-4 text-gray-700 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-xs font-medium text-gray-900">
                     Enhanced Analytics Available
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-[10px] text-gray-600 mt-0.5">
                     Run analysis on your prompts to unlock advanced brand intelligence metrics.
                   </p>
                 </div>
@@ -175,12 +191,12 @@ export default function Dashboard() {
         )}
 
         {/* Dashboard Grid */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Hero Section: Brand Health Score */}
           <BrandHealthCard score={dashboardData.brandHealthScore} />
 
           {/* Two Column Grid: Competitive Position + Top Sources */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <CompetitivePositionCard position={dashboardData.competitivePosition} />
             <TopSources
               topDomains={dashboardData.topDomains}
@@ -189,7 +205,7 @@ export default function Dashboard() {
           </div>
 
           {/* Two Column Grid: Sentiment + Threats */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <SentimentInsightsCard insights={dashboardData.sentimentInsights} />
             <CompetitiveThreatsCard threats={dashboardData.competitiveThreats} />
           </div>
