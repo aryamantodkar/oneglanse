@@ -9,21 +9,17 @@ import {
   useFetchAnalysedPrompts,
   usePromptSources,
 } from "../prompts/_lib/queries/prompt.queries";
-import { BrandHealthCard } from "./_components/BrandHealthCard";
 import { CompetitivePositionCard } from "./_components/CompetitivePositionCard";
 import { SentimentInsightsCard } from "./_components/SentimentInsightsCard";
 import { CompetitiveThreatsCard } from "./_components/CompetitiveThreatsCard";
 import { StrategicOpportunitiesCard } from "./_components/StrategicOpportunitiesCard";
-import { RecentInsightsCard } from "./_components/RecentInsightsCard";
 import { TopSources } from "./_components/TopSources";
 import {
   extractFullAnalysisData,
-  calculateBrandHealthScore,
   getCompetitivePosition,
   getSentimentInsights,
   getCompetitiveThreats,
   getStrategicOpportunities,
-  getRecentInsights,
   getTopDomains,
 } from "./_lib/aggregations";
 
@@ -74,12 +70,10 @@ export default function Dashboard() {
     return {
       hasData: records.length > 0, // Show dashboard if any records exist
       hasFullAnalysis: fullAnalyses.length > 0, // Track if full analysis exists
-      brandHealthScore: calculateBrandHealthScore(fullAnalyses),
       competitivePosition: getCompetitivePosition(fullAnalyses),
       sentimentInsights: getSentimentInsights(fullAnalyses),
       competitiveThreats: getCompetitiveThreats(fullAnalyses),
       strategicOpportunities: getStrategicOpportunities(fullAnalyses),
-      recentInsights: getRecentInsights(fullAnalyses, 5),
       topDomains: getTopDomains(domainStats, 8),
     };
   }, [analysedPromptData, promptSourcesData]);
@@ -190,33 +184,27 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Dashboard Grid */}
-        <div className="space-y-4">
-          {/* Hero Section: Brand Health Score */}
-          <BrandHealthCard score={dashboardData.brandHealthScore} />
+        {/* Dashboard Grid - Compact 3 Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* Column 1 */}
+          <CompetitivePositionCard position={dashboardData.competitivePosition} />
 
-          {/* Two Column Grid: Competitive Position + Top Sources */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <CompetitivePositionCard position={dashboardData.competitivePosition} />
-            <TopSources
-              topDomains={dashboardData.topDomains}
-              workspaceId={workspaceId}
-            />
-          </div>
+          {/* Column 2 */}
+          <TopSources
+            topDomains={dashboardData.topDomains}
+            workspaceId={workspaceId}
+          />
 
-          {/* Two Column Grid: Sentiment + Threats */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <SentimentInsightsCard insights={dashboardData.sentimentInsights} />
-            <CompetitiveThreatsCard threats={dashboardData.competitiveThreats} />
-          </div>
+          {/* Column 3 */}
+          <SentimentInsightsCard insights={dashboardData.sentimentInsights} />
+        </div>
 
-          {/* Full Width: Strategic Opportunities */}
+        {/* Second Row - 2 Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+          <CompetitiveThreatsCard threats={dashboardData.competitiveThreats} />
           <StrategicOpportunitiesCard
             opportunities={dashboardData.strategicOpportunities}
           />
-
-          {/* Full Width: Recent Insights */}
-          <RecentInsightsCard insights={dashboardData.recentInsights} />
         </div>
       </div>
     </div>
