@@ -11,9 +11,7 @@ interface TopSourcesProps {
 
 export function TopSources({ topDomains, workspaceId }: TopSourcesProps) {
   const getBadgeColor = (percentage: number) => {
-    if (percentage > 50) return "bg-blue-100 text-blue-800 border-blue-300";
-    if (percentage > 25) return "bg-purple-100 text-purple-800 border-purple-300";
-    return "bg-gray-100 text-gray-800 border-gray-300";
+    return "bg-gray-100 text-gray-900 border-gray-300";
   };
 
   return (

@@ -18,8 +18,8 @@ function avg(numbers: number[]): number {
 // Extract full analysis data from records
 export function extractFullAnalysisData(records: AnalysisRecord[]): LLMBrandAnalysis[] {
   return records
-    .filter(r => r.full_analysis && r.full_analysis.length > 0)
-    .flatMap(r => r.full_analysis || []);
+    .filter(r => r.full_analysis)
+    .map(r => r.full_analysis!);
 }
 
 // Calculate Brand Health Score (0-100 composite)

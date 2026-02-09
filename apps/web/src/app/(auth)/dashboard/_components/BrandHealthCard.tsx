@@ -13,12 +13,6 @@ export function BrandHealthCard({ score }: BrandHealthCardProps) {
     return "text-red-600";
   };
 
-  const getScoreBgColor = (value: number) => {
-    if (value >= 80) return "bg-green-100";
-    if (value >= 60) return "bg-yellow-100";
-    return "bg-red-100";
-  };
-
   const getTrendIcon = () => {
     switch (score.trend) {
       case 'up':

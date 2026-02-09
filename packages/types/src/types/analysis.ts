@@ -175,7 +175,7 @@ export interface AnalysisRecord {
     brand_metrics: BrandMetricMap;
 
     // NEW - Full analysis data (parsed from JSON if available)
-    full_analysis?: LLMBrandAnalysis[];  // Complete analysis array
+    full_analysis?: LLMBrandAnalysis;  // Complete analysis object
 
     // Analysis status
     is_analysed?: boolean;  // True if analyzed, false if raw response

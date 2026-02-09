@@ -67,7 +67,7 @@ export function CompetitivePositionCard({ position }: CompetitivePositionCardPro
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div
-              className="h-3 rounded-full bg-blue-600"
+              className="h-3 rounded-full bg-gray-900"
               style={{ width: `${Math.min(position.shareOfVoice, 100)}%` }}
             />
           </div>

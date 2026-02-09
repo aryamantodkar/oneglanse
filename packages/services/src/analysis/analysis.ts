@@ -246,7 +246,7 @@ export async function fetchAnalysedPrompts(args: {
         brand_metrics: row.brand_metrics && row.brand_metrics !== '' && row.brand_metrics !== '{}'
             ? (typeof row.brand_metrics === "string" ? JSON.parse(row.brand_metrics) : row.brand_metrics)
             : {},
-        full_analysis: row.full_analysis && row.full_analysis !== '' && row.full_analysis !== '[]'
+        full_analysis: row.full_analysis && row.full_analysis !== '' && row.full_analysis !== '{}' && row.full_analysis !== '[]'
             ? (typeof row.full_analysis === "string" ? JSON.parse(row.full_analysis) : row.full_analysis)
             : undefined,
         created_at: row.created_at,

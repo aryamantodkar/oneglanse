@@ -29,7 +29,7 @@ import {
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header className="mb-8">
           <Skeleton className="h-9 w-64 mb-3" />
@@ -72,7 +72,8 @@ export default function Dashboard() {
     const fullAnalyses = extractFullAnalysisData(records);
 
     return {
-      hasData: fullAnalyses.length > 0,
+      hasData: records.length > 0, // Show dashboard if any records exist
+      hasFullAnalysis: fullAnalyses.length > 0, // Track if full analysis exists
       brandHealthScore: calculateBrandHealthScore(fullAnalyses),
       competitivePosition: getCompetitivePosition(fullAnalyses),
       sentimentInsights: getSentimentInsights(fullAnalyses),
@@ -90,7 +91,7 @@ export default function Dashboard() {
   // Empty state: no analysis data yet
   if (!dashboardData.hasData) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <header className="mb-12">
             <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
@@ -101,21 +102,19 @@ export default function Dashboard() {
             </p>
           </header>
 
-          <Card className="rounded-2xl shadow-sm border-2 border-dashed border-gray-300 max-w-2xl mx-auto">
+          <Card className="rounded-xl shadow-sm border border-gray-200 max-w-2xl mx-auto">
             <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-              <div className="rounded-full bg-gradient-to-br from-blue-100 to-purple-100 p-6 mb-6">
-                <Sparkles className="h-12 w-12 text-blue-600" />
+              <div className="rounded-full bg-gray-100 p-6 mb-6">
+                <Sparkles className="h-12 w-12 text-gray-700" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
                 Get Started with Brand Intelligence
               </h3>
               <p className="text-sm text-gray-600 text-center mb-8 max-w-md leading-relaxed">
-                Run your first prompt analysis to unlock insights about brand health,
-                competitive positioning, and strategic opportunities across ChatGPT,
-                Claude, and Perplexity.
+                Run your first prompt analysis to unlock insights about brand health and competitive positioning.
               </p>
               <Link href={`/prompts?workspace=${workspaceId}`}>
-                <Button size="lg" className="rounded-lg">
+                <Button size="lg">
                   <Plus className="mr-2 h-5 w-5" />
                   Go to Prompts
                 </Button>
@@ -128,7 +127,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <header className="mb-10">
@@ -139,6 +138,25 @@ export default function Dashboard() {
             AI-powered insights from LLM responses
           </p>
         </header>
+
+        {/* Show notice if no full analysis data yet */}
+        {!dashboardData.hasFullAnalysis && (
+          <Card className="rounded-xl shadow-sm border-l-4 border-gray-900 mb-6">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-3">
+                <Sparkles className="h-5 w-5 text-gray-700 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Enhanced Analytics Available
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Run analysis on your prompts to unlock advanced brand intelligence metrics.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Dashboard Grid */}
         <div className="space-y-6">
