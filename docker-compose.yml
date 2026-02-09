@@ -1,4 +1,9 @@
+version: "3.9"
+
 services:
+  # ----------------------------
+  # Agent API
+  # ----------------------------
   agent-api:
     image: ghcr.io/aryamantodkar/onescope-agent:latest
     pull_policy: always
@@ -9,11 +14,17 @@ services:
     env_file:
       - apps/agent/.env
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
     volumes:
       - agent_storage:/storage
+    depends_on:
+      redis:
+        condition: service_started
     command: pnpm start:api
 
+  # ----------------------------
+  # Agent Worker
+  # ----------------------------
   agent-worker:
     image: ghcr.io/aryamantodkar/onescope-agent:latest
     pull_policy: always
@@ -22,80 +33,97 @@ services:
     env_file:
       - .env
       - apps/agent/.env
-    depends_on:
-      - redis
     shm_size: "1gb"
     volumes:
       - agent_storage:/storage
+    depends_on:
+      redis:
+        condition: service_started
     command: pnpm start:worker
+
+  # ----------------------------
+  # Redis
+  # ----------------------------
   redis:
     image: redis:7-alpine
     container_name: redis
-    restart: always
+    restart: unless-stopped
     volumes:
       - redis_data:/data
-  web:
-    image: ghcr.io/aryamantodkar/onescope-web:latest
-    pull_policy: always
-    container_name: onescopeAI
-    restart: always
-    ports:
-      - "127.0.0.1:3000:3000"
-    env_file: .env
-    depends_on:
-      - db
-      - clickhouse
-      - redis
 
-    # Uncomment below for development (mounts local code, uses pnpm dev)
-    # environment:
-    #   CI: "true"
-    # volumes:
-    #   - .:/app
-    # command: >
-    #   sh -c "
-    #   pnpm install &&
-    #   pnpm turbo build --filter='./packages/*' &&
-    #   pnpm --filter @onescope/web dev -H 0.0.0.0
-    #   "
+  # ----------------------------
+  # PostgreSQL (OFFICIAL IMAGE)
+  # ----------------------------
   db:
-    image: ghcr.io/aryamantodkar/onescope-postgres:latest
-    pull_policy: always
+    image: postgres:16-alpine
     container_name: postgres_db
-    restart: always
+    restart: unless-stopped
     env_file: .env
-    ports:
-      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./packages/db/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # ClickHouse service
+  # ----------------------------
+  # ClickHouse
+  # ----------------------------
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse_db
-    restart: always
+    restart: unless-stopped
     env_file: .env
     ports:
       - "9000:9000"
       - "8123:8123"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./packages/db/clickhouse-init/:/docker-entrypoint-initdb.d/
+      - ./packages/db/clickhouse-init:/docker-entrypoint-initdb.d
 
+  # ----------------------------
+  # Web App (Next.js / UI)
+  # ----------------------------
+  web:
+    image: ghcr.io/aryamantodkar/onescope-web:latest
+    pull_policy: always
+    container_name: onescope-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      clickhouse:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------
+  # Database Migrations (ONE-SHOT)
+  # ----------------------------
   migrate:
     image: ghcr.io/aryamantodkar/onescope-web:latest
     pull_policy: always
+    container_name: onescope-migrate
     env_file: .env
-    environment:
-      - CI=true
     depends_on:
-      - db
-    command: >
-      sh -c "
-      pnpm install &&
-      pnpm --filter @onescope/db db:migrate
-      "
+      db:
+        condition: service_healthy
+    restart: "no"
+    command: pnpm --filter @onescope/db db:migrate
+
+# ----------------------------
+# Volumes
+# ----------------------------
 volumes:
   db_data:
   clickhouse_data:
