@@ -745,15 +745,15 @@ export default function Prompts() {
                               <img
                                 src={getModelFavicon(record.model_provider)}
                                 alt={record.model_provider}
-                                className="w-6 h-6 rounded-md"
+                                className="w-7 h-7 rounded-md"
                               />
 
                               <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
                                 {modelSelectors.find(m => m.value === record.model_provider)?.label || record.model_provider}
                                 </span>
 
-                                <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400">
                                   {formatDate(record.prompt_run_at)}
                                 </span>
                               </div>
