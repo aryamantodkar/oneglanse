@@ -1,32 +1,45 @@
-import type { UserPrompt } from "@onescope/types";
+// New dashboard types for brand intelligence metrics
 
-export interface BrandSummary {
-  name: string;
-  website: string;
-  avgMentions: number;
-  avgSentiment: number;
-  avgVisibility: number;
-  avgPosition: number;
-  sourceCount: number;
+export interface BrandHealthScore {
+  score: number; // 0-100 composite
+  visibility: number; // 0-100
+  sentiment: number; // 0-100
+  recommendation: number; // 0-100
+  trend: 'up' | 'down' | 'stable';
 }
 
-export interface ModelStat {
-  model: string;
-  count: number;
-  percentage: number;
+export interface CompetitivePosition {
+  current: string; // market_leader, top_contender, solid_option, etc.
+  shareOfVoice: number; // Percentage
+  rank: number | null;
+  competitorCount: number;
 }
 
-export interface PromptWithCount {
-  id: string;
-  prompt: string;
-  created_at: string;
-  responseCount: number;
+export interface SentimentInsights {
+  positiveSignals: string[];
+  negativeSignals: string[];
+  topStrengths: string[];
+  topWeaknesses: string[];
 }
 
-export interface AnalysisStatus {
-  analyzed: number;
-  pending: number;
-  lastRun: string | null;
+export interface CompetitiveThreat {
+  competitor: string;
+  winCount: number;
+  totalMentions: number;
+  threats: string[];
+  lastSeen: string;
+}
+
+export interface StrategicOpportunities {
+  messagingOpportunities: string[];
+  contentGaps: string[];
+  totalOpportunities: number;
+}
+
+export interface RecentInsight {
+  type: 'strength' | 'weakness' | 'opportunity' | 'threat';
+  message: string;
+  timestamp: string;
 }
 
 export interface DomainSummary {

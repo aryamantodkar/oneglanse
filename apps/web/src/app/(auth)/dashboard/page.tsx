@@ -2,39 +2,46 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, Button, Skeleton } from "@onescope/ui";
-import { Plus } from "lucide-react";
+import { Card, CardContent, Button, Skeleton } from "@onescope/ui";
+import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import {
-  useUserPrompts,
   useFetchAnalysedPrompts,
   usePromptSources,
 } from "../prompts/_lib/queries/prompt.queries";
-import { OverviewStats } from "./_components/OverviewStats";
-import { RecentActivity } from "./_components/RecentActivity";
-import { BrandPerformance } from "./_components/BrandPerformance";
-import { ModelDistribution } from "./_components/ModelDistribution";
+import { BrandHealthCard } from "./_components/BrandHealthCard";
+import { CompetitivePositionCard } from "./_components/CompetitivePositionCard";
+import { SentimentInsightsCard } from "./_components/SentimentInsightsCard";
+import { CompetitiveThreatsCard } from "./_components/CompetitiveThreatsCard";
+import { StrategicOpportunitiesCard } from "./_components/StrategicOpportunitiesCard";
+import { RecentInsightsCard } from "./_components/RecentInsightsCard";
 import { TopSources } from "./_components/TopSources";
-import { AnalysisStatus } from "./_components/AnalysisStatus";
 import {
-  aggregateBrandMetrics,
-  aggregateModelStats,
-  getRecentPrompts,
-  calculateAnalysisStatus,
+  extractFullAnalysisData,
+  calculateBrandHealthScore,
+  getCompetitivePosition,
+  getSentimentInsights,
+  getCompetitiveThreats,
+  getStrategicOpportunities,
+  getRecentInsights,
   getTopDomains,
 } from "./_lib/aggregations";
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen p-8">
-      <header className="mb-8">
-        <Skeleton className="h-9 w-48 mb-2" />
-        <Skeleton className="h-5 w-96" />
-      </header>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Skeleton key={i} className="h-48 rounded-xl" />
-        ))}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header className="mb-8">
+          <Skeleton className="h-9 w-64 mb-3" />
+          <Skeleton className="h-5 w-96" />
+        </header>
+        <div className="space-y-6">
+          <Skeleton className="h-64 rounded-2xl" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-56 rounded-2xl" />
+            <Skeleton className="h-56 rounded-2xl" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -43,11 +50,6 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
-
-  const {
-    data: userPrompts,
-    isLoading: isUserPromptsLoading,
-  } = useUserPrompts(workspaceId);
 
   const {
     data: analysedPromptData,
@@ -59,108 +61,113 @@ export default function Dashboard() {
     isLoading: isPromptSourcesLoading,
   } = usePromptSources(workspaceId);
 
-  const isLoading =
-    isUserPromptsLoading || isAnalysedPromptsLoading || isPromptSourcesLoading;
+  const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
 
   // Aggregate data using memoization for performance
-  const aggregatedData = useMemo(() => {
-    const prompts = userPrompts?.data || [];
+  const dashboardData = useMemo(() => {
     const records = analysedPromptData?.data?.records || [];
-    const metadata = analysedPromptData?.data?.metadata || { available_brands: [] };
     const domainStats = promptSourcesData?.data?.domain_stats?.combined || [];
 
+    // Extract full analysis data
+    const fullAnalyses = extractFullAnalysisData(records);
+
     return {
-      totalPrompts: prompts.length,
-      totalResponses: records.length,
-      trackedBrands: metadata.available_brands.length,
-      uniqueSources: domainStats.length,
-      brandSummaries: aggregateBrandMetrics(records),
-      modelStats: aggregateModelStats(records),
-      recentPrompts: getRecentPrompts(prompts, records, 5),
-      analysisStatus: calculateAnalysisStatus(records),
+      hasData: fullAnalyses.length > 0,
+      brandHealthScore: calculateBrandHealthScore(fullAnalyses),
+      competitivePosition: getCompetitivePosition(fullAnalyses),
+      sentimentInsights: getSentimentInsights(fullAnalyses),
+      competitiveThreats: getCompetitiveThreats(fullAnalyses),
+      strategicOpportunities: getStrategicOpportunities(fullAnalyses),
+      recentInsights: getRecentInsights(fullAnalyses, 5),
       topDomains: getTopDomains(domainStats, 8),
     };
-  }, [userPrompts, analysedPromptData, promptSourcesData]);
+  }, [analysedPromptData, promptSourcesData]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
-  // Empty state: no prompts created yet
-  if (aggregatedData.totalPrompts === 0) {
+  // Empty state: no analysis data yet
+  if (!dashboardData.hasData) {
     return (
-      <div className="min-h-screen p-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-2">
-            Welcome back! Here's a quick overview of your workspace.
-          </p>
-        </header>
-        <Card className="rounded-xl shadow-sm max-w-2xl mx-auto">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-gray-100 p-4 mb-4">
-              <Plus className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Get Started with OneScope
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-6 max-w-md">
-              Create your first prompt to start monitoring brand mentions across
-              ChatGPT, Claude, and Perplexity.
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <header className="mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+              Brand Intelligence
+            </h1>
+            <p className="text-gray-600 mt-3 text-lg">
+              Get actionable insights from LLM responses
             </p>
-            <Link href={`/prompts?workspace=${workspaceId}`}>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Your First Prompt
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+          </header>
+
+          <Card className="rounded-2xl shadow-sm border-2 border-dashed border-gray-300 max-w-2xl mx-auto">
+            <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+              <div className="rounded-full bg-gradient-to-br from-blue-100 to-purple-100 p-6 mb-6">
+                <Sparkles className="h-12 w-12 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Get Started with Brand Intelligence
+              </h3>
+              <p className="text-sm text-gray-600 text-center mb-8 max-w-md leading-relaxed">
+                Run your first prompt analysis to unlock insights about brand health,
+                competitive positioning, and strategic opportunities across ChatGPT,
+                Claude, and Perplexity.
+              </p>
+              <Link href={`/prompts?workspace=${workspaceId}`}>
+                <Button size="lg" className="rounded-lg">
+                  <Plus className="mr-2 h-5 w-5" />
+                  Go to Prompts
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8">
-      {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-2">
-          Welcome back! Here's a quick overview of your workspace.
-        </p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <header className="mb-10">
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+            Brand Intelligence
+          </h1>
+          <p className="text-gray-600 mt-3 text-lg">
+            AI-powered insights from LLM responses
+          </p>
+        </header>
 
-      {/* Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Section 1 & 2: Overview Stats + Recent Activity */}
-        <div className="lg:col-span-1">
-          <OverviewStats
-            totalPrompts={aggregatedData.totalPrompts}
-            totalResponses={aggregatedData.totalResponses}
-            trackedBrands={aggregatedData.trackedBrands}
-            uniqueSources={aggregatedData.uniqueSources}
+        {/* Dashboard Grid */}
+        <div className="space-y-6">
+          {/* Hero Section: Brand Health Score */}
+          <BrandHealthCard score={dashboardData.brandHealthScore} />
+
+          {/* Two Column Grid: Competitive Position + Top Sources */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CompetitivePositionCard position={dashboardData.competitivePosition} />
+            <TopSources
+              topDomains={dashboardData.topDomains}
+              workspaceId={workspaceId}
+            />
+          </div>
+
+          {/* Two Column Grid: Sentiment + Threats */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SentimentInsightsCard insights={dashboardData.sentimentInsights} />
+            <CompetitiveThreatsCard threats={dashboardData.competitiveThreats} />
+          </div>
+
+          {/* Full Width: Strategic Opportunities */}
+          <StrategicOpportunitiesCard
+            opportunities={dashboardData.strategicOpportunities}
           />
+
+          {/* Full Width: Recent Insights */}
+          <RecentInsightsCard insights={dashboardData.recentInsights} />
         </div>
-
-        <div className="lg:col-span-2">
-          <RecentActivity
-            recentPrompts={aggregatedData.recentPrompts}
-            workspaceId={workspaceId}
-          />
-        </div>
-
-        {/* Section 3: Brand Performance (Full Width) */}
-        <BrandPerformance brandSummaries={aggregatedData.brandSummaries} />
-
-        {/* Section 4, 5, 6: Bottom Row */}
-        <ModelDistribution modelStats={aggregatedData.modelStats} />
-
-        <TopSources
-          topDomains={aggregatedData.topDomains}
-          workspaceId={workspaceId}
-        />
-
-        <AnalysisStatus status={aggregatedData.analysisStatus} />
       </div>
     </div>
   );

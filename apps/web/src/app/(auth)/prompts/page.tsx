@@ -618,26 +618,6 @@ export default function Prompts() {
                       </TableCell>
                     ) : (
                       <>
-                        <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300">
-                          <div className="flex items-center gap-2">
-                            {modelProvider === "All Models" ? (
-                              <Bot className="w-4 h-4 text-muted-foreground" />
-                            ) : (
-                              <img
-                                src={getModelFavicon(modelProvider)}
-                                alt={modelProvider}
-                                className="w-4 h-4 rounded-sm"
-                              />
-                            )}
-                            <span>
-                              {modelProvider === "All Models"
-                                ? "Average"
-                                : modelSelectors.find((m) => m.value === modelProvider)?.label || modelProvider
-                              }
-                            </span>
-                          </div>
-                        </TableCell>
-
                         <TableCell className="px-6 py-5 text-sm text-gray-700 dark:text-gray-300 text-center">
                           <span className="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 text-xs font-medium">
                             {metrics.mentions}
@@ -818,6 +798,38 @@ export default function Prompts() {
                           >
                             {isExpanded ? "Show less" : "View full response"}
                           </button>
+
+                          {/* Metrics Display - Clean & Minimal */}
+                          {record.is_analysed && Object.keys(record.brand_metrics).length > 0 && isExpanded && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                              <div className="flex items-center gap-6">
+                                {Object.entries(record.brand_metrics).slice(0, 1).map(([brandName, metrics]) => (
+                                  <>
+                                    <div key={`mentions-${brandName}`} className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">Mentions:</span>
+                                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                        {metrics.mentions}
+                                      </span>
+                                    </div>
+                                    <div key={`sentiment-${brandName}`} className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">Sentiment:</span>
+                                      <SentimentMetricCell sentiment={metrics.sentiment} />
+                                    </div>
+                                    <div key={`visibility-${brandName}`} className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">Visibility:</span>
+                                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                        {metrics.visibility}%
+                                      </span>
+                                    </div>
+                                    <div key={`position-${brandName}`} className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">Position:</span>
+                                      <PositionMetricCell position={metrics.position} />
+                                    </div>
+                                  </>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           <SourcesCard
                             key={record.id}

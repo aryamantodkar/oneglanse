@@ -1,5 +1,13 @@
-import type { AnalysisRecord, UserPrompt } from "@onescope/types";
-import type { BrandSummary, ModelStat, PromptWithCount, AnalysisStatus, DomainSummary } from "./types";
+import type { AnalysisRecord, LLMBrandAnalysis } from "@onescope/types";
+import type {
+  DomainSummary,
+  BrandHealthScore,
+  CompetitivePosition,
+  SentimentInsights,
+  CompetitiveThreat,
+  StrategicOpportunities,
+  RecentInsight
+} from "./types";
 
 // Helper: Calculate average of numbers
 function avg(numbers: number[]): number {
@@ -7,131 +15,344 @@ function avg(numbers: number[]): number {
   return numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
 }
 
-// 1. Aggregate brand metrics across all analysis records
-export function aggregateBrandMetrics(records: AnalysisRecord[]): BrandSummary[] {
-  const brandMap = new Map<
-    string,
-    {
-      mentions: number[];
-      sentiment: number[];
-      visibility: number[];
-      position: number[];
-      website: string;
-      sourceCount: number;
-    }
-  >();
+// Extract full analysis data from records
+export function extractFullAnalysisData(records: AnalysisRecord[]): LLMBrandAnalysis[] {
+  return records
+    .filter(r => r.full_analysis && r.full_analysis.length > 0)
+    .flatMap(r => r.full_analysis || []);
+}
 
-  records.forEach((record) => {
-    if (!record.brand_metrics) return;
+// Calculate Brand Health Score (0-100 composite)
+export function calculateBrandHealthScore(analyses: LLMBrandAnalysis[]): BrandHealthScore {
+  if (analyses.length === 0) {
+    return {
+      score: 0,
+      visibility: 0,
+      sentiment: 0,
+      recommendation: 0,
+      trend: 'stable'
+    };
+  }
 
-    Object.entries(record.brand_metrics).forEach(([name, metrics]) => {
-      if (!brandMap.has(name)) {
-        brandMap.set(name, {
-          mentions: [],
-          sentiment: [],
-          visibility: [],
-          position: [],
-          website: metrics.website,
-          sourceCount: 0,
+  // Calculate visibility score (0-100)
+  const visibilityScores = analyses.map(a => a.target_brand.visibility.visibility_score);
+  const avgVisibility = Math.round(avg(visibilityScores));
+
+  // Calculate sentiment score (0-100) from -1 to 1 scale
+  const sentimentScores = analyses.map(a => {
+    const score = a.target_brand.sentiment.score;
+    return (score + 1) * 50; // Convert -1 to 1 scale to 0-100
+  });
+  const avgSentiment = Math.round(avg(sentimentScores));
+
+  // Calculate recommendation score (0-100)
+  const recommendationScores = analyses.map(a => {
+    const strength = a.target_brand.visibility.recommendation_strength;
+    const scoreMap: Record<string, number> = {
+      'primary_choice': 100,
+      'strong_option': 80,
+      'among_options': 60,
+      'mentioned_only': 40,
+      'not_recommended': 20,
+      'not_mentioned': 0
+    };
+    return scoreMap[strength] || 0;
+  });
+  const avgRecommendation = Math.round(avg(recommendationScores));
+
+  // Weighted composite score
+  const compositeScore = Math.round(
+    avgVisibility * 0.4 +
+    avgSentiment * 0.3 +
+    avgRecommendation * 0.3
+  );
+
+  // Determine trend (compare first half vs second half)
+  const halfPoint = Math.floor(analyses.length / 2);
+  if (halfPoint > 0) {
+    const firstHalfAvg = avg(analyses.slice(0, halfPoint).map(a => a.target_brand.visibility.visibility_score));
+    const secondHalfAvg = avg(analyses.slice(halfPoint).map(a => a.target_brand.visibility.visibility_score));
+    const diff = secondHalfAvg - firstHalfAvg;
+
+    const trend = diff > 5 ? 'up' : diff < -5 ? 'down' : 'stable';
+
+    return {
+      score: compositeScore,
+      visibility: avgVisibility,
+      sentiment: avgSentiment,
+      recommendation: avgRecommendation,
+      trend
+    };
+  }
+
+  return {
+    score: compositeScore,
+    visibility: avgVisibility,
+    sentiment: avgSentiment,
+    recommendation: avgRecommendation,
+    trend: 'stable'
+  };
+}
+
+// Get competitive positioning
+export function getCompetitivePosition(analyses: LLMBrandAnalysis[]): CompetitivePosition {
+  if (analyses.length === 0) {
+    return {
+      current: 'not_positioned',
+      shareOfVoice: 0,
+      rank: null,
+      competitorCount: 0
+    };
+  }
+
+  // Get most common positioning
+  const positions = analyses.map(a => a.target_brand.competitive_intelligence.competitive_positioning);
+  const positionCounts = positions.reduce((acc, pos) => {
+    acc[pos] = (acc[pos] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const mostCommonPosition = Object.entries(positionCounts)
+    .sort((a, b) => b[1] - a[1])[0]?.[0] || 'not_positioned';
+
+  // Average share of voice
+  const shareOfVoices = analyses.map(a => a.target_brand.visibility.share_of_voice);
+  const avgShareOfVoice = Math.round(avg(shareOfVoices) * 10) / 10;
+
+  // Get most common rank
+  const ranks = analyses.map(a => a.target_brand.visibility.rank).filter(r => r !== null) as number[];
+  const avgRank = ranks.length > 0 ? Math.round(avg(ranks)) : null;
+
+  // Get competitor count
+  const competitorCounts = analyses.map(a => a.target_brand.competitive_intelligence.total_competitors_mentioned);
+  const avgCompetitorCount = Math.round(avg(competitorCounts));
+
+  return {
+    current: mostCommonPosition,
+    shareOfVoice: avgShareOfVoice,
+    rank: avgRank,
+    competitorCount: avgCompetitorCount
+  };
+}
+
+// Extract sentiment signals
+export function getSentimentInsights(analyses: LLMBrandAnalysis[]): SentimentInsights {
+  if (analyses.length === 0) {
+    return {
+      positiveSignals: [],
+      negativeSignals: [],
+      topStrengths: [],
+      topWeaknesses: []
+    };
+  }
+
+  // Aggregate positive and negative signals
+  const allPositiveSignals = analyses.flatMap(a => a.target_brand.sentiment.positive_signals);
+  const allNegativeSignals = analyses.flatMap(a => a.target_brand.sentiment.negative_signals);
+
+  // Count frequencies
+  const positiveCounts = allPositiveSignals.reduce((acc, signal) => {
+    acc[signal] = (acc[signal] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const negativeCounts = allNegativeSignals.reduce((acc, signal) => {
+    acc[signal] = (acc[signal] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Get top 5 of each
+  const topPositive = Object.entries(positiveCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([signal]) => signal);
+
+  const topNegative = Object.entries(negativeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([signal]) => signal);
+
+  // Aggregate strengths and weaknesses
+  const allStrengths = analyses.flatMap(a => a.target_brand.brand_narrative.strengths_cited);
+  const allWeaknesses = analyses.flatMap(a => a.target_brand.brand_narrative.weaknesses_cited);
+
+  const strengthCounts = allStrengths.reduce((acc, strength) => {
+    acc[strength] = (acc[strength] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const weaknessCounts = allWeaknesses.reduce((acc, weakness) => {
+    acc[weakness] = (acc[weakness] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const topStrengths = Object.entries(strengthCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([strength]) => strength);
+
+  const topWeaknesses = Object.entries(weaknessCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([weakness]) => weakness);
+
+  return {
+    positiveSignals: topPositive,
+    negativeSignals: topNegative,
+    topStrengths,
+    topWeaknesses
+  };
+}
+
+// Identify competitive threats
+export function getCompetitiveThreats(analyses: LLMBrandAnalysis[]): CompetitiveThreat[] {
+  if (analyses.length === 0) {
+    return [];
+  }
+
+  const competitorMap = new Map<string, {
+    winCount: number;
+    totalMentions: number;
+    threats: Set<string>;
+    lastSeen: string;
+  }>();
+
+  analyses.forEach(analysis => {
+    const comparisons = analysis.target_brand.competitive_intelligence.direct_comparisons;
+
+    comparisons.forEach(comparison => {
+      const competitorName = comparison.competitor_name;
+
+      if (!competitorMap.has(competitorName)) {
+        competitorMap.set(competitorName, {
+          winCount: 0,
+          totalMentions: 0,
+          threats: new Set(),
+          lastSeen: analysis.target_brand.brand_presence.mention_contexts[0]?.character_position?.toString() || ''
         });
       }
 
-      const brand = brandMap.get(name)!;
-      brand.mentions.push(metrics.mentions);
-      // Convert sentiment from -1 to 1 scale to 0-100 scale for UI
-      brand.sentiment.push((metrics.sentiment + 1) * 50);
-      brand.visibility.push(metrics.visibility);
-      brand.position.push(metrics.position);
+      const competitor = competitorMap.get(competitorName)!;
+      competitor.totalMentions += comparison.competitor_mention_count;
 
-      // Count sources that reference this brand's website
-      if (record.sources) {
-        brand.sourceCount += record.sources.filter((s) =>
-          s.url?.includes(metrics.website)
-        ).length;
+      // Count as "win" if competitor is superior
+      if (comparison.comparison_type === 'superior_to_target') {
+        competitor.winCount += 1;
+      }
+
+      // Add threats
+      if (comparison.competitor_wins_on.length > 0) {
+        comparison.competitor_wins_on.forEach(threat => competitor.threats.add(threat));
       }
     });
   });
 
-  return Array.from(brandMap.entries())
-    .map(([name, data]) => ({
-      name,
-      website: data.website,
-      avgMentions: Math.round(avg(data.mentions)),
-      avgSentiment: Math.round(avg(data.sentiment)),
-      avgVisibility: Math.round(avg(data.visibility)),
-      avgPosition: Math.round(avg(data.position)),
-      sourceCount: data.sourceCount,
+  return Array.from(competitorMap.entries())
+    .map(([competitor, data]) => ({
+      competitor,
+      winCount: data.winCount,
+      totalMentions: data.totalMentions,
+      threats: Array.from(data.threats),
+      lastSeen: data.lastSeen
     }))
-    .sort((a, b) => b.avgVisibility - a.avgVisibility); // Sort by visibility
+    .filter(c => c.totalMentions > 0)
+    .sort((a, b) => b.winCount - a.winCount)
+    .slice(0, 5);
 }
 
-// 2. Aggregate model statistics
-export function aggregateModelStats(records: AnalysisRecord[]): ModelStat[] {
-  const modelCounts = records.reduce(
-    (acc, record) => {
-      const model = record.model_provider;
-      acc[model] = (acc[model] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+// Extract strategic opportunities
+export function getStrategicOpportunities(analyses: LLMBrandAnalysis[]): StrategicOpportunities {
+  if (analyses.length === 0) {
+    return {
+      messagingOpportunities: [],
+      contentGaps: [],
+      totalOpportunities: 0
+    };
+  }
 
-  const total = records.length || 1; // Avoid division by zero
+  const allMessagingOpps = analyses.flatMap(a => a.action_items.messaging_opportunities);
+  const allContentGaps = analyses.flatMap(a => a.action_items.content_gaps);
 
-  return Object.entries(modelCounts).map(([model, count]) => ({
-    model,
-    count,
-    percentage: Math.round((count / total) * 100),
-  }));
-}
+  // Deduplicate and count frequencies
+  const messagingCounts = allMessagingOpps.reduce((acc, opp) => {
+    acc[opp] = (acc[opp] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-// 3. Get recent prompts with response counts
-export function getRecentPrompts(
-  prompts: UserPrompt[],
-  records: AnalysisRecord[],
-  limit: number
-): PromptWithCount[] {
-  // Create a map of prompt_id to response count
-  const responseCounts = records.reduce(
-    (acc, record) => {
-      acc[record.prompt_id] = (acc[record.prompt_id] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const contentGapCounts = allContentGaps.reduce((acc, gap) => {
+    acc[gap] = (acc[gap] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-  return prompts
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, limit)
-    .map((prompt) => ({
-      id: prompt.id,
-      prompt: prompt.prompt,
-      created_at: prompt.created_at,
-      responseCount: responseCounts[prompt.id] || 0,
-    }));
-}
+  const topMessaging = Object.entries(messagingCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([opp]) => opp);
 
-// 4. Calculate analysis status
-export function calculateAnalysisStatus(records: AnalysisRecord[]): AnalysisStatus {
-  const analyzed = records.filter((r) => r.is_analysed).length;
-  const pending = records.filter((r) => !r.is_analysed).length;
-
-  // Find most recent analysis timestamp
-  const analysedRecords = records.filter((r) => r.is_analysed);
-  const sortedRecords = analysedRecords.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-  const lastRun = sortedRecords.length > 0 ? sortedRecords[0]?.created_at ?? null : null;
+  const topContentGaps = Object.entries(contentGapCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([gap]) => gap);
 
   return {
-    analyzed,
-    pending,
-    lastRun,
+    messagingOpportunities: topMessaging,
+    contentGaps: topContentGaps,
+    totalOpportunities: topMessaging.length + topContentGaps.length
   };
 }
 
-// 5. Get top domains from domain stats
+// Get recent insights
+export function getRecentInsights(analyses: LLMBrandAnalysis[], limit: number = 5): RecentInsight[] {
+  if (analyses.length === 0) {
+    return [];
+  }
+
+  const insights: RecentInsight[] = [];
+
+  // Take the most recent analyses (last 5)
+  const recentAnalyses = analyses.slice(-Math.min(limit, analyses.length));
+
+  recentAnalyses.forEach(analysis => {
+    // Add top strength
+    if (analysis.target_brand.brand_narrative.strengths_cited.length > 0) {
+      insights.push({
+        type: 'strength',
+        message: analysis.target_brand.brand_narrative.strengths_cited[0] || '',
+        timestamp: new Date().toISOString() // Use analysis timestamp if available
+      });
+    }
+
+    // Add top weakness
+    if (analysis.target_brand.brand_narrative.weaknesses_cited.length > 0) {
+      insights.push({
+        type: 'weakness',
+        message: analysis.target_brand.brand_narrative.weaknesses_cited[0] || '',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Add opportunity
+    if (analysis.action_items.messaging_opportunities.length > 0) {
+      insights.push({
+        type: 'opportunity',
+        message: analysis.action_items.messaging_opportunities[0] || '',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Add threat
+    if (analysis.action_items.competitive_threats.length > 0) {
+      insights.push({
+        type: 'threat',
+        message: analysis.action_items.competitive_threats[0] || '',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  return insights.slice(0, limit);
+}
+
+// Keep getTopDomains for Top Sources metric
 export function getTopDomains(
   domainStats: Array<{
     domain: string;
