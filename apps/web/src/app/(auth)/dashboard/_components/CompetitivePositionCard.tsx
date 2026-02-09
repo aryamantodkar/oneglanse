@@ -20,44 +20,44 @@ export function CompetitivePositionCard({ position }: CompetitivePositionCardPro
   };
 
   return (
-    <Card className="rounded-lg shadow-sm border border-gray-200">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium text-gray-700">Competitive Position</CardTitle>
+    <Card className="rounded-xl shadow-sm border border-gray-200 bg-white hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-gray-900">Competitive Position</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-4">
         {/* Position */}
-        <div>
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide">Position</span>
-          <p className="text-sm font-semibold text-gray-900 mt-0.5">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <span className="text-xs text-gray-600 font-medium">Position</span>
+          <p className="text-base font-bold text-gray-900 mt-1">
             {getPositionLabel(position.current)}
           </p>
         </div>
 
         {/* Share of Voice */}
         <div>
-          <div className="flex justify-between items-baseline mb-1">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Share of Voice</span>
-            <span className="text-xs font-semibold text-gray-900">{position.shareOfVoice}%</span>
+          <div className="flex justify-between items-baseline mb-2">
+            <span className="text-xs text-gray-600 font-medium">Share of Voice</span>
+            <span className="text-sm font-bold text-gray-900">{position.shareOfVoice}%</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-1">
+          <div className="w-full bg-gray-100 rounded-full h-2">
             <div
-              className="h-1 rounded-full bg-gray-900"
+              className="h-2 rounded-full bg-gradient-to-r from-gray-700 to-gray-900 transition-all duration-300"
               style={{ width: `${Math.min(position.shareOfVoice, 100)}%` }}
             />
           </div>
         </div>
 
         {/* Rank and Competitors */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Rank</div>
-            <div className="text-lg font-bold text-gray-900">
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-xs text-gray-600 font-medium mb-1">Rank</div>
+            <div className="text-2xl font-bold text-gray-900">
               {position.rank !== null ? `#${position.rank}` : 'N/A'}
             </div>
           </div>
-          <div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Competitors</div>
-            <div className="text-lg font-bold text-gray-900">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-xs text-gray-600 font-medium mb-1">Competitors</div>
+            <div className="text-2xl font-bold text-gray-900">
               {position.competitorCount}
             </div>
           </div>

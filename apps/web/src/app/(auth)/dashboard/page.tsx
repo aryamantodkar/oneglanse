@@ -153,29 +153,35 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <header className="mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">
-            Brand Intelligence
-          </h1>
-          <p className="text-gray-500 mt-1 text-xs">
-            AI-powered insights from LLM responses
-          </p>
+        <header className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                Brand Intelligence
+              </h1>
+              <p className="text-gray-600 mt-1.5 text-sm">
+                AI-powered insights from LLM responses
+              </p>
+            </div>
+          </div>
         </header>
 
         {/* Show notice if no full analysis data yet */}
         {!dashboardData.hasFullAnalysis && (
-          <Card className="rounded-xl shadow-sm border-l-2 border-gray-900 mb-4">
-            <CardContent className="py-3">
-              <div className="flex items-start gap-2">
-                <Sparkles className="h-4 w-4 text-gray-700 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-gray-900">
+          <Card className="rounded-xl shadow-sm border-l-4 border-gray-900 mb-6 bg-white">
+            <CardContent className="py-4 px-5">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-gray-100 p-2 mt-0.5">
+                  <Sparkles className="h-4 w-4 text-gray-700" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">
                     Enhanced Analytics Available
                   </p>
-                  <p className="text-[10px] text-gray-600 mt-0.5">
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
                     Run analysis on your prompts to unlock advanced brand intelligence metrics.
                   </p>
                 </div>
@@ -184,23 +190,18 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Dashboard Grid - Compact 3 Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* Column 1 */}
+        {/* Dashboard Grid - 3 Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <CompetitivePositionCard position={dashboardData.competitivePosition} />
-
-          {/* Column 2 */}
           <TopSources
             topDomains={dashboardData.topDomains}
             workspaceId={workspaceId}
           />
-
-          {/* Column 3 */}
           <SentimentInsightsCard insights={dashboardData.sentimentInsights} />
         </div>
 
         {/* Second Row - 2 Column */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CompetitiveThreatsCard threats={dashboardData.competitiveThreats} />
           <StrategicOpportunitiesCard
             opportunities={dashboardData.strategicOpportunities}

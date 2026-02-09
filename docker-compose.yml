@@ -1,8 +1,7 @@
 services:
   agent-api:
-    build:
-      context: .
-      dockerfile: Dockerfile.agent
+    image: ghcr.io/aryamantodkar/onescope-agent:latest
+    pull_policy: always
     container_name: onescope-agent-api
     restart: unless-stopped
     ports:
@@ -16,9 +15,8 @@ services:
     command: pnpm start:api
 
   agent-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.agent
+    image: ghcr.io/aryamantodkar/onescope-agent:latest
+    pull_policy: always
     container_name: onescope-agent-worker
     restart: unless-stopped
     env_file:
@@ -37,9 +35,8 @@ services:
     volumes:
       - redis_data:/data
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/aryamantodkar/onescope-web:latest
+    pull_policy: always
     container_name: onescopeAI
     restart: always
     ports:
@@ -62,9 +59,8 @@ services:
     #   pnpm --filter @onescope/web dev -H 0.0.0.0
     #   "
   db:
-    build:
-      context: .
-      dockerfile: Dockerfile.postgres
+    image: ghcr.io/aryamantodkar/onescope-postgres:latest
+    pull_policy: always
     container_name: postgres_db
     restart: always
     env_file: .env
@@ -88,7 +84,8 @@ services:
       - ./packages/db/clickhouse-init/:/docker-entrypoint-initdb.d/
 
   migrate:
-    image: onescopeai-web
+    image: ghcr.io/aryamantodkar/onescope-web:latest
+    pull_policy: always
     env_file: .env
     environment:
       - CI=true
