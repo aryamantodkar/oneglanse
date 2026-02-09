@@ -216,9 +216,7 @@ export async function fetchAnalysedPrompts(args: {
                 pr.created_at,
                 pr.is_analysed,
                 if(pr.is_analysed, pa.brand_metrics, '{}') as brand_metrics,
-                if(pr.is_analysed, pa.full_analysis, '[]') as full_analysis,
-                if(pr.is_analysed, pa.analyzed_brand_count, 0) as analyzed_brand_count,
-                if(pr.is_analysed, pa.target_brand_name, '') as target_brand_name
+                if(pr.is_analysed, pa.full_analysis, '[]') as full_analysis
             FROM analytics.prompt_responses pr
             ANY LEFT JOIN analytics.prompt_analysis pa
               ON pr.prompt_id = pa.prompt_id
@@ -251,8 +249,6 @@ export async function fetchAnalysedPrompts(args: {
         full_analysis: row.full_analysis && row.full_analysis !== '' && row.full_analysis !== '[]'
             ? (typeof row.full_analysis === "string" ? JSON.parse(row.full_analysis) : row.full_analysis)
             : undefined,
-        analyzed_brand_count: row.analyzed_brand_count || 0,
-        target_brand_name: row.target_brand_name || '',
         created_at: row.created_at,
         is_analysed: row.is_analysed ?? true,
     }));
