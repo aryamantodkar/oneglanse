@@ -149,8 +149,6 @@ export interface PromptAnalysis {
     model_provider: string,
     brand_metrics: string,  // JSON string in ClickHouse
     full_analysis?: string,  // NEW - complete LLMBrandAnalysis array as JSON string
-    analyzed_brand_count?: number,  // NEW - count of brands analyzed
-    target_brand_name?: string,  // NEW - workspace/brand name
     prompt_run_at: string,
     created_at: string
 }
@@ -178,8 +176,6 @@ export interface AnalysisRecord {
 
     // NEW - Full analysis data (parsed from JSON if available)
     full_analysis?: LLMBrandAnalysis[];  // Complete analysis array
-    analyzed_brand_count?: number;        // Count of brands analyzed
-    target_brand_name?: string;           // Workspace/brand name
 
     // Analysis status
     is_analysed?: boolean;  // True if analyzed, false if raw response
