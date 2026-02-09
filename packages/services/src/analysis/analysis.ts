@@ -7,13 +7,12 @@ import { getWorkspaceById } from "../workspace/index.js";
 export async function analysePromptResponse(args: {
     workspaceId: string;
     response: string;
-    sources: Source[];
 }): Promise<{
     brandMetrics: BrandMetricMap;
     fullAnalysis: LLMBrandAnalysis;
     targetBrandName: string;
 }> {
-    const { workspaceId, response, sources } = args;
+    const { workspaceId, response } = args;
 
     const workspace = await getWorkspaceById({ workspaceId });
 
@@ -21,7 +20,6 @@ export async function analysePromptResponse(args: {
         brandDomain: workspace.domain,
         brandName: workspace.name,
         response: response,
-        sources: sources,
     });
 
     if (!result.data) {
@@ -96,18 +94,9 @@ export async function analysePromptsForWorkspace(args: {
         // Analyze each response
         for (const resp of responses) {
             try {
-                const sources: Source[] = resp.sources.map((s) => ({
-                    title: s.title,
-                    cited_text: s.cited_text,
-                    url: s.url,
-                    domain: s.domain,
-                    favicon: s.favicon,
-                }));
-
                 const analysisResult = await analysePromptResponse({
                     workspaceId: resp.workspace_id,
                     response: resp.response,
-                    sources,
                 });
 
                 analysisRows.push({

@@ -10,7 +10,8 @@ export async function runAnalysis(input: AnalysisInputSingle) {
       let response;
       try {
         response = await openai.responses.create({
-          model: "gpt-4o-mini",
+          model: "gpt-4.1",
+          temperature: 0,
           input: [
             {
               role: "system",
@@ -30,7 +31,7 @@ export async function runAnalysis(input: AnalysisInputSingle) {
           "OpenAI",
           "Failed to analyze response.",
           502,
-          { responseLength: input.response.length, sourcesCount: input.sources.length },
+          { responseLength: input.response.length },
           err
         );
       }
