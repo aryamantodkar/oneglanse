@@ -18,8 +18,7 @@ services:
     volumes:
       - agent_storage:/storage
     depends_on:
-      redis:
-        condition: service_started
+      - redis
     command: pnpm start:api
 
   # ----------------------------
@@ -62,11 +61,6 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./packages/db/init-scripts:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   # ----------------------------
   # ClickHouse
@@ -95,17 +89,9 @@ services:
       - "127.0.0.1:3000:3000"
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      clickhouse:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - db
+      - redis
+      - clickhouse
 
   # ----------------------------
   # Database Migrations (ONE-SHOT)
@@ -116,8 +102,7 @@ services:
     container_name: onescope-migrate
     env_file: .env
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     restart: "no"
     command: pnpm --filter @onescope/db db:migrate
 
