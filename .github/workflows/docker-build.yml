@@ -9,6 +9,8 @@ on:
       - "packages/**"
       - "Dockerfile"
       - "Dockerfile.agent"
+      - "Dockerfile.postgres"
+      - "packages/db/**"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -24,14 +26,8 @@ jobs:
       contents: read
       packages: write
 
-    if: |
-      contains(github.event.head_commit.modified, 'apps/web/') ||
-      contains(github.event.head_commit.modified, 'packages/') ||
-      contains(github.event.head_commit.modified, 'Dockerfile')
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -65,14 +61,8 @@ jobs:
       contents: read
       packages: write
 
-    if: |
-      contains(github.event.head_commit.modified, 'apps/agent/') ||
-      contains(github.event.head_commit.modified, 'packages/') ||
-      contains(github.event.head_commit.modified, 'Dockerfile.agent')
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -93,6 +83,41 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.agent
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-postgres:
+    name: Build Postgres Image (pg_cron)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/onescope-postgres
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.postgres
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
