@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - onescope-monorepo
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "Dockerfile"
+      - "Dockerfile.agent"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 env:
@@ -17,6 +23,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    if: |
+      contains(github.event.head_commit.modified, 'apps/web/') ||
+      contains(github.event.head_commit.modified, 'packages/') ||
+      contains(github.event.head_commit.modified, 'Dockerfile')
 
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +64,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    if: |
+      contains(github.event.head_commit.modified, 'apps/agent/') ||
+      contains(github.event.head_commit.modified, 'packages/') ||
+      contains(github.event.head_commit.modified, 'Dockerfile.agent')
 
     steps:
       - uses: actions/checkout@v4
