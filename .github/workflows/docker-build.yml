@@ -20,7 +20,7 @@ env:
 
 jobs:
   build-web:
-    name: Build Web Image
+    name: Build Web
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,7 +55,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-agent:
-    name: Build Agent Image
+    name: Build Agent
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -90,7 +90,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-postgres:
-    name: Build Postgres Image (pg_cron)
+    name: Build Postgres
     runs-on: ubuntu-latest
     permissions:
       contents: read

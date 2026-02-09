@@ -3,7 +3,7 @@ import type { AnalysisInputSingle } from "@onescope/types";
 export function analysisPrompt(
     input: AnalysisInputSingle
 ) {
-    const { response, sources, brandDomain, brandName } = input;
+    const { response, brandDomain, brandName } = input;
 
     return `
         You are a specialized brand monitoring AI. Your ONLY job is to analyze how a SPECIFIC BRAND is represented in LLM responses and compare it against competitors.
@@ -57,10 +57,6 @@ export function analysisPrompt(
         <response>
             ${response}
         </response>
-
-        <sources>
-            ${JSON.stringify(sources)}
-        </sources>
 
         <schema>
             {
@@ -129,7 +125,7 @@ export function analysisPrompt(
                         "direct_comparisons": [
                             {
                                 "competitor_name": "string — normalized competitor name",
-                                "competitor_website": "string — competitor domain (use your knowledge if not in sources)",
+                                "competitor_website": "string — competitor domain (use your knowledge)",
                                 "competitor_mention_count": "number — how many times this competitor is mentioned",
                                 "comparison_type": "string — one of: head_to_head | alternative | inferior_to_target | superior_to_target | neutral_comparison",
                                 "comparison_evidence": "string — exact quote showing comparison",
@@ -142,22 +138,6 @@ export function analysisPrompt(
                         "threats_identified": ["string — competitors positioned as superior alternatives to target brand"],
                         "opportunities_identified": ["string — gaps or weaknesses in competitors that target brand could exploit"]
                     },
-                    
-                    "source_analysis": {
-                        "sources_citing_target": [
-                            {
-                                "source_domain": "string",
-                                "source_url": "string",
-                                "source_title": "string",
-                                "cited_claim": "string — specific claim about target brand this source supports",
-                                "source_sentiment": "string — one of: positive | negative | neutral",
-                                "source_credibility": "string — one of: official | authoritative | third_party | user_generated | unknown"
-                            }
-                        ],
-                        "official_brand_sources": "number — count of sources from target brand's own domain",
-                        "authoritative_sources": "number — count of high-authority sources (major publications) citing target brand",
-                        "third_party_validation": "boolean — true if independent sources validate target brand's claims"
-                    }
                 },
                 
                 "market_context": {

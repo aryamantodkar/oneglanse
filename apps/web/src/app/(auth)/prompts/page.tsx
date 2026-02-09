@@ -570,9 +570,6 @@ export default function Prompts() {
                   <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-left">
                     Prompt
                   </TableHead>
-                  <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-left">
-                    Model
-                  </TableHead>
                   <TableHead className="text-sm font-medium text-gray-500 dark:text-gray-400 px-6 py-4 text-center">
                     Mentions
                   </TableHead>

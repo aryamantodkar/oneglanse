@@ -12,7 +12,6 @@ export interface AnalysisInputSingle {
     brandDomain: string;
     brandName: string;
     response: string;
-    sources: Source[];
 }
 
 /** Detailed brand analysis from LLM - matches schema in analysisPrompt */
@@ -95,20 +94,6 @@ export interface LLMBrandAnalysis {
                                   'niche_player' | 'underdog' | 'not_positioned' | 'not_mentioned';
           threats_identified: string[];
           opportunities_identified: string[];
-        };
-        
-        source_analysis: {
-          sources_citing_target: Array<{
-            source_domain: string;
-            source_url: string;
-            source_title: string;
-            cited_claim: string;
-            source_sentiment: 'positive' | 'negative' | 'neutral';
-            source_credibility: 'official' | 'authoritative' | 'third_party' | 'user_generated' | 'unknown';
-          }>;
-          official_brand_sources: number;
-          authoritative_sources: number;
-          third_party_validation: boolean;
         };
       };
       
