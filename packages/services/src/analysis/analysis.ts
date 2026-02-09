@@ -191,52 +191,30 @@ export async function fetchAnalysedPrompts(args: {
 }): Promise<AnalysisResponse> {
     const { workspaceId, userId } = args;
 
-    // Single optimized query using UNION ALL to get both analyzed and unanalyzed responses
+    // Query from prompt_responses (source of truth) and join analysis data
     const result = await clickhouse.query({
         query: `
-            -- Analyzed responses with metrics
             SELECT
-                pa.id,
-                pa.prompt_id,
-                pa.prompt_run_at,
-                pa.user_id,
-                pa.workspace_id,
-                pa.model_provider,
+                pr.id,
+                pr.prompt_id,
+                pr.prompt_run_at,
+                pr.user_id,
+                pr.workspace_id,
+                pr.model_provider,
                 pr.response,
                 pr.sources,
-                pa.brand_metrics,
-                pa.created_at,
-                true as is_analysed
-            FROM analytics.prompt_analysis pa
-            LEFT JOIN analytics.prompt_responses pr
-              ON pa.prompt_id = pr.prompt_id
-              AND pa.prompt_run_at = pr.prompt_run_at
-              AND pa.model_provider = pr.model_provider
-              AND pa.workspace_id = pr.workspace_id
-            WHERE pa.workspace_id = {workspaceId:String}
-              AND pa.user_id = {userId:String}
-
-            UNION ALL
-
-            -- Unanalyzed responses without metrics
-            SELECT
-                id,
-                prompt_id,
-                prompt_run_at,
-                user_id,
-                workspace_id,
-                model_provider,
-                response,
-                sources,
-                '{}' as brand_metrics,
-                created_at,
-                false as is_analysed
-            FROM analytics.prompt_responses
-            WHERE workspace_id = {workspaceId:String}
-              AND user_id = {userId:String}
-              AND is_analysed = false
-
-            ORDER BY prompt_run_at DESC
+                pr.created_at,
+                pr.is_analysed,
+                if(pr.is_analysed, pa.brand_metrics, '{}') as brand_metrics
+            FROM analytics.prompt_responses pr
+            ANY LEFT JOIN analytics.prompt_analysis pa
+              ON pr.prompt_id = pa.prompt_id
+              AND pr.prompt_run_at = pa.prompt_run_at
+              AND pr.model_provider = pa.model_provider
+              AND pr.workspace_id = pa.workspace_id
+            WHERE pr.workspace_id = {workspaceId:String}
+              AND pr.user_id = {userId:String}
+            ORDER BY pr.prompt_run_at DESC
         `,
         query_params: { workspaceId, userId },
         format: "JSONEachRow",
