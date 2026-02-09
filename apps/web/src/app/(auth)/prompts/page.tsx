@@ -740,20 +740,20 @@ export default function Prompts() {
                             ${isExpanded ? "shadow-lg ring-1 ring-gray-200 dark:ring-gray-700" : ""}
                           `}
                         >
-                          <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-4">
                               <img
                                 src={getModelFavicon(record.model_provider)}
                                 alt={record.model_provider}
-                                className="w-7 h-7 rounded-md"
+                                className="w-6 h-6 rounded-md"
                               />
 
                               <div className="flex flex-col">
-                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
+                                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                                 {modelSelectors.find(m => m.value === record.model_provider)?.label || record.model_provider}
                                 </span>
 
-                                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400">
                                   {formatDate(record.prompt_run_at)}
                                 </span>
                               </div>
@@ -769,6 +769,42 @@ export default function Prompts() {
                               `}
                             />
                           </div>
+
+                          {/* Metrics Display - Always visible at top */}
+                          {record.is_analysed && Object.keys(record.brand_metrics).length > 0 && (
+                            <div className="mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                              <div className="flex items-center gap-4 flex-wrap">
+                                {Object.entries(record.brand_metrics).slice(0, 1).map(([brandName, metrics]) => (
+                                  <>
+                                    <div key={`mentions-${brandName}`} className="flex items-center gap-1.5">
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Mentions</span>
+                                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                                        {metrics.mentions}
+                                      </span>
+                                    </div>
+                                    <div key={`sentiment-${brandName}`} className="flex items-center gap-1.5">
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Sentiment</span>
+                                      <div className="text-xs">
+                                        <SentimentMetricCell sentiment={metrics.sentiment} />
+                                      </div>
+                                    </div>
+                                    <div key={`visibility-${brandName}`} className="flex items-center gap-1.5">
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Visibility</span>
+                                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                                        {metrics.visibility}%
+                                      </span>
+                                    </div>
+                                    <div key={`position-${brandName}`} className="flex items-center gap-1.5">
+                                      <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Position</span>
+                                      <div className="text-xs">
+                                        <PositionMetricCell position={metrics.position} />
+                                      </div>
+                                    </div>
+                                  </>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           <div
                             className={`
@@ -798,38 +834,6 @@ export default function Prompts() {
                           >
                             {isExpanded ? "Show less" : "View full response"}
                           </button>
-
-                          {/* Metrics Display - Clean & Minimal */}
-                          {record.is_analysed && Object.keys(record.brand_metrics).length > 0 && isExpanded && (
-                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                              <div className="flex items-center gap-6">
-                                {Object.entries(record.brand_metrics).slice(0, 1).map(([brandName, metrics]) => (
-                                  <>
-                                    <div key={`mentions-${brandName}`} className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">Mentions:</span>
-                                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                        {metrics.mentions}
-                                      </span>
-                                    </div>
-                                    <div key={`sentiment-${brandName}`} className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">Sentiment:</span>
-                                      <SentimentMetricCell sentiment={metrics.sentiment} />
-                                    </div>
-                                    <div key={`visibility-${brandName}`} className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">Visibility:</span>
-                                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                        {metrics.visibility}%
-                                      </span>
-                                    </div>
-                                    <div key={`position-${brandName}`} className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">Position:</span>
-                                      <PositionMetricCell position={metrics.position} />
-                                    </div>
-                                  </>
-                                ))}
-                              </div>
-                            </div>
-                          )}
 
                           <SourcesCard
                             key={record.id}
