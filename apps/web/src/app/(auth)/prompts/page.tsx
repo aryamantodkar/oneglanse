@@ -145,6 +145,7 @@ export default function Prompts() {
       }
 
       // Calculate averages
+      const positionsWithValues = allBrandMetrics.filter(m => m.position !== null).map(m => m.position as number);
       const avgMetrics = {
         mentions: Math.round(
           allBrandMetrics.reduce((sum, m) => sum + (m.mentions || 0), 0) / allBrandMetrics.length
@@ -155,9 +156,9 @@ export default function Prompts() {
         visibility: Math.round(
           allBrandMetrics.reduce((sum, m) => sum + (m.visibility || 0), 0) / allBrandMetrics.length
         ),
-        position: Math.round(
-          allBrandMetrics.reduce((sum, m) => sum + (m.position || 0), 0) / allBrandMetrics.length
-        ),
+        position: positionsWithValues.length > 0
+          ? Math.round(positionsWithValues.reduce((sum, p) => sum + p, 0) / positionsWithValues.length)
+          : null,
         website: allBrandMetrics[0]?.website,
       };
 
@@ -635,7 +636,11 @@ export default function Prompts() {
                         </TableCell>
 
                         <TableCell className="px-6 py-5 text-center">
-                          <PositionMetricCell position={metrics.position} />
+                          {metrics.position !== null ? (
+                            <PositionMetricCell position={metrics.position} />
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">N/A</span>
+                          )}
                         </TableCell>
                       </>
                     )}
@@ -797,7 +802,11 @@ export default function Prompts() {
                                     <div key={`position-${brandName}`} className="flex items-center gap-1.5">
                                       <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Position</span>
                                       <div className="text-xs">
-                                        <PositionMetricCell position={metrics.position} />
+                                        {metrics.position !== null ? (
+                                          <PositionMetricCell position={metrics.position} />
+                                        ) : (
+                                          <span className="text-gray-400 italic">N/A</span>
+                                        )}
                                       </div>
                                     </div>
                                   </>

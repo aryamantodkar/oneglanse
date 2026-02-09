@@ -118,6 +118,7 @@ export interface LLMBrandAnalysis {
           brand_name: string;
           brand_website: string;
           mention_count: number;
+          first_position: number;
           visibility_rank: number;
           is_target_brand: boolean;
         }>;

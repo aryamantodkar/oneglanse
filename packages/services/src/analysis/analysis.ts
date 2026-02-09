@@ -31,9 +31,9 @@ export async function analysePromptResponse(args: {
     const map: BrandMetricMap = {};
     const brand = result.data.target_brand;
 
-    const visibilityScore = brand.visibility.visibility_score;
+    const visibilityScore = brand.visibility.visibility_score ?? 0;
 
-    const positionScore = brand.visibility.rank ?? 0;
+    const positionScore = brand.visibility.rank;
 
     map[brand.brand_name] = {
         mentions: brand.brand_presence.total_mentions,
