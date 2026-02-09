@@ -7,26 +7,28 @@ interface CompetitiveThreatsCardProps {
 
 export function CompetitiveThreatsCard({ threats }: CompetitiveThreatsCardProps) {
   return (
-    <Card className="rounded-lg shadow-sm border border-gray-200">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium text-gray-700">Competitive Threats</CardTitle>
+    <Card className="rounded-xl shadow-sm border border-gray-200 bg-white hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-gray-900">Competitive Threats</CardTitle>
       </CardHeader>
       <CardContent>
         {threats.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-[10px] text-gray-500">No threats identified</p>
+          <div className="text-center py-8">
+            <p className="text-xs text-gray-500">No threats identified</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {threats.slice(0, 3).map((threat, index) => (
-              <div key={index} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                <div className="flex items-start justify-between mb-1">
-                  <span className="text-xs font-semibold text-gray-900">{threat.competitor}</span>
-                  <span className="text-[10px] text-gray-500">{threat.totalMentions} mentions</span>
+              <div key={index} className="bg-gray-50 rounded-lg p-3 border-l-2 border-red-500/30">
+                <div className="flex items-start justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-900">{threat.competitor}</span>
+                  <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded-full">
+                    {threat.totalMentions} mentions
+                  </span>
                 </div>
                 {threat.threats.length > 0 && (
-                  <div className="text-[10px] text-gray-600">
-                    {threat.threats.slice(0, 2).join(', ')}
+                  <div className="text-xs text-gray-700 leading-relaxed">
+                    {threat.threats.slice(0, 2).join(' • ')}
                   </div>
                 )}
               </div>

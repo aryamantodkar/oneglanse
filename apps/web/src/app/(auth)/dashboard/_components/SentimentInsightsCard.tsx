@@ -7,22 +7,26 @@ interface SentimentInsightsCardProps {
 
 export function SentimentInsightsCard({ insights }: SentimentInsightsCardProps) {
   return (
-    <Card className="rounded-lg shadow-sm border border-gray-200">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium text-gray-700">Sentiment Analysis</CardTitle>
+    <Card className="rounded-xl shadow-sm border border-gray-200 bg-white hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-gray-900">Sentiment Analysis</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Strengths */}
           <div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Strengths</div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-1 w-1 rounded-full bg-green-500" />
+              <div className="text-xs text-gray-600 font-medium">Strengths</div>
+            </div>
             {insights.topStrengths.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">None identified</p>
+              <p className="text-xs text-gray-400 italic pl-3">None identified</p>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2 pl-3">
                 {insights.topStrengths.slice(0, 2).map((strength, index) => (
-                  <div key={index} className="text-xs text-gray-900">
-                    • {strength}
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="text-green-600 text-xs mt-0.5">•</span>
+                    <span className="text-xs text-gray-900 leading-relaxed">{strength}</span>
                   </div>
                 ))}
               </div>
@@ -31,14 +35,18 @@ export function SentimentInsightsCard({ insights }: SentimentInsightsCardProps) 
 
           {/* Weaknesses */}
           <div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Weaknesses</div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-1 w-1 rounded-full bg-red-500" />
+              <div className="text-xs text-gray-600 font-medium">Weaknesses</div>
+            </div>
             {insights.topWeaknesses.length === 0 ? (
-              <p className="text-[10px] text-gray-400 italic">None identified</p>
+              <p className="text-xs text-gray-400 italic pl-3">None identified</p>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2 pl-3">
                 {insights.topWeaknesses.slice(0, 2).map((weakness, index) => (
-                  <div key={index} className="text-xs text-gray-900">
-                    • {weakness}
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="text-red-600 text-xs mt-0.5">•</span>
+                    <span className="text-xs text-gray-900 leading-relaxed">{weakness}</span>
                   </div>
                 ))}
               </div>
