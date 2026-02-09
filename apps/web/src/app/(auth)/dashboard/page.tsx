@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, Button, Skeleton } from "@onescope/ui";
 import { Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { api } from "@/trpc/react";
 import {
   useFetchAnalysedPrompts,
   usePromptSources,
@@ -49,7 +50,22 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
-  const workspaceId = searchParams.get("workspace") ?? "";
+  const router = useRouter();
+  const workspaceIdFromUrl = searchParams.get("workspace");
+
+  // Fetch default workspace if not in URL
+  const { data: defaultWorkspace } = api.workspace.fetchUserWorkspace.useQuery(undefined, {
+    enabled: !workspaceIdFromUrl,
+  });
+
+  const workspaceId = workspaceIdFromUrl || defaultWorkspace?.data?.id || "";
+
+  // Redirect to add workspace to URL if missing
+  useEffect(() => {
+    if (!workspaceIdFromUrl && defaultWorkspace?.data?.id) {
+      router.replace(`/dashboard?workspace=${defaultWorkspace.data.id}`);
+    }
+  }, [workspaceIdFromUrl, defaultWorkspace, router]);
 
   const {
     data: analysedPromptData,
@@ -61,7 +77,7 @@ export default function Dashboard() {
     isLoading: isPromptSourcesLoading,
   } = usePromptSources(workspaceId);
 
-  const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
+  const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading || (!workspaceIdFromUrl && !defaultWorkspace);
 
   // Aggregate data using memoization for performance
   const dashboardData = useMemo(() => {
