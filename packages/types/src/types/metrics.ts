@@ -8,6 +8,6 @@ export type BrandMetric = {
     mentions: number;
     sentiment: number;
     visibility: number;
-    position: number;
+    position: number | null;
     website: string;
 };
