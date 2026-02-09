@@ -11,8 +11,3 @@ export type BrandMetric = {
     position: number;
     website: string;
 };
-
-export type BrandFilter = {
-    name: string;
-    website: string;
-};

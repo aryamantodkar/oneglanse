@@ -29,7 +29,7 @@ import {
   Separator,
   Input,
 } from "@onescope/ui";
-import type { AnalysisRecord, BrandFilter, UserPrompt } from "@onescope/types";
+import type { AnalysisRecord, UserPrompt } from "@onescope/types";
 import { getDomain, getUniqueLinks, formatDate, formatMarkdown, getFaviconUrls, getModelFavicon, filterAnalysisRecords, modelSelectors } from "@onescope/utils";
 import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
 import { useAnalyzeMetrics, useRunAgents, useStorePrompt } from "./_lib/mutations/prompt.mutations";
@@ -42,9 +42,6 @@ export default function Prompts() {
 
   const [initialPrompts, setInitialPrompts] = useState<UserPrompt[]>([]);
   const [modelFilter, setModelFilter] = useState("All Models");
-  const [brandFilter, setBrandFilter] = useState<BrandFilter | null>(null);
-  const [availableBrandFilters, setAvailableBrandFilters] = useState<BrandFilter[]>([]);
-  const [brandSearchTerm, setBrandSearchTerm] = useState("");
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">("all");
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -94,24 +91,14 @@ export default function Prompts() {
     ) return;
 
     setAnalysisRecords(analysedPromptData.data.records);
-    setAvailableBrandFilters(analysedPromptData.data.metadata.available_brands);
-    // Keep brandFilter as null initially to show "All Brands" view
   }, [analysedPromptData]);
 
   const filteredRecords = useMemo(() => {
     return filterAnalysisRecords(analysisRecords, {
       modelFilter,
       timeFilter,
-      brandFilter,
     });
-  }, [analysisRecords, modelFilter, timeFilter, brandFilter]);
-
-  const filteredBrands = useMemo(() => {
-    if (!brandSearchTerm) return availableBrandFilters;
-    return availableBrandFilters.filter(brand =>
-      brand.name.toLowerCase().includes(brandSearchTerm.toLowerCase())
-    );
-  }, [availableBrandFilters, brandSearchTerm]);
+  }, [analysisRecords, modelFilter, timeFilter]);
 
   // Calculate metrics for each prompt based on model filter
   const promptsWithMetrics = useMemo(() => {
@@ -129,9 +116,8 @@ export default function Prompts() {
           return { prompt, metrics: null, recordCount: records.length, modelProvider: modelFilter, reason: 'unanalyzed' as const };
         }
 
-        const brandMetrics = brandFilter
-          ? record.brand_metrics[brandFilter.name]
-          : Object.values(record.brand_metrics)[0];
+        // Use the first brand (target brand) from brand_metrics
+        const brandMetrics = Object.values(record.brand_metrics)[0];
 
         return {
           prompt,
@@ -149,17 +135,9 @@ export default function Prompts() {
         return { prompt, metrics: null, recordCount: records.length, modelProvider: "All Models", reason: 'unanalyzed' as const };
       }
 
-      // When brandFilter is null, aggregate across ALL brands
+      // Aggregate target brand metrics from all analyzed records
       const allBrandMetrics = analyzedRecords
-        .flatMap(record => {
-          if (brandFilter) {
-            // Specific brand selected
-            return record.brand_metrics[brandFilter.name] ? [record.brand_metrics[brandFilter.name]] : [];
-          } else {
-            // All brands - aggregate all brand metrics from this record
-            return Object.values(record.brand_metrics);
-          }
-        })
+        .map(record => Object.values(record.brand_metrics)[0])
         .filter((m): m is NonNullable<typeof m> => !!m);
 
       if (allBrandMetrics.length === 0) {
@@ -191,7 +169,7 @@ export default function Prompts() {
         reason: null,
       };
     });
-  }, [promptData, filteredRecords, modelFilter, brandFilter]);
+  }, [promptData, filteredRecords, modelFilter]);
 
   const openPromptRecords = useMemo(() => {
     if (!openPrompt) return [];
@@ -528,96 +506,6 @@ export default function Prompts() {
             </SelectContent>
           </Select>
 
-          {/* Brand filter with search */}
-          <Select
-            value={brandFilter?.name ?? "__all__"}
-            onValueChange={(value) => {
-              if (value === "__all__") {
-                setBrandFilter(null);
-              } else {
-                const selectedBrand = availableBrandFilters.find(b => b.name === value);
-                setBrandFilter(selectedBrand ?? null);
-              }
-              setBrandSearchTerm("");
-            }}
-            onOpenChange={(open) => {
-              if (!open) {
-                setBrandSearchTerm("");
-              }
-            }}
-          >
-            <SelectTrigger className="w-48 h-9 text-sm">
-              <SelectValue>
-                {brandFilter ? (
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={getFaviconUrls(brandFilter.website ?? "", brandFilter.name)[0]}
-                      alt={brandFilter.name}
-                      className="w-4 h-4 rounded-sm"
-                    />
-                    <span>{brandFilter.name}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
-                    <span>All Brands</span>
-                  </div>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <div className="p-2 border-b border-gray-200 dark:border-gray-800">
-                <Input
-                  placeholder="Search brands..."
-                  value={brandSearchTerm}
-                  onChange={(e) => setBrandSearchTerm(e.target.value)}
-                  className="h-8 text-sm"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-
-              <SelectItem value="__all__">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
-                  <span className="font-medium">All Brands</span>
-                </div>
-              </SelectItem>
-
-              <SelectSeparator />
-
-              {filteredBrands.map((m, index) => {
-                const faviconUrls = getFaviconUrls(m.website ?? "", m.name);
-                return (
-                  <SelectItem key={index} value={m.name}>
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={faviconUrls[0]}
-                        alt={m.name}
-                        className="w-4 h-4 rounded-sm bg-gray-100 dark:bg-gray-800"
-                        onError={(e) => {
-                          const img = e.currentTarget;
-                          const index = Number(img.dataset.i || 0) + 1;
-
-                          if (faviconUrls[index]) {
-                            img.dataset.i = String(index);
-                            img.src = faviconUrls[index];
-                          }
-                        }}
-                      />
-                      <span>{m.name}</span>
-                    </div>
-                  </SelectItem>
-                );
-              })}
-
-              {filteredBrands.length === 0 && (
-                <div className="px-2 py-6 text-center text-sm text-gray-500">
-                  No brands found
-                </div>
-              )}
-            </SelectContent>
-          </Select>
-
           {/* Time filter */}
           <Select
             value={timeFilter}
@@ -637,7 +525,7 @@ export default function Prompts() {
           </Select>
 
           {/* Clear filters button */}
-          {(modelFilter !== "All Models" || brandFilter !== null || timeFilter !== "all") && (
+          {(modelFilter !== "All Models" || timeFilter !== "all") && (
             <>
               <Separator orientation="vertical" className="h-4" />
               <Button
@@ -645,7 +533,6 @@ export default function Prompts() {
                 size="sm"
                 onClick={() => {
                   setModelFilter("All Models");
-                  setBrandFilter(null);
                   setTimeFilter("all");
                 }}
                 className="gap-2 text-gray-500 hover:text-gray-700"
@@ -823,96 +710,6 @@ export default function Prompts() {
                     </SelectContent>
                   </Select>
 
-                  {/* Brand filter with search */}
-                  <Select
-                    value={brandFilter?.name ?? "__all__"}
-                    onValueChange={(value) => {
-                      if (value === "__all__") {
-                        setBrandFilter(null);
-                      } else {
-                        const selectedBrand = availableBrandFilters.find(b => b.name === value);
-                        setBrandFilter(selectedBrand ?? null);
-                      }
-                      setBrandSearchTerm("");
-                    }}
-                    onOpenChange={(open) => {
-                      if (!open) {
-                        setBrandSearchTerm("");
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-48 h-9 text-sm">
-                      <SelectValue>
-                        {brandFilter ? (
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={getFaviconUrls(brandFilter.website ?? "", brandFilter.name)[0]}
-                              alt={brandFilter.name}
-                              className="w-4 h-4 rounded-sm"
-                            />
-                            <span>{brandFilter.name}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
-                            <span>All Brands</span>
-                          </div>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 border-b border-gray-200 dark:border-gray-800">
-                        <Input
-                          placeholder="Search brands..."
-                          value={brandSearchTerm}
-                          onChange={(e) => setBrandSearchTerm(e.target.value)}
-                          className="h-8 text-sm"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-
-                      <SelectItem value="__all__">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-blue-500 to-purple-500" />
-                          <span className="font-medium">All Brands</span>
-                        </div>
-                      </SelectItem>
-
-                      <SelectSeparator />
-
-                      {filteredBrands.map((m, index) => {
-                        const faviconUrls = getFaviconUrls(m.website ?? "", m.name);
-                        return (
-                          <SelectItem key={index} value={m.name}>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={faviconUrls[0]}
-                                alt={m.name}
-                                className="w-4 h-4 rounded-sm bg-gray-100 dark:bg-gray-800"
-                                onError={(e) => {
-                                  const img = e.currentTarget;
-                                  const index = Number(img.dataset.i || 0) + 1;
-
-                                  if (faviconUrls[index]) {
-                                    img.dataset.i = String(index);
-                                    img.src = faviconUrls[index];
-                                  }
-                                }}
-                              />
-                              <span>{m.name}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-
-                      {filteredBrands.length === 0 && (
-                        <div className="px-2 py-6 text-center text-sm text-gray-500">
-                          No brands found
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
-
                   {/* Time filter */}
                   <Select
                     value={timeFilter}
@@ -1040,7 +837,7 @@ export default function Prompts() {
                       </h3>
 
                       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-                        Try adjusting the selected brand, model, or time range to see available responses.
+                        Try adjusting the selected model or time range to see available responses.
                       </p>
                     </div>
                   }

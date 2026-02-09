@@ -26,13 +26,6 @@ export function filterAnalysisRecords(
             return false;
         }
 
-        // Brand filter - only keep if record has this brand
-        if (filters.brandFilter) {
-            if (!record.brand_metrics[filters.brandFilter.name]) {
-                return false;
-            }
-        }
-
         return true;
     });
 }

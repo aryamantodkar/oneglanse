@@ -1,15 +1,27 @@
 import { clickhouse } from "@onescope/db";
-import type { AnalysisRecord, AnalysisResponse, AnalysisMetadata, BrandMetricMap, PromptAnalysis, PromptResponse, Source, AnalysisRow } from "@onescope/types";
+import type { AnalysisRecord, AnalysisResponse, AnalysisMetadata, BrandMetricMap, PromptAnalysis, PromptResponse, Source, AnalysisRow, LLMBrandAnalysis } from "@onescope/types";
 import { runAnalysis } from "./runAnalysis.js";
 import { v4 as uuidv4 } from "uuid";
+import { getWorkspaceById } from "../workspace/index.js";
 
 export async function analysePromptResponse(args: {
+    workspaceId: string;
     response: string;
     sources: Source[];
-}): Promise<BrandMetricMap> {
+}): Promise<{
+    brandMetrics: BrandMetricMap;
+    fullAnalysis: LLMBrandAnalysis;
+    targetBrandName: string;
+}> {
+    const { workspaceId, response, sources } = args;
+
+    const workspace = await getWorkspaceById({ workspaceId });
+
     const result = await runAnalysis({
-        response: args.response,
-        sources: args.sources,
+        brandDomain: workspace.domain,
+        brandName: workspace.name,
+        response: response,
+        sources: sources,
     });
 
     if (!result.data) {
@@ -17,29 +29,25 @@ export async function analysePromptResponse(args: {
     }
 
     const map: BrandMetricMap = {};
-    const brands = result.data.brands;
+    const brand = result.data.target_brand;
 
-    for (const brand of brands) {
-        const visibilityScore = brand.visibility.visibility_score;
+    const visibilityScore = brand.visibility.visibility_score;
 
-        const positionScore = brand.visibility.rank;
+    const positionScore = brand.visibility.rank ?? 0;
 
-        // Normalize the brand website to include https:// if missing
-        let website = brand.brand_website || "";
-        if (website && !website.startsWith("http")) {
-            website = `https://${website}`;
-        }
+    map[brand.brand_name] = {
+        mentions: brand.brand_presence.total_mentions,
+        sentiment: brand.sentiment.score,
+        visibility: visibilityScore,
+        position: positionScore,
+        website: workspace.domain,
+    };
 
-        map[brand.brand_name] = {
-            mentions: brand.mention_count,
-            sentiment: brand.sentiment.score,
-            visibility: visibilityScore,
-            position: positionScore,
-            website: website,
-        };
-    }
-
-    return map;
+    return {
+        brandMetrics: map,
+        fullAnalysis: result.data,
+        targetBrandName: workspace.name,
+    };
 }
 
 export async function analysePromptsForWorkspace(args: {
@@ -96,7 +104,8 @@ export async function analysePromptsForWorkspace(args: {
                     favicon: s.favicon,
                 }));
 
-                const brandMetrics = await analysePromptResponse({
+                const analysisResult = await analysePromptResponse({
+                    workspaceId: resp.workspace_id,
                     response: resp.response,
                     sources,
                 });
@@ -107,7 +116,8 @@ export async function analysePromptsForWorkspace(args: {
                     workspace_id: resp.workspace_id,
                     user_id: resp.user_id,
                     model_provider: resp.model_provider,
-                    brand_metrics: JSON.stringify(brandMetrics),
+                    brand_metrics: JSON.stringify(analysisResult.brandMetrics),
+                    full_analysis: JSON.stringify(analysisResult.fullAnalysis),
                     prompt_run_at: resp.prompt_run_at,
                     created_at: resp.created_at
                 });
@@ -205,7 +215,10 @@ export async function fetchAnalysedPrompts(args: {
                 pr.sources,
                 pr.created_at,
                 pr.is_analysed,
-                if(pr.is_analysed, pa.brand_metrics, '{}') as brand_metrics
+                if(pr.is_analysed, pa.brand_metrics, '{}') as brand_metrics,
+                if(pr.is_analysed, pa.full_analysis, '[]') as full_analysis,
+                if(pr.is_analysed, pa.analyzed_brand_count, 0) as analyzed_brand_count,
+                if(pr.is_analysed, pa.target_brand_name, '') as target_brand_name
             FROM analytics.prompt_responses pr
             ANY LEFT JOIN analytics.prompt_analysis pa
               ON pr.prompt_id = pa.prompt_id
@@ -235,6 +248,11 @@ export async function fetchAnalysedPrompts(args: {
         brand_metrics: row.brand_metrics && row.brand_metrics !== '' && row.brand_metrics !== '{}'
             ? (typeof row.brand_metrics === "string" ? JSON.parse(row.brand_metrics) : row.brand_metrics)
             : {},
+        full_analysis: row.full_analysis && row.full_analysis !== '' && row.full_analysis !== '[]'
+            ? (typeof row.full_analysis === "string" ? JSON.parse(row.full_analysis) : row.full_analysis)
+            : undefined,
+        analyzed_brand_count: row.analyzed_brand_count || 0,
+        target_brand_name: row.target_brand_name || '',
         created_at: row.created_at,
         is_analysed: row.is_analysed ?? true,
     }));
