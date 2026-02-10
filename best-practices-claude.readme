@@ -1,0 +1,877 @@
+# onescopeAI - Production Audit & Best Practices Review
+
+> **Auditor:** Claude Opus 4.6 (Senior Staff Engineer Simulation)
+> **Date:** 2026-02-10
+> **Scope:** Full codebase, file-by-file review
+> **Verdict:** Not production-ready for open-source release without addressing critical issues
+
+---
+
+## 1. Executive Summary
+
+### High-Level Strengths
+- **Clean monorepo architecture** using pnpm workspaces + Turborepo with well-defined package boundaries (`types`, `errors`, `utils`, `db`, `services`, `ui`)
+- **Strong type-safety foundation** with TypeScript strict mode, `noUncheckedIndexedAccess`, and shared type definitions across all packages
+- **Good separation of concerns** between web app (Next.js + tRPC), agent worker (BullMQ + Playwright), and shared services
+- **Solid error hierarchy** with `BaseError` subclasses for domain-specific errors (`AuthError`, `ValidationError`, `DatabaseError`, etc.)
+- **Production-aware infrastructure** with Docker multi-stage builds, GitHub Actions CI/CD, Redis health checks, and graceful shutdown handlers
+- **Authorization middleware** (`validWorkspace`) properly validates workspace membership before allowing access
+
+### High-Risk Issues
+1. **SQL INJECTION** in ClickHouse queries via string interpolation (CRITICAL)
+2. **No test suite** - zero tests across the entire codebase
+3. **Secrets management** - `.env` files committed, hardcoded defaults for passwords
+4. **Sequential agent execution** - providers run serially instead of in parallel, tripling job duration
+5. **No rate limiting** on API endpoints
+6. **Middleware blocks API routes** - auth middleware matcher intercepts `/api/trpc` and `/api/auth` paths
+7. **Empty shutdown handler** - `try {}` block in `index.ts` does nothing
+8. **No input sanitization** on the agent API server (raw `createServer`)
+
+### Overall Readiness Score: **4/10**
+
+The codebase has solid architectural foundations but contains critical security vulnerabilities, zero test coverage, and several design decisions that will not survive production traffic or open-source scrutiny.
+
+---
+
+## 2. Critical Issues (Must Fix Before Production)
+
+### CRITICAL-1: SQL Injection in ClickHouse Queries
+- **File:** `packages/services/src/prompt/index.ts:181-187, 217-224`
+- **Problem:** Direct string interpolation of `userId` and `workspaceId` into ClickHouse SQL queries
+- **Why it matters:** An attacker who controls `userId` or `workspaceId` (e.g., through a compromised session) can execute arbitrary ClickHouse commands, exfiltrate data, or destroy tables
+- **Code:**
+  ```typescript
+  // LINE 184 - VULNERABLE
+  WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+  // LINE 222 - VULNERABLE
+  WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+  ```
+- **Fix:** Use parameterized queries consistently (as done correctly elsewhere in the same file):
+  ```typescript
+  query_params: { userId, workspaceId }
+  // with {userId:String} and {workspaceId:String} in the query
+  ```
+
+### CRITICAL-2: SQL Injection in Cron Scheduling
+- **File:** `packages/services/src/prompt/index.ts:86-118`
+- **Problem:** `scheduleCronForPrompts` interpolates `workspaceId`, `userId`, `process.env.API_BASE_URL`, and `process.env.INTERNAL_CRON_SECRET` directly into a SQL string passed to `pool.query`
+- **Why it matters:** Even though this function is currently commented out, it exists in the codebase and could be re-enabled. The pattern also leaks `INTERNAL_CRON_SECRET` into the PostgreSQL `cron.job` table
+- **Fix:** Use parameterized queries, store the cron secret reference instead of the literal value
+
+### CRITICAL-3: Middleware Blocks API Routes
+- **File:** `apps/web/middleware.ts:18-21`
+- **Problem:** The matcher pattern `/((?!login|signup|_next|static|favicon.ico).*)` will match `/api/auth/...` and `/api/trpc/...`, forcing session checks on routes that need to be publicly accessible (like the auth handler itself)
+- **Why it matters:** This can cause authentication loops or block the auth API entirely for unauthenticated users
+- **Fix:** Add `api` to the exclusion list:
+  ```typescript
+  matcher: ["/((?!login|signup|api|_next|static|favicon.ico).*)"]
+  ```
+
+### CRITICAL-4: No Request Body Size Limit on API
+- **File:** `apps/agent/src/api.ts:29-37`
+- **Problem:** While there is a 10MB check, the request is not destroyed until the limit is hit. The `res.end()` after `req.destroy()` may not actually prevent further processing. Also, non-upload routes have no body parsing protection
+- **Why it matters:** Memory exhaustion attack vector - an attacker can send large payloads to exhaust server memory
+- **Fix:** Use a proper body parser with content-length validation before reading chunks. Consider using Express middleware instead of raw `createServer`
+
+### CRITICAL-5: Empty Graceful Shutdown
+- **File:** `apps/agent/src/index.ts:7-8`
+- **Problem:** The `try {}` block in the shutdown handler is completely empty - it does not close the BullMQ worker, browser instances, Redis connections, or HTTP server
+- **Why it matters:** Zombie browser processes, orphaned Redis connections, and jobs that are mid-execution will be corrupted on restart
+- **Fix:**
+  ```typescript
+  try {
+    await worker.close();
+    await redis.quit();
+    server.close();
+  }
+  ```
+
+### CRITICAL-6: Timing-Unsafe Auth Token Comparison
+- **File:** `apps/agent/src/api.ts:15`
+- **Problem:** `token !== API_AUTH_TOKEN` uses standard string comparison which is vulnerable to timing attacks
+- **Why it matters:** An attacker can determine the correct token character-by-character by measuring response times
+- **Fix:** Use `crypto.timingSafeEqual()`:
+  ```typescript
+  import { timingSafeEqual } from "crypto";
+  const isValid = token && API_AUTH_TOKEN &&
+    token.length === API_AUTH_TOKEN.length &&
+    timingSafeEqual(Buffer.from(token), Buffer.from(API_AUTH_TOKEN));
+  ```
+
+---
+
+## 3. File-by-File Review
+
+### Root Configuration
+
+#### `package.json`
+- **Purpose:** Root monorepo configuration
+- **Issues:**
+  - `clean` script uses `rm -rf node_modules` - dangerous if CWD is wrong. Use `rimraf` package instead
+  - No `engines.pnpm` field to lock pnpm version
+- **Improvements:** Add `"pnpm"` field in `engines`, add a `format` script
+
+#### `turbo.json`
+- **Purpose:** Turborepo task configuration
+- **Issues:** Clean task has no outputs, which is correct, but `dev` depends on `^build` which means all packages must build before dev starts. This is correct but slow for initial dev startup
+- **Improvements:** Consider using `dependsOn: []` for dev with watch mode
+
+#### `tsconfig.json`
+- **Purpose:** Base TypeScript config
+- **Issues:** `noUncheckedIndexedAccess: true` is excellent. Missing `apps/web` in references (Next.js has its own setup)
+- **Improvements:** Add `forceConsistentCasingInFileNames: true`, `exactOptionalPropertyTypes: true`
+
+#### `docker-compose.yml`
+- **Purpose:** Production orchestration
+- **Issues:**
+  - PostgreSQL port `5432` is exposed to host - should be internal-only in production
+  - ClickHouse ports `9000` and `8123` exposed to host - security risk
+  - Redis has no password configured
+  - No health checks defined for services
+  - `clickhouse/clickhouse-server:latest` - pin to a specific version
+  - `agent-worker` depends on redis `service_started` but not `service_healthy`
+- **Improvements:**
+  - Remove host port bindings for db and clickhouse (or bind to 127.0.0.1)
+  - Add `REDIS_PASSWORD` and use it everywhere
+  - Add health checks for all services
+  - Pin image versions
+
+#### `Dockerfile`
+- **Purpose:** Web app Docker image
+- **Issues:**
+  - Stage 2 copies `COPY --from=builder /app/apps ./apps` and `COPY --from=builder /app/packages ./packages` which includes source files, dev dependencies, and build artifacts that aren't needed at runtime
+  - `pnpm install --prod --frozen-lockfile` after copying everything means you're re-installing in a bloated context
+  - No `.dockerignore` file found (or not checked) - `node_modules` etc. may be sent to build context
+- **Improvements:** Use `pnpm deploy` for a minimal production bundle, add `.dockerignore`
+
+#### `Dockerfile.agent`
+- **Purpose:** Agent Docker image with Playwright
+- **Issues:**
+  - Not a multi-stage build - includes ALL build dependencies in the final image
+  - No non-root user - runs as root inside container
+  - `--no-sandbox` in browser args (already applied in code, but the Docker image should create a proper sandboxed user)
+- **Improvements:** Add multi-stage build, add `RUN useradd -m agent && USER agent`
+
+#### `Dockerfile.postgres`
+- **Purpose:** Custom PostgreSQL with pg_cron
+- **Issues:** Hardcodes `cron.database_name = 'mydb'` - should use env variable
+- **Improvements:** Make database name configurable
+
+#### `.env.example`
+- **Purpose:** Environment template
+- **Issues:**
+  - Default passwords are `password` and `changeme` - fine for example but should be noted
+  - No documentation about which vars are required vs optional
+- **Improvements:** Add comments marking required/optional, add link to setup docs
+
+#### `.github/workflows/docker-build.yml`
+- **Purpose:** CI/CD pipeline
+- **Issues:**
+  - No test step - builds and pushes without any quality gates
+  - No linting step
+  - No type checking step
+  - All three builds run in parallel (good) but have no dependency on a shared test/lint job
+  - Path filter includes `packages/db/**` which is redundant with `packages/**`
+- **Improvements:** Add a `test-and-lint` job that runs before build jobs
+
+### Apps - Agent
+
+#### `apps/agent/src/index.ts`
+- **Purpose:** Main entry point that loads API and worker
+- **Issues:**
+  - Empty `try {}` block in shutdown handler (CRITICAL-5 above)
+  - Imports `./api.js` and `./worker.js` as side effects - no control over initialization order
+  - `unhandledRejection` exits with code 1 which prevents graceful worker drain
+- **Improvements:** Export server/worker instances and shut them down explicitly
+
+#### `apps/agent/src/api.ts`
+- **Purpose:** HTTP API server for session upload and health checks
+- **Issues:**
+  - Uses raw `createServer` instead of a framework - prone to bugs
+  - `API_AUTH_TOKEN` is read inside the request handler on every request instead of once at startup
+  - Timing-unsafe token comparison (CRITICAL-6)
+  - Synchronous `fs.writeFileSync` and `fs.mkdirSync` inside an async request handler blocks the event loop
+  - No CORS headers configured
+  - No request logging
+  - Health endpoint checks Redis but not ClickHouse
+- **Improvements:** Use Express (already a dependency), move token to module scope, use async fs operations
+
+#### `apps/agent/src/worker.ts`
+- **Purpose:** BullMQ worker that processes prompt jobs
+- **Issues:**
+  - `const PromptPayload: PromptPayload` - variable name starts with uppercase (naming convention violation; looks like a type, not a variable)
+  - `lockDuration: 60 * 60 * 1000` and `stalledInterval: 60 * 60 * 1000` are both 1 hour - if a job genuinely stalls, it won't be detected for an hour
+  - `concurrency: 1` is documented but will be a bottleneck at scale
+  - `redis.set` stores full results JSON with 1-hour TTL - can be large, no size check
+  - `data[0]` accessed without proper null check despite `noUncheckedIndexedAccess`
+- **Improvements:** Rename variable, reduce stalled interval, compress result before storing
+
+#### `apps/agent/src/agent.ts`
+- **Purpose:** Orchestrates multi-provider agent execution
+- **Issues:**
+  - **Agents run sequentially** - `openaiAgent`, then `anthropicAgent`, then `perplexityAgent`. This triples job duration unnecessarily since they are independent
+  - Status determination `openaiResult.length > 0 ? "fulfilled" : "rejected"` doesn't distinguish between "never ran" and "ran but returned empty"
+  - No timeout on the overall `launchAgents` function
+- **Improvements:** Run agents in parallel with `Promise.allSettled`, add overall timeout
+
+#### `apps/agent/src/env.ts`
+- **Purpose:** Environment loading for development
+- **Issues:**
+  - No validation of required environment variables
+  - Path `apps/agent/.env` assumes CWD is monorepo root - fragile
+- **Improvements:** Use a validation library (zod/envalid) to validate required vars at startup
+
+#### `apps/agent/src/agents/lib/agentHandler.ts`
+- **Purpose:** Retry loop with proxy rotation for browser-based agents
+- **Issues:**
+  - `PROXIES_PER_CYCLE = 5` and `MAX_CYCLES = 10` means up to 50 attempts per provider - combined with sequential agents, a full retry storm takes hours
+  - `INITIAL_BACKOFF = 10_000` with exponential backoff `Math.pow(2, cycle - 1)` reaches 10 * 512 = 5120 seconds (85 minutes) at cycle 10
+  - `finally` block closes browser/context but swallows errors with `.catch(() => {})`
+  - The timeout mechanism uses `Promise.race` but doesn't abort the inner promise - the browser stays alive
+- **Improvements:** Add AbortSignal for timeout, reduce MAX_CYCLES, add circuit breaker
+
+#### `apps/agent/src/agents/lib/runPrompts.ts`
+- **Purpose:** Executes prompts sequentially with retry logic
+- **Issues:**
+  - `MAX_PROMPT_RETRIES = 7` with exponential backoff means a single prompt can take 2+4+8+16+30+30 = 90 seconds of wait time alone
+  - Dead code: `totalFailedCount` is incremented but can never be > 0 when the function returns (the `throw` on line 102 exits before it)
+  - The `getExponentialBackoffDelay` comment says "Attempt 2: 2s" but the formula for attempt 2 is `2000 * 2^0 = 2000ms = 2s` which is correct. However, for attempt 1 it's `2000 * 2^(-1) = 1000ms` but attempt 1 never triggers the delay, so this is fine
+- **Improvements:** Remove dead code path, make retry params configurable
+
+#### `apps/agent/src/agents/lib/steps/askPrompt.ts`
+- **Purpose:** Types a prompt into the LLM chat UI and submits it
+- **Issues:**
+  - Character-by-character typing with `page.keyboard.type(char)` and 10ms delay per character is very slow for long prompts
+  - `process.platform === "darwin"` check will always be `linux` in Docker - Meta key will never be used in production
+  - Duplicate code for checking generation started (lines 69-81 and 93-105 are identical)
+  - `withTimeout` function creates a timer that may not be cleaned up properly
+- **Improvements:** Use clipboard paste instead of character typing, extract duplicate code, remove platform check (always use Control in Docker)
+
+#### `apps/agent/src/agents/lib/steps/extractSources.ts`
+- **Purpose:** Extracts source citations from LLM responses
+- **Issues:**
+  - Typos in function names: `exractSoucesFromOpenai`, `exractSoucesFromPerplexity` (missing letters)
+  - Uses `==` instead of `===` for provider comparison on lines 66, 97, 100
+  - Mixed responsibility: handles both finding the sources button and extracting sources
+  - `elementHandle()` is deprecated in newer Playwright versions
+- **Improvements:** Fix typos, use strict equality, split into smaller functions
+
+#### `apps/agent/src/agents/lib/steps/fetchPromptResponses.ts`
+- **Purpose:** Waits for and extracts the assistant's markdown response
+- **Issues:** Returns empty string on failure instead of throwing - caller cannot distinguish between "no response" and "extraction failed"
+- **Improvements:** Throw on failure after all retries
+
+#### `apps/agent/src/agents/{anthropic,openai,perplexity}/`
+- **Purpose:** Provider-specific agent implementations
+- **Issues:**
+  - All three `*Agent.ts` files are identical in structure - classic DRY violation
+  - All three `auth.ts` files are identical except for the function/variable names
+  - All three `validateAuth.ts` files have different logic but the same interface - good
+  - `launchOpenAI` and `launchPerplexity` have `let page = null; page = await context.newPage();` - unnecessary `let` and reassignment
+  - Authentication validation is URL-based only (no cookie/token checks) - fragile if URLs change
+- **Improvements:** Create a generic agent factory, consolidate auth wait logic
+
+#### `apps/agent/src/lib/browser/launchContext.ts`
+- **Purpose:** Launches Playwright browser with stealth plugin and proxy
+- **Issues:**
+  - `--no-sandbox` flag is a security risk even in Docker
+  - `StealthPlugin()` is registered at module level (side effect) - not testable
+  - No browser version pinning
+- **Improvements:** Remove `--no-sandbox` or document why it's needed, lazy-register stealth plugin
+
+#### `apps/agent/src/lib/browser/setupPage.ts`
+- **Purpose:** Configures page timeouts and console handling
+- **Issues:**
+  - `page.setDefaultTimeout(0)` and `page.setDefaultNavigationTimeout(0)` disable ALL timeouts - pages can hang forever
+  - Console handler is commented out - dead code
+- **Improvements:** Set reasonable timeouts (60s for navigation, 30s for actions), remove dead code
+
+#### `apps/agent/src/lib/browser/proxyPool.ts`
+- **Purpose:** Manages rotating proxy pool
+- **Issues:**
+  - Module-level mutable state (`proxies`, `cursor`, `badProxies`) is not thread-safe
+  - `fetchProxies()` uses `fetch()` with no timeout - can hang if proxy API is down
+  - `markProxyBad` adds to set but never recovers proxies (they stay bad forever within a cycle)
+  - No proxy validation (just trusts the API response)
+- **Improvements:** Add fetch timeout, add proxy health check
+
+#### `apps/agent/src/lib/input/findActiveEditor.ts`
+- **Purpose:** Finds the active text editor element on LLM chat pages
+- **Issues:**
+  - `waitForEditorReady` mutates the DOM to test editability (`el.innerText = "█"`) - this can trigger React/framework reconciliation and cause side effects
+  - Polling loop with 200ms interval and 30s timeout - acceptable but wasteful
+- **Improvements:** Use a less destructive check (e.g., check `contenteditable` attribute only)
+
+#### `apps/agent/src/lib/input/waitForAssistantToFinish.ts`
+- **Purpose:** Polls until the LLM response is complete
+- **Issues:**
+  - `MAX_WAIT = 20 * 60 * 1000` (20 minutes) polling every 300ms = up to 4000 polling iterations
+  - Each poll calls both `isGenerating(page)` and `getLastAssistantText(page, provider)` which involve DOM evaluation - significant overhead
+  - `FORCE_STABLE_WINDOW = 15_000` is a heuristic that may cause premature exits or unnecessary waits
+- **Improvements:** Use MutationObserver instead of polling, reduce poll frequency for stable text
+
+#### `apps/agent/src/lib/utils/logger.ts`
+- **Purpose:** Structured logging utility
+- **Issues:**
+  - Not structured (no JSON output) - difficult to parse in production log aggregators
+  - Uses emojis in log prefixes - problematic for some log viewers
+  - No log levels configurable at runtime
+  - No correlation IDs for tracing across jobs
+- **Improvements:** Use a proper logging library (pino/winston), add structured JSON output, add job ID context
+
+#### `apps/agent/src/lib/utils/runStep.ts`
+- **Purpose:** Wraps step execution with timing and error screenshots
+- **Issues:**
+  - Does NOT re-throw the error - the step silently fails and execution continues
+  - Screenshot saved to CWD with name `debug-*.png` - pollutes working directory
+  - No cleanup of old debug screenshots
+- **Improvements:** Re-throw the error after capturing diagnostics, save screenshots to a dedicated directory
+
+#### `apps/agent/src/lib/utils/dumpHtml.ts` / `writePromptsToFile.ts`
+- **Purpose:** Debug utilities for dumping HTML and writing prompt results
+- **Issues:** Synchronous file I/O (`writeFileSync`) blocks the event loop
+- **Improvements:** Use async versions or accept this is debug-only code
+
+### Apps - Web
+
+#### `apps/web/src/app/page.tsx`
+- **Purpose:** Root page - redirects to dashboard
+- **Issues:**
+  - `Math.floor(Math.random() * organizations.length)` selects a RANDOM organization on every page load - this means users get a different org each time they visit the home page
+  - Uses `authClient` (HTTP client) instead of `auth.api` (server-side) for organization list on a server component - makes an unnecessary HTTP round-trip to itself
+  - No error handling for `getWorkspace()` failure
+- **Improvements:** Use the first org or let user choose, use server-side API
+
+#### `apps/web/middleware.ts`
+- **Purpose:** Auth middleware for all routes
+- **Issues:**
+  - `console.log("Session in middleware:", session)` logs FULL session data including tokens on EVERY request (CRITICAL security issue in production)
+  - Matcher pattern catches API routes (CRITICAL-3)
+  - No rate limiting
+  - No CSRF protection
+- **Improvements:** Remove session logging, fix matcher, add rate limiting
+
+#### `apps/web/src/lib/auth/auth.ts`
+- **Purpose:** Better-auth server configuration
+- **Issues:**
+  - `process.env.GOOGLE_CLIENT_ID as string` - unsafe cast, will be `undefined` at runtime if not set, causing a cryptic error
+  - Imports `authSchema` via relative path `"../../../../../packages/db/src/schema/auth"` instead of using the package alias `@onescope/db`
+  - `databaseHooks.session.create.before` queries the database for active organization on EVERY session creation
+- **Improvements:** Validate env vars at startup, use package imports, cache org lookup
+
+#### `apps/web/src/lib/auth/auth-client.ts`
+- **Purpose:** Client-side auth configuration
+- **Issues:**
+  - `typeof window !== "undefined"` check for base URL is correct but the env vars may not be defined, causing `undefined` to be used as the base URL
+- **Improvements:** Add fallback and validation
+
+#### `apps/web/src/server/api/trpc.ts`
+- **Purpose:** tRPC context creation
+- **Issues:** Minor - passes `auth` instance in context but it's a singleton, doesn't need to be in context
+- **Improvements:** Remove `auth` from context if not used downstream
+
+#### `apps/web/src/server/api/procedures.ts`
+- **Purpose:** Defines tRPC procedure types with middleware
+- **Issues:**
+  - `authorizedWorkspaceProcedure` uses `validWorkspace` middleware but does NOT chain `isAuthenticated` first - the auth check is done inside `validWorkspace` inline. This works but is fragile
+  - `publicProcedure` only has `timingMiddleware` which adds artificial delay in dev
+- **Improvements:** Chain `isAuthenticated` before `validWorkspace` for clarity
+
+#### `apps/web/src/server/api/middleware/timingMiddleware.ts`
+- **Purpose:** Logs route timing and adds artificial delay in dev
+- **Issues:**
+  - Artificial delay `Math.floor(Math.random() * 400) + 100` (100-500ms) in dev slows development feedback loops
+  - `console.log` for timing - should use structured logging
+- **Improvements:** Make delay configurable or remove it
+
+#### `apps/web/src/server/api/middleware/isInternal.ts`
+- **Purpose:** Validates internal cron secret
+- **Issues:**
+  - Plain string comparison `auth !== \`Bearer ${process.env.INTERNAL_CRON_SECRET}\`` - timing unsafe
+  - If `INTERNAL_CRON_SECRET` is undefined, the comparison becomes `Bearer undefined` which would never match (safe by accident)
+- **Improvements:** Use timing-safe comparison, validate env var exists
+
+#### `apps/web/src/server/api/routers/agent/agent.ts`
+- **Purpose:** Agent job queue management
+- **Issues:**
+  - `status` endpoint parses JSON from Redis without validation: `JSON.parse(result)` - if Redis data is corrupted, this crashes
+  - Non-null assertions `workspaceId!` and `userId!` are unnecessary since `validWorkspace` middleware guarantees these exist
+  - Success message "Prompts Response analysed successfully" is misleading - the job is queued, not analyzed
+- **Improvements:** Validate Redis JSON, remove non-null assertions, fix success message
+
+#### `apps/web/src/server/api/routers/analysis/analysis.ts`
+- **Purpose:** Analysis execution and retrieval
+- **Issues:**
+  - `analyzeMetrics` mutation has `as Parameters<typeof analysePromptsForWorkspace>[0]` unsafe cast
+  - No pagination on `fetchAnalysis` - returns ALL records at once
+- **Improvements:** Remove cast, add pagination
+
+#### `apps/web/src/server/api/routers/location/location.ts`
+- **Purpose:** Countries/states data endpoint
+- **Issues:**
+  - `fs.readFileSync` at module top level blocks startup
+  - `publicProcedure` - these endpoints are accessible without authentication
+  - No caching headers
+- **Improvements:** These are reference data - add caching
+
+#### `apps/web/src/server/api/routers/prompt/prompt.ts`
+- **Purpose:** Prompt CRUD operations
+- **Issues:**
+  - Excessive non-null assertions: `prompts!`, `workspaceId!`, `userId!` - all guaranteed by middleware
+  - No prompt content validation (length, characters)
+  - No limit on number of prompts that can be stored
+- **Improvements:** Remove assertions, add validation, add limits
+
+#### `apps/web/src/server/api/routers/workspace/workspace.ts`
+- **Purpose:** Workspace CRUD
+- **Issues:**
+  - Redundant validation: `z.object()` validates `name`, `slug`, `domain`, then the handler checks `if (!name || !domain || !slug || !country)` again - Zod already handles this
+  - No slug uniqueness check before creation
+- **Improvements:** Remove redundant validation, add uniqueness check
+
+#### `apps/web/src/server/services/workspace/workspace.ts`
+- **Purpose:** Workspace creation with organization
+- **Issues:** Clean implementation, no significant issues
+- **Improvements:** Add error handling for partial creation failure (org created but workspace insert fails)
+
+#### `apps/web/src/lib/workspace/getActiveOrganization.ts`
+- **Purpose:** Gets user's active organization
+- **Issues:**
+  - Returns the FIRST member record found, not necessarily the active one
+  - No ordering - result is non-deterministic
+- **Improvements:** Order by `createdAt` or filter by active status
+
+### Packages
+
+#### `packages/db/src/index.ts`
+- **Purpose:** Database connections (PostgreSQL + ClickHouse)
+- **Issues:**
+  - ClickHouse password defaults to `'password'` if env var is not set - dangerous in production
+  - Two connection pools to PostgreSQL: `postgres.js` (via Drizzle) and `pg.Pool` (in `pg.ts`) - confusing and wasteful
+  - `globalForDb` pattern for dev hot-reload is standard but not documented
+- **Improvements:** Validate ClickHouse credentials, consolidate to one PG client, add documentation
+
+#### `packages/db/src/schema/workspace.ts`
+- **Purpose:** Workspace database schema
+- **Issues:**
+  - `workspaceInput` Zod schema is defined in the schema file - this is a data validation concern, not a schema definition concern
+  - Mixed column types: `workspaces.id` is `varchar(256)` but `workspaceMembers.workspaceId` references it as `text` - type mismatch
+  - `workspaceMembers.id` uses `uuid()` but `workspaces.id` uses `varchar` with app-generated IDs - inconsistent ID strategy
+- **Improvements:** Move Zod schema to a shared validation package, standardize ID types
+
+#### `packages/db/src/schema/auth.ts`
+- **Purpose:** Authentication-related tables
+- **Issues:**
+  - `session.updatedAt` is missing `.defaultNow()` unlike other `updatedAt` fields
+  - No indexes on frequently queried columns (`session.userId`, `account.userId`)
+  - `organization.createdAt` has no `.defaultNow()` - must be set manually
+- **Improvements:** Add indexes, add defaults consistently
+
+#### `packages/errors/src/error/BaseError.ts`
+- **Purpose:** Base error class for all domain errors
+- **Issues:** Clean implementation, proper `Object.setPrototypeOf` for extends
+- **Improvements:** None significant
+
+#### `packages/errors/src/error/IPRefreshNeededError.ts`
+- **Purpose:** Custom error for IP refresh signaling
+- **Issues:**
+  - Does NOT extend `BaseError` - extends plain `Error` instead. This breaks `instanceof BaseError` checks
+  - Carries data (partialResults, remainingPrompts) that could be large - may affect stack trace readability
+- **Improvements:** Extend `BaseError` for consistency
+
+#### `packages/errors/src/errorHandling.ts`
+- **Purpose:** Safe handler pattern for tRPC procedures
+- **Issues:**
+  - `safeHandler` catches ALL errors and returns them as API responses - this means tRPC never sees the errors and can't apply its own error formatting
+  - `mapErrorToResponse` accesses `err.response.data.message` without type guards - relies on duck typing
+- **Improvements:** Let tRPC handle errors via `TRPCError`, or at minimum re-throw non-operational errors
+
+#### `packages/errors/src/logger.ts`
+- **Purpose:** Error capture stub
+- **Issues:** `captureException` is a no-op (just logs) - fine for now but should be documented
+- **Improvements:** Add Sentry/error tracking integration, or document that this is a placeholder
+
+#### `packages/services/src/agent/redis.ts`
+- **Purpose:** Redis connection management
+- **Issues:**
+  - `maxRetriesPerRequest: null` disables retry limits - commands will queue indefinitely if Redis is down
+  - `lazyConnect: true` but no explicit `connect()` call - relies on first command to connect
+  - Port 6379 is hardcoded, not read from `REDIS_PORT` env var
+  - `console.log` instead of structured logger
+- **Improvements:** Read port from env, use structured logging, set reasonable retry limits
+
+#### `packages/services/src/agent/queue.ts`
+- **Purpose:** BullMQ queue configuration
+- **Issues:**
+  - `attempts: 1` means failed jobs are never retried at the queue level (agent handler has its own retry logic, which is fine, but this should be documented)
+  - `removeOnComplete: true` means completed jobs are immediately removed - no audit trail
+- **Improvements:** Keep completed jobs for a short TTL for debugging
+
+#### `packages/services/src/analysis/analysis.ts`
+- **Purpose:** Core analysis orchestration - processes prompt responses through LLM
+- **Issues:**
+  - Sequential processing of responses in `analysePromptsForWorkspace` - should batch or parallelize
+  - ClickHouse `ALTER TABLE UPDATE` for marking analyzed records - this is a heavy mutation operation in ClickHouse (creates a merge tree mutation)
+  - `v4 as uuidv4` import - `crypto.randomUUID()` is available natively
+  - No timeout on individual analysis calls
+  - Error accumulation (`allErrors`) grows unbounded
+- **Improvements:** Use `Promise.allSettled` for parallel analysis, use native UUID, add timeouts, limit error array size
+
+#### `packages/services/src/analysis/runAnalysis.ts`
+- **Purpose:** Calls OpenAI API for brand analysis
+- **Issues:**
+  - `as LLMBrandAnalysis` unsafe cast after JSON parse - no runtime validation that the LLM returned the correct schema
+  - Uses `gpt-4.1` model - hardcoded, not configurable
+  - No retry logic for transient OpenAI failures
+- **Improvements:** Validate with Zod schema, make model configurable, add retry
+
+#### `packages/services/src/analysis/analysisPrompt.ts`
+- **Purpose:** System prompt for brand analysis
+- **Issues:**
+  - 282 lines long - extremely large prompt with significant token cost per call
+  - Prompt includes the full JSON schema inline - could use OpenAI's structured outputs feature instead
+  - No versioning - changes to the prompt break comparability of historical analyses
+- **Improvements:** Use structured outputs, add prompt versioning, consider reducing prompt length
+
+#### `packages/services/src/llm/index.ts`
+- **Purpose:** Lazy-initialized OpenAI client
+- **Issues:**
+  - `@ts-expect-error` on the proxy - suppresses legitimate type errors
+  - Proxy pattern means OpenAI initialization error is deferred to first usage, not startup
+- **Improvements:** Initialize eagerly at startup with proper error
+
+#### `packages/services/src/prompt/index.ts`
+- **Purpose:** Prompt CRUD operations with ClickHouse
+- **Issues:**
+  - **SQL INJECTION** (CRITICAL-1 and CRITICAL-2 above)
+  - `storePromptsForWorkspace` fetches ALL existing prompts to diff - doesn't scale with many prompts
+  - `storePromptResponses` uses `formatDateToClickHouse` but ClickHouse can handle ISO dates natively
+  - `scheduleCronForPrompts` builds SQL strings with string interpolation including secrets
+  - Inconsistent return: `storePromptsForWorkspace` returns the raw input `prompts` array, not the stored records
+- **Improvements:** Fix SQL injection, paginate existing prompt fetch, use parameterized queries everywhere
+
+#### `packages/services/src/workspace/index.ts`
+- **Purpose:** Workspace CRUD operations
+- **Issues:** Clean implementation, proper error handling
+- **Improvements:** Add transaction for workspace + member creation (currently two separate inserts)
+
+#### `packages/types/src/types/analysis.ts`
+- **Purpose:** Analysis type definitions
+- **Issues:** Well-defined interfaces matching the LLM schema
+- **Improvements:** Generate Zod schemas from these types for runtime validation
+
+#### `packages/types/src/types/agent.ts`
+- **Purpose:** Agent type definitions
+- **Issues:**
+  - `AgentResult` type has `|` but only one variant - not actually a union type
+  - `ModelResult = Record<Provider, AgentResult>` requires ALL providers - should be `Partial<Record<...>>` if a provider can be skipped
+- **Improvements:** Fix union type, make partial if providers are optional
+
+#### `packages/utils/src/agent/constants.ts`
+- **Purpose:** CSS selectors for browser automation
+- **Issues:**
+  - These selectors are tightly coupled to third-party UIs (ChatGPT, Claude, Perplexity) that change frequently
+  - No versioning or test coverage for selector validity
+  - Very broad fallback selectors like `'textarea'` and `'[contenteditable="true"]'` can match unintended elements
+- **Improvements:** Add selector validation tests, version selectors per provider, narrow fallbacks
+
+#### `packages/utils/src/id.ts`
+- **Purpose:** Prefixed ID generation
+- **Issues:** Clean, uses native `crypto.randomUUID()`
+- **Improvements:** None
+
+#### `packages/ui/`
+- **Purpose:** Shared React components (shadcn/ui)
+- **Issues:** Standard shadcn/ui components, no custom logic to review
+- **Improvements:** None significant
+
+---
+
+## 4. Architectural Improvements
+
+### 4.1 Structural Changes
+
+**Run Agents in Parallel:**
+The single most impactful performance improvement. Currently in `apps/agent/src/agent.ts`, agents run sequentially:
+```typescript
+// CURRENT (sequential - ~75 min for 3 providers)
+const openaiResult = await agentHandler("OpenAI", ...);
+const anthropicResult = await agentHandler("Anthropic", ...);
+const perplexityResult = await agentHandler("Perplexity", ...);
+
+// RECOMMENDED (parallel - ~25 min for 3 providers)
+const [openaiResult, anthropicResult, perplexityResult] = await Promise.allSettled([
+  agentHandler("OpenAI", openaiAgent, payload, "openai"),
+  agentHandler("Anthropic", anthropicAgent, payload, "anthropic"),
+  agentHandler("Perplexity", perplexityAgent, payload, "perplexity"),
+]);
+```
+Note: This requires running 3 browser instances simultaneously, increasing memory needs to ~3GB.
+
+**Consolidate Provider Implementations:**
+The three provider implementations (`anthropicAgent.ts`, `openaiAgent.ts`, `perplexityAgent.ts`) are nearly identical. Create a generic factory:
+```typescript
+function createProviderAgent(provider: Provider, url: string) {
+  return async function() {
+    const { browser, context, proxy } = await launchContext(provider);
+    const page = await context.newPage();
+    setupPage(page, provider);
+    await navigateWithRetry(page, url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForTimeout(2000);
+    const auth = await isAuthenticated(page, provider);
+    return { browser, context, page, auth, proxy };
+  }
+}
+```
+
+**Separate API and Worker Processes:**
+Currently `index.ts` loads both API and worker via side-effect imports. In Docker, they're already run separately via `start:api` and `start:worker`. The `index.ts` entry point creates confusion - remove it or make it clearly a dev-only convenience.
+
+### 4.2 Refactoring Suggestions
+
+1. **Move Zod schemas out of DB schema files** - `workspaceInput` in `workspace.ts` is a validation concern, not a schema concern. Create a `packages/validators/` package or add to `packages/types/`
+
+2. **Consolidate database clients** - The codebase has both `postgres.js` (Drizzle) and `pg` (Pool) for PostgreSQL. Pick one. Since Drizzle uses `postgres.js`, remove the `pg` pool unless raw SQL is specifically needed
+
+3. **Add a `packages/config/` package** - Environment variable validation is scattered across multiple files (`env.ts`, inline checks, `as string` casts). Centralize into a validated config object
+
+4. **Create an `env.ts` for the web app** - The tRPC route imports `@/env` but this file was not found in the codebase (only a reference exists). This will cause a build/runtime error
+
+### 4.3 Dependency Cleanup
+
+- `express` is listed as a dependency in agent but is NOT used anywhere (raw `createServer` is used instead). Either use Express or remove the dependency
+- `tar` is in agent dependencies but no usage was found
+- `puppeteer-extra-plugin-stealth` is used but through `playwright-extra` - ensure the stealth plugin version is compatible
+- `@playwright/test` is in devDependencies but there are no tests
+- Duplicate UUID generation: `uuid` package in services + native `crypto.randomUUID()` in utils. Standardize on one
+
+---
+
+## 5. Security Findings
+
+### SEVERITY: CRITICAL
+
+**5.1 SQL Injection via String Interpolation**
+- **Impact:** Full ClickHouse database compromise - read, modify, or delete all analytics data
+- **Files:** `packages/services/src/prompt/index.ts:184, 222`
+- **Fix:** Replace string interpolation with parameterized queries using `query_params`
+
+**5.2 SQL Injection via Cron Scheduling (Commented Out)**
+- **Impact:** If re-enabled, leaks `INTERNAL_CRON_SECRET` to the database and allows arbitrary SQL execution through crafted workspace IDs
+- **Files:** `packages/services/src/prompt/index.ts:86-118`
+- **Fix:** Use parameterized queries, never embed secrets in SQL strings
+
+### SEVERITY: HIGH
+
+**5.3 Session Data Logged to Console**
+- **Impact:** Auth tokens and session data logged on every request - accessible in log aggregators, container logs, etc.
+- **Files:** `apps/web/middleware.ts:9`
+- **Fix:** Remove `console.log("Session in middleware:", session)`
+
+**5.4 No Rate Limiting**
+- **Impact:** API abuse, DDoS, credential stuffing attacks
+- **Files:** All API endpoints
+- **Fix:** Add rate limiting middleware (e.g., `@upstash/ratelimit` or `express-rate-limit`)
+
+**5.5 Timing-Unsafe Token Comparison**
+- **Impact:** API auth token can be brute-forced character-by-character
+- **Files:** `apps/agent/src/api.ts:15`
+- **Fix:** Use `crypto.timingSafeEqual()`
+
+### SEVERITY: MEDIUM
+
+**5.6 Hardcoded Default Credentials**
+- **Impact:** If deployment uses defaults, ClickHouse is accessible with `default/password`
+- **Files:** `packages/db/src/index.ts:33-34`
+- **Fix:** Remove defaults, require explicit configuration
+
+**5.7 No CORS Configuration**
+- **Impact:** Cross-origin requests to the agent API are unrestricted
+- **Files:** `apps/agent/src/api.ts`
+- **Fix:** Add CORS headers restricting to known origins
+
+**5.8 Database Ports Exposed to Host**
+- **Impact:** PostgreSQL (5432), ClickHouse (8123, 9000) accessible from outside Docker
+- **Files:** `docker-compose.yml:59-60, 74-75`
+- **Fix:** Bind to `127.0.0.1` or remove host port bindings
+
+**5.9 Unsafe `as string` Casts for Environment Variables**
+- **Impact:** Runtime crashes with unclear error messages when env vars are missing
+- **Files:** `apps/web/src/lib/auth/auth.ts:12-13`
+- **Fix:** Validate at startup, throw clear errors
+
+### SEVERITY: LOW
+
+**5.10 No Redis Password**
+- **Impact:** Anyone with network access to the Redis container can read/write data
+- **Files:** `docker-compose.yml:44-49`, `packages/services/src/agent/redis.ts`
+- **Fix:** Add `requirepass` to Redis config, use `REDIS_PASSWORD` env var everywhere
+
+**5.11 Browser `--no-sandbox` Flag**
+- **Impact:** Reduced browser security isolation in Docker
+- **Files:** `apps/agent/src/lib/browser/launchContext.ts:55`
+- **Fix:** Run browser as non-root user, remove `--no-sandbox`
+
+---
+
+## 6. Performance & Scalability
+
+### Current Risks
+
+**6.1 Sequential Provider Execution**
+- **Impact:** Job duration is 3x what it needs to be (25 min per provider = 75 min total)
+- **Fix:** Run providers in parallel (see Architecture section)
+
+**6.2 Character-by-Character Typing**
+- **Impact:** A 500-character prompt takes ~5 seconds just to type (10ms per char)
+- **Fix:** Use clipboard paste: `page.evaluate(() => navigator.clipboard.writeText(prompt))` then Ctrl+V
+
+**6.3 Excessive `waitForTimeout` Calls**
+- **Impact:** Hard-coded sleeps add up: 2s auth wait + 3s page load + 0.5s after type + 1s submit + 1.5s per extraction = ~8s of dead time per prompt, multiplied by prompt count
+- **Fix:** Replace sleeps with event-based waits (`waitForSelector`, `waitForFunction`)
+
+**6.4 No Pagination on Analysis Fetch**
+- **Impact:** `fetchAnalysedPrompts` returns ALL records - will cause OOM with large datasets
+- **Fix:** Add `LIMIT/OFFSET` or cursor-based pagination
+
+**6.5 ClickHouse ALTER TABLE UPDATE**
+- **Impact:** `ALTER TABLE UPDATE` in ClickHouse creates a mutation that rewrites parts of the data. With frequent calls, mutations queue up and degrade performance
+- **Fix:** Use a separate table or column family for analysis status, or use ReplacingMergeTree
+
+**6.6 Full Prompt Diff on Store**
+- **Impact:** `storePromptsForWorkspace` fetches ALL existing prompts to compute a diff - O(n) memory and O(n*m) comparison
+- **Fix:** Use ClickHouse-native UPSERT or maintain a hash index
+
+### Expected Future Bottlenecks
+
+1. **Single worker concurrency** - Only one job processes at a time. As user base grows, queue will back up
+2. **Redis as result store** - Job results stored in Redis with 1-hour TTL can consume significant memory
+3. **No connection pooling for ClickHouse** - Each operation creates a new connection
+4. **Browser memory** - Each Playwright browser instance uses 200-500MB. With parallel execution, this multiplies
+5. **LLM API costs** - Each analysis call to GPT-4.1 with the 282-line prompt consumes ~4000 tokens of input per call. At scale, this is expensive
+
+### Optimizations
+
+1. **Batch LLM analysis calls** - Analyze multiple responses in a single API call where possible
+2. **Cache analysis results** - Same response text should produce same analysis (deterministic with temperature=0)
+3. **Stream responses to client** - Use tRPC subscriptions or SSE for real-time job progress instead of polling Redis
+4. **Add worker scaling** - Use BullMQ's built-in worker scaling with concurrency > 1 (requires isolated browser profiles per worker)
+
+---
+
+## 7. OSS & Contributor Experience
+
+### What's Good
+- Clear monorepo structure with logical package separation
+- TypeScript throughout with strict mode
+- Standard tooling (pnpm, Turbo, Next.js, tRPC, Drizzle)
+- Docker Compose for local development
+- `.env.example` files with documented variables
+- Consistent error handling pattern with `safeHandler`
+
+### What's Missing
+
+**7.1 No Tests**
+- Zero test files across the entire codebase
+- No test framework configured
+- No test scripts in package.json files
+- This is the single biggest barrier to contributor confidence
+
+**7.2 No Contributing Guide**
+- No `CONTRIBUTING.md`
+- No PR template
+- No issue templates
+- No code of conduct
+- No development setup instructions
+
+**7.3 No Architecture Documentation**
+- No diagram showing data flow (web -> tRPC -> BullMQ -> agent -> browser -> ClickHouse)
+- No explanation of the agent/proxy/browser architecture
+- No documentation of the analysis pipeline
+- README.md and QUICK_REFERENCE.md exist but were not reviewed (may address some of this)
+
+**7.4 No Code Style Enforcement**
+- Biome is configured for the web app only
+- No pre-commit hooks (husky, lint-staged)
+- Inconsistent formatting across packages (some use `==` vs `===`, mixed semicolons, etc.)
+- Function names with typos that would be caught by linting (`exractSoucesFromOpenai`)
+
+**7.5 No Environment Setup Automation**
+- No `setup.sh` or `make setup` command
+- No documentation for ClickHouse schema initialization
+- Database migrations exist but the init script workflow is unclear
+
+**7.6 No API Documentation**
+- tRPC endpoints are not documented
+- Agent API endpoints are not documented
+- No OpenAPI/Swagger spec
+
+### Concrete Suggestions
+
+1. **Add a test framework immediately:**
+   ```bash
+   pnpm add -Dw vitest @testing-library/react
+   ```
+   Start with unit tests for `packages/utils`, `packages/errors`, and `packages/services`
+
+2. **Add pre-commit hooks:**
+   ```bash
+   pnpm add -Dw husky lint-staged
+   ```
+   Run Biome format + typecheck on staged files
+
+3. **Create `CONTRIBUTING.md`** with:
+   - Prerequisites (Node 20+, pnpm 10+, Docker)
+   - Setup steps (`pnpm install`, `docker compose up`, `pnpm db:migrate`)
+   - Development workflow
+   - PR guidelines
+   - Architecture overview
+
+4. **Add `.github/ISSUE_TEMPLATE/`** with templates for:
+   - Bug report
+   - Feature request
+   - Provider selector issue (broken by UI change)
+
+5. **Create `docs/architecture.md`** with:
+   - System diagram
+   - Data flow explanation
+   - Provider plugin system documentation
+
+6. **Standardize code formatting** across all packages:
+   - Extend Biome config to monorepo root
+   - Add `pnpm format` script
+   - Fix all existing lint errors
+
+7. **Add a `Makefile` or `justfile`** for common commands:
+   ```makefile
+   setup: install migrate
+   install: pnpm install
+   migrate: docker compose up -d db && pnpm db:migrate
+   dev: docker compose up -d redis db clickhouse && pnpm dev
+   test: pnpm vitest run
+   lint: pnpm biome check .
+   ```
+
+---
+
+## Appendix: Quick Reference - Files Needing Immediate Attention
+
+| Priority | File | Issue |
+|----------|------|-------|
+| P0 | `packages/services/src/prompt/index.ts` | SQL injection (lines 184, 222) |
+| P0 | `apps/web/middleware.ts` | Session logging + API route blocking |
+| P0 | `apps/agent/src/api.ts` | Timing-unsafe auth comparison |
+| P1 | `apps/agent/src/index.ts` | Empty shutdown handler |
+| P1 | `apps/agent/src/agent.ts` | Sequential execution (perf) |
+| P1 | `docker-compose.yml` | Exposed database ports, no Redis auth |
+| P1 | `apps/web/src/lib/auth/auth.ts` | Unsafe env var casts |
+| P2 | `apps/agent/src/lib/browser/setupPage.ts` | Infinite timeouts (0) |
+| P2 | `packages/services/src/analysis/runAnalysis.ts` | No schema validation on LLM output |
+| P2 | `.github/workflows/docker-build.yml` | No test/lint gates |
+| P3 | Multiple agent files | DRY violations, typos in function names |
+| P3 | `apps/web/src/app/page.tsx` | Random org selection |
+| P3 | `packages/db/src/index.ts` | Default ClickHouse credentials |
+
+---
+
+*This review was conducted as a production readiness audit. The findings are based strictly on the code as written, without assumptions about undocumented behavior. All recommendations are actionable and ordered by severity.*

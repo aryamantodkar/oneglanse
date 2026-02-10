@@ -1,0 +1,1259 @@
+**1. Executive Summary**
+High-level strengths: Clear monorepo layout with shared `types`, `utils`, and `errors` packages; consistent TypeScript strictness; strong separation between UI, services, and data layers; pragmatic Docker-based deployment flow; ClickHouse integration for analytics is well-scoped.
+High-risk issues: XSS exposure via unsanitized LLM markdown rendering; Next.js middleware running DB-backed auth in Edge plus logging sensitive sessions; tRPC auth middleware clobbers context and breaks downstream server logic; ClickHouse queries using string interpolation (injection risk); synchronous analysis pipeline can exceed request limits and block production traffic; server component mutating org state with random selection.
+Overall readiness score (1-10): 4.0
+
+**2. Critical Issues (Must Fix Before Production)**
+Critical Issue: XSS via LLM response rendering (Files: `packages/utils/src/format/formatMarkdown.ts`, `apps/web/src/app/(auth)/prompts/page.tsx`).
+Problem: `marked` output is injected with `dangerouslySetInnerHTML` without sanitization, and LLM responses are untrusted.
+Why it matters: A malicious or prompt-injected response can execute arbitrary JavaScript in user sessions.
+Exact recommendation: Sanitize HTML with a strict allowlist (e.g., DOMPurify) before rendering, or render markdown via a safe renderer that strips raw HTML. Add tests with `<script>` payloads.
+
+Critical Issue: Edge middleware uses DB-backed auth and logs sessions (File: `apps/web/middleware.ts`).
+Problem: Middleware runs in the Edge runtime, but `auth.api.getSession` pulls from Better Auth + Drizzle (Node/DB). It also logs full session data.
+Why it matters: Middleware may fail in production Edge, and session logging risks leaking PII and auth metadata.
+Exact recommendation: Move auth gating to server components/layouts; use a lightweight cookie check in middleware if needed; remove session logging entirely.
+
+Critical Issue: tRPC `isAuthenticated` middleware drops context (File: `apps/web/src/server/api/middleware/isAuthenticated.ts`).
+Problem: It returns a new ctx with only `{ user }`, losing `headers`, `db`, and `auth`.
+Why it matters: Downstream procedures (e.g., workspace creation) rely on `headers` and `db`; this will break and is hard to debug.
+Exact recommendation: Merge context in `next({ ctx: { ...ctx, user: ctx.session.user } })`.
+
+Critical Issue: ClickHouse SQL injection surface (File: `packages/services/src/prompt/index.ts`).
+Problem: `fetchPromptResponsesForWorkspace` and `fetchUserPromptsForWorkspace` build SQL with string interpolation, and `scheduleCronForPrompts` constructs SQL with unescaped user/workspace IDs.
+Why it matters: User-controlled IDs can terminate queries, read other tenants' data, or tamper with cron SQL.
+Exact recommendation: Use parameterized `query_params` consistently; for pg_cron SQL, use bind parameters or a dedicated stored procedure that validates inputs.
+
+Critical Issue: Analysis pipeline is synchronous and unbounded (Files: `packages/services/src/analysis/analysis.ts`, `apps/web/src/server/api/routers/analysis/analysis.ts`, `apps/web/src/app/(auth)/prompts/page.tsx`).
+Problem: Analysis runs in a request path, loops batches, and may exceed `maxDuration` with no background queue or cancellation.
+Why it matters: Requests will time out under load, re-run work, and degrade system reliability.
+Exact recommendation: Move analysis to a background queue with progress tracking; keep the API path as a job trigger + polling endpoint.
+
+Critical Issue: Server component mutates org state and chooses random org (File: `apps/web/src/app/page.tsx`).
+Problem: It calls the client auth SDK server-side and randomly sets active org on each request.
+Why it matters: User state becomes nondeterministic and can flip on refresh; server-side usage of a client SDK is brittle.
+Exact recommendation: Use server-side auth/DB to resolve the user's active org deterministically; remove random selection; only set active org when user explicitly chooses.
+
+Critical Issue: Zod default import + circular schema reference (File: `packages/db/src/schema/workspace.ts`).
+Problem: Uses `import z from "zod"` under NodeNext ESM and references `schema.user` via `../index.js`, creating a circular dependency.
+Why it matters: This can fail at runtime or during build, and can cause schema initialization issues.
+Exact recommendation: Use `import { z } from "zod"` and import `user` directly from `./auth.js` to avoid index cycle.
+
+**3. File-by-File Review**
+File: `.claude/settings.local.json`
+Purpose: Local Claude tool permissions for one developer's environment.
+Issues: Machine-specific absolute paths and permissive commands are committed to repo; this is not portable and leaks local paths.
+Improvements: Remove from version control, add to `.gitignore`, provide a sanitized example if required for contributors.
+
+File: `.env.example`
+Purpose: Template for shared environment variables.
+Issues: Mixes server and client variables without validation mapping; defaults like `password` are unsafe for production samples.
+Improvements: Split into server vs client sections and add notes on required/optional; use safer placeholder text; ensure all required envs from code are included (e.g., `NEXT_PUBLIC_API_URL`, `APP_URL`, `INTERNAL_CRON_SECRET`).
+
+File: `.github/workflows/docker-build.yml`
+Purpose: Build and push Docker images for web, agent, and postgres.
+Issues: Builds on `onescope-monorepo` only; no CI checks (lint/test/typecheck) before image push.
+Improvements: Add separate CI job for tests and typecheck; gate image pushes on successful checks.
+
+File: `.gitignore`
+Purpose: Ignore build outputs, envs, and local artifacts.
+Issues: Ignores `claude/` but not `.claude/`, so local AI settings are still tracked.
+Improvements: Add `.claude/` to ignore list; verify `.env.*` patterns match app env files.
+
+File: `.npmrc`
+Purpose: pnpm hoist configuration.
+Issues: Global hoisting patterns can mask dependency boundaries in a monorepo.
+Improvements: Document why these patterns are required; consider narrowing to exact packages if not needed.
+
+File: `Dockerfile`
+Purpose: Build and run Next.js web app.
+Issues: Builds entire monorepo, increasing build time and image size; runtime image still contains all packages.
+Improvements: Use Turborepo `prune` for a minimal workspace; copy only web app + required packages; consider multi-stage with `pnpm deploy`.
+
+File: `Dockerfile.agent`
+Purpose: Build and run agent with Playwright.
+Issues: Installs full monorepo dependencies; no non-root user; large image size.
+Improvements: Use `turbo prune` or a dedicated workspace; drop root privileges; pin Playwright browser versions explicitly.
+
+File: `Dockerfile.postgres`
+Purpose: Postgres image with pg_cron enabled.
+Issues: Hard-codes `cron.database_name = 'mydb'` which may not match env; no validation.
+Improvements: Use env substitution or configure at runtime; document required DB name.
+
+File: `QUICK_REFERENCE.md`
+Purpose: Deployment and operational commands.
+Issues: Contains repo-specific links and GHCR org names; assumes environment file names without explaining required keys.
+Improvements: Add a "Required env variables" section that mirrors `.env.example`; remove or parametrize repo-specific links for OSS.
+
+File: `README.md`
+Purpose: Top-level project overview and dev workflow.
+Issues: Ends with "Add vps to oauth" incomplete; lacks licensing, security policy, and contributor guidance.
+Improvements: Add License, Contributing, Security, and Architecture sections; remove incomplete line or replace with actionable doc link.
+
+File: `apps/agent/.env.example`
+Purpose: Agent-specific env template.
+Issues: Requires proxy settings but code doesn't use `PROXY_USERNAME/PASSWORD`; misleading requirements.
+Improvements: Align env with code (either use proxy auth in Playwright or remove env requirements).
+
+File: `apps/agent/.gitignore`
+Purpose: Ignore agent local artifacts.
+Issues: References `.env.local.tmp` and `/tmp` paths not guaranteed cross-platform; doesn't ignore Playwright traces.
+Improvements: Add `playwright-report/`, `trace.zip`, and clarify temp files; keep list minimal and OS-agnostic.
+
+File: `apps/agent/package.json`
+Purpose: Agent package config and scripts.
+Issues: `dev` uses ts-node/esm without a `NODE_OPTIONS` memory cap; no lint/test scripts.
+Improvements: Add `lint` and `test` scripts; consider `tsx` for faster dev startup and better ESM support.
+
+File: `apps/agent/readme.md`
+Purpose: Agent setup instructions.
+Issues: References `make init` and `QUICKSTART.md` that don't exist; includes raw VPS commands and IPs without context.
+Improvements: Update to match repo tooling; remove hard-coded IPs; add a minimal, reproducible local workflow.
+
+File: `apps/agent/src/agent.ts`
+Purpose: Orchestrate multi-provider agent runs.
+Issues: Runs providers serially; no timeout or per-provider error classification beyond length check.
+Improvements: Run providers concurrently with per-provider timeouts; return structured error details to callers.
+
+File: `apps/agent/src/agents/anthropic/anthropic.ts`
+Purpose: Launch Claude page with auth state.
+Issues: No explicit auth check beyond URL logging; no retry on navigation errors besides `navigateWithRetry`.
+Improvements: Add explicit post-load auth validation and fail fast with actionable error.
+
+File: `apps/agent/src/agents/anthropic/anthropicAgent.ts`
+Purpose: Wrap Anthropic launch and auth check.
+Issues: `waitForTimeout(2000)` fixed delay; no error if `auth` is false except upstream handler.
+Improvements: Replace fixed delay with readiness checks; propagate auth failure reason.
+
+File: `apps/agent/src/agents/anthropic/auth/auth.ts`
+Purpose: Wait for user authentication in Claude.
+Issues: Timeout comment says 5 minutes but code uses 8 minutes; no explicit error thrown on timeout.
+Improvements: Align comment with value; throw a timeout error so caller can react.
+
+File: `apps/agent/src/agents/anthropic/auth/validateAuth.ts`
+Purpose: Detect authenticated Claude session via URL.
+Issues: URL-based check can false-positive on error pages or cached redirects.
+Improvements: Add DOM-based checks (profile/avatar, authenticated UI elements).
+
+File: `apps/agent/src/agents/anthropic/lib/extractSources.ts`
+Purpose: Extract sources from Anthropic response DOM.
+Issues: Assumes `.standard-markdown` structure; no fallback for UI changes; cited_text threshold of 30 may drop short citations.
+Improvements: Add selector fallbacks and unit tests with fixture HTML; document heuristic choices.
+
+File: `apps/agent/src/agents/lib/agentHandler.ts`
+Purpose: Run provider agents with proxy cycling and retries.
+Issues: Partial results accumulation is good, but `PROXIES_PER_CYCLE` and `MAX_CYCLES` are hard-coded; overall duration can exceed worker lock duration.
+Improvements: Make retry limits configurable; align with BullMQ lock duration; add metrics for failure reasons.
+
+File: `apps/agent/src/agents/lib/runAgents.ts`
+Purpose: Warm up editor and run prompt batch.
+Issues: `runStep` swallows errors, so warm-up failures don't abort.
+Improvements: Re-throw in `runStep` or return a failure flag so caller can stop early.
+
+File: `apps/agent/src/agents/lib/runPrompts.ts`
+Purpose: Execute prompts with retries and backoff.
+Issues: Per-character typing is very slow; response extraction returning empty string still treated as success.
+Improvements: Use `page.keyboard.type(prompt)` and explicit failure if response empty after retries.
+
+File: `apps/agent/src/agents/lib/steps/askPrompt.ts`
+Purpose: Type and submit prompt in UI.
+Issues: Uses UI selectors and heuristics; doesn't guard against rate limits or modal dialogs.
+Improvements: Add detection for rate-limit banners and auth modals; return actionable error types.
+
+File: `apps/agent/src/agents/lib/steps/extractSources.ts`
+Purpose: Open sources panel and extract citations.
+Issues: Provider-specific extraction uses typoed function names; failure is logged but not surfaced to analytics.
+Improvements: Standardize function names and return structured extraction errors with source counts.
+
+File: `apps/agent/src/agents/lib/steps/fetchPromptResponses.ts`
+Purpose: Wait for completion and extract markdown.
+Issues: Empty response is returned as valid; no upper bound on total wait other than `waitForAssistantToFinish`.
+Improvements: Treat empty response as error; include timeout cause in error path.
+
+File: `apps/agent/src/agents/openai/auth/auth.ts`
+Purpose: Wait for OpenAI auth completion.
+Issues: Timeout comment mismatch; no thrown error on timeout.
+Improvements: Throw a clear timeout error and capture screenshot on failure.
+
+File: `apps/agent/src/agents/openai/auth/validateAuth.ts`
+Purpose: Detect OpenAI authenticated URL.
+Issues: URL-only check is brittle and can be bypassed by error pages.
+Improvements: Add DOM checks for chat UI and user menu elements.
+
+File: `apps/agent/src/agents/openai/lib/extractSources.ts`
+Purpose: Extract ChatGPT sources panel.
+Issues: Function name typo `exractSoucesFromOpenai`; DOM heuristics rely on class names that may change.
+Improvements: Fix spelling; add fallback selectors and tests; consider API-based extraction if possible.
+
+File: `apps/agent/src/agents/openai/openai.ts`
+Purpose: Launch ChatGPT with auth state.
+Issues: Navigates to `/auth/login` even when already authenticated, increasing risk of logout.
+Improvements: Navigate to a stable authenticated endpoint and verify auth before proceeding.
+
+File: `apps/agent/src/agents/openai/openaiAgent.ts`
+Purpose: Wrap OpenAI launch and auth check.
+Issues: Fixed `waitForTimeout(2000)`; no conditional logic for auth failure.
+Improvements: Use explicit readiness checks and return failure metadata.
+
+File: `apps/agent/src/agents/perplexity/auth/auth.ts`
+Purpose: Wait for Perplexity authentication.
+Issues: Silent timeout with no error; may lead to false "auth OK" path.
+Improvements: Throw explicit timeout error and log diagnostics.
+
+File: `apps/agent/src/agents/perplexity/auth/validateAuth.ts`
+Purpose: Detect Perplexity auth via UI.
+Issues: Heuristics rely on DOM text "Account" and specific selectors; may fail for localized UIs.
+Improvements: Add robust selectors for avatar and user menu; support locale variations.
+
+File: `apps/agent/src/agents/perplexity/lib/extractSources.ts`
+Purpose: Extract sources from Perplexity panel.
+Issues: Function name typo `exractSoucesFromPerplexity`; relies on fixed-position panel heuristic.
+Improvements: Fix spelling; include additional detection (data-testid, aria labels).
+
+File: `apps/agent/src/agents/perplexity/perplexity.ts`
+Purpose: Launch Perplexity page.
+Issues: `page` initialized to null then reassigned; no auth verification beyond URL.
+Improvements: Remove unused initialization; add explicit auth check.
+
+File: `apps/agent/src/agents/perplexity/perplexityAgent.ts`
+Purpose: Wrap Perplexity launch and auth check.
+Issues: Fixed delays and weak auth check propagation.
+Improvements: Replace delays with readiness checks; return error if auth false.
+
+File: `apps/agent/src/api.ts`
+Purpose: Minimal HTTP API for health and session upload.
+Issues: Content-Type check is strict and rejects `application/json; charset=utf-8`; no rate limiting; session JSON written without validation.
+Improvements: Accept JSON with charset; add validation schema; add rate limiting and audit logs.
+
+File: `apps/agent/src/auth/auth.ts`
+Purpose: Local CLI to run login and upload flow.
+Issues: Uses `execSync` without error classification; no validation that login succeeded.
+Improvements: Check exit codes and validate session files before upload.
+
+File: `apps/agent/src/auth/login.ts`
+Purpose: Interactive browser login for providers.
+Issues: Requires `PROXY_SERVER` but never uses it; auth path check uses directory existence, not session file validity.
+Improvements: Use proxy config in Playwright or remove requirement; validate storage state file contents.
+
+File: `apps/agent/src/auth/upload-session.ts`
+Purpose: Upload local auth sessions to VPS.
+Issues: Uses global `fetch` without timeout; uploads unvalidated session JSON; unused `existsSync` import.
+Improvements: Add request timeout and schema validation; remove unused import.
+
+File: `apps/agent/src/env.ts`
+Purpose: Load `.env` for non-production runs.
+Issues: Only loads if `apps/agent/.env` exists, else root `.env`; no logging or validation.
+Improvements: Validate required vars at startup and log missing keys with actionable errors.
+
+File: `apps/agent/src/index.ts`
+Purpose: Entry point that starts API and worker, plus shutdown handlers.
+Issues: Shutdown handler contains empty `try` block; does not await any cleanup.
+Improvements: Close Redis and browser resources on shutdown; handle in-flight jobs gracefully.
+
+File: `apps/agent/src/lib/auth/isAuthenticated.ts`
+Purpose: Dispatch provider-specific auth checks.
+Issues: Inconsistent style and missing `else` for openai/anthropic; default falls to perplexity without explicit check.
+Improvements: Use a `switch` with explicit `default` error for unknown providers.
+
+File: `apps/agent/src/lib/auth/waitForUserLogin.ts`
+Purpose: Dispatch provider-specific login wait.
+Issues: Missing default branch error if provider is unknown.
+Improvements: Add `default` case to throw a clear error.
+
+File: `apps/agent/src/lib/browser/checkPageStability.ts`
+Purpose: Wait for page stabilization.
+Issues: Hard-coded 2s delay with no observability.
+Improvements: Use `requestIdleCallback` or add metrics to track actual stabilization time.
+
+File: `apps/agent/src/lib/browser/launchContext.ts`
+Purpose: Launch Playwright with auth state and proxy.
+Issues: If proxy pool empty, proceeds without proxy but still may be required; no proxy auth support.
+Improvements: Support proxy credentials; make "no proxy" an explicit opt-in config.
+
+File: `apps/agent/src/lib/browser/navigateWithRetry.ts`
+Purpose: Retry navigation for transient errors.
+Issues: Error matching is string-based and may miss new Chromium error codes.
+Improvements: Add additional retryable error codes and log last error class.
+
+File: `apps/agent/src/lib/browser/proxyPool.ts`
+Purpose: Manage rotating proxy list.
+Issues: Proxy API response is unvalidated; no TTL or refresh schedule beyond manual call; no auth credentials support.
+Improvements: Validate format; add refresh intervals and proxy health scoring.
+
+File: `apps/agent/src/lib/browser/setupPage.ts`
+Purpose: Set page timeouts and logging.
+Issues: Sets default timeouts to 0, which risks infinite waits in other calls.
+Improvements: Set reasonable defaults and override per operation when needed.
+
+File: `apps/agent/src/lib/input/extractAssistantMarkdown.ts`
+Purpose: Convert assistant HTML to markdown.
+Issues: Depends on UI-specific classes and may capture hidden content; no error handling for large DOM.
+Improvements: Add safety caps for DOM size and sanitize output before storing.
+
+File: `apps/agent/src/lib/input/findActiveEditor.ts`
+Purpose: Find prompt editor in UI.
+Issues: Logs every selector for visible nodes; could spam logs; no provider-specific prioritization.
+Improvements: Add provider-specific order and reduce log volume in production.
+
+File: `apps/agent/src/lib/input/findEnabledSendButton.ts`
+Purpose: Find enabled send button.
+Issues: Swallows errors silently; returns null without context.
+Improvements: Log selector failures at debug level for diagnostics.
+
+File: `apps/agent/src/lib/input/getLastAssistantText.ts`
+Purpose: Extract last assistant text from page.
+Issues: Uses `Boolean` type instead of `boolean`; anthropic-specific extraction uses fragile hidden DOM checks.
+Improvements: Use `boolean` and refactor extraction into provider-specific modules.
+
+File: `apps/agent/src/lib/input/waitForAssistantToFinish.ts`
+Purpose: Wait for assistant completion.
+Issues: Polling loop with fixed intervals; no diagnostics on timeout except a warning.
+Improvements: Include last-seen text size and selector state in timeout logs.
+
+File: `apps/agent/src/lib/input/warmUpEditor.ts`
+Purpose: Clear editor and focus.
+Issues: Assumes editable content and uses destructive selection; may erase draft content unexpectedly.
+Improvements: Ensure editor is empty only for new prompts; optionally respect existing text for debugging.
+
+File: `apps/agent/src/lib/utils/dumpHtml.ts`
+Purpose: Dump panel HTML for debugging.
+Issues: Writes to cwd without ensuring directory; no size cap.
+Improvements: Use a `debug/` folder and limit file size.
+
+File: `apps/agent/src/lib/utils/logger.ts`
+Purpose: Lightweight logger.
+Issues: Always logs ISO timestamps; no structured context or log levels in production.
+Improvements: Add structured logging and include request/job IDs; allow log level configuration.
+
+File: `apps/agent/src/lib/utils/runStep.ts`
+Purpose: Wrap steps with timing and diagnostics.
+Issues: Errors are caught and not rethrown; step failure doesn't stop execution.
+Improvements: Re-throw after capturing diagnostics or return an explicit failure result.
+
+File: `apps/agent/src/lib/utils/writePromptsToFile.ts`
+Purpose: Persist prompt results to JSON.
+Issues: No error handling for write failures; not used in current flow.
+Improvements: Add try/catch and document usage or remove if unused.
+
+File: `apps/agent/src/worker.ts`
+Purpose: BullMQ worker for running agent jobs.
+Issues: Uses `created_at` from prompt as `promptRunAt`; proxy fetching hard-fails if no proxy API; no job-level timeout.
+Improvements: Use current time for run timestamp; make proxy optional; set BullMQ job timeout and retries.
+
+File: `apps/agent/tsconfig.json`
+Purpose: TS build config for agent.
+Issues: `isolatedModules` true with `ts-node/esm` can produce different runtime behavior vs build output.
+Improvements: Add a dedicated build/test pipeline to ensure parity with runtime.
+
+File: `apps/web/.gitignore`
+Purpose: Ignore local Next.js artifacts.
+Issues: Does not ignore `.env` at app root, only `.env*.local`.
+Improvements: Add `.env` and `.env.*` patterns aligned with root `.gitignore` to prevent secrets leakage.
+
+File: `apps/web/README.md`
+Purpose: Web app overview.
+Issues: No local setup steps or env variable list; not enough for first-time contributor.
+Improvements: Add a "Local dev" section with `.env` requirements and Docker/PNPM instructions.
+
+File: `apps/web/biome.jsonc`
+Purpose: Biome formatter/linter config.
+Issues: Applies recommended rules but no project-specific overrides for Next.js/React performance.
+Improvements: Add rules for `noDangerouslySetInnerHTML` warnings and `noUnusedImports`.
+
+File: `apps/web/components.json`
+Purpose: shadcn/ui config.
+Issues: `aliases` refer to `@/components/ui` which doesn't exist in this repo; potential confusion.
+Improvements: Align aliases with actual folder structure or remove unused aliases.
+
+File: `apps/web/countries.json`
+Purpose: Country and state lookup data.
+Issues: Large static JSON; loaded with `fs.readFileSync` at runtime.
+Improvements: Consider moving to a small database table or build-time import; add checksum/source attribution.
+
+File: `apps/web/middleware.ts`
+Purpose: Auth gate for routes.
+Issues: Runs DB-backed auth in Edge and logs session data.
+Improvements: Move to server components; remove session logging.
+
+File: `apps/web/next.config.js`
+Purpose: Next.js configuration.
+Issues: Adds `SKIP_ENV_VALIDATION` env but doesn't enforce required envs at runtime.
+Improvements: Add `env` validation at startup or use `@t3-oss/env-nextjs` for full set.
+
+File: `apps/web/package.json`
+Purpose: Web app scripts and dependencies.
+Issues: Both `node-fetch` and global fetch are used; unnecessary dependency; no test scripts.
+Improvements: Remove `node-fetch` if unused; add tests and `lint:fix` scripts.
+
+File: `apps/web/postcss.config.js`
+Purpose: Tailwind CSS PostCSS config.
+Issues: No autoprefixer or custom plugins; ok but not documented.
+Improvements: Document why only Tailwind is used; add autoprefixer if needed for broader browser support.
+
+File: `apps/web/public/favicon.ico`
+Purpose: Site favicon asset.
+Issues: No alternate sizes or SVG variant.
+Improvements: Add `favicon.svg` and `apple-touch-icon` for modern devices.
+
+File: `apps/web/src/app/layout.tsx`
+Purpose: Root layout for app.
+Issues: `ThemeProvider` set to `defaultTheme="light"` may ignore user preferences.
+Improvements: Consider `defaultTheme="system"` or document intentional choice.
+
+File: `apps/web/src/app/page.tsx`
+Purpose: Home redirect and org selection.
+Issues: Random org selection and use of client auth SDK on server; mutates state on each request.
+Improvements: Resolve active org server-side deterministically; remove random assignment.
+
+File: `apps/web/src/app/login/page.tsx`
+Purpose: Login page shell.
+Issues: Uses anchor `href="#"` for logo; not accessible and reloads top.
+Improvements: Replace with Link to `/` or a proper brand page.
+
+File: `apps/web/src/app/signup/page.tsx`
+Purpose: Signup page shell.
+Issues: Same `href="#"` issue; no branding alt text.
+Improvements: Link to `/` and add accessible label.
+
+File: `apps/web/src/app/api/auth/[...all]/route.ts`
+Purpose: Better Auth route handler.
+Issues: Imports `@lib/auth/auth` via alias, but alias configuration is only in TS and may not resolve at runtime in Node without bundler.
+Improvements: Confirm runtime path alias resolution or use relative path.
+
+File: `apps/web/src/app/api/trpc/[trpc]/route.ts`
+Purpose: tRPC API handler.
+Issues: `maxDuration = 300` helps but still low for large analysis; no request body size guard.
+Improvements: Add request size checks or move long tasks to background jobs.
+
+File: `apps/web/src/app/(auth)/layout.tsx`
+Purpose: Authenticated layout with sidebar.
+Issues: `defaultOpen` is always true due to `|| true`; duplicate global CSS import.
+Improvements: Fix cookie logic; remove duplicate CSS import and wrap in `ThemeProvider` for consistent theming.
+
+File: `apps/web/src/app/(auth)/layoutContent.tsx`
+Purpose: Client layout wrapper with sidebar.
+Issues: `shownJobsRef` is unused; routing to `/workspace/new` happens client-side only.
+Improvements: Remove dead ref; move redirect to server layer for consistency.
+
+File: `apps/web/src/app/(auth)/dashboard/page.tsx`
+Purpose: Dashboard UI for analyses.
+Issues: Uses `useMemo` but no data pagination; depends on `workspace` query param only.
+Improvements: Add pagination and server-side `workspace` selection; use error boundaries for missing data.
+
+File: `apps/web/src/app/(auth)/dashboard/_lib/aggregations.ts`
+Purpose: Aggregate analysis data for dashboard metrics.
+Issues: Uses `new Date().toISOString()` for insights timestamps instead of actual analysis timestamps.
+Improvements: Use `prompt_run_at` or `created_at` from analysis record for correct timelines.
+
+File: `apps/web/src/app/(auth)/dashboard/_lib/types.ts`
+Purpose: Local dashboard types.
+Issues: `current` field in `CompetitivePosition` is string without union type; reduces type safety.
+Improvements: Use a union matching analysis schema (e.g., `'market_leader' | 'top_contender' ...`).
+
+File: `apps/web/src/app/(auth)/dashboard/_components/BrandHealthCard.tsx`
+Purpose: Visualize composite brand health score.
+Issues: Hard-coded thresholds and weights not shared with backend.
+Improvements: Centralize scoring logic in shared utils to avoid divergence.
+
+File: `apps/web/src/app/(auth)/dashboard/_components/CompetitivePositionCard.tsx`
+Purpose: Show competitive position summary.
+Issues: `getPositionLabel` fallback may create awkward labels for unknown values.
+Improvements: Add safe fallback label and an explicit "Unknown" state.
+
+File: `apps/web/src/app/(auth)/dashboard/_components/CompetitiveThreatsCard.tsx`
+Purpose: Show top competitive threats.
+Issues: Displays only first 3 threats; no "view all" or link to detail.
+Improvements: Add a link to the Sources or Prompts detail view.
+
+File: `apps/web/src/app/(auth)/dashboard/_components/RecentInsightsCard.tsx`
+Purpose: Show recent insights.
+Issues: Component not used in dashboard; dead code adds maintenance burden.
+Improvements: Remove or integrate into dashboard with a real data source.
+
+File: `apps/web/src/app/(auth)/dashboard/_components/SentimentInsightsCard.tsx`
+Purpose: Show sentiment strengths/weaknesses.
+Issues: Uses fixed slice length without explaining significance.
+Improvements: Add `maxItems` prop and document behavior.
+
+File: `apps/web/src/app/(auth)/dashboard/_components/StrategicOpportunitiesCard.tsx`
+Purpose: Show messaging/content gaps.
+Issues: Color tokens hard-coded; not theme-aware.
+Improvements: Use CSS variables or token classes for theme compatibility.
+
+File: `apps/web/src/app/(auth)/dashboard/_components/TopSources.tsx`
+Purpose: Show top cited domains.
+Issues: External favicon URLs are used without fallback handling for failures.
+Improvements: Add onError fallback and caching strategy.
+
+File: `apps/web/src/app/(auth)/prompts/_lib/mutations/prompt.mutations.ts`
+Purpose: tRPC hooks for mutations.
+Issues: No error handling or retry config at hook level.
+Improvements: Add standard error parsing and retry policy to avoid repeated user errors.
+
+File: `apps/web/src/app/(auth)/prompts/_lib/queries/prompt.queries.ts`
+Purpose: tRPC hooks for prompt queries.
+Issues: `useAgentStatus` polls indefinitely unless completed; no timeout.
+Improvements: Add max polling duration or failure state.
+
+File: `apps/web/src/app/(auth)/prompts/page.tsx`
+Purpose: Prompt CRUD, run agents, and show responses.
+Issues: Renders LLM HTML unsafely; uses local prompt IDs not aligned with backend; analysis trigger runs on page load and after job completion with no debounce.
+Improvements: Sanitize HTML; create prompts server-side to preserve IDs; gate analysis calls with a server-side job status.
+
+File: `apps/web/src/app/(auth)/sources/page.tsx`
+Purpose: Display source statistics by domain and URL.
+Issues: Reloads and re-sorts large datasets on every render; no pagination or virtualization.
+Improvements: Add server-side pagination, memoize heavy computations, and virtualize large tables.
+
+File: `apps/web/src/app/(auth)/workspace/_lib/workspace.queries.ts`
+Purpose: tRPC hooks for workspace queries.
+Issues: No error boundary or fallback UI for errors.
+Improvements: Add standardized error handling for workspace fetch failures.
+
+File: `apps/web/src/app/(auth)/workspace/new/page.tsx`
+Purpose: New workspace creation UI.
+Issues: `country` selection can be empty but API requires it; `redirect` import is unused.
+Improvements: Require location selection before submit; remove unused import.
+
+File: `apps/web/src/app/(auth)/workspace/page.tsx`
+Purpose: Redirect to dashboard if workspace exists.
+Issues: Redirects without handling invalid workspace or errors.
+Improvements: Add error handling and user feedback.
+
+File: `apps/web/src/app/(auth)/organizations/page.tsx`
+Purpose: List organizations.
+Issues: Fetches via client SDK with no pagination or selection controls.
+Improvements: Add pagination and "set active org" actions.
+
+File: `apps/web/src/trpc/react.tsx`
+Purpose: tRPC React client provider.
+Issues: `getBaseUrl` uses `DOCKER_ENV` env but not set elsewhere; no fallback to headers for SSR.
+Improvements: Use Next.js request headers for server-side base URL; document env usage.
+
+File: `apps/web/src/trpc/query-client.ts`
+Purpose: QueryClient configuration.
+Issues: `staleTime` fixed at 30s without per-query overrides.
+Improvements: Consider per-query staleTime for critical data like job status.
+
+File: `apps/web/src/trpc/server.ts`
+Purpose: tRPC helpers for RSC.
+Issues: Uses `headers()` but no explicit error handling for missing headers in non-request contexts.
+Improvements: Add guards or defaults for background rendering.
+
+File: `apps/web/src/server/api/trpc.ts`
+Purpose: tRPC initialization and context.
+Issues: Context includes `db` and `auth`, but no structured logging context or request IDs.
+Improvements: Add request IDs and attach to logger for traceability.
+
+File: `apps/web/src/server/api/procedures.ts`
+Purpose: Procedure presets.
+Issues: `authorizedWorkspaceProcedure` does not include `isAuthenticated`; relies on `validWorkspace` only.
+Improvements: Add `isAuthenticated` to enforce session; reduce duplicated validation.
+
+File: `apps/web/src/server/api/middleware/isAuthenticated.ts`
+Purpose: Enforce authenticated session.
+Issues: Clobbers context and loses `headers`/`db`.
+Improvements: Merge context instead of replacing.
+
+File: `apps/web/src/server/api/middleware/validWorkspace.ts`
+Purpose: Validate workspace membership.
+Issues: Performs membership query per call; no caching; uses `ValidationError` for auth errors.
+Improvements: Use `AuthError` for unauthorized access; consider memoization per request.
+
+File: `apps/web/src/server/api/middleware/isInternal.ts`
+Purpose: Protect internal cron endpoints.
+Issues: Relies on static secret header; no rotation or auditing.
+Improvements: Add key rotation policy and request logging.
+
+File: `apps/web/src/server/api/middleware/timingMiddleware.ts`
+Purpose: Add timing logs to requests.
+Issues: Uses `console.log` in production; adds artificial delay in dev (ok but undocumented).
+Improvements: Use structured logger and make dev delay configurable.
+
+File: `apps/web/src/server/api/root.ts`
+Purpose: Compose API routers.
+Issues: No versioning or namespace separation for public vs internal routes.
+Improvements: Introduce `internal` router namespace for cron/admin tasks.
+
+File: `apps/web/src/server/api/routers/analysis/analysis.ts`
+Purpose: tRPC analysis endpoints.
+Issues: Runs analysis synchronously in request path; no job queue.
+Improvements: Offload to background jobs; return job IDs.
+
+File: `apps/web/src/server/api/routers/agent/agent.ts`
+Purpose: tRPC endpoints for agent jobs.
+Issues: Adds job even when no prompts; `status` endpoint returns raw JSON without validation.
+Improvements: Validate non-empty prompts; validate result schema.
+
+File: `apps/web/src/server/api/routers/location/location.ts`
+Purpose: Country/state lookup from JSON.
+Issues: Uses `process.cwd()` which may not resolve to `apps/web` in production builds.
+Improvements: Use `new URL("../../../../countries.json", import.meta.url)` or `path.resolve(__dirname, "../../../../countries.json")`.
+
+File: `apps/web/src/server/api/routers/prompt/prompt.ts`
+Purpose: tRPC endpoints for prompts and sources.
+Issues: Does not validate prompt length or sanitize inputs; uses `workspaceId!` and `userId!` with non-null assertions.
+Improvements: Add length constraints and remove `!` in favor of explicit checks.
+
+File: `apps/web/src/server/api/routers/workspace/workspace.ts`
+Purpose: Workspace create and fetch endpoints.
+Issues: `domain` and `slug` constraints are minimal; no uniqueness check at DB layer.
+Improvements: Add DB unique constraints and check for slug collision.
+
+File: `apps/web/src/server/services/workspace/workspace.ts`
+Purpose: Create workspace + org.
+Issues: Depends on `headers` in ctx but ctx may be clobbered by `isAuthenticated`; no transaction across org and workspace creation.
+Improvements: Ensure ctx integrity; wrap org+workspace creation in a transaction with rollback behavior.
+
+File: `apps/web/src/env.js`
+Purpose: Environment validation.
+Issues: Only validates `DATABASE_URL` and `NODE_ENV`; missing all required envs used elsewhere.
+Improvements: Add all required envs (auth secrets, API URLs, Redis, ClickHouse) with strict validation.
+
+File: `apps/web/src/styles/globals.css`
+Purpose: Global styling and theme tokens.
+Issues: Duplicate `@layer base` blocks; uses dark tokens that differ from sidebar tokens; potential inconsistency.
+Improvements: Consolidate theme variables; document token sources.
+
+File: `apps/web/src/components/forms/login-form.tsx`
+Purpose: Email/password and Google login UI.
+Issues: Uses `authClient` without handling error messages; uses anchor `href="#"` for forgot password.
+Improvements: Provide real reset flow or remove link; show structured error messages.
+
+File: `apps/web/src/components/forms/signup-form.tsx`
+Purpose: Signup UI.
+Issues: Google signup button uses inline SVG without accessible label; error handling is generic.
+Improvements: Add `aria-label` to icon; return backend errors in toast.
+
+File: `apps/web/src/components/forms/logout.tsx`
+Purpose: Logout button.
+Issues: No final state if `authClient.signOut()` fails; user still redirected.
+Improvements: Only redirect on success; show retry CTA.
+
+File: `apps/web/src/components/location/locationSelector.tsx`
+Purpose: Country/region selection.
+Issues: `useEffect` dependencies omit `onSelect`, `countries`, and `regions`; potential stale values.
+Improvements: Include dependencies or memoize `onSelect` with `useCallback`.
+
+File: `apps/web/src/components/app-sidebar.tsx`
+Purpose: Sidebar navigation and org selection.
+Issues: Uses `getModelFavicon` with domain; will generate incorrect favicon URL; `console.log` left in production.
+Improvements: Use `getFaviconUrls` for workspace domain; remove debug log.
+
+File: `apps/web/src/lib/auth/auth.ts`
+Purpose: Better Auth server configuration.
+Issues: Env values are cast without validation; `organization()` plugin used but active org set via DB hook from first member.
+Improvements: Validate envs; align active org logic with user choice.
+
+File: `apps/web/src/lib/auth/auth-client.ts`
+Purpose: Client auth SDK config.
+Issues: `NEXT_PUBLIC_API_URL` is required in browser but not validated; fallback to `APP_URL` server-side only.
+Improvements: Add fallback to `window.location.origin` if `NEXT_PUBLIC_API_URL` undefined.
+
+File: `apps/web/src/lib/workspace/getActiveOrganization.ts`
+Purpose: Fetch active organization for user.
+Issues: Returns first membership, not a stable or user-chosen org.
+Improvements: Store active org on session or user profile and read it consistently.
+
+File: `apps/web/src/lib/workspace/getWorkspace.ts`
+Purpose: Get workspace for active org.
+Issues: Returns first workspace by tenant without sorting; no active workspace selection.
+Improvements: Define active workspace explicitly and persist in session.
+
+File: `apps/web/src/lib/workspace/getTenant.ts`
+Purpose: Read active organization from session.
+Issues: Assumes session includes `activeOrganizationId`; no fallback if missing.
+Improvements: Add fallback to user's default organization or force selection.
+
+File: `apps/web/src/declarations.d.ts`
+Purpose: Declare missing module types.
+Issues: Blanket module declaration for `sentiment` hides missing types and can mask API issues.
+Improvements: Add a small, explicit type definition instead of `declare module` blanket.
+
+File: `docker-compose.yml`
+Purpose: Production Compose setup.
+Issues: `db` and `clickhouse` ports exposed to host; no resource limits; agent worker uses env from both `.env` and `apps/agent/.env` but API only uses agent env.
+Improvements: Bind DB ports to localhost; add resource limits; harmonize env usage across agent services.
+
+File: `docker-compose.override.yml`
+Purpose: Local dev overrides.
+Issues: Builds all images locally but no volumes for live code; dev loop may be slow.
+Improvements: Add bind mounts for app code and node_modules caching if desired.
+
+File: `mockData/prompt_analysis.json`
+Purpose: Mock analysis data.
+Issues: Contains realistic user/workspace IDs that appear production-like; can be mistaken for real data.
+Improvements: Redact or clearly label as synthetic; add generator script if needed.
+
+File: `mockData/prompt_responses.json`
+Purpose: Mock prompt response data.
+Issues: Very large file with real URLs; increases repo size and may be out of date.
+Improvements: Compress or move to test fixtures; include a script to regenerate.
+
+File: `package.json`
+Purpose: Root scripts and workspace config.
+Issues: `clean` removes `node_modules` without warning; no script for tests.
+Improvements: Add `test` script; add `clean:all` if destructive; document scripts in README.
+
+File: `packages/db/clickhouse-init/schema.sql`
+Purpose: ClickHouse schema for analytics.
+Issues: No TTL or retention policy; potential unbounded growth.
+Improvements: Add TTL policies and partitioning strategy for long-term retention.
+
+File: `packages/db/drizzle.config.ts`
+Purpose: Drizzle configuration.
+Issues: Uses `process.env.DATABASE_URL!` without validation.
+Improvements: Validate env before running migrations to give clear errors.
+
+File: `packages/db/drizzle/0000_famous_smiling_tiger.sql`
+Purpose: Postgres schema migration.
+Issues: Defines tables (cron_jobs, cron_queue, competitors) without corresponding Drizzle schema, risking drift.
+Improvements: Add schema definitions or remove unused tables from migration.
+
+File: `packages/db/drizzle/meta/0000_snapshot.json`
+Purpose: Drizzle migration metadata snapshot.
+Issues: Generated file is large and hard to review.
+Improvements: Treat as generated; ensure it is regenerated on schema changes and documented.
+
+File: `packages/db/drizzle/meta/_journal.json`
+Purpose: Drizzle migration journal.
+Issues: Generated file, not human-reviewed.
+Improvements: Add a note in CONTRIBUTING on how to update safely.
+
+File: `packages/db/init-scripts/00-init.sql`
+Purpose: Enable pgcrypto and pg_cron.
+Issues: Grants cron schema usage to PUBLIC; may be overly permissive.
+Improvements: Restrict privileges to a specific DB role.
+
+File: `packages/db/package.json`
+Purpose: Database package manifest.
+Issues: Includes `drizzle-kit` as dependency (runtime) rather than devDependency.
+Improvements: Move `drizzle-kit` to devDependencies.
+
+File: `packages/db/src/index.ts`
+Purpose: Export Postgres and ClickHouse clients.
+Issues: ClickHouse client uses default password fallback; `db` proxy throws only on access, not at startup.
+Improvements: Validate ClickHouse creds in production; fail fast with clear error.
+
+File: `packages/db/src/pg.ts`
+Purpose: Postgres Pool for raw SQL.
+Issues: Ignores `REDIS_PORT`-like env patterns; fixed pool size without config.
+Improvements: Allow pool sizing via env; add idle timeout settings.
+
+File: `packages/db/src/schema/auth.ts`
+Purpose: Auth tables schema.
+Issues: No indexes on `user_id` or `organization_id` beyond foreign keys.
+Improvements: Add indexes for high-traffic lookup columns.
+
+File: `packages/db/src/schema/index.ts`
+Purpose: Export schema modules.
+Issues: Used in a way that creates circular dependencies (workspace importing index).
+Improvements: Avoid `schema` index usage inside schema modules.
+
+File: `packages/db/src/schema/workspace.ts`
+Purpose: Workspace and membership schema.
+Issues: `import z from "zod"` incorrect for ESM; references `schema.user` via index causing circular dependency.
+Improvements: Use `import { z } from "zod"`; import `user` directly from `auth` module.
+
+File: `packages/db/src/types.ts`
+Purpose: Infer types from schema.
+Issues: Exports `Timestamp` as string but DB uses `Date`; potential mismatch.
+Improvements: Clarify date type semantics and align with actual runtime.
+
+File: `packages/db/tsconfig.json`
+Purpose: TS build config.
+Issues: None specific; standard config.
+Improvements: Consider enabling `noUnusedLocals` for tighter hygiene.
+
+File: `packages/errors/package.json`
+Purpose: Errors package manifest.
+Issues: No `type` field; relies on default CJS while code uses ESM imports.
+Improvements: Add `"type": "module"` and ensure build output matches.
+
+File: `packages/errors/src/error/BaseError.ts`
+Purpose: Base error class.
+Issues: `cause` stored but not set on native Error `cause` option for Node 16+.
+Improvements: Pass `cause` to `super` in Node 20 for better error chaining.
+
+File: `packages/errors/src/error/AuthError.ts`
+Purpose: Auth error type.
+Issues: No metadata to indicate which auth step failed.
+Improvements: Add optional meta fields for context.
+
+File: `packages/errors/src/error/DatabaseError.ts`
+Purpose: Database error type.
+Issues: `isOperational` false by default, but many DB errors are operational.
+Improvements: Make `isOperational` configurable or true by default.
+
+File: `packages/errors/src/error/EnvError.ts`
+Purpose: Missing/invalid env variable error.
+Issues: Status 500 for env issues might be better surfaced as configuration error at startup.
+Improvements: Throw during boot and fail fast rather than runtime errors.
+
+File: `packages/errors/src/error/ExternalServiceError.ts`
+Purpose: External service error type.
+Issues: No retry classification or recommended action.
+Improvements: Add `retryable` flag in meta.
+
+File: `packages/errors/src/error/IPRefreshNeededError.ts`
+Purpose: Control flow for proxy refresh.
+Issues: Extends `Error` without `cause` or `isOperational` semantics.
+Improvements: Add metadata or extend `BaseError` for consistent handling.
+
+File: `packages/errors/src/error/NotFoundError.ts`
+Purpose: Not found error type.
+Issues: None specific.
+Improvements: Optionally include resource ID in metadata.
+
+File: `packages/errors/src/error/RateLimitError.ts`
+Purpose: Rate limit error type.
+Issues: No retry-after guidance.
+Improvements: Add `retryAfter` meta.
+
+File: `packages/errors/src/error/ValidationError.ts`
+Purpose: Validation error type.
+Issues: No field-level data.
+Improvements: Add `fields` meta for richer UI feedback.
+
+File: `packages/errors/src/errorHandling.ts`
+Purpose: Response helpers and safe handler.
+Issues: `safeHandler` treats any object with `success` as already formatted; could pass malformed response through.
+Improvements: Validate response shape or use a branded type guard.
+
+File: `packages/errors/src/logger.ts`
+Purpose: Logger for errors package.
+Issues: Console-only; no log levels or structured context.
+Improvements: Integrate with app logger or expose hooks.
+
+File: `packages/errors/src/index.ts`
+Purpose: Export errors and helpers.
+Issues: None specific.
+Improvements: Add named exports for common error types in docs.
+
+File: `packages/errors/tsconfig.json`
+Purpose: TS config.
+Issues: None specific.
+Improvements: Align with monorepo's `noUnusedLocals` and `noImplicitReturns` if desired.
+
+File: `packages/services/package.json`
+Purpose: Services package manifest.
+Issues: No dev/test scripts; openai/anthropic SDKs are runtime dependencies even for builds that don't use them.
+Improvements: Add `lint`/`test`; consider optional dependencies or lazy imports.
+
+File: `packages/services/src/index.ts`
+Purpose: Barrel exports for services.
+Issues: Exposes all modules, increasing bundle surface area for consumers.
+Improvements: Consider subpath exports for focused imports.
+
+File: `packages/services/src/agent/index.ts`
+Purpose: Export agent queue/redis.
+Issues: None specific.
+Improvements: Document usage and connection requirements.
+
+File: `packages/services/src/agent/queue.ts`
+Purpose: BullMQ queue config.
+Issues: `attempts: 1` with no backoff; no queue prefix or separation per env.
+Improvements: Add retries/backoff; add queue prefix env var.
+
+File: `packages/services/src/agent/redis.ts`
+Purpose: Redis client for agent job status.
+Issues: Ignores `REDIS_PORT` env and uses fixed 6379; `console.log` for errors.
+Improvements: Use env-configured port; use structured logger.
+
+File: `packages/services/src/analysis/index.ts`
+Purpose: Barrel export for analysis services.
+Issues: None specific.
+Improvements: Add subpath exports for analysis-only usage.
+
+File: `packages/services/src/analysis/analysis.ts`
+Purpose: Analyze responses and store results.
+Issues: Loads workspace on every response; no concurrency control; `clickhouse.query` uses large `SELECT *` and no pagination.
+Improvements: Cache workspace lookup per batch; add concurrency limits; paginate response queries.
+
+File: `packages/services/src/analysis/analysisPrompt.ts`
+Purpose: LLM prompt for brand analysis.
+Issues: Contradictory instructions (only use response text vs "use your knowledge" for competitor websites); extremely long prompt increases token cost.
+Improvements: Remove "use your knowledge"; shorten and structure with clear scoring rubric; version the schema.
+
+File: `packages/services/src/analysis/runAnalysis.ts`
+Purpose: Call OpenAI for structured analysis.
+Issues: Model is hard-coded; no retries/backoff or rate limit handling; only JSON parsing validation.
+Improvements: Make model configurable; add retry and response validation (Zod schema) for `LLMBrandAnalysis`.
+
+File: `packages/services/src/llm/index.ts`
+Purpose: Lazy OpenAI client initialization.
+Issues: Uses Proxy with dynamic property access; lacks runtime typing and may hide missing methods.
+Improvements: Export a `getOpenAI()` function instead of Proxy; add typed wrappers for used endpoints.
+
+File: `packages/services/src/prompt/index.ts`
+Purpose: Store prompts and responses, compute source stats.
+Issues: SQL injection risk via string interpolation; no pagination; `getCleanUrl` imported but unused; `clickhouse` `DELETE` is heavy for high volume.
+Improvements: Use query params; add pagination; remove unused imports; consider soft-delete pattern.
+
+File: `packages/services/src/workspace/index.ts`
+Purpose: Workspace creation and fetch.
+Issues: No uniqueness enforcement for slug/domain; no transaction around workspace + membership insert.
+Improvements: Add unique constraints and wrap inserts in transaction.
+
+File: `packages/services/tsconfig.json`
+Purpose: TS config.
+Issues: None specific.
+Improvements: Consider enabling `noUnusedLocals` and `noImplicitReturns`.
+
+File: `packages/types/package.json`
+Purpose: Shared types manifest.
+Issues: No `type` field; but built output used by ESM consumers.
+Improvements: Add `"type": "module"` if output is ESM.
+
+File: `packages/types/src/index.ts`
+Purpose: Barrel export for shared types.
+Issues: None specific.
+Improvements: Document high-level usage in README.
+
+File: `packages/types/src/types/agent.ts`
+Purpose: Agent types.
+Issues: `AgentResult` type allows only `fulfilled` or `rejected` but no `error` details.
+Improvements: Add error metadata to improve UI and retry handling.
+
+File: `packages/types/src/types/analysis.ts`
+Purpose: Analysis data types.
+Issues: `LLMBrandAnalysis` matches prompt schema but lacks versioning and optional fields; any schema change is breaking.
+Improvements: Add `schema_version` and consider `Partial<>` for optional fields.
+
+File: `packages/types/src/types/api.ts`
+Purpose: API response type.
+Issues: `data` is optional and nullable; can lead to ambiguous states.
+Improvements: Use a discriminated union for success vs error.
+
+File: `packages/types/src/types/entities.ts`
+Purpose: Misc entity types.
+Issues: `WorkspaceLocation` uses different field names than server types; risk of confusion.
+Improvements: Align names with DB schema (`country`, `region`).
+
+File: `packages/types/src/types/metrics.ts`
+Purpose: Metric types.
+Issues: `sentiment` is number but UI treats it as 0-100; analysis prompt defines 0-100 but other code uses -1..1 mapping.
+Improvements: Standardize sentiment scale across pipeline and document it.
+
+File: `packages/types/src/types/prompts.ts`
+Purpose: Prompt and response types.
+Issues: `PromptAnalysisBase` includes `model` and `model_provider` but usage is inconsistent; `PromptResponse` includes `is_analysed` but some callers assume it exists.
+Improvements: Unify naming and ensure DB schema matches types.
+
+File: `packages/types/src/types/sources.ts`
+Purpose: Source and stats types.
+Issues: `SourceExcerpt` optional `model_provider` but UI assumes it exists.
+Improvements: Make `model_provider` required in grouped sources.
+
+File: `packages/types/tsconfig.json`
+Purpose: TS config.
+Issues: None specific.
+Improvements: Add `noUnusedLocals` to keep types clean.
+
+File: `packages/ui/package.json`
+Purpose: UI package manifest.
+Issues: Depends on `@onescope/utils` for `cn`; but no CSS tokens defined in package itself.
+Improvements: Add a UI README describing usage and required CSS variables.
+
+File: `packages/ui/src/components/button.tsx`
+Purpose: Button component.
+Issues: `outline-none` and focus ring relies on tailwind ring classes; ok but not documented.
+Improvements: Add usage docs and accessibility notes.
+
+File: `packages/ui/src/components/card.tsx`
+Purpose: Card component.
+Issues: `CardTitle` uses `div` rather than heading; impacts accessibility.
+Improvements: Use semantic headings or allow `asChild`.
+
+File: `packages/ui/src/components/cell.tsx`
+Purpose: Metric cell renderers.
+Issues: Hard-coded thresholds for sentiment and position; not shared with backend.
+Improvements: Move thresholds to shared constants.
+
+File: `packages/ui/src/components/checkbox.tsx`
+Purpose: Checkbox component.
+Issues: No explicit `aria-label` when used without label; relies on consumer.
+Improvements: Document usage requirements.
+
+File: `packages/ui/src/components/dialog.tsx`
+Purpose: Dialog component wrappers.
+Issues: Close button uses `rounded-xs` (Tailwind v4?) which might not exist; verify CSS.
+Improvements: Use standard rounded classes or define custom tokens.
+
+File: `packages/ui/src/components/dropdown-menu.tsx`
+Purpose: Dropdown menu wrappers.
+Issues: Large file with many exports but no docs; keyboard interactions are inherited but not documented.
+Improvements: Add doc comments or a UI docs site.
+
+File: `packages/ui/src/components/form.tsx`
+Purpose: React Hook Form wrappers.
+Issues: `useForm` re-export can confuse imports; form context errors thrown at runtime.
+Improvements: Namespace exports or document usage patterns.
+
+File: `packages/ui/src/components/input.tsx`
+Purpose: Input component.
+Issues: `text-base` for input may override global typography; might not match design.
+Improvements: Align input size with design tokens.
+
+File: `packages/ui/src/components/label.tsx`
+Purpose: Label component.
+Issues: Default `flex` may cause layout issues in forms.
+Improvements: Make layout class optional or remove flex by default.
+
+File: `packages/ui/src/components/scroll-area.tsx`
+Purpose: Scroll area component.
+Issues: Scrollbar styling minimal; no mobile optimizations.
+Improvements: Add optional `hideScrollbar` or `alwaysVisible` props.
+
+File: `packages/ui/src/components/select.tsx`
+Purpose: Select component wrappers.
+Issues: Select `value` and `label` require careful structure; no docs for children structure.
+Improvements: Add usage examples in UI docs.
+
+File: `packages/ui/src/components/separator.tsx`
+Purpose: Separator component.
+Issues: None specific.
+Improvements: Document `decorative` usage for accessibility.
+
+File: `packages/ui/src/components/sheet.tsx`
+Purpose: Sheet component.
+Issues: No `aria` labels for close button beyond `sr-only` text; ok but minimal.
+Improvements: Consider adding `aria-label` prop pass-through.
+
+File: `packages/ui/src/components/sidebar.tsx`
+Purpose: Full sidebar system with mobile support.
+Issues: Uses `document.cookie` directly without SSR guard beyond `useEffect`; ok but not documented; uses `TooltipProvider` internally which may conflict with app-level provider.
+Improvements: Add optional prop to disable internal tooltip provider; document cookie key and behavior.
+
+File: `packages/ui/src/components/skeleton.tsx`
+Purpose: Skeleton loader.
+Issues: None specific.
+Improvements: Add accessibility note (aria-busy where used).
+
+File: `packages/ui/src/components/sonner.tsx`
+Purpose: Toast provider wrapper.
+Issues: Exports `toast` from `sonner` without re-exporting types; might cause confusion.
+Improvements: Re-export `toast` types or document usage.
+
+File: `packages/ui/src/components/table.tsx`
+Purpose: Table component wrappers.
+Issues: `TableCell` and `TableHead` enforce `whitespace-nowrap`, which can cause overflow for long text.
+Improvements: Make nowrap optional or use `truncate` only where needed.
+
+File: `packages/ui/src/components/tabs.tsx`
+Purpose: Tabs wrappers.
+Issues: `TabsList` default width is `w-fit` and may cause overflow when many tabs.
+Improvements: Provide `fullWidth` variant.
+
+File: `packages/ui/src/components/textarea.tsx`
+Purpose: Textarea component.
+Issues: `field-sizing-content` relies on experimental CSS; may not work in all browsers.
+Improvements: Add fallback height styling or remove experimental property.
+
+File: `packages/ui/src/components/tooltip.tsx`
+Purpose: Tooltip wrappers.
+Issues: Wrapper creates a new provider each time `Tooltip` is used; redundant if app already has provider.
+Improvements: Export a provider separately and avoid double providers by default.
+
+File: `packages/ui/src/hooks/use-mobile.ts`
+Purpose: Hook for mobile breakpoint.
+Issues: Returns `false` during SSR, which may cause hydration mismatches in layout.
+Improvements: Consider using CSS for layout changes or return `undefined` until mounted and handle accordingly.
+
+File: `packages/ui/src/index.ts`
+Purpose: Barrel exports for UI package.
+Issues: Exports `sidebar` and `sonner` without clear docs; consumers may pull in large bundles unintentionally.
+Improvements: Add subpath exports to reduce bundle size.
+
+File: `packages/ui/tsconfig.json`
+Purpose: UI TS config.
+Issues: None specific.
+Improvements: Add `noUnusedLocals` if desired.
+
+File: `packages/utils/package.json`
+Purpose: Utilities package manifest.
+Issues: `marked` used without sanitization by default.
+Improvements: Add `dompurify` dependency or integrate safe markdown rendering.
+
+File: `packages/utils/src/index.ts`
+Purpose: Utils barrel exports.
+Issues: Exports everything, which can lead to large bundles.
+Improvements: Provide subpath exports for targeted use.
+
+File: `packages/utils/src/cn.ts`
+Purpose: Tailwind class merging utility.
+Issues: None specific.
+Improvements: None; standard implementation.
+
+File: `packages/utils/src/favicon.ts`
+Purpose: Favicon URL helpers.
+Issues: Uses external services (Google, DuckDuckGo, Clearbit, ui-avatars) without privacy notice.
+Improvements: Document external calls and allow opt-out or caching proxy.
+
+File: `packages/utils/src/id.ts`
+Purpose: ID generator.
+Issues: Depends on `crypto.randomUUID`, which is not available in older runtimes.
+Improvements: Add fallback or document Node 20+ requirement.
+
+File: `packages/utils/src/analysis/filterAnalysisRecords.ts`
+Purpose: Filter analysis records by model/time.
+Issues: Uses `Date` parsing without timezone normalization; could mis-filter around timezone boundaries.
+Improvements: Use UTC date parsing or a date library for consistent filtering.
+
+File: `packages/utils/src/analysis/index.ts`
+Purpose: Export analysis utilities.
+Issues: None specific.
+Improvements: None.
+
+File: `packages/utils/src/agent/constants.ts`
+Purpose: UI selectors for agent automation.
+Issues: Hard-coded selectors likely to break; selectors are not versioned per provider.
+Improvements: Add provider-specific selector bundles with version tags; include integration tests.
+
+File: `packages/utils/src/agent/providers.ts`
+Purpose: Provider metadata for agent.
+Issues: URLs for login differ from actual flows; e.g., Claude login URL may redirect.
+Improvements: Validate URLs at runtime and update docs when providers change.
+
+File: `packages/utils/src/agent/index.ts`
+Purpose: Export agent constants.
+Issues: None specific.
+Improvements: Add README for agent selectors and update procedure.
+
+File: `packages/utils/src/extract/extractDomainStats.ts`
+Purpose: Compute domain stats from sources.
+Issues: `usedPercentageAcrossAllDomains` computed per request; expensive for large datasets.
+Improvements: Precompute stats in ClickHouse or cache results.
+
+File: `packages/utils/src/extract/extractSourceStats.ts`
+Purpose: Group sources and excerpts by URL.
+Issues: Uses `removeUrlParams` but doesn't normalize scheme or trailing slashes; can duplicate sources.
+Improvements: Normalize URLs beyond query params (lowercase host, remove trailing slash).
+
+File: `packages/utils/src/extract/groupSourcesByUrl.ts`
+Purpose: Group sources by URL.
+Issues: Dedup key uses title + model + cited text; can still duplicate when titles change.
+Improvements: Add URL normalization and canonicalization.
+
+File: `packages/utils/src/extract/index.ts`
+Purpose: Export extraction helpers.
+Issues: None specific.
+Improvements: None.
+
+File: `packages/utils/src/format/dateFilter.ts`
+Purpose: Simple date range filter.
+Issues: Uses local time; ignores timezone boundaries and inclusive/exclusive semantics.
+Improvements: Use UTC and clarify inclusive behavior.
+
+File: `packages/utils/src/format/format.ts`
+Purpose: Date formatting and URL cleanup.
+Issues: `getCleanUrl` only removes a few params; unused in services.
+Improvements: Use in source normalization or remove if unused.
+
+File: `packages/utils/src/format/formatDate.ts`
+Purpose: Format date for UI.
+Issues: Uses local timezone; might mismatch server timestamps.
+Improvements: Add optional timezone parameter.
+
+File: `packages/utils/src/format/formatMarkdown.ts`
+Purpose: Render markdown to HTML.
+Issues: No HTML sanitization; exposes XSS if used with untrusted content.
+Improvements: Integrate DOMPurify or sanitize at call sites; add tests for script injection.
+
+File: `packages/utils/src/format/index.ts`
+Purpose: Export formatting utilities.
+Issues: None specific.
+Improvements: None.
+
+File: `packages/utils/src/metrics/index.ts`
+Purpose: Metrics utilities placeholder.
+Issues: File indicates metrics utilities removed; dead exports could confuse contributors.
+Improvements: Remove file or replace with a README pointing to new implementation.
+
+File: `packages/utils/src/url/getDomain.ts`
+Purpose: Extract normalized domain from URL.
+Issues: Simple normalization may still yield empty domain for invalid input; error handling is silent.
+Improvements: Return `null` for invalid input and document behavior.
+
+File: `packages/utils/src/url/getUniqueLinks.ts`
+Purpose: Deduplicate sources by domain.
+Issues: Collapses multiple sources per domain, which may be undesired in some UI views.
+Improvements: Provide an option to dedupe by URL instead of domain.
+
+File: `packages/utils/src/url/removeUrlParams.ts`
+Purpose: Strip tracking parameters.
+Issues: Does not canonicalize scheme/host or handle uppercase params consistently.
+Improvements: Normalize URL string and apply case-insensitive param removal.
+
+File: `packages/utils/src/url/index.ts`
+Purpose: Export URL utilities.
+Issues: None specific.
+Improvements: None.
+
+File: `packages/utils/src/web/constant.ts`
+Purpose: Model selection list for UI.
+Issues: `value` uses lowercase provider names while other parts expect title case; inconsistent.
+Improvements: Use a single source of truth for provider IDs and display names.
+
+File: `packages/utils/src/web/index.ts`
+Purpose: Export web constants.
+Issues: None specific.
+Improvements: None.
+
+File: `packages/utils/tsconfig.json`
+Purpose: TS config.
+Issues: None specific.
+Improvements: Consider enabling `noUnusedLocals`.
+
+File: `pnpm-lock.yaml`
+Purpose: Lockfile for dependency versions.
+Issues: Large file; should be treated as generated.
+Improvements: Ensure CI validates lockfile integrity and avoid manual edits.
+
+File: `pnpm-workspace.yaml`
+Purpose: Workspace package list.
+Issues: Only includes `apps/*` and `packages/*`, but ignores tooling directories that might be added later.
+Improvements: Document workspace layout assumptions.
+
+File: `scripts/deploy-vps.sh`
+Purpose: VPS deployment script.
+Issues: Runs `docker image prune -f` which can delete unrelated images; no confirmation.
+Improvements: Add confirmation flag or make pruning optional.
+
+File: `scripts/setup-vps.sh`
+Purpose: VPS setup script.
+Issues: Reads PAT via stdin but doesn't sanitize history; no validation of `.env` contents.
+Improvements: Add env validation step; provide non-interactive mode for automation.
+
+File: `tsconfig.json`
+Purpose: Root TS config.
+Issues: `paths` includes `packages/*/dist`, which may conflict with source during dev.
+Improvements: Restrict to source in dev and use build paths for production bundles.
+
+File: `turbo.json`
+Purpose: Turborepo pipeline config.
+Issues: `dev` depends on `^build`, which slows dev startup.
+Improvements: Consider removing build dependency for faster iteration.
+
+**4. Architectural Improvements**
+Structural changes: Split runtime services into `packages/data` (DB/ClickHouse), `packages/analysis` (LLM analysis), and `packages/agent` (automation runtime) to reduce coupling. Keep `apps/web` thin and move data-heavy logic into services.
+Refactoring suggestions: Introduce a background job queue for analysis and prompt runs, with explicit job state schema; normalize provider IDs into a single enum across `types`, `utils`, and agent; consolidate env validation into a single package shared by all apps.
+Dependency cleanup: Remove unused deps (`node-fetch` in web, `drizzle-kit` in db runtime); avoid importing `@onescope/ui` from `packages/ui` internals; add subpath exports to reduce bundle size.
+
+**5. Security Findings**
+Severity: Critical. Impact: XSS via untrusted markdown rendering. Fix: Sanitize markdown output or render via safe markdown component (`DOMPurify`, `rehype-sanitize`).
+Severity: High. Impact: SQL injection in ClickHouse queries and cron SQL. Fix: Parameterize queries and avoid string interpolation; use stored procedures for cron.
+Severity: High. Impact: Edge middleware using DB-backed auth plus session logging. Fix: Remove middleware DB calls; remove session logs.
+Severity: Medium. Impact: Unvalidated JSON session uploads to agent API; no rate limiting. Fix: Validate schema, add size/time limits and rate limiting.
+Severity: Medium. Impact: Auth sessions stored unencrypted on disk. Fix: Store encrypted or restrict file permissions; document security posture.
+Severity: Low. Impact: External favicon and avatar services leak user browsing context. Fix: Proxy requests or allow opt-out.
+
+**6. Performance & Scalability**
+Current risks: `fetchAnalysedPrompts` and source stats load all records at once; analysis runs synchronously and may exceed request timeouts; agent uses per-character typing and fixed waits; ClickHouse deletes are heavy at scale.
+Expected future bottlenecks: Growth of prompt responses will make in-memory aggregation slow; large data transfer to client will degrade UX; analysis requests will time out under load.
+Optimizations: Add pagination and server-side aggregation; move analysis to background jobs; batch ClickHouse queries; use streaming/virtualized lists; replace per-character typing with bulk input.
+
+**7. OSS & Contributor Experience**
+What's good: Monorepo layout is clear; Docker-based workflow is documented; packages are reasonably separated; TypeScript strict mode is enabled.
+What's missing: License, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, architecture diagrams, and a clear release/versioning policy.
+Concrete suggestions: Add `LICENSE` (e.g., Apache-2.0 or MIT); add `CONTRIBUTING.md` with dev setup, testing, and coding standards; add `SECURITY.md` with vulnerability disclosure; add a `docs/architecture.md` with data flow diagrams; include `Makefile` or remove references in readmes; document environment variables per app; add CI workflows for lint, typecheck, and tests.
