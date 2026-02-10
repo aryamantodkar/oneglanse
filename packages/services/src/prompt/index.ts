@@ -1,7 +1,7 @@
 import { clickhouse, pool , db, schema } from "@onescope/db";
 import { v4 as uuidv4 } from "uuid";
 import { and, eq, isNull } from "drizzle-orm";
-import type { PromptResponse, DomainStats, UserPrompt, ModelResult, Provider } from "@onescope/types";
+import type { PromptResponse, DomainStats, UserPrompt, ModelResult, Provider, Source } from "@onescope/types";
 import { DatabaseError, NotFoundError } from "@onescope/errors";
 import { formatDateToClickHouse, getCleanUrl, extractDomainStats, extractSourceStats } from "@onescope/utils";
 
@@ -129,12 +129,13 @@ export async function storePromptResponses(args: {
     const values: Array<{
         id: string;
         prompt_id: string;
+        prompt: string;
         user_id: string;
         workspace_id: string;
         model: string;
         model_provider: string;
         response: string;
-        sources: Array<{ title: string; cited_text: string; url: string; domain: string | null; favicon: string | null }>;
+        sources: Source[];
         prompt_run_at: string;
     }> = [];
 
@@ -145,6 +146,7 @@ export async function storePromptResponses(args: {
             values.push({
                 id: uuidv4(),
                 prompt_id: item.promptId,
+                prompt: item.prompt,
                 user_id: userId,
                 workspace_id: workspaceId,
                 model: provider,

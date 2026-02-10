@@ -40,6 +40,7 @@ export interface PromptAnalysisBase extends PromptDetails, AnalysisModelInput {
 export interface PromptAnalysisWithSources extends PromptAnalysisBase, SourceLookup {}
 
 export interface PromptResponse extends PromptAnalysisWithSources {
+    prompt: string;
     prompt_run_at: string;
     created_at: string;
     is_analysed: boolean;

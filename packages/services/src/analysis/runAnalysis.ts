@@ -1,11 +1,18 @@
 import { analysisPrompt } from "./analysisPrompt.js";
 import { ExternalServiceError, safeHandler, ValidationError } from "@onescope/errors";
-import type { AnalysisInputSingle, LLMBrandAnalysis } from "@onescope/types";
+import type { AnalysisInputSingle, BrandAnalysisResult } from "@onescope/types";
 import { openai } from "../llm/index.js";
 
 export async function runAnalysis(input: AnalysisInputSingle) {
     return safeHandler(async () => {
       const prompt = analysisPrompt(input);
+
+      const systemPrompt =
+        "You are an expert brand intelligence analyst. " +
+        "You respond ONLY with valid JSON — no markdown, no code fences, no commentary. " +
+        "Return only valid JSON matching the requested schema. " +
+        "Be precise, evidence-based, and conservative in your scoring. " +
+        "If the brand is not mentioned in the response, return zeroed-out scores and empty arrays rather than fabricating data.";
 
       let response;
       try {
@@ -15,7 +22,7 @@ export async function runAnalysis(input: AnalysisInputSingle) {
           input: [
             {
               role: "system",
-              content: "You are a brand intelligence extraction engine. Return only valid JSON matching the requested schema. Do not include any markdown formatting or explanation."
+              content: systemPrompt
             },
             {
               role: "user",
@@ -52,6 +59,6 @@ export async function runAnalysis(input: AnalysisInputSingle) {
         throw new Error("Invalid JSON shape");
       }
 
-      return parsed as LLMBrandAnalysis;
+      return parsed as BrandAnalysisResult;
     })
   }
