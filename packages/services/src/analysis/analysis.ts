@@ -1,5 +1,5 @@
 import { clickhouse } from "@onescope/db";
-import type { AnalysisRecord, AnalysisResponse, AnalysisMetadata, BrandMetricMap, PromptAnalysis, PromptResponse, Source, AnalysisRow, LLMBrandAnalysis } from "@onescope/types";
+import type { AnalysisRecord, AnalysisResponse, AnalysisMetadata, BrandMetricMap, PromptAnalysis, PromptResponse, Source, AnalysisRow, BrandAnalysisResult } from "@onescope/types";
 import { runAnalysis } from "./runAnalysis.js";
 import { v4 as uuidv4 } from "uuid";
 import { getWorkspaceById } from "../workspace/index.js";
@@ -7,45 +7,24 @@ import { getWorkspaceById } from "../workspace/index.js";
 export async function analysePromptResponse(args: {
     workspaceId: string;
     response: string;
-}): Promise<{
-    brandMetrics: BrandMetricMap;
-    fullAnalysis: LLMBrandAnalysis;
-    targetBrandName: string;
-}> {
-    const { workspaceId, response } = args;
+    prompt: string;
+}): Promise<BrandAnalysisResult> {
+    const { workspaceId, response, prompt } = args;
 
     const workspace = await getWorkspaceById({ workspaceId });
 
     const result = await runAnalysis({
         brandDomain: workspace.domain,
         brandName: workspace.name,
-        response: response,
+        response,
+        prompt
     });
 
     if (!result.data) {
         throw new Error("Analysis failed - no data returned");
     }
 
-    const map: BrandMetricMap = {};
-    const brand = result.data.target_brand;
-
-    const visibilityScore = brand.visibility.visibility_score ?? 0;
-
-    const positionScore = brand.visibility.rank;
-
-    map[brand.brand_name] = {
-        mentions: brand.brand_presence.total_mentions,
-        sentiment: brand.sentiment.score,
-        visibility: visibilityScore,
-        position: positionScore,
-        website: workspace.domain,
-    };
-
-    return {
-        brandMetrics: map,
-        fullAnalysis: result.data,
-        targetBrandName: workspace.name,
-    };
+    return result.data;
 }
 
 export async function analysePromptsForWorkspace(args: {
@@ -97,16 +76,17 @@ export async function analysePromptsForWorkspace(args: {
                 const analysisResult = await analysePromptResponse({
                     workspaceId: resp.workspace_id,
                     response: resp.response,
+                    prompt: resp.prompt
                 });
 
                 analysisRows.push({
                     id: uuidv4(),
                     prompt_id: resp.prompt_id,
                     workspace_id: resp.workspace_id,
+                    prompt: resp.prompt,
                     user_id: resp.user_id,
                     model_provider: resp.model_provider,
-                    brand_metrics: JSON.stringify(analysisResult.brandMetrics),
-                    full_analysis: JSON.stringify(analysisResult.fullAnalysis),
+                    brand_analysis: JSON.stringify(analysisResult),
                     prompt_run_at: resp.prompt_run_at,
                     created_at: resp.created_at
                 });
@@ -187,7 +167,7 @@ export async function analysePromptsForWorkspace(args: {
 export async function fetchAnalysedPrompts(args: {
     workspaceId: string;
     userId: string;
-}): Promise<AnalysisResponse> {
+}): Promise<AnalysisRecord[]> {
     const { workspaceId, userId } = args;
 
     // Query from prompt_responses (source of truth) and join analysis data
@@ -197,6 +177,7 @@ export async function fetchAnalysedPrompts(args: {
                 pr.id,
                 pr.prompt_id,
                 pr.prompt_run_at,
+                pr.prompt,
                 pr.user_id,
                 pr.workspace_id,
                 pr.model_provider,
@@ -204,8 +185,7 @@ export async function fetchAnalysedPrompts(args: {
                 pr.sources,
                 pr.created_at,
                 pr.is_analysed,
-                if(pr.is_analysed, pa.brand_metrics, '{}') as brand_metrics,
-                if(pr.is_analysed, pa.full_analysis, '[]') as full_analysis
+                if(pr.is_analysed, pa.brand_analysis, '[]') as brand_analysis
             FROM analytics.prompt_responses pr
             ANY LEFT JOIN analytics.prompt_analysis pa
               ON pr.prompt_id = pa.prompt_id
@@ -226,50 +206,19 @@ export async function fetchAnalysedPrompts(args: {
     const records: AnalysisRecord[] = rows.map((row) => ({
         id: row.id,
         prompt_id: row.prompt_id,
+        prompt: row.prompt,
         prompt_run_at: row.prompt_run_at,
         user_id: row.user_id,
         workspace_id: row.workspace_id,
         model_provider: row.model_provider,
         response: row.response || "",
         sources: row.sources || [],
-        brand_metrics: row.brand_metrics && row.brand_metrics !== '' && row.brand_metrics !== '{}'
-            ? (typeof row.brand_metrics === "string" ? JSON.parse(row.brand_metrics) : row.brand_metrics)
-            : {},
-        full_analysis: row.full_analysis && row.full_analysis !== '' && row.full_analysis !== '{}' && row.full_analysis !== '[]'
-            ? (typeof row.full_analysis === "string" ? JSON.parse(row.full_analysis) : row.full_analysis)
+        brand_analysis: row.brand_analysis && row.brand_analysis !== '' && row.brand_analysis !== '{}' && row.brand_analysis !== '[]'
+            ? (typeof row.brand_analysis === "string" ? JSON.parse(row.brand_analysis) : row.brand_analysis)
             : undefined,
         created_at: row.created_at,
         is_analysed: row.is_analysed ?? true,
     }));
 
-    // Extract metadata in single pass
-    const brandsSet = new Map<string, string>();
-    const modelsSet = new Set<string>();
-
-    for (const record of records) {
-        // Collect unique brands (only from analyzed records)
-        if (record.is_analysed && record.brand_metrics) {
-            for (const [brandName, metrics] of Object.entries(record.brand_metrics)) {
-                if (metrics && !brandsSet.has(brandName) && metrics.website) {
-                    brandsSet.set(brandName, metrics.website);
-                }
-            }
-        }
-
-        // Collect unique models
-        modelsSet.add(record.model_provider);
-    }
-
-    const metadata: AnalysisMetadata = {
-        available_brands: Array.from(brandsSet, ([name, website]) => ({
-            name,
-            website,
-        })),
-        available_models: Array.from(modelsSet),
-    };
-
-    return {
-        records,
-        metadata,
-    };
+    return records;
 }

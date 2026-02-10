@@ -13,6 +13,7 @@ ORDER BY (user_id, workspace_id, prompt, created_at);
 CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
     id String,
     prompt_id String,
+    prompt String,
     user_id String,
     workspace_id String,
     model String,
@@ -39,8 +40,7 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_analysis (
     workspace_id String,
     user_id String,
     model_provider LowCardinality(String),
-    brand_metrics String,
-    full_analysis String DEFAULT '',
+    brand_analysis String DEFAULT '',
     prompt_run_at DateTime,
     created_at DateTime DEFAULT now()
 )
@@ -52,3 +52,6 @@ ORDER BY (
     prompt_run_at,
     model_provider
 );
+
+-- Migration: Add prompt column if it doesn't exist (safe to run multiple times)
+ALTER TABLE analytics.prompt_analysis ADD COLUMN IF NOT EXISTS prompt String DEFAULT '';
