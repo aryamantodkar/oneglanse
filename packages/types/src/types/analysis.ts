@@ -16,11 +16,12 @@ export interface AnalysisInputSingle {
 }
 
 export interface BrandAnalysisResult {
-  metadata: {
+  // Metadata is optional - populated by application code, not from LLM
+  metadata?: {
     brandName: string;
     brandDomain: string;
-    platform: string;
-    query: string | null;
+    prompt: string | null;
+    prompt_id: string | null;
     analyzedAt: string;
   };
 

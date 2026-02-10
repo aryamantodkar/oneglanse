@@ -8,8 +8,9 @@ export async function analysePromptResponse(args: {
     workspaceId: string;
     response: string;
     prompt: string;
+    promptId?: string;
 }): Promise<BrandAnalysisResult> {
-    const { workspaceId, response, prompt } = args;
+    const { workspaceId, response, prompt, promptId } = args;
 
     const workspace = await getWorkspaceById({ workspaceId });
 
@@ -23,6 +24,14 @@ export async function analysePromptResponse(args: {
     if (!result.data) {
         throw new Error("Analysis failed - no data returned");
     }
+
+    result.data.metadata = {
+        brandName: workspace.name,
+        brandDomain: workspace.domain,
+        prompt: prompt,
+        prompt_id: promptId || null,
+        analyzedAt: new Date().toISOString()
+    };
 
     return result.data;
 }
@@ -76,7 +85,8 @@ export async function analysePromptsForWorkspace(args: {
                 const analysisResult = await analysePromptResponse({
                     workspaceId: resp.workspace_id,
                     response: resp.response,
-                    prompt: resp.prompt
+                    prompt: resp.prompt,
+                    promptId: resp.prompt_id
                 });
 
                 analysisRows.push({
