@@ -48,15 +48,11 @@ import {
 	FilterX,
 	Globe,
 	Info,
-	MessageSquare,
-	Quote,
 	Shield,
 	Sparkles,
-	Star,
 	Target,
 	TrendingUp,
 	Users,
-	Zap,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -188,18 +184,6 @@ function HorizontalBar({
 			<div
 				className={`h-full rounded-full transition-all duration-700 ease-out ${colorClass}`}
 				style={{ width: `${widthPercent}%` }}
-			/>
-		</div>
-	);
-}
-
-function SentimentGradientBar({ score }: { score: number }) {
-	return (
-		<div className="relative mt-1 h-2.5 w-full overflow-visible rounded-full">
-			<div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-400 via-amber-400 to-emerald-400 opacity-80" />
-			<div
-				className="-translate-y-1/2 absolute top-1/2 h-3.5 w-3.5 rounded-full border-2 border-gray-700 bg-white shadow-sm transition-all duration-500 dark:border-gray-200 dark:bg-gray-900"
-				style={{ left: `calc(${Math.min(Math.max(score, 2), 98)}% - 7px)` }}
 			/>
 		</div>
 	);
@@ -429,16 +413,10 @@ function DashboardFilters({
 
 function MetricCardsGrid({
 	avgRank,
-	avgShareOfVoice,
 	avgSentiment,
-	topRecommendation,
-	avgProminence,
 }: {
 	avgRank: { position: number | null; total: number | null };
-	avgShareOfVoice: number;
 	avgSentiment: { score: number; label: string };
-	topRecommendation: { type: string; bestFor: string[] };
-	avgProminence: string;
 }) {
 	const sentimentColor = getSentimentColor(avgSentiment.score);
 
@@ -476,118 +454,40 @@ function MetricCardsGrid({
 					)}
 				</CardContent>
 			</Card>
-
-			{/* Share of Voice Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-green-50 p-2 dark:bg-green-950/30">
-							<BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Share of Voice
-						</span>
-					</div>
-					<div className="mb-3 flex items-baseline gap-2">
-						<span className="font-bold text-4xl tracking-tight">{avgShareOfVoice}%</span>
-						<span className="text-muted-foreground text-xs capitalize">
-							{avgProminence}
-						</span>
-					</div>
-					<HorizontalBar
-						value={avgShareOfVoice}
-						colorClass="bg-green-500 dark:bg-green-400"
-					/>
-				</CardContent>
-			</Card>
-
-			{/* Sentiment Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-purple-50 p-2 dark:bg-purple-950/30">
-							<MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Sentiment
-						</span>
-					</div>
-					<div className="mb-3 flex items-baseline gap-2">
-						<span className={`font-bold text-4xl tracking-tight ${sentimentColor.text}`}>
-							{avgSentiment.score}
-						</span>
-						<span className="text-muted-foreground text-xs capitalize">
-							{avgSentiment.label.replace("_", " ")}
-						</span>
-					</div>
-					<SentimentGradientBar score={avgSentiment.score} />
-				</CardContent>
-			</Card>
-
-			{/* Recommendation Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-950/30">
-							<Star className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Recommendation
-						</span>
-					</div>
-					<div className="mb-3">
-						<span
-							className={`inline-flex items-center rounded-lg px-3 py-1.5 font-semibold text-sm ${recTypeColors[topRecommendation.type] ?? recTypeColors.not_mentioned}`}
-						>
-							{recTypeLabels[topRecommendation.type] ?? topRecommendation.type}
-						</span>
-					</div>
-					{topRecommendation.bestFor.length > 0 && (
-						<div className="flex flex-wrap gap-1.5">
-							<span className="mr-1 text-muted-foreground text-xs">
-								Best For:
-							</span>
-							{topRecommendation.bestFor.map((tag) => (
-								<PillTag key={tag} label={tag} />
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
 		</div>
 	);
 }
 
 function AggregateStatsRow({
 	presenceRate,
-	winRate,
-	recRate,
+	rank,
+	topSource,
 	topCompetitor,
 }: {
 	presenceRate: number;
-	winRate: number;
-	recRate: number;
+	rank: number;
+	topSource: string;
 	topCompetitor: string;
 }) {
 	return (
-		<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 			<StatCard
 				icon={Globe}
 				label="Presence Rate"
 				value={`${presenceRate}%`}
-				subtitle="Queries mentioning your brand"
+				subtitle="Prompts mentioning your brand"
 			/>
 			<StatCard
 				icon={Award}
-				label="Win Rate"
-				value={`${winRate}%`}
-				subtitle="Queries where you're #1"
+				label="Rank"
+				value={`#${rank}`}
+				subtitle="Avg rank across prompts"
 			/>
 			<StatCard
-				icon={TrendingUp}
-				label="Rec. Rate"
-				value={`${recRate}%`}
-				subtitle="Queries recommending you"
+				icon={Globe}
+				label="Top Source"
+				value={topSource}
+				subtitle="Most cited information source"
 			/>
 			<StatCard
 				icon={Users}
@@ -653,42 +553,36 @@ function CompetitiveLandscape({
 
 	return (
 		<Card>
-			<CardHeader>
-				<div className="flex items-center justify-between">
-					<div>
-						<CardTitle className="text-base">Competitive Landscape</CardTitle>
-						<CardDescription>
-							How Competitors Compare Across AI Responses
-						</CardDescription>
-					</div>
-					<div className="flex items-center gap-2 text-xs">
-						<span className="text-muted-foreground">Sort By:</span>
+			<CardHeader className="pb-3">
+				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+					<CardTitle className="text-sm font-semibold">Competitive Landscape</CardTitle>
+					<div className="flex gap-1">
 						<button
 							onClick={() => setCompetitorSort('appearances')}
-							className={`rounded-md px-2.5 py-1.5 transition-colors ${
+							className={`rounded-md px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5 ${
 								competitorSort === 'appearances'
 									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+									: 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-900/20'
 							}`}
 						>
 							Frequency
 						</button>
 						<button
 							onClick={() => setCompetitorSort('sentiment')}
-							className={`rounded-md px-2.5 py-1.5 transition-colors ${
+							className={`rounded-md px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5 ${
 								competitorSort === 'sentiment'
 									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+									: 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-900/20'
 							}`}
 						>
 							Sentiment
 						</button>
 						<button
 							onClick={() => setCompetitorSort('rank')}
-							className={`rounded-md px-2.5 py-1.5 transition-colors ${
+							className={`rounded-md px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5 ${
 								competitorSort === 'rank'
 									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+									: 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-900/20'
 							}`}
 						>
 							Rank
@@ -696,123 +590,102 @@ function CompetitiveLandscape({
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent className="space-y-3">
-				{displayedCompetitors.map((comp) => {
-					const isExpanded = expandedCompetitor === comp.name;
-					const barColor =
-						comp.avgSentiment >= 60
-							? "bg-emerald-500"
-							: comp.avgSentiment >= 40
-								? "bg-amber-500"
-								: "bg-red-500";
+			<CardContent className="p-0">
+				<div className="divide-y divide-gray-100 dark:divide-gray-800">
+					{displayedCompetitors.slice(0, 3).map((comp) => {
+						const isExpanded = expandedCompetitor === comp.name;
 
-					return (
-						<div key={comp.name}>
-							<button
-								type="button"
-								onClick={() =>
-									setExpandedCompetitor(isExpanded ? null : comp.name)
-								}
-								className="w-full rounded-xl border border-gray-100 bg-white px-5 py-4 text-left transition-all hover:border-gray-200 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900/30 dark:hover:border-gray-700"
-							>
-								<div className="mb-3 flex items-center justify-between">
-									<div className="flex items-center gap-3">
-										<span className="font-semibold text-gray-900 text-base dark:text-gray-100">
-											{comp.name}
-										</span>
-										{comp.avgRank !== null && (
-											<span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600 text-xs dark:bg-gray-800 dark:text-gray-400">
-												#{comp.avgRank}
+						return (
+							<div key={comp.name}>
+								<button
+									type="button"
+									onClick={() =>
+										setExpandedCompetitor(isExpanded ? null : comp.name)
+									}
+									className="w-full px-4 py-3 text-left hover:bg-gray-50/50 dark:hover:bg-gray-900/20"
+								>
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-3">
+											<span className="font-medium text-sm">
+												{comp.name}
 											</span>
-										)}
-									</div>
-									<div className="flex items-center gap-4">
-										<div className="text-right">
-											<div className={`font-semibold text-sm ${getSentimentColor(comp.avgSentiment).text}`}>
-												{comp.avgSentiment} Sentiment
-											</div>
-											<div className="text-muted-foreground text-xs">
-												{comp.appearances} Appearances
-											</div>
+											{comp.avgRank !== null && (
+												<span className="text-xs text-muted-foreground">
+													#{comp.avgRank}
+												</span>
+											)}
 										</div>
-										<ChevronDown
-											className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-										/>
-									</div>
-								</div>
-								<HorizontalBar
-									value={comp.appearances}
-									maxValue={maxAppearances}
-									colorClass={barColor}
-								/>
-							</button>
-
-							{isExpanded &&
-								(comp.winsOver.length > 0 || comp.losesTo.length > 0) && (
-									<div className="mx-2 mt-2 mb-3 rounded-xl border border-gray-100 bg-gray-50/80 p-5 dark:border-gray-800 dark:bg-gray-900/40">
-										<p className="mb-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-											{brandName} vs {comp.name}
-										</p>
-										<div className="grid grid-cols-2 gap-4">
-											<div>
-												<p className="mb-2 font-medium text-emerald-600 text-xs dark:text-emerald-400">
-													You Win On
-												</p>
-												{comp.losesTo.length > 0 ? (
-													<ul className="space-y-1">
-														{comp.losesTo.map((item) => (
-															<li
-																key={item}
-																className="flex items-start gap-1.5 text-gray-700 text-xs dark:text-gray-300"
-															>
-																<CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
-																{item}
-															</li>
-														))}
-													</ul>
-												) : (
-													<p className="text-muted-foreground text-xs italic">
-														No Data
-													</p>
-												)}
+										<div className="flex items-center gap-4">
+											<div className="text-right">
+												<div className={`font-semibold text-sm ${getSentimentColor(comp.avgSentiment).text}`}>
+													{comp.avgSentiment}
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{comp.appearances}×
+												</div>
 											</div>
-											<div>
-												<p className="mb-2 font-medium text-red-600 text-xs dark:text-red-400">
-													They Win On
-												</p>
-												{comp.winsOver.length > 0 ? (
-													<ul className="space-y-1">
-														{comp.winsOver.map((item) => (
-															<li
-																key={item}
-																className="flex items-start gap-1.5 text-gray-700 text-xs dark:text-gray-300"
-															>
-																<AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
-																{item}
-															</li>
-														))}
-													</ul>
-												) : (
-													<p className="text-muted-foreground text-xs italic">
-														No Data
-													</p>
-												)}
-											</div>
+											<ChevronDown
+												className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+											/>
 										</div>
 									</div>
-								)}
-						</div>
-					);
-				})}
+								</button>
 
-				{sortedCompetitors.length > displayLimit && (
-					<button
-						onClick={() => setShowAllCompetitors(!showAllCompetitors)}
-						className="mt-2 w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-					>
-						{showAllCompetitors ? 'Show Less' : `Show ${sortedCompetitors.length - displayLimit} More Competitors`}
-					</button>
-				)}
+								{isExpanded &&
+									(comp.winsOver.length > 0 || comp.losesTo.length > 0) && (
+										<div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
+											<div className="grid grid-cols-2 gap-4">
+												<div>
+													<p className="mb-2 font-medium text-emerald-600 text-xs dark:text-emerald-400">
+														You Win On
+													</p>
+													{comp.losesTo.length > 0 ? (
+														<ul className="space-y-1">
+															{comp.losesTo.slice(0, 3).map((item) => (
+																<li
+																	key={item}
+																	className="flex items-start gap-1.5 text-gray-700 text-xs dark:text-gray-300"
+																>
+																	<CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
+																	{item}
+																</li>
+															))}
+														</ul>
+													) : (
+														<p className="text-muted-foreground text-xs italic">
+															No Data
+														</p>
+													)}
+												</div>
+												<div>
+													<p className="mb-2 font-medium text-red-600 text-xs dark:text-red-400">
+														They Win On
+													</p>
+													{comp.winsOver.length > 0 ? (
+														<ul className="space-y-1">
+															{comp.winsOver.slice(0, 3).map((item) => (
+																<li
+																	key={item}
+																	className="flex items-start gap-1.5 text-gray-700 text-xs dark:text-gray-300"
+																>
+																	<AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
+																	{item}
+																</li>
+															))}
+														</ul>
+													) : (
+														<p className="text-muted-foreground text-xs italic">
+															No Data
+														</p>
+													)}
+												</div>
+											</div>
+										</div>
+									)}
+							</div>
+						);
+					})}
+				</div>
 			</CardContent>
 		</Card>
 	);
@@ -827,82 +700,60 @@ function SentimentBreakdown({
 }) {
 	return (
 		<Card>
-			<CardHeader>
-				<div className="flex items-center gap-2">
-					<div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-950/30">
-						<MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-					</div>
-					<div>
-						<CardTitle className="text-base">Brand Sentiment Highlights</CardTitle>
-						<CardDescription>
-							Positive And Negative Feedback Across Responses
-						</CardDescription>
-					</div>
-				</div>
+			<CardHeader className="pb-3">
+				<CardTitle className="text-sm font-semibold">Sentiment</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-5">
-				<div className="grid grid-cols-2 gap-6">
-					{/* Strengths */}
-					<div>
-						<div className="mb-3 flex items-center gap-2">
-							<CheckCircle2 className="h-4 w-4 text-emerald-500" />
-							<p className="font-semibold text-emerald-700 text-sm uppercase tracking-wide dark:text-emerald-400">
-								Strengths
-							</p>
-						</div>
-						{positives.length > 0 ? (
-							<ul className="space-y-2">
-								{positives.slice(0, 6).map((item) => (
-									<li key={item.text} className="flex items-start gap-2.5">
-										<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-										<span className="text-gray-800 text-sm leading-relaxed dark:text-gray-200">
-											{item.text.charAt(0).toUpperCase() + item.text.slice(1)}
-										</span>
-										{item.count > 1 && (
-											<span className="ml-auto shrink-0 text-muted-foreground text-xs">
-												{item.count}×
-											</span>
-										)}
-									</li>
-								))}
-							</ul>
-						) : (
-							<p className="text-muted-foreground text-sm italic">
-								No Strengths Found
-							</p>
-						)}
+			<CardContent className="space-y-4">
+				{/* Strengths */}
+				<div>
+					<div className="mb-2 flex items-center gap-2">
+						<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+						<p className="font-medium text-emerald-700 text-xs dark:text-emerald-400">
+							Strengths
+						</p>
 					</div>
+					{positives.length > 0 ? (
+						<ul className="space-y-1.5">
+							{positives.slice(0, 3).map((item) => (
+								<li key={item.text} className="flex items-start gap-2">
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-500" />
+									<span className="text-gray-800 text-xs leading-relaxed dark:text-gray-200">
+										{item.text.charAt(0).toUpperCase() + item.text.slice(1)}
+									</span>
+								</li>
+							))}
+						</ul>
+					) : (
+						<p className="text-muted-foreground text-xs italic">
+							No data
+						</p>
+					)}
+				</div>
 
-					{/* Areas for Improvement */}
-					<div>
-						<div className="mb-3 flex items-center gap-2">
-							<AlertCircle className="h-4 w-4 text-amber-500" />
-							<p className="font-semibold text-amber-700 text-sm uppercase tracking-wide dark:text-amber-400">
-								Areas for Improvement
-							</p>
-						</div>
-						{negatives.length > 0 ? (
-							<ul className="space-y-2">
-								{negatives.slice(0, 6).map((item) => (
-									<li key={item.text} className="flex items-start gap-2.5">
-										<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-										<span className="text-gray-800 text-sm leading-relaxed dark:text-gray-200">
-											{item.text.charAt(0).toUpperCase() + item.text.slice(1)}
-										</span>
-										{item.count > 1 && (
-											<span className="ml-auto shrink-0 text-muted-foreground text-xs">
-												{item.count}×
-											</span>
-										)}
-									</li>
-								))}
-							</ul>
-						) : (
-							<p className="text-muted-foreground text-sm italic">
-								No Areas for Improvement Found
-							</p>
-						)}
+				{/* Areas for Improvement */}
+				<div>
+					<div className="mb-2 flex items-center gap-2">
+						<AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+						<p className="font-medium text-amber-700 text-xs dark:text-amber-400">
+							Concerns
+						</p>
 					</div>
+					{negatives.length > 0 ? (
+						<ul className="space-y-1.5">
+							{negatives.slice(0, 3).map((item) => (
+								<li key={item.text} className="flex items-start gap-2">
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-500" />
+									<span className="text-gray-800 text-xs leading-relaxed dark:text-gray-200">
+										{item.text.charAt(0).toUpperCase() + item.text.slice(1)}
+									</span>
+								</li>
+							))}
+						</ul>
+					) : (
+						<p className="text-muted-foreground text-xs italic">
+							No data
+						</p>
+					)}
 				</div>
 			</CardContent>
 		</Card>
@@ -922,38 +773,27 @@ function BrandPerceptionCard({
 }) {
 	return (
 		<Card>
-			<CardHeader>
-				<div className="flex items-center gap-2">
-					<div className="rounded-lg bg-purple-50 p-2 dark:bg-purple-950/30">
-						<Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-					</div>
-					<div>
-						<CardTitle className="text-base">AI Perception Overview</CardTitle>
-						<CardDescription>How AI Models Position Your Brand</CardDescription>
-					</div>
-				</div>
+			<CardHeader className="pb-3">
+				<CardTitle className="text-sm font-semibold">AI Perception</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-4">
-				{/* Best Known For - More Prominent */}
+			<CardContent className="space-y-3">
+				{/* Best Known For */}
 				{bestKnownFor && (
-					<div className="rounded-xl border-2 border-purple-100 bg-gradient-to-br from-purple-50/50 to-blue-50/50 p-4 dark:border-purple-900/50 dark:from-purple-950/20 dark:to-blue-950/20">
-						<div className="mb-2 flex items-center gap-2">
-							<Quote className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-							<span className="font-medium text-purple-900 text-xs uppercase tracking-wider dark:text-purple-300">
-								Best Known For
-							</span>
-						</div>
-						<p className="font-semibold text-gray-900 text-base leading-relaxed dark:text-gray-100">
+					<div>
+						<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
+							Best Known For
+						</p>
+						<p className="font-medium text-gray-900 text-sm leading-relaxed dark:text-gray-100">
 							{bestKnownFor.charAt(0).toUpperCase() + bestKnownFor.slice(1)}
 						</p>
 					</div>
 				)}
 
-				{/* Pricing - Inline Card */}
-				<div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
-					<span className="font-medium text-gray-700 text-sm dark:text-gray-300">
-						Pricing Perception:
-					</span>
+				{/* Pricing */}
+				<div>
+					<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
+						Pricing
+					</p>
 					<PillTag
 						label={pricingLabels[pricingPerception] ?? pricingPerception}
 						className={
@@ -966,39 +806,36 @@ function BrandPerceptionCard({
 					/>
 				</div>
 
-				{/* Core Claims - 2 Column Grid */}
+				{/* Core Claims */}
 				{coreClaims.length > 0 && (
 					<div>
-						<p className="mb-2.5 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Core Claims
+						<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
+							Key Claims
 						</p>
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-							{coreClaims.slice(0, 6).map((claim) => (
-								<div
-									key={claim}
-									className="flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-900/50"
-								>
-									<CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />
-									<span className="text-gray-800 text-sm leading-snug dark:text-gray-200">
+						<ul className="space-y-1.5">
+							{coreClaims.slice(0, 3).map((claim) => (
+								<li key={claim} className="flex items-start gap-2">
+									<CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
+									<span className="text-gray-800 text-xs leading-snug dark:text-gray-200">
 										{claim.charAt(0).toUpperCase() + claim.slice(1)}
 									</span>
-								</div>
+								</li>
 							))}
-						</div>
+						</ul>
 					</div>
 				)}
 
-				{/* Differentiators - Compact Pills */}
+				{/* Differentiators */}
 				{differentiators.length > 0 && (
 					<div>
-						<p className="mb-2.5 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Key Differentiators
+						<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
+							Differentiators
 						</p>
-						<div className="flex flex-wrap gap-2">
-							{differentiators.slice(0, 8).map((d) => (
+						<div className="flex flex-wrap gap-1.5">
+							{differentiators.slice(0, 4).map((d) => (
 								<span
 									key={d}
-									className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-1.5 font-medium text-blue-700 text-xs dark:from-blue-950/40 dark:to-purple-950/40 dark:text-blue-300"
+									className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 font-medium text-blue-700 text-xs dark:bg-blue-950/40 dark:text-blue-300"
 								>
 									{d.charAt(0).toUpperCase() + d.slice(1)}
 								</span>
@@ -1011,7 +848,7 @@ function BrandPerceptionCard({
 	);
 }
 
-function SourcesIntelligence({
+function TopSources({
 	sources,
 	totalRecords = 1,
 }: {
@@ -1019,151 +856,73 @@ function SourcesIntelligence({
 		domain: string;
 		favicon: string | null;
 		citationCount: number;
+		uniqueRecords: Set<string>;
 		models: Set<string>;
-		excerpts: { text: string; model: string }[];
-		urls: Set<string>;
 	}[];
 	totalRecords?: number;
 }) {
-	const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
-	const [showAllSources, setShowAllSources] = useState(false);
-
-	const displayLimit = 5;
-	const displayedSources = showAllSources
-		? sources
-		: sources.slice(0, displayLimit);
-
 	if (sources.length === 0) return null;
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle className="text-base">Source Intelligence</CardTitle>
-				<CardDescription>
-					Where AI Models Source Information About Your Brand
+			<CardHeader className="pb-3">
+				<CardTitle className="text-sm font-semibold">Top Sources</CardTitle>
+				<CardDescription className="text-xs">
+					Most Cited Information Sources
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-2">
-				{displayedSources.map((source) => {
-					const isExpanded = expandedDomain === source.domain;
-					const faviconUrl =
-						source.favicon || getFaviconUrls(source.domain, "")[0];
-					const usagePercent = Math.round((source.citationCount / totalRecords) * 100);
+			<CardContent className="p-0">
+				<div className="divide-y divide-gray-100 dark:divide-gray-800">
+					{sources.slice(0, 5).map((source) => {
+						const faviconUrl =
+							source.favicon || getFaviconUrls(source.domain, "")[0];
+						const usagePercent = Math.round((source.uniqueRecords.size / totalRecords) * 100);
 
-					return (
-						<div key={source.domain}>
-							<button
-								type="button"
-								onClick={() =>
-									setExpandedDomain(isExpanded ? null : source.domain)
-								}
-								className="w-full rounded-xl border border-gray-100 bg-white px-5 py-4 text-left transition-all hover:border-gray-200 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900/30 dark:hover:border-gray-700"
-							>
-								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-3">
-										{faviconUrl && (
-											<img
-												src={faviconUrl}
-												alt=""
-												className="h-5 w-5 rounded-sm"
-												onError={(e) => {
-													(e.target as HTMLImageElement).style.display = "none";
-												}}
-											/>
-										)}
-										<span className="font-semibold text-gray-900 text-sm dark:text-gray-100">
-											{source.domain.charAt(0).toUpperCase() + source.domain.slice(1)}
-										</span>
-									</div>
-									<div className="flex items-center gap-4">
-										<div className="text-right">
-											<div className="font-bold text-blue-600 text-sm dark:text-blue-400">
-												{usagePercent}% Usage
-											</div>
-											<div className="text-muted-foreground text-xs">
-												{source.citationCount} Citation{source.citationCount !== 1 ? 's' : ''}
-											</div>
-										</div>
-										<div className="flex items-center gap-1">
-											{[...source.models].map((model) => (
-												<img
-													key={model}
-													src={getModelFavicon(model)}
-													alt={model}
-													title={
-														modelSelectors.find((m) => m.value === model)
-															?.label || model
-													}
-													className="h-4 w-4 rounded-sm"
-												/>
-											))}
-										</div>
-										<ChevronDown
-											className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+						return (
+							<div key={source.domain} className="flex items-center justify-between px-4 py-3">
+								<div className="flex items-center gap-3">
+									{faviconUrl && (
+										<img
+											src={faviconUrl}
+											alt=""
+											className="h-4 w-4 rounded-sm"
+											onError={(e) => {
+												(e.target as HTMLImageElement).style.display = "none";
+											}}
 										/>
-									</div>
-								</div>
-							</button>
-
-							{isExpanded && (
-								<div className="mx-2 mt-2 mb-3 rounded-xl border border-gray-100 bg-gray-50/80 p-5 dark:border-gray-800 dark:bg-gray-900/40">
-									{/* URLs */}
-									<div className="mb-4">
-										<p className="mb-2 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-											Referenced URLs
-										</p>
-										<div className="space-y-2">
-											{[...source.urls].slice(0, 5).map((url) => (
-												<a
-													key={url}
-													href={url}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs text-blue-600 transition-colors hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
-												>
-													<ExternalLink className="h-3.5 w-3.5 shrink-0" />
-													<span className="truncate">{url}</span>
-												</a>
-											))}
-										</div>
-									</div>
-
-									{/* Excerpts */}
-									{source.excerpts.length > 0 && (
-										<div>
-											<p className="mb-2 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-												Sample Citations
-											</p>
-											<div className="space-y-3">
-												{source.excerpts.slice(0, 3).map((excerpt, i) => (
-													<div key={i} className="flex items-start gap-3 rounded-lg bg-white p-3 dark:bg-gray-800">
-														<img
-															src={getModelFavicon(excerpt.model)}
-															alt=""
-															className="mt-0.5 h-4 w-4 shrink-0 rounded-sm"
-														/>
-														<p className="text-gray-700 text-sm italic leading-relaxed dark:text-gray-300">
-															&ldquo;{excerpt.text}&rdquo;
-														</p>
-													</div>
-												))}
-											</div>
-										</div>
 									)}
+									<span className="font-medium text-sm">
+										{source.domain.charAt(0).toUpperCase() + source.domain.slice(1)}
+									</span>
 								</div>
-							)}
-						</div>
-					);
-				})}
-
-				{sources.length > displayLimit && (
-					<button
-						onClick={() => setShowAllSources(!showAllSources)}
-						className="mt-2 w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-					>
-						{showAllSources ? 'Show Less' : `Show ${sources.length - displayLimit} More Sources`}
-					</button>
-				)}
+								<div className="flex items-center gap-4">
+									<div className="text-right">
+										<div className="font-semibold text-sm text-blue-600 dark:text-blue-400">
+											{usagePercent}%
+										</div>
+										<div className="text-xs text-muted-foreground">
+											{source.citationCount} citations
+										</div>
+									</div>
+									<div className="flex gap-1">
+										{[...source.models].map((model) => (
+											<img
+												key={model}
+												src={getModelFavicon(model)}
+												alt={model}
+												title={
+													modelSelectors.find((m) => m.value === model)
+														?.label || model
+												}
+												className="h-4 w-4 rounded-sm"
+											/>
+										))}
+									</div>
+								</div>
+							</div>
+						);
+					})}
+				</div>
 			</CardContent>
 		</Card>
 	);
@@ -2041,6 +1800,7 @@ export default function Dashboard() {
 				domain: string;
 				favicon: string | null;
 				citationCount: number;
+				uniqueRecords: Set<string>;
 				models: Set<string>;
 				excerpts: { text: string; model: string }[];
 				urls: Set<string>;
@@ -2055,11 +1815,13 @@ export default function Dashboard() {
 					domain,
 					favicon: s.favicon ?? null,
 					citationCount: 0,
+					uniqueRecords: new Set<string>(),
 					models: new Set<string>(),
 					excerpts: [],
 					urls: new Set<string>(),
 				};
 				existing.citationCount += 1;
+				existing.uniqueRecords.add(r.id);
 				existing.models.add(r.model_provider);
 				existing.urls.add(s.url);
 				if (s.cited_text) {
@@ -2073,7 +1835,7 @@ export default function Dashboard() {
 		});
 
 		return [...domainMap.values()]
-			.sort((a, b) => b.citationCount - a.citationCount)
+			.sort((a, b) => b.uniqueRecords.size - a.uniqueRecords.size)
 			.slice(0, 15);
 	}, [analyzedRecords]);
 
@@ -2186,7 +1948,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="min-h-screen">
-			<div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
 				{/* Header */}
 				<header>
 					<h1 className="font-semibold text-gray-900 text-xl dark:text-gray-100">
@@ -2210,29 +1972,18 @@ export default function Dashboard() {
 				{/* Aggregate Stats */}
 				<AggregateStatsRow
 					presenceRate={aggregateStats.presenceRate}
-					winRate={aggregateStats.winRate}
-					recRate={aggregateStats.recRate}
+					rank={avgRank.position ?? 0}
+					topSource={sourcesIntelligence[0]?.domain ?? 'N/A'}
 					topCompetitor={aggregateStats.topCompetitor}
 				/>
 
-				{/* Key Metric Cards */}
-				<MetricCardsGrid
-					avgRank={avgRank}
-					avgShareOfVoice={avgShareOfVoice}
-					avgSentiment={avgSentiment}
-					topRecommendation={topRecommendation}
-					avgProminence={avgProminence}
-				/>
-
-				{/* Competitive Landscape */}
-				<CompetitiveLandscape
-					competitors={competitorData}
-					brandName={brandName}
-					brandSentiment={avgSentiment.score}
-				/>
-
-				{/* Sentiment + Perception Side-by-Side */}
-				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				{/* 3-Column Compact Row: Competitive Landscape + Sentiment + AI Perception */}
+				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+					<CompetitiveLandscape
+						competitors={competitorData}
+						brandName={brandName}
+						brandSentiment={avgSentiment.score}
+					/>
 					<SentimentBreakdown
 						positives={sentimentBreakdown.positives}
 						negatives={sentimentBreakdown.negatives}
@@ -2245,8 +1996,8 @@ export default function Dashboard() {
 					/>
 				</div>
 
-				{/* Sources Intelligence */}
-				<SourcesIntelligence sources={sourcesIntelligence} totalRecords={analyzedRecords.length} />
+				{/* Top Sources */}
+				<TopSources sources={sourcesIntelligence} totalRecords={analyzedRecords.length} />
 
 				{/* Risk Alerts */}
 				<RiskAlerts risks={aggregatedRisks} />
