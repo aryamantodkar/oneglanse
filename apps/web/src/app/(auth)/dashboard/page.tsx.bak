@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import type { AnalysisRecord, BrandAnalysisResult } from "@onescope/types";
 import {
 	Button,
@@ -44,6 +43,7 @@ import {
 	Building2,
 	CheckCircle2,
 	ChevronDown,
+	ChevronUp,
 	ExternalLink,
 	FilterX,
 	Globe,
@@ -443,77 +443,71 @@ function MetricCardsGrid({
 	const sentimentColor = getSentimentColor(avgSentiment.score);
 
 	return (
-		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:gap-4">
+		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			{/* Rank Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-950/30">
-							<Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
+			<Card>
+				<CardContent className="pt-5 pb-5">
+					<div className="mb-3 flex items-center gap-2">
+						<Target className="h-4 w-4 text-muted-foreground" />
+						<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 							Rank Position
 						</span>
 					</div>
 					{avgRank.position !== null ? (
 						<>
-							<div className="flex items-baseline gap-2">
-								<span className="font-bold text-4xl tracking-tight">#{avgRank.position}</span>
+							<div className="flex items-baseline gap-1.5">
+								<span className="font-bold text-3xl">#{avgRank.position}</span>
 								{avgRank.total !== null && (
-									<span className="text-muted-foreground text-base">
+									<span className="text-muted-foreground text-sm">
 										of {avgRank.total}
 									</span>
 								)}
 							</div>
-							<p className="mt-1.5 text-muted-foreground text-xs">
-								Average Across All Queries
+							<p className="mt-1 text-muted-foreground text-xs">
+								Average across all queries
 							</p>
 						</>
 					) : (
 						<span className="text-muted-foreground text-sm italic">
-							No Ranking Data
+							No ranking data
 						</span>
 					)}
 				</CardContent>
 			</Card>
 
 			{/* Share of Voice Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-green-50 p-2 dark:bg-green-950/30">
-							<BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
+			<Card>
+				<CardContent className="pt-5 pb-5">
+					<div className="mb-3 flex items-center gap-2">
+						<BarChart3 className="h-4 w-4 text-muted-foreground" />
+						<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 							Share of Voice
 						</span>
 					</div>
 					<div className="mb-3 flex items-baseline gap-2">
-						<span className="font-bold text-4xl tracking-tight">{avgShareOfVoice}%</span>
+						<span className="font-bold text-3xl">{avgShareOfVoice}%</span>
 						<span className="text-muted-foreground text-xs capitalize">
 							{avgProminence}
 						</span>
 					</div>
 					<HorizontalBar
 						value={avgShareOfVoice}
-						colorClass="bg-green-500 dark:bg-green-400"
+						colorClass="bg-blue-500 dark:bg-blue-400"
 					/>
 				</CardContent>
 			</Card>
 
 			{/* Sentiment Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-purple-50 p-2 dark:bg-purple-950/30">
-							<MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
+			<Card>
+				<CardContent className="pt-5 pb-5">
+					<div className="mb-3 flex items-center gap-2">
+						<MessageSquare className="h-4 w-4 text-muted-foreground" />
+						<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 							Sentiment
 						</span>
 					</div>
 					<div className="mb-3 flex items-baseline gap-2">
-						<span className={`font-bold text-4xl tracking-tight ${sentimentColor.text}`}>
+						<span className={`font-bold text-3xl ${sentimentColor.text}`}>
 							{avgSentiment.score}
 						</span>
 						<span className="text-muted-foreground text-xs capitalize">
@@ -525,13 +519,11 @@ function MetricCardsGrid({
 			</Card>
 
 			{/* Recommendation Card */}
-			<Card className="overflow-hidden">
-				<CardContent className="p-5">
-					<div className="mb-2 flex items-center gap-2">
-						<div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-950/30">
-							<Star className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-						</div>
-						<span className="font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
+			<Card>
+				<CardContent className="pt-5 pb-5">
+					<div className="mb-3 flex items-center gap-2">
+						<Star className="h-4 w-4 text-muted-foreground" />
+						<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 							Recommendation
 						</span>
 					</div>
@@ -545,7 +537,7 @@ function MetricCardsGrid({
 					{topRecommendation.bestFor.length > 0 && (
 						<div className="flex flex-wrap gap-1.5">
 							<span className="mr-1 text-muted-foreground text-xs">
-								Best For:
+								Best for:
 							</span>
 							{topRecommendation.bestFor.map((tag) => (
 								<PillTag key={tag} label={tag} />
@@ -619,85 +611,20 @@ function CompetitiveLandscape({
 	const [expandedCompetitor, setExpandedCompetitor] = useState<string | null>(
 		null,
 	);
-	const [showAllCompetitors, setShowAllCompetitors] = useState(false);
-	const [competitorSort, setCompetitorSort] = useState<'appearances' | 'sentiment' | 'rank'>('appearances');
-
-	const displayLimit = 5;
-
-	// Sort competitors based on selected criteria
-	const sortedCompetitors = useMemo(() => {
-		const sorted = [...competitors];
-		switch(competitorSort) {
-			case 'appearances':
-				return sorted.sort((a, b) => b.appearances - a.appearances);
-			case 'sentiment':
-				return sorted.sort((a, b) => b.avgSentiment - a.avgSentiment);
-			case 'rank':
-				return sorted.sort((a, b) => {
-					if (a.avgRank === null) return 1;
-					if (b.avgRank === null) return -1;
-					return a.avgRank - b.avgRank;
-				});
-			default:
-				return sorted;
-		}
-	}, [competitors, competitorSort]);
-
-	const displayedCompetitors = showAllCompetitors
-		? sortedCompetitors
-		: sortedCompetitors.slice(0, displayLimit);
-
-	const maxAppearances = Math.max(...sortedCompetitors.map((c) => c.appearances), 1);
+	const maxAppearances = Math.max(...competitors.map((c) => c.appearances), 1);
 
 	if (competitors.length === 0) return null;
 
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex items-center justify-between">
-					<div>
-						<CardTitle className="text-base">Competitive Landscape</CardTitle>
-						<CardDescription>
-							How Competitors Compare Across AI Responses
-						</CardDescription>
-					</div>
-					<div className="flex items-center gap-2 text-xs">
-						<span className="text-muted-foreground">Sort By:</span>
-						<button
-							onClick={() => setCompetitorSort('appearances')}
-							className={`rounded-md px-2.5 py-1.5 transition-colors ${
-								competitorSort === 'appearances'
-									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-							}`}
-						>
-							Frequency
-						</button>
-						<button
-							onClick={() => setCompetitorSort('sentiment')}
-							className={`rounded-md px-2.5 py-1.5 transition-colors ${
-								competitorSort === 'sentiment'
-									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-							}`}
-						>
-							Sentiment
-						</button>
-						<button
-							onClick={() => setCompetitorSort('rank')}
-							className={`rounded-md px-2.5 py-1.5 transition-colors ${
-								competitorSort === 'rank'
-									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
-							}`}
-						>
-							Rank
-						</button>
-					</div>
-				</div>
+				<CardTitle className="text-base">Competitive Landscape</CardTitle>
+				<CardDescription>
+					How competitors compare across AI responses
+				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-3">
-				{displayedCompetitors.map((comp) => {
+			<CardContent className="space-y-2">
+				{competitors.slice(0, 10).map((comp) => {
 					const isExpanded = expandedCompetitor === comp.name;
 					const barColor =
 						comp.avgSentiment >= 60
@@ -713,28 +640,28 @@ function CompetitiveLandscape({
 								onClick={() =>
 									setExpandedCompetitor(isExpanded ? null : comp.name)
 								}
-								className="w-full rounded-xl border border-gray-100 bg-white px-5 py-4 text-left transition-all hover:border-gray-200 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900/30 dark:hover:border-gray-700"
+								className="w-full rounded-lg px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-900/50"
 							>
-								<div className="mb-3 flex items-center justify-between">
+								<div className="mb-2 flex items-center justify-between">
 									<div className="flex items-center gap-3">
-										<span className="font-semibold text-gray-900 text-base dark:text-gray-100">
+										<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
 											{comp.name}
 										</span>
 										{comp.avgRank !== null && (
-											<span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600 text-xs dark:bg-gray-800 dark:text-gray-400">
+											<span className="text-muted-foreground text-xs">
 												#{comp.avgRank}
 											</span>
 										)}
 									</div>
-									<div className="flex items-center gap-4">
-										<div className="text-right">
-											<div className={`font-semibold text-sm ${getSentimentColor(comp.avgSentiment).text}`}>
-												{comp.avgSentiment} Sentiment
-											</div>
-											<div className="text-muted-foreground text-xs">
-												{comp.appearances} Appearances
-											</div>
-										</div>
+									<div className="flex items-center gap-3">
+										<span
+											className={`font-medium text-xs ${getSentimentColor(comp.avgSentiment).text}`}
+										>
+											{comp.avgSentiment}
+										</span>
+										<span className="text-muted-foreground text-xs">
+											{comp.appearances}x
+										</span>
 										<ChevronDown
 											className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
 										/>
@@ -749,14 +676,14 @@ function CompetitiveLandscape({
 
 							{isExpanded &&
 								(comp.winsOver.length > 0 || comp.losesTo.length > 0) && (
-									<div className="mx-2 mt-2 mb-3 rounded-xl border border-gray-100 bg-gray-50/80 p-5 dark:border-gray-800 dark:bg-gray-900/40">
+									<div className="mx-4 mt-1 mb-3 rounded-lg border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/40">
 										<p className="mb-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
 											{brandName} vs {comp.name}
 										</p>
 										<div className="grid grid-cols-2 gap-4">
 											<div>
 												<p className="mb-2 font-medium text-emerald-600 text-xs dark:text-emerald-400">
-													You Win On
+													You win on
 												</p>
 												{comp.losesTo.length > 0 ? (
 													<ul className="space-y-1">
@@ -772,13 +699,13 @@ function CompetitiveLandscape({
 													</ul>
 												) : (
 													<p className="text-muted-foreground text-xs italic">
-														No Data
+														No data
 													</p>
 												)}
 											</div>
 											<div>
 												<p className="mb-2 font-medium text-red-600 text-xs dark:text-red-400">
-													They Win On
+													They win on
 												</p>
 												{comp.winsOver.length > 0 ? (
 													<ul className="space-y-1">
@@ -794,7 +721,7 @@ function CompetitiveLandscape({
 													</ul>
 												) : (
 													<p className="text-muted-foreground text-xs italic">
-														No Data
+														No data
 													</p>
 												)}
 											</div>
@@ -804,15 +731,6 @@ function CompetitiveLandscape({
 						</div>
 					);
 				})}
-
-				{sortedCompetitors.length > displayLimit && (
-					<button
-						onClick={() => setShowAllCompetitors(!showAllCompetitors)}
-						className="mt-2 w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-					>
-						{showAllCompetitors ? 'Show Less' : `Show ${sortedCompetitors.length - displayLimit} More Competitors`}
-					</button>
-				)}
 			</CardContent>
 		</Card>
 	);
@@ -828,39 +746,29 @@ function SentimentBreakdown({
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex items-center gap-2">
-					<div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-950/30">
-						<MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-					</div>
-					<div>
-						<CardTitle className="text-base">Brand Sentiment Highlights</CardTitle>
-						<CardDescription>
-							Positive And Negative Feedback Across Responses
-						</CardDescription>
-					</div>
-				</div>
+				<CardTitle className="text-base">What AI Is Saying</CardTitle>
+				<CardDescription>
+					Aggregated sentiment across all responses
+				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-5">
+			<CardContent>
 				<div className="grid grid-cols-2 gap-6">
-					{/* Strengths */}
+					{/* Positives */}
 					<div>
-						<div className="mb-3 flex items-center gap-2">
-							<CheckCircle2 className="h-4 w-4 text-emerald-500" />
-							<p className="font-semibold text-emerald-700 text-sm uppercase tracking-wide dark:text-emerald-400">
-								Strengths
-							</p>
-						</div>
+						<p className="mb-3 font-semibold text-emerald-600 text-xs uppercase tracking-wide dark:text-emerald-400">
+							Positives
+						</p>
 						{positives.length > 0 ? (
-							<ul className="space-y-2">
-								{positives.slice(0, 6).map((item) => (
-									<li key={item.text} className="flex items-start gap-2.5">
-										<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-										<span className="text-gray-800 text-sm leading-relaxed dark:text-gray-200">
-											{item.text.charAt(0).toUpperCase() + item.text.slice(1)}
+							<ul className="space-y-2.5">
+								{positives.slice(0, 8).map((item) => (
+									<li key={item.text} className="flex items-start gap-2">
+										<CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+										<span className="text-gray-700 text-sm leading-snug dark:text-gray-300">
+											{item.text}
 										</span>
 										{item.count > 1 && (
-											<span className="ml-auto shrink-0 text-muted-foreground text-xs">
-												{item.count}×
+											<span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 font-medium text-[10px] text-muted-foreground dark:bg-gray-800">
+												{item.count}x
 											</span>
 										)}
 									</li>
@@ -868,30 +776,27 @@ function SentimentBreakdown({
 							</ul>
 						) : (
 							<p className="text-muted-foreground text-sm italic">
-								No Strengths Found
+								No positives found
 							</p>
 						)}
 					</div>
 
-					{/* Areas for Improvement */}
+					{/* Negatives */}
 					<div>
-						<div className="mb-3 flex items-center gap-2">
-							<AlertCircle className="h-4 w-4 text-amber-500" />
-							<p className="font-semibold text-amber-700 text-sm uppercase tracking-wide dark:text-amber-400">
-								Areas for Improvement
-							</p>
-						</div>
+						<p className="mb-3 font-semibold text-amber-600 text-xs uppercase tracking-wide dark:text-amber-400">
+							Negatives
+						</p>
 						{negatives.length > 0 ? (
-							<ul className="space-y-2">
-								{negatives.slice(0, 6).map((item) => (
-									<li key={item.text} className="flex items-start gap-2.5">
-										<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-										<span className="text-gray-800 text-sm leading-relaxed dark:text-gray-200">
-											{item.text.charAt(0).toUpperCase() + item.text.slice(1)}
+							<ul className="space-y-2.5">
+								{negatives.slice(0, 8).map((item) => (
+									<li key={item.text} className="flex items-start gap-2">
+										<AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+										<span className="text-gray-700 text-sm leading-snug dark:text-gray-300">
+											{item.text}
 										</span>
 										{item.count > 1 && (
-											<span className="ml-auto shrink-0 text-muted-foreground text-xs">
-												{item.count}×
+											<span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 font-medium text-[10px] text-muted-foreground dark:bg-gray-800">
+												{item.count}x
 											</span>
 										)}
 									</li>
@@ -899,7 +804,7 @@ function SentimentBreakdown({
 							</ul>
 						) : (
 							<p className="text-muted-foreground text-sm italic">
-								No Areas for Improvement Found
+								No negatives found
 							</p>
 						)}
 					</div>
@@ -923,36 +828,29 @@ function BrandPerceptionCard({
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex items-center gap-2">
-					<div className="rounded-lg bg-purple-50 p-2 dark:bg-purple-950/30">
-						<Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-					</div>
-					<div>
-						<CardTitle className="text-base">AI Perception Overview</CardTitle>
-						<CardDescription>How AI Models Position Your Brand</CardDescription>
-					</div>
-				</div>
+				<CardTitle className="text-base">AI Perception</CardTitle>
+				<CardDescription>How AI models describe your brand</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-4">
-				{/* Best Known For - More Prominent */}
+			<CardContent className="space-y-5">
+				{/* Best known for */}
 				{bestKnownFor && (
-					<div className="rounded-xl border-2 border-purple-100 bg-gradient-to-br from-purple-50/50 to-blue-50/50 p-4 dark:border-purple-900/50 dark:from-purple-950/20 dark:to-blue-950/20">
-						<div className="mb-2 flex items-center gap-2">
-							<Quote className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-							<span className="font-medium text-purple-900 text-xs uppercase tracking-wider dark:text-purple-300">
-								Best Known For
-							</span>
+					<div className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/50">
+						<Quote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+						<div>
+							<p className="mb-1 text-muted-foreground text-xs">
+								Best known for
+							</p>
+							<p className="font-medium text-gray-900 text-sm dark:text-gray-100">
+								{bestKnownFor}
+							</p>
 						</div>
-						<p className="font-semibold text-gray-900 text-base leading-relaxed dark:text-gray-100">
-							{bestKnownFor.charAt(0).toUpperCase() + bestKnownFor.slice(1)}
-						</p>
 					</div>
 				)}
 
-				{/* Pricing - Inline Card */}
-				<div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
-					<span className="font-medium text-gray-700 text-sm dark:text-gray-300">
-						Pricing Perception:
+				{/* Pricing */}
+				<div className="flex items-center gap-2">
+					<span className="text-muted-foreground text-xs">
+						Pricing perception:
 					</span>
 					<PillTag
 						label={pricingLabels[pricingPerception] ?? pricingPerception}
@@ -966,42 +864,33 @@ function BrandPerceptionCard({
 					/>
 				</div>
 
-				{/* Core Claims - 2 Column Grid */}
+				{/* Core claims */}
 				{coreClaims.length > 0 && (
 					<div>
-						<p className="mb-2.5 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Core Claims
-						</p>
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-							{coreClaims.slice(0, 6).map((claim) => (
-								<div
+						<p className="mb-2 text-muted-foreground text-xs">Core claims</p>
+						<ul className="space-y-1.5">
+							{coreClaims.slice(0, 5).map((claim) => (
+								<li
 									key={claim}
-									className="flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-900/50"
+									className="flex items-start gap-2 text-gray-700 text-sm dark:text-gray-300"
 								>
-									<CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />
-									<span className="text-gray-800 text-sm leading-snug dark:text-gray-200">
-										{claim.charAt(0).toUpperCase() + claim.slice(1)}
-									</span>
-								</div>
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400 text-muted-foreground" />
+									{claim}
+								</li>
 							))}
-						</div>
+						</ul>
 					</div>
 				)}
 
-				{/* Differentiators - Compact Pills */}
+				{/* Differentiators */}
 				{differentiators.length > 0 && (
 					<div>
-						<p className="mb-2.5 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-							Key Differentiators
+						<p className="mb-2 text-muted-foreground text-xs">
+							Differentiators
 						</p>
-						<div className="flex flex-wrap gap-2">
-							{differentiators.slice(0, 8).map((d) => (
-								<span
-									key={d}
-									className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-1.5 font-medium text-blue-700 text-xs dark:from-blue-950/40 dark:to-purple-950/40 dark:text-blue-300"
-								>
-									{d.charAt(0).toUpperCase() + d.slice(1)}
-								</span>
+						<div className="flex flex-wrap gap-1.5">
+							{differentiators.map((d) => (
+								<PillTag key={d} label={d} />
 							))}
 						</div>
 					</div>
@@ -1013,7 +902,6 @@ function BrandPerceptionCard({
 
 function SourcesIntelligence({
 	sources,
-	totalRecords = 1,
 }: {
 	sources: {
 		domain: string;
@@ -1023,32 +911,24 @@ function SourcesIntelligence({
 		excerpts: { text: string; model: string }[];
 		urls: Set<string>;
 	}[];
-	totalRecords?: number;
 }) {
 	const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
-	const [showAllSources, setShowAllSources] = useState(false);
-
-	const displayLimit = 5;
-	const displayedSources = showAllSources
-		? sources
-		: sources.slice(0, displayLimit);
 
 	if (sources.length === 0) return null;
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="text-base">Source Intelligence</CardTitle>
+				<CardTitle className="text-base">Sources Intelligence</CardTitle>
 				<CardDescription>
-					Where AI Models Source Information About Your Brand
+					Where AI models get their information about your brand
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-2">
-				{displayedSources.map((source) => {
+			<CardContent className="space-y-1">
+				{sources.map((source) => {
 					const isExpanded = expandedDomain === source.domain;
 					const faviconUrl =
 						source.favicon || getFaviconUrls(source.domain, "")[0];
-					const usagePercent = Math.round((source.citationCount / totalRecords) * 100);
 
 					return (
 						<div key={source.domain}>
@@ -1057,7 +937,7 @@ function SourcesIntelligence({
 								onClick={() =>
 									setExpandedDomain(isExpanded ? null : source.domain)
 								}
-								className="w-full rounded-xl border border-gray-100 bg-white px-5 py-4 text-left transition-all hover:border-gray-200 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900/30 dark:hover:border-gray-700"
+								className="w-full rounded-lg px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-900/50"
 							>
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-3">
@@ -1065,89 +945,76 @@ function SourcesIntelligence({
 											<img
 												src={faviconUrl}
 												alt=""
-												className="h-5 w-5 rounded-sm"
+												className="h-4 w-4 rounded-sm opacity-80"
 												onError={(e) => {
 													(e.target as HTMLImageElement).style.display = "none";
 												}}
 											/>
 										)}
-										<span className="font-semibold text-gray-900 text-sm dark:text-gray-100">
-											{source.domain.charAt(0).toUpperCase() + source.domain.slice(1)}
+										<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
+											{source.domain}
+										</span>
+										<span className="text-muted-foreground text-xs">
+											{source.citationCount} citation
+											{source.citationCount !== 1 ? "s" : ""}
 										</span>
 									</div>
-									<div className="flex items-center gap-4">
-										<div className="text-right">
-											<div className="font-bold text-blue-600 text-sm dark:text-blue-400">
-												{usagePercent}% Usage
-											</div>
-											<div className="text-muted-foreground text-xs">
-												{source.citationCount} Citation{source.citationCount !== 1 ? 's' : ''}
-											</div>
-										</div>
-										<div className="flex items-center gap-1">
-											{[...source.models].map((model) => (
-												<img
-													key={model}
-													src={getModelFavicon(model)}
-													alt={model}
-													title={
-														modelSelectors.find((m) => m.value === model)
-															?.label || model
-													}
-													className="h-4 w-4 rounded-sm"
-												/>
-											))}
-										</div>
+									<div className="flex items-center gap-2">
+										{[...source.models].map((model) => (
+											<img
+												key={model}
+												src={getModelFavicon(model)}
+												alt={model}
+												title={
+													modelSelectors.find((m) => m.value === model)
+														?.label || model
+												}
+												className="h-4 w-4 rounded-sm"
+											/>
+										))}
 										<ChevronDown
-											className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+											className={`ml-1 h-3.5 w-3.5 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
 										/>
 									</div>
 								</div>
 							</button>
 
 							{isExpanded && (
-								<div className="mx-2 mt-2 mb-3 rounded-xl border border-gray-100 bg-gray-50/80 p-5 dark:border-gray-800 dark:bg-gray-900/40">
+								<div className="mx-4 mb-2 rounded-lg border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/40">
 									{/* URLs */}
-									<div className="mb-4">
-										<p className="mb-2 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-											Referenced URLs
-										</p>
-										<div className="space-y-2">
-											{[...source.urls].slice(0, 5).map((url) => (
-												<a
-													key={url}
-													href={url}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs text-blue-600 transition-colors hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
-												>
-													<ExternalLink className="h-3.5 w-3.5 shrink-0" />
-													<span className="truncate">{url}</span>
-												</a>
-											))}
-										</div>
+									<div className="mb-3 flex flex-wrap gap-2">
+										{[...source.urls].slice(0, 5).map((url) => (
+											<a
+												key={url}
+												href={url}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline dark:text-blue-400"
+											>
+												<ExternalLink className="h-3 w-3" />
+												{url.length > 60 ? `${url.substring(0, 60)}...` : url}
+											</a>
+										))}
 									</div>
 
 									{/* Excerpts */}
 									{source.excerpts.length > 0 && (
-										<div>
-											<p className="mb-2 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-												Sample Citations
+										<div className="space-y-2">
+											<p className="font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
+												Cited excerpts
 											</p>
-											<div className="space-y-3">
-												{source.excerpts.slice(0, 3).map((excerpt, i) => (
-													<div key={i} className="flex items-start gap-3 rounded-lg bg-white p-3 dark:bg-gray-800">
-														<img
-															src={getModelFavicon(excerpt.model)}
-															alt=""
-															className="mt-0.5 h-4 w-4 shrink-0 rounded-sm"
-														/>
-														<p className="text-gray-700 text-sm italic leading-relaxed dark:text-gray-300">
-															&ldquo;{excerpt.text}&rdquo;
-														</p>
-													</div>
-												))}
-											</div>
+											{source.excerpts.slice(0, 5).map((excerpt, i) => (
+												<div key={i} className="flex items-start gap-2">
+													<img
+														src={getModelFavicon(excerpt.model)}
+														alt=""
+														className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-sm"
+													/>
+													<p className="line-clamp-2 text-muted-foreground text-xs italic leading-relaxed">
+														&ldquo;{excerpt.text}&rdquo;
+													</p>
+												</div>
+											))}
 										</div>
 									)}
 								</div>
@@ -1155,15 +1022,6 @@ function SourcesIntelligence({
 						</div>
 					);
 				})}
-
-				{sources.length > displayLimit && (
-					<button
-						onClick={() => setShowAllSources(!showAllSources)}
-						className="mt-2 w-full rounded-lg border border-dashed border-gray-300 py-3 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-					>
-						{showAllSources ? 'Show Less' : `Show ${sources.length - displayLimit} More Sources`}
-					</button>
-				)}
 			</CardContent>
 		</Card>
 	);
@@ -1222,27 +1080,34 @@ function RiskAlerts({
 }
 
 function QueryLevelTable({
-	groupedRecords,
-	onSelectRecord,
+	records,
+	sortColumn,
+	sortDirection,
+	onSort,
+	onSelect,
 }: {
-	groupedRecords: Array<{
-		prompt: string;
-		records: AnalysisRecord[];
-		avgScore: number;
-		avgSentiment: number;
-		bestRank: number | null;
-		topRecType: string;
-	}>;
-	onSelectRecord: (prompt: string) => void;
+	records: AnalysisRecord[];
+	sortColumn: string;
+	sortDirection: "asc" | "desc";
+	onSort: (col: string, dir: "asc" | "desc") => void;
+	onSelect: (record: AnalysisRecord) => void;
 }) {
-	const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
+	const handleSort = (col: string) => {
+		if (sortColumn === col) {
+			onSort(col, sortDirection === "asc" ? "desc" : "asc");
+		} else {
+			onSort(col, "desc");
+		}
+	};
+
+	const SortIcon = sortDirection === "asc" ? ChevronUp : ChevronDown;
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="text-base">Query Performance Overview</CardTitle>
+				<CardTitle className="text-base">All Queries</CardTitle>
 				<CardDescription>
-					Click Any Query To See Model-Specific Details
+					Click any row to see the full analysis
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="p-0">
@@ -1250,163 +1115,93 @@ function QueryLevelTable({
 					<Table className="min-w-full">
 						<TableHeader>
 							<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
-								<TableHead className="px-4 py-3 text-left font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Query
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Models
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Avg Score
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Best Rank
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Avg Sentiment
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Top Rec.
-								</TableHead>
+								{[
+									{ key: "query", label: "Query", align: "text-left" },
+									{ key: "platform", label: "Platform", align: "text-left" },
+									{ key: "score", label: "Score", align: "text-center" },
+									{ key: "rank", label: "Rank", align: "text-center" },
+									{
+										key: "sentiment",
+										label: "Sentiment",
+										align: "text-center",
+									},
+									{ key: "rec", label: "Rec. Type", align: "text-center" },
+								].map((col) => (
+									<TableHead
+										key={col.key}
+										onClick={() => handleSort(col.key)}
+										className={`cursor-pointer select-none px-4 py-3 font-medium text-gray-500 text-xs transition-colors hover:text-foreground dark:text-gray-400 ${col.align}`}
+									>
+										<div
+											className={`flex items-center gap-1 ${col.align === "text-center" ? "justify-center" : ""}`}
+										>
+											{col.label}
+											{sortColumn === col.key && (
+												<SortIcon className="h-3 w-3" />
+											)}
+										</div>
+									</TableHead>
+								))}
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{groupedRecords.map((group) => {
-								const isExpanded = expandedPrompt === group.prompt;
-								const geoColor = getGeoScoreColor(group.avgScore);
-								const sentimentColor = getSentimentColor(group.avgSentiment);
+							{records.map((record) => {
+								const ba = record.brand_analysis!;
+								const sentimentColor = getSentimentColor(ba.sentiment.score);
+								const geoColor = getGeoScoreColor(ba.geoScore.overall);
 
 								return (
-									<React.Fragment key={group.prompt}>
-										<TableRow
-											onClick={() =>
-												setExpandedPrompt(isExpanded ? null : group.prompt)
-											}
-											className="cursor-pointer border-gray-100/50 border-b transition-colors hover:bg-gray-50 dark:border-gray-800/40 dark:hover:bg-gray-900/60"
-										>
-											<TableCell className="max-w-md px-4 py-4">
-												<div className="flex items-center gap-2">
-													<ChevronDown
-														className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-													/>
-													<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-														{group.prompt}
-													</span>
-												</div>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<div className="flex items-center justify-center gap-1">
-													{group.records.map((r) => (
-														<img
-															key={r.id}
-															src={getModelFavicon(r.model_provider)}
-															alt={r.model_provider}
-															title={
-																modelSelectors.find(
-																	(m) => m.value === r.model_provider,
-																)?.label
-															}
-															className="h-4 w-4 rounded-sm"
-														/>
-													))}
-												</div>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span
-													className="font-bold text-sm"
-													style={{ color: geoColor }}
-												>
-													{group.avgScore}
+									<TableRow
+										key={record.id}
+										onClick={() => onSelect(record)}
+										className="cursor-pointer border-gray-100/50 border-b transition-colors last:border-none hover:bg-gray-50 dark:border-gray-800/40 dark:hover:bg-gray-900/60"
+									>
+										<TableCell className="max-w-xs truncate px-4 py-4 text-gray-800 text-sm dark:text-gray-200">
+											{record.prompt}
+										</TableCell>
+										<TableCell className="px-4 py-4">
+											<div className="flex items-center gap-2">
+												<img
+													src={getModelFavicon(record.model_provider)}
+													alt={record.model_provider}
+													className="h-4 w-4 rounded-sm"
+												/>
+												<span className="text-gray-700 text-sm dark:text-gray-300">
+													{modelSelectors.find(
+														(m) => m.value === record.model_provider,
+													)?.label || record.model_provider}
 												</span>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-													{group.bestRank ? `#${group.bestRank}` : "—"}
-												</span>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span
-													className={`font-bold text-sm ${sentimentColor.text}`}
-												>
-													{group.avgSentiment}
-												</span>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span
-													className={`inline-flex items-center rounded-md px-2.5 py-1 font-semibold text-xs ${recTypeColors[group.topRecType] ?? recTypeColors.not_mentioned}`}
-												>
-													{recTypeLabels[group.topRecType] ?? group.topRecType}
-												</span>
-											</TableCell>
-										</TableRow>
-
-										{/* Expanded Model Details */}
-										{isExpanded && (
-											<TableRow className="bg-gray-50/50 dark:bg-gray-900/20">
-												<TableCell colSpan={6} className="px-8 py-4">
-													<div className="space-y-2">
-														<p className="mb-3 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-															Model-Specific Results
-														</p>
-														<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-															{group.records.map((record) => {
-																const ba = record.brand_analysis!;
-																const recColor = getGeoScoreColor(
-																	ba.geoScore.overall,
-																);
-																const sentColor = getSentimentColor(
-																	ba.sentiment.score,
-																);
-
-																return (
-																	<button
-																		key={record.id}
-																		type="button"
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			onSelectRecord(record.prompt);
-																		}}
-																		className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition-colors hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900/50 dark:hover:border-gray-700"
-																	>
-																		<div className="flex items-center gap-3">
-																			<img
-																				src={getModelFavicon(
-																					record.model_provider,
-																				)}
-																				alt={record.model_provider}
-																				className="h-5 w-5 rounded-sm"
-																			/>
-																			<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-																				{modelSelectors.find(
-																					(m) => m.value === record.model_provider,
-																				)?.label}
-																			</span>
-																		</div>
-																		<div className="flex items-center gap-4">
-																			<div className="text-right">
-																				<span
-																					className="block font-bold text-xs"
-																					style={{ color: recColor }}
-																				>
-																					{ba.geoScore.overall} Score
-																				</span>
-																				<span
-																					className={`block text-xs ${sentColor.text}`}
-																				>
-																					{ba.sentiment.score} Sentiment
-																				</span>
-																			</div>
-																			<ExternalLink className="h-4 w-4 text-gray-400" />
-																		</div>
-																	</button>
-																);
-															})}
-														</div>
-													</div>
-												</TableCell>
-											</TableRow>
-										)}
-									</React.Fragment>
+											</div>
+										</TableCell>
+										<TableCell className="px-4 py-4 text-center">
+											<span
+												className="font-semibold text-sm"
+												style={{ color: geoColor }}
+											>
+												{ba.geoScore.overall}
+											</span>
+										</TableCell>
+										<TableCell className="px-4 py-4 text-center text-gray-700 text-sm dark:text-gray-300">
+											{ba.position.rankPosition !== null
+												? `#${ba.position.rankPosition}`
+												: "—"}
+										</TableCell>
+										<TableCell className="px-4 py-4 text-center">
+											<span
+												className={`font-medium text-sm ${sentimentColor.text}`}
+											>
+												{ba.sentiment.score}
+											</span>
+										</TableCell>
+										<TableCell className="px-4 py-4 text-center">
+											<span
+												className={`inline-flex items-center rounded-md px-2 py-0.5 font-medium text-xs ${recTypeColors[ba.recommendation.type] ?? recTypeColors.not_mentioned}`}
+											>
+												{recTypeLabels[ba.recommendation.type] ??
+													ba.recommendation.type}
+											</span>
+										</TableCell>
+									</TableRow>
 								);
 							})}
 						</TableBody>
@@ -1428,7 +1223,7 @@ function RecordDetailDialog({
 }) {
 	if (!record || !record.brand_analysis) return null;
 
-	const ba = record.brand_analysis!;
+	const ba = record.brand_analysis;
 	const geoColor = getGeoScoreColor(ba.geoScore.overall);
 	const sentimentColor = getSentimentColor(ba.sentiment.score);
 
@@ -1728,6 +1523,8 @@ export default function Dashboard() {
 	);
 
 	// Table sorting
+	const [sortColumn, setSortColumn] = useState("score");
+	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
 	// Record detail dialog
 	const [selectedRecord, setSelectedRecord] = useState<AnalysisRecord | null>(
@@ -2103,66 +1900,38 @@ export default function Dashboard() {
 		});
 	}, [analyzedRecords]);
 
-	const groupedRecords = useMemo(() => {
-		const groups = new Map<string, AnalysisRecord[]>();
-
-		analyzedRecords.forEach((record) => {
-			const prompt = record.prompt;
-			if (!groups.has(prompt)) {
-				groups.set(prompt, []);
+	const sortedRecords = useMemo(() => {
+		const records = [...analyzedRecords];
+		records.sort((a, b) => {
+			const ba = a.brand_analysis;
+			const bb = b.brand_analysis;
+			let cmp = 0;
+			switch (sortColumn) {
+				case "query":
+					cmp = a.prompt.localeCompare(b.prompt);
+					break;
+				case "platform":
+					cmp = a.model_provider.localeCompare(b.model_provider);
+					break;
+				case "score":
+					cmp = ba.geoScore.overall - bb.geoScore.overall;
+					break;
+				case "rank":
+					cmp =
+						(ba.position.rankPosition ?? 999) -
+						(bb.position.rankPosition ?? 999);
+					break;
+				case "sentiment":
+					cmp = ba.sentiment.score - bb.sentiment.score;
+					break;
+				case "rec":
+					cmp = ba.recommendation.type.localeCompare(bb.recommendation.type);
+					break;
 			}
-			groups.get(prompt)!.push(record);
+			return sortDirection === "desc" ? -cmp : cmp;
 		});
-
-		return Array.from(groups.entries()).map(([prompt, records]) => {
-			// Sort records within group by model provider
-			const sortedGroupRecords = records.sort((a, b) =>
-				a.model_provider.localeCompare(b.model_provider),
-			);
-
-			// Calculate aggregate metrics
-			const avgScore = Math.round(
-				sortedGroupRecords.reduce(
-					(sum, r) => sum + r.brand_analysis!.geoScore.overall,
-					0,
-				) / sortedGroupRecords.length,
-			);
-
-			const avgSentiment = Math.round(
-				sortedGroupRecords.reduce(
-					(sum, r) => sum + r.brand_analysis!.sentiment.score,
-					0,
-				) / sortedGroupRecords.length,
-			);
-
-			const rankPositions = sortedGroupRecords
-				.map((r) => r.brand_analysis!.position.rankPosition)
-				.filter((r): r is number => r !== null);
-			const bestRank = rankPositions.length > 0 ? Math.min(...rankPositions) : null;
-
-			// Get best recommendation type (prioritize top_pick > strong_alternative > etc)
-			const recTypeOrder = [
-				"top_pick",
-				"strong_alternative",
-				"conditional",
-				"mentioned_only",
-				"discouraged",
-				"not_mentioned",
-			];
-			const topRecType = sortedGroupRecords
-				.map((r) => r.brand_analysis!.recommendation.type)
-				.sort((a, b) => recTypeOrder.indexOf(a) - recTypeOrder.indexOf(b))[0]!;
-
-			return {
-				prompt,
-				records: sortedGroupRecords,
-				avgScore,
-				avgSentiment,
-				bestRank,
-				topRecType,
-			};
-		});
-	}, [analyzedRecords]);
+		return records;
+	}, [analyzedRecords, sortColumn, sortDirection]);
 
 	// ─── Conditional Renders ─────────────────────────────────────────────────
 
@@ -2206,14 +1975,15 @@ export default function Dashboard() {
 					setTimeFilter={setTimeFilter}
 				/>
 
-
-				{/* Aggregate Stats */}
-				<AggregateStatsRow
-					presenceRate={aggregateStats.presenceRate}
-					winRate={aggregateStats.winRate}
-					recRate={aggregateStats.recRate}
-					topCompetitor={aggregateStats.topCompetitor}
+				{/* Hero — GEO Score Gauge */}
+				<GeoScoreGauge
+					score={avgGeoScore.overall}
+					verdict={avgGeoScore.verdict}
+					brandName={brandName}
 				/>
+
+				{/* Trend Lines */}
+				{trendData && <TrendLines trendData={trendData} />}
 
 				{/* Key Metric Cards */}
 				<MetricCardsGrid
@@ -2222,6 +1992,14 @@ export default function Dashboard() {
 					avgSentiment={avgSentiment}
 					topRecommendation={topRecommendation}
 					avgProminence={avgProminence}
+				/>
+
+				{/* Aggregate Stats */}
+				<AggregateStatsRow
+					presenceRate={aggregateStats.presenceRate}
+					winRate={aggregateStats.winRate}
+					recRate={aggregateStats.recRate}
+					topCompetitor={aggregateStats.topCompetitor}
 				/>
 
 				{/* Competitive Landscape */}
@@ -2246,19 +2024,24 @@ export default function Dashboard() {
 				</div>
 
 				{/* Sources Intelligence */}
-				<SourcesIntelligence sources={sourcesIntelligence} totalRecords={analyzedRecords.length} />
+				<SourcesIntelligence sources={sourcesIntelligence} />
 
 				{/* Risk Alerts */}
 				<RiskAlerts risks={aggregatedRisks} />
 
+				{/* Action Items */}
+				<ActionItems actions={aggregatedActions} />
 
 				{/* Query-Level Table */}
 				<QueryLevelTable
-					groupedRecords={groupedRecords}
-					onSelectRecord={(prompt) => {
-						const record = analyzedRecords.find((r) => r.prompt === prompt);
-						if (record) setSelectedRecord(record);
+					records={sortedRecords}
+					sortColumn={sortColumn}
+					sortDirection={sortDirection}
+					onSort={(col, dir) => {
+						setSortColumn(col);
+						setSortDirection(dir);
 					}}
+					onSelect={setSelectedRecord}
 				/>
 
 				{/* Record Detail Dialog */}
