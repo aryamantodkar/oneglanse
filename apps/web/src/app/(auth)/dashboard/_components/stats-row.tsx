@@ -1,3 +1,4 @@
+import { getFaviconUrls } from "@onescope/utils";
 import { Award, Globe, TrendingUp, Users } from "lucide-react";
 
 export function PillTag({
@@ -18,34 +19,51 @@ export function StatCard({
 	value,
 	subtitle,
 	icon: Icon,
-	favicon,
 }: {
 	label: string;
 	value: string | number;
 	subtitle?: string;
 	icon: typeof TrendingUp;
-	favicon?: string | null;
 }) {
+	let faviconUrls: string[] = [];
+
+	if((typeof value === "string") && (label=="Top Source" || label=="Top Competitor")){
+		faviconUrls = getFaviconUrls(value ?? "", "");
+	}
+
 	return (
 		<div className="flex flex-col gap-1 rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
 			<div className="mb-1 flex items-center gap-2">
-				{favicon ? (
-					<img
-						src={favicon}
-						alt=""
-						className="h-3.5 w-3.5 rounded-sm"
-						onError={(e) => {
-							(e.target as HTMLImageElement).style.display = "none";
-						}}
-					/>
-				) : (
-					<Icon className="h-3.5 w-3.5 text-muted-foreground" />
-				)}
+				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
 				<span className="font-medium text-muted-foreground text-xs">
 					{label}
 				</span>
 			</div>
-			<span className="font-bold text-2xl tracking-tight">{value}</span>
+			{
+				faviconUrls.length > 0
+				?
+				<div className="flex items-center gap-2">
+					<img
+						src={faviconUrls[0]}
+						alt=""
+						className="
+						w-[1.25em] 
+						h-[1.25em]
+						rounded-md
+						shrink-0
+						"
+						onError={(e) =>
+						((e.target as HTMLImageElement).style.display = "none")
+						}
+					/>
+
+					<span className="font-bold text-2xl tracking-tight leading-none">
+						{value}
+					</span>
+				</div>
+				:
+				<span className="font-bold text-2xl tracking-tight">{value}</span>
+			}
 			{subtitle && (
 				<span className="text-muted-foreground text-xs">{subtitle}</span>
 			)}
@@ -57,16 +75,12 @@ export function AggregateStatsRow({
 	presenceRate,
 	rank,
 	topSource,
-	topSourceFavicon,
-	topCompetitor,
-	topCompetitorFavicon,
+	topCompetitor
 }: {
 	presenceRate: number;
 	rank: number;
 	topSource: string;
-	topSourceFavicon?: string | null;
 	topCompetitor: string;
-	topCompetitorFavicon?: string | null;
 }) {
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -83,18 +97,16 @@ export function AggregateStatsRow({
 				subtitle="Avg rank across prompts"
 			/>
 			<StatCard
-				icon={Globe}
+				icon={TrendingUp}
 				label="Top Source"
 				value={topSource}
 				subtitle="Most cited information source"
-				favicon={topSourceFavicon}
 			/>
 			<StatCard
 				icon={Users}
 				label="Top Competitor"
 				value={topCompetitor}
 				subtitle="Most frequently appears with you"
-				favicon={topCompetitorFavicon}
 			/>
 		</div>
 	);

@@ -1,19 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
 import type { AnalysisRecord } from "@onescope/types";
 import {
 	Card,
 	CardContent,
 	CardHeader,
 	CardTitle,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
 } from "@onescope/ui";
 import { getModelFavicon, modelSelectors } from "@onescope/utils";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { getGeoScoreColor, getSentimentColor } from "../_utils/helpers";
 import { recTypeColors, recTypeLabels } from "../_utils/constants";
 
@@ -31,180 +25,127 @@ export function QueryLevelTable({
 	}>;
 	onSelectRecord: (prompt: string) => void;
 }) {
-	const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
-
 	return (
-		<Card className="border-gray-100 dark:border-gray-800">
-			<CardHeader className="pb-4 px-5 pt-5">
-				<CardTitle className="text-sm font-semibold">Query Performance</CardTitle>
+		<Card className="relative overflow-hidden border-none bg-white/80 shadow-sm ring-1 ring-slate-100 backdrop-blur-sm dark:bg-slate-900/70 dark:ring-slate-800">
+			<div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950" />
+			<div className="pointer-events-none absolute -left-16 -top-16 h-36 w-36 rounded-full bg-slate-900/5 blur-3xl dark:bg-white/5" />
+			<CardHeader className="relative pb-3 px-5 pt-5">
+				<p className="text-[11px] uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+					Query Intelligence
+				</p>
+				<CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+					Query Performance
+				</CardTitle>
+				<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+					Compare prompts by coverage, sentiment, and recommendation strength.
+				</p>
 			</CardHeader>
-			<CardContent className="p-0">
-				<div className="overflow-hidden rounded-b-xl">
-					<Table className="min-w-full">
-						<TableHeader>
-							<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
-								<TableHead className="px-4 py-3 text-left font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Query
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Models
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Avg Score
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Best Rank
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Avg Sentiment
-								</TableHead>
-								<TableHead className="px-4 py-3 text-center font-semibold text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-									Top Rec.
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{groupedRecords.map((group) => {
-								const isExpanded = expandedPrompt === group.prompt;
-								const geoColor = getGeoScoreColor(group.avgScore);
-								const sentimentColor = getSentimentColor(group.avgSentiment);
+			<CardContent className="relative space-y-3 px-4 pb-6 pt-1 sm:px-5">
+				{groupedRecords.map((group) => {
+					const geoColor = getGeoScoreColor(group.avgScore);
+					const sentimentColor = getSentimentColor(group.avgSentiment);
 
-								return (
-									<React.Fragment key={group.prompt}>
-										<TableRow
-											onClick={() =>
-												setExpandedPrompt(isExpanded ? null : group.prompt)
-											}
-											className="cursor-pointer border-gray-100/50 border-b transition-colors hover:bg-gray-50 dark:border-gray-800/40 dark:hover:bg-gray-900/60"
-										>
-											<TableCell className="max-w-md px-4 py-4">
-												<div className="flex items-center gap-2">
-													<ChevronDown
-														className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+					return (
+						<div
+							key={group.prompt}
+							className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)] backdrop-blur-sm transition hover:-translate-y-[1px] hover:shadow-[0_22px_52px_-30px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70"
+						>
+							<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+								<div className="space-y-1">
+									<p className="text-sm font-semibold leading-snug text-slate-900 dark:text-white">
+										{group.prompt}
+									</p>
+									<div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+										<span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
+											{group.records.length} model{group.records.length !== 1 ? "s" : ""}
+										</span>
+										<span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+										<span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+											{recTypeLabels[group.topRecType] ?? group.topRecType}
+										</span>
+									</div>
+								</div>
+								<div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:min-w-[320px]">
+									<span
+										className="inline-flex items-center justify-between rounded-full bg-slate-900/5 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:bg-white/10 dark:text-white"
+										style={{ color: geoColor }}
+									>
+										<span>Avg Score</span>
+										<span>{group.avgScore}</span>
+									</span>
+									<span className="inline-flex items-center justify-between rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+										<span>Rank</span>
+										<span>{group.bestRank ? `#${group.bestRank}` : "—"}</span>
+									</span>
+									<span
+										className={`inline-flex items-center justify-between rounded-full px-3 py-1.5 text-xs font-semibold ${sentimentColor.text} bg-slate-900/5 dark:bg-white/10`}
+									>
+										<span>Sentiment</span>
+										<span>{group.avgSentiment}</span>
+									</span>
+									<span
+										className={`inline-flex items-center justify-between rounded-full px-3 py-1.5 text-[11px] font-semibold ${recTypeColors[group.topRecType] ?? recTypeColors.not_mentioned}`}
+									>
+										<span>Top Rec</span>
+										<span>{recTypeLabels[group.topRecType] ?? group.topRecType}</span>
+									</span>
+								</div>
+							</div>
+
+							<div className="mt-4">
+								<p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+									Model-Specific Results
+								</p>
+								<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+									{group.records.map((record) => {
+										const ba = record.brand_analysis!;
+										const recColor = getGeoScoreColor(ba.geoScore.overall);
+										const sentColor = getSentimentColor(ba.sentiment.score);
+
+										return (
+											<button
+												key={record.id}
+												type="button"
+												onClick={() => onSelectRecord(record.prompt)}
+												className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 text-left shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-slate-300/80 hover:shadow-[0_22px_52px_-30px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70"
+											>
+												<div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/40 via-white/10 to-transparent dark:from-white/5 dark:via-white/0 dark:to-transparent" />
+												<div className="flex items-center gap-3">
+													<img
+														src={getModelFavicon(record.model_provider)}
+														alt={record.model_provider}
+														className="h-6 w-6 rounded-md border border-white shadow-sm dark:border-slate-800"
 													/>
-													<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-														{group.prompt}
+													<span className="font-semibold text-slate-900 text-sm dark:text-white">
+														{modelSelectors.find(
+															(m) => m.value === record.model_provider,
+														)?.label}
 													</span>
 												</div>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<div className="flex items-center justify-center gap-1">
-													{group.records.map((r) => (
-														<img
-															key={r.id}
-															src={getModelFavicon(r.model_provider)}
-															alt={r.model_provider}
-															title={
-																modelSelectors.find(
-																	(m) => m.value === r.model_provider,
-																)?.label
-															}
-															className="h-4 w-4 rounded-sm"
-														/>
-													))}
-												</div>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span
-													className="font-bold text-sm"
-													style={{ color: geoColor }}
-												>
-													{group.avgScore}
-												</span>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-													{group.bestRank ? `#${group.bestRank}` : "—"}
-												</span>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span
-													className={`font-bold text-sm ${sentimentColor.text}`}
-												>
-													{group.avgSentiment}
-												</span>
-											</TableCell>
-											<TableCell className="px-4 py-4 text-center">
-												<span
-													className={`inline-flex items-center rounded-md px-2.5 py-1 font-semibold text-xs ${recTypeColors[group.topRecType] ?? recTypeColors.not_mentioned}`}
-												>
-													{recTypeLabels[group.topRecType] ?? group.topRecType}
-												</span>
-											</TableCell>
-										</TableRow>
-
-										{/* Expanded Model Details */}
-										{isExpanded && (
-											<TableRow className="bg-gray-50/50 dark:bg-gray-900/20">
-												<TableCell colSpan={6} className="px-8 py-4">
-													<div className="space-y-2">
-														<p className="mb-3 font-medium text-gray-700 text-xs uppercase tracking-wider dark:text-gray-300">
-															Model-Specific Results
-														</p>
-														<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-															{group.records.map((record) => {
-																const ba = record.brand_analysis!;
-																const recColor = getGeoScoreColor(
-																	ba.geoScore.overall,
-																);
-																const sentColor = getSentimentColor(
-																	ba.sentiment.score,
-																);
-
-																return (
-																	<button
-																		key={record.id}
-																		type="button"
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			onSelectRecord(record.prompt);
-																		}}
-																		className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition-colors hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900/50 dark:hover:border-gray-700"
-																	>
-																		<div className="flex items-center gap-3">
-																			<img
-																				src={getModelFavicon(
-																					record.model_provider,
-																				)}
-																				alt={record.model_provider}
-																				className="h-5 w-5 rounded-sm"
-																			/>
-																			<span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-																				{modelSelectors.find(
-																					(m) => m.value === record.model_provider,
-																				)?.label}
-																			</span>
-																		</div>
-																		<div className="flex items-center gap-4">
-																			<div className="text-right">
-																				<span
-																					className="block font-bold text-xs"
-																					style={{ color: recColor }}
-																				>
-																					{ba.geoScore.overall} Score
-																				</span>
-																				<span
-																					className={`block text-xs ${sentColor.text}`}
-																				>
-																					{ba.sentiment.score} Sentiment
-																				</span>
-																			</div>
-																			<ExternalLink className="h-4 w-4 text-gray-400" />
-																		</div>
-																	</button>
-																);
-															})}
-														</div>
+												<div className="flex items-center gap-4">
+													<div className="text-right">
+														<span
+															className="block text-xs font-semibold"
+															style={{ color: recColor }}
+														>
+															{ba.geoScore.overall} Score
+														</span>
+														<span
+															className={`block text-[11px] font-semibold ${sentColor.text}`}
+														>
+															{ba.sentiment.score} Sentiment
+														</span>
 													</div>
-												</TableCell>
-											</TableRow>
-										)}
-									</React.Fragment>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</div>
+													<ExternalLink className="h-4 w-4 text-slate-400 transition group-hover:text-slate-600 dark:group-hover:text-slate-200" />
+												</div>
+											</button>
+										);
+									})}
+								</div>
+							</div>
+						</div>
+					);
+				})}
 			</CardContent>
 		</Card>
 	);

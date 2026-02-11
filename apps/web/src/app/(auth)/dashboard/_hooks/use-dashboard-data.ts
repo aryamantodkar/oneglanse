@@ -14,7 +14,7 @@ export function useDashboardData(
 	const allRecords = useMemo<AnalysisRecord[]>(() => {
 		const data = analysedPromptData?.data;
 		if (!data) return [];
-		// Handle both possible shapes: { records: [...] } or direct array
+
 		if (Array.isArray(data)) return data;
 		if (
 			data &&
@@ -135,6 +135,7 @@ export function useDashboardData(
 			string,
 			{
 				name: string;
+				domain: string;
 				appearances: number;
 				sentimentSum: number;
 				rankSum: number;
@@ -149,6 +150,7 @@ export function useDashboardData(
 			r.brand_analysis.competitors.forEach((c) => {
 				const existing = map.get(c.name) ?? {
 					name: c.name,
+					domain: c.domain ?? "",
 					appearances: 0,
 					sentimentSum: 0,
 					rankSum: 0,
@@ -177,6 +179,7 @@ export function useDashboardData(
 		return [...map.values()]
 			.map((c) => ({
 				name: c.name,
+				domain: c.domain,
 				appearances: c.appearances,
 				avgSentiment: Math.round(c.sentimentSum / c.appearances),
 				avgRank: c.rankCount > 0 ? Math.round(c.rankSum / c.rankCount) : null,

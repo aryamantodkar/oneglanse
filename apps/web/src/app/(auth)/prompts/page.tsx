@@ -168,7 +168,7 @@ export default function Prompts() {
 					geoScore: ba.geoScore.overall,
 					mentionCount: ba.presence.mentionCount,
 					sentiment: ba.sentiment.score,
-					shareOfVoice: ba.presence.shareOfVoice,
+					visibility: ba.presence.visibility,
 					position: ba.position.rankPosition,
 				};
 
@@ -226,8 +226,8 @@ export default function Prompts() {
 					allAnalyses.reduce((sum, ba) => sum + ba.sentiment.score, 0) /
 						allAnalyses.length,
 				),
-				shareOfVoice: Math.round(
-					allAnalyses.reduce((sum, ba) => sum + ba.presence.shareOfVoice, 0) /
+				visibility: Math.round(
+					allAnalyses.reduce((sum, ba) => sum + ba.presence.visibility, 0) /
 						allAnalyses.length,
 				),
 				position:
@@ -731,7 +731,7 @@ export default function Prompts() {
 
 													<TableCell className="px-6 py-5 text-center text-gray-700 text-sm dark:text-gray-300">
 														<span className="inline-block rounded-full bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs dark:bg-gray-800 dark:text-gray-300">
-															{metrics.shareOfVoice}%
+															{metrics.visibility}%
 														</span>
 													</TableCell>
 
@@ -899,7 +899,7 @@ export default function Prompts() {
 																		<span className="font-semibold text-gray-900 text-xs dark:text-gray-100">
 																			{
 																				record.brand_analysis.presence
-																					.shareOfVoice
+																					.visibility
 																			}
 																			%
 																		</span>

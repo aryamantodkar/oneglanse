@@ -1,56 +1,104 @@
-FROM node:20-bookworm
+# ----------------------------
+# Stage 1: Builder - Build TypeScript application
+# ----------------------------
+FROM node:20-alpine AS builder
 
-# ----------------------------
-# Playwright system deps
-# ----------------------------
-RUN apt-get update && apt-get install -y \
-  libnss3 \
-  libatk1.0-0 \
-  libatk-bridge2.0-0 \
-  libcups2 \
-  libdrm2 \
-  libxkbcommon0 \
-  libxcomposite1 \
-  libxdamage1 \
-  libxfixes3 \
-  libxrandr2 \
-  libgbm1 \
-  libasound2 \
-  libpangocairo-1.0-0 \
-  libgtk-3-0 \
-  ca-certificates \
-  fonts-liberation \
-  && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+RUN apk add --no-cache libc6-compat python3 make g++
+RUN corepack enable && corepack prepare pnpm@10.16.0 --activate
 
 WORKDIR /app
 
-# Install pnpm via npm (more resilient than corepack which depends on registry.npmjs.org)
-RUN npm install -g pnpm@10.16.0
+# Copy workspace configuration
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.json ./
 
-# ----------------------------
-# Copy monorepo
-# ----------------------------
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+# Copy package.json files for all packages
+COPY packages/db/package.json ./packages/db/
+COPY packages/errors/package.json ./packages/errors/
+COPY packages/services/package.json ./packages/services/
+COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/utils/package.json ./packages/utils/
+COPY apps/agent/package.json ./apps/agent/
+
+# Install dependencies with cache
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm fetch --frozen-lockfile
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --offline
+
+# Copy source code
 COPY packages ./packages
 COPY apps/agent ./apps/agent
 
-# ----------------------------
-# Install deps
-# ----------------------------
-RUN pnpm install --frozen-lockfile
-
-# ----------------------------
-# Install Playwright browser
-# ----------------------------
-RUN pnpm --filter @onescope/agent exec playwright install chromium
-
-# ----------------------------
-# Build agent
-# ----------------------------
+# Build the agent and its dependencies
 RUN pnpm turbo build --filter=@onescope/agent...
 
-WORKDIR /app/apps/agent
-ENV NODE_ENV=production
+# ----------------------------
+# Stage 2: Runner - Production image
+# ----------------------------
+FROM node:20-slim AS runner
 
-# Default command (can be overridden in docker-compose)
+# Install Playwright system dependencies (minimal set)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    libnspr4 \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    fonts-liberation \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@10.16.0 --activate
+
+ENV NODE_ENV=production
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Create non-root user
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 --gid nodejs agentuser
+
+# Copy workspace files
+COPY --from=builder /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json ./
+COPY --from=builder /app/packages/db/package.json ./packages/db/
+COPY --from=builder /app/packages/errors/package.json ./packages/errors/
+COPY --from=builder /app/packages/services/package.json ./packages/services/
+COPY --from=builder /app/packages/types/package.json ./packages/types/
+COPY --from=builder /app/packages/ui/package.json ./packages/ui/
+COPY --from=builder /app/packages/utils/package.json ./packages/utils/
+COPY --from=builder /app/apps/agent/package.json ./apps/agent/
+
+# Install only production dependencies
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --prod --frozen-lockfile
+
+# Copy built packages
+COPY --from=builder --chown=agentuser:nodejs /app/packages/db/dist ./packages/db/dist
+COPY --from=builder --chown=agentuser:nodejs /app/packages/errors/dist ./packages/errors/dist
+COPY --from=builder --chown=agentuser:nodejs /app/packages/services/dist ./packages/services/dist
+COPY --from=builder --chown=agentuser:nodejs /app/packages/types/dist ./packages/types/dist
+COPY --from=builder --chown=agentuser:nodejs /app/packages/ui/dist ./packages/ui/dist
+COPY --from=builder --chown=agentuser:nodejs /app/packages/utils/dist ./packages/utils/dist
+
+# Copy built agent application
+COPY --from=builder --chown=agentuser:nodejs /app/apps/agent/dist ./apps/agent/dist
+
+USER agentuser
+
+EXPOSE 3333
+
+# Default to API, can override with worker command
 CMD ["pnpm", "start:api"]

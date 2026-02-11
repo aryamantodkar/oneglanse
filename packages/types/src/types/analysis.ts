@@ -40,7 +40,7 @@ export interface BrandAnalysisResult {
   presence: {
     mentioned: boolean;
     mentionCount: number;
-    shareOfVoice: number;
+    visibility: number;
     prominence: "dominant" | "significant" | "moderate" | "minor" | "passing" | "absent";
     firstMentionPosition: "top" | "middle" | "bottom" | "absent";
   };
@@ -80,6 +80,7 @@ export interface BrandAnalysisResult {
    */
   competitors: {
     name: string;
+    domain: string;
     sentiment: number;
     rankPosition: number | null;
     isRecommended: boolean;
