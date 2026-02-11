@@ -1,0 +1,404 @@
+import { useMemo } from "react";
+import type { AnalysisRecord, BrandAnalysisResult } from "@onescope/types";
+import { filterAnalysisRecords, getDomain } from "@onescope/utils";
+import { severityRank } from "../_utils/helpers";
+import type { DashboardMetrics } from "../_utils/types";
+
+export function useDashboardData(
+	analysedPromptData: any,
+	modelFilter: string,
+	timeFilter: "all" | "7d" | "14d" | "30d"
+): DashboardMetrics {
+	// ─── Data Extraction ─────────────────────────────────────────────────────
+
+	const allRecords = useMemo<AnalysisRecord[]>(() => {
+		const data = analysedPromptData?.data;
+		if (!data) return [];
+		// Handle both possible shapes: { records: [...] } or direct array
+		if (Array.isArray(data)) return data;
+		if (
+			data &&
+			typeof data === "object" &&
+			"records" in data &&
+			Array.isArray((data as any).records)
+		) {
+			return (data as any).records;
+		}
+		return [];
+	}, [analysedPromptData]);
+
+	const filteredRecords = useMemo(() => {
+		return filterAnalysisRecords(allRecords, { modelFilter, timeFilter });
+	}, [allRecords, modelFilter, timeFilter]);
+
+	const analyzedRecords = useMemo(() => {
+		return filteredRecords.filter(
+			(r): r is AnalysisRecord & { brand_analysis: BrandAnalysisResult } =>
+				!!r.is_analysed && !!r.brand_analysis,
+		);
+	}, [filteredRecords]);
+
+	// ─── Aggregations ────────────────────────────────────────────────────────
+
+	const brandName = useMemo(() => {
+		const first = analyzedRecords.find(
+			(r) => r.brand_analysis.metadata?.brandName,
+		);
+		return first?.brand_analysis.metadata?.brandName ?? "Your Brand";
+	}, [analyzedRecords]);
+
+	const avgRank = useMemo(() => {
+		const withRank = analyzedRecords.filter(
+			(r) => r.brand_analysis.position.rankPosition !== null,
+		);
+		if (withRank.length === 0) return { position: null, total: null };
+		const avgPos = Math.round(
+			withRank.reduce(
+				(s, r) => s + r.brand_analysis.position.rankPosition!,
+				0,
+			) / withRank.length,
+		);
+		const withTotal = withRank.filter(
+			(r) => r.brand_analysis.position.totalRanked !== null,
+		);
+		const avgTotal =
+			withTotal.length > 0
+				? Math.round(
+						withTotal.reduce(
+							(s, r) => s + r.brand_analysis.position.totalRanked!,
+							0,
+						) / withTotal.length,
+					)
+				: null;
+		return { position: avgPos, total: avgTotal };
+	}, [analyzedRecords]);
+
+	const avgSentiment = useMemo(() => {
+		if (analyzedRecords.length === 0)
+			return { score: 0, label: "neutral" as const };
+		const avg = Math.round(
+			analyzedRecords.reduce(
+				(s, r) => s + r.brand_analysis.sentiment.score,
+				0,
+			) / analyzedRecords.length,
+		);
+		const label =
+			avg >= 80
+				? "very_positive"
+				: avg >= 60
+					? "positive"
+					: avg >= 40
+						? "neutral"
+						: avg >= 20
+							? "negative"
+							: "very_negative";
+		return { score: avg, label };
+	}, [analyzedRecords]);
+
+	const aggregateStats = useMemo(() => {
+		if (analyzedRecords.length === 0) {
+			return { presenceRate: 0, winRate: 0, recRate: 0, topCompetitor: "N/A" };
+		}
+		const total = analyzedRecords.length;
+		const mentioned = analyzedRecords.filter(
+			(r) => r.brand_analysis.presence.mentioned,
+		).length;
+		const isTopPick = analyzedRecords.filter(
+			(r) => r.brand_analysis.position.isTopPick,
+		).length;
+		const isRecommended = analyzedRecords.filter((r) =>
+			["top_pick", "strong_alternative"].includes(
+				r.brand_analysis.recommendation.type,
+			),
+		).length;
+
+		const competitorCounts = new Map<string, number>();
+		analyzedRecords.forEach((r) => {
+			r.brand_analysis.competitors.forEach((c) => {
+				competitorCounts.set(c.name, (competitorCounts.get(c.name) ?? 0) + 1);
+			});
+		});
+		const topCompetitor =
+			[...competitorCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+			"N/A";
+
+		return {
+			presenceRate: Math.round((mentioned / total) * 100),
+			winRate: Math.round((isTopPick / total) * 100),
+			recRate: Math.round((isRecommended / total) * 100),
+			topCompetitor,
+		};
+	}, [analyzedRecords]);
+
+	const competitorData = useMemo(() => {
+		const map = new Map<
+			string,
+			{
+				name: string;
+				appearances: number;
+				sentimentSum: number;
+				rankSum: number;
+				rankCount: number;
+				recCount: number;
+				winsOver: Map<string, number>;
+				losesTo: Map<string, number>;
+			}
+		>();
+
+		analyzedRecords.forEach((r) => {
+			r.brand_analysis.competitors.forEach((c) => {
+				const existing = map.get(c.name) ?? {
+					name: c.name,
+					appearances: 0,
+					sentimentSum: 0,
+					rankSum: 0,
+					rankCount: 0,
+					recCount: 0,
+					winsOver: new Map<string, number>(),
+					losesTo: new Map<string, number>(),
+				};
+				existing.appearances += 1;
+				existing.sentimentSum += c.sentiment;
+				if (c.rankPosition !== null) {
+					existing.rankSum += c.rankPosition;
+					existing.rankCount += 1;
+				}
+				if (c.isRecommended) existing.recCount += 1;
+				c.winsOver.forEach((w) =>
+					existing.winsOver.set(w, (existing.winsOver.get(w) ?? 0) + 1),
+				);
+				c.losesTo.forEach((l) =>
+					existing.losesTo.set(l, (existing.losesTo.get(l) ?? 0) + 1),
+				);
+				map.set(c.name, existing);
+			});
+		});
+
+		return [...map.values()]
+			.map((c) => ({
+				name: c.name,
+				appearances: c.appearances,
+				avgSentiment: Math.round(c.sentimentSum / c.appearances),
+				avgRank: c.rankCount > 0 ? Math.round(c.rankSum / c.rankCount) : null,
+				recCount: c.recCount,
+				winsOver: [...c.winsOver.entries()]
+					.sort((a, b) => b[1] - a[1])
+					.map(([k]) => k),
+				losesTo: [...c.losesTo.entries()]
+					.sort((a, b) => b[1] - a[1])
+					.map(([k]) => k),
+			}))
+			.sort((a, b) => b.appearances - a.appearances);
+	}, [analyzedRecords]);
+
+	const sentimentBreakdown = useMemo(() => {
+		const positiveCounts = new Map<string, number>();
+		const negativeCounts = new Map<string, number>();
+		analyzedRecords.forEach((r) => {
+			r.brand_analysis.sentiment.positives.forEach((p) =>
+				positiveCounts.set(p, (positiveCounts.get(p) ?? 0) + 1),
+			);
+			r.brand_analysis.sentiment.negatives.forEach((n) =>
+				negativeCounts.set(n, (negativeCounts.get(n) ?? 0) + 1),
+			);
+		});
+		return {
+			positives: [...positiveCounts.entries()]
+				.sort((a, b) => b[1] - a[1])
+				.map(([text, count]) => ({ text, count })),
+			negatives: [...negativeCounts.entries()]
+				.sort((a, b) => b[1] - a[1])
+				.map(([text, count]) => ({ text, count })),
+		};
+	}, [analyzedRecords]);
+
+	const brandPerception = useMemo(() => {
+		const bestKnownForCounts = new Map<string, number>();
+		const pricingCounts = new Map<string, number>();
+		const claimCounts = new Map<string, number>();
+		const diffCounts = new Map<string, number>();
+
+		analyzedRecords.forEach((r) => {
+			const p = r.brand_analysis.perception;
+			if (p.bestKnownFor)
+				bestKnownForCounts.set(
+					p.bestKnownFor,
+					(bestKnownForCounts.get(p.bestKnownFor) ?? 0) + 1,
+				);
+			pricingCounts.set(
+				p.pricingPerception,
+				(pricingCounts.get(p.pricingPerception) ?? 0) + 1,
+			);
+			p.coreClaims.forEach((c) =>
+				claimCounts.set(c, (claimCounts.get(c) ?? 0) + 1),
+			);
+			p.differentiators.forEach((d) =>
+				diffCounts.set(d, (diffCounts.get(d) ?? 0) + 1),
+			);
+		});
+
+		return {
+			bestKnownFor:
+				[...bestKnownForCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+				null,
+			pricingPerception:
+				[...pricingCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+				"not_mentioned",
+			coreClaims: [...claimCounts.entries()]
+				.sort((a, b) => b[1] - a[1])
+				.slice(0, 8)
+				.map(([t]) => t),
+			differentiators: [...diffCounts.entries()]
+				.sort((a, b) => b[1] - a[1])
+				.slice(0, 8)
+				.map(([t]) => t),
+		};
+	}, [analyzedRecords]);
+
+	const sourcesIntelligence = useMemo(() => {
+		const domainMap = new Map<
+			string,
+			{
+				domain: string;
+				favicon: string | null;
+				citationCount: number;
+				uniqueRecords: Set<string>;
+				models: Set<string>;
+				excerpts: { text: string; model: string }[];
+				urls: Set<string>;
+			}
+		>();
+
+		analyzedRecords.forEach((r) => {
+			r.sources.forEach((s) => {
+				const domain = s.domain || getDomain(s.url);
+				if (!domain) return;
+				const existing = domainMap.get(domain) ?? {
+					domain,
+					favicon: s.favicon ?? null,
+					citationCount: 0,
+					uniqueRecords: new Set<string>(),
+					models: new Set<string>(),
+					excerpts: [],
+					urls: new Set<string>(),
+				};
+				existing.citationCount += 1;
+				existing.uniqueRecords.add(r.id);
+				existing.models.add(r.model_provider);
+				existing.urls.add(s.url);
+				if (s.cited_text) {
+					existing.excerpts.push({
+						text: s.cited_text,
+						model: r.model_provider,
+					});
+				}
+				domainMap.set(domain, existing);
+			});
+		});
+
+		return [...domainMap.values()]
+			.sort((a, b) => b.uniqueRecords.size - a.uniqueRecords.size)
+			.slice(0, 15);
+	}, [analyzedRecords]);
+
+	const aggregatedRisks = useMemo(() => {
+		const riskMap = new Map<
+			string,
+			{ type: string; severity: string; detail: string; count: number }
+		>();
+		analyzedRecords.forEach((r) => {
+			if (!r.brand_analysis.risks.hasRisks) return;
+			r.brand_analysis.risks.items.forEach((risk) => {
+				const key = risk.detail.toLowerCase().trim();
+				const existing = riskMap.get(key);
+				if (
+					!existing ||
+					severityRank(risk.severity) > severityRank(existing.severity)
+				) {
+					riskMap.set(key, { ...risk, count: (existing?.count ?? 0) + 1 });
+				} else if (existing) {
+					existing.count += 1;
+				}
+			});
+		});
+		return [...riskMap.values()].sort((a, b) => {
+			const sevDiff = severityRank(b.severity) - severityRank(a.severity);
+			return sevDiff !== 0 ? sevDiff : b.count - a.count;
+		});
+	}, [analyzedRecords]);
+
+	const groupedRecords = useMemo(() => {
+		const groups = new Map<string, AnalysisRecord[]>();
+
+		analyzedRecords.forEach((record) => {
+			const prompt = record.prompt;
+			if (!groups.has(prompt)) {
+				groups.set(prompt, []);
+			}
+			groups.get(prompt)!.push(record);
+		});
+
+		return Array.from(groups.entries()).map(([prompt, records]) => {
+			// Sort records within group by model provider
+			const sortedGroupRecords = records.sort((a, b) =>
+				a.model_provider.localeCompare(b.model_provider),
+			);
+
+			// Calculate aggregate metrics
+			const avgScore = Math.round(
+				sortedGroupRecords.reduce(
+					(sum, r) => sum + r.brand_analysis!.geoScore.overall,
+					0,
+				) / sortedGroupRecords.length,
+			);
+
+			const avgSentiment = Math.round(
+				sortedGroupRecords.reduce(
+					(sum, r) => sum + r.brand_analysis!.sentiment.score,
+					0,
+				) / sortedGroupRecords.length,
+			);
+
+			const rankPositions = sortedGroupRecords
+				.map((r) => r.brand_analysis!.position.rankPosition)
+				.filter((r): r is number => r !== null);
+			const bestRank = rankPositions.length > 0 ? Math.min(...rankPositions) : null;
+
+			// Get best recommendation type (prioritize top_pick > strong_alternative > etc)
+			const recTypeOrder = [
+				"top_pick",
+				"strong_alternative",
+				"conditional",
+				"mentioned_only",
+				"discouraged",
+				"not_mentioned",
+			];
+			const topRecType = sortedGroupRecords
+				.map((r) => r.brand_analysis!.recommendation.type)
+				.sort((a, b) => recTypeOrder.indexOf(a) - recTypeOrder.indexOf(b))[0]!;
+
+			return {
+				prompt,
+				records: sortedGroupRecords,
+				avgScore,
+				avgSentiment,
+				bestRank,
+				topRecType,
+			};
+		});
+	}, [analyzedRecords]);
+
+	return {
+		brandName,
+		avgRank,
+		avgSentiment,
+		aggregateStats,
+		competitorData,
+		sentimentBreakdown,
+		brandPerception,
+		sourcesIntelligence,
+		aggregatedRisks,
+		groupedRecords,
+		analyzedRecords,
+	};
+}
