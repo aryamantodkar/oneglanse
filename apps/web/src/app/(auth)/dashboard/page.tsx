@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { AnalysisRecord } from "@onescope/types";
-import { getFaviconUrls } from "@onescope/utils";
 import {
 	useFetchAnalysedPrompts,
 	usePromptSources,
@@ -80,20 +79,7 @@ export default function Dashboard() {
 					presenceRate={metrics.aggregateStats.presenceRate}
 					rank={metrics.avgRank.position ?? 0}
 					topSource={metrics.sourcesIntelligence[0]?.domain ?? 'N/A'}
-					topSourceFavicon={
-						metrics.sourcesIntelligence[0]?.domain
-							? getFaviconUrls(metrics.sourcesIntelligence[0].domain, metrics.sourcesIntelligence[0].favicon ?? "")[0]
-							: null
-					}
 					topCompetitor={metrics.aggregateStats.topCompetitor}
-					topCompetitorFavicon={
-						metrics.aggregateStats.topCompetitor !== 'N/A'
-							? getFaviconUrls(
-									metrics.aggregateStats.topCompetitor.toLowerCase().replace(/\s+/g, ''),
-									''
-								)[0]
-							: null
-					}
 				/>
 
 				{/* 3-Column Grid */}

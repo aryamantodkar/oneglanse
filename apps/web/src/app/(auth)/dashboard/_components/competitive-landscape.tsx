@@ -37,92 +37,99 @@ export function CompetitiveLandscape({
 		}
 	}, [competitors, competitorSort]);
 
+	const maxMentions = useMemo(
+		() => Math.max(...competitors.map((c) => c.appearances), 1),
+		[competitors],
+	);
+
+	const sentimentColor = getSentimentColor(brandSentiment);
+
+	const tabClass = (value: 'rank' | 'sentiment' | 'appearances') =>
+		`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
+			competitorSort === value
+				? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
+				: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+		}`;
+
 	if (competitors.length === 0) return null;
 
 	return (
-		<Card className="border-gray-100 dark:border-gray-800">
-			<CardHeader className="pb-4 px-5 pt-5">
-				<div className="flex items-center justify-between">
-					<CardTitle className="text-sm font-semibold">Competitors</CardTitle>
-					<div className="flex gap-1">
-						<button
-							onClick={() => setCompetitorSort('rank')}
-							className={`rounded px-2 py-1 text-xs transition-colors ${
-								competitorSort === 'rank'
-									? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-									: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-							}`}
-						>
-							Rank
-						</button>
-						<button
-							onClick={() => setCompetitorSort('sentiment')}
-							className={`rounded px-2 py-1 text-xs transition-colors ${
-								competitorSort === 'sentiment'
-									? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-									: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-							}`}
-						>
-							Sentiment
-						</button>
-						<button
-							onClick={() => setCompetitorSort('appearances')}
-							className={`rounded px-2 py-1 text-xs transition-colors ${
-								competitorSort === 'appearances'
-									? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-									: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-							}`}
-						>
-							Frequency
-						</button>
+		<Card className="relative overflow-hidden border-none bg-white/80 shadow-sm ring-1 ring-slate-100 backdrop-blur-sm dark:bg-slate-900/70 dark:ring-slate-800">
+			<div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950" />
+			<div className="pointer-events-none absolute -right-16 -top-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl" />
+			<CardHeader className="relative pb-4 px-5 pt-5">
+				<div className="flex items-start justify-between gap-3">
+					<div>
+						<p className="text-[11px] uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+							Competitive Pulse
+						</p>
+						<CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+							Competitors
+						</CardTitle>
+					</div>
+					<div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white ${sentimentColor.bg}`}>
+						<span className="uppercase tracking-[0.08em] text-[10px] opacity-80">{brandName}</span>
+						<span className="leading-none">{brandSentiment}</span>
 					</div>
 				</div>
+				<div className="mt-3 flex gap-2 rounded-full bg-white/70 p-1 text-xs ring-1 ring-slate-200 backdrop-blur-sm dark:bg-slate-900/60 dark:ring-slate-800">
+					<button onClick={() => setCompetitorSort('rank')} className={tabClass('rank')}>
+						Rank
+					</button>
+					<button onClick={() => setCompetitorSort('sentiment')} className={tabClass('sentiment')}>
+						Sentiment
+					</button>
+					<button onClick={() => setCompetitorSort('appearances')} className={tabClass('appearances')}>
+						Mentions
+					</button>
+				</div>
 			</CardHeader>
-			<CardContent className="px-5 pb-5 pt-0">
-				<div className="space-y-2">
-					{sortedCompetitors.slice(0, 5).map((comp, idx) => (
-						<div
-							key={comp.name}
-							className="flex items-center justify-between py-2.5"
-						>
-							<div className="flex items-center gap-3 flex-1 min-w-0">
-								<span className="text-gray-400 text-xs font-medium w-6 shrink-0">
+			<CardContent className="relative px-5 pb-5 pt-0">
+				<div className="space-y-3">
+					{sortedCompetitors.slice(0, 5).map((comp, idx) => {
+						const mentionWidth = Math.max(
+							12,
+							Math.round((comp.appearances / maxMentions) * 100),
+						);
+
+						return (
+							<div
+								key={comp.name}
+								className="flex items-center gap-3 rounded-xl border border-slate-100/70 bg-white/80 px-3 py-3 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-800/70 dark:bg-slate-900/60"
+							>
+								<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-sm font-semibold text-white dark:bg-white dark:text-slate-900">
 									{idx + 1}
-								</span>
-								<span className="font-medium text-sm truncate">
-									{comp.name}
-								</span>
-							</div>
-							<div className="flex items-center gap-4 shrink-0">
-								{comp.avgRank !== null && (
-									<div className="text-center min-w-[48px]">
-										<div className="text-gray-900 text-sm font-semibold dark:text-gray-100">
-											#{comp.avgRank}
-										</div>
-										<div className="text-[10px] text-gray-400">
-											rank
-										</div>
-									</div>
-								)}
-								<div className="text-center min-w-[48px]">
-									<div className={`text-sm font-semibold ${getSentimentColor(comp.avgSentiment).text}`}>
-										{comp.avgSentiment}
-									</div>
-									<div className="text-[10px] text-gray-400">
-										sentiment
-									</div>
 								</div>
-								<div className="text-center min-w-[48px]">
-									<div className="text-gray-900 text-sm font-semibold dark:text-gray-100">
-										{comp.appearances}
+								<div className="min-w-0 flex-1">
+									<div className="flex items-center justify-between gap-2">
+										<p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+											{comp.name}
+										</p>
+										{comp.avgRank !== null && (
+											<span className="text-[11px] text-slate-500 dark:text-slate-400">
+												#{comp.avgRank} rank
+											</span>
+										)}
 									</div>
-									<div className="text-[10px] text-gray-400">
-										mentions
+									<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+										<span className={`${getSentimentColor(comp.avgSentiment).text} font-semibold`}>
+											{comp.avgSentiment} sentiment
+										</span>
+										<span className="flex items-center gap-1">
+											<span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+											{comp.appearances} mentions
+										</span>
+									</div>
+									<div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+										<div
+											className="h-full rounded-full bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-white/80 dark:to-white/60"
+											style={{ width: `${mentionWidth}%` }}
+										/>
 									</div>
 								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			</CardContent>
 		</Card>

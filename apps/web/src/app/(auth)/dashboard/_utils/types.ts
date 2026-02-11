@@ -2,6 +2,7 @@ import type { AnalysisRecord } from "@onescope/types";
 
 export interface CompetitorData {
 	name: string;
+	domain: string;
 	appearances: number;
 	avgSentiment: number;
 	avgRank: number | null;

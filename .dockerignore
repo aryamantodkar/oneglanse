@@ -1,0 +1,59 @@
+# Build outputs (will be rebuilt in Docker)
+.next
+dist
+out
+.turbo
+node_modules
+
+# Development files
+.git
+.github
+.vscode
+.idea
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__
+**/__mocks__
+*.test.js
+*.spec.js
+coverage
+
+# Environment and secrets
+.env*.local
+.env.development
+.env.test
+
+# Documentation
+*.md
+!README.md
+docs
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.swp
+*.swo
+
+# CI/CD
+.github
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Docker files (avoid recursive copying)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

@@ -29,94 +29,108 @@ export function RecordDetailDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onClose}>
-			<DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[70vw] sm:!w-[70vw] flex h-[85vh] flex-col rounded-2xl px-8 pb-8 sm:px-10 sm:pt-10 sm:pb-10">
-				<DialogHeader className="pb-4">
-					<DialogTitle className="font-semibold text-lg">
+			<DialogContent className="relative !max-w-[90vw] !w-[90vw] sm:!max-w-[70vw] sm:!w-[70vw] flex h-[85vh] flex-col overflow-hidden rounded-2xl border-none bg-white/90 px-8 pb-8 shadow-2xl ring-1 ring-slate-100 backdrop-blur-xl dark:bg-slate-950/85 dark:ring-slate-800 sm:px-10 sm:pt-10 sm:pb-10">
+				<div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-black" />
+				<div className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl dark:bg-white/5" />
+				<div className="pointer-events-none absolute right-[-18%] top-[-18%] h-72 w-72 rounded-full bg-violet-500/10 blur-3xl dark:bg-white/5" />
+
+				<DialogHeader className="relative pb-4">
+					<p className="text-[11px] uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+						Prompt Detail
+					</p>
+					<DialogTitle className="font-semibold text-xl leading-snug text-slate-900 dark:text-white">
 						{record.prompt}
 					</DialogTitle>
 					<DialogDescription>
-						<div className="mt-1 flex items-center gap-3">
-							<img
-								src={getModelFavicon(record.model_provider)}
-								alt={record.model_provider}
-								className="h-4 w-4 rounded-sm"
-							/>
-							<span>
+						<div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+							<span className="inline-flex items-center gap-2 rounded-full bg-slate-900 text-white px-3 py-1 text-xs font-semibold dark:bg-white dark:text-slate-900">
+								<img
+									src={getModelFavicon(record.model_provider)}
+									alt={record.model_provider}
+									className="h-4 w-4 rounded-sm"
+								/>
 								{modelSelectors.find((m) => m.value === record.model_provider)
 									?.label || record.model_provider}
 							</span>
-							<span className="text-gray-400">&middot;</span>
-							<span>{formatDate(record.prompt_run_at)}</span>
+							<span className="text-slate-400">&middot;</span>
+							<span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+								{formatDate(record.prompt_run_at)}
+							</span>
 						</div>
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="flex-1 space-y-6 overflow-y-auto pr-2">
+				<div className="relative flex-1 space-y-6 overflow-y-auto pr-2">
 					{/* GEO Score + Key Metrics */}
-					<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-						<div className="flex flex-col items-center rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-							<span className="mb-1 text-muted-foreground text-xs">
-								GEO Score
-							</span>
-							<span className="font-bold text-2xl" style={{ color: geoColor }}>
-								{ba.geoScore.overall}
-							</span>
-						</div>
-						<div className="flex flex-col items-center rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-							<span className="mb-1 text-muted-foreground text-xs">Rank</span>
-							<span className="font-bold text-2xl">
-								{ba.position.rankPosition !== null
-									? `#${ba.position.rankPosition}`
-									: "—"}
-							</span>
-						</div>
-						<div className="flex flex-col items-center rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-							<span className="mb-1 text-muted-foreground text-xs">
-								Sentiment
-							</span>
-							<span className={`font-bold text-2xl ${sentimentColor.text}`}>
-								{ba.sentiment.score}
-							</span>
-						</div>
-						<div className="flex flex-col items-center rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-							<span className="mb-1 text-muted-foreground text-xs">
-								Share of Voice
-							</span>
-							<span className="font-bold text-2xl">
-								{ba.presence.shareOfVoice}%
-							</span>
-						</div>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+						{[
+							{ label: "GEO Score", value: ba.geoScore.overall, color: geoColor },
+							{
+								label: "Rank",
+								value:
+									ba.position.rankPosition !== null
+										? `#${ba.position.rankPosition}`
+										: "—",
+								color: undefined,
+							},
+							{
+								label: "Sentiment",
+								value: ba.sentiment.score,
+								color: sentimentColor.text,
+							},
+							{ label: "Share of Voice", value: `${ba.presence.visibility}%`, color: undefined },
+						].map((item) => (
+							<div
+								key={item.label}
+								className="flex flex-col gap-1 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70"
+							>
+								<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+									{item.label}
+								</span>
+								<span
+									className={`text-xl font-semibold text-slate-900 dark:text-white ${item.color ?? ""}`}
+									style={item.color && !item.color.includes("text-") ? { color: item.color } : {}}
+								>
+									{item.value}
+								</span>
+							</div>
+						))}
 					</div>
 
 					{/* Verdict */}
-					<div className="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
-						<p className="mb-1 text-muted-foreground text-xs">Verdict</p>
-						<p className="text-gray-700 text-sm dark:text-gray-300">
+					<div className="rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+							Verdict
+						</p>
+						<p className="mt-2 text-sm leading-relaxed text-slate-800 dark:text-slate-200">
 							{ba.geoScore.verdict}
 						</p>
 					</div>
 
 					{/* Recommendation */}
-					<div>
-						<p className="mb-2 text-muted-foreground text-xs">Recommendation</p>
-						<div className="flex flex-wrap items-center gap-3">
+					<div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+							Recommendation
+						</p>
+						<div className="flex flex-wrap items-center gap-2">
 							<span
-								className={`inline-flex items-center rounded-lg px-3 py-1 font-semibold text-sm ${recTypeColors[ba.recommendation.type] ?? ""}`}
+								className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${recTypeColors[ba.recommendation.type] ?? ""}`}
 							>
 								{recTypeLabels[ba.recommendation.type] ??
 									ba.recommendation.type}
 							</span>
 							{ba.recommendation.bestFor.map((tag) => (
-								<PillTag key={tag} label={tag} />
+								<PillTag
+									key={tag}
+									label={tag}
+									className="bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+								/>
 							))}
 						</div>
 						{ba.recommendation.caveats.length > 0 && (
-							<div className="mt-2 space-y-1">
+							<div className="space-y-1 rounded-xl bg-slate-50/70 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
 								{ba.recommendation.caveats.map((caveat) => (
-									<p
-										key={caveat}
-										className="text-muted-foreground text-xs italic"
-									>
+									<p key={caveat} className="leading-relaxed">
 										{caveat}
 									</p>
 								))}
@@ -125,34 +139,34 @@ export function RecordDetailDialog({
 					</div>
 
 					{/* Sentiment Breakdown */}
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<p className="mb-2 font-medium text-emerald-600 text-xs dark:text-emerald-400">
+					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+						<div className="rounded-2xl border border-emerald-100/80 bg-emerald-50/60 px-4 py-3 shadow-[0_12px_32px_-28px_rgba(16,185,129,0.45)] dark:border-emerald-900/50 dark:bg-emerald-950/20">
+							<p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300">
 								Positives
 							</p>
 							<ul className="space-y-1.5">
 								{ba.sentiment.positives.map((p) => (
 									<li
 										key={p}
-										className="flex items-start gap-1.5 text-gray-700 text-sm dark:text-gray-300"
+										className="flex items-start gap-2 text-sm text-emerald-900 dark:text-emerald-100"
 									>
-										<CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+										<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
 										{p}
 									</li>
 								))}
 							</ul>
 						</div>
-						<div>
-							<p className="mb-2 font-medium text-amber-600 text-xs dark:text-amber-400">
+						<div className="rounded-2xl border border-amber-100/80 bg-amber-50/60 px-4 py-3 shadow-[0_12px_32px_-28px_rgba(251,191,36,0.45)] dark:border-amber-900/50 dark:bg-amber-950/20">
+							<p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300">
 								Negatives
 							</p>
 							<ul className="space-y-1.5">
 								{ba.sentiment.negatives.map((n) => (
 									<li
 										key={n}
-										className="flex items-start gap-1.5 text-gray-700 text-sm dark:text-gray-300"
+										className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100"
 									>
-										<AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+										<AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
 										{n}
 									</li>
 								))}
@@ -162,29 +176,33 @@ export function RecordDetailDialog({
 
 					{/* Competitors */}
 					{ba.competitors.length > 0 && (
-						<div>
-							<p className="mb-2 text-muted-foreground text-xs">Competitors</p>
-							<div className="space-y-2">
+						<div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+								Competitors
+							</p>
+							<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 								{ba.competitors.map((comp) => (
 									<div
 										key={comp.name}
-										className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50"
+										className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-3 dark:border-slate-800/70 dark:bg-slate-900/60"
 									>
-										<div className="flex items-center gap-3">
-											<span className="font-medium text-sm">{comp.name}</span>
+										<div className="flex items-center gap-2">
+											<span className="font-semibold text-sm text-slate-900 dark:text-white">
+												{comp.name}
+											</span>
 											{comp.rankPosition !== null && (
-												<span className="text-muted-foreground text-xs">
+												<span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
 													#{comp.rankPosition}
 												</span>
 											)}
 											{comp.isRecommended && (
-												<span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+												<span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
 													Recommended
 												</span>
 											)}
 										</div>
 										<span
-											className={`font-medium text-sm ${getSentimentColor(comp.sentiment).text}`}
+											className={`text-sm font-semibold ${getSentimentColor(comp.sentiment).text}`}
 										>
 											{comp.sentiment}
 										</span>
@@ -196,17 +214,21 @@ export function RecordDetailDialog({
 
 					{/* Perception */}
 					{ba.perception.bestKnownFor && (
-						<div className="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
-							<p className="mb-1 text-muted-foreground text-xs">
+						<div className="rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
 								Best known for
 							</p>
-							<p className="font-medium text-sm">
+							<p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
 								{ba.perception.bestKnownFor}
 							</p>
 							{ba.perception.differentiators.length > 0 && (
-								<div className="mt-2 flex flex-wrap gap-1.5">
+								<div className="mt-3 flex flex-wrap gap-2">
 									{ba.perception.differentiators.map((d) => (
-										<PillTag key={d} label={d} />
+										<PillTag
+											key={d}
+											label={d}
+											className="bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+										/>
 									))}
 								</div>
 							)}
@@ -215,8 +237,10 @@ export function RecordDetailDialog({
 
 					{/* Risks */}
 					{ba.risks.hasRisks && ba.risks.items.length > 0 && (
-						<div>
-							<p className="mb-2 text-muted-foreground text-xs">Risks</p>
+						<div className="space-y-2 rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+								Risks
+							</p>
 							<div className="space-y-2">
 								{ba.risks.items.map((risk, i) => {
 									const style =
@@ -224,14 +248,15 @@ export function RecordDetailDialog({
 									return (
 										<div
 											key={i}
-											className={`rounded-lg border p-3 ${style.bg} ${style.border}`}
+											className={`rounded-xl border px-3 py-3 ${style.bg} ${style.border}`}
 										>
 											<span
-												className={`font-semibold text-xs uppercase ${style.text}`}
+												className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${style.text}`}
 											>
+												<span className={`h-2 w-2 rounded-full ${style.dot}`} />
 												{risk.severity}
 											</span>
-											<p className={`mt-0.5 text-sm ${style.text}`}>
+											<p className={`mt-1 text-sm leading-relaxed ${style.text}`}>
 												{risk.detail}
 											</p>
 										</div>
@@ -243,19 +268,24 @@ export function RecordDetailDialog({
 
 					{/* Actions */}
 					{ba.actions.length > 0 && (
-						<div>
-							<p className="mb-2 text-muted-foreground text-xs">Actions</p>
+						<div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+								Actions
+							</p>
 							<div className="space-y-2">
 								{ba.actions.map((action, i) => (
-									<div key={i} className="flex items-start gap-2">
+									<div
+										key={i}
+										className="flex items-start gap-3 rounded-xl border border-slate-100/80 bg-slate-50/80 px-3 py-2 dark:border-slate-800/60 dark:bg-slate-900/50"
+									>
 										<span
 											className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${priorityColors[action.priority] ?? "bg-gray-400"}`}
 										/>
 										<div>
-											<span className="font-semibold text-[10px] text-muted-foreground uppercase">
+											<span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
 												{action.priority}
 											</span>
-											<p className="text-gray-700 text-sm dark:text-gray-300">
+											<p className="mt-1 text-sm leading-relaxed text-slate-800 dark:text-slate-200">
 												{action.recommendation}
 											</p>
 										</div>
@@ -267,8 +297,10 @@ export function RecordDetailDialog({
 
 					{/* Sources */}
 					{record.sources.length > 0 && (
-						<div>
-							<p className="mb-2 text-muted-foreground text-xs">Sources</p>
+						<div className="space-y-2 rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-4 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-900/70">
+							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+								Sources
+							</p>
 							<div className="flex flex-wrap gap-2">
 								{record.sources.map((source, i) => {
 									const favicon =
@@ -279,7 +311,7 @@ export function RecordDetailDialog({
 											href={source.url}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="inline-flex items-center gap-1.5 rounded-md border border-gray-200/60 bg-gray-50/50 px-2.5 py-1.5 text-[11px] text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-800/60 dark:bg-gray-900/50 dark:text-gray-400 dark:hover:bg-gray-800"
+											className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 dark:text-slate-200"
 										>
 											{favicon && (
 												<img
