@@ -207,16 +207,29 @@ function StatCard({
 	value,
 	subtitle,
 	icon: Icon,
+	favicon,
 }: {
 	label: string;
 	value: string | number;
 	subtitle?: string;
 	icon: typeof TrendingUp;
+	favicon?: string | null;
 }) {
 	return (
 		<div className="flex flex-col gap-1 rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
 			<div className="mb-1 flex items-center gap-2">
-				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
+				{favicon ? (
+					<img
+						src={favicon}
+						alt=""
+						className="h-3.5 w-3.5 rounded-sm"
+						onError={(e) => {
+							(e.target as HTMLImageElement).style.display = "none";
+						}}
+					/>
+				) : (
+					<Icon className="h-3.5 w-3.5 text-muted-foreground" />
+				)}
 				<span className="font-medium text-muted-foreground text-xs">
 					{label}
 				</span>
@@ -462,12 +475,16 @@ function AggregateStatsRow({
 	presenceRate,
 	rank,
 	topSource,
+	topSourceFavicon,
 	topCompetitor,
+	topCompetitorFavicon,
 }: {
 	presenceRate: number;
 	rank: number;
 	topSource: string;
+	topSourceFavicon?: string | null;
 	topCompetitor: string;
+	topCompetitorFavicon?: string | null;
 }) {
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -488,12 +505,14 @@ function AggregateStatsRow({
 				label="Top Source"
 				value={topSource}
 				subtitle="Most cited information source"
+				favicon={topSourceFavicon}
 			/>
 			<StatCard
 				icon={Users}
 				label="Top Competitor"
 				value={topCompetitor}
 				subtitle="Most frequently appears with you"
+				favicon={topCompetitorFavicon}
 			/>
 		</div>
 	);
@@ -516,13 +535,7 @@ function CompetitiveLandscape({
 	brandName: string;
 	brandSentiment: number;
 }) {
-	const [expandedCompetitor, setExpandedCompetitor] = useState<string | null>(
-		null,
-	);
-	const [showAllCompetitors, setShowAllCompetitors] = useState(false);
-	const [competitorSort, setCompetitorSort] = useState<'appearances' | 'sentiment' | 'rank'>('appearances');
-
-	const displayLimit = 5;
+	const [competitorSort, setCompetitorSort] = useState<'appearances' | 'sentiment' | 'rank'>('rank');
 
 	// Sort competitors based on selected criteria
 	const sortedCompetitors = useMemo(() => {
@@ -536,6 +549,10 @@ function CompetitiveLandscape({
 				return sorted.sort((a, b) => {
 					if (a.avgRank === null) return 1;
 					if (b.avgRank === null) return -1;
+					// Primary sort by rank, secondary by appearances for tie-breaking
+					if (a.avgRank === b.avgRank) {
+						return b.appearances - a.appearances;
+					}
 					return a.avgRank - b.avgRank;
 				});
 			default:
@@ -543,148 +560,92 @@ function CompetitiveLandscape({
 		}
 	}, [competitors, competitorSort]);
 
-	const displayedCompetitors = showAllCompetitors
-		? sortedCompetitors
-		: sortedCompetitors.slice(0, displayLimit);
-
-	const maxAppearances = Math.max(...sortedCompetitors.map((c) => c.appearances), 1);
-
 	if (competitors.length === 0) return null;
 
 	return (
-		<Card>
-			<CardHeader className="pb-3">
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<CardTitle className="text-sm font-semibold">Competitive Landscape</CardTitle>
+		<Card className="border-gray-100 dark:border-gray-800">
+			<CardHeader className="pb-4 px-5 pt-5">
+				<div className="flex items-center justify-between">
+					<CardTitle className="text-sm font-semibold">Competitors</CardTitle>
 					<div className="flex gap-1">
 						<button
-							onClick={() => setCompetitorSort('appearances')}
-							className={`rounded-md px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5 ${
-								competitorSort === 'appearances'
-									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-900/20'
+							onClick={() => setCompetitorSort('rank')}
+							className={`rounded px-2 py-1 text-xs transition-colors ${
+								competitorSort === 'rank'
+									? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+									: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
 							}`}
 						>
-							Frequency
+							Rank
 						</button>
 						<button
 							onClick={() => setCompetitorSort('sentiment')}
-							className={`rounded-md px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5 ${
+							className={`rounded px-2 py-1 text-xs transition-colors ${
 								competitorSort === 'sentiment'
-									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-900/20'
+									? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+									: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
 							}`}
 						>
 							Sentiment
 						</button>
 						<button
-							onClick={() => setCompetitorSort('rank')}
-							className={`rounded-md px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5 ${
-								competitorSort === 'rank'
-									? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-									: 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-900/20'
+							onClick={() => setCompetitorSort('appearances')}
+							className={`rounded px-2 py-1 text-xs transition-colors ${
+								competitorSort === 'appearances'
+									? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+									: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
 							}`}
 						>
-							Rank
+							Frequency
 						</button>
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent className="p-0">
-				<div className="divide-y divide-gray-100 dark:divide-gray-800">
-					{displayedCompetitors.slice(0, 3).map((comp) => {
-						const isExpanded = expandedCompetitor === comp.name;
-
-						return (
-							<div key={comp.name}>
-								<button
-									type="button"
-									onClick={() =>
-										setExpandedCompetitor(isExpanded ? null : comp.name)
-									}
-									className="w-full px-4 py-3 text-left hover:bg-gray-50/50 dark:hover:bg-gray-900/20"
-								>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-3">
-											<span className="font-medium text-sm">
-												{comp.name}
-											</span>
-											{comp.avgRank !== null && (
-												<span className="text-xs text-muted-foreground">
-													#{comp.avgRank}
-												</span>
-											)}
+			<CardContent className="px-5 pb-5 pt-0">
+				<div className="space-y-2">
+					{sortedCompetitors.slice(0, 5).map((comp, idx) => (
+						<div
+							key={comp.name}
+							className="flex items-center justify-between py-2.5"
+						>
+							<div className="flex items-center gap-3 flex-1 min-w-0">
+								<span className="text-gray-400 text-xs font-medium w-6 shrink-0">
+									{idx + 1}
+								</span>
+								<span className="font-medium text-sm truncate">
+									{comp.name}
+								</span>
+							</div>
+							<div className="flex items-center gap-4 shrink-0">
+								{comp.avgRank !== null && (
+									<div className="text-center min-w-[48px]">
+										<div className="text-gray-900 text-sm font-semibold dark:text-gray-100">
+											#{comp.avgRank}
 										</div>
-										<div className="flex items-center gap-4">
-											<div className="text-right">
-												<div className={`font-semibold text-sm ${getSentimentColor(comp.avgSentiment).text}`}>
-													{comp.avgSentiment}
-												</div>
-												<div className="text-xs text-muted-foreground">
-													{comp.appearances}×
-												</div>
-											</div>
-											<ChevronDown
-												className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-											/>
+										<div className="text-[10px] text-gray-400">
+											rank
 										</div>
 									</div>
-								</button>
-
-								{isExpanded &&
-									(comp.winsOver.length > 0 || comp.losesTo.length > 0) && (
-										<div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
-											<div className="grid grid-cols-2 gap-4">
-												<div>
-													<p className="mb-2 font-medium text-emerald-600 text-xs dark:text-emerald-400">
-														You Win On
-													</p>
-													{comp.losesTo.length > 0 ? (
-														<ul className="space-y-1">
-															{comp.losesTo.slice(0, 3).map((item) => (
-																<li
-																	key={item}
-																	className="flex items-start gap-1.5 text-gray-700 text-xs dark:text-gray-300"
-																>
-																	<CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
-																	{item}
-																</li>
-															))}
-														</ul>
-													) : (
-														<p className="text-muted-foreground text-xs italic">
-															No Data
-														</p>
-													)}
-												</div>
-												<div>
-													<p className="mb-2 font-medium text-red-600 text-xs dark:text-red-400">
-														They Win On
-													</p>
-													{comp.winsOver.length > 0 ? (
-														<ul className="space-y-1">
-															{comp.winsOver.slice(0, 3).map((item) => (
-																<li
-																	key={item}
-																	className="flex items-start gap-1.5 text-gray-700 text-xs dark:text-gray-300"
-																>
-																	<AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
-																	{item}
-																</li>
-															))}
-														</ul>
-													) : (
-														<p className="text-muted-foreground text-xs italic">
-															No Data
-														</p>
-													)}
-												</div>
-											</div>
-										</div>
-									)}
+								)}
+								<div className="text-center min-w-[48px]">
+									<div className={`text-sm font-semibold ${getSentimentColor(comp.avgSentiment).text}`}>
+										{comp.avgSentiment}
+									</div>
+									<div className="text-[10px] text-gray-400">
+										sentiment
+									</div>
+								</div>
+								<div className="text-center min-w-[48px]">
+									<div className="text-gray-900 text-sm font-semibold dark:text-gray-100">
+										{comp.appearances}
+									</div>
+									<div className="text-[10px] text-gray-400">
+										mentions
+									</div>
+								</div>
 							</div>
-						);
-					})}
+						</div>
+					))}
 				</div>
 			</CardContent>
 		</Card>
@@ -772,77 +733,53 @@ function BrandPerceptionCard({
 	differentiators: string[];
 }) {
 	return (
-		<Card>
-			<CardHeader className="pb-3">
+		<Card className="border-gray-100 dark:border-gray-800">
+			<CardHeader className="pb-4 px-5 pt-5">
 				<CardTitle className="text-sm font-semibold">AI Perception</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-3">
-				{/* Best Known For */}
-				{bestKnownFor && (
-					<div>
-						<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
-							Best Known For
-						</p>
-						<p className="font-medium text-gray-900 text-sm leading-relaxed dark:text-gray-100">
-							{bestKnownFor.charAt(0).toUpperCase() + bestKnownFor.slice(1)}
-						</p>
-					</div>
-				)}
-
-				{/* Pricing */}
-				<div>
-					<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
-						Pricing
-					</p>
-					<PillTag
-						label={pricingLabels[pricingPerception] ?? pricingPerception}
-						className={
-							pricingPerception === "premium"
-								? "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
-								: pricingPerception === "budget" || pricingPerception === "free"
-									? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-									: ""
-						}
-					/>
-				</div>
-
-				{/* Core Claims */}
-				{coreClaims.length > 0 && (
-					<div>
-						<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
-							Key Claims
-						</p>
-						<ul className="space-y-1.5">
-							{coreClaims.slice(0, 3).map((claim) => (
-								<li key={claim} className="flex items-start gap-2">
-									<CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
-									<span className="text-gray-800 text-xs leading-snug dark:text-gray-200">
-										{claim.charAt(0).toUpperCase() + claim.slice(1)}
-									</span>
-								</li>
-							))}
-						</ul>
-					</div>
-				)}
-
-				{/* Differentiators */}
-				{differentiators.length > 0 && (
-					<div>
-						<p className="mb-1.5 font-medium text-gray-700 text-xs dark:text-gray-300">
-							Differentiators
-						</p>
-						<div className="flex flex-wrap gap-1.5">
-							{differentiators.slice(0, 4).map((d) => (
-								<span
-									key={d}
-									className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 font-medium text-blue-700 text-xs dark:bg-blue-950/40 dark:text-blue-300"
-								>
-									{d.charAt(0).toUpperCase() + d.slice(1)}
-								</span>
-							))}
+			<CardContent className="px-5 pb-5 pt-0">
+				<div className="space-y-4">
+					{/* Best Known For */}
+					{bestKnownFor && (
+						<div>
+							<p className="mb-1.5 text-gray-400 text-xs">
+								Best Known For
+							</p>
+							<p className="font-medium text-gray-900 text-sm leading-relaxed dark:text-gray-100">
+								{bestKnownFor.charAt(0).toUpperCase() + bestKnownFor.slice(1)}
+							</p>
 						</div>
+					)}
+
+					{/* Pricing */}
+					<div>
+						<p className="mb-1.5 text-gray-400 text-xs">
+							Pricing
+						</p>
+						<span className="inline-flex items-center rounded px-2 py-1 bg-gray-100 text-gray-900 text-xs font-medium dark:bg-gray-800 dark:text-gray-100">
+							{pricingLabels[pricingPerception] ?? pricingPerception}
+						</span>
 					</div>
-				)}
+
+					{/* Core Claims */}
+					{coreClaims.length > 0 && (
+						<div>
+							<p className="mb-2 text-gray-400 text-xs">
+								Key Claims
+							</p>
+							<ul className="space-y-1.5">
+								{coreClaims.slice(0, 4).map((claim) => (
+									<li key={claim} className="flex items-start gap-2">
+										<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400" />
+										<span className="text-gray-700 text-xs leading-relaxed dark:text-gray-300">
+											{claim.charAt(0).toUpperCase() + claim.slice(1)}
+										</span>
+									</li>
+								))}
+							</ul>
+						</div>
+					)}
+				</div>
 			</CardContent>
 		</Card>
 	);
@@ -864,59 +801,53 @@ function TopSources({
 	if (sources.length === 0) return null;
 
 	return (
-		<Card>
-			<CardHeader className="pb-3">
+		<Card className="border-gray-100 dark:border-gray-800">
+			<CardHeader className="pb-4 px-5 pt-5">
 				<CardTitle className="text-sm font-semibold">Top Sources</CardTitle>
-				<CardDescription className="text-xs">
-					Most Cited Information Sources
-				</CardDescription>
 			</CardHeader>
-			<CardContent className="p-0">
-				<div className="divide-y divide-gray-100 dark:divide-gray-800">
-					{sources.slice(0, 5).map((source) => {
+			<CardContent className="px-5 pb-5 pt-0">
+				<div className="space-y-2">
+					{sources.slice(0, 5).map((source, idx) => {
 						const faviconUrl =
 							source.favicon || getFaviconUrls(source.domain, "")[0];
 						const usagePercent = Math.round((source.uniqueRecords.size / totalRecords) * 100);
 
 						return (
-							<div key={source.domain} className="flex items-center justify-between px-4 py-3">
-								<div className="flex items-center gap-3">
+							<div key={source.domain} className="flex items-center justify-between py-2.5">
+								<div className="flex items-center gap-3 flex-1 min-w-0">
+									<span className="text-gray-400 text-xs font-medium w-6 shrink-0">
+										{idx + 1}
+									</span>
 									{faviconUrl && (
 										<img
 											src={faviconUrl}
 											alt=""
-											className="h-4 w-4 rounded-sm"
+											className="h-4 w-4 rounded-sm shrink-0"
 											onError={(e) => {
 												(e.target as HTMLImageElement).style.display = "none";
 											}}
 										/>
 									)}
-									<span className="font-medium text-sm">
-										{source.domain.charAt(0).toUpperCase() + source.domain.slice(1)}
+									<span className="font-medium text-sm truncate">
+										{source.domain}
 									</span>
 								</div>
-								<div className="flex items-center gap-4">
-									<div className="text-right">
-										<div className="font-semibold text-sm text-blue-600 dark:text-blue-400">
+								<div className="flex items-center gap-4 shrink-0">
+									<div className="text-center min-w-[48px]">
+										<div className="text-gray-900 text-sm font-semibold dark:text-gray-100">
 											{usagePercent}%
 										</div>
-										<div className="text-xs text-muted-foreground">
-											{source.citationCount} citations
+										<div className="text-[10px] text-gray-400">
+											usage
 										</div>
 									</div>
-									<div className="flex gap-1">
-										{[...source.models].map((model) => (
-											<img
-												key={model}
-												src={getModelFavicon(model)}
-												alt={model}
-												title={
-													modelSelectors.find((m) => m.value === model)
-														?.label || model
-												}
-												className="h-4 w-4 rounded-sm"
-											/>
-										))}
+									<div className="text-center min-w-[48px]">
+										<div className="text-gray-900 text-sm font-semibold dark:text-gray-100">
+											{source.citationCount}
+										</div>
+										<div className="text-[10px] text-gray-400">
+											citations
+										</div>
 									</div>
 								</div>
 							</div>
@@ -936,45 +867,41 @@ function RiskAlerts({
 	if (risks.length === 0) return null;
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-base">
-					<Shield className="h-4 w-4" />
+		<Card className="border-gray-100 dark:border-gray-800">
+			<CardHeader className="pb-4 px-5 pt-5">
+				<CardTitle className="flex items-center gap-2 text-sm font-semibold">
+					<Shield className="h-3.5 w-3.5" />
 					Risk Alerts
 				</CardTitle>
-				<CardDescription>Issues that need attention</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-2">
-				{risks.map((risk, i) => {
-					const style = severityStyles[risk.severity] ?? defaultSeverityStyle;
-					const Icon = style.icon;
-					return (
-						<div
-							key={i}
-							className={`flex items-start gap-3 rounded-lg border p-3 ${style.bg} ${style.border}`}
-						>
-							<Icon className={`mt-0.5 h-4 w-4 shrink-0 ${style.text}`} />
-							<div className="min-w-0 flex-1">
-								<div className="mb-0.5 flex items-center gap-2">
-									<span
-										className={`font-semibold text-xs uppercase ${style.text}`}
-									>
-										{risk.severity}
-									</span>
-									<span className="text-[10px] text-muted-foreground capitalize">
-										{risk.type.replace(/_/g, " ")}
-									</span>
-									{risk.count > 1 && (
-										<span className="text-[10px] text-muted-foreground">
-											({risk.count}x)
+			<CardContent className="px-5 pb-5 pt-0">
+				<div className="space-y-3">
+					{risks.map((risk, i) => {
+						const style = severityStyles[risk.severity] ?? defaultSeverityStyle;
+						const Icon = style.icon;
+						return (
+							<div
+								key={i}
+								className="flex items-start gap-3 py-2"
+							>
+								<Icon className={`mt-0.5 h-4 w-4 shrink-0 ${style.text}`} />
+								<div className="min-w-0 flex-1">
+									<div className="mb-1 flex items-center gap-2">
+										<span className={`font-semibold text-xs ${style.text}`}>
+											{risk.severity.toUpperCase()}
 										</span>
-									)}
+										{risk.count > 1 && (
+											<span className="text-xs text-gray-400">
+												({risk.count}×)
+											</span>
+										)}
+									</div>
+									<p className="text-sm text-gray-700 dark:text-gray-300">{risk.detail}</p>
 								</div>
-								<p className={`text-sm ${style.text}`}>{risk.detail}</p>
 							</div>
-						</div>
-					);
-				})}
+						);
+					})}
+				</div>
 			</CardContent>
 		</Card>
 	);
@@ -997,12 +924,9 @@ function QueryLevelTable({
 	const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="text-base">Query Performance Overview</CardTitle>
-				<CardDescription>
-					Click Any Query To See Model-Specific Details
-				</CardDescription>
+		<Card className="border-gray-100 dark:border-gray-800">
+			<CardHeader className="pb-4 px-5 pt-5">
+				<CardTitle className="text-sm font-semibold">Query Performance</CardTitle>
 			</CardHeader>
 			<CardContent className="p-0">
 				<div className="overflow-hidden rounded-b-xl">
@@ -1974,20 +1898,30 @@ export default function Dashboard() {
 					presenceRate={aggregateStats.presenceRate}
 					rank={avgRank.position ?? 0}
 					topSource={sourcesIntelligence[0]?.domain ?? 'N/A'}
+					topSourceFavicon={
+						sourcesIntelligence[0]?.domain
+							? getFaviconUrls(sourcesIntelligence[0].domain, sourcesIntelligence[0].favicon ?? "")[0]
+							: null
+					}
 					topCompetitor={aggregateStats.topCompetitor}
+					topCompetitorFavicon={
+						aggregateStats.topCompetitor !== 'N/A'
+							? getFaviconUrls(
+									aggregateStats.topCompetitor.toLowerCase().replace(/\s+/g, ''),
+									''
+								)[0]
+							: null
+					}
 				/>
 
-				{/* 3-Column Compact Row: Competitive Landscape + Sentiment + AI Perception */}
+				{/* 3-Column Compact Row: Competitive Landscape + Top Sources + AI Perception */}
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 					<CompetitiveLandscape
 						competitors={competitorData}
 						brandName={brandName}
 						brandSentiment={avgSentiment.score}
 					/>
-					<SentimentBreakdown
-						positives={sentimentBreakdown.positives}
-						negatives={sentimentBreakdown.negatives}
-					/>
+					<TopSources sources={sourcesIntelligence} totalRecords={analyzedRecords.length} />
 					<BrandPerceptionCard
 						bestKnownFor={brandPerception.bestKnownFor}
 						pricingPerception={brandPerception.pricingPerception}
@@ -1995,9 +1929,6 @@ export default function Dashboard() {
 						differentiators={brandPerception.differentiators}
 					/>
 				</div>
-
-				{/* Top Sources */}
-				<TopSources sources={sourcesIntelligence} totalRecords={analyzedRecords.length} />
 
 				{/* Risk Alerts */}
 				<RiskAlerts risks={aggregatedRisks} />
