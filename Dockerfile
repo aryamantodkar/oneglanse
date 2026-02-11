@@ -54,7 +54,18 @@ ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN pnpm turbo build --filter=@onescope/web
+RUN pnpm turbo build --filter=@onescope/web...
+
+# Verify build outputs
+RUN echo "Build verification:" && \
+    for pkg in db errors services types ui utils; do \
+      if [ -d "/app/packages/$pkg/dist" ]; then \
+        echo "✓ packages/$pkg/dist exists"; \
+      else \
+        echo "✗ packages/$pkg/dist missing"; \
+      fi; \
+    done && \
+    ls -la /app/apps/web/.next/
 
 # ----------------------------
 # Stage 4: Runner - Production image
@@ -86,13 +97,14 @@ COPY --from=builder /app/apps/web/package.json ./apps/web/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --prod --frozen-lockfile
 
-# Copy built packages
-COPY --from=builder --chown=nextjs:nodejs /app/packages/db/dist ./packages/db/dist
-COPY --from=builder --chown=nextjs:nodejs /app/packages/errors/dist ./packages/errors/dist
-COPY --from=builder --chown=nextjs:nodejs /app/packages/services/dist ./packages/services/dist
-COPY --from=builder --chown=nextjs:nodejs /app/packages/types/dist ./packages/types/dist
-COPY --from=builder --chown=nextjs:nodejs /app/packages/ui/dist ./packages/ui/dist
-COPY --from=builder --chown=nextjs:nodejs /app/packages/utils/dist ./packages/utils/dist
+# Copy built packages and their compiled outputs
+# Copying entire packages directory is simpler and includes dist + package.json
+COPY --from=builder --chown=nextjs:nodejs /app/packages ./packages
+
+# Remove source files to keep image small (optional but recommended)
+RUN find ./packages -type f -name "*.ts" -not -name "*.d.ts" -delete && \
+    find ./packages -type f -name "*.tsx" -delete && \
+    find ./packages -type d -name "src" -exec rm -rf {} + 2>/dev/null || true
 
 # Copy built Next.js application (standalone output)
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./

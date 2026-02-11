@@ -85,13 +85,13 @@ COPY --from=builder /app/apps/agent/package.json ./apps/agent/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --prod --frozen-lockfile
 
-# Copy built packages
-COPY --from=builder --chown=agentuser:nodejs /app/packages/db/dist ./packages/db/dist
-COPY --from=builder --chown=agentuser:nodejs /app/packages/errors/dist ./packages/errors/dist
-COPY --from=builder --chown=agentuser:nodejs /app/packages/services/dist ./packages/services/dist
-COPY --from=builder --chown=agentuser:nodejs /app/packages/types/dist ./packages/types/dist
-COPY --from=builder --chown=agentuser:nodejs /app/packages/ui/dist ./packages/ui/dist
-COPY --from=builder --chown=agentuser:nodejs /app/packages/utils/dist ./packages/utils/dist
+# Copy built packages and their compiled outputs
+COPY --from=builder --chown=agentuser:nodejs /app/packages ./packages
+
+# Remove source files to keep image small
+RUN find ./packages -type f -name "*.ts" -not -name "*.d.ts" -delete && \
+    find ./packages -type f -name "*.tsx" -delete && \
+    find ./packages -type d -name "src" -exec rm -rf {} + 2>/dev/null || true
 
 # Copy built agent application
 COPY --from=builder --chown=agentuser:nodejs /app/apps/agent/dist ./apps/agent/dist
