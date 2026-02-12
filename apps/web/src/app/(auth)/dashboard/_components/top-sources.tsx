@@ -16,19 +16,16 @@ export function TopSources({
 		
 		{/* Header */}
 		<div>
-		  <p className="text-xs text-muted-foreground">
-			Source Intelligence
-		  </p>
-		  <h3 className="text-sm font-semibold">
+		  <h1 className="text-sm font-semibold">
 			Top Sources
-		  </h3>
+		  </h1>
 		  <p className="mt-1 text-xs text-muted-foreground">
 			Where AI pulls your brand narrative most often.
 		  </p>
 		</div>
   
 		{/* Source List */}
-		<div className="mt-4 space-y-3">
+		<div className="mt-2 space-y-3">
 		  {sources.slice(0, 5).map((source, idx) => {
 			const faviconUrl =
 			  source.favicon || getFaviconUrls(source.domain, "")[0];

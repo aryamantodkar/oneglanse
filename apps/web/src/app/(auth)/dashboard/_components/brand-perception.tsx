@@ -17,18 +17,15 @@ export function BrandPerceptionCard({
 		
 		{/* Header */}
 		<div>
-		  <p className="text-xs text-muted-foreground">
-			Brand Narrative
-		  </p>
-		  <h3 className="text-sm font-semibold">
+		  <h1 className="text-sm font-semibold">
 			AI Perception
-		  </h3>
+		  </h1>
 		  <p className="mt-1 text-xs text-muted-foreground">
 			What large models say most about you.
 		  </p>
 		</div>
   
-		<div className="mt-4 space-y-4">
+		<div className="mt-2 space-y-4">
 		  
 		  {/* Best Known For */}
 		  {bestKnownFor && (
