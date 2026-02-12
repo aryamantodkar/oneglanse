@@ -19,57 +19,68 @@ export function StatCard({
 	value,
 	subtitle,
 	icon: Icon,
-}: {
+  }: {
 	label: string;
 	value: string | number;
 	subtitle?: string;
 	icon: typeof TrendingUp;
-}) {
-	let faviconUrls: string[] = [];
-
-	if((typeof value === "string") && (label=="Top Source" || label=="Top Competitor")){
-		faviconUrls = getFaviconUrls(value ?? "", "");
-	}
-
+  }) {
+	const isStringValue = typeof value === "string";
+	const showFavicon =
+	  isStringValue &&
+	  (label === "Top Source" || label === "Top Competitor");
+  
+	const faviconUrls = showFavicon
+	  ? getFaviconUrls(String(value), "")
+	  : [];
+  
 	return (
-		<div className="flex flex-col gap-1 rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
-			<div className="mb-1 flex items-center gap-2">
-				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
-				<span className="font-medium text-muted-foreground text-xs">
-					{label}
-				</span>
-			</div>
-			{
-				faviconUrls.length > 0
-				?
-				<div className="flex items-center gap-2">
-					<img
-						src={faviconUrls[0]}
-						alt=""
-						className="
-						w-[1.25em] 
-						h-[1.25em]
-						rounded-md
-						shrink-0
-						"
-						onError={(e) =>
-						((e.target as HTMLImageElement).style.display = "none")
-						}
-					/>
-
-					<span className="font-bold text-2xl tracking-tight leading-none">
-						{value}
-					</span>
-				</div>
-				:
-				<span className="font-bold text-2xl tracking-tight">{value}</span>
-			}
-			{subtitle && (
-				<span className="text-muted-foreground text-xs">{subtitle}</span>
-			)}
+	  <div className="
+		flex flex-col justify-between
+		rounded-xl border border-gray-100
+		bg-card p-4
+		dark:border-gray-800
+		min-h-[120px]
+	  ">
+		{/* Header */}
+		<div className="flex items-center gap-2">
+		  <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+		  <span className="text-xs font-medium text-muted-foreground">
+			{label}
+		  </span>
 		</div>
+  
+		{/* Value Row (ALWAYS SAME STRUCTURE) */}
+		<div className="flex items-center gap-2 mt-2 min-h-[36px]">
+		  {/* Favicon slot (reserved space) */}
+		  <div className="w-5 h-5 flex items-center justify-center shrink-0">
+			{showFavicon && (
+			  <img
+				src={faviconUrls[0]}
+				alt=""
+				className="w-5 h-5 rounded-md object-contain"
+				onError={(e) =>
+				  ((e.target as HTMLImageElement).style.visibility = "hidden")
+				}
+			  />
+			)}
+		  </div>
+  
+		  {/* Value */}
+		  <span className="text-2xl font-bold tracking-tight leading-none truncate max-w-[160px]">
+			{value}
+		  </span>
+		</div>
+  
+		{/* Subtitle */}
+		{subtitle && (
+		  <span className="text-xs text-muted-foreground mt-1">
+			{subtitle}
+		  </span>
+		)}
+	  </div>
 	);
-}
+  }
 
 export function AggregateStatsRow({
 	presenceRate,
