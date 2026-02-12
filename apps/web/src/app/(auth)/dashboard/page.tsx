@@ -52,17 +52,6 @@ export default function Dashboard() {
 	return (
 		<div className="min-h-screen dark:bg-black">
 			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-				{/* Header */}
-				<header>
-					<h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-						AI Visibility Dashboard
-					</h1>
-					<p className="mt-1 text-muted-foreground text-sm">
-						Aggregate brand intelligence across {metrics.analyzedRecords.length} AI
-						response{metrics.analyzedRecords.length !== 1 ? "s" : ""}
-					</p>
-				</header>
-
 				{/* Filters */}
 				<DashboardFilters
 					modelFilter={modelFilter}

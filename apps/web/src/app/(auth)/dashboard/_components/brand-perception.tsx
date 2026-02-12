@@ -13,11 +13,11 @@ export function BrandPerceptionCard({
 	differentiators: string[];
   }) {
 	return (
-	  <Card className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+	  <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 		
 		{/* Header */}
 		<div>
-		  <h1 className="mt-6 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
+		  <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 			AI Perception
 		  </h1>
 		  <p className="mt-2 text-xs text-muted-foreground">
