@@ -17,10 +17,7 @@ export function BrandPerceptionCard({
 		
 		{/* Header */}
 		<div>
-		  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-			Perception
-		  </p>
-		  <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
+		  <h1 className="mt-6 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 			AI Perception
 		  </h1>
 		  <p className="mt-2 text-xs text-muted-foreground">

@@ -14,9 +14,6 @@ import { AggregateStatsRow } from "./_components/stats-row";
 import { CompetitiveLandscape } from "./_components/competitive-landscape";
 import { TopSources } from "./_components/top-sources";
 import { BrandPerceptionCard } from "./_components/brand-perception";
-import { RiskAlerts } from "./_components/risk-alerts";
-import { QueryLevelTable } from "./_components/query-table";
-import { RecordDetailDialog } from "./_components/record-dialog";
 import {
 	DashboardSkeleton,
 	NoWorkspaceState,
@@ -53,7 +50,7 @@ export default function Dashboard() {
 	if (metrics.analyzedRecords.length === 0) return <NoAnalysisState />;
 
 	return (
-		<div className="min-h-screen bg-gray-50 dark:bg-black">
+		<div className="min-h-screen dark:bg-black">
 			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
 				{/* Header */}
 				<header>
@@ -86,8 +83,6 @@ export default function Dashboard() {
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 					<CompetitiveLandscape
 						competitors={metrics.competitorData}
-						brandName={metrics.brandName}
-						brandSentiment={metrics.avgSentiment.score}
 					/>
 					<TopSources
 						sources={metrics.sourcesIntelligence}
@@ -100,25 +95,6 @@ export default function Dashboard() {
 						differentiators={metrics.brandPerception.differentiators}
 					/>
 				</div>
-
-				{/* Risk Alerts */}
-				<RiskAlerts risks={metrics.aggregatedRisks} />
-
-				{/* Query Table */}
-				<QueryLevelTable
-					groupedRecords={metrics.groupedRecords}
-					onSelectRecord={(prompt) => {
-						const record = metrics.analyzedRecords.find((r) => r.prompt === prompt);
-						if (record) setSelectedRecord(record);
-					}}
-				/>
-
-				{/* Detail Dialog */}
-				<RecordDetailDialog
-					record={selectedRecord}
-					open={!!selectedRecord}
-					onClose={() => setSelectedRecord(null)}
-				/>
 			</div>
 		</div>
 	);
