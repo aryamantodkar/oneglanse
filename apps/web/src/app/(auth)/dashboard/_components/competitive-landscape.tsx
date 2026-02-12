@@ -67,7 +67,7 @@ export function CompetitiveLandscape({
   if (competitors.length === 0) return null;
 
   return (
-    <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
+    <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-5">
       
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -82,9 +82,6 @@ export function CompetitiveLandscape({
 
         {/* Brand Highlight with Subtle Sentiment */}
         <div className="flex flex-col items-end gap-1">
-          <span className="text-xs text-muted-foreground">
-            Your Brand
-          </span>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
               {brandName}
@@ -101,44 +98,45 @@ export function CompetitiveLandscape({
 
 			return (
 				<div
-				  key={comp.name}
-				  className="flex items-center gap-4 rounded-lg border border-gray-100 px-4 py-3 dark:border-gray-800"
+				key={comp.name}
+				className="flex items-center gap-4 rounded-lg border border-gray-100 px-4 py-3 dark:border-gray-800"
 				>
-				  {/* Ranking */}
-				  <div className="w-6 text-center text-sm font-medium text-muted-foreground">
-					#{idx + 1}
-				  </div>
-	  
-				  {/* Content */}
-				  <div className="flex items-start gap-3 min-w-0 flex-1">
-  
-						{/* Icon Column (fixed width, larger visual weight) */}
-						<div className="w-9 h-9 flex items-center justify-center shrink-0">
-							<img
-							src={faviconUrls[0]}
-							alt=""
-							className="h-5 w-5 object-contain"
-							onError={(e) =>
-								((e.target as HTMLImageElement).style.visibility = "hidden")
-							}
-							/>
-						</div>
+				{/* Ranking */}
+				<div className="w-4 text-center text-xs text-muted-foreground">
+					{idx + 1}
+				</div>
 
-						{/* Content Column */}
-						<div className="min-w-0 flex-1">
-							<p className="truncate text-sm font-medium leading-tight">
-							{comp.name}
-							</p>
+				{/* Content */}
+				<div className="min-w-0 flex-1 flex flex-col">
+					
+					{/* Row 1 → Icon + Name */}
+					<div className="flex items-center gap-2 min-w-0">
+					{faviconUrls[0] && (
+						<img
+						src={faviconUrls[0]}
+						alt=""
+						className="h-5 w-5 rounded-md object-contain shrink-0"
+						onError={(e) =>
+							((e.target as HTMLImageElement).style.display = "none")
+						}
+						/>
+					)}
 
-							<div className="mt-2 flex flex-wrap items-center gap-3">
-							<SentimentBadge value={comp.avgSentiment} />
-
-							<span className="text-xs text-muted-foreground">
-								{comp.appearances} mentions
-							</span>
-							</div>
-						</div>
+					<p className="truncate text-sm font-medium">
+						{comp.name}
+					</p>
 					</div>
+
+					{/* Row 2 → Sentiment + Mentions */}
+					<div className="mt-2 flex flex-wrap items-center gap-3">
+					<SentimentBadge value={comp.avgSentiment} />
+
+					<span className="text-xs text-muted-foreground">
+						{comp.appearances} mentions
+					</span>
+					</div>
+
+				</div>
 				</div>
 			  )
 		})}
