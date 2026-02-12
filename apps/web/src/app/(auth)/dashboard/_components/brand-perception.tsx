@@ -13,27 +13,30 @@ export function BrandPerceptionCard({
 	differentiators: string[];
   }) {
 	return (
-	  <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
+	  <Card className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 		
 		{/* Header */}
 		<div>
-		  <h1 className="text-lg font-semibold leading-none tracking-tight">
+		  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+			Perception
+		  </p>
+		  <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 			AI Perception
 		  </h1>
-		  <p className="mt-3 text-xs text-muted-foreground">
+		  <p className="mt-2 text-xs text-muted-foreground">
 			What large models say most about you.
 		  </p>
 		</div>
   
-		<div className="mt-2 space-y-4">
+		<div className="mt-4 space-y-4">
 		  
 		  {/* Best Known For */}
 		  {bestKnownFor && (
-			<div className="rounded-lg border border-gray-100 px-3 py-3">
-			  <p className="text-xs text-muted-foreground">
+			<div className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
+			  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 				Best Known For
 			  </p>
-			  <p className="mt-1 text-sm font-medium leading-relaxed">
+			  <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-900 dark:text-gray-100">
 				{bestKnownFor.charAt(0).toUpperCase() + bestKnownFor.slice(1)}
 			  </p>
 			</div>
@@ -42,14 +45,14 @@ export function BrandPerceptionCard({
 		  {/* Core Claims */}
 		  {coreClaims.length > 0 && (
 			<div>
-			  <p className="mb-2 text-xs text-muted-foreground">
+			  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 				Key Claims
 			  </p>
 			  <ul className="space-y-2">
 				{coreClaims.slice(0, 4).map((claim) => (
 				  <li
 					key={claim}
-					className="flex items-start gap-2 rounded-lg border border-gray-100 px-3 py-2 text-xs leading-relaxed dark:border-gray-800"
+					className="flex items-start gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-gray-900"
 				  >
 					<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
 					<span>
@@ -64,14 +67,14 @@ export function BrandPerceptionCard({
 		  {/* Differentiators */}
 		  {differentiators.length > 0 && (
 			<div>
-			  <p className="mb-2 text-xs text-muted-foreground">
+			  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 				Differentiators
 			  </p>
 			  <div className="flex flex-wrap gap-2">
 				{differentiators.slice(0, 5).map((diff) => (
 				  <span
 					key={diff}
-					className="rounded-full border border-gray-200 px-3 py-1 text-[11px] font-medium text-muted-foreground dark:border-gray-700"
+					className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800"
 				  >
 					{diff.charAt(0).toUpperCase() + diff.slice(1)}
 				  </span>

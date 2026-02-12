@@ -12,20 +12,23 @@ export function TopSources({
 	if (sources.length === 0) return null;
   
 	return (
-	  <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-5 ">
+	  <Card className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 		
 		{/* Header */}
 		<div>
-		  <h1 className="text-lg font-semibold leading-none tracking-tight">
+		  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+			Sources
+		  </p>
+		  <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 			Top Sources
 		  </h1>
-		  <p className="mt-3 text-xs text-muted-foreground">
+		  <p className="mt-2 text-xs text-muted-foreground">
 			Where AI pulls your brand narrative most often.
 		  </p>
 		</div>
   
 		{/* Source List */}
-		<div className="mt-2 space-y-3">
+		<div className="mt-4 space-y-2.5">
 		  {sources.slice(0, 5).map((source, idx) => {
 			const faviconUrl =
 			  source.favicon || getFaviconUrls(source.domain, "")[0];
@@ -37,7 +40,7 @@ export function TopSources({
 			return (
 				<div
 					key={source.domain}
-					className="flex items-center justify-between gap-4 px-3 py-3"
+					className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
 					>
 					{/* LEFT SIDE (Rank + Content) */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
@@ -58,19 +61,24 @@ export function TopSources({
 
 						{/* Content */}
 						<div className="min-w-0 flex-1">
-							<p className="truncate text-sm font-medium leading-tight">
+							<p className="truncate text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
 							{source.domain}
 							</p>
 
-							<div className="mt-1 text-xs text-muted-foreground">
-							{source.citationCount} citations
+							<div className="mt-1 flex items-center gap-2">
+							  <span className="text-xs text-muted-foreground">
+								{source.citationCount} citations
+							  </span>
+							  <span className="text-[10px] text-muted-foreground">
+								#{idx + 1}
+							  </span>
 							</div>
 						</div>
 						</div>
 					</div>
 
 					{/* RIGHT SIDE (Percentage) */}
-					<div className="w-10 shrink-0 text-right text-xs font-semibold text-black dark:text-white">
+					<div className="w-10 shrink-0 text-right text-xs font-semibold text-gray-900 dark:text-gray-100">
 						{usagePercent}%
 					</div>
 					</div>
