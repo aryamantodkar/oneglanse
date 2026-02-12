@@ -25,7 +25,7 @@ export function BrandPerceptionCard({
 		  </p>
 		</div>
   
-		<div className="mt-4 space-y-4">
+		<div className="mt-4 flex flex-1 flex-col gap-4">
 		  
 		  {/* Best Known For */}
 		  {bestKnownFor && (

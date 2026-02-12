@@ -80,7 +80,7 @@ export function CompetitiveLandscape({
 
       {/* Header */}
       <div>
-        <h1 className="mt-2 text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+        <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
           Competitors
         </h1>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -89,8 +89,8 @@ export function CompetitiveLandscape({
       </div>
 
       {/* Competitor List */}
-      <div className="mt-4 space-y-2.5">
-        {displayCompetitors.map((comp) => {
+      <div className="mt-4 flex flex-1 flex-col gap-2.5">
+        {displayCompetitors.map((comp, idx) => {
 			const faviconUrls = getFaviconUrls(comp?.domain ?? "");
 			const isBrand = comp.isBrand === true;
 
@@ -128,30 +128,13 @@ export function CompetitiveLandscape({
 						</span>
 					)}
 					</div>
-
-					{/* Row 2 → Secondary metrics (the ones NOT being sorted by) */}
-					<div className="mt-1.5 flex flex-wrap items-center gap-3">
-					{competitorSort !== "sentiment" && (
-						<SentimentBadge value={comp.avgSentiment} />
-					)}
-					{competitorSort !== "rank" && (
-						<span className="text-xs text-muted-foreground">
-						{comp.avgRank !== null ? `#${comp.avgRank} rank` : "— rank"}
-						</span>
-					)}
-					{competitorSort !== "appearances" && (
-						<span className="text-xs text-muted-foreground">
-						{comp.appearances} mentions
-						</span>
-					)}
-					</div>
 				</div>
 
 				{/* RIGHT — Primary metric (the one being sorted by) */}
 				<div className="shrink-0">
 					{competitorSort === "rank" && (
 					<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-						{comp.avgRank !== null ? `#${comp.avgRank}` : "—"}
+						#{idx + 1}
 					</span>
 					)}
 					{competitorSort === "sentiment" && (

@@ -25,7 +25,7 @@ export function TopSources({
 		</div>
   
 		{/* Source List */}
-		<div className="mt-4 space-y-2.5">
+		<div className="mt-4 flex flex-1 flex-col gap-2.5">
 		  {sources.slice(0, 5).map((source, idx) => {
 			const faviconUrl =
 			  source.favicon || getFaviconUrls(source.domain, "")[0];
