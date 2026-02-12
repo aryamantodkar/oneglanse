@@ -19,19 +19,21 @@ export function StatCard({
 	value,
 	subtitle,
 	icon: Icon,
+	domain,
   }: {
 	label: string;
 	value: string | number;
 	subtitle?: string;
 	icon: typeof TrendingUp;
+	domain?: string;
   }) {
 	const isStringValue = typeof value === "string";
 	const showFavicon =
 	  isStringValue &&
 	  (label === "Top Source" || label === "Top Competitor");
-  
+
 	const faviconUrls = showFavicon
-	  ? getFaviconUrls(String(value), "")
+	  ? getFaviconUrls(domain || String(value), String(value))
 	  : [];
   
 	return (
@@ -89,12 +91,14 @@ export function AggregateStatsRow({
 	presenceRate,
 	rank,
 	topSource,
-	topCompetitor
+	topCompetitor,
+	topCompetitorDomain,
 }: {
 	presenceRate: number;
 	rank: number;
 	topSource: string;
 	topCompetitor: string;
+	topCompetitorDomain?: string;
 }) {
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -121,6 +125,7 @@ export function AggregateStatsRow({
 				label="Top Competitor"
 				value={topCompetitor}
 				subtitle="Most frequently appears with you"
+				domain={topCompetitorDomain}
 			/>
 		</div>
 	);
