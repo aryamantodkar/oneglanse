@@ -176,7 +176,7 @@ export function useDashboardData(
 			});
 		});
 
-		return [...map.values()]
+		const competitorList = [...map.values()]
 			.map((c) => ({
 				name: c.name,
 				domain: c.domain,
@@ -192,7 +192,29 @@ export function useDashboardData(
 					.map(([k]) => k),
 			}))
 			.sort((a, b) => b.appearances - a.appearances);
-	}, [analyzedRecords]);
+
+		// Build brand entry and merge into competitor array
+		const brandDomain =
+			analyzedRecords.find((r) => r.brand_analysis.metadata?.brandDomain)
+				?.brand_analysis.metadata?.brandDomain ?? "";
+		const brandAppearances = analyzedRecords.filter(
+			(r) => r.brand_analysis.presence.mentioned,
+		).length;
+
+		const brandEntry = {
+			name: brandName,
+			domain: brandDomain,
+			appearances: brandAppearances,
+			avgSentiment: avgSentiment.score,
+			avgRank: avgRank.position,
+			recCount: 0,
+			winsOver: [] as string[],
+			losesTo: [] as string[],
+			isBrand: true,
+		};
+
+		return [brandEntry, ...competitorList];
+	}, [analyzedRecords, brandName, avgSentiment.score, avgRank.position]);
 
 	const sentimentBreakdown = useMemo(() => {
 		const positiveCounts = new Map<string, number>();

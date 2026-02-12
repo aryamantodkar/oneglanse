@@ -9,6 +9,7 @@ export interface CompetitorData {
 	recCount: number;
 	winsOver: string[];
 	losesTo: string[];
+	isBrand?: boolean;
 }
 
 export interface SourceData {
