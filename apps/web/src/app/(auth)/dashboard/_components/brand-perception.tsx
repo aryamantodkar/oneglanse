@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@onescope/ui";
 import { pricingLabels } from "../_utils/constants";
+import { Info } from "lucide-react";
 
 export function BrandPerceptionCard({
 	bestKnownFor,
@@ -12,6 +13,8 @@ export function BrandPerceptionCard({
 	coreClaims: string[];
 	differentiators: string[];
   }) {
+	const hasData = bestKnownFor || coreClaims.length > 0 || differentiators.length > 0;
+
 	return (
 	  <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 		
@@ -24,11 +27,17 @@ export function BrandPerceptionCard({
 			What large models say most about you.
 		  </p>
 		</div>
-  
-		<div className="mt-4 flex flex-1 flex-col gap-4">
-		  
-		  {/* Best Known For */}
-		  {bestKnownFor && (
+
+		{!hasData ? (
+		  <div className="flex flex-1 flex-col items-center justify-center gap-3">
+			<Info className="h-8 w-8 text-muted-foreground/40" />
+			<p className="text-sm text-muted-foreground">No perception data available</p>
+		  </div>
+		) : (
+		  <div className="mt-4 flex flex-1 flex-col gap-4">
+
+			{/* Best Known For */}
+			{bestKnownFor && (
 			<div className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
 			  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 				Best Known For
@@ -79,7 +88,8 @@ export function BrandPerceptionCard({
 			  </div>
 			</div>
 		  )}
-		</div>
+		  </div>
+		)}
 	  </Card>
 	);
   }
