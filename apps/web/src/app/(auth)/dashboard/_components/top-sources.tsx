@@ -16,10 +16,10 @@ export function TopSources({
 		
 		{/* Header */}
 		<div>
-		  <h1 className="text-sm font-semibold">
+		  <h1 className="text-lg font-semibold leading-none tracking-tight">
 			Top Sources
 		  </h1>
-		  <p className="mt-1 text-xs text-muted-foreground">
+		  <p className="mt-3 text-xs text-muted-foreground">
 			Where AI pulls your brand narrative most often.
 		  </p>
 		</div>
@@ -35,52 +35,62 @@ export function TopSources({
 			);
   
 			return (
-			  <div
-				key={source.domain}
-				className="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
-			  >
-				{/* Light minimal ranking */}
-				<div className="w-4 text-center text-xs text-muted-foreground">
-				  {idx + 1}
-				</div>
-  
-				{/* Content */}
-				<div className="min-w-0 flex-1">
-				  <div className="flex items-center gap-2">
-					{faviconUrl && (
-					  <img
-						src={faviconUrl}
-						alt=""
-						className="h-4 w-4 shrink-0 rounded-sm"
-						onError={(e) => {
-						  (e.target as HTMLImageElement).style.display = "none";
-						}}
-					  />
-					)}
-					<p className="truncate text-sm font-medium">
-					  {source.domain}
-					</p>
+				<div
+				  key={source.domain}
+				  className="flex items-start justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
+				>
+				  {/* LEFT SIDE (Rank + Content) */}
+				  <div className="flex items-start gap-3 min-w-0 flex-1">
+			  
+					{/* Ranking */}
+					<div className="w-5 shrink-0 text-xs text-muted-foreground">
+					  #{idx + 1}
+					</div>
+			  
+					{/* Icon + Content */}
+					<div className="flex items-start gap-3 min-w-0 flex-1">
+			  
+					  {/* Icon Column */}
+					  <div className="w-9 h-9 flex items-center justify-center rounded-md bg-muted shrink-0">
+						{faviconUrl && (
+						  <img
+							src={faviconUrl}
+							alt=""
+							className="h-5 w-5 object-contain"
+							onError={(e) => {
+							  (e.target as HTMLImageElement).style.visibility = "hidden";
+							}}
+						  />
+						)}
+					  </div>
+			  
+					  {/* Content Column */}
+					  <div className="min-w-0 flex-1">
+						<p className="truncate text-sm font-medium leading-tight">
+						  {source.domain}
+						</p>
+			  
+						<div className="mt-1 text-xs text-muted-foreground">
+						  {source.citationCount} citations
+						</div>
+			  
+						{/* Usage Bar */}
+						<div className="mt-3 h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+						  <div
+							className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
+							style={{ width: `${usagePercent}%` }}
+						  />
+						</div>
+					  </div>
+					</div>
 				  </div>
-  
-				  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-					<span>{source.citationCount} citations</span>
-				  </div>
-  
-				  {/* Subtle usage bar */}
-				  <div className="mt-2 h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-					<div
-					  className="h-full rounded-full bg-slate-900 dark:bg-white"
-					  style={{ width: `${usagePercent}%` }}
-					/>
+			  
+				  {/* RIGHT SIDE (Percentage) */}
+				  <div className="w-10 shrink-0 text-right text-xs font-semibold text-muted-foreground">
+					{usagePercent}%
 				  </div>
 				</div>
-  
-				{/* Right aligned percentage */}
-				<div className="w-10 text-right text-xs font-semibold">
-				  {usagePercent}%
-				</div>
-			  </div>
-			);
+			  );
 		  })}
 		</div>
 	  </Card>
