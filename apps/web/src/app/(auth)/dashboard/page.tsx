@@ -53,11 +53,11 @@ export default function Dashboard() {
 	if (metrics.analyzedRecords.length === 0) return <NoAnalysisState />;
 
 	return (
-		<div className="min-h-screen">
-			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+		<div className="min-h-screen bg-gray-50 dark:bg-black">
+			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
 				{/* Header */}
 				<header>
-					<h1 className="font-semibold text-gray-900 text-xl dark:text-gray-100">
+					<h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
 						AI Visibility Dashboard
 					</h1>
 					<p className="mt-1 text-muted-foreground text-sm">
