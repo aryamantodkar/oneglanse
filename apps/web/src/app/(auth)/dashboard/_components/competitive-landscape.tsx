@@ -76,11 +76,11 @@ export function CompetitiveLandscape({
   if (competitors.length === 0) return null;
 
   return (
-    <Card className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+    <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 
       {/* Header */}
       <div>
-        <h1 className="mt-6 text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+        <h1 className="mt-2 text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
           Competitors
         </h1>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -90,27 +90,21 @@ export function CompetitiveLandscape({
 
       {/* Competitor List */}
       <div className="mt-4 space-y-2.5">
-        {displayCompetitors.map((comp, idx) => {
+        {displayCompetitors.map((comp) => {
 			const faviconUrls = getFaviconUrls(comp?.domain ?? "");
 			const isBrand = comp.isBrand === true;
 
 			return (
 				<div
 				key={comp.name}
-				className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition ${
+				className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 transition ${
 					isBrand
 					? "border-l-2 border-l-blue-500 border-y-gray-200 border-r-gray-200 bg-blue-50/60 dark:border-y-gray-800 dark:border-r-gray-800 dark:bg-blue-950/30"
 					: "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
 				}`}
 				>
-				{/* Ranking */}
-				<div className="w-4 text-center text-[11px] font-semibold text-muted-foreground">
-					{idx + 1}
-				</div>
-
-				{/* Content */}
+				{/* LEFT — Icon + Name + Secondary metrics */}
 				<div className="min-w-0 flex-1 flex flex-col">
-
 					{/* Row 1 → Icon + Name + You pill */}
 					<div className="flex items-center gap-2 min-w-0">
 					{faviconUrls[0] && (
@@ -135,15 +129,39 @@ export function CompetitiveLandscape({
 					)}
 					</div>
 
-					{/* Row 2 → Sentiment + Mentions */}
-					<div className="mt-2 flex flex-wrap items-center gap-3">
-					<SentimentBadge value={comp.avgSentiment} />
-
-					<span className="text-xs text-muted-foreground">
+					{/* Row 2 → Secondary metrics (the ones NOT being sorted by) */}
+					<div className="mt-1.5 flex flex-wrap items-center gap-3">
+					{competitorSort !== "sentiment" && (
+						<SentimentBadge value={comp.avgSentiment} />
+					)}
+					{competitorSort !== "rank" && (
+						<span className="text-xs text-muted-foreground">
+						{comp.avgRank !== null ? `#${comp.avgRank} rank` : "— rank"}
+						</span>
+					)}
+					{competitorSort !== "appearances" && (
+						<span className="text-xs text-muted-foreground">
 						{comp.appearances} mentions
-					</span>
+						</span>
+					)}
 					</div>
+				</div>
 
+				{/* RIGHT — Primary metric (the one being sorted by) */}
+				<div className="shrink-0">
+					{competitorSort === "rank" && (
+					<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						{comp.avgRank !== null ? `#${comp.avgRank}` : "—"}
+					</span>
+					)}
+					{competitorSort === "sentiment" && (
+					<SentimentBadge value={comp.avgSentiment} />
+					)}
+					{competitorSort === "appearances" && (
+					<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						{comp.appearances}
+					</span>
+					)}
 				</div>
 				</div>
 			  )
