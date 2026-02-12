@@ -11,7 +11,7 @@ export function TopSources({
 	totalCitations?: number;
   }) {
 	return (
-	  <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 pt-0 dark:border-gray-800 dark:bg-gray-900">
+	  <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 		
 		{/* Header */}
 		<div>
@@ -30,7 +30,7 @@ export function TopSources({
 			<p className="text-sm text-muted-foreground">No source data found</p>
 		  </div>
 		) : (
-		  <div className="mt-4 flex flex-1 flex-col justify-around">
+		  <div className="flex flex-1 flex-col justify-around">
 			{sources.slice(0, 5).map((source, idx) => {
 			const faviconUrl =
 			  source.favicon || getFaviconUrls(source.domain, "")[0];

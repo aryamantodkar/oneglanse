@@ -77,7 +77,7 @@ export function CompetitiveLandscape({
   }, [competitors, competitorSort]);
 
   return (
-    <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 pt-0 dark:border-gray-800 dark:bg-gray-900">
+    <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -110,7 +110,7 @@ export function CompetitiveLandscape({
           <p className="text-sm text-muted-foreground">No competitor data available</p>
         </div>
       ) : (
-        <div className="mt-2 flex flex-1 flex-col justify-around">
+        <div className="flex flex-1 flex-col justify-around">
           {displayCompetitors.map((comp) => {
 			const faviconUrls = getFaviconUrls(comp?.domain ?? "");
 			const isBrand = comp.isBrand === true;
