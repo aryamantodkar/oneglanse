@@ -51,7 +51,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="min-h-screen dark:bg-black">
-			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-4 sm:px-6 lg:px-8">
 				{/* Filters */}
 				<DashboardFilters
 					modelFilter={modelFilter}
