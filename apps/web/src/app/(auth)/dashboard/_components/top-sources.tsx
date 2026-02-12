@@ -37,7 +37,7 @@ export function TopSources({
 			return (
 				<div
 					key={source.domain}
-					className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
+					className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
 					>
 					{/* LEFT SIDE (Rank + Content) */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
@@ -62,7 +62,7 @@ export function TopSources({
 							{source.domain}
 							</p>
 
-							<div className="mt-1 flex items-center gap-2">
+							<div className="mt-1.5 flex items-center gap-2">
 							  <span className="text-xs text-muted-foreground">
 								{source.citationCount} citations
 							  </span>
