@@ -12,7 +12,7 @@ export function TopSources({
 	if (sources.length === 0) return null;
   
 	return (
-	  <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
+	  <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-5 ">
 		
 		{/* Header */}
 		<div>
@@ -36,60 +36,44 @@ export function TopSources({
   
 			return (
 				<div
-				  key={source.domain}
-				  className="flex items-start justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3 dark:border-gray-800"
-				>
-				  {/* LEFT SIDE (Rank + Content) */}
-				  <div className="flex items-start gap-3 min-w-0 flex-1">
-			  
-					{/* Ranking */}
-					<div className="w-5 shrink-0 text-xs text-muted-foreground">
-					  #{idx + 1}
-					</div>
-			  
-					{/* Icon + Content */}
-					<div className="flex items-start gap-3 min-w-0 flex-1">
-			  
-					  {/* Icon Column */}
-					  <div className="w-9 h-9 flex items-center justify-center rounded-md bg-muted shrink-0">
+					key={source.domain}
+					className="flex items-center justify-between gap-4 px-3 py-3"
+					>
+					{/* LEFT SIDE (Rank + Content) */}
+					<div className="flex items-center gap-3 min-w-0 flex-1">
+						{/* Icon + Content */}
+						<div className="flex items-center gap-3 min-w-0 flex-1">
+
+						{/* Icon */}
 						{faviconUrl && (
-						  <img
+							<img
 							src={faviconUrl}
 							alt=""
-							className="h-5 w-5 object-contain"
+							className="h-5 w-5 rounded-md object-contain shrink-0"
 							onError={(e) => {
-							  (e.target as HTMLImageElement).style.visibility = "hidden";
+								(e.target as HTMLImageElement).style.visibility = "hidden";
 							}}
-						  />
+							/>
 						)}
-					  </div>
-			  
-					  {/* Content Column */}
-					  <div className="min-w-0 flex-1">
-						<p className="truncate text-sm font-medium leading-tight">
-						  {source.domain}
-						</p>
-			  
-						<div className="mt-1 text-xs text-muted-foreground">
-						  {source.citationCount} citations
+
+						{/* Content */}
+						<div className="min-w-0 flex-1">
+							<p className="truncate text-sm font-medium leading-tight">
+							{source.domain}
+							</p>
+
+							<div className="mt-1 text-xs text-muted-foreground">
+							{source.citationCount} citations
+							</div>
 						</div>
-			  
-						{/* Usage Bar */}
-						<div className="mt-3 h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-						  <div
-							className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
-							style={{ width: `${usagePercent}%` }}
-						  />
 						</div>
-					  </div>
 					</div>
-				  </div>
-			  
-				  {/* RIGHT SIDE (Percentage) */}
-				  <div className="w-10 shrink-0 text-right text-xs font-semibold text-muted-foreground">
-					{usagePercent}%
-				  </div>
-				</div>
+
+					{/* RIGHT SIDE (Percentage) */}
+					<div className="w-10 shrink-0 text-right text-xs font-semibold text-black dark:text-white">
+						{usagePercent}%
+					</div>
+					</div>
 			  );
 		  })}
 		</div>

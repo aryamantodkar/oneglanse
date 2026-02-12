@@ -13,89 +13,65 @@ export function BrandPerceptionCard({
 	differentiators: string[];
   }) {
 	return (
-	  <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-5 dark:border-gray-800">
-  
+	  <Card className="flex flex-col rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
+		
 		{/* Header */}
 		<div>
-		  <h1 className="text-lg font-semibold tracking-tight">
+		  <h1 className="text-lg font-semibold leading-none tracking-tight">
 			AI Perception
 		  </h1>
-		  <p className="mt-1 text-xs text-muted-foreground">
+		  <p className="mt-3 text-xs text-muted-foreground">
 			What large models say most about you.
 		  </p>
 		</div>
   
-		<div className="mt-5 space-y-6">
-  
+		<div className="mt-2 space-y-4">
+		  
 		  {/* Best Known For */}
 		  {bestKnownFor && (
-			<div className="rounded-xl border border-gray-200 bg-muted/40 px-4 py-4 dark:border-gray-800">
-			  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+			<div className="rounded-lg border border-gray-100 px-3 py-3">
+			  <p className="text-xs text-muted-foreground">
 				Best Known For
 			  </p>
-			  <p className="mt-2 text-sm font-semibold leading-relaxed text-foreground">
+			  <p className="mt-1 text-sm font-medium leading-relaxed">
 				{bestKnownFor.charAt(0).toUpperCase() + bestKnownFor.slice(1)}
 			  </p>
 			</div>
 		  )}
   
-		  {/* Pricing */}
-		  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2 text-xs dark:border-gray-800">
-			<span className="text-muted-foreground">
-			  Pricing
-			</span>
-			<span className="font-semibold text-foreground">
-			  {pricingLabels[pricingPerception] ?? pricingPerception}
-			</span>
-		  </div>
-  
-		  {/* Key Claims — More Prominent */}
+		  {/* Core Claims */}
 		  {coreClaims.length > 0 && (
 			<div>
-			  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+			  <p className="mb-2 text-xs text-muted-foreground">
 				Key Claims
 			  </p>
-  
-			  <div className="space-y-3">
+			  <ul className="space-y-2">
 				{coreClaims.slice(0, 4).map((claim) => (
-				  <div
+				  <li
 					key={claim}
-					className="group relative rounded-xl border border-gray-200 bg-muted/30 px-4 py-3 transition-all hover:shadow-sm dark:border-gray-800"
+					className="flex items-start gap-2 rounded-lg border border-gray-100 px-3 py-2 text-xs leading-relaxed dark:border-gray-800"
 				  >
-					{/* Subtle Accent */}
-					<div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-foreground/10 group-hover:bg-foreground/20 transition-all" />
-  
-					<p className="pl-2 text-sm font-medium leading-relaxed text-foreground">
+					<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
+					<span>
 					  {claim.charAt(0).toUpperCase() + claim.slice(1)}
-					</p>
-				  </div>
+					</span>
+				  </li>
 				))}
-			  </div>
+			  </ul>
 			</div>
 		  )}
   
-		  {/* Differentiators — Strong Signal Pills */}
+		  {/* Differentiators */}
 		  {differentiators.length > 0 && (
 			<div>
-			  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+			  <p className="mb-2 text-xs text-muted-foreground">
 				Differentiators
 			  </p>
-  
 			  <div className="flex flex-wrap gap-2">
 				{differentiators.slice(0, 5).map((diff) => (
 				  <span
 					key={diff}
-					className="
-					  inline-flex items-center
-					  rounded-md
-					  bg-muted/50
-					  px-3 py-1.5
-					  text-xs font-semibold
-					  text-foreground
-					  transition-all
-					  hover:bg-muted
-					  hover:shadow-sm
-					"
+					className="rounded-full border border-gray-200 px-3 py-1 text-[11px] font-medium text-muted-foreground dark:border-gray-700"
 				  >
 					{diff.charAt(0).toUpperCase() + diff.slice(1)}
 				  </span>
