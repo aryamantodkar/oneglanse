@@ -11,7 +11,7 @@ export function TopSources({
 	totalCitations?: number;
   }) {
 	return (
-	  <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+	  <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 pt-0 dark:border-gray-800 dark:bg-gray-900">
 		
 		{/* Header */}
 		<div>

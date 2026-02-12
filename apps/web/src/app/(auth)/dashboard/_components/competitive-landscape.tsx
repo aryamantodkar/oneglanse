@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card } from "@onescope/ui";
+import { Card, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
 import { getFaviconUrls } from "@onescope/utils";
 import { Users } from "lucide-react";
@@ -34,8 +34,10 @@ function SentimentBadge({ value }: { value: number }) {
 
 export function CompetitiveLandscape({
   competitors,
+  modelFilter,
 }: {
   competitors: CompetitorData[];
+  modelFilter: string;
 }) {
   const [competitorSort, setCompetitorSort] =
     useState<"appearances" | "sentiment" | "rank">("rank");
@@ -75,7 +77,7 @@ export function CompetitiveLandscape({
   }, [competitors, competitorSort]);
 
   return (
-    <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+    <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 pt-0 dark:border-gray-800 dark:bg-gray-900">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -88,29 +90,17 @@ export function CompetitiveLandscape({
           </p>
         </div>
 
-        {/* Segmented Filter */}
-        <div className="inline-flex rounded-full border border-gray-200 bg-white p-0.5 dark:border-gray-800 dark:bg-gray-900">
-          {[
-            { key: "rank", label: "Rank" },
-            { key: "sentiment", label: "Sentiment" },
-            { key: "appearances", label: "Mentions" },
-          ].map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setCompetitorSort(item.key as any)}
-              className={`
-                px-3 py-1 text-[10px] font-semibold rounded-full transition-all whitespace-nowrap
-                ${
-                  competitorSort === item.key
-                    ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-                    : "text-muted-foreground hover:text-foreground"
-                }
-              `}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        {/* Sort Filter */}
+        <Select value={competitorSort} onValueChange={(v) => setCompetitorSort(v as any)}>
+          <SelectTrigger className="h-9 w-32 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="rank">Rank</SelectItem>
+            <SelectItem value="sentiment">Sentiment</SelectItem>
+            <SelectItem value="appearances">Mentions</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Competitor List */}
@@ -165,7 +155,9 @@ export function CompetitiveLandscape({
 				<div className="shrink-0">
 					{competitorSort === "rank" && comp.avgRank !== null && (
 					<div className="flex items-center gap-1 text-sm">
+						{modelFilter === "All Models" && (
 						<span className="text-[10px] font-medium text-muted-foreground">AVG</span>
+						)}
 						<span className="font-semibold text-gray-900 dark:text-gray-100">
 						#{comp.avgRank}
 						</span>
