@@ -27,18 +27,15 @@ export function QueryLevelTable({
       
       {/* Header */}
       <div>
-        <p className="text-xs text-muted-foreground">
-          Query Intelligence
-        </p>
-        <h3 className="text-sm font-semibold">
-          Query Performance
-        </h3>
+        <h1 className="text-sm font-semibold">
+          Prompt Visibility
+        </h1>
         <p className="mt-1 text-xs text-muted-foreground">
           Compare prompts by coverage, sentiment, and recommendation strength.
         </p>
       </div>
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-2 space-y-4">
         {groupedRecords.map((group) => {
           const geoColor = getGeoScoreColor(group.avgScore);
           const sentimentColor = getSentimentColor(group.avgSentiment);

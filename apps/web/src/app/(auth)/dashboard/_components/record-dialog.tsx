@@ -41,8 +41,20 @@ export function RecordDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl border border-gray-200 bg-card p-6 shadow-lg dark:border-gray-800">
-
+      <DialogContent
+		className="
+			w-[95vw] max-w-5xl
+			h-[90vh]
+			flex flex-col
+			overflow-hidden
+			rounded-xl
+			border border-gray-200
+			bg-card
+			p-6
+			shadow-lg
+			dark:border-gray-800
+		"
+	>
         {/* Header */}
         <DialogHeader>
           <p className="text-xs text-muted-foreground">
@@ -76,8 +88,8 @@ export function RecordDetailDialog({
         </DialogHeader>
 
         {/* Scrollable Body */}
-        <div className="mt-6 flex-1 space-y-6 overflow-y-auto pr-1">
-
+        <div className="mt-6 flex-1 overflow-y-auto pr-2 space-y-6">
+			
           {/* Metrics Grid */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[

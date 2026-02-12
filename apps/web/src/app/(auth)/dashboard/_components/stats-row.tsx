@@ -35,13 +35,15 @@ export function StatCard({
 	  : [];
   
 	return (
-	  <div className="
-		flex flex-col justify-between
-		rounded-xl border border-gray-100
-		bg-card p-4
-		dark:border-gray-800
-		min-h-[120px]
-	  ">
+	  <div
+		className="
+		  flex flex-col justify-between
+		  rounded-xl border border-gray-100
+		  bg-card p-4
+		  dark:border-gray-800
+		  min-h-[120px]
+		"
+	  >
 		{/* Header */}
 		<div className="flex items-center gap-2">
 		  <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -50,31 +52,32 @@ export function StatCard({
 		  </span>
 		</div>
   
-		{/* Value Row (ALWAYS SAME STRUCTURE) */}
-		<div className="flex items-center gap-2 mt-2 min-h-[36px]">
-		  {/* Favicon slot (reserved space) */}
-		  <div className="w-5 h-5 flex items-center justify-center shrink-0">
-			{showFavicon && (
-			  <img
-				src={faviconUrls[0]}
-				alt=""
-				className="w-5 h-5 rounded-md object-contain"
-				onError={(e) =>
-				  ((e.target as HTMLImageElement).style.visibility = "hidden")
-				}
-			  />
-			)}
-		  </div>
+		{/* Value Row */}
+		<div className="mt-3 flex items-center gap-2 h-[40px]">
+		  {showFavicon && faviconUrls[0] && (
+			<img
+			  src={faviconUrls[0]}
+			  alt=""
+			  className="h-5 w-5 rounded-md object-contain shrink-0"
+			  onError={(e) =>
+				((e.target as HTMLImageElement).style.display = "none")
+			  }
+			/>
+		  )}
   
-		  {/* Value */}
-		  <span className="text-2xl font-bold tracking-tight leading-none truncate max-w-[160px]">
+		  <span
+			className="
+			  text-2xl font-semibold tracking-tight
+			  leading-none truncate
+			"
+		  >
 			{value}
 		  </span>
 		</div>
   
 		{/* Subtitle */}
 		{subtitle && (
-		  <span className="text-xs text-muted-foreground mt-1">
+		  <span className="text-xs text-muted-foreground mt-1 truncate">
 			{subtitle}
 		  </span>
 		)}
