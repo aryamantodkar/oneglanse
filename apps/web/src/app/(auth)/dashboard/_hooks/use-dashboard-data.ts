@@ -47,6 +47,13 @@ export function useDashboardData(
 		return first?.brand_analysis.metadata?.brandName ?? "Your Brand";
 	}, [analyzedRecords]);
 
+	const brandDomain = useMemo(() => {
+		return (
+			analyzedRecords.find((r) => r.brand_analysis.metadata?.brandDomain)
+				?.brand_analysis.metadata?.brandDomain ?? ""
+		);
+	}, [analyzedRecords]);
+
 	const avgRank = useMemo(() => {
 		const withRank = analyzedRecords.filter(
 			(r) => r.brand_analysis.position.rankPosition !== null,
@@ -194,9 +201,6 @@ export function useDashboardData(
 			.sort((a, b) => b.appearances - a.appearances);
 
 		// Build brand entry and merge into competitor array
-		const brandDomain =
-			analyzedRecords.find((r) => r.brand_analysis.metadata?.brandDomain)
-				?.brand_analysis.metadata?.brandDomain ?? "";
 		const brandAppearances = analyzedRecords.filter(
 			(r) => r.brand_analysis.presence.mentioned,
 		).length;
@@ -214,7 +218,7 @@ export function useDashboardData(
 		};
 
 		return [brandEntry, ...competitorList];
-	}, [analyzedRecords, brandName, avgSentiment.score, avgRank.position]);
+	}, [analyzedRecords, brandName, brandDomain, avgSentiment.score, avgRank.position]);
 
 	const sentimentBreakdown = useMemo(() => {
 		const positiveCounts = new Map<string, number>();
@@ -420,6 +424,7 @@ export function useDashboardData(
 
 	return {
 		brandName,
+		brandDomain,
 		avgRank,
 		avgSentiment,
 		aggregateStats,

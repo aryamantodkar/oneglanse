@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@onescope/ui";
 import { getFaviconUrls } from "@onescope/utils";
 import type { SourceData } from "../_utils/types";
+import { FileQuestion } from "lucide-react";
 
 export function TopSources({
 	sources,
@@ -9,8 +10,6 @@ export function TopSources({
 	sources: SourceData[];
 	totalCitations?: number;
   }) {
-	if (sources.length === 0) return null;
-  
 	return (
 	  <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 		
@@ -25,14 +24,20 @@ export function TopSources({
 		</div>
   
 		{/* Source List */}
-		<div className="mt-4 flex flex-1 flex-col justify-between">
-		  {sources.slice(0, 5).map((source, idx) => {
+		{sources.length === 0 ? (
+		  <div className="flex flex-1 flex-col items-center justify-center gap-3">
+			<FileQuestion className="h-8 w-8 text-muted-foreground/40" />
+			<p className="text-sm text-muted-foreground">No source data found</p>
+		  </div>
+		) : (
+		  <div className="mt-4 flex flex-1 flex-col justify-around">
+			{sources.slice(0, 5).map((source, idx) => {
 			const faviconUrl =
 			  source.favicon || getFaviconUrls(source.domain, "")[0];
   
-			const usagePercent = Math.round(
+			const usagePercent = (
 			  (source.citationCount / totalCitations) * 100
-			);
+			).toFixed(1);
   
 			return (
 				<div
@@ -80,8 +85,9 @@ export function TopSources({
 					</div>
 					</div>
 			  );
-		  })}
-		</div>
+			})}
+		  </div>
+		)}
 	  </Card>
 	);
   }

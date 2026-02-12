@@ -664,7 +664,7 @@ export default function Prompts() {
 										Sentiment
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										Share of Voice
+										Visibility
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
 										Position
@@ -894,7 +894,7 @@ export default function Prompts() {
 																	</div>
 																	<div className="flex items-center gap-1.5">
 																		<span className="text-[10px] text-gray-400 uppercase tracking-wide dark:text-gray-500">
-																			Share of Voice
+																			Visibility
 																		</span>
 																		<span className="font-semibold text-gray-900 text-xs dark:text-gray-100">
 																			{

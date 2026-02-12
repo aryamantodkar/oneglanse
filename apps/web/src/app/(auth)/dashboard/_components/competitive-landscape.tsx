@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
 import { getFaviconUrls } from "@onescope/utils";
+import { Users } from "lucide-react";
 
 function SentimentBadge({ value }: { value: number }) {
   let bgClass = "";
@@ -73,50 +74,54 @@ export function CompetitiveLandscape({
     return top5;
   }, [competitors, competitorSort]);
 
-  if (competitors.length === 0) return null;
-
   return (
     <Card className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 
       {/* Header */}
-      <div>
-        <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
-          Competitors
-        </h1>
-        <p className="mt-2 text-xs text-muted-foreground">
-          See how you stack up against competitors
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
+            Competitors
+          </h1>
+          <p className="mt-2 text-xs text-muted-foreground">
+            See how you stack up against competitors
+          </p>
+        </div>
+
+        {/* Segmented Filter */}
+        <div className="inline-flex rounded-full border border-gray-200 bg-white p-0.5 dark:border-gray-800 dark:bg-gray-900">
+          {[
+            { key: "rank", label: "Rank" },
+            { key: "sentiment", label: "Sentiment" },
+            { key: "appearances", label: "Mentions" },
+          ].map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setCompetitorSort(item.key as any)}
+              className={`
+                px-3 py-1 text-[10px] font-semibold rounded-full transition-all whitespace-nowrap
+                ${
+                  competitorSort === item.key
+                    ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+                    : "text-muted-foreground hover:text-foreground"
+                }
+              `}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-	    {/* Segmented Filter */}
-	  <div className="mt-2 flex justify-center">
-			<div className="inline-flex rounded-full border border-gray-200 bg-white p-1 dark:border-gray-800 dark:bg-gray-900">
-			{[
-				{ key: "rank", label: "Rank" },
-				{ key: "sentiment", label: "Sentiment" },
-				{ key: "appearances", label: "Mentions" },
-			].map((item) => (
-				<button
-				key={item.key}
-				onClick={() => setCompetitorSort(item.key as any)}
-				className={`
-					px-4 py-1.5 text-[11px] font-semibold rounded-full transition-all
-					${
-					competitorSort === item.key
-						? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-						: "text-muted-foreground hover:text-foreground"
-					}
-				`}
-				>
-				{item.label}
-				</button>
-			))}
-			</div>
-		</div>
-
       {/* Competitor List */}
-      <div className="mt-4 flex flex-1 flex-col justify-between">
-        {displayCompetitors.map((comp) => {
+      {competitors.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+          <Users className="h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No competitor data available</p>
+        </div>
+      ) : (
+        <div className="mt-2 flex flex-1 flex-col justify-around">
+          {displayCompetitors.map((comp) => {
 			const faviconUrls = getFaviconUrls(comp?.domain ?? "");
 			const isBrand = comp.isBrand === true;
 
@@ -159,9 +164,12 @@ export function CompetitiveLandscape({
 				{/* RIGHT — Primary metric (the one being sorted by) */}
 				<div className="shrink-0">
 					{competitorSort === "rank" && comp.avgRank !== null && (
-					<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+					<div className="flex items-center gap-1 text-sm">
+						<span className="text-[10px] font-medium text-muted-foreground">AVG</span>
+						<span className="font-semibold text-gray-900 dark:text-gray-100">
 						#{comp.avgRank}
-					</span>
+						</span>
+					</div>
 					)}
 					{competitorSort === "sentiment" && (
 					<SentimentBadge value={comp.avgSentiment} />
@@ -174,9 +182,9 @@ export function CompetitiveLandscape({
 				</div>
 				</div>
 			  )
-		})}
-      </div>
-
+		  })}
+        </div>
+      )}
 
     </Card>
   );

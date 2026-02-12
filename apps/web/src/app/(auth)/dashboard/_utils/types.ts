@@ -38,6 +38,7 @@ export interface GroupedRecord {
 
 export interface DashboardMetrics {
 	brandName: string;
+	brandDomain: string;
 	avgRank: { position: number | null; total: number | null };
 	avgSentiment: { score: number; label: string };
 	aggregateStats: {
