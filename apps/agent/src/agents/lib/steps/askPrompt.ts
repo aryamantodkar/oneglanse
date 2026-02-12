@@ -61,10 +61,10 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
 
     logger.debug("  📤 Submitting...");
     await page.keyboard.press("Enter");
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5000);
 
     // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
-    await page.waitForLoadState("domcontentloaded", { timeout: 10000 }).catch(() => {});
+    await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
 
     const generationStarted = await withTimeout(
       page.waitForFunction(
@@ -74,9 +74,9 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
               '[aria-label*="stop" i], [class*="loading"], [class*="typing"]'
             )
           ),
-        { timeout: 5000 }
+        { timeout: 10000 }
       ).then(() => true).catch(() => false),
-      7000,
+      15000,
       false
     );
 
@@ -98,9 +98,9 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
                 '[aria-label*="stop" i], [class*="loading"], [class*="typing"]'
               )
             ),
-          { timeout: 5000 }
+          { timeout: 10000 }
         ).then(() => true).catch(() => false),
-        7000,
+        15000,
         false
       );
 
