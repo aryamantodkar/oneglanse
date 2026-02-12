@@ -58,6 +58,7 @@ export interface DashboardMetrics {
 		differentiators: string[];
 	};
 	sourcesIntelligence: SourceData[];
+	totalCitations: number;
 	aggregatedRisks: RiskData[];
 	groupedRecords: GroupedRecord[];
 	analyzedRecords: AnalysisRecord[];

@@ -88,9 +88,35 @@ export function CompetitiveLandscape({
         </p>
       </div>
 
+	    {/* Segmented Filter */}
+	  <div className="mt-2 flex justify-center">
+			<div className="inline-flex rounded-full border border-gray-200 bg-white p-1 dark:border-gray-800 dark:bg-gray-900">
+			{[
+				{ key: "rank", label: "Rank" },
+				{ key: "sentiment", label: "Sentiment" },
+				{ key: "appearances", label: "Mentions" },
+			].map((item) => (
+				<button
+				key={item.key}
+				onClick={() => setCompetitorSort(item.key as any)}
+				className={`
+					px-4 py-1.5 text-[11px] font-semibold rounded-full transition-all
+					${
+					competitorSort === item.key
+						? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+						: "text-muted-foreground hover:text-foreground"
+					}
+				`}
+				>
+				{item.label}
+				</button>
+			))}
+			</div>
+		</div>
+
       {/* Competitor List */}
-      <div className="mt-4 flex flex-1 flex-col gap-2.5">
-        {displayCompetitors.map((comp, idx) => {
+      <div className="mt-4 flex flex-1 flex-col justify-between">
+        {displayCompetitors.map((comp) => {
 			const faviconUrls = getFaviconUrls(comp?.domain ?? "");
 			const isBrand = comp.isBrand === true;
 
@@ -132,9 +158,9 @@ export function CompetitiveLandscape({
 
 				{/* RIGHT — Primary metric (the one being sorted by) */}
 				<div className="shrink-0">
-					{competitorSort === "rank" && (
+					{competitorSort === "rank" && comp.avgRank !== null && (
 					<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-						#{idx + 1}
+						#{comp.avgRank}
 					</span>
 					)}
 					{competitorSort === "sentiment" && (
@@ -151,31 +177,7 @@ export function CompetitiveLandscape({
 		})}
       </div>
 
-	    {/* Segmented Filter */}
-		<div className="mt-3 flex justify-center">
-			<div className="inline-flex rounded-full border border-gray-200 bg-white p-1 dark:border-gray-800 dark:bg-gray-900">
-			{[
-				{ key: "rank", label: "Rank" },
-				{ key: "sentiment", label: "Sentiment" },
-				{ key: "appearances", label: "Mentions" },
-			].map((item) => (
-				<button
-				key={item.key}
-				onClick={() => setCompetitorSort(item.key as any)}
-				className={`
-					px-4 py-1.5 text-[11px] font-semibold rounded-full transition-all
-					${
-					competitorSort === item.key
-						? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-						: "text-muted-foreground hover:text-foreground"
-					}
-				`}
-				>
-				{item.label}
-				</button>
-			))}
-			</div>
-		</div>
+
     </Card>
   );
 }

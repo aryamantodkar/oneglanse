@@ -49,9 +49,9 @@ export function BrandPerceptionCard({
 				{coreClaims.slice(0, 4).map((claim) => (
 				  <li
 					key={claim}
-					className="flex items-start gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-gray-900"
+					className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-gray-900"
 				  >
-					<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
+					<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
 					<span>
 					  {claim.charAt(0).toUpperCase() + claim.slice(1)}
 					</span>

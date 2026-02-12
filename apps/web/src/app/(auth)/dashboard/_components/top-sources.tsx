@@ -4,10 +4,10 @@ import type { SourceData } from "../_utils/types";
 
 export function TopSources({
 	sources,
-	totalRecords = 1,
+	totalCitations = 1,
   }: {
 	sources: SourceData[];
-	totalRecords?: number;
+	totalCitations?: number;
   }) {
 	if (sources.length === 0) return null;
   
@@ -25,13 +25,13 @@ export function TopSources({
 		</div>
   
 		{/* Source List */}
-		<div className="mt-4 flex flex-1 flex-col gap-2.5">
+		<div className="mt-4 flex flex-1 flex-col justify-between">
 		  {sources.slice(0, 5).map((source, idx) => {
 			const faviconUrl =
 			  source.favicon || getFaviconUrls(source.domain, "")[0];
   
 			const usagePercent = Math.round(
-			  (source.uniqueRecords.size / totalRecords) * 100
+			  (source.citationCount / totalCitations) * 100
 			);
   
 			return (

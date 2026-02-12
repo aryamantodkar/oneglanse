@@ -66,6 +66,9 @@ export default function Dashboard() {
 					rank={metrics.avgRank.position ?? 0}
 					topSource={metrics.sourcesIntelligence[0]?.domain ?? 'N/A'}
 					topCompetitor={metrics.aggregateStats.topCompetitor}
+					topCompetitorDomain={metrics.competitorData.find(
+						(c) => c.name === metrics.aggregateStats.topCompetitor && !c.isBrand
+					)?.domain}
 				/>
 
 				{/* 3-Column Grid */}
@@ -75,7 +78,7 @@ export default function Dashboard() {
 					/>
 					<TopSources
 						sources={metrics.sourcesIntelligence}
-						totalRecords={metrics.analyzedRecords.length}
+						totalCitations={metrics.totalCitations}
 					/>
 					<BrandPerceptionCard
 						bestKnownFor={metrics.brandPerception.bestKnownFor}

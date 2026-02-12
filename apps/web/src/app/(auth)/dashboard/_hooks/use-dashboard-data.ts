@@ -321,9 +321,14 @@ export function useDashboardData(
 			});
 		});
 
-		return [...domainMap.values()]
-			.sort((a, b) => b.uniqueRecords.size - a.uniqueRecords.size)
-			.slice(0, 15);
+		const allDomains = [...domainMap.values()].sort(
+			(a, b) => b.citationCount - a.citationCount
+		);
+		const totalCitations = allDomains.reduce(
+			(sum, d) => sum + d.citationCount,
+			0
+		);
+		return { sources: allDomains.slice(0, 15), totalCitations };
 	}, [analyzedRecords]);
 
 	const aggregatedRisks = useMemo(() => {
@@ -421,7 +426,8 @@ export function useDashboardData(
 		competitorData,
 		sentimentBreakdown,
 		brandPerception,
-		sourcesIntelligence,
+		sourcesIntelligence: sourcesIntelligence.sources,
+		totalCitations: sourcesIntelligence.totalCitations,
 		aggregatedRisks,
 		groupedRecords,
 		analyzedRecords,
