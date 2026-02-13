@@ -22,7 +22,6 @@ import {
 	Bot,
 	ChevronRight,
 	ExternalLink,
-	FileText,
 	Globe2,
 	Link2,
 	SearchX,
@@ -35,10 +34,19 @@ type DomainGroup = {
 	domain: string;
 	totalCitations: number;
 	urlCount: number;
-	citedTextCount: number;
 	providers: Set<string>;
 	urls: GroupedSource[];
 };
+
+function getUrlPath(url: string): string {
+	try {
+		const parsed = new URL(url);
+		const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+		return path && path !== "/" ? path : "/";
+	} catch {
+		return "/";
+	}
+}
 
 function MetricCard({
 	label,
@@ -107,14 +115,12 @@ export default function SourcesPage() {
 				domain,
 				totalCitations: 0,
 				urlCount: 0,
-				citedTextCount: 0,
 				providers: new Set<string>(),
 				urls: [],
 			};
 
 			existing.totalCitations += source.totalSources ?? 0;
 			existing.urlCount += 1;
-			existing.citedTextCount += source.excerpts.filter((e) => e.cited_text?.trim()).length;
 			for (const excerpt of source.excerpts) {
 				if (excerpt.model_provider) {
 					existing.providers.add(excerpt.model_provider);
@@ -132,24 +138,21 @@ export default function SourcesPage() {
 		const totalUrls = displayedSources.length;
 		const totalDomains = domainGroups.length;
 		const totalCitations = displayedSources.reduce((sum, s) => sum + (s.totalSources ?? 0), 0);
-		const totalCitedText = displayedSources.reduce(
-			(sum, s) => sum + s.excerpts.filter((e) => e.cited_text?.trim()).length,
-			0
-		);
-		const citedCoverage = totalCitations
-			? Math.round((totalCitedText / totalCitations) * 100)
-			: 0;
 		const avgCitationsPerUrl = totalUrls
 			? (totalCitations / totalUrls).toFixed(1)
 			: "0.0";
+		const topDomainCitations = domainGroups[0]?.totalCitations ?? 0;
+		const topDomainShare = totalCitations
+			? Math.round((topDomainCitations / totalCitations) * 100)
+			: 0;
 
 		return {
 			totalUrls,
 			totalDomains,
 			totalCitations,
-			totalCitedText,
-			citedCoverage,
 			avgCitationsPerUrl,
+			topDomainShare,
+			topDomain: domainGroups[0]?.domain ?? "N/A",
 		};
 	}, [displayedSources, domainGroups]);
 
@@ -273,10 +276,10 @@ export default function SourcesPage() {
 						subtitle={`Avg ${aggregate.avgCitationsPerUrl} citations per URL`}
 					/>
 					<MetricCard
-						icon={FileText}
-						label="Cited Text Coverage"
-						value={`${aggregate.citedCoverage}%`}
-						subtitle={`${aggregate.totalCitedText} citations include extracted source text`}
+						icon={BarChart3}
+						label="Top Domain Share"
+						value={`${aggregate.topDomainShare}%`}
+						subtitle={`${aggregate.topDomain} concentration in total citations`}
 					/>
 				</div>
 
@@ -299,7 +302,7 @@ export default function SourcesPage() {
 						}`}
 						onClick={() => setActiveTab("citations")}
 					>
-						Citations (Grouped by Domain)
+						Citations
 					</button>
 				</div>
 
@@ -320,25 +323,22 @@ export default function SourcesPage() {
 						<Table className="w-full">
 							<TableHeader>
 								<TableRow className="border-b border-gray-200 dark:border-gray-800">
-									<TableHead className="w-[56px] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									<TableHead className="w-[56px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 										#
 									</TableHead>
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Domain
+									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Publisher
 									</TableHead>
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Share
+									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Share of Citations
 									</TableHead>
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Citations
+									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Total Citations
 									</TableHead>
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										URLs
+									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Unique URLs
 									</TableHead>
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Cited Text
-									</TableHead>
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 										Models
 									</TableHead>
 								</TableRow>
@@ -349,19 +349,17 @@ export default function SourcesPage() {
 									const share = aggregate.totalCitations
 										? ((domain.totalCitations / aggregate.totalCitations) * 100).toFixed(1)
 										: "0.0";
-									const citedPct = domain.totalCitations
-										? Math.round((domain.citedTextCount / domain.totalCitations) * 100)
-										: 0;
+									const providers = [...domain.providers];
 
 									return (
 										<TableRow
 											key={domain.domain}
 											className="ui-list-item border-b border-gray-100 last:border-0 hover:bg-gray-50/80 dark:border-gray-800 dark:hover:bg-gray-800/40"
 										>
-											<TableCell className="px-4 py-4 text-xs text-muted-foreground">
+											<TableCell className="px-4 py-5 text-xs text-muted-foreground">
 												{idx + 1}
 											</TableCell>
-											<TableCell className="px-4 py-4">
+											<TableCell className="px-4 py-5">
 												<div className="flex items-center gap-2">
 													{favicon && (
 														<img
@@ -383,20 +381,27 @@ export default function SourcesPage() {
 													</a>
 												</div>
 											</TableCell>
-											<TableCell className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+											<TableCell className="px-4 py-5 text-sm font-semibold text-gray-900 dark:text-gray-100">
 												{share}%
 											</TableCell>
-											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+											<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
 												{domain.totalCitations}
 											</TableCell>
-											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+											<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
 												{domain.urlCount}
 											</TableCell>
-											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
-												{domain.citedTextCount} ({citedPct}%)
-											</TableCell>
-											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
-												{domain.providers.size}
+											<TableCell className="px-4 py-5">
+												<div className="flex items-center gap-1.5">
+													{providers.map((provider) => (
+														<img
+															key={`${domain.domain}-${provider}`}
+															src={getModelFavicon(provider)}
+															alt={provider}
+															title={provider}
+															className="h-4 w-4 rounded-sm"
+														/>
+													))}
+												</div>
 											</TableCell>
 										</TableRow>
 									);
@@ -409,11 +414,11 @@ export default function SourcesPage() {
 						<Table className="w-full">
 							<TableHeader>
 								<TableRow className="border-b border-gray-200 dark:border-gray-800">
-									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Domain / URL
+									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Source Reference
 									</TableHead>
-									<TableHead className="w-[260px] px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Metrics
+									<TableHead className="w-[300px] px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Citations & Models
 									</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -430,7 +435,7 @@ export default function SourcesPage() {
 													setOpenDomain(domainOpen ? null : group.domain)
 												}
 											>
-												<TableCell className="px-4 py-4">
+												<TableCell className="px-4 py-5">
 													<div className="flex items-center gap-2">
 														<ChevronRight
 															className={`h-4 w-4 text-muted-foreground transition-transform ${
@@ -452,7 +457,7 @@ export default function SourcesPage() {
 														</span>
 													</div>
 												</TableCell>
-												<TableCell className="px-4 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
+												<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
 													<span className="font-semibold">{group.totalCitations}</span> citations
 													<span className="mx-2 text-gray-300">•</span>
 													{group.urlCount} URLs
@@ -466,7 +471,6 @@ export default function SourcesPage() {
 													const urlOpen = openUrl === source.url;
 													const urlFavicon = getFaviconUrls(source.url, "")[0];
 													const providers = [...new Set(source.excerpts.map((e) => e.model_provider).filter(Boolean))] as string[];
-													const withTextCount = source.excerpts.filter((e) => e.cited_text?.trim()).length;
 
 													return (
 														<Fragment key={source.url}>
@@ -474,7 +478,7 @@ export default function SourcesPage() {
 																className="cursor-pointer border-b border-gray-100 hover:bg-gray-50/60 dark:border-gray-800 dark:hover:bg-gray-800/40"
 																onClick={() => setOpenUrl(urlOpen ? null : source.url)}
 															>
-																<TableCell className="px-4 py-4 pl-12">
+																<TableCell className="px-4 py-5 pl-12">
 																	<div className="flex items-start gap-2">
 																		<ChevronRight
 																			className={`mt-0.5 h-3.5 w-3.5 text-muted-foreground transition-transform ${
@@ -491,16 +495,19 @@ export default function SourcesPage() {
 																				}}
 																			/>
 																		)}
-																		<div className="min-w-0">
-																			<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-																				{source.title || "Untitled source"}
-																			</p>
-																			<div className="mt-1 flex items-center gap-2">
-																				<p className="truncate text-xs text-muted-foreground">
-																					{source.url}
+																			<div className="min-w-0">
+																				<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+																					{source.title || "Untitled source"}
 																				</p>
-																				<a
-																					href={source.url}
+																				<div className="mt-1.5 flex items-center gap-2">
+																					<span className="truncate text-xs text-muted-foreground">
+																						{getDomain(source.url) || "unknown"}
+																					</span>
+																					<span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+																						{getUrlPath(source.url)}
+																					</span>
+																					<a
+																						href={source.url}
 																					target="_blank"
 																					rel="noreferrer noopener"
 																					onClick={(e) => e.stopPropagation()}
@@ -512,12 +519,20 @@ export default function SourcesPage() {
 																		</div>
 																	</div>
 																</TableCell>
-																<TableCell className="px-4 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
+																<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
 																	<span className="font-semibold">{source.totalSources}</span> citations
 																	<span className="mx-2 text-gray-300">•</span>
-																	{withTextCount} with text
-																	<span className="mx-2 text-gray-300">•</span>
-																	{providers.length} models
+																	<div className="inline-flex items-center gap-1.5 align-middle">
+																		{providers.map((provider) => (
+																			<img
+																				key={`${source.url}-${provider}`}
+																				src={getModelFavicon(provider)}
+																				alt={provider}
+																				title={provider}
+																				className="h-4 w-4 rounded-sm"
+																			/>
+																		))}
+																	</div>
 																</TableCell>
 															</TableRow>
 
@@ -527,7 +542,7 @@ export default function SourcesPage() {
 																		key={`${source.url}-${idx}`}
 																		className="border-b border-gray-50 bg-white/70 dark:border-gray-900 dark:bg-gray-900/20"
 																	>
-																		<TableCell className="px-4 py-4 pl-20">
+																		<TableCell className="px-4 py-5 pl-20">
 																			<div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900">
 																				<p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
 																					{excerpt.cited_text?.trim()
@@ -536,7 +551,7 @@ export default function SourcesPage() {
 																				</p>
 																			</div>
 																		</TableCell>
-																		<TableCell className="px-4 py-4 text-right">
+																		<TableCell className="px-4 py-5 text-right">
 																			{excerpt.model_provider ? (
 																				<div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-900">
 																					<img
