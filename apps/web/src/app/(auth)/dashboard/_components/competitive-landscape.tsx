@@ -3,6 +3,7 @@ import { Card, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } f
 import type { CompetitorData } from "../_utils/types";
 import { getFaviconUrls } from "@onescope/utils";
 import { Users } from "lucide-react";
+import { DashboardEmptyState } from "./empty-state";
 
 function compareByName(a: CompetitorData, b: CompetitorData): number {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -162,10 +163,11 @@ export function CompetitiveLandscape({
 
       {/* Competitor List */}
       {competitors.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3">
-          <Users className="h-8 w-8 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No competitor data available</p>
-        </div>
+        <DashboardEmptyState
+          icon={Users}
+          title="No competitor data"
+          description="No analysis data is available for the selected filters."
+        />
       ) : (
         <div className="flex flex-1 flex-col justify-around">
           {displayCompetitors.map((comp) => {

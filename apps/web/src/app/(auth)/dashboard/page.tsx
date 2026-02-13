@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { AnalysisRecord } from "@onescope/types";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import {
 	useFetchAnalysedPrompts,
 	usePromptSources,
@@ -47,6 +47,19 @@ export default function Dashboard() {
 
 	// Computed data
 	const metrics = useDashboardData(analysedPromptData, modelFilter, timeFilter);
+	const hasAnyAnalysisInWorkspace = useMemo(() => {
+		const data = analysedPromptData?.data;
+		if (!data) return false;
+
+		const records = Array.isArray(data)
+			? data
+			: typeof data === "object" && data && "records" in data && Array.isArray((data as any).records)
+				? (data as any).records
+				: [];
+
+		return records.some((r: any) => Boolean(r?.is_analysed && r?.brand_analysis));
+	}, [analysedPromptData]);
+	const hasFilteredAnalysis = metrics.analyzedRecords.length > 0;
 
 	// Conditional renders
 	if (!workspaceId) return <NoWorkspaceState />;
@@ -71,7 +84,7 @@ export default function Dashboard() {
 	if (!analysedPromptData?.data || (Array.isArray(analysedPromptData.data) && analysedPromptData.data.length === 0)) {
 		return <EmptyState />;
 	}
-	if (metrics.analyzedRecords.length === 0) return <NoAnalysisState />;
+	if (!hasAnyAnalysisInWorkspace) return <NoAnalysisState />;
 
 	return (
 		<div className="ui-page-enter min-h-screen dark:bg-black">
@@ -96,7 +109,17 @@ export default function Dashboard() {
 						topCompetitorDomain={metrics.competitorData.find(
 							(c) => c.name === metrics.aggregateStats.topCompetitor && !c.isBrand
 						)?.domain}
+						noData={!hasFilteredAnalysis}
 					/>
+
+					{!hasFilteredAnalysis && (
+						<div className="flex items-start gap-2 rounded-xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-4 py-3 text-sm text-muted-foreground dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">
+							<Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+							<span>
+								No analysis data for this filter selection. Try another model or time range.
+							</span>
+						</div>
+					)}
 
 					{/* 3-Column Grid */}
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
