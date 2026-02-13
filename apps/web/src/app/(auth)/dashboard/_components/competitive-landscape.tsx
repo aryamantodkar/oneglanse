@@ -152,8 +152,8 @@ export function CompetitiveLandscape({
             See how you stack up against competitors.
           </p>
           {competitorSort === "rank" && (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Rank order: avg position, then recommendation consistency, recommendation count, mentions, sentiment.
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Rank order: Avg Position, then Recommendation Consistency, Recommendation Count, Mentions, Sentiment.
             </p>
           )}
         </div>

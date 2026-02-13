@@ -38,6 +38,10 @@ type DomainGroup = {
 	urls: GroupedSource[];
 };
 
+function formatCitationLabel(count: number): string {
+	return `${count} citation${count === 1 ? "" : "s"}`;
+}
+
 function getUrlPath(url: string): string {
 	try {
 		const parsed = new URL(url);
@@ -474,7 +478,7 @@ export default function SourcesPage() {
 													</div>
 												</TableCell>
 												<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
-													<span className="font-semibold">{group.totalCitations}</span> citations
+													<span className="font-semibold">{formatCitationLabel(group.totalCitations)}</span>
 													<span className="mx-2 text-gray-300">•</span>
 													{group.urlCount} URLs
 													<span className="mx-2 text-gray-300">•</span>
@@ -526,9 +530,6 @@ export default function SourcesPage() {
 																					{source.title || "Untitled source"}
 																				</p>
 																				<div className="mt-1.5 flex items-center gap-2">
-																					<span className="truncate text-xs text-muted-foreground">
-																						{getDomain(source.url) || "unknown"}
-																					</span>
 																					<span className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
 																						{getUrlPath(source.url)}
 																					</span>
@@ -546,7 +547,7 @@ export default function SourcesPage() {
 																	</div>
 																</TableCell>
 																<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
-																	<span className="font-semibold">{source.totalSources}</span> citations
+																	<span className="font-semibold">{formatCitationLabel(source.totalSources)}</span>
 																	<span className="mx-2 text-gray-300">•</span>
 																	<div className="inline-flex items-center gap-1.5 align-middle">
 																		{providers.map((provider) => (

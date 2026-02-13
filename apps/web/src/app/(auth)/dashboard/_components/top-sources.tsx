@@ -4,6 +4,10 @@ import type { SourceData } from "../_utils/types";
 import { FileQuestion } from "lucide-react";
 import { DashboardEmptyState } from "./empty-state";
 
+function formatCitationLabel(count: number): string {
+	return `${count} citation${count === 1 ? "" : "s"}`;
+}
+
 export function TopSources({
 	sources,
 	totalCitations = 1,
@@ -71,7 +75,7 @@ export function TopSources({
 
 							<div className="mt-1.5 flex items-center gap-2">
 							  <span className="text-xs text-muted-foreground">
-								{source.citationCount} citations
+								{formatCitationLabel(source.citationCount)}
 							  </span>
 							  <span className="text-[10px] text-muted-foreground">
 								{source.models.size} models
