@@ -73,8 +73,8 @@ export function LoginForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+    <div className={cn("ui-page-enter flex flex-col gap-6", className)} {...props}>
+      <Card className="ui-list-item">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
           <CardDescription>
@@ -84,7 +84,7 @@ export function LoginForm({
         <CardContent>
            <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid gap-6">
+              <div className="ui-stagger grid gap-6">
                 <div className="flex flex-col gap-4">
                   <Button variant="outline" className="w-full" type="button" onClick={signInWithGoogle}>
                     <FcGoogle className="h-4 w-4" />

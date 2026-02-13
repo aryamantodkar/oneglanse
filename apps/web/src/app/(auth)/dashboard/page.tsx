@@ -74,45 +74,47 @@ export default function Dashboard() {
 	if (metrics.analyzedRecords.length === 0) return <NoAnalysisState />;
 
 	return (
-		<div className="min-h-screen dark:bg-black">
-			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-				{/* Filters */}
-				<DashboardFilters
-					brandName={metrics.brandName}
-					brandDomain={metrics.brandDomain}
-					modelFilter={modelFilter}
-					setModelFilter={setModelFilter}
-					timeFilter={timeFilter}
-					setTimeFilter={setTimeFilter}
-				/>
-
-				{/* Aggregate Stats */}
-				<AggregateStatsRow
-					presenceRate={metrics.aggregateStats.presenceRate}
-					rank={metrics.avgRank.position ?? 0}
-					topSource={metrics.sourcesIntelligence[0]?.domain ?? 'N/A'}
-					topCompetitor={metrics.aggregateStats.topCompetitor}
-					topCompetitorDomain={metrics.competitorData.find(
-						(c) => c.name === metrics.aggregateStats.topCompetitor && !c.isBrand
-					)?.domain}
-				/>
-
-				{/* 3-Column Grid */}
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-					<CompetitiveLandscape
-						competitors={metrics.competitorData}
+		<div className="ui-page-enter min-h-screen dark:bg-black">
+			<div className="mx-auto w-full max-w-[95vw] px-4 py-4 sm:px-6 lg:px-8 xl:max-w-[1600px]">
+				<div className="ui-stagger space-y-6">
+					{/* Filters */}
+					<DashboardFilters
+						brandName={metrics.brandName}
+						brandDomain={metrics.brandDomain}
 						modelFilter={modelFilter}
+						setModelFilter={setModelFilter}
+						timeFilter={timeFilter}
+						setTimeFilter={setTimeFilter}
 					/>
-					<TopSources
-						sources={metrics.sourcesIntelligence}
-						totalCitations={metrics.totalCitations}
+
+					{/* Aggregate Stats */}
+					<AggregateStatsRow
+						presenceRate={metrics.aggregateStats.presenceRate}
+						rank={metrics.avgRank.position ?? 0}
+						topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
+						topCompetitor={metrics.aggregateStats.topCompetitor}
+						topCompetitorDomain={metrics.competitorData.find(
+							(c) => c.name === metrics.aggregateStats.topCompetitor && !c.isBrand
+						)?.domain}
 					/>
-					<BrandPerceptionCard
-						bestKnownFor={metrics.brandPerception.bestKnownFor}
-						pricingPerception={metrics.brandPerception.pricingPerception}
-						coreClaims={metrics.brandPerception.coreClaims}
-						differentiators={metrics.brandPerception.differentiators}
-					/>
+
+					{/* 3-Column Grid */}
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+						<CompetitiveLandscape
+							competitors={metrics.competitorData}
+							modelFilter={modelFilter}
+						/>
+						<TopSources
+							sources={metrics.sourcesIntelligence}
+							totalCitations={metrics.totalCitations}
+						/>
+						<BrandPerceptionCard
+							bestKnownFor={metrics.brandPerception.bestKnownFor}
+							pricingPerception={metrics.brandPerception.pricingPerception}
+							coreClaims={metrics.brandPerception.coreClaims}
+							differentiators={metrics.brandPerception.differentiators}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
