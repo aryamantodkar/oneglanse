@@ -90,9 +90,12 @@ export default function Dashboard() {
 					{/* Aggregate Stats */}
 					<AggregateStatsRow
 						presenceRate={metrics.aggregateStats.presenceRate}
-						rank={metrics.avgRank.position}
+						rank={metrics.avgRank.position ?? 0}
 						topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
 						topCompetitor={metrics.aggregateStats.topCompetitor}
+						topCompetitorDomain={metrics.competitorData.find(
+							(c) => c.name === metrics.aggregateStats.topCompetitor && !c.isBrand
+						)?.domain}
 					/>
 
 					{/* 3-Column Grid */}

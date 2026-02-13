@@ -1,3 +1,4 @@
+import { getFaviconUrls } from "@onescope/utils";
 import { Globe, Link2, Trophy, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -7,13 +8,22 @@ export function StatCard({
 	subtitle,
 	icon: Icon,
 	valueClassName = "text-gray-900 dark:text-gray-100",
+	domain,
 }: {
 	label: string;
 	value: string | number;
 	subtitle?: string;
 	icon: LucideIcon;
 	valueClassName?: string;
+	domain?: string;
 }) {
+	const isStringValue = typeof value === "string";
+	const showFavicon =
+		isStringValue && (label === "Top Source" || label === "Top Competitor");
+	const faviconUrls = showFavicon
+		? getFaviconUrls(domain || String(value), String(value))
+		: [];
+
 	return (
 		<div className="ui-list-item group flex min-h-[120px] flex-col justify-between rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900">
 			<div className="flex items-center gap-2">
@@ -24,6 +34,16 @@ export function StatCard({
 			</div>
 
 			<div className="mt-3 flex h-[40px] items-center gap-2">
+				{showFavicon && faviconUrls[0] && (
+					<img
+						src={faviconUrls[0]}
+						alt=""
+						className="h-5 w-5 shrink-0 rounded-sm"
+						onError={(e) => {
+							(e.target as HTMLImageElement).style.display = "none";
+						}}
+					/>
+				)}
 				<span
 					className={`truncate text-2xl font-semibold leading-none tracking-tight ${valueClassName}`}
 				>
@@ -45,39 +65,40 @@ export function AggregateStatsRow({
 	rank,
 	topSource,
 	topCompetitor,
+	topCompetitorDomain,
 }: {
 	presenceRate: number;
-	rank: number | null;
+	rank: number;
 	topSource: string;
 	topCompetitor: string;
+	topCompetitorDomain?: string;
 }) {
-	const rankValue = rank !== null ? `#${rank}` : "N/A";
-
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 			<StatCard
 				icon={Globe}
 				label="Presence Rate"
 				value={`${presenceRate}%`}
-				subtitle="Queries mentioning your brand"
+				subtitle="Prompts mentioning your brand"
 			/>
 			<StatCard
 				icon={Trophy}
-				label="Avg Rank"
-				value={rankValue}
-				subtitle="Average placement across ranked responses"
+				label="Rank"
+				value={`#${rank}`}
+				subtitle="Avg rank across prompts"
 			/>
 			<StatCard
 				icon={Link2}
 				label="Top Source"
 				value={topSource}
-				subtitle="Most cited domain in AI answers"
+				subtitle="Most cited information source"
 			/>
 			<StatCard
 				icon={Users}
 				label="Top Competitor"
 				value={topCompetitor}
 				subtitle="Most frequently appears with you"
+				domain={topCompetitorDomain}
 			/>
 		</div>
 	);
