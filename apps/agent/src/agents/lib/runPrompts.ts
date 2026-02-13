@@ -66,6 +66,9 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
           await page.waitForTimeout(1500);
 
           let response: string = await fetchPromptResponses(page, provider);
+          if (!response || response.trim().length === 0) {
+            throw new Error(`[${provider}] Empty response extracted; blocking source extraction and retrying prompt`);
+          }
 
           await page.waitForTimeout(1500);
 
