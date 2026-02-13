@@ -27,7 +27,7 @@ export function TopSources({
 		{sources.length === 0 ? (
 		  <div className="flex flex-1 flex-col items-center justify-center gap-3">
 			<FileQuestion className="h-8 w-8 text-muted-foreground/40" />
-			<p className="text-sm text-muted-foreground">No source data found</p>
+			<p className="text-sm text-muted-foreground">No source data found.</p>
 		  </div>
 		) : (
 		  <div className="flex flex-1 flex-col justify-around">
