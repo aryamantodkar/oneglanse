@@ -7,7 +7,7 @@ import { logger } from "../../lib/utils/logger.js";
 import { PromptPayload } from "@onescope/types";
 import { IPRefreshNeededError } from "@onescope/errors";
 
-const MAX_PROMPT_RETRIES = 5; // Increased from 3 to 5 for better resilience
+const MAX_PROMPT_RETRIES = 3; // Fewer retries per IP; rely more on proxy rotation
 const INITIAL_RETRY_DELAY = 2000; // 2 seconds for first retry
 const MAX_RETRY_DELAY = 30000; // Cap at 30 seconds
 

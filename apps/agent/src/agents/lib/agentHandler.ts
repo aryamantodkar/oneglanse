@@ -7,9 +7,15 @@ import { AuthError, IPRefreshNeededError } from "@onescope/errors";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const PROXIES_PER_CYCLE = 5;
-const MAX_CYCLES = 10;
+const MAX_CYCLES = 20; // More proxy refresh opportunities across all providers
 const INITIAL_BACKOFF = 10_000; // 10 seconds
+const MAX_CYCLE_BACKOFF = 60_000; // Cap cycle backoff at 60s
 const RETRY_DELAY = 3000; // 3 seconds
+
+function getCycleBackoffMs(cycle: number): number {
+  if (cycle <= 0) return 0;
+  return Math.min(INITIAL_BACKOFF * Math.pow(2, cycle - 1), MAX_CYCLE_BACKOFF);
+}
 
 export async function agentHandler(
     label: string,
@@ -29,7 +35,7 @@ export async function agentHandler(
 
     for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
       if (cycle > 0) {
-        const backoff = INITIAL_BACKOFF * Math.pow(2, cycle - 1);
+        const backoff = getCycleBackoffMs(cycle);
         logger.warn(`${label} cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s, refreshing proxies...`);
         await new Promise((r) => setTimeout(r, backoff));
 
