@@ -39,7 +39,7 @@ export function StatCard({
 	return (
 	  <div
 		className="
-		  group flex min-h-[120px] flex-col justify-between
+		  ui-list-item group flex min-h-[120px] flex-col justify-between
 		  rounded-2xl border border-gray-200 bg-white p-4
 		  transition hover:border-gray-300
 		  dark:border-gray-800 dark:bg-gray-900
@@ -47,7 +47,7 @@ export function StatCard({
 	  >
 		{/* Header */}
 		<div className="flex items-center gap-2">
-		  <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+		  <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:scale-110" />
 		  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 			{label}
 		  </span>
@@ -59,7 +59,7 @@ export function StatCard({
 			<img
 			  src={faviconUrls[0]}
 			  alt=""
-			  className="h-5 w-5 rounded-md object-contain shrink-0"
+			  className="h-5 w-5 shrink-0 rounded-md object-contain transition-transform duration-200 group-hover:scale-105"
 			  onError={(e) =>
 				((e.target as HTMLImageElement).style.display = "none")
 			  }

@@ -33,10 +33,10 @@ export default function LayoutContent({ children, workspace, userName, userEmail
   
   if (!resolvedWorkspace) {
     return (
-      <div className="flex w-full h-screen">
+      <div className="ui-page-enter flex h-screen w-full">
         <main className="flex-1 flex flex-col min-h-0">
           {/* Header */}
-          <div className="flex items-center justify-between p-2 border-b border-gray-200">
+          <div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
             <div className="flex items-center gap-3">
               <h1 className="text-sm font-semibold text-gray-900">Workspace Setup</h1>
             </div>
@@ -48,26 +48,26 @@ export default function LayoutContent({ children, workspace, userName, userEmail
           </div>
 
           {/* Page content */}
-          <div className="flex-1 overflow-auto min-h-0 px-6">{children}</div>
+          <div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">{children}</div>
         </main>
       </div>
     );
   }
   
   return (
-    <div className="flex w-full h-screen">
+    <div className="ui-page-enter flex h-screen w-full">
       <AppSidebar workspace={resolvedWorkspace} userName={userName} userEmail={userEmail} />
       <main className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between p-2 border-b border-gray-200">
+        <div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="text-gray-700 hover:text-gray-900" />
+            <SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
             <h1 className="text-sm font-semibold text-gray-900">{capitalizedTitle}</h1>
           </div>
           <Logout/>
         </div>
 
         {/* Page content */}
-        <div className="flex-1 overflow-auto min-h-0 px-6">{children}</div>
+        <div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">{children}</div>
       </main>
     </div>
   );

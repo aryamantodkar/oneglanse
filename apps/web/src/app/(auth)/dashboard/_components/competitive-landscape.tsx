@@ -118,7 +118,7 @@ export function CompetitiveLandscape({
 			return (
 				<div
 				key={comp.name}
-				className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 transition ${
+				className={`ui-list-item group flex items-center justify-between gap-4 rounded-xl border px-4 py-3 ${
 					isBrand
 					? "border-l-2 border-l-blue-500 border-y-gray-200 border-r-gray-200 bg-blue-50/60 dark:border-y-gray-800 dark:border-r-gray-800 dark:bg-blue-950/30"
 					: "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
@@ -132,7 +132,7 @@ export function CompetitiveLandscape({
 						<img
 						src={faviconUrls[0]}
 						alt=""
-						className="h-5 w-5 rounded-md object-contain shrink-0"
+						className="h-5 w-5 shrink-0 rounded-md object-contain transition-transform duration-200 group-hover:scale-105"
 						onError={(e) =>
 							((e.target as HTMLImageElement).style.display = "none")
 						}

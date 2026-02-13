@@ -42,7 +42,7 @@ export function TopSources({
 			return (
 				<div
 					key={source.domain}
-					className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
+					className="ui-list-item group flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
 					>
 					{/* LEFT SIDE (Rank + Content) */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
@@ -54,7 +54,7 @@ export function TopSources({
 							<img
 							src={faviconUrl}
 							alt=""
-							className="h-5 w-5 rounded-md object-contain shrink-0"
+							className="h-5 w-5 shrink-0 rounded-md object-contain transition-transform duration-200 group-hover:scale-105"
 							onError={(e) => {
 								(e.target as HTMLImageElement).style.visibility = "hidden";
 							}}

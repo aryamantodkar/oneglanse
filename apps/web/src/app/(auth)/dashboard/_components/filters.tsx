@@ -30,7 +30,7 @@ export function DashboardFilters({
 	return (
 		<div className="flex items-center gap-3">
 			{/* Brand pill */}
-			<div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm dark:border-gray-800 dark:bg-gray-950">
+			<div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-px hover:shadow-sm dark:border-gray-800 dark:bg-gray-950">
 				{faviconUrls[0] && (
 					<img
 						src={faviconUrls[0]}
@@ -95,7 +95,7 @@ export function DashboardFilters({
 							setModelFilter("All Models");
 							setTimeFilter("all");
 						}}
-						className="gap-2 text-gray-500 hover:text-gray-700"
+						className="gap-2 text-gray-500 transition-[color,transform] duration-200 hover:text-gray-700"
 					>
 						<FilterX size={14} />
 						Clear

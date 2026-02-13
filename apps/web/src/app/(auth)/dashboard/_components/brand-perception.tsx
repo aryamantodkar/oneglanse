@@ -38,7 +38,7 @@ export function BrandPerceptionCard({
 
 			{/* Best Known For */}
 			{bestKnownFor && (
-			<div className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
+			<div className="ui-list-item rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
 			  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 				Best Known For
 			  </p>
@@ -58,7 +58,7 @@ export function BrandPerceptionCard({
 				{coreClaims.slice(0, 4).map((claim) => (
 				  <li
 					key={claim}
-					className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-gray-900"
+					className="ui-list-item flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-gray-900"
 				  >
 					<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
 					<span>
@@ -80,7 +80,7 @@ export function BrandPerceptionCard({
 				{differentiators.slice(0, 5).map((diff) => (
 				  <span
 					key={diff}
-					className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800"
+					className="ui-list-item rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800"
 				  >
 					{diff.charAt(0).toUpperCase() + diff.slice(1)}
 				  </span>
