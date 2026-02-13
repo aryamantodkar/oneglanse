@@ -10,6 +10,7 @@ import {
   CardTitle,
   Input,
   Label,
+  Skeleton,
   toast,
   Button
 } from "@onescope/ui";
@@ -215,9 +216,15 @@ export default function NewWorkspace() {
           </Card>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center h-screen gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading Workspace Setup</span>
+        <div className="flex flex-col items-center justify-center h-screen gap-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
+          <div className="w-full max-w-md space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -56,6 +57,7 @@ export default function PeoplePage() {
     { enabled: !!workspaceId }
   );
   const joinInfo = joinInfoQuery.data?.data;
+  const joinInfoLoading = joinInfoQuery.isLoading;
 
   const addWsMemberMutation = api.workspace.addMember.useMutation();
   const removeWsMemberMutation = api.workspace.removeMember.useMutation();
@@ -154,6 +156,14 @@ export default function PeoplePage() {
     );
   }
 
+  if (wsMembersQuery.isError) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <p className="text-sm text-gray-500">Unable to load workspace members.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-8 py-6">
       {/* Workspace Members Section */}
@@ -174,36 +184,49 @@ export default function PeoplePage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Input
-              readOnly
-              value={joinInfo?.workspaceCode ?? ""}
-              placeholder="Workspace code"
-              className="max-w-md"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")}
-              disabled={!joinInfo?.workspaceCode}
-            >
-              Copy
-            </Button>
+            {joinInfoLoading ? (
+              <>
+                <Skeleton className="h-9 w-[260px]" />
+                <Skeleton className="h-9 w-16" />
+              </>
+            ) : (
+              <>
+                <Input
+                  readOnly
+                  value={joinInfo?.workspaceCode ?? ""}
+                  placeholder="Workspace code"
+                  className="max-w-md"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")}
+                  disabled={!joinInfo?.workspaceCode}
+                >
+                  Copy
+                </Button>
+              </>
+            )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span>Org code:</span>
-            <span className="font-mono text-gray-700 dark:text-gray-300">
-              {joinInfo?.orgCode ?? "—"}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleCopy(joinInfo?.orgCode ?? "", "Org code")}
-              disabled={!joinInfo?.orgCode}
-              className="h-7 px-2 text-xs"
-            >
-              Copy
-            </Button>
-          </div>
+          {joinInfoLoading ? (
+            <Skeleton className="h-4 w-40" />
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span>Org code:</span>
+              <span className="font-mono text-gray-700 dark:text-gray-300">
+                {joinInfo?.orgCode ?? "—"}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCopy(joinInfo?.orgCode ?? "", "Org code")}
+                disabled={!joinInfo?.orgCode}
+                className="h-7 px-2 text-xs"
+              >
+                Copy
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Add member form */}
@@ -243,9 +266,19 @@ export default function PeoplePage() {
 
         {/* Workspace members table */}
         {wsMembersQuery.isLoading ? (
-          <div className="flex items-center gap-2 py-8 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading workspace members...
+          <div className="space-y-3 py-6">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div
+                key={`ws-member-skeleton-${idx}`}
+                className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+              >
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">

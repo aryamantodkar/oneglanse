@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -258,9 +259,22 @@ export default function OrganizationsPage() {
           Your Organizations
         </h2>
         {isLoading ? (
-          <div className="flex items-center gap-2 py-8 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading organizations...
+          <div className="space-y-2 py-4">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={`org-skeleton-${idx}`}
+                className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-20 rounded-md" />
+              </div>
+            ))}
           </div>
         ) : organizations.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-500">
@@ -366,9 +380,19 @@ export default function OrganizationsPage() {
 
             {/* Members table */}
             {orgDetailsLoading ? (
-              <div className="flex items-center gap-2 py-8 text-sm text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading members...
+              <div className="space-y-3 py-6">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={`member-skeleton-${idx}`}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+                  >
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-40" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
@@ -425,14 +449,16 @@ export default function OrganizationsPage() {
             )}
 
             {/* Pending Invitations */}
-            {orgInvitations.length > 0 && (
-              <div className="mt-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Pending Invitations
-                  </h3>
-                </div>
+            <div className="mt-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Pending Invitations
+                </h3>
+              </div>
+              {orgInvitations.length === 0 ? (
+                <p className="text-sm text-gray-500">No pending invitations.</p>
+              ) : (
                 <div className="space-y-2">
                   {orgInvitations.map((inv) => (
                     <div
@@ -461,8 +487,8 @@ export default function OrganizationsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </section>
         </>
       )}

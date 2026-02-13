@@ -3,8 +3,8 @@
 import React from "react";
 import { useEffect, useState, useMemo, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
-import { Bot, ChevronRight, ExternalLink, SearchX } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
+import { AlertTriangle, Bot, ChevronRight, ExternalLink, SearchX } from "lucide-react";
 import type { SourceGroupResult, ModelFilterDomainStats } from "@onescope/types";
 import { getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
@@ -77,11 +77,65 @@ export default function Sources() {
 
   }, [sourceStats, selectedProvider]);
 
+  if (!workspaceId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center px-6 text-center">
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+            <SearchX className="h-5 w-5 text-gray-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900">Select a workspace</h2>
+          <p className="mt-2 max-w-sm text-sm text-gray-500">
+            Choose a workspace from the sidebar to view your sources.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <p className="text-gray-500 text-lg mb-2">Loading prompt responses...</p>
-        <p className="text-gray-400 text-sm">This may take a few minutes depending on your data size.</p>
+      <div className="min-h-screen p-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-9 w-[220px]" />
+        </div>
+
+        <div className="flex gap-4 border-b border-gray-200 pb-4">
+          <Skeleton className="h-8 w-24 rounded-full" />
+          <Skeleton className="h-8 w-20 rounded-full" />
+        </div>
+
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div
+              key={`sources-skeleton-${idx}`}
+              className="flex items-center justify-between rounded-lg border border-gray-200 px-6 py-5"
+            >
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-5 w-5 rounded-md" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+        </div>
+        <h2 className="text-lg font-semibold text-gray-900">Unable to load sources</h2>
+        <p className="mt-2 max-w-sm text-sm text-gray-500">
+          We ran into an issue loading your source data. Please try again in a moment.
+        </p>
       </div>
     );
   }
@@ -140,20 +194,20 @@ export default function Sources() {
 
       <div className="flex gap-4 border-b border-gray-200 mb-4">
         <button
-          className={`px-4 py-2 font-medium ${
+          className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "domains"
               ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-gray-600"
+              : "text-gray-600 hover:text-gray-900"
           }`}
           onClick={() => setActiveTab("domains")}
         >
           Domains
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
+          className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "urls"
               ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-gray-600"
+              : "text-gray-600 hover:text-gray-900"
           }`}
           onClick={() => setActiveTab("urls")}
         >
@@ -162,7 +216,8 @@ export default function Sources() {
       </div>
 
       {
-        (activeTab === "domains" && !displayedDomainStats) || (activeTab === "urls" && !displayedSourceStats)
+        (activeTab === "domains" && displayedDomainStats.length === 0) ||
+        (activeTab === "urls" && displayedSourceStats.length === 0)
         ?
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
           <div className="

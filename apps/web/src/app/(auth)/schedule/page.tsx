@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button, toast } from "@onescope/ui";
+import { Button, Skeleton, toast } from "@onescope/ui";
 import { Clock, Loader2, Check } from "lucide-react";
 import { api } from "@/trpc/react";
 
@@ -54,7 +54,7 @@ export default function SchedulePage() {
       await scheduleQuery.refetch();
       toast.success(
         selected
-          ? `Schedule set to ${getScheduleLabel(selected).toLowerCase()}`
+          ? "Schedule saved! Your prompts will run shortly."
           : "Schedule disabled"
       );
     } catch (err) {
@@ -108,9 +108,20 @@ export default function SchedulePage() {
 
       {/* Current status */}
       {scheduleQuery.isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading schedule...
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-48" />
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div
+              key={`schedule-skeleton-${idx}`}
+              className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+            >
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-56" />
+              </div>
+              <Skeleton className="h-4 w-4 rounded-full" />
+            </div>
+          ))}
         </div>
       ) : (
         <>
@@ -170,7 +181,7 @@ export default function SchedulePage() {
 
           {/* Save button */}
           {hasChanges && (
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2">
               <Button onClick={handleSave} disabled={saving} className="gap-2">
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -178,6 +189,9 @@ export default function SchedulePage() {
                   "Save Schedule"
                 )}
               </Button>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Prompts will run immediately and then follow the selected schedule.
+              </p>
             </div>
           )}
         </>
