@@ -3,7 +3,7 @@ import { runAgents } from "./runAgents.js";
 import { logger } from "../../lib/utils/logger.js";
 import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
 import { markProxyBad, fetchProxies } from "../../lib/browser/proxyPool.js";
-import { IPRefreshNeededError } from "@onescope/errors";
+import { AuthError, IPRefreshNeededError } from "@onescope/errors";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const PROXIES_PER_CYCLE = 5;
@@ -61,7 +61,7 @@ export async function agentHandler(
               logger.log(`${label} authentication status: ${agent.auth}`);
 
               if (!agent.auth) {
-                throw new Error(`${label} authentication failed`);
+                throw new AuthError(`${provider} not authenticated`);
               }
 
               return await runAgents(currentPayload, agent.page, provider);
@@ -75,6 +75,11 @@ export async function agentHandler(
           accumulatedResults.push(...result);
           return accumulatedResults;
         } catch (err: any) {
+          if (err instanceof AuthError) {
+            logger.error(`🔴 ${label} authentication is missing or invalid. Stopping retries.`);
+            throw new Error(`${provider} not authenticated — re-login required. Run: pnpm --filter @onescope/agent run auth`);
+          }
+
           // Check if this is an IP refresh request
           if (err instanceof IPRefreshNeededError) {
             logger.warn(`${label} needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`);
