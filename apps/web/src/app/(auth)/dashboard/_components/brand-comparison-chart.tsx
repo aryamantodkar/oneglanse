@@ -1,0 +1,287 @@
+import { Card } from "@onescope/ui";
+import type { CompetitorData } from "../_utils/types";
+import { DashboardEmptyState } from "./empty-state";
+import { LineChart } from "lucide-react";
+
+type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
+
+type SeriesPoint = {
+	name: string;
+	domain: string;
+	isBrand: boolean;
+	composite: number;
+	values: Record<MetricKey, number>;
+};
+
+const METRIC_CONFIG: { key: MetricKey; label: string }[] = [
+	{ key: "presence", label: "Presence" },
+	{ key: "recommendation", label: "Recommendation" },
+	{ key: "sentiment", label: "Sentiment" },
+	{ key: "rankStrength", label: "Rank Strength" },
+];
+
+const SERIES_COLORS = ["#2563eb", "#0f766e", "#d97706", "#dc2626", "#0891b2"];
+
+function clampScore(value: number): number {
+	if (Number.isNaN(value)) return 0;
+	return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function rankToStrength(rank: number | null): number {
+	if (rank === null) return 0;
+	if (rank >= 6) return 30;
+	if (rank <= 1) return 100;
+
+	const points: Array<{ x: number; y: number }> = [
+		{ x: 1, y: 100 },
+		{ x: 2, y: 80 },
+		{ x: 3, y: 65 },
+		{ x: 4, y: 50 },
+		{ x: 5, y: 40 },
+		{ x: 6, y: 30 },
+	];
+
+	for (let i = 0; i < points.length - 1; i++) {
+		const start = points[i]!;
+		const end = points[i + 1]!;
+		if (rank >= start.x && rank <= end.x) {
+			const t = (rank - start.x) / (end.x - start.x);
+			return clampScore(start.y + t * (end.y - start.y));
+		}
+	}
+
+	return 30;
+}
+
+function buildPath(points: Array<{ x: number; y: number }>): string {
+	return points
+		.map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+		.join(" ");
+}
+
+export function BrandComparisonChart({
+	competitors,
+	brandName,
+	brandDomain,
+	totalResponses,
+	brandPresenceRate,
+	brandRecommendationRate,
+	brandSentimentScore,
+	brandAvgRank,
+}: {
+	competitors: CompetitorData[];
+	brandName: string;
+	brandDomain: string;
+	totalResponses: number;
+	brandPresenceRate: number;
+	brandRecommendationRate: number;
+	brandSentimentScore: number;
+	brandAvgRank: number | null;
+}) {
+	const rivals = competitors
+		.filter((c) => !c.isBrand)
+		.sort((a, b) => {
+			if (a.appearances !== b.appearances) return b.appearances - a.appearances;
+			if (a.avgRank !== null && b.avgRank !== null && a.avgRank !== b.avgRank) {
+				return a.avgRank - b.avgRank;
+			}
+			return b.recCount - a.recCount;
+		})
+		.slice(0, 4);
+
+	const series: SeriesPoint[] = [
+		{
+			name: brandName,
+			domain: brandDomain,
+			isBrand: true,
+			values: {
+				presence: clampScore(brandPresenceRate),
+				recommendation: clampScore(brandRecommendationRate),
+				sentiment: clampScore(brandSentimentScore),
+				rankStrength: rankToStrength(brandAvgRank),
+			},
+			composite: 0,
+		},
+		...rivals.map((r) => ({
+			name: r.name,
+			domain: r.domain,
+			isBrand: false,
+			values: {
+				presence: clampScore(totalResponses > 0 ? (r.appearances / totalResponses) * 100 : 0),
+				recommendation: clampScore(r.appearances > 0 ? (r.recCount / r.appearances) * 100 : 0),
+				sentiment: clampScore(r.avgSentiment),
+				rankStrength: rankToStrength(r.avgRank),
+			},
+			composite: 0,
+		})),
+	].map((entry) => ({
+		...entry,
+		composite: clampScore(
+			(entry.values.presence +
+				entry.values.recommendation +
+				entry.values.sentiment +
+				entry.values.rankStrength) /
+				4,
+		),
+	}));
+
+	if (series.length <= 1 || totalResponses === 0) {
+		return (
+			<Card className="flex min-h-[360px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+				<div>
+					<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
+						Brand Comparison
+					</h1>
+					<p className="mt-2 text-xs text-muted-foreground">
+						Multi-metric benchmark across your closest answer rivals.
+					</p>
+				</div>
+				<DashboardEmptyState
+					icon={LineChart}
+					title="Not enough comparison data"
+					description="Run more prompts to unlock multi-brand performance comparison."
+				/>
+			</Card>
+		);
+	}
+
+	const width = 760;
+	const height = 280;
+	const left = 50;
+	const right = 16;
+	const top = 20;
+	const bottom = 44;
+	const plotWidth = width - left - right;
+	const plotHeight = height - top - bottom;
+
+	const xFor = (index: number) =>
+		left + (index * plotWidth) / Math.max(1, METRIC_CONFIG.length - 1);
+	const yFor = (score: number) => top + ((100 - score) / 100) * plotHeight;
+
+	const leader = [...series].sort((a, b) => b.composite - a.composite)[0];
+
+	return (
+		<Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+			<div className="mb-4 flex items-start justify-between gap-3">
+				<div>
+					<h1 className="mt-1 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
+						Brand Comparison
+					</h1>
+					<p className="mt-2 text-xs text-muted-foreground">
+						Presence, recommendation strength, sentiment, and ranking strength in one view.
+					</p>
+				</div>
+				<span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800">
+					Leader: {leader?.name ?? "N/A"}
+				</span>
+			</div>
+
+			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
+				<div className="overflow-x-auto">
+					<svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full min-w-[680px]">
+						{[0, 25, 50, 75, 100].map((tick) => {
+							const y = yFor(tick);
+							return (
+								<g key={`grid-${tick}`}>
+									<line
+										x1={left}
+										y1={y}
+										x2={width - right}
+										y2={y}
+										stroke="currentColor"
+										className="text-gray-200 dark:text-gray-800"
+										strokeDasharray={tick === 0 ? "0" : "3 5"}
+									/>
+									<text
+										x={left - 10}
+										y={y + 4}
+										textAnchor="end"
+										className="fill-gray-400 text-[10px]"
+									>
+										{tick}
+									</text>
+								</g>
+							);
+						})}
+
+						{series.map((s, idx) => {
+							const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
+							const points = METRIC_CONFIG.map((metric, metricIndex) => ({
+								x: xFor(metricIndex),
+								y: yFor(s.values[metric.key]),
+							}));
+							const d = buildPath(points);
+							return (
+								<g key={s.name}>
+									<path
+										d={d}
+										fill="none"
+										stroke={color}
+										strokeWidth={s.isBrand ? 3 : 2}
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										opacity={s.isBrand ? 1 : 0.85}
+									/>
+									{points.map((p, pointIdx) => (
+										<circle
+											key={`${s.name}-${METRIC_CONFIG[pointIdx]?.key}`}
+											cx={p.x}
+											cy={p.y}
+											r={s.isBrand ? 4.5 : 3.5}
+											fill={color}
+											stroke="white"
+											strokeWidth={1.5}
+										/>
+									))}
+								</g>
+							);
+						})}
+
+						{METRIC_CONFIG.map((metric, idx) => (
+							<text
+								key={metric.key}
+								x={xFor(idx)}
+								y={height - 14}
+								textAnchor="middle"
+								className="fill-gray-500 text-[11px] font-medium"
+							>
+								{metric.label}
+							</text>
+						))}
+					</svg>
+				</div>
+
+				<div className="space-y-2">
+					{series.map((s, idx) => {
+						const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
+						return (
+							<div
+								key={`legend-${s.name}`}
+								className={`ui-list-item rounded-xl border px-3 py-2 ${
+									s.isBrand
+										? "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
+										: "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+								}`}
+							>
+								<div className="flex items-center justify-between gap-2">
+									<div className="flex min-w-0 items-center gap-2">
+										<span
+											className="h-2.5 w-2.5 shrink-0 rounded-full"
+											style={{ backgroundColor: color }}
+										/>
+										<p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+											{s.name}
+										</p>
+									</div>
+									<span className="text-xs font-semibold text-muted-foreground">
+										{s.composite}/100
+									</span>
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		</Card>
+	);
+}
