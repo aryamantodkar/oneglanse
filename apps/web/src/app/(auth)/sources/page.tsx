@@ -430,7 +430,7 @@ export default function SourcesPage() {
 					</div>
 				) : (
 					<div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-						<Table className="w-full">
+						<Table className="w-full table-fixed">
 							<TableHeader>
 								<TableRow className="border-b border-gray-200 dark:border-gray-800">
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -570,8 +570,8 @@ export default function SourcesPage() {
 																		className="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900"
 																	>
 																		<TableCell className="px-4 py-5 pl-20">
-																			<div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
-																				<p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+																			<div className="max-w-full rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50/60 p-4 dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/80">
+																				<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
 																					{excerpt.cited_text?.trim()
 																						? excerpt.cited_text
 																						: "This citation has no extracted quoted text."}
