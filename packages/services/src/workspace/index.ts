@@ -228,3 +228,67 @@ export async function removeMemberFromWorkspace(args: {
   return { workspaceId, userId };
 }
 
+export async function getAllWorkspacesForUser(args: { userId: string }) {
+  const { userId } = args;
+
+  // Get all active workspace memberships with workspace + org details in one query
+  const rows = await db
+    .select({
+      workspace: {
+        id: schema.workspaces.id,
+        name: schema.workspaces.name,
+        slug: schema.workspaces.slug,
+        domain: schema.workspaces.domain,
+        tenantId: schema.workspaces.tenantId,
+        country: schema.workspaces.country,
+        region: schema.workspaces.region,
+        schedule: schema.workspaces.schedule,
+        createdAt: schema.workspaces.createdAt,
+        deletedAt: schema.workspaces.deletedAt,
+      },
+      organization: {
+        id: schema.organization.id,
+        name: schema.organization.name,
+        slug: schema.organization.slug,
+      },
+    })
+    .from(schema.workspaceMembers)
+    .innerJoin(
+      schema.workspaces,
+      and(
+        eq(schema.workspaces.id, schema.workspaceMembers.workspaceId),
+        isNull(schema.workspaces.deletedAt)
+      )
+    )
+    .innerJoin(
+      schema.organization,
+      eq(schema.organization.id, schema.workspaces.tenantId)
+    )
+    .where(
+      and(
+        eq(schema.workspaceMembers.userId, userId),
+        isNull(schema.workspaceMembers.deletedAt)
+      )
+    )
+    .execute();
+
+  // Group by organization
+  const orgMap = new Map<string, {
+    organization: { id: string; name: string; slug: string | null };
+    workspaces: typeof rows[number]["workspace"][];
+  }>();
+
+  for (const row of rows) {
+    const orgId = row.organization.id;
+    if (!orgMap.has(orgId)) {
+      orgMap.set(orgId, {
+        organization: row.organization,
+        workspaces: [],
+      });
+    }
+    orgMap.get(orgId)!.workspaces.push(row.workspace);
+  }
+
+  return Array.from(orgMap.values());
+}
+

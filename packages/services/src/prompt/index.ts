@@ -18,12 +18,11 @@ export async function storePromptsForWorkspace(args: {
 
       const existing = await clickhouse.query({
         query: `
-          SELECT prompt 
-          FROM analytics.user_prompts 
-          WHERE user_id = {userId:String} 
-            AND workspace_id = {workspaceId:String}
+          SELECT prompt
+          FROM analytics.user_prompts
+          WHERE workspace_id = {workspaceId:String}
         `,
-        query_params: { userId, workspaceId },
+        query_params: { workspaceId },
         format: "JSONEachRow",
       })
 
@@ -60,13 +59,11 @@ export async function storePromptsForWorkspace(args: {
       if (promptsToDelete.length > 0) {
         await clickhouse.command({
           query: `
-            ALTER TABLE analytics.user_prompts 
-            DELETE WHERE user_id = {userId:String} 
-              AND workspace_id = {workspaceId:String} 
+            ALTER TABLE analytics.user_prompts
+            DELETE WHERE workspace_id = {workspaceId:String}
               AND prompt IN ({promptsToDelete:Array(String)})
           `,
           query_params: {
-            userId,
             workspaceId,
             promptsToDelete,
           },
@@ -192,13 +189,13 @@ export async function fetchPromptResponsesForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
-    const { workspaceId, userId } = args;
+    const { workspaceId } = args;
 
     const result = await clickhouse.query({
       query: `
         SELECT *
         FROM analytics.prompt_responses
-        WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+        WHERE workspace_id = '${workspaceId}'
       `,
       format: "JSONEachRow",
     });
@@ -229,13 +226,13 @@ export async function fetchUserPromptsForWorkspace(args: {
     workspaceId: string;
     userId: string;
 }) {
-    const { workspaceId, userId } = args;
+    const { workspaceId } = args;
 
     const result = await clickhouse.query({
       query: `
         SELECT *
         FROM analytics.user_prompts
-        WHERE user_id = '${userId}' AND workspace_id = '${workspaceId}'
+        WHERE workspace_id = '${workspaceId}'
       `,
       format: "JSONEachRow",
     });

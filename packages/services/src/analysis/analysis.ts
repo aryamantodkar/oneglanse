@@ -61,11 +61,10 @@ export async function analysePromptsForWorkspace(args: {
                 SELECT *
                 FROM analytics.prompt_responses
                 WHERE workspace_id = {workspaceId:String}
-                  AND user_id = {userId:String}
                   AND is_analysed = false
                 LIMIT {batchSize:UInt32}
             `,
-            query_params: { workspaceId, userId, batchSize },
+            query_params: { workspaceId, batchSize },
             format: "JSONEachRow",
         });
 
@@ -153,10 +152,9 @@ export async function analysePromptsForWorkspace(args: {
             SELECT count() as count
             FROM analytics.prompt_responses
             WHERE workspace_id = {workspaceId:String}
-              AND user_id = {userId:String}
               AND is_analysed = false
         `,
-        query_params: { workspaceId, userId },
+        query_params: { workspaceId },
         format: "JSONEachRow",
     });
 
@@ -178,7 +176,7 @@ export async function fetchAnalysedPrompts(args: {
     workspaceId: string;
     userId: string;
 }): Promise<AnalysisRecord[]> {
-    const { workspaceId, userId } = args;
+    const { workspaceId } = args;
 
     // Query from prompt_responses (source of truth) and join analysis data
     const result = await clickhouse.query({
@@ -203,10 +201,9 @@ export async function fetchAnalysedPrompts(args: {
               AND pr.model_provider = pa.model_provider
               AND pr.workspace_id = pa.workspace_id
             WHERE pr.workspace_id = {workspaceId:String}
-              AND pr.user_id = {userId:String}
             ORDER BY pr.prompt_run_at DESC
         `,
-        query_params: { workspaceId, userId },
+        query_params: { workspaceId },
         format: "JSONEachRow",
     });
 

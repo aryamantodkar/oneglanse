@@ -1,11 +1,11 @@
 // /app/LayoutContent.tsx (Client Component)
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SidebarTrigger } from "@onescope/ui";
 import { AppSidebar } from "@/components/app-sidebar";
 import type { Workspace } from "@onescope/db";
-import { useEffect, useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Logout } from "@/components/forms/logout";
 import { api } from "@/trpc/react";
 
@@ -16,7 +16,6 @@ export default function LayoutContent({ children, workspace, userName, userEmail
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
   const shownJobsRef = useRef<Set<string>>(new Set());
 
-  const router = useRouter();
   const workspaceIdFromUrl = searchParams.get("workspace") ?? "";
 
   const shouldFetchWorkspace =
@@ -27,14 +26,6 @@ export default function LayoutContent({ children, workspace, userName, userEmail
   );
 
   const resolvedWorkspace = workspaceQuery.data?.data ?? workspace ?? null;
-  const isWorkspaceRoute = pathname?.startsWith("/workspace");
-
-  useEffect(() => {
-    if (isWorkspaceRoute) return;
-    if (!resolvedWorkspace && !workspaceQuery.isLoading) {
-      router.push("/workspace");
-    }
-  }, [resolvedWorkspace, workspaceQuery.isLoading, isWorkspaceRoute, router]);
 
   useEffect(() => {
     shownJobsRef.current.clear();

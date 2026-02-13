@@ -41,7 +41,7 @@ export function LoginForm({
   const signInWithGoogle = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/workspace"
+      callbackURL: "/"
     });
   };
 
@@ -62,7 +62,7 @@ export function LoginForm({
           password: values.password
       })
       toast.success("Signed in successfully!")
-      router.push("/workspace")
+      router.push("/")
     }
     catch(err){
       console.log(err)

@@ -8,11 +8,11 @@ import {
   LayoutGrid,
   MessageSquare,
   Users,
-  Building,
   Loader2,
   Plus,
   Check,
   User2,
+  UserPlus,
 } from "lucide-react"
 import {
   Sidebar,
@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   toast,
 } from "@onescope/ui"
@@ -40,6 +41,7 @@ import { api } from "@/trpc/react";
 import { getFaviconUrls } from "@onescope/utils";
 import Link from "next/link";
 import { CreateWorkspaceDialog } from "./dialogs/create-workspace-dialog";
+import { JoinWorkspaceDialog } from "./dialogs/join-workspace-dialog";
 
 interface AppSidebarProps {
   workspace: Workspace | null;
@@ -50,27 +52,30 @@ interface AppSidebarProps {
 export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] = useState(false);
+    const [showJoinWorkspaceDialog, setShowJoinWorkspaceDialog] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const activeOrgId = workspace?.tenantId ?? null;
 
-    // Fetch workspaces for the active org
-    const workspacesQuery = api.workspace.listByOrg.useQuery(
-      { tenantId: activeOrgId ?? "" },
-      { enabled: !!activeOrgId }
-    );
-    const workspaces = (workspacesQuery.data?.data ?? []) as Workspace[];
+    // Fetch all workspaces across all orgs for this user
+    const allWorkspacesQuery = api.workspace.listAllForUser.useQuery();
+    const groupedWorkspaces = allWorkspacesQuery.data?.data ?? [];
+
+    // Flat list of all workspaces for lookup
+    const allWorkspaces = useMemo(() => {
+      return groupedWorkspaces.flatMap((g: any) => g.workspaces) as Workspace[];
+    }, [groupedWorkspaces]);
 
     // Derive active workspace from URL params, falling back to server prop
     const workspaceIdFromUrl = searchParams.get("workspace");
     const activeWorkspace = useMemo(() => {
       if (workspaceIdFromUrl) {
-        const match = workspaces.find(ws => ws.id === workspaceIdFromUrl);
+        const match = allWorkspaces.find(ws => ws.id === workspaceIdFromUrl);
         if (match) return match;
       }
       return workspace;
-    }, [workspaceIdFromUrl, workspaces, workspace]);
+    }, [workspaceIdFromUrl, allWorkspaces, workspace]);
 
     const activeWorkspaceFavicon = useMemo(() => {
       return getFaviconUrls(activeWorkspace?.domain ?? "", activeWorkspace?.name ?? "")[0] ?? "";
@@ -105,15 +110,22 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
         url: `/people?workspace=${activeWorkspace?.id ?? ""}`,
         icon: Users,
       },
-      {
-        title: "Organizations",
-        url: `/organizations?workspace=${activeWorkspace?.id ?? ""}`,
-        icon: Building,
-      },
     ];
 
-    const handleSwitchWorkspace = (ws: Workspace) => {
+    const handleSwitchWorkspace = async (ws: Workspace) => {
       if (ws.id === activeWorkspace?.id) return;
+
+      // If switching to a workspace in a different org, update active org
+      if (ws.tenantId !== activeWorkspace?.tenantId) {
+        try {
+          await authClient.organization.setActive({
+            organizationId: ws.tenantId,
+          });
+        } catch (err) {
+          console.error("Failed to switch org:", err);
+        }
+      }
+
       router.push(`/dashboard?workspace=${ws.id}`);
     };
 
@@ -156,28 +168,38 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-popper-anchor-width]" align="start">
-                  {workspacesQuery.isLoading ? (
+                  {allWorkspacesQuery.isLoading ? (
                     <DropdownMenuItem disabled>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Loading...</span>
                     </DropdownMenuItem>
-                  ) : workspaces.length > 0 ? (
-                    workspaces.map((ws) => (
-                      <DropdownMenuItem
-                        key={ws.id}
-                        onClick={() => handleSwitchWorkspace(ws)}
-                        className="flex items-center gap-2"
-                      >
-                        <img
-                          src={getFaviconUrls(ws.domain ?? "", ws.name)[0] ?? ""}
-                          alt=""
-                          className="w-4 h-4 rounded-sm shrink-0"
-                        />
-                        <span className="truncate">{ws.name}</span>
-                        {ws.id === activeWorkspace?.id && (
-                          <Check className="ml-auto h-4 w-4 shrink-0" />
+                  ) : groupedWorkspaces.length > 0 ? (
+                    groupedWorkspaces.map((group: any, idx: number) => (
+                      <div key={group.organization.id}>
+                        {idx > 0 && <DropdownMenuSeparator />}
+                        {groupedWorkspaces.length > 1 && (
+                          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                            {group.organization.name}
+                          </DropdownMenuLabel>
                         )}
-                      </DropdownMenuItem>
+                        {group.workspaces.map((ws: Workspace) => (
+                          <DropdownMenuItem
+                            key={ws.id}
+                            onClick={() => handleSwitchWorkspace(ws)}
+                            className="flex items-center gap-2"
+                          >
+                            <img
+                              src={getFaviconUrls(ws.domain ?? "", ws.name)[0] ?? ""}
+                              alt=""
+                              className="w-4 h-4 rounded-sm shrink-0"
+                            />
+                            <span className="truncate">{ws.name}</span>
+                            {ws.id === activeWorkspace?.id && (
+                              <Check className="ml-auto h-4 w-4 shrink-0" />
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
                     ))
                   ) : (
                     <DropdownMenuItem disabled>
@@ -191,6 +213,12 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                   >
                     <Plus className="h-4 w-4" />
                     <span>Create Workspace</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowJoinWorkspaceDialog(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span>Join Workspace</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -276,6 +304,11 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
           tenantId={activeOrgId}
         />
       )}
+
+      <JoinWorkspaceDialog
+        open={showJoinWorkspaceDialog}
+        onOpenChange={setShowJoinWorkspaceDialog}
+      />
     </>
   )
 }
