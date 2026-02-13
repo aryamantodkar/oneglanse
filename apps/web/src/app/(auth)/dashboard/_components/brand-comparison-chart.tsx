@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
 import { LineChart } from "lucide-react";
@@ -77,6 +78,15 @@ export function BrandComparisonChart({
 	brandSentimentScore: number;
 	brandAvgRank: number | null;
 }) {
+	const [hoveredPoint, setHoveredPoint] = useState<{
+		name: string;
+		metric: string;
+		value: number;
+		leftPct: number;
+		topPct: number;
+		color: string;
+	} | null>(null);
+
 	const rivals = competitors
 		.filter((c) => !c.isBrand)
 		.sort((a, b) => {
@@ -191,8 +201,12 @@ export function BrandComparisonChart({
 			</div>
 
 			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
-				<div className="overflow-x-auto">
-					<svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full min-w-[680px]">
+				<div
+					className="overflow-x-auto"
+					onMouseLeave={() => setHoveredPoint(null)}
+				>
+					<div className="relative min-w-[680px]">
+						<svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full min-w-[680px]">
 						{[0, 25, 50, 75, 100].map((tick) => {
 							const y = yFor(tick);
 							return (
@@ -245,10 +259,18 @@ export function BrandComparisonChart({
 											fill={color}
 											stroke="white"
 											strokeWidth={1.5}
+											className="cursor-pointer"
+											onMouseEnter={() =>
+												setHoveredPoint({
+													name: s.name,
+													metric: METRIC_CONFIG[pointIdx]!.label,
+													value: s.values[METRIC_CONFIG[pointIdx]!.key],
+													leftPct: (p.x / width) * 100,
+													topPct: (p.y / height) * 100,
+													color,
+												})
+											}
 										>
-											<title>
-												{`${s.name} - ${METRIC_CONFIG[pointIdx]!.label}: ${s.values[METRIC_CONFIG[pointIdx]!.key]}`}
-											</title>
 										</circle>
 									))}
 								</g>
@@ -266,7 +288,34 @@ export function BrandComparisonChart({
 								{metric.label}
 							</text>
 						))}
-					</svg>
+						</svg>
+
+						{hoveredPoint && (
+							<div
+								className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[110%] rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900"
+								style={{
+									left: `${hoveredPoint.leftPct}%`,
+									top: `${hoveredPoint.topPct}%`,
+								}}
+							>
+								<div className="flex items-center gap-1.5">
+									<span
+										className="h-2 w-2 rounded-full"
+										style={{ backgroundColor: hoveredPoint.color }}
+									/>
+									<p className="max-w-[170px] truncate text-[11px] font-semibold text-gray-900 dark:text-gray-100">
+										{hoveredPoint.name}
+									</p>
+								</div>
+								<p className="mt-1 text-[10px] text-muted-foreground">
+									{hoveredPoint.metric}:{" "}
+									<span className="font-semibold text-gray-900 dark:text-gray-100">
+										{hoveredPoint.value}
+									</span>
+								</p>
+							</div>
+						)}
+					</div>
 				</div>
 
 				<div className="space-y-2">
