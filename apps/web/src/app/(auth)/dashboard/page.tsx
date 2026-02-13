@@ -89,7 +89,7 @@ export default function Dashboard() {
 
 					{/* Aggregate Stats */}
 					<AggregateStatsRow
-						impactMetrics={metrics.impactMetrics}
+						presenceRate={metrics.aggregateStats.presenceRate}
 						rank={metrics.avgRank.position}
 						topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
 						topCompetitor={metrics.aggregateStats.topCompetitor}
