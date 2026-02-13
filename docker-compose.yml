@@ -115,7 +115,7 @@ services:
       db:
         condition: service_healthy
     restart: "no"
-    command: pnpm --filter @onescope/db db:migrate
+    command: sh -c "cd /workspace && pnpm --filter @onescope/db db:migrate"
 
 # ----------------------------
 # Volumes

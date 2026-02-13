@@ -19,8 +19,61 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
 
 jobs:
+  changes:
+    name: Detect Changed Areas
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      agent: ${{ steps.filter.outputs.agent }}
+      postgres: ${{ steps.filter.outputs.postgres }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/db/**'
+              - 'packages/errors/**'
+              - 'packages/services/**'
+              - 'packages/types/**'
+              - 'packages/ui/**'
+              - 'packages/utils/**'
+              - 'Dockerfile'
+              - 'Dockerfile.dockerignore'
+              - '.dockerignore'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig.json'
+              - '.github/workflows/docker-build.yml'
+            agent:
+              - 'apps/agent/**'
+              - 'packages/db/**'
+              - 'packages/errors/**'
+              - 'packages/services/**'
+              - 'packages/types/**'
+              - 'packages/utils/**'
+              - 'Dockerfile.agent'
+              - 'Dockerfile.agent.dockerignore'
+              - '.dockerignore'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig.json'
+              - '.github/workflows/docker-build.yml'
+            postgres:
+              - 'Dockerfile.postgres'
+              - 'packages/db/init-scripts/**'
+              - '.github/workflows/docker-build.yml'
+
   build-web:
     name: Build Web
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,11 +104,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=onescope-web
+          cache-to: type=gha,scope=onescope-web,mode=max
 
   build-agent:
     name: Build Agent
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.agent == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -86,11 +141,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=onescope-agent
+          cache-to: type=gha,scope=onescope-agent,mode=max
 
   build-postgres:
     name: Build Postgres
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,5 +178,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=onescope-postgres
+          cache-to: type=gha,scope=onescope-postgres,mode=max
