@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
 import { getFaviconUrls } from "@onescope/utils";
-import { Users } from "lucide-react";
+import { CircleHelp, Users } from "lucide-react";
 import { DashboardEmptyState } from "./empty-state";
 
 function compareByName(a: CompetitorData, b: CompetitorData): number {
@@ -152,9 +152,12 @@ export function CompetitiveLandscape({
             See how you stack up against competitors.
           </p>
           {competitorSort === "rank" && (
-            <p className="mt-2 text-[10px] text-muted-foreground">
-              Rank order: Avg Position, then Recommendation Consistency, Recommendation Count, Mentions, Sentiment.
-            </p>
+            <span
+              className="mt-2 inline-flex cursor-help items-center justify-center rounded-full border border-gray-200 bg-white p-1 text-muted-foreground dark:border-gray-700 dark:bg-gray-900"
+              title="Rank order: average position, then recommendation consistency, recommendation count, mentions, sentiment."
+            >
+              <CircleHelp className="h-3.5 w-3.5" />
+            </span>
           )}
         </div>
 
