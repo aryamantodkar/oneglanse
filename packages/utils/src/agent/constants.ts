@@ -80,13 +80,14 @@ export const MODEL_RESPONSE_SELECTORS = [
 ];
 
 export const RESPONSE_GENERATION_SELECTORS = [
-  // Buttons
+  // Buttons (works for all providers)
   'button:has-text("Stop")',
   'button:has-text("Stop generating")',
   'button[aria-label*="stop" i]',
   'button[aria-label*="cancel" i]',
+  'button[aria-label="Stop generating response"]', // Perplexity-specific
 
-  // Streaming states
+  // Streaming states (Claude, ChatGPT)
   '[data-streaming="true"]',
   '.result-streaming',
   '.is-typing',

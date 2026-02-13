@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { randomUUID } from "crypto";
 import { createTRPCRouter } from "../../trpc";
 import { agentQueue, fetchUserPromptsForWorkspace, redis } from "@onescope/services";
 import { authorizedWorkspaceProcedure } from "../../procedures";
@@ -14,11 +15,57 @@ export const agentRouter = createTRPCRouter({
             } = ctx;
 
             const prompts = await fetchUserPromptsForWorkspace({ workspaceId: workspaceId!, userId: userId! });
-        
-            const job = await agentQueue.add("run-agent", prompts);
-    
+
+            if (!prompts || prompts.length === 0) {
+              return ok({ jobId: null as string | null, status: "empty" }, "No prompts to run.");
+            }
+
+            const jobGroupId = randomUUID();
+            const createdAt = prompts[0]?.created_at ?? new Date().toISOString();
+            const providers = ["openai", "anthropic", "perplexity"] as const;
+
+            const progress = {
+              status: "pending" as const,
+              updateId: 0,
+              providers: {
+                openai: "pending",
+                anthropic: "pending",
+                perplexity: "pending",
+              },
+              results: {
+                openai: 0,
+                anthropic: 0,
+                perplexity: 0,
+              },
+              stats: {
+                totalPrompts: prompts.length,
+                expectedResponses: prompts.length * providers.length,
+                actualResponses: 0,
+              },
+            };
+
+            await redis.set(
+              `job:${jobGroupId}:result`,
+              JSON.stringify(progress),
+              "EX",
+              60 * 60
+            );
+
+            await Promise.all(
+              providers.map((provider) =>
+                agentQueue.add("run-agent", {
+                  jobGroupId,
+                  provider,
+                  prompts,
+                  user_id: userId,
+                  workspace_id: workspaceId!,
+                  created_at: createdAt,
+                })
+              )
+            );
+
             const jobDetails = {
-                jobId: job.id,
+                jobId: jobGroupId,
                 status: "queued",
             };
 
@@ -42,9 +89,12 @@ export const agentRouter = createTRPCRouter({
         };
       }
 
+      const parsed = JSON.parse(result);
+      const status = parsed?.status === "completed" ? "completed" : "pending";
+
       return {
-        status: "completed" as const,
-        response: JSON.parse(result)
+        status,
+        response: parsed
       };
     })
 });

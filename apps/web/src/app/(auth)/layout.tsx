@@ -47,7 +47,13 @@ export default async function RootLayout({
 		<>
 			<TRPCReactProvider>
 				<SidebarProvider defaultOpen={defaultOpen}>
-					<LayoutContent workspace={workspace}>{children}</LayoutContent>
+					<LayoutContent
+						workspace={workspace}
+						userName={session.user.name}
+						userEmail={session.user.email}
+					>
+						{children}
+					</LayoutContent>
 				</SidebarProvider>
 			</TRPCReactProvider>
 		</>

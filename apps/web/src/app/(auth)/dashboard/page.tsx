@@ -50,8 +50,8 @@ export default function Dashboard() {
 	if (metrics.analyzedRecords.length === 0) return <NoAnalysisState />;
 
 	return (
-		<div className="h-screen overflow-hidden dark:bg-black">
-			<div className="mx-auto h-full w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-4 sm:px-6 lg:px-8 overflow-y-auto">
+		<div className="min-h-screen dark:bg-black">
+			<div className="mx-auto w-full max-w-[95vw] xl:max-w-[1600px] space-y-6 px-4 py-4 sm:px-6 lg:px-8">
 				{/* Filters */}
 				<DashboardFilters
 					brandName={metrics.brandName}

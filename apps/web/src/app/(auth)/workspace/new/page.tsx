@@ -109,6 +109,7 @@ export default function NewWorkspace() {
         toast.error("Could not set active workspace.");
       }
 
+      router.refresh();
       return router.push(`/dashboard?workspace=${workspace.id}`);
     } finally {
       setLoading(false);

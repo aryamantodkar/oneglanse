@@ -1,6 +1,8 @@
 import "server-only";
 
 import { auth } from "@lib/auth/auth";
+import { db, schema } from "@onescope/db";
+import { eq, and } from "drizzle-orm";
 import { ValidationError } from "@onescope/errors";
 import { createWorkspaceForTenant } from "@onescope/services"
 
@@ -32,5 +34,33 @@ export async function createNewWorkspace(args: {
   const workspace = await createWorkspaceForTenant({name, slug, tenantId: orgData.id, domain, country, region, userId });
 
   return { workspace, org: orgData };
+}
+
+export async function addWorkspaceToExistingOrg(args: {
+    name: string;
+    slug: string;
+    domain: string;
+    country: string;
+    region?: string | null;
+    userId: string;
+    tenantId: string;
+}) {
+    const { name, slug, domain, country, region, userId, tenantId } = args;
+
+    // Verify user is a member of the organization
+    const membership = await db.query.member.findFirst({
+        where: (m, { eq, and }) =>
+            and(eq(m.organizationId, tenantId), eq(m.userId, userId)),
+    });
+
+    if (!membership) {
+        throw new ValidationError("User is not a member of this organization.");
+    }
+
+    const workspace = await createWorkspaceForTenant({
+        name, slug, domain, tenantId, country, region, userId,
+    });
+
+    return { workspace };
 }
 
