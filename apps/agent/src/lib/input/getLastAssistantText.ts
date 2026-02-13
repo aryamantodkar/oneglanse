@@ -83,52 +83,12 @@ export async function getLastAssistantText(
   return "";
 }
 
-export async function isGenerating(page: Page, provider?: Provider): Promise<boolean> {
-  const isPerplexity = provider?.toLowerCase() === 'perplexity';
-
-  // **Fast path: Check visible selectors first (all providers)**
+export async function isGenerating(page: Page): Promise<boolean> {
   for (const selector of RESPONSE_GENERATION_SELECTORS) {
     if (await page.locator(selector).isVisible().catch(() => false)) {
       return true;
     }
   }
-
-  // **Perplexity-specific: Check text indicators and completion state**
-  if (isPerplexity) {
-    return await page.evaluate(() => {
-      // Check for "Thinking" indicator
-      const hasThinking = Array.from(document.querySelectorAll('*')).some(el => 
-        el.textContent?.trim() === 'Thinking'
-      );
-      if (hasThinking) return true;
-
-      // Check for "Searching" indicator
-      const hasSearching = Array.from(document.querySelectorAll('*')).some(el => 
-        el.textContent?.includes('Searching')
-      );
-      if (hasSearching) return true;
-
-      // Check for "X steps completed" indicator
-      const hasSteps = Array.from(document.querySelectorAll('*')).some(el => 
-        el.textContent?.includes('steps completed')
-      );
-      if (hasSteps) return true;
-
-      // Check if Follow-ups section is present (definitive completion)
-      const hasFollowUps = Array.from(document.querySelectorAll('*')).some(el => 
-        el.textContent?.trim() === 'Follow-ups'
-      );
-      if (hasFollowUps) return false; // Definitely done
-
-      // Conservative: if there's answer content but no Follow-ups, might still be generating
-      const hasAnswer = Array.from(document.querySelectorAll('[role="tabpanel"]')).some(panel => 
-        panel.textContent && panel.textContent.length > 100
-      );
-      
-      return hasAnswer && !hasFollowUps;
-    });
-  }
-
   return false;
 }
 
