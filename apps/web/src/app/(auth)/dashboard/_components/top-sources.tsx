@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@onescope/ui";
+import { Card } from "@onescope/ui";
 import { getFaviconUrls } from "@onescope/utils";
 import type { SourceData } from "../_utils/types";
 import { FileQuestion } from "lucide-react";
+import { DashboardEmptyState } from "./empty-state";
 
 export function TopSources({
 	sources,
@@ -25,10 +26,11 @@ export function TopSources({
   
 		{/* Source List */}
 		{sources.length === 0 ? (
-		  <div className="flex flex-1 flex-col items-center justify-center gap-3">
-			<FileQuestion className="h-8 w-8 text-muted-foreground/40" />
-			<p className="text-sm text-muted-foreground">No source data found.</p>
-		  </div>
+			<DashboardEmptyState
+				icon={FileQuestion}
+				title="No source data"
+				description="No source intelligence is available for the selected filters."
+			/>
 		) : (
 		  <div className="flex flex-1 flex-col justify-around">
 			{sources.slice(0, 5).map((source, idx) => {

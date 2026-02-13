@@ -466,9 +466,11 @@ export const workspaceRouter = createTRPCRouter({
               cronExpression: schedule,
             });
 
-            // Trigger immediate first run (with 1-hour cooldown)
-            const cooldownKey = `workspace:${workspaceId}:run-cooldown`;
-            const canRun = await redis.set(cooldownKey, "1", "EX", 3600, "NX");
+            // Trigger immediate first run.
+            // TEMP (testing): 1-hour cooldown disabled.
+            // const cooldownKey = `workspace:${workspaceId}:run-cooldown`;
+            // const canRun = await redis.set(cooldownKey, "1", "EX", 3600, "NX");
+            const canRun = "OK";
 
             if (canRun) try {
               const prompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });

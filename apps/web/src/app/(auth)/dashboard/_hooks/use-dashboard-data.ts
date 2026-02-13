@@ -222,6 +222,8 @@ export function useDashboardData(
 	}, [analyzedRecords]);
 
 	const competitorData = useMemo(() => {
+		if (analyzedRecords.length === 0) return [];
+
 		const map = new Map<
 			string,
 			{

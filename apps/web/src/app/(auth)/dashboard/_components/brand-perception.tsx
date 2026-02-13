@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@onescope/ui";
+import { Card } from "@onescope/ui";
 import { pricingLabels } from "../_utils/constants";
 import { Info } from "lucide-react";
+import { DashboardEmptyState } from "./empty-state";
 
 export function BrandPerceptionCard({
 	bestKnownFor,
@@ -29,10 +30,11 @@ export function BrandPerceptionCard({
 		</div>
 
 		{!hasData ? (
-		  <div className="flex flex-1 flex-col items-center justify-center gap-3">
-			<Info className="h-8 w-8 text-muted-foreground/40" />
-			<p className="text-sm text-muted-foreground">No perception data available</p>
-		  </div>
+			<DashboardEmptyState
+				icon={Info}
+				title="No perception data"
+				description="No brand perception signals are available for the selected filters."
+			/>
 		) : (
 		  <div className="flex flex-1 flex-col gap-4">
 			{/* Pricing Signal */}
