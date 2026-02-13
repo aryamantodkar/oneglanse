@@ -31,7 +31,7 @@ export default function WorkspaceGateway() {
 
   const handleJoin = async (joinCode: string) => {
     if (!joinCode.trim()) {
-      toast.error("Please enter a workspace or organization code.");
+      toast.error("Please enter a workspace code.");
       return;
     }
 
@@ -88,13 +88,12 @@ export default function WorkspaceGateway() {
             <CardHeader>
               <CardTitle>Join Workspace</CardTitle>
               <CardDescription>
-                Enter a workspace code like <span className="font-medium">org/workspace</span> or
-                an organization code.
+                Enter a workspace code shared by your team.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="join-code">Workspace or Org Code</Label>
+                <Label htmlFor="join-code">Workspace Code</Label>
                 <Input
                   id="join-code"
                   placeholder="acme/marketing"
@@ -145,7 +144,7 @@ export default function WorkspaceGateway() {
             <CardHeader>
               <CardTitle>Create Workspace</CardTitle>
               <CardDescription>
-                Start a new organization and create your first workspace.
+                Start fresh and create your first workspace.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

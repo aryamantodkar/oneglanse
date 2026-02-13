@@ -7,6 +7,7 @@ import { safeHandler, ok, ValidationError, NotFoundError } from "@onescope/error
 import {
   getWorkspaceById,
   getWorkspacesForUser,
+  getAllWorkspacesForUser,
   getWorkspaceMembersWithUsers,
   addMemberToWorkspace,
   removeMemberFromWorkspace,
@@ -70,6 +71,15 @@ export const workspaceRouter = createTRPCRouter({
           const userId = ctx.user.id;
           const workspaces = await getWorkspacesForUser({ tenantId, userId });
           return ok(workspaces, "Workspaces fetched successfully.");
+        });
+      }),
+
+    listAllForUser: protectedProcedure
+      .query(async ({ ctx }) => {
+        return safeHandler(async () => {
+          const userId = ctx.user.id;
+          const grouped = await getAllWorkspacesForUser({ userId });
+          return ok(grouped, "All workspaces fetched.");
         });
       }),
 
@@ -165,18 +175,9 @@ export const workspaceRouter = createTRPCRouter({
           });
 
           if (!targetUser) {
-            const inviteRes = await ctx.auth.api.createInvitation({
-              headers: ctx.headers,
-              body: {
-                email,
-                role: "member",
-                organizationId: workspace.tenantId,
-              },
-            });
-
             return ok(
-              { status: "invited", invitation: inviteRes },
-              "Invitation sent to organization."
+              { status: "not-found" },
+              "This user hasn't signed up yet. Share your workspace code so they can join."
             );
           }
 

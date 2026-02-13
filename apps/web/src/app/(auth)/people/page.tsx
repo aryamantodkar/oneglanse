@@ -93,8 +93,8 @@ export default function PeoplePage() {
         return;
       }
 
-      if (result.data?.status === "invited") {
-        toast.success("Invitation sent! Share the workspace code once they sign up.");
+      if (result.data?.status === "not-found") {
+        toast.error("User not found. Share your workspace code so they can join after signing up.");
         setWsInviteEmail("");
         return;
       }
@@ -208,25 +208,6 @@ export default function PeoplePage() {
               </>
             )}
           </div>
-          {joinInfoLoading ? (
-            <Skeleton className="h-4 w-40" />
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>Org code:</span>
-              <span className="font-mono text-gray-700 dark:text-gray-300">
-                {joinInfo?.orgCode ?? "—"}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleCopy(joinInfo?.orgCode ?? "", "Org code")}
-                disabled={!joinInfo?.orgCode}
-                className="h-7 px-2 text-xs"
-              >
-                Copy
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Add member form */}
