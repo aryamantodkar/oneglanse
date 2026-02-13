@@ -74,8 +74,8 @@ export default function WorkspaceGateway() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl space-y-6">
+    <div className="ui-page-enter min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="ui-stagger w-full max-w-3xl space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-semibold text-gray-900">Welcome to your workspace</h1>
           <p className="text-sm text-gray-500">

@@ -170,7 +170,11 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-[--radix-popper-anchor-width] min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  className="min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  style={{
+                    width: "var(--radix-dropdown-menu-trigger-width)",
+                    maxWidth: "var(--radix-dropdown-menu-trigger-width)",
+                  }}
                   align="start"
                   sideOffset={8}
                 >
@@ -295,7 +299,11 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                 <DropdownMenuContent
                   side="top"
                   sideOffset={8}
-                  className="w-[--radix-popper-anchor-width] min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  className="min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  style={{
+                    width: "var(--radix-dropdown-menu-trigger-width)",
+                    maxWidth: "var(--radix-dropdown-menu-trigger-width)",
+                  }}
                 >
                   <DropdownMenuItem>
                     <span>Account</span>

@@ -165,7 +165,7 @@ export default function PeoplePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 py-6">
+    <div className="ui-page-enter ui-stagger mx-auto max-w-4xl space-y-8 py-6">
       {/* Workspace Members Section */}
       <section>
         <div className="mb-4 flex items-center gap-2">

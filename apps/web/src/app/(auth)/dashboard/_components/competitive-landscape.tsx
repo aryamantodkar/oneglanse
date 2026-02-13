@@ -84,7 +84,7 @@ export function CompetitiveLandscape({
   const [competitorSort, setCompetitorSort] =
     useState<"appearances" | "sentiment" | "rank">("rank");
 
-  const displayCompetitors = useMemo(() => {
+  const sortedCompetitors = useMemo(() => {
     const sorted = [...competitors];
     switch (competitorSort) {
       case "appearances":
@@ -106,7 +106,11 @@ export function CompetitiveLandscape({
         sorted.sort(compareByRankDeterministic);
         break;
     }
+    return sorted;
+  }, [competitors, competitorSort]);
 
+  const displayCompetitors = useMemo(() => {
+    const sorted = sortedCompetitors;
     // Take top 5, but ensure brand is always visible
     const top5 = sorted.slice(0, 5);
     const brandInTop5 = top5.some((c) => c.isBrand);
@@ -118,21 +122,22 @@ export function CompetitiveLandscape({
     }
 
     return top5;
-  }, [competitors, competitorSort]);
+  }, [sortedCompetitors]);
 
   const uniqueRankMap = useMemo(() => {
     const map = new Map<string, number>();
     if (competitorSort !== "rank") return map;
 
     let currentRank = 1;
-    for (const competitor of displayCompetitors) {
+    // Rank across full competitor set so rank card and competitor list stay consistent.
+    for (const competitor of sortedCompetitors) {
       if (competitor.avgRank === null) continue;
       map.set(competitor.name, currentRank);
       currentRank += 1;
     }
 
     return map;
-  }, [displayCompetitors, competitorSort]);
+  }, [sortedCompetitors, competitorSort]);
 
   return (
     <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -146,6 +151,11 @@ export function CompetitiveLandscape({
           <p className="mt-2 text-xs text-muted-foreground">
             See how you stack up against competitors.
           </p>
+          {competitorSort === "rank" && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Rank order: avg position, then recommendation consistency, recommendation count, mentions, sentiment.
+            </p>
+          )}
         </div>
 
         {/* Sort Filter */}
@@ -218,7 +228,7 @@ export function CompetitiveLandscape({
 						#{uniqueRankMap.get(comp.name)}
 						</span>
 						<span className="text-[10px] font-medium text-muted-foreground">
-							avg #{comp.avgRank}
+							avg pos #{comp.avgRank}
 						</span>
 					</div>
 					)}

@@ -122,9 +122,9 @@ export default function NewWorkspace() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="ui-page-enter min-h-screen bg-background flex items-center justify-center p-4">
       {formReady ? (
-        <div className="w-full max-w-md">
+        <div className="ui-stagger w-full max-w-md">
           <Card>
             <CardHeader>
               <CardTitle>Workspace Setup</CardTitle>

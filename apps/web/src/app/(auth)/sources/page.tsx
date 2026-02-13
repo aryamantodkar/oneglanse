@@ -53,11 +53,13 @@ function MetricCard({
 	value,
 	subtitle,
 	icon: Icon,
+	badgeFavicon,
 }: {
 	label: string;
 	value: string;
 	subtitle: string;
 	icon: typeof Globe2;
+	badgeFavicon?: string | null;
 }) {
 	return (
 		<div className="ui-list-item rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
@@ -70,7 +72,19 @@ function MetricCard({
 			<p className="mt-3 text-2xl font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 				{value}
 			</p>
-			<p className="mt-2 text-xs text-muted-foreground">{subtitle}</p>
+			<div className="mt-2 flex items-center gap-2">
+				{badgeFavicon && (
+					<img
+						src={badgeFavicon}
+						alt=""
+						className="h-3.5 w-3.5 rounded-sm"
+						onError={(e) => {
+							(e.target as HTMLImageElement).style.display = "none";
+						}}
+					/>
+				)}
+				<p className="text-xs text-muted-foreground">{subtitle}</p>
+			</div>
 		</div>
 	);
 }
@@ -220,8 +234,8 @@ export default function SourcesPage() {
 	const hasData = displayedSources.length > 0;
 
 	return (
-		<div className="min-h-screen p-4 sm:p-6 lg:p-8">
-			<div className="mx-auto w-full max-w-[95vw] space-y-6 xl:max-w-[1600px]">
+		<div className="ui-page-enter min-h-screen p-4 sm:p-6 lg:p-8">
+			<div className="ui-stagger mx-auto w-full max-w-[95vw] space-y-6 xl:max-w-[1600px]">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div>
 						<h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
@@ -280,6 +294,7 @@ export default function SourcesPage() {
 						label="Top Domain Share"
 						value={`${aggregate.topDomainShare}%`}
 						subtitle={`${aggregate.topDomain} concentration in total citations`}
+						badgeFavicon={getFaviconUrls(aggregate.topDomain, "")[0] ?? null}
 					/>
 				</div>
 
@@ -426,11 +441,12 @@ export default function SourcesPage() {
 								{domainGroups.map((group) => {
 									const domainFavicon = getFaviconUrls(group.domain, "")[0];
 									const domainOpen = openDomain === group.domain;
+									const groupProviders = [...group.providers];
 
 									return (
 										<Fragment key={group.domain}>
 											<TableRow
-												className="cursor-pointer border-b border-gray-100 bg-gray-50/40 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900/70 dark:hover:bg-gray-800/50"
+												className="cursor-pointer border-b border-gray-100 bg-white hover:bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800/40"
 												onClick={() =>
 													setOpenDomain(domainOpen ? null : group.domain)
 												}
@@ -462,7 +478,17 @@ export default function SourcesPage() {
 													<span className="mx-2 text-gray-300">•</span>
 													{group.urlCount} URLs
 													<span className="mx-2 text-gray-300">•</span>
-													{group.providers.size} models
+													<div className="inline-flex items-center gap-1.5 align-middle">
+														{groupProviders.map((provider) => (
+															<img
+																key={`${group.domain}-${provider}`}
+																src={getModelFavicon(provider)}
+																alt={provider}
+																title={provider}
+																className="h-4 w-4 rounded-sm"
+															/>
+														))}
+													</div>
 												</TableCell>
 											</TableRow>
 
@@ -475,7 +501,7 @@ export default function SourcesPage() {
 													return (
 														<Fragment key={source.url}>
 															<TableRow
-																className="cursor-pointer border-b border-gray-100 hover:bg-gray-50/60 dark:border-gray-800 dark:hover:bg-gray-800/40"
+																className="cursor-pointer border-b border-gray-100 bg-white hover:bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800/40"
 																onClick={() => setOpenUrl(urlOpen ? null : source.url)}
 															>
 																<TableCell className="px-4 py-5 pl-12">
@@ -503,7 +529,7 @@ export default function SourcesPage() {
 																					<span className="truncate text-xs text-muted-foreground">
 																						{getDomain(source.url) || "unknown"}
 																					</span>
-																					<span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+																					<span className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
 																						{getUrlPath(source.url)}
 																					</span>
 																					<a
@@ -540,10 +566,10 @@ export default function SourcesPage() {
 																source.excerpts.map((excerpt, idx) => (
 																	<TableRow
 																		key={`${source.url}-${idx}`}
-																		className="border-b border-gray-50 bg-white/70 dark:border-gray-900 dark:bg-gray-900/20"
+																		className="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900"
 																	>
 																		<TableCell className="px-4 py-5 pl-20">
-																			<div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900">
+																			<div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
 																				<p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
 																					{excerpt.cited_text?.trim()
 																						? excerpt.cited_text
