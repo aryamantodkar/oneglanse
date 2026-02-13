@@ -58,6 +58,10 @@ export default function Prompts() {
 	const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">(
 		"all",
 	);
+	const [sortBy, setSortBy] = useState<
+		"prompt" | "geoScore" | "sentiment" | "visibility" | "position"
+	>("prompt");
+	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [currentPrompt, setCurrentPrompt] = useState("");
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -119,11 +123,20 @@ export default function Prompts() {
 
 	// Calculate metrics for each prompt based on model filter
 	const promptsWithMetrics = useMemo(() => {
-		return promptData.map((prompt) => {
+		const isDefaultAnalysis = (
+			ba: NonNullable<AnalysisRecord["brand_analysis"]>,
+		) =>
+			ba.geoScore.overall === 0 &&
+			ba.sentiment.score === 50 &&
+			ba.presence.visibility === 0 &&
+			ba.position.rankPosition === null;
+
+		return promptData.map((prompt, sourceIndex) => {
 			const records = filteredRecords.filter((r) => r.prompt_id === prompt.id);
 
 			if (records.length === 0) {
 				return {
+					sourceIndex,
 					prompt,
 					metrics: null,
 					recordCount: 0,
@@ -137,6 +150,7 @@ export default function Prompts() {
 				const record = records.find((r) => r.model_provider === modelFilter);
 				if (!record || !record.is_analysed) {
 					return {
+						sourceIndex,
 						prompt,
 						metrics: null,
 						recordCount: records.length,
@@ -148,6 +162,18 @@ export default function Prompts() {
 				const ba = record.brand_analysis;
 				if (!ba) {
 					return {
+						sourceIndex,
+						prompt,
+						metrics: null,
+						recordCount: records.length,
+						modelProvider: record.model_provider,
+						reason: "brand-not-mentioned" as const,
+					};
+				}
+
+				if (isDefaultAnalysis(ba)) {
+					return {
+						sourceIndex,
 						prompt,
 						metrics: null,
 						recordCount: records.length,
@@ -165,6 +191,7 @@ export default function Prompts() {
 				};
 
 				return {
+					sourceIndex,
 					prompt,
 					metrics,
 					recordCount: records.length,
@@ -178,6 +205,7 @@ export default function Prompts() {
 
 			if (analyzedRecords.length === 0) {
 				return {
+					sourceIndex,
 					prompt,
 					metrics: null,
 					recordCount: records.length,
@@ -191,8 +219,12 @@ export default function Prompts() {
 				.map((record) => record.brand_analysis)
 				.filter((ba): ba is NonNullable<typeof ba> => !!ba);
 
-			if (allAnalyses.length === 0) {
+			// Skip default-only analyses when calculating averages
+			const validAnalyses = allAnalyses.filter((ba) => !isDefaultAnalysis(ba));
+
+			if (validAnalyses.length === 0) {
 				return {
+					sourceIndex,
 					prompt,
 					metrics: null,
 					recordCount: records.length,
@@ -203,24 +235,25 @@ export default function Prompts() {
 
 			// Calculate averages
 			const positionsWithValues = allAnalyses
+				.filter((ba) => !isDefaultAnalysis(ba))
 				.filter((ba) => ba.position.rankPosition !== null)
 				.map((ba) => ba.position.rankPosition as number);
 			const avgMetrics = {
 				geoScore: Math.round(
-					allAnalyses.reduce((sum, ba) => sum + ba.geoScore.overall, 0) /
-						allAnalyses.length,
+					validAnalyses.reduce((sum, ba) => sum + ba.geoScore.overall, 0) /
+						validAnalyses.length,
 				),
 				mentionCount: Math.round(
-					allAnalyses.reduce((sum, ba) => sum + ba.presence.mentionCount, 0) /
-						allAnalyses.length,
+					validAnalyses.reduce((sum, ba) => sum + ba.presence.mentionCount, 0) /
+						validAnalyses.length,
 				),
 				sentiment: Math.round(
-					allAnalyses.reduce((sum, ba) => sum + ba.sentiment.score, 0) /
-						allAnalyses.length,
+					validAnalyses.reduce((sum, ba) => sum + ba.sentiment.score, 0) /
+						validAnalyses.length,
 				),
 				visibility: Math.round(
-					allAnalyses.reduce((sum, ba) => sum + ba.presence.visibility, 0) /
-						allAnalyses.length,
+					validAnalyses.reduce((sum, ba) => sum + ba.presence.visibility, 0) /
+						validAnalyses.length,
 				),
 				position:
 					positionsWithValues.length > 0
@@ -232,6 +265,7 @@ export default function Prompts() {
 			};
 
 			return {
+				sourceIndex,
 				prompt,
 				metrics: avgMetrics,
 				recordCount: records.length,
@@ -240,6 +274,41 @@ export default function Prompts() {
 			};
 		});
 	}, [promptData, filteredRecords, modelFilter]);
+
+	const sortedPromptsWithMetrics = useMemo(() => {
+		const rows = [...promptsWithMetrics];
+		const direction = sortDirection === "asc" ? 1 : -1;
+
+		rows.sort((a, b) => {
+			if (sortBy === "prompt") {
+				return direction * a.prompt.prompt.localeCompare(b.prompt.prompt);
+			}
+
+			const aValue =
+				sortBy === "position"
+					? (a.metrics?.position ?? null)
+					: (a.metrics?.[sortBy] ?? null);
+			const bValue =
+				sortBy === "position"
+					? (b.metrics?.position ?? null)
+					: (b.metrics?.[sortBy] ?? null);
+
+			// Keep rows without metrics at the bottom regardless of direction
+			if (aValue === null && bValue !== null) return 1;
+			if (aValue !== null && bValue === null) return -1;
+			if (aValue === null && bValue === null) {
+				return a.prompt.prompt.localeCompare(b.prompt.prompt);
+			}
+
+			if ((aValue as number) === (bValue as number)) {
+				return a.prompt.prompt.localeCompare(b.prompt.prompt);
+			}
+
+			return direction * ((aValue as number) - (bValue as number));
+		});
+
+		return rows;
+	}, [promptsWithMetrics, sortBy, sortDirection]);
 
 	const openPromptRecords = useMemo(() => {
 		if (!openPrompt) return [];
@@ -506,8 +575,53 @@ export default function Prompts() {
 							</SelectContent>
 						</Select>
 
+						{/* Sort by */}
+						<Select
+							value={sortBy}
+							onValueChange={(value) =>
+								setSortBy(
+									value as
+										| "prompt"
+										| "geoScore"
+										| "sentiment"
+										| "visibility"
+										| "position",
+								)
+							}
+						>
+							<SelectTrigger className="h-9 w-40 text-sm">
+								<SelectValue placeholder="Sort by" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="prompt">Prompt</SelectItem>
+								<SelectItem value="geoScore">GEO Score</SelectItem>
+								<SelectItem value="sentiment">Sentiment</SelectItem>
+								<SelectItem value="visibility">Visibility</SelectItem>
+								<SelectItem value="position">Position</SelectItem>
+							</SelectContent>
+						</Select>
+
+						{/* Sort direction */}
+						<Select
+							value={sortDirection}
+							onValueChange={(value) =>
+								setSortDirection(value as "asc" | "desc")
+							}
+						>
+							<SelectTrigger className="h-9 w-32 text-sm">
+								<SelectValue placeholder="Direction" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="asc">Ascending</SelectItem>
+								<SelectItem value="desc">Descending</SelectItem>
+							</SelectContent>
+						</Select>
+
 						{/* Clear filters button */}
-						{(modelFilter !== "All Models" || timeFilter !== "all") && (
+						{(modelFilter !== "All Models" ||
+							timeFilter !== "all" ||
+							sortBy !== "prompt" ||
+							sortDirection !== "asc") && (
 							<>
 								<Separator orientation="vertical" className="h-4" />
 								<Button
@@ -516,6 +630,8 @@ export default function Prompts() {
 									onClick={() => {
 										setModelFilter("All Models");
 										setTimeFilter("all");
+										setSortBy("prompt");
+										setSortDirection("asc");
 									}}
 									className="gap-2 text-gray-500 hover:text-gray-700"
 								>
@@ -580,8 +696,14 @@ export default function Prompts() {
 							</TableHeader>
 
 							<TableBody>
-								{promptsWithMetrics.map(
-									({ prompt, metrics, modelProvider, reason }, promptIdx) => (
+								{sortedPromptsWithMetrics.map(
+									({
+										prompt,
+										metrics,
+										modelProvider,
+										reason,
+										sourceIndex,
+									}) => (
 										<TableRow
 											key={prompt.id}
 											onClick={() => setOpenPrompt(prompt)}
@@ -589,8 +711,8 @@ export default function Prompts() {
 										>
 											<TableCell className="pl-4">
 												<Checkbox
-													checked={selectedRows.has(promptIdx)}
-													onCheckedChange={() => toggleRow(promptIdx)}
+													checked={selectedRows.has(sourceIndex)}
+													onCheckedChange={() => toggleRow(sourceIndex)}
 													onClick={(e) => e.stopPropagation()}
 												/>
 											</TableCell>
