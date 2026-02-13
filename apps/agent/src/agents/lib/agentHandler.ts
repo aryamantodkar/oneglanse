@@ -61,7 +61,7 @@ export async function agentHandler(
               logger.log(`${label} authentication status: ${agent.auth}`);
 
               if (!agent.auth) {
-                throw new AuthError(`${provider} not authenticated`);
+                throw new Error(`${provider} authentication is false or using invalid proxy.`);
               }
 
               return await runAgents(currentPayload, agent.page, provider);

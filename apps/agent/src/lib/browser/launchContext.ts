@@ -16,12 +16,8 @@ export async function launchContext(provider: Provider) {
   const providerDir = path.join(USER_DATA_DIR, provider);
   const authFile = path.join(providerDir, `${provider}-auth.json`);
 
-  if (!fs.existsSync(providerDir)) {
-    throw new AuthError(`${provider} not authenticated`);
-  }
-
   if (!fs.existsSync(authFile)) {
-    throw new AuthError(`${provider} auth session not found.`);
+    throw new AuthError(`AUTH_SESSION_MISSING: ${provider} not authenticated`);
   }
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
