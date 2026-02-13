@@ -28,19 +28,16 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   toast,
 } from "@onescope/ui"
-import type { Organization, Workspace } from "@onescope/db"
+import type { Workspace } from "@onescope/db"
 import { authClient } from "@/lib/auth/auth-client";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/trpc/react";
-import { getModelFavicon } from "@onescope/utils";
+import { getFaviconUrls } from "@onescope/utils";
 import Link from "next/link";
-import { CreateOrganizationDialog } from "./dialogs/create-organization-dialog";
 import { CreateWorkspaceDialog } from "./dialogs/create-workspace-dialog";
 
 interface AppSidebarProps {
@@ -50,27 +47,12 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) {
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
-    const [activeOrgId, setActiveOrgId] = useState<string | null>(workspace?.tenantId ?? null);
-    const [isSwitching, setIsSwitching] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [showCreateOrgDialog, setShowCreateOrgDialog] = useState(false);
     const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] = useState(false);
-    const latestOrgSwitchRef = useRef<string | null>(null);
     const router = useRouter();
-    const utils = api.useUtils();
+    const searchParams = useSearchParams();
 
-    const activeOrg = useMemo(() => {
-      return organizations.find((org) => org.id === activeOrgId) ?? null;
-    }, [organizations, activeOrgId]);
-
-    const workspaceDomain = useMemo(() => {
-      if (!workspace?.domain) return "";
-      return workspace.domain
-        .replace(/^https?:\/\//, "")
-        .replace(/^www\./, "")
-        .trim();
-    }, [workspace?.domain]);
+    const activeOrgId = workspace?.tenantId ?? null;
 
     // Fetch workspaces for the active org
     const workspacesQuery = api.workspace.listByOrg.useQuery(
@@ -79,20 +61,34 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
     );
     const workspaces = (workspacesQuery.data?.data ?? []) as Workspace[];
 
+    // Derive active workspace from URL params, falling back to server prop
+    const workspaceIdFromUrl = searchParams.get("workspace");
+    const activeWorkspace = useMemo(() => {
+      if (workspaceIdFromUrl) {
+        const match = workspaces.find(ws => ws.id === workspaceIdFromUrl);
+        if (match) return match;
+      }
+      return workspace;
+    }, [workspaceIdFromUrl, workspaces, workspace]);
+
+    const activeWorkspaceFavicon = useMemo(() => {
+      return getFaviconUrls(activeWorkspace?.domain ?? "", activeWorkspace?.name ?? "")[0] ?? "";
+    }, [activeWorkspace?.domain, activeWorkspace?.name]);
+
     const generalItems = [
       {
         title: "Dashboard",
-        url: `/dashboard?workspace=${workspace?.id ?? ""}`,
+        url: `/dashboard?workspace=${activeWorkspace?.id ?? ""}`,
         icon: LayoutGrid,
       },
       {
         title: "Prompts",
-        url: `/prompts?workspace=${workspace?.id ?? ""}`,
+        url: `/prompts?workspace=${activeWorkspace?.id ?? ""}`,
         icon: MessageSquare,
       },
       {
         title: "Sources",
-        url: `/sources?workspace=${workspace?.id ?? ""}`,
+        url: `/sources?workspace=${activeWorkspace?.id ?? ""}`,
         icon: Globe,
       },
     ];
@@ -100,69 +96,18 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
     const settingsItems = [
       {
         title: "People",
-        url: `/people?workspace=${workspace?.id ?? ""}`,
+        url: `/people?workspace=${activeWorkspace?.id ?? ""}`,
         icon: Users,
       },
       {
         title: "Organizations",
-        url: `/organizations?workspace=${workspace?.id ?? ""}`,
+        url: `/organizations?workspace=${activeWorkspace?.id ?? ""}`,
         icon: Building,
       },
     ];
 
-    useEffect(() => {
-      const fetchAllOrganizations = async () => {
-        try {
-          const { data, error } = await authClient.organization.list();
-          if (error) {
-            console.error("Failed to fetch organizations:", error);
-            return;
-          }
-          const orgs = (data ?? []) as Organization[];
-          setOrganizations(orgs);
-        } catch (err) {
-          console.error("Error fetching organizations:", err);
-        }
-      };
-
-      fetchAllOrganizations();
-    }, []);
-
-    const handleChangeOrganization = async (organizationId: string) => {
-      if (organizationId === activeOrgId) return;
-
-      latestOrgSwitchRef.current = organizationId;
-      setIsSwitching(true);
-
-      try {
-        await authClient.organization.setActive({ organizationId });
-
-        // Bail if user already clicked another org
-        if (latestOrgSwitchRef.current !== organizationId) return;
-
-        setActiveOrgId(organizationId);
-
-        const result = await utils.workspace.listByOrg.fetch({ tenantId: organizationId });
-
-        if (latestOrgSwitchRef.current !== organizationId) return;
-
-        if (result?.success && result.data && result.data.length > 0) {
-          const firstWorkspace = result.data[0]!;
-          router.refresh();
-          router.push(`/dashboard?workspace=${firstWorkspace.id}`);
-        } else {
-          router.push("/workspace/new");
-        }
-      } catch (err) {
-        console.error("Failed to switch organization:", err);
-        toast.error("Failed to switch organization.");
-      } finally {
-        setIsSwitching(false);
-      }
-    };
-
     const handleSwitchWorkspace = (ws: Workspace) => {
-      if (ws.id === workspace?.id) return;
+      if (ws.id === activeWorkspace?.id) return;
       router.push(`/dashboard?workspace=${ws.id}`);
     };
 
@@ -191,80 +136,48 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                   <SidebarMenuButton>
                     <div className="flex items-center gap-2 min-w-0">
                       <img
-                        src={getModelFavicon(workspaceDomain)}
+                        src={activeWorkspaceFavicon}
                         alt="Favicon"
                         className="w-4 h-4 rounded-sm shrink-0"
                       />
                       <div className="flex flex-col min-w-0">
                         <span className="text-sm font-medium truncate">
-                          {activeOrg?.name ?? "Select Organization"}
+                          {activeWorkspace?.name ?? "Select Workspace"}
                         </span>
-                        {workspace && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            {workspace.name}
-                          </span>
-                        )}
                       </div>
                     </div>
-                    {isSwitching ? (
-                      <Loader2 className="ml-auto h-4 w-4 animate-spin shrink-0" />
-                    ) : (
-                      <ChevronDown className="ml-auto shrink-0" />
-                    )}
+                    <ChevronDown className="ml-auto shrink-0" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-popper-anchor-width]" align="start">
-                  {/* Organization Section */}
-                  <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    {organizations.map((org) => (
+                  {workspacesQuery.isLoading ? (
+                    <DropdownMenuItem disabled>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading...</span>
+                    </DropdownMenuItem>
+                  ) : workspaces.length > 0 ? (
+                    workspaces.map((ws) => (
                       <DropdownMenuItem
-                        key={org.id}
-                        onClick={() => handleChangeOrganization(org.id)}
+                        key={ws.id}
+                        onClick={() => handleSwitchWorkspace(ws)}
                         className="flex items-center gap-2"
                       >
-                        <span className="truncate">{org.name}</span>
-                        {org.id === activeOrgId && (
+                        <img
+                          src={getFaviconUrls(ws.domain ?? "", ws.name)[0] ?? ""}
+                          alt=""
+                          className="w-4 h-4 rounded-sm shrink-0"
+                        />
+                        <span className="truncate">{ws.name}</span>
+                        {ws.id === activeWorkspace?.id && (
                           <Check className="ml-auto h-4 w-4 shrink-0" />
                         )}
                       </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowCreateOrgDialog(true)}>
-                    <Plus className="h-4 w-4" />
-                    <span>Create Organization</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  {/* Workspace Section */}
-                  <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    {workspacesQuery.isLoading ? (
-                      <DropdownMenuItem disabled>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Loading...</span>
-                      </DropdownMenuItem>
-                    ) : workspaces.length > 0 ? (
-                      workspaces.map((ws) => (
-                        <DropdownMenuItem
-                          key={ws.id}
-                          onClick={() => handleSwitchWorkspace(ws)}
-                          className="flex items-center gap-2"
-                        >
-                          <span className="truncate">{ws.name}</span>
-                          {ws.id === workspace?.id && (
-                            <Check className="ml-auto h-4 w-4 shrink-0" />
-                          )}
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <DropdownMenuItem disabled>
-                        <span className="text-muted-foreground">No workspaces yet</span>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuGroup>
+                    ))
+                  ) : (
+                    <DropdownMenuItem disabled>
+                      <span className="text-muted-foreground">No workspaces yet</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => setShowCreateWorkspaceDialog(true)}
@@ -350,11 +263,6 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
         </SidebarFooter>
       </Sidebar>
 
-      {/* Dialogs rendered outside the sidebar */}
-      <CreateOrganizationDialog
-        open={showCreateOrgDialog}
-        onOpenChange={setShowCreateOrgDialog}
-      />
       {activeOrgId && (
         <CreateWorkspaceDialog
           open={showCreateWorkspaceDialog}
