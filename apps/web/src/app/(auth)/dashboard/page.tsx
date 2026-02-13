@@ -89,7 +89,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="ui-page-enter min-h-screen dark:bg-black">
-			<div className="mx-auto w-full max-w-[95vw] px-4 py-4 sm:px-6 lg:px-8 xl:max-w-[1600px]">
+			<div className="mx-auto w-full max-w-[95vw] px-4 pt-4 pb-12 sm:px-6 lg:px-8 xl:max-w-[1600px]">
 				<div className="ui-stagger space-y-6">
 					{/* Filters */}
 					<DashboardFilters
