@@ -1,560 +1,568 @@
 "use client";
 
-import React from "react";
-import { useEffect, useState, useMemo, Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@onescope/ui";
-import { AlertTriangle, Bot, ChevronRight, ExternalLink, SearchX } from "lucide-react";
-import type { SourceGroupResult, ModelFilterDomainStats } from "@onescope/types";
-import { getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+	Skeleton,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@onescope/ui";
+import {
+	AlertTriangle,
+	BarChart3,
+	Bot,
+	ChevronRight,
+	ExternalLink,
+	FileText,
+	Globe2,
+	Link2,
+	SearchX,
+} from "lucide-react";
+import type { GroupedSource, SourceGroupResult } from "@onescope/types";
+import { getDomain, getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
 
-export default function Sources() {
-  const [domainStats, setDomainStats] = useState<ModelFilterDomainStats | null>(null);
-  const [sourceStats, setSourceStats] = useState<SourceGroupResult | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
-  const [activeTab, setActiveTab] = useState<"domains" | "urls">("domains");
-  const [openUrl, setOpenUrl] = useState<string | null>(null);
+type DomainGroup = {
+	domain: string;
+	totalCitations: number;
+	urlCount: number;
+	citedTextCount: number;
+	providers: Set<string>;
+	urls: GroupedSource[];
+};
 
-  const searchParams = useSearchParams();
-  const workspaceId = searchParams.get("workspace") ?? "";
+function MetricCard({
+	label,
+	value,
+	subtitle,
+	icon: Icon,
+}: {
+	label: string;
+	value: string;
+	subtitle: string;
+	icon: typeof Globe2;
+}) {
+	return (
+		<div className="ui-list-item rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+			<div className="flex items-center gap-2">
+				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
+				<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+					{label}
+				</span>
+			</div>
+			<p className="mt-3 text-2xl font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
+				{value}
+			</p>
+			<p className="mt-2 text-xs text-muted-foreground">{subtitle}</p>
+		</div>
+	);
+}
 
-  const { data: promptSources, refetch, isLoading, error } = usePromptSources(workspaceId);
+export default function SourcesPage() {
+	const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
+	const [activeTab, setActiveTab] = useState<"domains" | "citations">("domains");
+	const [openDomain, setOpenDomain] = useState<string | null>(null);
+	const [openUrl, setOpenUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (workspaceId) {
-      refetch();
-    }
-  }, [workspaceId, refetch]);
+	const searchParams = useSearchParams();
+	const workspaceId = searchParams.get("workspace") ?? "";
+	const { data: promptSources, isLoading, error } = usePromptSources(workspaceId);
 
-  useEffect(() => {
-    if (
-      isLoading ||
-      !promptSources?.data ||
-      !promptSources.data.domain_stats ||
-      !Array.isArray(promptSources.data.domain_stats.combined) ||
-      !promptSources.data.sourceStats ||
-      !Array.isArray(promptSources.data.sourceStats.combined)
-    ) {
-      return;
-    }
+	const sourceStats = useMemo<SourceGroupResult | null>(() => {
+		const data = promptSources?.data;
+		if (
+			!data ||
+			!data.sourceStats ||
+			!Array.isArray(data.sourceStats.combined)
+		) {
+			return null;
+		}
+		return data.sourceStats as SourceGroupResult;
+	}, [promptSources]);
 
-    const domainStatistics: ModelFilterDomainStats = promptSources?.data.domain_stats;
-    const sourceStatistics: SourceGroupResult = promptSources?.data.sourceStats;
+	const displayedSources = useMemo<GroupedSource[]>(() => {
+		if (!sourceStats) return [];
+		const rows =
+			selectedProvider === "All Models"
+				? sourceStats.combined
+				: sourceStats.byModel[selectedProvider] ?? [];
+		return [...rows].sort((a, b) => (b.totalSources ?? 0) - (a.totalSources ?? 0));
+	}, [sourceStats, selectedProvider]);
 
-    setDomainStats(domainStatistics);
-    setSourceStats(sourceStatistics);
-  }, [promptSources, isLoading]);
+	const domainGroups = useMemo<DomainGroup[]>(() => {
+		const map = new Map<string, DomainGroup>();
 
-  const displayedDomainStats = useMemo(() => {
-    const stats =
-      selectedProvider === "All Models"
-        ? domainStats?.combined
-        : domainStats?.byModel[selectedProvider];
-  
-    if (!stats) return [];
-  
-    return [...stats].sort(
-      (a, b) =>
-        (b.usedPercentageAcrossAllDomains ?? 0) -
-        (a.usedPercentageAcrossAllDomains ?? 0)
-    );
-  }, [domainStats, selectedProvider]);
+		for (const source of displayedSources) {
+			const domain = getDomain(source.url) || "unknown";
+			const existing = map.get(domain) ?? {
+				domain,
+				totalCitations: 0,
+				urlCount: 0,
+				citedTextCount: 0,
+				providers: new Set<string>(),
+				urls: [],
+			};
 
-  const displayedSourceStats = useMemo(() => {
-    const stats =
-      selectedProvider === "All Models"
-          ? sourceStats?.combined
-          : sourceStats?.byModel[selectedProvider];
+			existing.totalCitations += source.totalSources ?? 0;
+			existing.urlCount += 1;
+			existing.citedTextCount += source.excerpts.filter((e) => e.cited_text?.trim()).length;
+			for (const excerpt of source.excerpts) {
+				if (excerpt.model_provider) {
+					existing.providers.add(excerpt.model_provider);
+				}
+			}
+			existing.urls.push(source);
 
-    if (!stats) return [];
+			map.set(domain, existing);
+		}
 
-    return [...stats].sort(
-      (a, b) =>
-        (b.totalSources ?? 0) -
-        (a.totalSources ?? 0)
-    );
+		return [...map.values()].sort((a, b) => b.totalCitations - a.totalCitations);
+	}, [displayedSources]);
 
-  }, [sourceStats, selectedProvider]);
+	const aggregate = useMemo(() => {
+		const totalUrls = displayedSources.length;
+		const totalDomains = domainGroups.length;
+		const totalCitations = displayedSources.reduce((sum, s) => sum + (s.totalSources ?? 0), 0);
+		const totalCitedText = displayedSources.reduce(
+			(sum, s) => sum + s.excerpts.filter((e) => e.cited_text?.trim()).length,
+			0
+		);
+		const citedCoverage = totalCitations
+			? Math.round((totalCitedText / totalCitations) * 100)
+			: 0;
+		const avgCitationsPerUrl = totalUrls
+			? (totalCitations / totalUrls).toFixed(1)
+			: "0.0";
 
-  if (!workspaceId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center px-6 text-center">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-            <SearchX className="h-5 w-5 text-gray-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-gray-900">Select a workspace</h2>
-          <p className="mt-2 max-w-sm text-sm text-gray-500">
-            Choose a workspace from the sidebar to view your sources.
-          </p>
-        </div>
-      </div>
-    );
-  }
+		return {
+			totalUrls,
+			totalDomains,
+			totalCitations,
+			totalCitedText,
+			citedCoverage,
+			avgCitationsPerUrl,
+		};
+	}, [displayedSources, domainGroups]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen p-8 space-y-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-9 w-[220px]" />
-        </div>
+	if (!workspaceId) {
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<div className="flex flex-col items-center px-6 text-center">
+					<div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+					</div>
+					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+						Select a workspace
+					</h2>
+					<p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+						Choose a workspace from the sidebar to view source intelligence.
+					</p>
+				</div>
+			</div>
+		);
+	}
 
-        <div className="flex gap-4 border-b border-gray-200 pb-4">
-          <Skeleton className="h-8 w-24 rounded-full" />
-          <Skeleton className="h-8 w-20 rounded-full" />
-        </div>
+	if (isLoading) {
+		return (
+			<div className="min-h-screen p-6">
+				<div className="space-y-4">
+					<Skeleton className="h-10 w-56" />
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+						{Array.from({ length: 4 }).map((_, i) => (
+							<Skeleton key={`sources-metric-${i}`} className="h-28 rounded-2xl" />
+						))}
+					</div>
+					<Skeleton className="h-[480px] rounded-2xl" />
+				</div>
+			</div>
+		);
+	}
 
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <div
-              key={`sources-skeleton-${idx}`}
-              className="flex items-center justify-between rounded-lg border border-gray-200 px-6 py-5"
-            >
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-5 w-5 rounded-md" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-              </div>
-              <Skeleton className="h-4 w-20" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+	if (error) {
+		return (
+			<div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+				<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+					<AlertTriangle className="h-5 w-5 text-amber-500" />
+				</div>
+				<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+					Unable to load sources
+				</h2>
+				<p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+					We ran into an issue loading your source data. Please try again in a moment.
+				</p>
+			</div>
+		);
+	}
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-        </div>
-        <h2 className="text-lg font-semibold text-gray-900">Unable to load sources</h2>
-        <p className="mt-2 max-w-sm text-sm text-gray-500">
-          We ran into an issue loading your source data. Please try again in a moment.
-        </p>
-      </div>
-    );
-  }
+	if (!sourceStats) {
+		return (
+			<div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
+				<p className="text-lg text-gray-500 dark:text-gray-400">No prompt responses yet.</p>
+				<p className="mt-2 text-sm text-gray-400">
+					If you&apos;ve just run prompts, please check back in a few minutes.
+				</p>
+			</div>
+		);
+	}
 
-  if (
-    isLoading ||
-    !promptSources?.data ||
-    !promptSources.data.domain_stats ||
-    !Array.isArray(promptSources.data.domain_stats.combined) ||
-    !promptSources.data.sourceStats ||
-    !Array.isArray(promptSources.data.sourceStats.combined)
-  ) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <p className="text-gray-500 text-lg mb-2">No prompt responses yet.</p>
-        <p className="text-gray-400 text-sm mb-4">
-          If you've just added prompts, please check back in some time — processing can take a few minutes.
-        </p>
-      </div>
-    );
-  }
+	const hasData = displayedSources.length > 0;
 
-  return (
-    <div className="min-h-screen p-8 space-y-6">
-      <div className="flex items-center gap-4 mb-4">
-        <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-          <SelectTrigger className="w-[220px]">
-            <div className="flex items-center gap-2">
-              <SelectValue placeholder="Select Provider" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {modelSelectors.map(({ value, label }) => {
-              const icon = value === "All Models" ? "" : getModelFavicon(value);
+	return (
+		<div className="min-h-screen p-4 sm:p-6 lg:p-8">
+			<div className="mx-auto w-full max-w-[95vw] space-y-6 xl:max-w-[1600px]">
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+							Sources Intelligence
+						</h1>
+						<p className="mt-1 text-sm text-muted-foreground">
+							High-signal view of where model answers are sourced from.
+						</p>
+					</div>
 
-              return (
-                <SelectItem key={value} value={value}>
-                  <div className="flex items-center gap-2">
-                  {value === "All Models" ? (
-                      <Bot className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <img
-                        src={icon}
-                        alt={value}
-                        className="w-4 h-4 rounded-sm"
-                      />
-                    )}
-                    <span>{label}</span>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </div>
+					<Select value={selectedProvider} onValueChange={setSelectedProvider}>
+						<SelectTrigger className="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
+							<SelectValue placeholder="Select Provider" />
+						</SelectTrigger>
+						<SelectContent>
+							{modelSelectors.map(({ value, label }) => {
+								const icon = value === "All Models" ? "" : getModelFavicon(value);
+								return (
+									<SelectItem key={value} value={value}>
+										<div className="flex items-center gap-2">
+											{value === "All Models" ? (
+												<Bot className="h-4 w-4 text-muted-foreground" />
+											) : (
+												<img src={icon} alt={value} className="h-4 w-4 rounded-sm" />
+											)}
+											<span>{label}</span>
+										</div>
+									</SelectItem>
+								);
+							})}
+						</SelectContent>
+					</Select>
+				</div>
 
-      <div className="flex gap-4 border-b border-gray-200 mb-4">
-        <button
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "domains"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-gray-600 hover:text-gray-900"
-          }`}
-          onClick={() => setActiveTab("domains")}
-        >
-          Domains
-        </button>
-        <button
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "urls"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-gray-600 hover:text-gray-900"
-          }`}
-          onClick={() => setActiveTab("urls")}
-        >
-          URLs
-        </button>
-      </div>
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+					<MetricCard
+						icon={Globe2}
+						label="Domains"
+						value={String(aggregate.totalDomains)}
+						subtitle="Unique domains across selected model scope"
+					/>
+					<MetricCard
+						icon={Link2}
+						label="URLs"
+						value={String(aggregate.totalUrls)}
+						subtitle="Unique source URLs captured from responses"
+					/>
+					<MetricCard
+						icon={BarChart3}
+						label="Citations"
+						value={String(aggregate.totalCitations)}
+						subtitle={`Avg ${aggregate.avgCitationsPerUrl} citations per URL`}
+					/>
+					<MetricCard
+						icon={FileText}
+						label="Cited Text Coverage"
+						value={`${aggregate.citedCoverage}%`}
+						subtitle={`${aggregate.totalCitedText} citations include extracted source text`}
+					/>
+				</div>
 
-      {
-        (activeTab === "domains" && displayedDomainStats.length === 0) ||
-        (activeTab === "urls" && displayedSourceStats.length === 0)
-        ?
-        <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-          <div className="
-              mb-5
-              flex items-center justify-center
-              w-11 h-11
-              rounded-full
-              bg-gray-100
-            ">
-              <SearchX className="w-5 h-5 text-gray-400" strokeWidth={1.5} />
-            </div>
+				<div className="flex gap-3 border-b border-gray-200 dark:border-gray-800">
+					<button
+						className={`px-3 py-2 text-sm font-semibold transition-colors ${
+							activeTab === "domains"
+								? "border-blue-600 border-b-2 text-blue-600"
+								: "text-muted-foreground hover:text-gray-900 dark:hover:text-gray-100"
+						}`}
+						onClick={() => setActiveTab("domains")}
+					>
+						Domains
+					</button>
+					<button
+						className={`px-3 py-2 text-sm font-semibold transition-colors ${
+							activeTab === "citations"
+								? "border-blue-600 border-b-2 text-blue-600"
+								: "text-muted-foreground hover:text-gray-900 dark:hover:text-gray-100"
+						}`}
+						onClick={() => setActiveTab("citations")}
+					>
+						Citations (Grouped by Domain)
+					</button>
+				</div>
 
-            <h3 className="text-md font-medium text-gray-900">
-              No results found
-            </h3>
+				{!hasData ? (
+					<div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-6 py-20 text-center dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">
+						<div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+							<SearchX className="h-5 w-5 text-gray-400" />
+						</div>
+						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+							No source data for this filter
+						</p>
+						<p className="mt-1 text-xs text-muted-foreground">
+							Try another model filter to inspect source patterns.
+						</p>
+					</div>
+				) : activeTab === "domains" ? (
+					<div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+						<Table className="w-full">
+							<TableHeader>
+								<TableRow className="border-b border-gray-200 dark:border-gray-800">
+									<TableHead className="w-[56px] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										#
+									</TableHead>
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Domain
+									</TableHead>
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Share
+									</TableHead>
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Citations
+									</TableHead>
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										URLs
+									</TableHead>
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Cited Text
+									</TableHead>
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Models
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{domainGroups.map((domain, idx) => {
+									const favicon = getFaviconUrls(domain.domain, "")[0];
+									const share = aggregate.totalCitations
+										? ((domain.totalCitations / aggregate.totalCitations) * 100).toFixed(1)
+										: "0.0";
+									const citedPct = domain.totalCitations
+										? Math.round((domain.citedTextCount / domain.totalCitations) * 100)
+										: 0;
 
-            <p className="mt-1.5 text-sm text-gray-500 max-w-xs">
-              {activeTab === "domains"
-                ? "Try adjusting your filters to see source data."
-                : "Try adjusting your filters to see source data."}
-            </p>
-        </div>
-        :
-        activeTab === "domains" && displayedDomainStats ? (
-          <div className="overflow-x-auto">
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="px-4 py-4 w-[40px]" />
-                  <TableHead className="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Domain
-                  </TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Used (%)
-                  </TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Avg Citations / Domain
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+									return (
+										<TableRow
+											key={domain.domain}
+											className="ui-list-item border-b border-gray-100 last:border-0 hover:bg-gray-50/80 dark:border-gray-800 dark:hover:bg-gray-800/40"
+										>
+											<TableCell className="px-4 py-4 text-xs text-muted-foreground">
+												{idx + 1}
+											</TableCell>
+											<TableCell className="px-4 py-4">
+												<div className="flex items-center gap-2">
+													{favicon && (
+														<img
+															src={favicon}
+															alt=""
+															className="h-5 w-5 rounded-sm"
+															onError={(e) => {
+																(e.target as HTMLImageElement).style.display = "none";
+															}}
+														/>
+													)}
+													<a
+														href={`https://${domain.domain}`}
+														target="_blank"
+														rel="noreferrer noopener"
+														className="truncate text-sm font-semibold text-gray-900 hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-300"
+													>
+														{domain.domain}
+													</a>
+												</div>
+											</TableCell>
+											<TableCell className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+												{share}%
+											</TableCell>
+											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+												{domain.totalCitations}
+											</TableCell>
+											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+												{domain.urlCount}
+											</TableCell>
+											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+												{domain.citedTextCount} ({citedPct}%)
+											</TableCell>
+											<TableCell className="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+												{domain.providers.size}
+											</TableCell>
+										</TableRow>
+									);
+								})}
+							</TableBody>
+						</Table>
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+						<Table className="w-full">
+							<TableHeader>
+								<TableRow className="border-b border-gray-200 dark:border-gray-800">
+									<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Domain / URL
+									</TableHead>
+									<TableHead className="w-[260px] px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+										Metrics
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{domainGroups.map((group) => {
+									const domainFavicon = getFaviconUrls(group.domain, "")[0];
+									const domainOpen = openDomain === group.domain;
 
-              <TableBody>
-                {displayedDomainStats &&
-                  displayedDomainStats.map((d, idx) => {
-                    const faviconUrls = getFaviconUrls(d.domain ?? "", "");
+									return (
+										<Fragment key={group.domain}>
+											<TableRow
+												className="cursor-pointer border-b border-gray-100 bg-gray-50/40 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900/70 dark:hover:bg-gray-800/50"
+												onClick={() =>
+													setOpenDomain(domainOpen ? null : group.domain)
+												}
+											>
+												<TableCell className="px-4 py-4">
+													<div className="flex items-center gap-2">
+														<ChevronRight
+															className={`h-4 w-4 text-muted-foreground transition-transform ${
+																domainOpen ? "rotate-90" : ""
+															}`}
+														/>
+														{domainFavicon && (
+															<img
+																src={domainFavicon}
+																alt=""
+																className="h-5 w-5 rounded-sm"
+																onError={(e) => {
+																	(e.target as HTMLImageElement).style.display = "none";
+																}}
+															/>
+														)}
+														<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+															{group.domain}
+														</span>
+													</div>
+												</TableCell>
+												<TableCell className="px-4 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
+													<span className="font-semibold">{group.totalCitations}</span> citations
+													<span className="mx-2 text-gray-300">•</span>
+													{group.urlCount} URLs
+													<span className="mx-2 text-gray-300">•</span>
+													{group.providers.size} models
+												</TableCell>
+											</TableRow>
 
-                    return (
-                      <TableRow
-                        key={d.domain}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <TableCell className="px-4 py-5 align-middle text-xs text-gray-400 w-[40px]">
-                          {idx + 1}
-                        </TableCell>
+											{domainOpen &&
+												group.urls.map((source) => {
+													const urlOpen = openUrl === source.url;
+													const urlFavicon = getFaviconUrls(source.url, "")[0];
+													const providers = [...new Set(source.excerpts.map((e) => e.model_provider).filter(Boolean))] as string[];
+													const withTextCount = source.excerpts.filter((e) => e.cited_text?.trim()).length;
 
-                        <TableCell className="px-6 py-5 align-middle">
-                          <div className="flex items-center gap-4">
-                            <img
-                              src={faviconUrls[0]}
-                              alt=""
-                              className="
-                                w-[1.25em] h-[1.25em]
-                                rounded-md
-                                shrink-0
-                              "
-                              onError={(e) =>
-                                ((e.target as HTMLImageElement).style.display = "none")
-                              }
-                            />
-                            <a
-                              href={`https://${d.domain}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="
-                                text-sm font-medium text-gray-900
-                                hover:text-gray-700
-                                transition-colors
-                              "
-                            >
-                              {d.domain}
-                            </a>
-                          </div>
-                        </TableCell>
+													return (
+														<Fragment key={source.url}>
+															<TableRow
+																className="cursor-pointer border-b border-gray-100 hover:bg-gray-50/60 dark:border-gray-800 dark:hover:bg-gray-800/40"
+																onClick={() => setOpenUrl(urlOpen ? null : source.url)}
+															>
+																<TableCell className="px-4 py-4 pl-12">
+																	<div className="flex items-start gap-2">
+																		<ChevronRight
+																			className={`mt-0.5 h-3.5 w-3.5 text-muted-foreground transition-transform ${
+																				urlOpen ? "rotate-90" : ""
+																			}`}
+																		/>
+																		{urlFavicon && (
+																			<img
+																				src={urlFavicon}
+																				alt=""
+																				className="mt-0.5 h-4 w-4 rounded-sm"
+																				onError={(e) => {
+																					(e.target as HTMLImageElement).style.display = "none";
+																				}}
+																			/>
+																		)}
+																		<div className="min-w-0">
+																			<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+																				{source.title || "Untitled source"}
+																			</p>
+																			<div className="mt-1 flex items-center gap-2">
+																				<p className="truncate text-xs text-muted-foreground">
+																					{source.url}
+																				</p>
+																				<a
+																					href={source.url}
+																					target="_blank"
+																					rel="noreferrer noopener"
+																					onClick={(e) => e.stopPropagation()}
+																					className="text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300"
+																				>
+																					<ExternalLink className="h-3.5 w-3.5" />
+																				</a>
+																			</div>
+																		</div>
+																	</div>
+																</TableCell>
+																<TableCell className="px-4 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
+																	<span className="font-semibold">{source.totalSources}</span> citations
+																	<span className="mx-2 text-gray-300">•</span>
+																	{withTextCount} with text
+																	<span className="mx-2 text-gray-300">•</span>
+																	{providers.length} models
+																</TableCell>
+															</TableRow>
 
-                        <TableCell className="px-6 py-5 align-middle text-sm text-gray-700">
-                          {d.usedPercentageAcrossAllDomains}%
-                        </TableCell>
-
-                        <TableCell className="px-6 py-5 align-middle text-sm text-gray-700">
-                          {d.sourceTextCount === 0 ? (
-                            <div className="relative inline-block group">
-                              <span className="text-xs text-gray-500 cursor-default">
-                                Referenced by {selectedProvider}
-                              </span>
-
-                              <div
-                                className="
-                                  pointer-events-none
-                                  absolute left-1/2 bottom-full z-20 mt-1
-                                  -translate-x-1/2
-                                  whitespace-nowrap
-                                  rounded-md
-                                  bg-gray-900
-                                  px-3 py-2
-                                  text-[11px]
-                                  text-white
-                                  opacity-0
-                                  group-hover:opacity-100
-                                  transition-opacity
-                                "
-                              >
-                                This source was referenced, but no cited text was provided.
-                              </div>
-                            </div>
-                          ) : (
-                            d.avgSourcesPerDomain
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table className="w-full table-fixed">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-full px-6 py-3 text-left font-medium text-gray-500">Source</TableHead>
-                <TableHead className="w-[220px] px-6 py-3 text-right font-medium text-gray-500">Providers</TableHead>
-              </TableRow>
-            </TableHeader>
-              <TableBody>
-                {displayedSourceStats && displayedSourceStats.map((s, idx) => {
-                  const faviconUrls = getFaviconUrls(s.url ?? "", "");
-                  const isOpen = openUrl === s.url;
-
-                  const providers = Array.from(
-                    new Set(s.excerpts.map((r) => r.model_provider))
-                  );
-
-                  const hasOnlyReferences =
-                      s.totalSources ===
-                      s.excerpts.filter(e => !e.cited_text?.trim()).length;
-
-                  return (
-                    <React.Fragment key={s.url}>
-                      <TableRow
-                        className="cursor-pointer hover:bg-gray-50 transition-colors"
-                        onClick={() => setOpenUrl(isOpen ? null : s.url)}
-                      >
-
-                      <TableCell colSpan={1} className="px-6 py-5 w-full">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={faviconUrls[0]}
-                              alt=""
-                              className="
-                                w-[1.25em] h-[1.25em]
-                                rounded-md
-                                shrink-0
-                              "
-                              onError={(e) =>
-                                ((e.target as HTMLImageElement).style.display = "none")
-                              }
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-gray-900 line-clamp-1">
-                              {s.title || "Untitled source"}
-                            </span>
-
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-gray-500 break-all">
-                                {s.url}
-                              </span>
-
-                              <a
-                                href={s.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="
-                                  inline-flex
-                                  items-center
-                                  justify-center
-                                  rounded
-                                  text-gray-400
-                                  hover:text-gray-600
-                                  transition-colors
-                                "
-                                title="Open source"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.75} />
-                              </a>
-                            </div>
-
-                            <div className="flex gap-2 mt-1">
-                              {hasOnlyReferences ? (
-                                <span
-                                  className="
-                                    bg-gray-50
-                                    text-gray-500
-                                    text-[10px]
-                                    font-medium
-                                    px-2 py-0.5
-                                    rounded-full
-                                    border border-dashed border-gray-200
-                                  "
-                                >
-                                  {s.totalSources} Reference{s.totalSources > 1 ? "s" : ""}
-                                </span>
-                              ) : (
-                                <span
-                                  className="bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                                >
-                                  {s.totalSources} Citation{s.totalSources > 1 ? "s" : ""}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                        <TableCell className="w-[220px] px-6 py-5 align-middle">
-                          <div className="flex items-center justify-end gap-3">
-                            {!isOpen &&
-                              providers.slice(0, 4).map((provider) => provider && (
-                                <img
-                                  key={provider}
-                                  src={getModelFavicon(provider)}
-                                  title={provider}
-                                  className="w-5 h-5 rounded-sm"
-                                />
-                              ))}
-
-                            {providers.length > 4 && !isOpen && (
-                              <span className="text-xs text-gray-400">
-                                +{providers.length - 4}
-                              </span>
-                            )}
-
-                            <ChevronRight
-                              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                                isOpen ? "rotate-90" : ""
-                              }`}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-
-                      {isOpen &&
-                        s.excerpts.map(({ cited_text, model_provider }, index) => (
-                          <TableRow
-                            key={`${s.url}-excerpt-${index}`}
-                            className="bg-transparent"
-                          >
-                            <TableCell className="px-6 py-6 pl-16 align-top w-full">
-                              <div className="relative max-w-3xl">
-                                <div
-                                  className="
-                                    absolute
-                                    left-0
-                                    top-1/2
-                                    -translate-y-1/2
-                                    h-[70%]
-                                    w-[2px]
-                                    bg-gradient-to-b
-                                    from-transparent
-                                    via-gray-200
-                                    to-transparent
-                                  "
-                                />
-
-                                <div
-                                  className="
-                                    absolute
-                                    left-[-30px]
-                                    top-1/2
-                                    -translate-y-1/2
-
-                                    w-5
-                                    text-center
-
-                                    text-[12px]
-                                    font-medium
-                                    text-gray-500
-                                    tracking-tight
-                                  "
-                                >
-                                  {index + 1}
-                                </div>
-
-                                <div className="pl-6 flex flex-col gap-3">
-                                  {
-                                    hasOnlyReferences
-                                    ?
-                                    <div className="text-[14px] leading-[1.65] italic text-gray-500">
-                                      This source was referenced by the model, but no cited text was provided.
-                                    </div>
-                                    :
-                                    <p className="text-[14px] leading-[1.65] italic text-gray-600">
-                                      <span className="text-gray-300 mr-1">"</span>
-                                      {cited_text}
-                                      <span className="text-gray-300 ml-1">"</span>
-                                    </p>
-                                  }
-
-                                  {model_provider && (
-                                    <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                                      <img
-                                        src={getModelFavicon(model_provider)}
-                                        alt=""
-                                        className="w-4 h-4 rounded-sm opacity-80"
-                                      />
-                                      <span className="tracking-wide">
-                                        {modelSelectors.find(m => m.value === model_provider)?.label || model_provider}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-
-                            <TableCell className="w-[220px]" />
-                          </TableRow>
-                        ))}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-    </div>
-  );
+															{urlOpen &&
+																source.excerpts.map((excerpt, idx) => (
+																	<TableRow
+																		key={`${source.url}-${idx}`}
+																		className="border-b border-gray-50 bg-white/70 dark:border-gray-900 dark:bg-gray-900/20"
+																	>
+																		<TableCell className="px-4 py-4 pl-20">
+																			<div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 dark:border-gray-800 dark:bg-gray-900">
+																				<p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+																					{excerpt.cited_text?.trim()
+																						? excerpt.cited_text
+																						: "This citation has no extracted quoted text."}
+																				</p>
+																			</div>
+																		</TableCell>
+																		<TableCell className="px-4 py-4 text-right">
+																			{excerpt.model_provider ? (
+																				<div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-900">
+																					<img
+																						src={getModelFavicon(excerpt.model_provider)}
+																						alt=""
+																						className="h-3.5 w-3.5 rounded-sm"
+																					/>
+																					{modelSelectors.find((m) => m.value === excerpt.model_provider)?.label ?? excerpt.model_provider}
+																				</div>
+																			) : (
+																				<span className="text-xs text-muted-foreground">Unknown model</span>
+																			)}
+																		</TableCell>
+																	</TableRow>
+																))}
+														</Fragment>
+													);
+												})}
+										</Fragment>
+									);
+								})}
+							</TableBody>
+						</Table>
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }

@@ -77,7 +77,7 @@ export function TopSources({
 								{source.models.size} models
 							  </span>
 							  <span className="text-[10px] text-muted-foreground">
-								{source.uniqueRecords.size} prompts
+								{source.uniqueRecords.size} responses
 							  </span>
 							  <span className="text-[10px] text-muted-foreground">
 								#{idx + 1}

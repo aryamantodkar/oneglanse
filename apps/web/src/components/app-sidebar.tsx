@@ -37,6 +37,7 @@ import type { Workspace } from "@onescope/db"
 import { authClient } from "@/lib/auth/auth-client";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { api } from "@/trpc/react";
 import { getFaviconUrls } from "@onescope/utils";
 import Link from "next/link";
@@ -54,6 +55,7 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
     const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] = useState(false);
     const [showJoinWorkspaceDialog, setShowJoinWorkspaceDialog] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
 
     const activeOrgId = workspace?.tenantId ?? null;
@@ -145,13 +147,13 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
 
   return (
     <>
-      <Sidebar className="flex flex-col h-screen">
-        <SidebarHeader>
+      <Sidebar className="flex h-screen flex-col border-r border-gray-200/70 bg-white dark:border-gray-800 dark:bg-gray-950">
+        <SidebarHeader className="p-3">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton>
+                  <SidebarMenuButton className="h-10 rounded-xl border border-gray-200/80 bg-gray-50/60 px-3 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/80 dark:hover:bg-gray-900">
                     <div className="flex items-center gap-2 min-w-0">
                       <img
                         src={activeWorkspaceFavicon}
@@ -167,7 +169,11 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                     <ChevronDown className="ml-auto shrink-0" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-popper-anchor-width]" align="start">
+                <DropdownMenuContent
+                  className="w-64 min-w-64 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  align="start"
+                  sideOffset={8}
+                >
                   {allWorkspacesQuery.isLoading ? (
                     <DropdownMenuItem disabled>
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -178,7 +184,7 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                       <div key={group.organization.id}>
                         {idx > 0 && <DropdownMenuSeparator />}
                         {groupedWorkspaces.length > 1 && (
-                          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                          <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                             {group.organization.name}
                           </DropdownMenuLabel>
                         )}
@@ -186,7 +192,7 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                           <DropdownMenuItem
                             key={ws.id}
                             onClick={() => handleSwitchWorkspace(ws)}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 rounded-lg"
                           >
                             <img
                               src={getFaviconUrls(ws.domain ?? "", ws.name)[0] ?? ""}
@@ -228,12 +234,18 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
 
         <SidebarContent className="flex-1 overflow-y-auto">
           <SidebarGroup>
-            <SidebarGroupLabel>General</SidebarGroupLabel>
+            <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              General
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {generalItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url.split("?")[0]}
+                      className="h-10 rounded-xl px-3 text-[13px] font-medium"
+                    >
                       <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
@@ -245,12 +257,18 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
             </SidebarGroupContent>
           </SidebarGroup>
           <SidebarGroup>
-            <SidebarGroupLabel>Settings</SidebarGroupLabel>
+            <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Settings
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {settingsItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url.split("?")[0]}
+                      className="h-10 rounded-xl px-3 text-[13px] font-medium"
+                    >
                       <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
@@ -263,19 +281,21 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter className="flex-shrink-0">
+        <SidebarFooter className="flex-shrink-0 p-3 pt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton>
-                    <User2 /> {userName || userEmail || "Account"}
+                  <SidebarMenuButton className="h-10 rounded-xl border border-gray-200/80 bg-gray-50/60 px-3 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/80 dark:hover:bg-gray-900">
+                    <User2 />
+                    <span className="truncate">{userName || userEmail || "Account"}</span>
                     <ChevronUp className="ml-auto" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side="top"
-                  className="w-[--radix-popper-anchor-width]"
+                  sideOffset={8}
+                  className="w-64 min-w-64 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
                 >
                   <DropdownMenuItem>
                     <span>Account</span>
