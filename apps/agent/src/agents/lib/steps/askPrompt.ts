@@ -17,25 +17,6 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pro
   ]).finally(() => clearTimeout(timer!));
 }
 
-async function captureSubmitScreenshot(
-  page: Page,
-  provider: Provider,
-  stage: "after-enter" | "after-send-click-failed"
-): Promise<void> {
-  try {
-    const dir = path.resolve(process.cwd(), "debug-screenshots");
-    fs.mkdirSync(dir, { recursive: true });
-    const filename = `${provider}-${stage}-${Date.now()}.png`;
-    const outputPath = path.join(dir, filename);
-    await page.screenshot({ path: outputPath, fullPage: true });
-    logger.debug(`📸 Submit screenshot saved: ${outputPath}`);
-  } catch (error) {
-    logger.warn(
-      `Failed to capture ${stage} screenshot: ${(error as Error)?.message ?? "unknown error"}`
-    );
-  }
-}
-
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
     logger.debug(`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
@@ -85,7 +66,6 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
     logger.debug("  📤 Submitting...");
     await page.keyboard.press("Enter");
     await page.waitForTimeout(5000);
-    await captureSubmitScreenshot(page, provider, "after-enter");
 
     // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
     await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
@@ -129,7 +109,6 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       );
 
       if (!fallbackStarted) {
-        await captureSubmitScreenshot(page, provider, "after-send-click-failed");
         throw new Error(`[${provider}] Send failed — no generation after click`);
       }
     }
