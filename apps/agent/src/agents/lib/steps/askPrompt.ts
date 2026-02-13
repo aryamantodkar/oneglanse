@@ -59,6 +59,8 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       throw new Error("Typing failed: editor did not receive prompt");
     }
 
+    await page.waitForTimeout(5000);
+
     logger.debug("  📤 Submitting...");
     await page.keyboard.press("Enter");
     await page.waitForTimeout(5000);
@@ -71,7 +73,7 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
         () =>
           Boolean(
             document.querySelector(
-              '[aria-label*="stop" i], [class*="loading"], [class*="typing"]'
+              '[aria-label*="stop" i], [class*="loading"], [class*="typing"], button[aria-label="Stop generating response"]'
             )
           ),
         { timeout: 10000 }

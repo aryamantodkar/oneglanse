@@ -11,11 +11,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-	Input,
 	Select,
 	SelectContent,
 	SelectItem,
-	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
 	Separator,
@@ -41,14 +39,11 @@ import {
 } from "@onescope/utils";
 import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-	useAnalyzeMetrics,
-	useRunAgents,
 	useStorePrompt,
 } from "./_lib/mutations/prompt.mutations";
 import {
-	useAgentStatus,
 	useFetchAnalysedPrompts,
 	useUserPrompts,
 } from "./_lib/queries/prompt.queries";
@@ -76,10 +71,6 @@ export default function Prompts() {
 		new Set(),
 	);
 	const [analysisRecords, setAnalysisRecords] = useState<AnalysisRecord[]>([]);
-	const [jobId, setJobId] = useState<string | null>(null);
-	const [isAnalyzing, setIsAnalyzing] = useState(false);
-	const hasCheckedForUnanalysed = useRef(false);
-	const lastProgressId = useRef<number | null>(null);
 
 	const { data: userPrompts, isLoading: isUserPromptsLoading } =
 		useUserPrompts(workspaceId);
@@ -87,14 +78,9 @@ export default function Prompts() {
 	const {
 		data: analysedPromptData,
 		isLoading: isAnalysedPromptsLoading,
-		refetch: refetchAnalysedPrompts,
 	} = useFetchAnalysedPrompts(workspaceId);
 
-	const { data: agentResponse } = useAgentStatus(workspaceId, jobId ?? "");
-
 	const storePromptMutation = useStorePrompt();
-	const analyzeMetricsMutation = useAnalyzeMetrics();
-	const runAgentMutation = useRunAgents();
 
 	useEffect(() => {
 		if (userPrompts?.data?.length) {
@@ -325,116 +311,6 @@ export default function Prompts() {
 		});
 	};
 
-	const handleRunAgents = async () => {
-		if (!workspaceId) return toast.error("Workspace ID is undefined.");
-
-		setLoading(true);
-		try {
-			const jobDetails = await runAgentMutation.mutateAsync({ workspaceId });
-
-			setJobId(jobDetails?.data?.jobId ?? null);
-			toast.success("Agents started! Polling for results...");
-		} catch (err) {
-			console.error(err);
-			toast.error("Failed to run prompts with agents");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		if (!workspaceId || isAnalyzing || isAnalysedPromptsLoading) return;
-
-		const agentJustCompleted = agentResponse?.status === "completed" && jobId;
-		const progressUpdateId =
-			typeof (agentResponse as any)?.response?.updateId === "number"
-				? ((agentResponse as any).response.updateId as number)
-				: null;
-		const hasProgressUpdate =
-			progressUpdateId !== null && progressUpdateId !== lastProgressId.current;
-		const needsInitialCheck = !hasCheckedForUnanalysed.current;
-
-		if (!agentJustCompleted && !needsInitialCheck && !hasProgressUpdate) return;
-
-		if (needsInitialCheck) {
-			hasCheckedForUnanalysed.current = true;
-		}
-		if (hasProgressUpdate) {
-			lastProgressId.current = progressUpdateId;
-		}
-
-		const runAnalysis = async () => {
-			setIsAnalyzing(true);
-			const toastId = toast.loading(
-				agentJustCompleted
-					? "Analyzing agent responses..."
-					: hasProgressUpdate
-						? "New agent results detected..."
-						: "Checking for unanalyzed responses...",
-			);
-
-			try {
-				// Call once - backend handles all batches automatically
-				const result = await analyzeMetricsMutation.mutateAsync({
-					workspaceId,
-					analyzeAll: true,
-				});
-
-				const totalAnalyzed = result?.data?.analysedCount ?? 0;
-				const totalFailed = result?.data?.failedCount ?? 0;
-				const allErrors = result?.data?.errors ?? [];
-
-				// Show final result
-				if (totalAnalyzed > 0) {
-					if (totalFailed > 0) {
-						toast.warning(
-							`Analyzed ${totalAnalyzed} response${totalAnalyzed > 1 ? "s" : ""}, ${totalFailed} failed`,
-							{ id: toastId, duration: 5000 },
-						);
-						console.error("Analysis errors:", allErrors);
-					} else {
-						toast.success(
-							`Analyzed ${totalAnalyzed} response${totalAnalyzed > 1 ? "s" : ""}`,
-							{ id: toastId },
-						);
-					}
-					await refetchAnalysedPrompts();
-				} else if (totalFailed > 0) {
-					toast.error(
-						`Analysis failed for ${totalFailed} response${totalFailed > 1 ? "s" : ""}. Check console for details.`,
-						{ id: toastId, duration: 6000 },
-					);
-					console.error("Analysis errors:", allErrors);
-				} else {
-					if (agentJustCompleted) {
-						toast.success("Agent job completed!", { id: toastId });
-					} else {
-						toast.dismiss(toastId);
-					}
-				}
-
-				if (agentJustCompleted) {
-					setJobId(null);
-				}
-			} catch (err) {
-				console.error("Analysis failed:", err);
-				toast.error("Analysis failed", { id: toastId });
-			} finally {
-				setIsAnalyzing(false);
-			}
-		};
-
-		runAnalysis();
-	}, [
-		workspaceId,
-		agentResponse?.status,
-		(agentResponse as any)?.response?.updateId,
-		jobId,
-		isAnalyzing,
-		isAnalysedPromptsLoading,
-		analyzeMetricsMutation,
-		refetchAnalysedPrompts,
-	]);
 
 	const LoadingState = () => (
 		<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
@@ -628,7 +504,7 @@ export default function Prompts() {
 						)}
 					</div>
 
-					{/* Right: Save & Run actions */}
+					{/* Right: Save action */}
 					<div className="flex items-center gap-2">
 						<Button
 							variant="outline"
@@ -637,10 +513,6 @@ export default function Prompts() {
 							className="gap-2"
 						>
 							{loading ? "Saving..." : "Save Changes"}
-						</Button>
-						<Button onClick={handleRunAgents} className="gap-2">
-							<Bot size={16} />
-							Run Prompts
 						</Button>
 					</div>
 				</div>

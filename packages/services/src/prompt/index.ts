@@ -81,11 +81,11 @@ export async function storePromptsForWorkspace(args: {
 export async function scheduleCronForPrompts(args: {
   workspaceId: string;
   userId: string;
+  cronExpression: string;
 }) {
-      const { workspaceId, userId } = args;
+      const { workspaceId, userId, cronExpression } = args;
 
       const scheduleName = `auto_run_prompts_${workspaceId}`;
-      const cronExpression = "0 */12 * * *";
 
       const scheduledSQL = `
         SELECT http_post(
@@ -107,15 +107,30 @@ export async function scheduleCronForPrompts(args: {
         );
       `;
 
-      await pool.query(
-        `SELECT cron.unschedule($1);`,
-        [scheduleName]
-      );
+      // Remove existing schedule first (ignore errors if it doesn't exist)
+      try {
+        await pool.query(`SELECT cron.unschedule($1);`, [scheduleName]);
+      } catch {
+        // Schedule may not exist yet
+      }
 
       await pool.query(
         `SELECT cron.schedule($1, $2, $3);`,
         [scheduleName, cronExpression, scheduledSQL]
       );
+}
+
+export async function unscheduleCronForPrompts(args: {
+  workspaceId: string;
+}) {
+      const { workspaceId } = args;
+      const scheduleName = `auto_run_prompts_${workspaceId}`;
+
+      try {
+        await pool.query(`SELECT cron.unschedule($1);`, [scheduleName]);
+      } catch {
+        // Schedule may not exist
+      }
 }
 
 export async function storePromptResponses(args: {

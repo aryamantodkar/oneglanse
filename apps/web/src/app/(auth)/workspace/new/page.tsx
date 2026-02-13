@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -14,7 +14,7 @@ import {
   Button
 } from "@onescope/ui";
 import { Loader2 } from "lucide-react";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { authClient } from "@/lib/auth/auth-client";
 import { LocationSelector } from "@/components/location/locationSelector";
@@ -190,18 +190,27 @@ export default function NewWorkspace() {
             </CardContent>
 
             <CardFooter>
-              <Button
-                onClick={handleComplete}
-                disabled={
-                  loading ||
-                  !formData.workspaceName.trim() ||
-                  !formData.workspaceSlug.trim() ||
-                  !formData.domain.trim()
-                }
-                className="w-full flex items-center gap-2 cursor-pointer"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Workspace"}
-              </Button>
+              <div className="w-full space-y-3">
+                <Button
+                  onClick={handleComplete}
+                  disabled={
+                    loading ||
+                    !formData.workspaceName.trim() ||
+                    !formData.workspaceSlug.trim() ||
+                    !formData.domain.trim()
+                  }
+                  className="w-full flex items-center gap-2 cursor-pointer"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Workspace"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/workspace")}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Already have a code? Join an existing workspace
+                </button>
+              </div>
             </CardFooter>
           </Card>
         </div>

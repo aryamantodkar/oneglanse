@@ -1,39 +1,53 @@
 // /app/LayoutContent.tsx (Client Component)
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SidebarTrigger } from "@onescope/ui";
 import { AppSidebar } from "@/components/app-sidebar";
 import type { Workspace } from "@onescope/db";
 import { useEffect, useRef } from "react";
 import { Logout } from "@/components/forms/logout";
+import { api } from "@/trpc/react";
 
 export default function LayoutContent({ children, workspace, userName, userEmail }: { children: React.ReactNode, workspace: Workspace | null, userName: string, userEmail: string }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
   const shownJobsRef = useRef<Set<string>>(new Set());
 
   const router = useRouter();
+  const workspaceIdFromUrl = searchParams.get("workspace") ?? "";
+
+  const shouldFetchWorkspace =
+    !!workspaceIdFromUrl && workspace?.id !== workspaceIdFromUrl;
+  const workspaceQuery = api.workspace.getById.useQuery(
+    { workspaceId: workspaceIdFromUrl },
+    { enabled: shouldFetchWorkspace }
+  );
+
+  const resolvedWorkspace = workspaceQuery.data?.data ?? workspace ?? null;
+  const isWorkspaceRoute = pathname?.startsWith("/workspace");
 
   useEffect(() => {
-    if (!workspace) {
-      return router.push("/workspace/new");
+    if (isWorkspaceRoute) return;
+    if (!resolvedWorkspace && !workspaceQuery.isLoading) {
+      router.push("/workspace");
     }
-  }, [workspace, router]);
+  }, [resolvedWorkspace, workspaceQuery.isLoading, isWorkspaceRoute, router]);
 
   useEffect(() => {
     shownJobsRef.current.clear();
-  }, [workspace?.id]);
+  }, [resolvedWorkspace?.id]);
   
-  if (!workspace) {
+  if (!resolvedWorkspace) {
     return (
       <div className="flex w-full h-screen">
         <main className="flex-1 flex flex-col min-h-0">
           {/* Header */}
           <div className="flex items-center justify-between p-2 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <h1 className="text-sm font-semibold text-gray-900">New Workspace</h1>
+              <h1 className="text-sm font-semibold text-gray-900">Workspace Setup</h1>
             </div>
 
             {/* Logout button */}
@@ -51,7 +65,7 @@ export default function LayoutContent({ children, workspace, userName, userEmail
   
   return (
     <div className="flex w-full h-screen">
-      <AppSidebar workspace={workspace} userName={userName} userEmail={userEmail} />
+      <AppSidebar workspace={resolvedWorkspace} userName={userName} userEmail={userEmail} />
       <main className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between p-2 border-b border-gray-200">
           <div className="flex items-center gap-3">

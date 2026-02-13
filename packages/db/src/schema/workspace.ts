@@ -11,6 +11,7 @@ export const workspaces = pgTable("workspaces", {
     tenantId: varchar("tenant_id", { length: 256 }).notNull(),
     country: varchar("country", { length: 64 }).notNull(), 
     region: varchar("region", { length: 128 }),             
+    schedule: varchar("schedule", { length: 64 }),
     createdAt: timestamp("created_at").notNull(),
     deletedAt: timestamp("deleted_at"),
 });
