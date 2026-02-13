@@ -35,6 +35,17 @@ export function BrandPerceptionCard({
 		  </div>
 		) : (
 		  <div className="flex flex-1 flex-col gap-4">
+			{/* Pricing Signal */}
+			{pricingPerception !== "not_mentioned" && (
+				<div className="ui-list-item rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
+					<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+						Pricing Signal
+					</p>
+					<p className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+						{pricingLabels[pricingPerception] ?? pricingPerception}
+					</p>
+				</div>
+			)}
 
 			{/* Best Known For */}
 			{bestKnownFor && (

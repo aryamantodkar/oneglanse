@@ -41,6 +41,19 @@ export interface DashboardMetrics {
 	brandDomain: string;
 	avgRank: { position: number | null; total: number | null };
 	avgSentiment: { score: number; label: string };
+	impactMetrics: {
+		totalResponses: number;
+		avgGeoScore: number;
+		avgVisibility: number;
+		recommendationRate: number;
+		topPickRate: number;
+		earlyMentionRate: number;
+		dominantPresenceRate: number;
+		absentRate: number;
+		riskResponseRate: number;
+		criticalRiskCount: number;
+		warningRiskCount: number;
+	};
 	aggregateStats: {
 		presenceRate: number;
 		winRate: number;
