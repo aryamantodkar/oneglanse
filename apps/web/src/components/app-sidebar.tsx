@@ -170,7 +170,7 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-64 min-w-64 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  className="w-[--radix-popper-anchor-width] min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
                   align="start"
                   sideOffset={8}
                 >
@@ -295,7 +295,7 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                 <DropdownMenuContent
                   side="top"
                   sideOffset={8}
-                  className="w-64 min-w-64 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+                  className="w-[--radix-popper-anchor-width] min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
                 >
                   <DropdownMenuItem>
                     <span>Account</span>

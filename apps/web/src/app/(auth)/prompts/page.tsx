@@ -310,6 +310,24 @@ export default function Prompts() {
 		return rows;
 	}, [promptsWithMetrics, sortBy, sortDirection]);
 
+	const handleColumnSort = (
+		field: "prompt" | "geoScore" | "sentiment" | "visibility" | "position",
+	) => {
+		if (sortBy === field) {
+			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+			return;
+		}
+		setSortBy(field);
+		setSortDirection("asc");
+	};
+
+	const getSortIndicator = (
+		field: "prompt" | "geoScore" | "sentiment" | "visibility" | "position",
+	) => {
+		if (sortBy !== field) return "↕";
+		return sortDirection === "asc" ? "↑" : "↓";
+	};
+
 	const openPromptRecords = useMemo(() => {
 		if (!openPrompt) return [];
 		// Filter responses for this prompt using current filters
@@ -575,53 +593,8 @@ export default function Prompts() {
 							</SelectContent>
 						</Select>
 
-						{/* Sort by */}
-						<Select
-							value={sortBy}
-							onValueChange={(value) =>
-								setSortBy(
-									value as
-										| "prompt"
-										| "geoScore"
-										| "sentiment"
-										| "visibility"
-										| "position",
-								)
-							}
-						>
-							<SelectTrigger className="h-9 w-40 text-sm">
-								<SelectValue placeholder="Sort by" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="prompt">Prompt</SelectItem>
-								<SelectItem value="geoScore">GEO Score</SelectItem>
-								<SelectItem value="sentiment">Sentiment</SelectItem>
-								<SelectItem value="visibility">Visibility</SelectItem>
-								<SelectItem value="position">Position</SelectItem>
-							</SelectContent>
-						</Select>
-
-						{/* Sort direction */}
-						<Select
-							value={sortDirection}
-							onValueChange={(value) =>
-								setSortDirection(value as "asc" | "desc")
-							}
-						>
-							<SelectTrigger className="h-9 w-32 text-sm">
-								<SelectValue placeholder="Direction" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="asc">Ascending</SelectItem>
-								<SelectItem value="desc">Descending</SelectItem>
-							</SelectContent>
-						</Select>
-
 						{/* Clear filters button */}
-						{(modelFilter !== "All Models" ||
-							timeFilter !== "all" ||
-							sortBy !== "prompt" ||
-							sortDirection !== "asc") && (
+						{(modelFilter !== "All Models" || timeFilter !== "all") && (
 							<>
 								<Separator orientation="vertical" className="h-4" />
 								<Button
@@ -630,8 +603,6 @@ export default function Prompts() {
 									onClick={() => {
 										setModelFilter("All Models");
 										setTimeFilter("all");
-										setSortBy("prompt");
-										setSortDirection("asc");
 									}}
 									className="gap-2 text-gray-500 hover:text-gray-700"
 								>
@@ -678,19 +649,69 @@ export default function Prompts() {
 										/>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-left font-medium text-gray-500 text-sm dark:text-gray-400">
-										Prompt
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleColumnSort("prompt");
+											}}
+											className="inline-flex items-center gap-1"
+										>
+											Prompt
+											<span className="text-[11px] text-gray-400">{getSortIndicator("prompt")}</span>
+										</button>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										GEO Score
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleColumnSort("geoScore");
+											}}
+											className="mx-auto inline-flex items-center gap-1"
+										>
+											GEO Score
+											<span className="text-[11px] text-gray-400">{getSortIndicator("geoScore")}</span>
+										</button>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										Sentiment
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleColumnSort("sentiment");
+											}}
+											className="mx-auto inline-flex items-center gap-1"
+										>
+											Sentiment
+											<span className="text-[11px] text-gray-400">{getSortIndicator("sentiment")}</span>
+										</button>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										Visibility
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleColumnSort("visibility");
+											}}
+											className="mx-auto inline-flex items-center gap-1"
+										>
+											Visibility
+											<span className="text-[11px] text-gray-400">{getSortIndicator("visibility")}</span>
+										</button>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										Position
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleColumnSort("position");
+											}}
+											className="mx-auto inline-flex items-center gap-1"
+										>
+											Position
+											<span className="text-[11px] text-gray-400">{getSortIndicator("position")}</span>
+										</button>
 									</TableHead>
 								</TableRow>
 							</TableHeader>
