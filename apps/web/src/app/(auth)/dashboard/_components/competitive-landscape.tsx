@@ -4,6 +4,47 @@ import type { CompetitorData } from "../_utils/types";
 import { getFaviconUrls } from "@onescope/utils";
 import { Users } from "lucide-react";
 
+function compareByName(a: CompetitorData, b: CompetitorData): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
+function recommendationRatio(c: CompetitorData): number {
+  if (c.appearances <= 0) return 0;
+  return c.recCount / c.appearances;
+}
+
+function compareByRankDeterministic(a: CompetitorData, b: CompetitorData): number {
+  if (a.avgRank === null && b.avgRank !== null) return 1;
+  if (a.avgRank !== null && b.avgRank === null) return -1;
+  if (a.avgRank !== null && b.avgRank !== null && a.avgRank !== b.avgRank) {
+    return a.avgRank - b.avgRank;
+  }
+
+  // Tie-break #1: stronger recommendation consistency wins
+  const recRatioDiff = recommendationRatio(b) - recommendationRatio(a);
+  if (recRatioDiff !== 0) return recRatioDiff;
+
+  // Tie-break #2: more total recommendations wins
+  if (a.recCount !== b.recCount) return b.recCount - a.recCount;
+
+  // Tie-break #3: broader appearance coverage wins
+  if (a.appearances !== b.appearances) return b.appearances - a.appearances;
+
+  // Tie-break #4: higher sentiment wins
+  if (a.avgSentiment !== b.avgSentiment) return b.avgSentiment - a.avgSentiment;
+
+  // Tie-break #5: more wins and fewer losses win
+  if (a.winsOver.length !== b.winsOver.length) {
+    return b.winsOver.length - a.winsOver.length;
+  }
+  if (a.losesTo.length !== b.losesTo.length) {
+    return a.losesTo.length - b.losesTo.length;
+  }
+
+  // Final deterministic fallback
+  return compareByName(a, b);
+}
+
 function SentimentBadge({ value }: { value: number }) {
   let bgClass = "";
   let dotClass = "";
@@ -46,20 +87,22 @@ export function CompetitiveLandscape({
     const sorted = [...competitors];
     switch (competitorSort) {
       case "appearances":
-        sorted.sort((a, b) => b.appearances - a.appearances);
+        sorted.sort((a, b) => {
+          if (a.appearances !== b.appearances) return b.appearances - a.appearances;
+          if (a.recCount !== b.recCount) return b.recCount - a.recCount;
+          if (a.avgSentiment !== b.avgSentiment) return b.avgSentiment - a.avgSentiment;
+          return compareByName(a, b);
+        });
         break;
       case "sentiment":
-        sorted.sort((a, b) => b.avgSentiment - a.avgSentiment);
+        sorted.sort((a, b) => {
+          if (a.avgSentiment !== b.avgSentiment) return b.avgSentiment - a.avgSentiment;
+          if (a.appearances !== b.appearances) return b.appearances - a.appearances;
+          return compareByName(a, b);
+        });
         break;
       case "rank":
-        sorted.sort((a, b) => {
-          if (a.avgRank === null) return 1;
-          if (b.avgRank === null) return -1;
-          if (a.avgRank === b.avgRank) {
-            return b.appearances - a.appearances;
-          }
-          return a.avgRank - b.avgRank;
-        });
+        sorted.sort(compareByRankDeterministic);
         break;
     }
 
@@ -75,6 +118,20 @@ export function CompetitiveLandscape({
 
     return top5;
   }, [competitors, competitorSort]);
+
+  const uniqueRankMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (competitorSort !== "rank") return map;
+
+    let currentRank = 1;
+    for (const competitor of displayCompetitors) {
+      if (competitor.avgRank === null) continue;
+      map.set(competitor.name, currentRank);
+      currentRank += 1;
+    }
+
+    return map;
+  }, [displayCompetitors, competitorSort]);
 
   return (
     <Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -155,11 +212,11 @@ export function CompetitiveLandscape({
 				<div className="shrink-0">
 					{competitorSort === "rank" && comp.avgRank !== null && (
 					<div className="flex items-center gap-1 text-sm">
-						{modelFilter === "All Models" && (
-						<span className="text-[10px] font-medium text-muted-foreground">AVG</span>
-						)}
 						<span className="font-semibold text-gray-900 dark:text-gray-100">
-						#{comp.avgRank}
+						#{uniqueRankMap.get(comp.name)}
+						</span>
+						<span className="text-[10px] font-medium text-muted-foreground">
+							avg #{comp.avgRank}
 						</span>
 					</div>
 					)}

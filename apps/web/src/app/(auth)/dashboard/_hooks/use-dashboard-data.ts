@@ -102,6 +102,90 @@ export function useDashboardData(
 		return { score: avg, label };
 	}, [analyzedRecords]);
 
+	const impactMetrics = useMemo(() => {
+		if (analyzedRecords.length === 0) {
+			return {
+				totalResponses: 0,
+				avgGeoScore: 0,
+				avgVisibility: 0,
+				recommendationRate: 0,
+				topPickRate: 0,
+				earlyMentionRate: 0,
+				dominantPresenceRate: 0,
+				absentRate: 0,
+				riskResponseRate: 0,
+				criticalRiskCount: 0,
+				warningRiskCount: 0,
+			};
+		}
+
+		const total = analyzedRecords.length;
+		let geoScoreSum = 0;
+		let visibilitySum = 0;
+		let recommendedCount = 0;
+		let topPickCount = 0;
+		let earlyMentionCount = 0;
+		let dominantPresenceCount = 0;
+		let absentCount = 0;
+		let responsesWithRisks = 0;
+		let criticalRiskCount = 0;
+		let warningRiskCount = 0;
+
+		for (const record of analyzedRecords) {
+			const analysis = record.brand_analysis;
+			geoScoreSum += analysis.geoScore.overall;
+			visibilitySum += analysis.presence.visibility;
+
+			if (
+				analysis.recommendation.type === "top_pick" ||
+				analysis.recommendation.type === "strong_alternative"
+			) {
+				recommendedCount += 1;
+			}
+
+			if (analysis.recommendation.type === "top_pick") {
+				topPickCount += 1;
+			}
+
+			if (analysis.presence.firstMentionPosition === "top") {
+				earlyMentionCount += 1;
+			}
+
+			if (
+				analysis.presence.prominence === "dominant" ||
+				analysis.presence.prominence === "significant"
+			) {
+				dominantPresenceCount += 1;
+			}
+
+			if (!analysis.presence.mentioned) {
+				absentCount += 1;
+			}
+
+			if (analysis.risks.hasRisks && analysis.risks.items.length > 0) {
+				responsesWithRisks += 1;
+				for (const risk of analysis.risks.items) {
+					if (risk.severity === "critical") criticalRiskCount += 1;
+					if (risk.severity === "warning") warningRiskCount += 1;
+				}
+			}
+		}
+
+		return {
+			totalResponses: total,
+			avgGeoScore: Math.round(geoScoreSum / total),
+			avgVisibility: Math.round(visibilitySum / total),
+			recommendationRate: Math.round((recommendedCount / total) * 100),
+			topPickRate: Math.round((topPickCount / total) * 100),
+			earlyMentionRate: Math.round((earlyMentionCount / total) * 100),
+			dominantPresenceRate: Math.round((dominantPresenceCount / total) * 100),
+			absentRate: Math.round((absentCount / total) * 100),
+			riskResponseRate: Math.round((responsesWithRisks / total) * 100),
+			criticalRiskCount,
+			warningRiskCount,
+		};
+	}, [analyzedRecords]);
+
 	const aggregateStats = useMemo(() => {
 		if (analyzedRecords.length === 0) {
 			return { presenceRate: 0, winRate: 0, recRate: 0, topCompetitor: "N/A" };
@@ -427,6 +511,7 @@ export function useDashboardData(
 		brandDomain,
 		avgRank,
 		avgSentiment,
+		impactMetrics,
 		aggregateStats,
 		competitorData,
 		sentimentBreakdown,

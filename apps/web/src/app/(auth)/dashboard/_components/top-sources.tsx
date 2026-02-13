@@ -72,6 +72,12 @@ export function TopSources({
 								{source.citationCount} citations
 							  </span>
 							  <span className="text-[10px] text-muted-foreground">
+								{source.models.size} models
+							  </span>
+							  <span className="text-[10px] text-muted-foreground">
+								{source.uniqueRecords.size} prompts
+							  </span>
+							  <span className="text-[10px] text-muted-foreground">
 								#{idx + 1}
 							  </span>
 							</div>
