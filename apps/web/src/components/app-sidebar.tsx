@@ -3,6 +3,7 @@
 import {
   ChevronDown,
   ChevronUp,
+  Clock,
   Globe,
   LayoutGrid,
   MessageSquare,
@@ -90,6 +91,11 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
         title: "Sources",
         url: `/sources?workspace=${activeWorkspace?.id ?? ""}`,
         icon: Globe,
+      },
+      {
+        title: "Schedule",
+        url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
+        icon: Clock,
       },
     ];
 

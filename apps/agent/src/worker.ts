@@ -1,6 +1,6 @@
 import "./env.js";
 import { Job, Worker } from "bullmq";
-import { redis, waitForRedis, storePromptResponses } from "@onescope/services";
+import { redis, waitForRedis, storePromptResponses, analysePromptsForWorkspace } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 import { AgentResult, ModelResult, PromptPayload, Provider, UserPrompt } from "@onescope/types";
 import { fetchProxies } from "./lib/browser/proxyPool.js";
@@ -125,6 +125,19 @@ async function startWorker() {
           workspaceId: workspace_id,
           promptRunAt: created_at,
         });
+
+        // Auto-trigger analysis for this provider's responses immediately
+        try {
+          logger.log(`${provider} done for job group ${jobGroupId}, starting analysis...`);
+          await analysePromptsForWorkspace({
+            workspaceId: workspace_id,
+            userId: user_id,
+            analyzeAll: true,
+          });
+          logger.success(`Analysis completed after ${provider} for job group ${jobGroupId}`);
+        } catch (err: any) {
+          logger.error(`Analysis failed after ${provider} for job group ${jobGroupId}:`, err?.message ?? err);
+        }
       }
 
       // Update progress
@@ -145,6 +158,7 @@ async function startWorker() {
       }
 
       await redis.set(progressKey, JSON.stringify(progress), "EX", 60 * 60);
+
 
       return true;
     },

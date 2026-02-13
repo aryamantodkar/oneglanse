@@ -1,0 +1,73 @@
+import "server-only";
+
+import { z } from "zod";
+import { randomUUID } from "crypto";
+import { createTRPCRouter } from "@/server/api/trpc";
+import { internalProcedure } from "../../procedures";
+import { agentQueue, fetchUserPromptsForWorkspace, redis } from "@onescope/services";
+import { ok, safeHandler } from "@onescope/errors";
+
+export const internalRouter = createTRPCRouter({
+  runPrompts: internalProcedure
+    .input(z.object({
+      workspaceId: z.string(),
+      userId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      return safeHandler(async () => {
+        const { workspaceId, userId } = input;
+
+        const prompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });
+
+        if (!prompts || prompts.length === 0) {
+          return ok({ jobId: null as string | null, status: "empty" }, "No prompts to run.");
+        }
+
+        const jobGroupId = randomUUID();
+        const createdAt = prompts[0]?.created_at ?? new Date().toISOString();
+        const providers = ["openai", "anthropic", "perplexity"] as const;
+
+        const progress = {
+          status: "pending" as const,
+          updateId: 0,
+          providers: {
+            openai: "pending",
+            anthropic: "pending",
+            perplexity: "pending",
+          },
+          results: {
+            openai: 0,
+            anthropic: 0,
+            perplexity: 0,
+          },
+          stats: {
+            totalPrompts: prompts.length,
+            expectedResponses: prompts.length * providers.length,
+            actualResponses: 0,
+          },
+        };
+
+        await redis.set(
+          `job:${jobGroupId}:result`,
+          JSON.stringify(progress),
+          "EX",
+          60 * 60
+        );
+
+        await Promise.all(
+          providers.map((provider) =>
+            agentQueue.add("run-agent", {
+              jobGroupId,
+              provider,
+              prompts,
+              user_id: userId,
+              workspace_id: workspaceId,
+              created_at: createdAt,
+            })
+          )
+        );
+
+        return ok({ jobId: jobGroupId, status: "queued" }, "Prompts queued successfully.");
+      });
+    }),
+});

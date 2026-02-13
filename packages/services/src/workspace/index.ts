@@ -21,8 +21,9 @@ export async function createWorkspaceForTenant(args: {
     slug,
     domain,
     tenantId,
-    country, // new field
-    region: region || null, // new field
+    country,
+    region: region || null,
+    schedule: null,
     createdAt: new Date(),
     deletedAt: null,
   };
@@ -86,6 +87,7 @@ export async function getWorkspacesForUser(args: {
       tenantId: schema.workspaces.tenantId,
       country: schema.workspaces.country,
       region: schema.workspaces.region,
+      schedule: schema.workspaces.schedule,
       createdAt: schema.workspaces.createdAt,
       deletedAt: schema.workspaces.deletedAt,
     })

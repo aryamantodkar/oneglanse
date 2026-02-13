@@ -143,7 +143,7 @@ export default function OrganizationsPage() {
         router.push(`/dashboard?workspace=${firstWorkspace.id}`);
       } else {
         router.refresh();
-        router.push("/workspace/new");
+        router.push("/workspace");
       }
     } catch (err) {
       console.error("Failed to switch organization:", err);

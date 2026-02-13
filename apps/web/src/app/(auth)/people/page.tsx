@@ -51,9 +51,25 @@ export default function PeoplePage() {
     { enabled: !!workspaceId }
   );
   const wsMembers = (wsMembersQuery.data?.data ?? []) as WorkspaceMember[];
+  const joinInfoQuery = api.workspace.getJoinInfo.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId }
+  );
+  const joinInfo = joinInfoQuery.data?.data;
 
   const addWsMemberMutation = api.workspace.addMember.useMutation();
   const removeWsMemberMutation = api.workspace.removeMember.useMutation();
+
+  const handleCopy = async (value: string, label: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied to clipboard.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to copy to clipboard.");
+    }
+  };
 
   // Workspace add member handler
   const handleWsAddMember = async () => {
@@ -72,6 +88,18 @@ export default function PeoplePage() {
 
       if (!result?.success) {
         toast.error(result?.message ?? "Failed to add member.");
+        return;
+      }
+
+      if (result.data?.status === "invited") {
+        toast.success("Invitation sent! Share the workspace code once they sign up.");
+        setWsInviteEmail("");
+        return;
+      }
+
+      if (result.data?.status === "already-member") {
+        toast.success("This user is already a workspace member.");
+        setWsInviteEmail("");
         return;
       }
 
@@ -137,10 +165,51 @@ export default function PeoplePage() {
           </h2>
         </div>
 
+        {/* Join codes */}
+        <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Invite with a code</p>
+            <p className="text-xs text-gray-500">
+              Share the workspace code to let teammates join instantly.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Input
+              readOnly
+              value={joinInfo?.workspaceCode ?? ""}
+              placeholder="Workspace code"
+              className="max-w-md"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")}
+              disabled={!joinInfo?.workspaceCode}
+            >
+              Copy
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>Org code:</span>
+            <span className="font-mono text-gray-700 dark:text-gray-300">
+              {joinInfo?.orgCode ?? "—"}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleCopy(joinInfo?.orgCode ?? "", "Org code")}
+              disabled={!joinInfo?.orgCode}
+              className="h-7 px-2 text-xs"
+            >
+              Copy
+            </Button>
+          </div>
+        </div>
+
         {/* Add member form */}
         <div className="mb-4 flex items-center gap-2">
           <Input
-            placeholder="Email address (must be an org member)"
+            placeholder="Email address (we'll invite if needed)"
             value={wsInviteEmail}
             onChange={(e) => setWsInviteEmail(e.target.value)}
             className="max-w-xs"
