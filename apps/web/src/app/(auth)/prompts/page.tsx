@@ -447,7 +447,7 @@ export default function Prompts() {
 	}
 
 	return (
-		<div className="flex h-screen flex-col">
+		<div className="ui-page-enter ui-stagger flex h-screen flex-col">
 			<div className="px-6 py-6">
 				{/* Single Row: Actions + Filters */}
 				<div className="flex items-center justify-between gap-4">

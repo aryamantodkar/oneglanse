@@ -92,7 +92,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 py-6">
+    <div className="ui-page-enter ui-stagger mx-auto max-w-2xl space-y-8 py-6">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
