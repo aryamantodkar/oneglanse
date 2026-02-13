@@ -17,6 +17,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
+	Skeleton,
 	Table,
 	TableBody,
 	TableCell,
@@ -72,12 +73,16 @@ export default function Prompts() {
 	);
 	const [analysisRecords, setAnalysisRecords] = useState<AnalysisRecord[]>([]);
 
-	const { data: userPrompts, isLoading: isUserPromptsLoading } =
-		useUserPrompts(workspaceId);
+	const {
+		data: userPrompts,
+		isLoading: isUserPromptsLoading,
+		error: userPromptsError,
+	} = useUserPrompts(workspaceId);
 
 	const {
 		data: analysedPromptData,
 		isLoading: isAnalysedPromptsLoading,
+		error: analysedPromptError,
 	} = useFetchAnalysedPrompts(workspaceId);
 
 	const storePromptMutation = useStorePrompt();
@@ -317,19 +322,36 @@ export default function Prompts() {
 			<div className="mb-4 flex h-12 w-12 animate-pulse items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
 				<Bot className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 			</div>
-
 			<p className="text-gray-500 text-sm dark:text-gray-400">
 				Loading your prompts…
 			</p>
 		</div>
 	);
 
+	if (!workspaceId) {
+		return (
+			<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
+				<p className="text-sm text-gray-500">No workspace selected.</p>
+			</div>
+		);
+	}
+
+	if (userPromptsError || analysedPromptError) {
+		return (
+			<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
+				<p className="text-sm text-gray-500">
+					We couldn&apos;t load your prompts right now.
+				</p>
+			</div>
+		);
+	}
+
 	if (isUserPromptsLoading || isAnalysedPromptsLoading) {
 		return (
 			<div className="flex h-screen flex-col">
 				<div className="flex items-center justify-between px-6 py-4">
-					<div className="h-8 w-24 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
-					<div className="h-9 w-28 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+					<Skeleton className="h-8 w-24 rounded-lg" />
+					<Skeleton className="h-9 w-28 rounded-xl" />
 				</div>
 
 				<LoadingState />

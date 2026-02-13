@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { randomUUID } from "crypto";
 import { createTRPCRouter } from "@/server/api/trpc";
 import { safeHandler, ok, ValidationError, NotFoundError } from "@onescope/errors";
 import {
@@ -11,6 +12,9 @@ import {
   removeMemberFromWorkspace,
   scheduleCronForPrompts,
   unscheduleCronForPrompts,
+  fetchUserPromptsForWorkspace,
+  agentQueue,
+  redis,
 } from "@onescope/services";
 import { db, schema } from "@onescope/db";
 import { and, eq, isNull, or } from "drizzle-orm";
@@ -460,6 +464,44 @@ export const workspaceRouter = createTRPCRouter({
               userId,
               cronExpression: schedule,
             });
+
+            // Trigger immediate first run (with 1-hour cooldown)
+            const cooldownKey = `workspace:${workspaceId}:run-cooldown`;
+            const canRun = await redis.set(cooldownKey, "1", "EX", 3600, "NX");
+
+            if (canRun) try {
+              const prompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });
+              if (prompts && prompts.length > 0) {
+                const jobGroupId = randomUUID();
+                const createdAt = prompts[0]?.created_at ?? new Date().toISOString();
+                const providers = ["openai", "anthropic", "perplexity"] as const;
+
+                const progress = {
+                  status: "pending" as const,
+                  updateId: 0,
+                  providers: { openai: "pending", anthropic: "pending", perplexity: "pending" } as Record<string, string>,
+                  results: { openai: 0, anthropic: 0, perplexity: 0 } as Record<string, number>,
+                  stats: { totalPrompts: prompts.length, expectedResponses: prompts.length * 3, actualResponses: 0 },
+                };
+
+                await redis.set(`job:${jobGroupId}:result`, JSON.stringify(progress), "EX", 60 * 60);
+
+                await Promise.all(
+                  providers.map((provider) =>
+                    agentQueue.add("run-agent", {
+                      jobGroupId,
+                      provider,
+                      prompts,
+                      user_id: userId,
+                      workspace_id: workspaceId,
+                      created_at: createdAt,
+                    })
+                  )
+                );
+              }
+            } catch (err: any) {
+              console.error("Failed to trigger immediate run:", err);
+            }
           } else {
             await unscheduleCronForPrompts({ workspaceId });
           }
