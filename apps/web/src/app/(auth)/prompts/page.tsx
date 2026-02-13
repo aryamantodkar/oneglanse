@@ -79,6 +79,7 @@ export default function Prompts() {
 	const [jobId, setJobId] = useState<string | null>(null);
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
 	const hasCheckedForUnanalysed = useRef(false);
+	const lastProgressId = useRef<number | null>(null);
 
 	const { data: userPrompts, isLoading: isUserPromptsLoading } =
 		useUserPrompts(workspaceId);
@@ -345,12 +346,21 @@ export default function Prompts() {
 		if (!workspaceId || isAnalyzing || isAnalysedPromptsLoading) return;
 
 		const agentJustCompleted = agentResponse?.status === "completed" && jobId;
+		const progressUpdateId =
+			typeof (agentResponse as any)?.response?.updateId === "number"
+				? ((agentResponse as any).response.updateId as number)
+				: null;
+		const hasProgressUpdate =
+			progressUpdateId !== null && progressUpdateId !== lastProgressId.current;
 		const needsInitialCheck = !hasCheckedForUnanalysed.current;
 
-		if (!agentJustCompleted && !needsInitialCheck) return;
+		if (!agentJustCompleted && !needsInitialCheck && !hasProgressUpdate) return;
 
 		if (needsInitialCheck) {
 			hasCheckedForUnanalysed.current = true;
+		}
+		if (hasProgressUpdate) {
+			lastProgressId.current = progressUpdateId;
 		}
 
 		const runAnalysis = async () => {
@@ -358,7 +368,9 @@ export default function Prompts() {
 			const toastId = toast.loading(
 				agentJustCompleted
 					? "Analyzing agent responses..."
-					: "Checking for unanalyzed responses...",
+					: hasProgressUpdate
+						? "New agent results detected..."
+						: "Checking for unanalyzed responses...",
 			);
 
 			try {
@@ -416,6 +428,7 @@ export default function Prompts() {
 	}, [
 		workspaceId,
 		agentResponse?.status,
+		(agentResponse as any)?.response?.updateId,
 		jobId,
 		isAnalyzing,
 		isAnalysedPromptsLoading,
@@ -450,9 +463,9 @@ export default function Prompts() {
 
 	return (
 		<div className="flex h-screen flex-col">
-			<div className="flex flex-col gap-6 px-6 py-6">
-				{/* Row 1: Actions */}
-				<div className="flex items-center justify-between">
+			<div className="px-6 py-6">
+				{/* Single Row: Actions + Filters */}
+				<div className="flex items-center justify-between gap-4">
 					{/* Left: Prompt actions */}
 					<div className="flex items-center gap-2">
 						{selectedRows.size === 0 ? (
@@ -550,6 +563,71 @@ export default function Prompts() {
 						)}
 					</div>
 
+					{/* Middle: Filters */}
+					<div className="flex items-center gap-3">
+						{/* Model filter */}
+						<Select value={modelFilter} onValueChange={setModelFilter}>
+							<SelectTrigger className="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
+								<SelectValue placeholder="Select Model" />
+							</SelectTrigger>
+							<SelectContent className="z-[9999]">
+								{modelSelectors.map(({ value, label }) => (
+									<SelectItem key={value} value={value}>
+										<div className="flex items-center gap-2">
+											{value === "All Models" ? (
+												<Bot className="h-4 w-4 text-muted-foreground" />
+											) : (
+												<img
+													src={getModelFavicon(value)}
+													alt={value}
+													className="h-4 w-4 rounded-sm"
+												/>
+											)}
+											<span>{label}</span>
+										</div>
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+
+						{/* Time filter */}
+						<Select
+							value={timeFilter}
+							onValueChange={(value) =>
+								setTimeFilter(value as "all" | "7d" | "14d" | "30d")
+							}
+						>
+							<SelectTrigger className="h-9 w-40 text-sm">
+								<SelectValue placeholder="Time range" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All time</SelectItem>
+								<SelectItem value="7d">Last 7 days</SelectItem>
+								<SelectItem value="14d">Last 14 days</SelectItem>
+								<SelectItem value="30d">Last 30 days</SelectItem>
+							</SelectContent>
+						</Select>
+
+						{/* Clear filters button */}
+						{(modelFilter !== "All Models" || timeFilter !== "all") && (
+							<>
+								<Separator orientation="vertical" className="h-4" />
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => {
+										setModelFilter("All Models");
+										setTimeFilter("all");
+									}}
+									className="gap-2 text-gray-500 hover:text-gray-700"
+								>
+									<FilterX size={14} />
+									Clear
+								</Button>
+							</>
+						)}
+					</div>
+
 					{/* Right: Save & Run actions */}
 					<div className="flex items-center gap-2">
 						<Button
@@ -565,71 +643,6 @@ export default function Prompts() {
 							Run Prompts
 						</Button>
 					</div>
-				</div>
-
-				{/* Row 2: Filters */}
-				<div className="flex items-center gap-3">
-					{/* Model filter */}
-					<Select value={modelFilter} onValueChange={setModelFilter}>
-						<SelectTrigger className="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
-							<SelectValue placeholder="Select Model" />
-						</SelectTrigger>
-						<SelectContent className="z-[9999]">
-							{modelSelectors.map(({ value, label }) => (
-								<SelectItem key={value} value={value}>
-									<div className="flex items-center gap-2">
-										{value === "All Models" ? (
-											<Bot className="h-4 w-4 text-muted-foreground" />
-										) : (
-											<img
-												src={getModelFavicon(value)}
-												alt={value}
-												className="h-4 w-4 rounded-sm"
-											/>
-										)}
-										<span>{label}</span>
-									</div>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					{/* Time filter */}
-					<Select
-						value={timeFilter}
-						onValueChange={(value) =>
-							setTimeFilter(value as "all" | "7d" | "14d" | "30d")
-						}
-					>
-						<SelectTrigger className="h-9 w-40 text-sm">
-							<SelectValue placeholder="Time range" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All time</SelectItem>
-							<SelectItem value="7d">Last 7 days</SelectItem>
-							<SelectItem value="14d">Last 14 days</SelectItem>
-							<SelectItem value="30d">Last 30 days</SelectItem>
-						</SelectContent>
-					</Select>
-
-					{/* Clear filters button */}
-					{(modelFilter !== "All Models" || timeFilter !== "all") && (
-						<>
-							<Separator orientation="vertical" className="h-4" />
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={() => {
-									setModelFilter("All Models");
-									setTimeFilter("all");
-								}}
-								className="gap-2 text-gray-500 hover:text-gray-700"
-							>
-								<FilterX size={14} />
-								Clear
-							</Button>
-						</>
-					)}
 				</div>
 			</div>
 

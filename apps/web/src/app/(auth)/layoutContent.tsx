@@ -8,7 +8,7 @@ import type { Workspace } from "@onescope/db";
 import { useEffect, useRef } from "react";
 import { Logout } from "@/components/forms/logout";
 
-export default function LayoutContent({ children, workspace }: { children: React.ReactNode, workspace: Workspace | null}) {
+export default function LayoutContent({ children, workspace, userName, userEmail }: { children: React.ReactNode, workspace: Workspace | null, userName: string, userEmail: string }) {
   const pathname = usePathname();
   const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
@@ -51,7 +51,7 @@ export default function LayoutContent({ children, workspace }: { children: React
   
   return (
     <div className="flex w-full h-screen">
-      <AppSidebar workspace={workspace}/>
+      <AppSidebar workspace={workspace} userName={userName} userEmail={userEmail} />
       <main className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between p-2 border-b border-gray-200">
           <div className="flex items-center gap-3">

@@ -29,7 +29,6 @@ export async function launchAgents(payload: PromptPayload): Promise<ModelResult>
     "perplexity"
   );
 
-
   return {
     openai: {
       status: openaiResult.length > 0 ? "fulfilled" : "rejected",

@@ -1,10 +1,31 @@
 import "./env.js";
 import { Job, Worker } from "bullmq";
-import { launchAgents } from "./agent.js";
 import { redis, waitForRedis, storePromptResponses } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
-import { PromptPayload, UserPrompt } from "@onescope/types";
+import { AgentResult, ModelResult, PromptPayload, Provider, UserPrompt } from "@onescope/types";
 import { fetchProxies } from "./lib/browser/proxyPool.js";
+import { agentHandler } from "./agents/lib/agentHandler.js";
+import { openaiAgent } from "./agents/openai/openaiAgent.js";
+import { anthropicAgent } from "./agents/anthropic/anthropicAgent.js";
+import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
+
+type ProviderJobData = {
+  jobGroupId: string;
+  provider: Provider;
+  prompts: UserPrompt[];
+  user_id: string;
+  workspace_id: string;
+  created_at: string;
+};
+
+const providerConfig: Record<
+  Provider,
+  { label: string; factory: () => Promise<any> }
+> = {
+  openai: { label: "OpenAI", factory: openaiAgent },
+  anthropic: { label: "Anthropic", factory: anthropicAgent },
+  perplexity: { label: "Perplexity", factory: perplexityAgent },
+};
 
 async function startWorker() {
   await waitForRedis();
@@ -12,70 +33,118 @@ async function startWorker() {
 
   const worker = new Worker(
     "onescope-agent",
-    async (job: Job<UserPrompt[]>) => {
-      const data = job.data as UserPrompt[];
+    async (job: Job<ProviderJobData>) => {
+      const data = job.data as ProviderJobData;
 
-      const first = data[0];
-      if (!first) {
-        throw new Error("Agent job received no prompts");
+      const { provider, jobGroupId, prompts, user_id, workspace_id, created_at } = data;
+
+      if (!providerConfig[provider]) {
+        throw new Error(`Unknown provider: ${provider}`);
       }
 
-      const { user_id, workspace_id, created_at } = first;
+      if (!prompts || prompts.length === 0) {
+        throw new Error("Agent job received no prompts");
+      }
 
       const PromptPayload: PromptPayload = {
         user_id,
         workspace_id,
-        prompts: data.map(({ id, prompt }) => ({
+        prompts: prompts.map(({ id, prompt }) => ({
           id,
           prompt,
         })),
         created_at
       };
 
-      const results = await launchAgents(PromptPayload);
+      const progressKey = `job:${jobGroupId}:result`;
 
-      const allFailed = Object.values(results).every(
-        (r) => r.status === "rejected"
-      );
+      const ensureProgress = async () => {
+        const raw = await redis.get(progressKey);
+        if (raw) return JSON.parse(raw);
 
-      if (allFailed) {
-        throw new Error("All providers failed - please check authentication and try again");
-      }
-
-      await storePromptResponses({
-        results,
-        userId: user_id,
-        workspaceId: workspace_id,
-        promptRunAt: created_at,
-      });
-
-      // Calculate statistics for logging
-      const totalPromptsRequested = data.length;
-      const expectedResponses = totalPromptsRequested * Object.keys(results).length;
-      const actualResponses = Object.values(results).reduce((sum, r) => sum + r.data.length, 0);
-
-      if (actualResponses < expectedResponses) {
-        logger.warn(
-          `Job ${job.id}: ${actualResponses}/${expectedResponses} responses succeeded (some prompts failed after 7 retries with exponential backoff)`
-        );
-      } else {
-        logger.success(`Job ${job.id}: All ${actualResponses} responses succeeded`);
-      }
-
-      await redis.set(
-        `job:${job.id}:result`,
-        JSON.stringify({
-          status: "completed",
-          results,
+        const totalPromptsRequested = prompts.length;
+        const expectedResponses = totalPromptsRequested * 3;
+        const fallback = {
+          status: "pending" as const,
+          updateId: 0,
+          providers: {
+            openai: "pending",
+            anthropic: "pending",
+            perplexity: "pending",
+          } as Record<Provider, "pending" | "running" | "completed" | "failed">,
+          results: {
+            openai: 0,
+            anthropic: 0,
+            perplexity: 0,
+          } as Record<Provider, number>,
           stats: {
             totalPrompts: totalPromptsRequested,
             expectedResponses,
-            actualResponses,
+            actualResponses: 0,
           },
-        }),
-        "EX",
-        60 * 60 // 1 hour TTL
+        };
+        await redis.set(progressKey, JSON.stringify(fallback), "EX", 60 * 60);
+        return fallback;
+      };
+
+      const progress = await ensureProgress();
+
+      // Mark provider as running
+      progress.providers[provider] = "running";
+      await redis.set(progressKey, JSON.stringify(progress), "EX", 60 * 60);
+
+      let wrapped: AgentResult = { status: "rejected", data: [] };
+
+      try {
+        const { label, factory } = providerConfig[provider];
+        const result = await agentHandler(label, factory, PromptPayload, provider);
+        wrapped = {
+          status: result.length > 0 ? "fulfilled" : "rejected",
+          data: result,
+        };
+      } catch (err: any) {
+        logger.error(`${provider} failed:`, err?.message ?? err);
+      }
+
+      // Store successful results immediately
+      if (wrapped.status === "fulfilled" && wrapped.data.length > 0) {
+        const emptyResult: Record<Provider, AgentResult> = {
+          openai: { status: "rejected", data: [] },
+          anthropic: { status: "rejected", data: [] },
+          perplexity: { status: "rejected", data: [] },
+        };
+
+        const partialResults: ModelResult = {
+          ...emptyResult,
+          [provider]: wrapped,
+        };
+
+        await storePromptResponses({
+          results: partialResults,
+          userId: user_id,
+          workspaceId: workspace_id,
+          promptRunAt: created_at,
+        });
+      }
+
+      // Update progress
+      progress.providers[provider] =
+        wrapped.status === "fulfilled" ? "completed" : "failed";
+      progress.results[provider] = wrapped.data.length;
+      progress.stats.actualResponses = (Object.values(progress.results) as number[]).reduce(
+        (sum, count) => sum + count,
+        0
       );
+      progress.updateId += 1;
+
+      const allDone = (Object.values(progress.providers) as string[]).every(
+        (state) => state === "completed" || state === "failed"
+      );
+      if (allDone) {
+        progress.status = "completed";
+      }
+
+      await redis.set(progressKey, JSON.stringify(progress), "EX", 60 * 60);
 
       return true;
     },
@@ -85,7 +154,7 @@ async function startWorker() {
         port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
         password: process.env.REDIS_PASSWORD,
       },
-      concurrency: 1, // 🔒 single Chrome profile
+      concurrency: 3, // one job per provider in parallel
       lockDuration: 60 * 60 * 1000, // 1 hour — must exceed worst-case job duration to prevent stall re-queues
       stalledInterval: 60 * 60 * 1000,
     }

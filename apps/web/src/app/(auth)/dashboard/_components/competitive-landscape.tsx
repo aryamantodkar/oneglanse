@@ -86,7 +86,7 @@ export function CompetitiveLandscape({
             Competitors
           </h1>
           <p className="mt-2 text-xs text-muted-foreground">
-            See how you stack up against competitors
+            See how you stack up against competitors.
           </p>
         </div>
 

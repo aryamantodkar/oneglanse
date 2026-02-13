@@ -1,6 +1,6 @@
 import { db, schema } from "@onescope/db";
 import type { Workspace } from "@onescope/db";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, isNull, and, sql } from "drizzle-orm";
 import { ValidationError, NotFoundError } from "@onescope/errors";
 import { newId } from "@onescope/utils";
 
@@ -65,5 +65,164 @@ export async function getWorkspaceById(args: {
   }
 
   return workspace;
+}
+
+export async function getWorkspacesForUser(args: {
+  tenantId: string;
+  userId: string;
+}) {
+  const { tenantId, userId } = args;
+
+  if (!tenantId || tenantId.trim() === "") {
+    throw new ValidationError("Tenant ID is undefined.");
+  }
+
+  const workspaces = await db
+    .select({
+      id: schema.workspaces.id,
+      name: schema.workspaces.name,
+      slug: schema.workspaces.slug,
+      domain: schema.workspaces.domain,
+      tenantId: schema.workspaces.tenantId,
+      country: schema.workspaces.country,
+      region: schema.workspaces.region,
+      createdAt: schema.workspaces.createdAt,
+      deletedAt: schema.workspaces.deletedAt,
+    })
+    .from(schema.workspaces)
+    .innerJoin(
+      schema.workspaceMembers,
+      and(
+        eq(schema.workspaceMembers.workspaceId, schema.workspaces.id),
+        eq(schema.workspaceMembers.userId, userId),
+        isNull(schema.workspaceMembers.deletedAt)
+      )
+    )
+    .where(
+      and(
+        eq(schema.workspaces.tenantId, tenantId),
+        isNull(schema.workspaces.deletedAt)
+      )
+    )
+    .execute();
+
+  return workspaces;
+}
+
+export async function getWorkspaceMembersWithUsers(args: {
+  workspaceId: string;
+}) {
+  const { workspaceId } = args;
+
+  if (!workspaceId || workspaceId.trim() === "") {
+    throw new ValidationError("Workspace ID is undefined.");
+  }
+
+  const members = await db
+    .select({
+      memberId: schema.workspaceMembers.id,
+      userId: schema.workspaceMembers.userId,
+      role: schema.workspaceMembers.role,
+      joinedAt: schema.workspaceMembers.createdAt,
+      userName: schema.user.name,
+      userEmail: schema.user.email,
+      userImage: schema.user.image,
+    })
+    .from(schema.workspaceMembers)
+    .innerJoin(
+      schema.user,
+      eq(schema.user.id, schema.workspaceMembers.userId)
+    )
+    .where(
+      and(
+        eq(schema.workspaceMembers.workspaceId, workspaceId),
+        isNull(schema.workspaceMembers.deletedAt)
+      )
+    )
+    .execute();
+
+  return members;
+}
+
+export async function addMemberToWorkspace(args: {
+  workspaceId: string;
+  userId: string;
+  role?: string;
+}) {
+  const { workspaceId, userId, role = "member" } = args;
+
+  // Check if already an active member
+  const existing = await db.query.workspaceMembers.findFirst({
+    where: (wm, { eq, and, isNull }) =>
+      and(
+        eq(wm.workspaceId, workspaceId),
+        eq(wm.userId, userId),
+        isNull(wm.deletedAt)
+      ),
+  });
+
+  if (existing) {
+    throw new ValidationError("User is already a member of this workspace.");
+  }
+
+  await db.insert(schema.workspaceMembers).values({
+    workspaceId,
+    userId,
+    role,
+  });
+
+  return { workspaceId, userId, role };
+}
+
+export async function removeMemberFromWorkspace(args: {
+  workspaceId: string;
+  userId: string;
+}) {
+  const { workspaceId, userId } = args;
+
+  // Prevent removing the last owner
+  const owners = await db
+    .select({ id: schema.workspaceMembers.id })
+    .from(schema.workspaceMembers)
+    .where(
+      and(
+        eq(schema.workspaceMembers.workspaceId, workspaceId),
+        eq(schema.workspaceMembers.role, "owner"),
+        isNull(schema.workspaceMembers.deletedAt)
+      )
+    )
+    .execute();
+
+  const memberToRemove = await db.query.workspaceMembers.findFirst({
+    where: (wm, { eq, and, isNull }) =>
+      and(
+        eq(wm.workspaceId, workspaceId),
+        eq(wm.userId, userId),
+        isNull(wm.deletedAt)
+      ),
+  });
+
+  if (!memberToRemove) {
+    throw new NotFoundError("Member not found in this workspace.");
+  }
+
+  if (memberToRemove.role === "owner" && owners.length <= 1) {
+    throw new ValidationError("Cannot remove the last owner of a workspace.");
+  }
+
+  // Soft delete
+  await db
+    .update(schema.workspaceMembers)
+    .set({ deletedAt: new Date() })
+    .where(
+      and(
+        eq(schema.workspaceMembers.workspaceId, workspaceId),
+        eq(schema.workspaceMembers.userId, userId),
+        isNull(schema.workspaceMembers.deletedAt)
+      )
+    )
+    .execute();
+
+  return { workspaceId, userId };
 }
 
