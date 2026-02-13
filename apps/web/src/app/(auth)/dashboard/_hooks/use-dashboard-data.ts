@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { AnalysisRecord, BrandAnalysisResult } from "@onescope/types";
-import { filterAnalysisRecords, getDomain } from "@onescope/utils";
+import { filterAnalysisRecords, getDomain, removeUrlParams } from "@onescope/utils";
 import { severityRank } from "../_utils/helpers";
 import type { DashboardMetrics } from "../_utils/types";
 
@@ -383,11 +383,21 @@ export function useDashboardData(
 				urls: Set<string>;
 			}
 		>();
+		const seenCitations = new Set<string>();
 
-		analyzedRecords.forEach((r) => {
+		filteredRecords.forEach((r) => {
 			r.sources.forEach((s) => {
-				const domain = s.domain || getDomain(s.url);
+				const cleanUrl = removeUrlParams(s.url);
+				const domain = getDomain(cleanUrl);
 				if (!domain) return;
+
+				const dedupeKey =
+					s.cited_text?.trim()
+						? `${s.title}::${r.model_provider}::${s.cited_text}`
+						: `${s.title}::${r.model_provider}::${cleanUrl}`;
+				if (seenCitations.has(dedupeKey)) return;
+				seenCitations.add(dedupeKey);
+
 				const existing = domainMap.get(domain) ?? {
 					domain,
 					favicon: s.favicon ?? null,
@@ -400,7 +410,7 @@ export function useDashboardData(
 				existing.citationCount += 1;
 				existing.uniqueRecords.add(r.id);
 				existing.models.add(r.model_provider);
-				existing.urls.add(s.url);
+				existing.urls.add(cleanUrl);
 				if (s.cited_text) {
 					existing.excerpts.push({
 						text: s.cited_text,
@@ -419,7 +429,7 @@ export function useDashboardData(
 			0
 		);
 		return { sources: allDomains.slice(0, 15), totalCitations };
-	}, [analyzedRecords]);
+	}, [filteredRecords]);
 
 	const aggregatedRisks = useMemo(() => {
 		const riskMap = new Map<
