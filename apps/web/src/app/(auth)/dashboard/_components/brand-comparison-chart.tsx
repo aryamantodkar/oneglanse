@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Card } from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
 import { DashboardEmptyState } from "./empty-state";
@@ -21,6 +22,8 @@ const METRIC_CONFIG: { key: MetricKey; label: string }[] = [
 ];
 
 const SERIES_COLORS = ["#2563eb", "#0f766e", "#d97706", "#dc2626", "#0891b2"];
+const TOOLTIP_WIDTH = 156;
+const TOOLTIP_HEIGHT = 52;
 
 function clampScore(value: number): number {
 	if (Number.isNaN(value)) return 0;
@@ -53,10 +56,24 @@ function rankToStrength(rank: number | null): number {
 	return 30;
 }
 
-function buildPath(points: Array<{ x: number; y: number }>): string {
-	return points
-		.map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-		.join(" ");
+function buildSmoothPath(points: Array<{ x: number; y: number }>): string {
+	if (points.length === 0) return "";
+	if (points.length === 1) return `M ${points[0]!.x} ${points[0]!.y}`;
+	if (points.length === 2) {
+		return `M ${points[0]!.x} ${points[0]!.y} L ${points[1]!.x} ${points[1]!.y}`;
+	}
+
+	let d = `M ${points[0]!.x} ${points[0]!.y}`;
+	for (let i = 1; i < points.length - 1; i++) {
+		const current = points[i]!;
+		const next = points[i + 1]!;
+		const xc = (current.x + next.x) / 2;
+		const yc = (current.y + next.y) / 2;
+		d += ` Q ${current.x} ${current.y} ${xc} ${yc}`;
+	}
+	const last = points[points.length - 1]!;
+	d += ` T ${last.x} ${last.y}`;
+	return d;
 }
 
 export function BrandComparisonChart({
@@ -78,52 +95,82 @@ export function BrandComparisonChart({
 	brandSentimentScore: number;
 	brandAvgRank: number | null;
 }) {
-	const rivals = competitors
-		.filter((c) => !c.isBrand)
-		.sort((a, b) => {
-			if (a.appearances !== b.appearances) return b.appearances - a.appearances;
-			if (a.avgRank !== null && b.avgRank !== null && a.avgRank !== b.avgRank) {
-				return a.avgRank - b.avgRank;
-			}
-			return b.recCount - a.recCount;
-		})
-		.slice(0, 4);
+	const [hovered, setHovered] = useState<{
+		name: string;
+		metric: string;
+		value: number;
+		x: number;
+		y: number;
+		color: string;
+	} | null>(null);
 
-	const series: SeriesPoint[] = [
-		{
-			name: brandName,
-			domain: brandDomain,
-			isBrand: true,
-			values: {
-				presence: clampScore(brandPresenceRate),
-				recommendation: clampScore(brandRecommendationRate),
-				sentiment: clampScore(brandSentimentScore),
-				rankStrength: rankToStrength(brandAvgRank),
-			},
-			composite: 0,
+	const brandSeriesEntry: SeriesPoint = {
+		name: brandName,
+		domain: brandDomain,
+		isBrand: true,
+		values: {
+			presence: clampScore(brandPresenceRate),
+			recommendation: clampScore(brandRecommendationRate),
+			sentiment: clampScore(brandSentimentScore),
+			rankStrength: rankToStrength(brandAvgRank),
 		},
-		...rivals.map((r) => ({
-			name: r.name,
-			domain: r.domain,
-			isBrand: false,
-			values: {
-				presence: clampScore(totalResponses > 0 ? (r.appearances / totalResponses) * 100 : 0),
-				recommendation: clampScore(r.appearances > 0 ? (r.recCount / r.appearances) * 100 : 0),
+		composite: 0,
+	};
+
+	const scoredRivals = competitors
+		.filter((c) => !c.isBrand)
+		.map((r) => {
+			const values = {
+				presence: clampScore(
+					totalResponses > 0 ? (r.appearances / totalResponses) * 100 : 0,
+				),
+				recommendation: clampScore(
+					r.appearances > 0 ? (r.recCount / r.appearances) * 100 : 0,
+				),
 				sentiment: clampScore(r.avgSentiment),
 				rankStrength: rankToStrength(r.avgRank),
-			},
-			composite: 0,
-		})),
-	].map((entry) => ({
-		...entry,
-		composite: clampScore(
-			(entry.values.presence +
-				entry.values.recommendation +
-				entry.values.sentiment +
-				entry.values.rankStrength) /
-				4,
-		),
-	}));
+			};
+			return {
+				name: r.name,
+				domain: r.domain,
+				isBrand: false,
+				values,
+				composite: clampScore(
+					(values.presence +
+						values.recommendation +
+						values.sentiment +
+						values.rankStrength) /
+						4,
+				),
+			} satisfies SeriesPoint;
+		})
+		.sort((a, b) => b.composite - a.composite)
+		.slice(0, 4);
+
+	const series = useMemo(() => {
+		const all = [brandSeriesEntry, ...scoredRivals].map((entry) => ({
+			...entry,
+			composite:
+				entry.composite ||
+				clampScore(
+					(entry.values.presence +
+						entry.values.recommendation +
+						entry.values.sentiment +
+						entry.values.rankStrength) /
+						4,
+				),
+		}));
+
+		return all.sort((a, b) => {
+			if (a.composite !== b.composite) return b.composite - a.composite;
+			if (a.isBrand && !b.isBrand) return -1;
+			if (!a.isBrand && b.isBrand) return 1;
+			return a.name.localeCompare(b.name);
+		});
+	}, [
+		brandSeriesEntry,
+		scoredRivals,
+	]);
 
 	if (series.length <= 1 || totalResponses === 0) {
 		return (
@@ -158,7 +205,7 @@ export function BrandComparisonChart({
 		left + (index * plotWidth) / Math.max(1, METRIC_CONFIG.length - 1);
 	const yFor = (score: number) => top + ((100 - score) / 100) * plotHeight;
 
-	const leader = [...series].sort((a, b) => b.composite - a.composite)[0];
+	const leader = series[0];
 
 	return (
 		<Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -168,7 +215,7 @@ export function BrandComparisonChart({
 						Brand Comparison
 					</h1>
 					<p className="mt-2 text-xs text-muted-foreground">
-						Presence, recommendation strength, sentiment, and ranking strength in one view.
+						Sorted by composite score (descending) across four normalized metrics.
 					</p>
 				</div>
 				<span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800">
@@ -177,8 +224,15 @@ export function BrandComparisonChart({
 			</div>
 
 			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
-				<div className="overflow-x-auto">
+				<div className="relative overflow-x-auto">
 					<svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full min-w-[680px]">
+						<defs>
+							<linearGradient id="brandLineGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+								<stop offset="0%" stopColor="#2563eb" stopOpacity="0.7" />
+								<stop offset="100%" stopColor="#2563eb" stopOpacity="1" />
+							</linearGradient>
+						</defs>
+
 						{[0, 25, 50, 75, 100].map((tick) => {
 							const y = yFor(tick);
 							return (
@@ -210,17 +264,17 @@ export function BrandComparisonChart({
 								x: xFor(metricIndex),
 								y: yFor(s.values[metric.key]),
 							}));
-							const d = buildPath(points);
+							const d = buildSmoothPath(points);
 							return (
 								<g key={s.name}>
 									<path
 										d={d}
 										fill="none"
-										stroke={color}
+										stroke={s.isBrand ? "url(#brandLineGlow)" : color}
 										strokeWidth={s.isBrand ? 3 : 2}
 										strokeLinecap="round"
 										strokeLinejoin="round"
-										opacity={s.isBrand ? 1 : 0.85}
+										opacity={s.isBrand ? 1 : 0.82}
 									/>
 									{points.map((p, pointIdx) => (
 										<circle
@@ -231,6 +285,18 @@ export function BrandComparisonChart({
 											fill={color}
 											stroke="white"
 											strokeWidth={1.5}
+											className="cursor-pointer transition-all duration-200 hover:r-[6]"
+											onMouseEnter={() =>
+												setHovered({
+													name: s.name,
+													metric: METRIC_CONFIG[pointIdx]!.label,
+													value: s.values[METRIC_CONFIG[pointIdx]!.key],
+													x: p.x,
+													y: p.y,
+													color,
+												})
+											}
+											onMouseLeave={() => setHovered(null)}
 										/>
 									))}
 								</g>
@@ -248,6 +314,58 @@ export function BrandComparisonChart({
 								{metric.label}
 							</text>
 						))}
+
+						{hovered && (
+							<g pointerEvents="none">
+								<line
+									x1={hovered.x}
+									y1={top}
+									x2={hovered.x}
+									y2={height - bottom + 2}
+									stroke={hovered.color}
+									strokeOpacity={0.3}
+									strokeDasharray="4 4"
+								/>
+								<rect
+									x={Math.min(width - right - TOOLTIP_WIDTH, Math.max(left, hovered.x - 8))}
+									y={Math.max(top + 6, hovered.y - TOOLTIP_HEIGHT - 10)}
+									width={TOOLTIP_WIDTH}
+									height={TOOLTIP_HEIGHT}
+									rx={8}
+									fill="white"
+									stroke="#e5e7eb"
+									className="dark:fill-gray-900 dark:stroke-gray-700"
+								/>
+								<circle
+									cx={Math.min(width - right - TOOLTIP_WIDTH + 11, Math.max(left + 12, hovered.x + 3))}
+									cy={Math.max(top + 18, hovered.y - TOOLTIP_HEIGHT + 6)}
+									r={3}
+									fill={hovered.color}
+								/>
+								<text
+									x={Math.min(width - right - TOOLTIP_WIDTH + 20, Math.max(left + 18, hovered.x + 12))}
+									y={Math.max(top + 20, hovered.y - TOOLTIP_HEIGHT + 8)}
+									className="fill-gray-700 text-[10px] font-semibold dark:fill-gray-200"
+								>
+									{hovered.name}
+								</text>
+								<text
+									x={Math.min(width - right - TOOLTIP_WIDTH + 10, Math.max(left + 10, hovered.x + 2))}
+									y={Math.max(top + 36, hovered.y - TOOLTIP_HEIGHT + 24)}
+									className="fill-gray-500 text-[10px] dark:fill-gray-400"
+								>
+									{hovered.metric}
+								</text>
+								<text
+									x={Math.min(width - right - 10, Math.max(left + 10, hovered.x + 2))}
+									y={Math.max(top + 36, hovered.y - TOOLTIP_HEIGHT + 24)}
+									textAnchor="end"
+									className="fill-gray-900 text-[11px] font-semibold dark:fill-gray-100"
+								>
+									{hovered.value}
+								</text>
+							</g>
+						)}
 					</svg>
 				</div>
 
@@ -273,9 +391,18 @@ export function BrandComparisonChart({
 											{s.name}
 										</p>
 									</div>
-									<span className="text-xs font-semibold text-muted-foreground">
+									<span className="text-[11px] font-semibold text-muted-foreground">
 										{s.composite}/100
 									</span>
+								</div>
+								<div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+									<div
+										className="h-full rounded-full transition-all duration-500"
+										style={{
+											width: `${s.composite}%`,
+											backgroundColor: color,
+										}}
+									/>
 								</div>
 							</div>
 						);

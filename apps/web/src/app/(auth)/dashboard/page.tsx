@@ -16,7 +16,6 @@ import { CompetitiveLandscape } from "./_components/competitive-landscape";
 import { TopSources } from "./_components/top-sources";
 import { BrandPerceptionCard } from "./_components/brand-perception";
 import { BrandComparisonChart } from "./_components/brand-comparison-chart";
-import { ImpactSignals } from "./_components/impact-signals";
 import {
 	DashboardSkeleton,
 	NoWorkspaceState,
@@ -151,14 +150,6 @@ export default function Dashboard() {
 							brandRecommendationRate={metrics.impactMetrics.recommendationRate}
 							brandSentimentScore={metrics.avgSentiment.score}
 							brandAvgRank={metrics.avgRank.position}
-						/>
-
-						<ImpactSignals
-							avgVisibility={metrics.impactMetrics.avgVisibility}
-							recommendationRate={metrics.impactMetrics.recommendationRate}
-							topPickRate={metrics.impactMetrics.topPickRate}
-							riskResponseRate={metrics.impactMetrics.riskResponseRate}
-							noData={!hasFilteredAnalysis}
 						/>
 					</div>
 				</div>

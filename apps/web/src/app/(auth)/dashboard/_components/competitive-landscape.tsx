@@ -1,5 +1,15 @@
 import { useMemo, useState } from "react";
-import { Card, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@onescope/ui";
+import {
+  Card,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
 import { getFaviconUrls } from "@onescope/utils";
 import { CircleHelp, Users } from "lucide-react";
@@ -152,12 +162,21 @@ export function CompetitiveLandscape({
             See how you stack up against competitors.
           </p>
           {competitorSort === "rank" && (
-            <span
-              className="mt-2 inline-flex cursor-help items-center justify-center rounded-full border border-gray-200 bg-white p-1 text-muted-foreground dark:border-gray-700 dark:bg-gray-900"
-              title="Rank order: average position, then recommendation consistency, recommendation count, mentions, sentiment."
-            >
-              <CircleHelp className="h-3.5 w-3.5" />
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="mt-2 inline-flex cursor-help items-center justify-center rounded-full border border-gray-200 bg-white p-1 text-muted-foreground transition-colors hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:hover:text-gray-100"
+                  aria-label="Ranking logic"
+                >
+                  <CircleHelp className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8} className="max-w-[260px] leading-relaxed">
+                Rank order uses average position, then recommendation consistency,
+                recommendation count, mentions, and sentiment.
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
 
