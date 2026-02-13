@@ -1,19 +1,5 @@
-import { Eye, Megaphone, ShieldAlert, Sparkles } from "lucide-react";
+import { Globe, Link2, Trophy, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { DashboardMetrics } from "../_utils/types";
-
-export function PillTag({
-	label,
-	className = "",
-}: { label: string; className?: string }) {
-	return (
-		<span
-			className={`inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300 ${className}`}
-		>
-			{label}
-		</span>
-	);
-}
 
 export function StatCard({
 	label,
@@ -55,71 +41,44 @@ export function StatCard({
 }
 
 export function AggregateStatsRow({
-	impactMetrics,
+	presenceRate,
 	rank,
 	topSource,
 	topCompetitor,
 }: {
-	impactMetrics: DashboardMetrics["impactMetrics"];
+	presenceRate: number;
 	rank: number | null;
 	topSource: string;
 	topCompetitor: string;
 }) {
-	const riskValueClassName =
-		impactMetrics.riskResponseRate >= 40
-			? "text-red-600 dark:text-red-400"
-			: impactMetrics.riskResponseRate >= 15
-				? "text-amber-600 dark:text-amber-400"
-				: "text-emerald-600 dark:text-emerald-400";
-
-	const primaryGapLabel =
-		impactMetrics.absentRate > 0
-			? `Coverage gap: ${impactMetrics.absentRate}% responses don't mention your brand`
-			: impactMetrics.riskResponseRate > 0
-				? `Quality risk: ${impactMetrics.riskResponseRate}% responses include risk flags`
-				: rank && rank > 3
-					? `Ranking gap: average position is #${rank}`
-					: "Strong baseline: your brand is consistently visible in responses";
+	const rankValue = rank !== null ? `#${rank}` : "N/A";
 
 	return (
-		<div className="space-y-3">
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-				<StatCard
-					icon={Sparkles}
-					label="AI Impact Score"
-					value={`${impactMetrics.avgGeoScore}/100`}
-					subtitle={`Composite visibility quality across ${impactMetrics.totalResponses} responses`}
-				/>
-				<StatCard
-					icon={Eye}
-					label="Visibility Depth"
-					value={`${impactMetrics.avgVisibility}%`}
-					subtitle={`Appears prominently in ${impactMetrics.dominantPresenceRate}% of responses`}
-				/>
-				<StatCard
-					icon={Megaphone}
-					label="Recommendation Rate"
-					value={`${impactMetrics.recommendationRate}%`}
-					subtitle={`Chosen as top pick in ${impactMetrics.topPickRate}% of responses`}
-				/>
-				<StatCard
-					icon={ShieldAlert}
-					label="Risk Pressure"
-					value={`${impactMetrics.riskResponseRate}%`}
-					valueClassName={riskValueClassName}
-					subtitle={`${impactMetrics.criticalRiskCount} critical and ${impactMetrics.warningRiskCount} warning signals`}
-				/>
-			</div>
-
-			<div className="flex flex-wrap gap-2">
-				<PillTag label={primaryGapLabel} />
-				{topSource !== "N/A" && (
-					<PillTag label={`Content battleground: ${topSource}`} />
-				)}
-				{topCompetitor !== "N/A" && (
-					<PillTag label={`Primary answer rival: ${topCompetitor}`} />
-				)}
-			</div>
+		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+			<StatCard
+				icon={Globe}
+				label="Presence Rate"
+				value={`${presenceRate}%`}
+				subtitle="Queries mentioning your brand"
+			/>
+			<StatCard
+				icon={Trophy}
+				label="Avg Rank"
+				value={rankValue}
+				subtitle="Average placement across ranked responses"
+			/>
+			<StatCard
+				icon={Link2}
+				label="Top Source"
+				value={topSource}
+				subtitle="Most cited domain in AI answers"
+			/>
+			<StatCard
+				icon={Users}
+				label="Top Competitor"
+				value={topCompetitor}
+				subtitle="Most frequently appears with you"
+			/>
 		</div>
 	);
 }
