@@ -1,6 +1,5 @@
 import { Card } from "@onescope/ui";
 import type { CompetitorData } from "../_utils/types";
-import { DashboardEmptyState } from "./empty-state";
 import { LineChart } from "lucide-react";
 
 type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
@@ -143,11 +142,19 @@ export function BrandComparisonChart({
 						Multi-metric benchmark across your closest answer rivals.
 					</p>
 				</div>
-				<DashboardEmptyState
-					icon={LineChart}
-					title="Not enough comparison data"
-					description="Run more prompts to unlock multi-brand performance comparison."
-				/>
+				<div className="flex flex-1 items-center justify-center">
+					<div className="w-full max-w-md rounded-2xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white p-6 text-center dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">
+						<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+							<LineChart className="h-5 w-5 text-muted-foreground" />
+						</div>
+						<h3 className="mt-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+							Not enough comparison data
+						</h3>
+						<p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+							Run more analyzed prompts to unlock cross-brand trend comparison.
+						</p>
+					</div>
+				</div>
 			</Card>
 		);
 	}
