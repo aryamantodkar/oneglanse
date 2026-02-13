@@ -52,6 +52,12 @@ function getUrlPath(url: string): string {
 	}
 }
 
+function cleanCitedText(text: string): string {
+	return text
+		.replace(/\s*(?:\.\.\.|…)?\s*read more\.?\s*$/i, "")
+		.trim();
+}
+
 function MetricCard({
 	label,
 	value,
@@ -573,7 +579,7 @@ export default function SourcesPage() {
 																			<div className="max-w-full rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50/60 p-4 dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/80">
 																				<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
 																					{excerpt.cited_text?.trim()
-																						? excerpt.cited_text
+																						? cleanCitedText(excerpt.cited_text)
 																						: "This citation has no extracted quoted text."}
 																				</p>
 																			</div>
