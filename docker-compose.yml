@@ -115,7 +115,25 @@ services:
       db:
         condition: service_healthy
     restart: "no"
-    command: sh -c "cd /workspace && pnpm --filter @onescope/db db:migrate"
+    command: >
+      sh -lc '
+        set -e;
+        ROOT="";
+        for d in /workspace /app; do
+          if [ -f "$d/package.json" ] && [ -d "$d/packages/db" ]; then
+            ROOT="$d";
+            break;
+          fi;
+        done;
+        if [ -z "$ROOT" ]; then
+          echo "Unable to find monorepo root (/workspace or /app) with packages/db";
+          ls -la /;
+          exit 1;
+        fi;
+        echo "Running migrations from $ROOT";
+        cd "$ROOT";
+        pnpm --filter @onescope/db db:migrate
+      '
 
 # ----------------------------
 # Volumes
