@@ -636,6 +636,12 @@ export default function Prompts() {
 											promptRunAt: r.prompt_run_at,
 											response: r.response,
 											citations: r.sources?.length ?? 0,
+											sources: (r.sources ?? []).map((source) => ({
+												title: source.title ?? "",
+												url: source.url ?? "",
+												domain: source.domain ?? "",
+												citedText: source.cited_text ?? "",
+											})),
 										})),
 								}));
 
@@ -655,6 +661,18 @@ export default function Prompts() {
 									visibility: metrics?.visibility ?? "",
 									position: metrics?.position ?? "",
 									status: reason ?? "ok",
+									source_urls: filteredRecords
+										.filter((r) => r.prompt_id === prompt.id)
+										.flatMap((r) => r.sources ?? [])
+										.map((source) => source.url)
+										.filter(Boolean)
+										.join(" | "),
+									cited_texts: filteredRecords
+										.filter((r) => r.prompt_id === prompt.id)
+										.flatMap((r) => r.sources ?? [])
+										.map((source) => source.cited_text)
+										.filter(Boolean)
+										.join(" | "),
 								}));
 								downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
 							}}

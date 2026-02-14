@@ -118,6 +118,12 @@ export default function Dashboard() {
 									position: record.brand_analysis?.position?.rankPosition ?? null,
 									recommendation: record.brand_analysis?.recommendation?.type ?? null,
 									citations: record.sources?.length ?? 0,
+									sources: (record.sources ?? []).map((source) => ({
+										title: source.title ?? "",
+										url: source.url ?? "",
+										domain: source.domain ?? "",
+										citedText: source.cited_text ?? "",
+									})),
 								}));
 
 								downloadJson(
@@ -152,6 +158,8 @@ export default function Dashboard() {
 									position: record.brand_analysis?.position?.rankPosition ?? "",
 									recommendation: record.brand_analysis?.recommendation?.type ?? "",
 									citations: record.sources?.length ?? 0,
+									source_urls: (record.sources ?? []).map((source) => source.url).filter(Boolean).join(" | "),
+									cited_texts: (record.sources ?? []).map((source) => source.cited_text).filter(Boolean).join(" | "),
 								}));
 								downloadCsv(`dashboard-${workspaceId}-${Date.now()}.csv`, rows);
 							}}

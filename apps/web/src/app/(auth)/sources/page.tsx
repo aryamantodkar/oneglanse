@@ -262,6 +262,20 @@ export default function SourcesPage() {
 						<ExportMenu
 							disabled={!hasData}
 							onExportJson={() => {
+								const citationRows = domainGroups.flatMap((group) =>
+									group.urls.flatMap((source) =>
+										(source.excerpts ?? []).map((excerpt) => ({
+											domain: group.domain,
+											url: source.url,
+											title: source.title,
+											urlPath: getUrlPath(source.url),
+											totalCitations: source.totalSources ?? 0,
+											modelProvider: excerpt.model_provider ?? "",
+											citedText: excerpt.cited_text ? cleanCitedText(excerpt.cited_text) : "",
+										}))
+									)
+								);
+
 								downloadJson(`sources-${workspaceId}-${Date.now()}.json`, {
 									generatedAt: new Date().toISOString(),
 									workspaceId,
@@ -277,6 +291,7 @@ export default function SourcesPage() {
 										providers: Array.from(group.providers),
 									})),
 									sources: displayedSources,
+									citations: citationRows,
 								});
 							}}
 							onExportCsv={() => {
@@ -291,10 +306,29 @@ export default function SourcesPage() {
 									...displayedSources.map((source) => ({
 										section: "citation",
 										url: source.url,
+										url_path: getUrlPath(source.url),
 										title: source.title,
 										total_citations: source.totalSources ?? 0,
 										domain: getDomain(source.url) || "",
+										models: [...new Set((source.excerpts ?? []).map((e) => e.model_provider).filter(Boolean))].join(", "),
+										cited_texts: (source.excerpts ?? [])
+											.map((e) => (e.cited_text ? cleanCitedText(e.cited_text) : ""))
+											.filter(Boolean)
+											.join(" | "),
 									})),
+									...domainGroups.flatMap((group) =>
+										group.urls.flatMap((source) =>
+											(source.excerpts ?? []).map((excerpt) => ({
+												section: "citation_excerpt",
+												domain: group.domain,
+												url: source.url,
+												url_path: getUrlPath(source.url),
+												title: source.title,
+												model: excerpt.model_provider ?? "",
+												cited_text: excerpt.cited_text ? cleanCitedText(excerpt.cited_text) : "",
+											}))
+										)
+									),
 								];
 								downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
 							}}

@@ -7,7 +7,7 @@ import { AuthError, IPRefreshNeededError } from "@onescope/errors";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const PROXIES_PER_CYCLE = 3;
-const MAX_CYCLES = 25; // More proxy refresh opportunities across all providers
+const MAX_CYCLES = 30; // More proxy refresh opportunities across all providers
 const INITIAL_BACKOFF = 10_000; // 10 seconds
 const MAX_CYCLE_BACKOFF = 60_000; // Cap cycle backoff at 60s
 const RETRY_DELAY = 3000; // 3 seconds
