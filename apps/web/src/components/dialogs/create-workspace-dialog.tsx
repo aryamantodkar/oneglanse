@@ -90,7 +90,10 @@ export function CreateWorkspaceDialog({
         return;
       }
 
-      const { workspace } = response.data;
+      const { workspace, isFirstWorkspace } = response.data as {
+        workspace: { id: string };
+        isFirstWorkspace?: boolean;
+      };
 
       await utils.workspace.listByOrg.invalidate({ tenantId });
 
@@ -98,7 +101,11 @@ export function CreateWorkspaceDialog({
       resetForm();
       onOpenChange(false);
       router.refresh();
-      router.push(`/dashboard?workspace=${workspace.id}`);
+      if (isFirstWorkspace) {
+        router.push(`/onboarding?workspace=${workspace.id}`);
+      } else {
+        router.push(`/dashboard?workspace=${workspace.id}`);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to create workspace.");
