@@ -1,4 +1,5 @@
 import { Page } from "playwright";
+import { pageHealthCheck } from "../../../lib/browser/pageHealthCheck.js";
 
 export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
   if (!page.url().startsWith("https://www.perplexity.ai")) return false;
@@ -6,7 +7,7 @@ export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
   // Wait for the page to be interactive
   await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 
-  // Fallback: Check for UI elements with retry logic
+  // Check for UI elements with retry logic
   let hasProfileUI = false;
   for (let i = 0; i < 3; i++) {
     hasProfileUI = await page.evaluate(() => {
@@ -36,5 +37,9 @@ export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
     await page.waitForTimeout(2000);
   }
 
-  return hasProfileUI;
+  if (!hasProfileUI) return false;
+
+  // Deep page health check — catches bot detection, CAPTCHAs, rate limits
+  const health = await pageHealthCheck(page, "perplexity");
+  return health.healthy;
 }

@@ -7,20 +7,24 @@ import { logger } from "../../lib/utils/logger.js";
 import { PromptPayload } from "@onescope/types";
 import { IPRefreshNeededError } from "@onescope/errors";
 
-const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 3); // Faster IP rotation
-const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000); // 1 second default
-const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000); // Cap at 5 seconds
+const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 3);
+const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000);
+const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000);
 
-/**
- * Calculate exponential backoff delay
- * @param attempt - Current attempt number (1-indexed)
- * @returns Delay in milliseconds
- */
 function getExponentialBackoffDelay(attempt: number): number {
-  // Formula: initialDelay * (2 ^ (attempt - 2))
-  // With defaults: Attempt 2: 1s, Attempt 3: 2s, Attempt 4: 4s, then cap at 5s
   const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 2);
   return Math.min(delay, MAX_RETRY_DELAY);
+}
+
+function classifyFailureType(err: any): string | undefined {
+  const msg = String(err?.message ?? "").toLowerCase();
+  if (/err_proxy|err_connection|err_ssl|err_timed_out/i.test(msg)) return "connection_error";
+  if (/bot.?detect|cloudflare|captcha|turnstile/i.test(msg)) return "bot_detection";
+  if (/rate.?limit|too many|usage.?limit/i.test(msg)) return "rate_limited";
+  if (/extraction.*fail|empty.*response/i.test(msg)) return "extraction_failed";
+  if (/send failed|no send button|no generation/i.test(msg)) return "no_editor";
+  if (/typing failed/i.test(msg)) return "no_editor";
+  return undefined;
 }
 
 export async function runPrompts(payload: PromptPayload, page: Page, provider: Provider): Promise<AskPromptResult[]> {
@@ -30,10 +34,12 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
     await page
       .waitForLoadState("domcontentloaded", { timeout: 30000 })
       .catch(() => {});
-    await page.waitForTimeout(2000);
 
     let promptMetrics: AskPromptResult[] = [];
     let totalFailedCount = 0;
+
+    // Canary flag: first successful prompt proves this proxy works
+    let proxyProven = false;
 
     for (let i = 0; i < promptsArray.length; i++) {
       const promptEntry = promptsArray[i];
@@ -49,15 +55,17 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
       logger.debug(`${"=".repeat(70)}`);
       logger.debug(`📝 ${prompt}\n`);
 
-      let succeeded = false;
+      // Canary: first prompt on unproven proxy gets 1 attempt (fail fast)
+      // Proven proxy gets full retries (it's earned trust)
+      const effectiveMaxRetries = proxyProven ? MAX_PROMPT_RETRIES : 1;
+
       let lastError: any = null;
 
-      // Retry loop with exponential backoff for individual prompt
-      for (let attempt = 1; attempt <= MAX_PROMPT_RETRIES; attempt++) {
+      for (let attempt = 1; attempt <= effectiveMaxRetries; attempt++) {
         try {
           if (attempt > 1) {
             const backoffDelay = getExponentialBackoffDelay(attempt);
-            logger.log(`🔄 Retry attempt ${attempt}/${MAX_PROMPT_RETRIES} for prompt ${i + 1} (waiting ${backoffDelay / 1000}s)`);
+            logger.log(`🔄 Retry attempt ${attempt}/${effectiveMaxRetries} for prompt ${i + 1} (waiting ${backoffDelay / 1000}s)`);
             await page.waitForTimeout(backoffDelay);
           }
 
@@ -87,36 +95,52 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
             sources
           });
 
-          succeeded = true;
-          break; // Success - exit retry loop
+          // First success proves this proxy works — unlock full retries for remaining prompts
+          if (!proxyProven) {
+            proxyProven = true;
+            logger.log(`✅ Proxy proven good after canary prompt — full retries enabled for remaining prompts`);
+          }
+
+          break;
         } catch (err: any) {
           lastError = err;
-          logger.error(`❌ Attempt ${attempt}/${MAX_PROMPT_RETRIES} failed for prompt ${i + 1}: [${provider}] ${err.message}`);
+          logger.error(`❌ Attempt ${attempt}/${effectiveMaxRetries} failed for prompt ${i + 1}: [${provider}] ${err.message}`);
+
+          // Canary failed: immediately rotate IP without retrying
+          if (!proxyProven) {
+            logger.warn(`⚡ Canary prompt failed on unproven proxy — rotating IP immediately`);
+            const remainingPrompts = promptsArray.slice(i);
+            throw new IPRefreshNeededError(
+              `${provider} canary prompt failed — rotating IP. Error: ${lastError?.message}`,
+              promptMetrics,
+              remainingPrompts,
+              i,
+              classifyFailureType(lastError)
+            );
+          }
 
           const isExtractionFailure = /Markdown response extraction failed|Empty response extracted/i.test(
             String(err?.message ?? "")
           );
           if (isExtractionFailure) {
-            logger.warn(`⚠️ Repeated extraction failure on current IP (prompt ${i + 1}, attempt ${attempt}/${MAX_PROMPT_RETRIES})`);
+            logger.warn(`⚠️ Repeated extraction failure on current IP (prompt ${i + 1}, attempt ${attempt}/${effectiveMaxRetries})`);
           }
 
-          if (attempt === MAX_PROMPT_RETRIES) {
-            // Final attempt failed - throw error to trigger IP refresh
+          if (attempt === effectiveMaxRetries) {
             totalFailedCount++;
-            logger.error(`🔴 Prompt ${i + 1} failed after ${MAX_PROMPT_RETRIES} attempts with exponential backoff. Final error: ${lastError?.message}`);
-            logger.error(`🔴 This indicates a persistent issue - triggering IP refresh and will retry this prompt with new IP.`);
+            logger.error(`🔴 Prompt ${i + 1} failed after ${effectiveMaxRetries} attempts. Final error: ${lastError?.message}`);
+            logger.error(`🔴 Triggering IP refresh for remaining prompts.`);
 
-            // Get remaining prompts (including the one that failed)
             const remainingPrompts = promptsArray.slice(i);
 
             throw new IPRefreshNeededError(
-              `${provider} failed ${MAX_PROMPT_RETRIES} consecutive attempts — refreshing IP. Last error: ${lastError?.message}`,
-              promptMetrics, // partial results (successfully completed prompts)
-              remainingPrompts, // remaining prompts to process
-              i // index of the failed prompt
+              `${provider} failed ${effectiveMaxRetries} consecutive attempts — refreshing IP. Last error: ${lastError?.message}`,
+              promptMetrics,
+              remainingPrompts,
+              i,
+              classifyFailureType(lastError)
             );
           }
-          // Continue to next retry attempt
         }
       }
     }
@@ -125,8 +149,7 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
     const totalCount = promptsArray.length;
 
     if (totalFailedCount > 0) {
-      logger.warn(`⚠️ Completed with errors: ${successCount}/${totalCount} prompts succeeded, ${totalFailedCount} failed after ${MAX_PROMPT_RETRIES} retries with exponential backoff`);
-      logger.warn(`⚠️ Total backoff time per failed prompt: up to ${(INITIAL_RETRY_DELAY * (Math.pow(2, MAX_PROMPT_RETRIES - 1) - 1)) / 1000}s`);
+      logger.warn(`⚠️ Completed with errors: ${successCount}/${totalCount} prompts succeeded, ${totalFailedCount} failed`);
     } else {
       logger.success(`✅ All prompts completed successfully (${successCount}/${totalCount})`);
     }

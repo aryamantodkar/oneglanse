@@ -61,11 +61,11 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       throw new Error("Typing failed: editor did not receive prompt");
     }
 
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(2000);
 
     logger.debug("  📤 Submitting...");
     await page.keyboard.press("Enter");
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(2000);
 
     // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
     await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
