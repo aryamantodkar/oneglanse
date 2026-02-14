@@ -22,6 +22,7 @@ import { LocationSelector } from "@/components/location/locationSelector";
 
 export default function NewWorkspace() {
   const [formData, setFormData] = useState({
+    organizationName: "",
     workspaceName: "",
     workspaceSlug: "",
     domain: ""
@@ -68,7 +69,12 @@ export default function NewWorkspace() {
   });
 
   const handleComplete = async () => {
-    if (!formData.workspaceSlug || !formData.workspaceName || !formData.domain) {
+    if (
+      !formData.organizationName ||
+      !formData.workspaceSlug ||
+      !formData.workspaceName ||
+      !formData.domain
+    ) {
       toast.error("Please fill all the mandatory fields.");
       return;
     }
@@ -86,6 +92,7 @@ export default function NewWorkspace() {
       }
 
       const response = await createWorkspaceMutation.mutateAsync({
+        organizationName: formData.organizationName.trim(),
         name: formData.workspaceName.trim(),
         slug: formData.workspaceSlug.trim(),
         domain: formData.domain.trim(),
@@ -127,18 +134,34 @@ export default function NewWorkspace() {
         <div className="ui-stagger w-full max-w-md">
           <Card>
             <CardHeader>
-              <CardTitle>Workspace Setup</CardTitle>
+              <CardTitle>Brand Workspace Setup</CardTitle>
               <CardDescription>
-                Create your new workspace with a name, slug, and location.
+                Set up your organization and brand tracking workspace.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="workspace-name">Workspace Name</Label>
+                <Label htmlFor="organization-name">Organization Name</Label>
+                <Input
+                  className="outline-none"
+                  id="organization-name"
+                  placeholder="Enter your organization name"
+                  value={formData.organizationName}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      organizationName: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="workspace-name">Brand Name</Label>
                 <Input
                   className="outline-none"
                   id="workspace-name"
-                  placeholder="Enter your workspace name"
+                  placeholder="e.g. Pipedrive"
                   value={formData.workspaceName}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -147,13 +170,16 @@ export default function NewWorkspace() {
                     }))
                   }
                 />
+                <p className="text-xs text-gray-500">
+                  This is used as your tracked brand name in AI visibility analysis.
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="workspace-slug">Workspace Slug</Label>
                 <Input
                   id="workspace-slug"
-                  placeholder="workspace-slug"
+                  placeholder="brand-workspace-slug"
                   value={formData.workspaceSlug}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -165,10 +191,10 @@ export default function NewWorkspace() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="workspace-domain">Domain</Label>
+                <Label htmlFor="workspace-domain">Brand Domain</Label>
                 <Input
                   id="workspace-domain"
-                  placeholder="example.com"
+                  placeholder="e.g. pipedrive.com"
                   value={formData.domain}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -177,6 +203,9 @@ export default function NewWorkspace() {
                     }))
                   }
                 />
+                <p className="text-xs text-gray-500">
+                  Use your primary brand domain. We use this for source matching and brand tracking.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -196,6 +225,7 @@ export default function NewWorkspace() {
                   onClick={handleComplete}
                   disabled={
                     loading ||
+                    !formData.organizationName.trim() ||
                     !formData.workspaceName.trim() ||
                     !formData.workspaceSlug.trim() ||
                     !formData.domain.trim()

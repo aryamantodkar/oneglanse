@@ -108,8 +108,8 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
 
     const settingsItems = [
       {
-        title: "People",
-        url: `/people?workspace=${activeWorkspace?.id ?? ""}`,
+        title: "Manage",
+        url: `/settings?workspace=${activeWorkspace?.id ?? ""}`,
         icon: Users,
       },
     ];

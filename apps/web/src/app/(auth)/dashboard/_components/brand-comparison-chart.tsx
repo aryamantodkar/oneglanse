@@ -202,10 +202,10 @@ export function BrandComparisonChart({
 
 			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
 				<div
-					className="overflow-x-auto"
+					className="relative"
 					onMouseLeave={() => setHoveredPoint(null)}
 				>
-					<div className="relative min-w-[680px]">
+					<div className="overflow-x-auto">
 						<svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full min-w-[680px]">
 						{[0, 25, 50, 75, 100].map((tick) => {
 							const y = yFor(tick);
@@ -289,33 +289,33 @@ export function BrandComparisonChart({
 							</text>
 						))}
 						</svg>
+					</div>
 
-						{hoveredPoint && (
-							<div
-								className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[110%] rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900"
-								style={{
-									left: `${hoveredPoint.leftPct}%`,
-									top: `${hoveredPoint.topPct}%`,
-								}}
-							>
-								<div className="flex items-center gap-1.5">
-									<span
-										className="h-2 w-2 rounded-full"
-										style={{ backgroundColor: hoveredPoint.color }}
-									/>
-									<p className="max-w-[170px] truncate text-[11px] font-semibold text-gray-900 dark:text-gray-100">
-										{hoveredPoint.name}
-									</p>
-								</div>
-								<p className="mt-1 text-[10px] text-muted-foreground">
-									{hoveredPoint.metric}:{" "}
-									<span className="font-semibold text-gray-900 dark:text-gray-100">
-										{hoveredPoint.value}
-									</span>
+					{hoveredPoint && (
+						<div
+							className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${hoveredPoint.topPct < 20 ? "translate-y-2" : "-translate-y-[110%]"}`}
+							style={{
+								left: `${Math.max(10, Math.min(90, hoveredPoint.leftPct))}%`,
+								top: `${hoveredPoint.topPct}%`,
+							}}
+						>
+							<div className="flex items-center gap-1.5">
+								<span
+									className="h-2 w-2 rounded-full"
+									style={{ backgroundColor: hoveredPoint.color }}
+								/>
+								<p className="max-w-[170px] truncate text-[11px] font-semibold text-gray-900 dark:text-gray-100">
+									{hoveredPoint.name}
 								</p>
 							</div>
-						)}
-					</div>
+							<p className="mt-1 text-[10px] text-muted-foreground">
+								{hoveredPoint.metric}:{" "}
+								<span className="font-semibold text-gray-900 dark:text-gray-100">
+									{hoveredPoint.value}
+								</span>
+							</p>
+						</div>
+					)}
 				</div>
 
 				<div className="space-y-2">

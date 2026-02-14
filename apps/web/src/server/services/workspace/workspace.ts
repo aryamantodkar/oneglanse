@@ -10,17 +10,18 @@ export async function createNewWorkspace(args: {
     name: string;
     slug: string;
     domain: string;
+    organizationName?: string;
     country: string;
     region?: string | null;
     userId: string;           
     headers: Headers;
 }) {
-    const { name, slug, domain, country, region, userId, headers } = args;
+    const { name, slug, domain, organizationName, country, region, userId, headers } = args;
 
     const orgData = await auth.api
     .createOrganization({
       body: {
-        name: name,
+        name: organizationName?.trim() || name,
         slug: slug,
         keepCurrentActiveOrganization: true,
       },
@@ -63,4 +64,3 @@ export async function addWorkspaceToExistingOrg(args: {
 
     return { workspace };
 }
-
