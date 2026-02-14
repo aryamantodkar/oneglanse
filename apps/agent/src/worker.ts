@@ -26,6 +26,31 @@ const providerConfig: Record<
   perplexity: { label: "Perplexity", factory: perplexityAgent },
 };
 
+function runAnalysisInBackground(args: {
+  workspaceId: string;
+  userId: string;
+  provider: Provider;
+  jobGroupId: string;
+}) {
+  const { workspaceId, userId, provider, jobGroupId } = args;
+  void (async () => {
+    try {
+      logger.log(`${provider} done for job group ${jobGroupId}, starting analysis in background...`);
+      await analysePromptsForWorkspace({
+        workspaceId,
+        userId,
+        analyzeAll: true,
+      });
+      logger.success(`Background analysis completed after ${provider} for job group ${jobGroupId}`);
+    } catch (err: any) {
+      logger.error(
+        `Background analysis failed after ${provider} for job group ${jobGroupId}:`,
+        err?.message ?? err
+      );
+    }
+  })();
+}
+
 async function startWorker() {
   await waitForRedis();
   const configuredConcurrency = Number.parseInt(
@@ -132,18 +157,13 @@ async function startWorker() {
           promptRunAt: created_at,
         });
 
-        // Auto-trigger analysis for this provider's responses immediately
-        try {
-          logger.log(`${provider} done for job group ${jobGroupId}, starting analysis...`);
-          await analysePromptsForWorkspace({
-            workspaceId: workspace_id,
-            userId: user_id,
-            analyzeAll: true,
-          });
-          logger.success(`Analysis completed after ${provider} for job group ${jobGroupId}`);
-        } catch (err: any) {
-          logger.error(`Analysis failed after ${provider} for job group ${jobGroupId}:`, err?.message ?? err);
-        }
+        // Trigger analysis asynchronously; do not block provider completion.
+        runAnalysisInBackground({
+          workspaceId: workspace_id,
+          userId: user_id,
+          provider,
+          jobGroupId,
+        });
       }
 
       // Update progress
