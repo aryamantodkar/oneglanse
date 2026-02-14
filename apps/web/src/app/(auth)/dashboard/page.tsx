@@ -103,14 +103,31 @@ export default function Dashboard() {
 							timeFilter={timeFilter}
 							setTimeFilter={setTimeFilter}
 						/>
-						<ExportMenu
-							disabled={!hasFilteredAnalysis}
-							onExportJson={() => {
-								const generatedAt = new Date().toISOString();
-								const promptRows = metrics.analyzedRecords.map((record) => ({
-									promptId: record.prompt_id,
-									prompt: record.prompt,
-									modelProvider: record.model_provider,
+							<ExportMenu
+								disabled={!hasFilteredAnalysis}
+								onExportJson={() => {
+									const generatedAt = new Date().toISOString();
+									const topCompetitors = metrics.competitorData
+										.filter((competitor) => !competitor.isBrand)
+										.slice(0, 5);
+									const actionPriorities = [
+										metrics.aggregateStats.presenceRate < 70
+											? "Increase brand mention frequency across high-intent prompts."
+											: null,
+										(metrics.avgRank.position ?? 99) > 3
+											? "Improve ranking consistency by strengthening comparison-oriented messaging."
+											: null,
+										metrics.impactMetrics.topPickRate < 35
+											? "Raise top-pick conversion with stronger differentiators and proof points."
+											: null,
+										metrics.impactMetrics.criticalRiskCount > 0
+											? "Resolve critical risk signals found in model answers."
+											: null,
+									].filter(Boolean);
+									const promptRows = metrics.analyzedRecords.map((record) => ({
+										promptId: record.prompt_id,
+										prompt: record.prompt,
+										modelProvider: record.model_provider,
 									promptRunAt: record.prompt_run_at,
 									geoScore: record.brand_analysis?.geoScore?.overall ?? null,
 									sentiment: record.brand_analysis?.sentiment?.score ?? null,
@@ -126,44 +143,104 @@ export default function Dashboard() {
 									})),
 								}));
 
-								downloadJson(
-									`dashboard-${workspaceId}-${Date.now()}.json`,
-									{
-										generatedAt,
-										workspaceId,
-										filters: { modelFilter, timeFilter },
-										summary: {
-											brandName: metrics.brandName,
-											brandDomain: metrics.brandDomain,
-											presenceRate: metrics.aggregateStats.presenceRate,
-											avgRank: metrics.avgRank.position,
-											topSource: metrics.sourcesIntelligence[0]?.domain ?? null,
-											topCompetitor: metrics.aggregateStats.topCompetitor,
-											totalCitations: metrics.totalCitations,
+									downloadJson(
+										`dashboard-${workspaceId}-${Date.now()}.json`,
+										{
+											generatedAt,
+											workspaceId,
+											report: {
+												title: "AI Visibility Dashboard Export",
+												version: "2.0",
+												filters: { modelFilter, timeFilter },
+											},
+											overview: {
+												brandName: metrics.brandName,
+												brandDomain: metrics.brandDomain,
+												responsesAnalyzed: metrics.analyzedRecords.length,
+												citationsCaptured: metrics.totalCitations,
+											},
+											impactSummary: {
+												presenceRate: `${metrics.aggregateStats.presenceRate}%`,
+												averageRank: metrics.avgRank.position,
+												recommendationRate: `${metrics.impactMetrics.recommendationRate}%`,
+												topPickRate: `${metrics.impactMetrics.topPickRate}%`,
+												avgSentiment: metrics.avgSentiment.score,
+												topSourceDomain:
+													metrics.sourcesIntelligence[0]?.domain ?? null,
+												topCompetitor:
+													metrics.aggregateStats.topCompetitor,
+											},
+											actionPriorities:
+												actionPriorities.length > 0
+													? actionPriorities
+													: ["Maintain current trajectory and scale winning prompt themes."],
+											leaderboards: {
+												competitors: topCompetitors,
+												sources: metrics.sourcesIntelligence.slice(0, 10),
+											},
+											detailedData: {
+												competitors: metrics.competitorData,
+												sources: metrics.sourcesIntelligence,
+												prompts: promptRows,
+											},
 										},
-										competitors: metrics.competitorData,
-										sources: metrics.sourcesIntelligence,
-										prompts: promptRows,
-									},
-								);
-							}}
-							onExportCsv={() => {
-								const rows = metrics.analyzedRecords.map((record) => ({
-									prompt: record.prompt,
-									model: record.model_provider,
-									prompt_run_at: record.prompt_run_at,
-									geo_score: record.brand_analysis?.geoScore?.overall ?? "",
-									sentiment: record.brand_analysis?.sentiment?.score ?? "",
-									visibility: record.brand_analysis?.presence?.visibility ?? "",
-									position: record.brand_analysis?.position?.rankPosition ?? "",
-									recommendation: record.brand_analysis?.recommendation?.type ?? "",
-									citations: record.sources?.length ?? 0,
-									source_urls: (record.sources ?? []).map((source) => source.url).filter(Boolean).join(" | "),
-									cited_texts: (record.sources ?? []).map((source) => source.cited_text).filter(Boolean).join(" | "),
-								}));
-								downloadCsv(`dashboard-${workspaceId}-${Date.now()}.csv`, rows);
-							}}
-						/>
+									);
+								}}
+								onExportCsv={() => {
+									const rows = [
+										{
+											section: "overview",
+											metric: "Brand",
+											value: metrics.brandName,
+										},
+										{
+											section: "overview",
+											metric: "Domain",
+											value: metrics.brandDomain,
+										},
+										{
+											section: "overview",
+											metric: "Responses Analyzed",
+											value: metrics.analyzedRecords.length,
+										},
+										{
+											section: "impact_summary",
+											metric: "Presence Rate",
+											value: `${metrics.aggregateStats.presenceRate}%`,
+										},
+										{
+											section: "impact_summary",
+											metric: "Average Rank",
+											value: metrics.avgRank.position ?? "N/A",
+										},
+										{
+											section: "impact_summary",
+											metric: "Recommendation Rate",
+											value: `${metrics.impactMetrics.recommendationRate}%`,
+										},
+										{
+											section: "impact_summary",
+											metric: "Top Pick Rate",
+											value: `${metrics.impactMetrics.topPickRate}%`,
+										},
+										...metrics.analyzedRecords.map((record) => ({
+											section: "prompt_details",
+											prompt: record.prompt,
+											model: record.model_provider,
+											prompt_run_at: record.prompt_run_at,
+											geo_score: record.brand_analysis?.geoScore?.overall ?? "",
+											sentiment: record.brand_analysis?.sentiment?.score ?? "",
+											visibility: record.brand_analysis?.presence?.visibility ?? "",
+											position: record.brand_analysis?.position?.rankPosition ?? "",
+											recommendation: record.brand_analysis?.recommendation?.type ?? "",
+											citations: record.sources?.length ?? 0,
+											source_urls: (record.sources ?? []).map((source) => source.url).filter(Boolean).join(" | "),
+											cited_texts: (record.sources ?? []).map((source) => source.cited_text).filter(Boolean).join(" | "),
+										})),
+									];
+									downloadCsv(`dashboard-${workspaceId}-${Date.now()}.csv`, rows);
+								}}
+							/>
 					</div>
 
 					{/* Aggregate Stats */}

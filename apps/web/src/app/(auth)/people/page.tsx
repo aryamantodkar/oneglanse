@@ -294,15 +294,26 @@ export default function PeoplePage() {
         citedText: excerpt.cited_text ?? "",
       }))
     );
+    const analysisRecords = Array.isArray(analysisData) ? analysisData : [];
 
     downloadJson(`workspace-all-${workspaceId}-${Date.now()}.json`, {
       generatedAt: new Date().toISOString(),
       workspace: workspace ?? null,
       organization: organization ?? null,
+      report: {
+        title: "Workspace AI Visibility Export",
+        version: "2.0",
+      },
+      overview: {
+        promptCount: userPrompts.length,
+        analysisRecordCount: analysisRecords.length,
+        sourceUrlCount: combinedSources.length,
+        citationCount: citationRows.length,
+      },
       exports: {
         dashboard: {
-          analysisCount: Array.isArray(analysisData) ? analysisData.length : 0,
-          records: analysisData,
+          analysisCount: analysisRecords.length,
+          records: analysisRecords,
         },
         prompts: {
           promptCount: userPrompts.length,
@@ -331,14 +342,37 @@ export default function PeoplePage() {
       : domainStatsRaw?.combined ?? [];
 
     const rows: Array<Record<string, unknown>> = [
+      {
+        section: "overview",
+        metric: "Prompts",
+        value: userPrompts.length,
+      },
+      {
+        section: "overview",
+        metric: "Analysis Records",
+        value: analysisData.length,
+      },
+      {
+        section: "overview",
+        metric: "Source URLs",
+        value: combinedSources.length,
+      },
+      {
+        section: "overview",
+        metric: "Citation Excerpts",
+        value: combinedSources.reduce(
+          (count: number, source: any) => count + (source.excerpts?.length ?? 0),
+          0
+        ),
+      },
       ...userPrompts.map((prompt) => ({
-        section: "prompts",
+        section: "prompt_definitions",
         prompt_id: prompt.id,
         prompt: prompt.prompt,
         created_at: prompt.created_at,
       })),
       ...analysisData.map((record: any) => ({
-        section: "dashboard_analysis",
+        section: "analysis_metrics",
         prompt_id: record.prompt_id,
         prompt: record.prompt,
         model: record.model_provider,
@@ -353,13 +387,13 @@ export default function PeoplePage() {
         cited_texts: (record.sources ?? []).map((source: any) => source.cited_text).filter(Boolean).join(" | "),
       })),
       ...domainStats.map((domain: any) => ({
-        section: "source_domains",
+        section: "source_domain_performance",
         domain: domain.domain,
         total_sources: domain.total_sources ?? domain.totalSources ?? 0,
         percentage: domain.percentage ?? "",
       })),
       ...combinedSources.map((source: any) => ({
-        section: "sources",
+        section: "source_url_performance",
         url: source.url,
         title: source.title,
         total_citations: source.totalSources ?? 0,
@@ -377,7 +411,7 @@ export default function PeoplePage() {
       ),
       ...analysisData.flatMap((record: any) =>
         (record.sources ?? []).map((source: any) => ({
-          section: "analysis_source_rows",
+          section: "analysis_sources",
           prompt_id: record.prompt_id,
           model: record.model_provider,
           source_title: source.title ?? "",

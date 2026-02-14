@@ -642,6 +642,15 @@ export default function Prompts() {
 						<ExportMenu
 							disabled={sortedPromptsWithMetrics.length === 0}
 							onExportJson={() => {
+								const analyzedRows = sortedPromptsWithMetrics.filter(
+									(row) => row.metrics !== null,
+								);
+								const topPrompt = analyzedRows
+									.slice()
+									.sort((a, b) => (b.metrics?.geoScore ?? 0) - (a.metrics?.geoScore ?? 0))[0];
+								const weakestPrompt = analyzedRows
+									.slice()
+									.sort((a, b) => (a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0))[0];
 								const promptRows = sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
 									promptId: prompt.id,
 									prompt: prompt.prompt,
@@ -670,32 +679,78 @@ export default function Prompts() {
 								downloadJson(`prompts-${workspaceId}-${Date.now()}.json`, {
 									generatedAt: new Date().toISOString(),
 									workspaceId,
-									filters: { modelFilter, timeFilter, sortBy, sortDirection },
-									rows: promptRows,
+									report: {
+										title: "Prompt Performance Export",
+										version: "2.0",
+										filters: { modelFilter, timeFilter, sortBy, sortDirection },
+									},
+									overview: {
+										totalPrompts: sortedPromptsWithMetrics.length,
+										analyzedPrompts: analyzedRows.length,
+										unanalyzedPrompts: sortedPromptsWithMetrics.length - analyzedRows.length,
+									},
+									impactSummary: {
+										highestGeoPrompt: topPrompt?.prompt.prompt ?? null,
+										highestGeoScore: topPrompt?.metrics?.geoScore ?? null,
+										lowestGeoPrompt: weakestPrompt?.prompt.prompt ?? null,
+										lowestGeoScore: weakestPrompt?.metrics?.geoScore ?? null,
+									},
+									actionPriorities: [
+										weakestPrompt
+											? `Improve weak prompt: "${weakestPrompt.prompt.prompt}" (GEO ${weakestPrompt.metrics?.geoScore ?? 0}).`
+											: null,
+										sortedPromptsWithMetrics.some((row) => row.reason === "brand-not-mentioned")
+											? "Revise prompts where brand is not mentioned to improve coverage."
+											: null,
+									].filter(Boolean),
+									detailedData: {
+										rows: promptRows,
+									},
 								});
 							}}
 							onExportCsv={() => {
-								const rows = sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
-									prompt: prompt.prompt,
-									model: modelProvider,
-									geo_score: metrics?.geoScore ?? "",
-									sentiment: metrics?.sentiment ?? "",
-									visibility: metrics?.visibility ?? "",
-									position: metrics?.position ?? "",
-									status: reason ?? "ok",
-									source_urls: filteredRecords
-										.filter((r) => r.prompt_id === prompt.id)
-										.flatMap((r) => r.sources ?? [])
-										.map((source) => source.url)
-										.filter(Boolean)
-										.join(" | "),
-									cited_texts: filteredRecords
-										.filter((r) => r.prompt_id === prompt.id)
-										.flatMap((r) => r.sources ?? [])
-										.map((source) => source.cited_text)
-										.filter(Boolean)
-										.join(" | "),
-								}));
+								const analyzedPromptCount = sortedPromptsWithMetrics.filter(
+									(row) => row.metrics !== null,
+								).length;
+								const rows = [
+									{
+										section: "overview",
+										metric: "Total Prompts",
+										value: sortedPromptsWithMetrics.length,
+									},
+									{
+										section: "overview",
+										metric: "Analyzed Prompts",
+										value: analyzedPromptCount,
+									},
+									{
+										section: "overview",
+										metric: "Unanalyzed Prompts",
+										value: sortedPromptsWithMetrics.length - analyzedPromptCount,
+									},
+									...sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
+										section: "prompt_details",
+										prompt: prompt.prompt,
+										model: modelProvider,
+										geo_score: metrics?.geoScore ?? "",
+										sentiment: metrics?.sentiment ?? "",
+										visibility: metrics?.visibility ?? "",
+										position: metrics?.position ?? "",
+										status: reason ?? "ok",
+										source_urls: filteredRecords
+											.filter((r) => r.prompt_id === prompt.id)
+											.flatMap((r) => r.sources ?? [])
+											.map((source) => source.url)
+											.filter(Boolean)
+											.join(" | "),
+										cited_texts: filteredRecords
+											.filter((r) => r.prompt_id === prompt.id)
+											.flatMap((r) => r.sources ?? [])
+											.map((source) => source.cited_text)
+											.filter(Boolean)
+											.join(" | "),
+									})),
+								];
 								downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
 							}}
 						/>
