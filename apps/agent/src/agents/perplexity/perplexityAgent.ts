@@ -2,12 +2,8 @@ import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchPerplexity } from "./perplexity.js";
 
-type AgentFactoryOptions = {
-    proxyPoolId?: string;
-};
-
-export async function perplexityAgent(options: AgentFactoryOptions = {}) {
-    const perplexity = await launchPerplexity({ proxyPoolId: options.proxyPoolId });
+export async function perplexityAgent() {
+    const perplexity = await launchPerplexity();
     
     setupPage(perplexity.page, "perplexity");
 

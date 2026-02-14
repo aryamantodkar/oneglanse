@@ -2,13 +2,8 @@ import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchOpenAI } from "./openai.js";
 
-
-type AgentFactoryOptions = {
-    proxyPoolId?: string;
-};
-
-export async function openaiAgent(options: AgentFactoryOptions = {}) {
-    const openai = await launchOpenAI({ proxyPoolId: options.proxyPoolId });
+export async function openaiAgent() {
+    const openai = await launchOpenAI();
 
     setupPage(openai.page, "openai");
 

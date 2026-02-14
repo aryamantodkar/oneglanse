@@ -19,7 +19,7 @@ type ProviderJobData = {
 
 const providerConfig: Record<
   Provider,
-  { label: string; factory: (options: { proxyPoolId: string }) => Promise<any> }
+  { label: string; factory: () => Promise<any> }
 > = {
   openai: { label: "OpenAI", factory: openaiAgent },
   anthropic: { label: "Anthropic", factory: anthropicAgent },
@@ -28,6 +28,14 @@ const providerConfig: Record<
 
 async function startWorker() {
   await waitForRedis();
+  const configuredConcurrency = Number.parseInt(
+    process.env.AGENT_WORKER_CONCURRENCY ?? "1",
+    10
+  );
+  const workerConcurrency =
+    Number.isFinite(configuredConcurrency) && configuredConcurrency > 0
+      ? configuredConcurrency
+      : 1;
 
   const worker = new Worker(
     "onescope-agent",
@@ -166,7 +174,8 @@ async function startWorker() {
         port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
         password: process.env.REDIS_PASSWORD,
       },
-      concurrency: 3, // one job per provider in parallel
+      // Default sequential execution to reduce Playwright/proxy contention.
+      concurrency: workerConcurrency,
       lockDuration: 2 * 60 * 1000, // Renew lock frequently to avoid long stale-lock windows
       stalledInterval: 30 * 1000, // Check stalled jobs every 30s
       maxStalledCount: 3, // Allow transient disconnects/restarts before hard-failing a job

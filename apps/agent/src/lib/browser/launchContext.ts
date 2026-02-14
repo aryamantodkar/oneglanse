@@ -10,8 +10,7 @@ import { getNextProxy, fetchProxies } from "./proxyPool.js";
 playwrightChromium.use(StealthPlugin());
 
 export async function launchContext(
-  provider: Provider,
-  proxyPoolId: string = provider
+  provider: Provider
 ) {
   const USER_DATA_DIR = path.resolve(
     process.env.VPS_AUTH_PROFILE_PATH ?? "/storage"
@@ -25,18 +24,15 @@ export async function launchContext(
 
   logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
 
-  let proxy = getNextProxy(proxyPoolId);
+  let proxy = getNextProxy();
 
   if (!proxy) {
-    logger.warn(`[${provider}] Proxy pool exhausted (${proxyPoolId}), refreshing...`);
+    logger.warn(`[${provider}] Proxy pool exhausted, refreshing...`);
     try {
-      await fetchProxies(proxyPoolId, { forceRefresh: true });
-      proxy = getNextProxy(proxyPoolId);
+      await fetchProxies({ forceRefresh: true });
+      proxy = getNextProxy();
     } catch (err: any) {
-      logger.error(
-        `[${provider}] Failed to refresh proxy pool (${proxyPoolId}):`,
-        err?.message
-      );
+      logger.error(`[${provider}] Failed to refresh proxy pool:`, err?.message);
     }
   }
 

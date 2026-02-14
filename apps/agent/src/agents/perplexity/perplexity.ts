@@ -2,12 +2,8 @@ import { launchContext } from "../../lib/browser/launchContext.js";
 import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
-type LaunchAgentOptions = {
-    proxyPoolId?: string;
-};
-
-export async function launchPerplexity(options: LaunchAgentOptions = {}) {
-    const { browser, context, proxy } = await launchContext("perplexity", options.proxyPoolId);
+export async function launchPerplexity() {
+    const { browser, context, proxy } = await launchContext("perplexity");
 
     let page = null;
 
