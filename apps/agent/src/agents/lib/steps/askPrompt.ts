@@ -8,16 +8,6 @@ import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 
-async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => {
-      timer = setTimeout(() => resolve(fallback), ms);
-    }),
-  ]).finally(() => clearTimeout(timer!));
-}
-
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
     logger.debug(`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
@@ -54,118 +44,145 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
 
     await page.waitForTimeout(500);
 
-    const typed = await input.evaluate(el =>
-      (el.textContent || "").trim()
-    );
-
-    if (!typed || typed.length < Math.min(10, prompt.length / 3)) {
-      throw new Error("Typing failed: editor did not receive prompt");
-    }
-
-    // Wait for send button to appear after typing (dynamic UI)
-    await page.waitForTimeout(500);
-
     logger.debug("  📤 Submitting...");
 
-    // Check if editor still has content before submitting
+    // Store pre-submit state for success detection
     const preSubmitContent = await input.evaluate(el => (el.textContent || "").trim());
-    logger.debug(`  Editor content before submit (${preSubmitContent.length} chars): ${preSubmitContent.slice(0, 50)}...`);
+    const preSubmitUrl = page.url();
 
-    // Find the send button AFTER typing (it appears dynamically)
-    const sendButton = await findEnabledSendButton(page);
+    // Verify we have content before attempting submission
+    if (!preSubmitContent || preSubmitContent.length === 0) {
+      throw new Error(`[${provider}] Typing failed: editor did not receive prompt`);
+    }
 
-    // Use comprehensive generation detection (filter out pseudo-selectors for waitForSelector)
-    const cssSelectors = RESPONSE_GENERATION_SELECTORS.filter(s => !s.includes(':has-text('));
-    const generationSelector = cssSelectors.join(', ');
-
+    // Find send button AFTER typing (appears dynamically)
+    // Wait a bit longer if needed for button to appear
+    let sendButton = await findEnabledSendButton(page);
     if (!sendButton) {
-      logger.warn("Send button not found after typing, trying Enter key");
+      await page.waitForTimeout(500);
+      sendButton = await findEnabledSendButton(page);
+    }
 
-      // Ensure focus is on the input before pressing Enter
-      await input.focus();
-      await page.waitForTimeout(300);
-
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(2000);
-
-      // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
-      await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
-
-      const generationStarted = await withTimeout(
-        page.waitForSelector(generationSelector, { state: "visible", timeout: 10000 })
-          .then(() => {
-            logger.debug(`  ✓ Generation started`);
-            return true;
-          })
-          .catch(() => {
-            logger.debug(`  No generation indicators found. Checked: ${cssSelectors.slice(0, 3).join(', ')}`);
-            return false;
-          }),
-        15000,
-        false
-      );
-
-      if (!generationStarted) {
-        throw new Error(`[${provider}] Submit failed — Enter key didn't work and no send button found`);
-      }
-    } else {
-      // Send button found - click it directly
-      logger.debug(`  Clicking send button...`);
-      await sendButton.click();
-      await page.waitForTimeout(1000);
-
-      // Check if editor cleared (indicates submission worked)
-      const postClickContent = await input.evaluate(el => (el.textContent || "").trim()).catch(() => "");
-      logger.debug(`  Editor after click: "${postClickContent.slice(0, 30)}..." (${postClickContent.length} chars)`);
-
-      // Wait for any navigation triggered by submit
-      await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
-
-      // Check what's on the page after click
-      const pageState = await page.evaluate(() => ({
-        url: window.location.href,
-        hasStopButton: !!document.querySelector('button[aria-label*="stop" i]'),
-        hasLoadingClass: !!document.querySelector('[class*="loading"]'),
-        hasTypingClass: !!document.querySelector('[class*="typing"]'),
-        hasStreaming: !!document.querySelector('[data-streaming="true"]'),
-        visibleButtons: Array.from(document.querySelectorAll('button:not([style*="display: none"])')).slice(0, 5).map(b => ({
-          text: b.textContent?.trim().slice(0, 20),
-          ariaLabel: b.getAttribute('aria-label'),
-        })),
-      })).catch(() => null);
-      logger.debug(`  Page state after click: ${JSON.stringify(pageState, null, 2)}`);
-
-      // Try multiple detection methods
-      let generationStarted = false;
-
-      // Method 1: Wait for standard generation indicators
-      generationStarted = await withTimeout(
-        page.waitForSelector(generationSelector, { state: "visible", timeout: 10000 })
-          .then(() => {
-            logger.debug(`  ✓ Generation started (detected via selectors)`);
-            return true;
-          })
-          .catch(() => false),
-        15000,
-        false
-      );
-
-      if (!generationStarted && provider=="perplexity") {
-        const newUrl = page.url();
-        if (newUrl.includes('/search')) {
-          logger.debug(`  ✓ Generation started (detected via URL change to ${newUrl})`);
-          generationStarted = true;
+    // Helper: Check if submission succeeded
+    const checkSubmissionSuccess = async (): Promise<boolean> => {
+      // Signal 1: URL change (Perplexity-specific)
+      if (provider === "perplexity") {
+        const urlAfter = page.url();
+        if (urlAfter !== preSubmitUrl && urlAfter.includes('/search')) {
+          logger.debug(`  ✓ Submission detected via URL: ${urlAfter}`);
+          return true;
         }
       }
 
-      if (!generationStarted && postClickContent.length === 0 && preSubmitContent.length > 0) {
-        logger.debug(`  ✓ Generation started (editor cleared from ${preSubmitContent.length} to 0 chars)`);
-        generationStarted = true;
-      }    
-
-      if (!generationStarted) {
-        logger.debug(`  No generation indicators found after button click`);
-        throw new Error(`[${provider}] Send failed — no generation after button click`);
+      // Signal 2: Editor cleared
+      const editorContent = await input.evaluate(el => (el.textContent || "").trim()).catch(() => "");
+      if (preSubmitContent.length > 0 && editorContent.length === 0) {
+        logger.debug(`  ✓ Submission detected via editor clear: ${preSubmitContent.length} → 0 chars`);
+        return true;
       }
+
+      // Signal 3: Generation indicators
+      const cssSelectors = RESPONSE_GENERATION_SELECTORS;
+      const generationSelector = cssSelectors.join(', ');
+      const hasIndicators = await page.locator(generationSelector).first().isVisible().catch(() => false);
+      if (hasIndicators) {
+        logger.debug(`  ✓ Submission detected via generation indicators`);
+        return true;
+      }
+
+      // Signal 4: Stop button
+      const hasStopButton = await page.locator('button[aria-label*="stop" i]').isVisible().catch(() => false);
+      if (hasStopButton) {
+        logger.debug(`  ✓ Submission detected via stop button`);
+        return true;
+      }
+
+      // Signal 5: Send button disappeared
+      if (sendButton) {
+        const stillVisible = await sendButton.isVisible().catch(() => false);
+        if (!stillVisible) {
+          logger.debug(`  ✓ Submission detected via send button disappearing`);
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    // Method 1: Try Enter key FIRST
+    const tryEnterSubmit = async (): Promise<boolean> => {
+      logger.debug("  Method 1: Trying Enter key...");
+      await input.focus();
+      await page.waitForTimeout(300);
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(1500);
+      return await checkSubmissionSuccess();
+    };
+
+    // Method 2: Force click
+    const tryForceClick = async (button: any): Promise<boolean> => {
+      logger.debug("  Method 2: Trying force click...");
+
+      // Verify button is still visible
+      const isVisible = await button.isVisible().catch(() => false);
+      if (!isVisible) {
+        logger.debug("  Button not visible, skipping force click");
+        return false;
+      }
+
+      await button.scrollIntoViewIfNeeded().catch(() => {});
+      await button.hover().catch(() => {});
+      await page.waitForTimeout(200);
+      await button.click({ force: true, timeout: 3000 });
+      await page.waitForTimeout(1500);
+      return await checkSubmissionSuccess();
+    };
+
+    // Method 3: Synthetic MouseEvent dispatch
+    const tryDispatchClick = async (button: any): Promise<boolean> => {
+      logger.debug("  Method 3: Trying dispatch event...");
+
+      // Verify button is still visible
+      const isVisible = await button.isVisible().catch(() => false);
+      if (!isVisible) {
+        logger.debug("  Button not visible, skipping dispatch click");
+        return false;
+      }
+
+      const handle = await button.elementHandle();
+      if (!handle) {
+        logger.debug("  Could not get button handle");
+        return false;
+      }
+
+      await page.evaluate((el) => {
+        if (el instanceof HTMLElement) {
+          el.dispatchEvent(
+            new MouseEvent("click", {
+              bubbles: true,
+              cancelable: true,
+              composed: true,
+              view: window,
+            })
+          );
+        }
+      }, handle);
+
+      await page.waitForTimeout(1500);
+      return await checkSubmissionSuccess();
+    };
+
+    // Try methods in order
+    let success = await tryEnterSubmit();
+    if (!success && sendButton) success = await tryForceClick(sendButton);
+    if (!success && sendButton) success = await tryDispatchClick(sendButton);
+
+    if (!success) {
+      throw new Error(`[${provider}] All submission methods failed`);
     }
+
+    // Wait for page stabilization
+    await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
 }

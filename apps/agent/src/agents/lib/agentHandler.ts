@@ -7,7 +7,7 @@ import type { FailureType } from "../../lib/browser/pageHealthCheck.js";
 import { AuthError, IPRefreshNeededError } from "@onescope/errors";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
-const PROXIES_PER_CYCLE = 5; // More proxies per cycle since health checks fail fast
+const PROXIES_PER_CYCLE = 10; // More proxies per cycle since health checks fail fast
 const MAX_CYCLES = 10; // Fewer cycles needed with fast-fail
 const INITIAL_BACKOFF = 5_000; // 5 seconds — shorter since bad proxies are caught quickly
 const MAX_CYCLE_BACKOFF = 60_000; // Cap cycle backoff at 60s
