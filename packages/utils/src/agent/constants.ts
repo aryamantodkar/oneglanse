@@ -46,7 +46,6 @@ export const SUBMIT_BTN_SELECTORS = [
 
   // Claude
   'button[aria-label="Send message"]',
-  'button.Button_claude__c_hZy',
 
   // Perplexity
   'button[aria-label*="ask" i]',
@@ -80,12 +79,9 @@ export const MODEL_RESPONSE_SELECTORS = [
 ];
 
 export const RESPONSE_GENERATION_SELECTORS = [
-  // Buttons (works for all providers)
-  'button:has-text("Stop")',
-  'button:has-text("Stop generating")',
   'button[aria-label*="stop" i]',
   'button[aria-label*="cancel" i]',
-  'button[aria-label="Stop generating response"]', // Perplexity-specific
+  'button[aria-label="Stop generating response"]',
 
   // Streaming states (Claude, ChatGPT)
   '[data-streaming="true"]',
@@ -94,6 +90,12 @@ export const RESPONSE_GENERATION_SELECTORS = [
   '[class*="typing"]',
   '[class*="loading"]',
   '[class*="spinner"]',
+  '[class*="streaming"]',
+
+  '[class*="answer"]',
+  '[class*="response"]',
+  '[class*="result"]',
+  'div[role="article"]',
 ];
 
 export const SOURCES_SELECTORS = [
