@@ -1,7 +1,6 @@
 import { Page } from "playwright";
 import { Provider } from "@onescope/types";
 import { logger } from "../utils/logger.js";
-import { EDITOR_SELECTORS } from "@onescope/utils";
 
 export type FailureType =
   | "connection_error"
@@ -12,6 +11,28 @@ export type FailureType =
   | "extraction_failed"
   | "timeout"
   | "unknown";
+
+// Provider-specific editor selectors (most reliable first)
+const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
+  perplexity: [
+    '#ask-input[contenteditable="true"]',
+    '[data-lexical-editor="true"][contenteditable="true"]',
+    'div.relative #ask-input[contenteditable="true"]',
+    'div[contenteditable="true"][spellcheck="true"]',
+  ],
+  anthropic: [
+    '[data-testid="chat-input"][contenteditable="true"]',
+    '.ProseMirror[contenteditable="true"]',
+    '[data-testid="chat-input-grid-container"] [contenteditable="true"]',
+    'textarea[data-testid="chat-input-ssr"]',
+  ],
+  openai: [
+    '#prompt-textarea',
+    'div#prompt-textarea[contenteditable="true"]',
+    '[data-testid="composer"] #prompt-textarea',
+    'textarea[name="prompt-textarea"]',
+  ],
+};
 
 export type HealthCheckResult = {
   healthy: boolean;
@@ -80,17 +101,19 @@ export async function pageHealthCheck(
       return { healthy: false, reason: "rate_limited", failureType: "rate_limited" };
     }
 
-    // 4. Provider-specific editor presence (~2-3s)
-    const selectors = EDITOR_SELECTORS;
+    // 4. Provider-specific editor presence with quick timeout
+    const selectors = PROVIDER_EDITOR_SELECTORS[provider] || [];
     let editorFound = false;
+    let foundSelector = "";
 
     for (const selector of selectors) {
       try {
         await page
           .locator(selector)
           .first()
-          .waitFor({ state: "visible", timeout: 8000 });
+          .waitFor({ state: "visible", timeout: 2000 }); // 2s timeout per selector
         editorFound = true;
+        foundSelector = selector;
         break;
       } catch {
         // Try next selector
@@ -100,6 +123,32 @@ export async function pageHealthCheck(
     if (!editorFound) {
       logger.warn(`[${provider}] Health check: no editor found in ${Date.now() - start}ms`);
       return { healthy: false, reason: "no_editor", failureType: "no_editor" };
+    }
+
+    // 5. Verify the editor is actually interactive (not disabled/readonly)
+    const isEditable = await page.evaluate((sel) => {
+      const editor = document.querySelector(sel);
+      if (!editor) return false;
+
+      // Check contenteditable
+      const contentEditable = editor.getAttribute("contenteditable");
+      if (contentEditable === "false") return false;
+
+      // Check disabled/readonly
+      if (editor instanceof HTMLInputElement || editor instanceof HTMLTextAreaElement) {
+        if (editor.disabled || editor.readOnly) return false;
+      }
+
+      // Check if element is visible and not hidden
+      const rect = editor.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return false;
+
+      return true;
+    }, foundSelector).catch(() => false);
+
+    if (!isEditable) {
+      logger.warn(`[${provider}] Health check: editor found but not interactive in ${Date.now() - start}ms`);
+      return { healthy: false, reason: "editor_not_interactive", failureType: "no_editor" };
     }
 
     logger.debug(`[${provider}] Health check passed in ${Date.now() - start}ms`);
