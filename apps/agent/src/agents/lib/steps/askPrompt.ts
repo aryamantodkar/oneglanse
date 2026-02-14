@@ -114,24 +114,57 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       await sendButton.click();
       await page.waitForTimeout(1000);
 
+      // Check if editor cleared (indicates submission worked)
+      const postClickContent = await input.evaluate(el => (el.textContent || "").trim()).catch(() => "");
+      logger.debug(`  Editor after click: "${postClickContent.slice(0, 30)}..." (${postClickContent.length} chars)`);
+
       // Wait for any navigation triggered by submit
       await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
 
-      const generationStarted = await withTimeout(
+      // Check what's on the page after click
+      const pageState = await page.evaluate(() => ({
+        url: window.location.href,
+        hasStopButton: !!document.querySelector('button[aria-label*="stop" i]'),
+        hasLoadingClass: !!document.querySelector('[class*="loading"]'),
+        hasTypingClass: !!document.querySelector('[class*="typing"]'),
+        hasStreaming: !!document.querySelector('[data-streaming="true"]'),
+        visibleButtons: Array.from(document.querySelectorAll('button:not([style*="display: none"])')).slice(0, 5).map(b => ({
+          text: b.textContent?.trim().slice(0, 20),
+          ariaLabel: b.getAttribute('aria-label'),
+        })),
+      })).catch(() => null);
+      logger.debug(`  Page state after click: ${JSON.stringify(pageState, null, 2)}`);
+
+      // Try multiple detection methods
+      let generationStarted = false;
+
+      // Method 1: Wait for standard generation indicators
+      generationStarted = await withTimeout(
         page.waitForSelector(generationSelector, { state: "visible", timeout: 10000 })
           .then(() => {
-            logger.debug(`  ✓ Generation started after button click`);
+            logger.debug(`  ✓ Generation started (detected via selectors)`);
             return true;
           })
-          .catch(() => {
-            logger.debug(`  No generation indicators found after button click`);
-            return false;
-          }),
+          .catch(() => false),
         15000,
         false
       );
 
+      if (!generationStarted && provider=="perplexity") {
+        const newUrl = page.url();
+        if (newUrl.includes('/search')) {
+          logger.debug(`  ✓ Generation started (detected via URL change to ${newUrl})`);
+          generationStarted = true;
+        }
+      }
+
+      if (!generationStarted && postClickContent.length === 0 && preSubmitContent.length > 0) {
+        logger.debug(`  ✓ Generation started (editor cleared from ${preSubmitContent.length} to 0 chars)`);
+        generationStarted = true;
+      }    
+
       if (!generationStarted) {
+        logger.debug(`  No generation indicators found after button click`);
         throw new Error(`[${provider}] Send failed — no generation after button click`);
       }
     }
