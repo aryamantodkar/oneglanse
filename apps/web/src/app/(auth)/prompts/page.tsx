@@ -340,11 +340,26 @@ export default function Prompts() {
 
 	const isModified = useMemo(() => {
 		if (promptData.length !== initialPrompts.length) return true;
-		return promptData.some((p, i) => p !== initialPrompts[i]);
+		return promptData.some((p, i) => {
+			const original = initialPrompts[i];
+			if (!original) return true;
+			return p.prompt.trim() !== original.prompt.trim();
+		});
 	}, [promptData, initialPrompts]);
+
+	const isEditPromptChanged =
+		editIndex !== null &&
+		editPromptValue.trim() !== (promptData[editIndex]?.prompt ?? "").trim();
 
 	const handleAddOrEditPrompt = () => {
 		if (editIndex !== null) {
+			if (!isEditPromptChanged) {
+				setEditIndex(null);
+				setEditPromptValue("");
+				setDialogOpen(false);
+				return;
+			}
+
 			setPromptData((prev) =>
 				prev.map((p, i) =>
 					i === editIndex ? { ...p, prompt: editPromptValue.trim() } : p,
@@ -498,7 +513,14 @@ export default function Prompts() {
 										>
 											Cancel
 										</Button>
-										<Button onClick={handleAddOrEditPrompt}>
+										<Button
+											onClick={handleAddOrEditPrompt}
+											disabled={
+												editIndex !== null
+													? !isEditPromptChanged
+													: !currentPrompt.trim()
+											}
+										>
 											{editIndex !== null ? "Update" : "Add"}
 										</Button>
 									</div>

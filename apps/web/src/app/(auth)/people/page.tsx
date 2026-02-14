@@ -100,13 +100,22 @@ export default function PeoplePage() {
   const organization = joinInfo?.organization;
 
   useEffect(() => {
-    if (workspace?.name) setWorkspaceName(workspace.name);
-    if (workspace?.domain) setWorkspaceDomain(workspace.domain);
+    setWorkspaceName(workspace?.name ?? "");
+    setWorkspaceDomain(workspace?.domain ?? "");
   }, [workspace?.name, workspace?.domain]);
 
   useEffect(() => {
-    if (organization?.name) setOrganizationName(organization.name);
+    setOrganizationName(organization?.name ?? "");
   }, [organization?.name]);
+
+  const normalizedWorkspaceName = workspaceName.trim();
+  const normalizedWorkspaceDomain = workspaceDomain.trim();
+  const normalizedOrganizationName = organizationName.trim();
+  const workspaceDetailsChanged =
+    normalizedWorkspaceName !== (workspace?.name ?? "").trim() ||
+    normalizedWorkspaceDomain !== (workspace?.domain ?? "").trim();
+  const organizationNameChanged =
+    normalizedOrganizationName !== (organization?.name ?? "").trim();
 
   const handleCopy = async (value: string, label: string) => {
     if (!value) return;
@@ -188,6 +197,7 @@ export default function PeoplePage() {
       toast.error("Please enter both brand name and brand domain.");
       return;
     }
+    if (!workspaceDetailsChanged) return;
 
     const nextName = workspaceName.trim();
     const nextDomain = workspaceDomain.trim();
@@ -238,6 +248,7 @@ export default function PeoplePage() {
       toast.error("Please enter an organization name.");
       return;
     }
+    if (!organizationNameChanged) return;
 
     setSavingOrg(true);
     try {
@@ -497,7 +508,12 @@ export default function PeoplePage() {
                   </Button>
                   <Button
                     onClick={handleSaveWorkspaceDetails}
-                    disabled={savingWorkspace || !workspaceName.trim() || !workspaceDomain.trim()}
+                    disabled={
+                      savingWorkspace ||
+                      !workspaceName.trim() ||
+                      !workspaceDomain.trim() ||
+                      !workspaceDetailsChanged
+                    }
                     className="w-28"
                   >
                     {savingWorkspace ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
@@ -560,7 +576,9 @@ export default function PeoplePage() {
                   </Button>
                   <Button
                     onClick={handleSaveOrganizationName}
-                    disabled={savingOrg || !organizationName.trim()}
+                    disabled={
+                      savingOrg || !organizationName.trim() || !organizationNameChanged
+                    }
                     className="w-28"
                   >
                     {savingOrg ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
