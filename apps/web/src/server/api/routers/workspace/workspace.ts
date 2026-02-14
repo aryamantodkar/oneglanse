@@ -17,7 +17,7 @@ import {
   agentQueue,
   redis,
 } from "@onescope/services";
-import { db, schema } from "@onescope/db";
+import { clickhouse, db, schema } from "@onescope/db";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { authorizedWorkspaceProcedure, protectedProcedure } from "../../procedures";
 import { createNewWorkspace, addWorkspaceToExistingOrg } from "@/server/services/workspace/workspace";
@@ -145,17 +145,48 @@ export const workspaceRouter = createTRPCRouter({
           }
 
           const { workspaceId, name, domain } = input;
+          const nextName = name.trim();
+          const nextDomain = domain.trim();
+
+          const current = await getWorkspaceById({ workspaceId });
+          const brandChanged =
+            current.name.trim() !== nextName || current.domain.trim() !== nextDomain;
 
           await db
             .update(schema.workspaces)
             .set({
-              name: name.trim(),
-              domain: domain.trim(),
+              name: nextName,
+              domain: nextDomain,
             })
             .where(and(eq(schema.workspaces.id, workspaceId), isNull(schema.workspaces.deletedAt)));
 
+          // Brand identity changed: clear derived analysis only, keep raw prompt responses intact.
+          if (brandChanged) {
+            await clickhouse.command({
+              query: `
+                ALTER TABLE analytics.prompt_analysis
+                DELETE WHERE workspace_id = {workspaceId:String}
+              `,
+              query_params: { workspaceId },
+            });
+
+            await clickhouse.command({
+              query: `
+                ALTER TABLE analytics.prompt_responses
+                UPDATE is_analysed = false
+                WHERE workspace_id = {workspaceId:String}
+              `,
+              query_params: { workspaceId },
+            });
+          }
+
           const workspace = await getWorkspaceById({ workspaceId });
-          return ok(workspace, "Workspace details updated successfully.");
+          return ok(
+            { workspace, analysisReset: brandChanged },
+            brandChanged
+              ? "Workspace details updated. Existing analysis was reset for re-analysis."
+              : "Workspace details updated successfully."
+          );
         });
       }),
 
@@ -173,11 +204,30 @@ export const workspaceRouter = createTRPCRouter({
           }
 
           const workspace = await getWorkspaceById({ workspaceId: input.workspaceId });
+          const baseSlug = input.organizationName
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 64) || "organization";
+
+          let nextSlug = baseSlug;
+          let attempt = 1;
+          while (true) {
+            const existing = await db.query.organization.findFirst({
+              where: eq(schema.organization.slug, nextSlug),
+            });
+
+            if (!existing || existing.id === workspace.tenantId) break;
+            attempt += 1;
+            nextSlug = `${baseSlug}-${attempt}`;
+          }
 
           await db
             .update(schema.organization)
             .set({
               name: input.organizationName.trim(),
+              slug: nextSlug,
             })
             .where(eq(schema.organization.id, workspace.tenantId));
 
