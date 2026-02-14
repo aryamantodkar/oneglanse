@@ -2,13 +2,8 @@ import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchAnthropic } from "./anthropic.js";
 
-
-type AgentFactoryOptions = {
-    proxyPoolId?: string;
-};
-
-export async function anthropicAgent(options: AgentFactoryOptions = {}) {
-    const anthropic = await launchAnthropic({ proxyPoolId: options.proxyPoolId });
+export async function anthropicAgent() {
+    const anthropic = await launchAnthropic();
     
     setupPage(anthropic.page, "anthropic");
 

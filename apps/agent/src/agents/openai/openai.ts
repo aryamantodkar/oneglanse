@@ -2,12 +2,8 @@ import { launchContext } from "../../lib/browser/launchContext.js";
 import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
-type LaunchAgentOptions = {
-    proxyPoolId?: string;
-};
-
-export async function launchOpenAI(options: LaunchAgentOptions = {}) {
-    const { browser, context, proxy } = await launchContext("openai", options.proxyPoolId);
+export async function launchOpenAI() {
+    const { browser, context, proxy } = await launchContext("openai");
 
     let page = null;
 
