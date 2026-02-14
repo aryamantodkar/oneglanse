@@ -48,6 +48,8 @@ import {
 	useFetchAnalysedPrompts,
 	useUserPrompts,
 } from "./_lib/queries/prompt.queries";
+import { ExportMenu } from "@/components/export-menu";
+import { downloadCsv, downloadJson } from "@/lib/export/download";
 
 export default function Prompts() {
 	const searchParams = useSearchParams();
@@ -615,6 +617,48 @@ export default function Prompts() {
 
 					{/* Right: Save action */}
 					<div className="flex items-center gap-2">
+						<ExportMenu
+							disabled={sortedPromptsWithMetrics.length === 0}
+							onExportJson={() => {
+								const promptRows = sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
+									promptId: prompt.id,
+									prompt: prompt.prompt,
+									modelProvider,
+									geoScore: metrics?.geoScore ?? null,
+									sentiment: metrics?.sentiment ?? null,
+									visibility: metrics?.visibility ?? null,
+									position: metrics?.position ?? null,
+									reason: reason ?? null,
+									responses: filteredRecords
+										.filter((r) => r.prompt_id === prompt.id)
+										.map((r) => ({
+											model: r.model_provider,
+											promptRunAt: r.prompt_run_at,
+											response: r.response,
+											citations: r.sources?.length ?? 0,
+										})),
+								}));
+
+								downloadJson(`prompts-${workspaceId}-${Date.now()}.json`, {
+									generatedAt: new Date().toISOString(),
+									workspaceId,
+									filters: { modelFilter, timeFilter, sortBy, sortDirection },
+									rows: promptRows,
+								});
+							}}
+							onExportCsv={() => {
+								const rows = sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
+									prompt: prompt.prompt,
+									model: modelProvider,
+									geo_score: metrics?.geoScore ?? "",
+									sentiment: metrics?.sentiment ?? "",
+									visibility: metrics?.visibility ?? "",
+									position: metrics?.position ?? "",
+									status: reason ?? "ok",
+								}));
+								downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
+							}}
+						/>
 						<Button
 							variant="outline"
 							onClick={handleSave}

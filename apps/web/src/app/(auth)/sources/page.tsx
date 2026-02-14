@@ -29,6 +29,8 @@ import {
 import type { GroupedSource, SourceGroupResult } from "@onescope/types";
 import { getDomain, getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
+import { ExportMenu } from "@/components/export-menu";
+import { downloadCsv, downloadJson } from "@/lib/export/download";
 
 type DomainGroup = {
 	domain: string;
@@ -256,28 +258,70 @@ export default function SourcesPage() {
 						</p>
 					</div>
 
-					<Select value={selectedProvider} onValueChange={setSelectedProvider}>
-						<SelectTrigger className="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-							<SelectValue placeholder="Select Provider" />
-						</SelectTrigger>
-						<SelectContent>
-							{modelSelectors.map(({ value, label }) => {
-								const icon = value === "All Models" ? "" : getModelFavicon(value);
-								return (
-									<SelectItem key={value} value={value}>
-										<div className="flex items-center gap-2">
-											{value === "All Models" ? (
-												<Bot className="h-4 w-4 text-muted-foreground" />
-											) : (
-												<img src={icon} alt={value} className="h-4 w-4 rounded-sm" />
-											)}
-											<span>{label}</span>
-										</div>
-									</SelectItem>
-								);
-							})}
-						</SelectContent>
-					</Select>
+					<div className="flex items-center gap-2">
+						<ExportMenu
+							disabled={!hasData}
+							onExportJson={() => {
+								downloadJson(`sources-${workspaceId}-${Date.now()}.json`, {
+									generatedAt: new Date().toISOString(),
+									workspaceId,
+									filters: {
+										selectedProvider,
+										activeTab,
+									},
+									aggregate,
+									domainGroups: domainGroups.map((group) => ({
+										domain: group.domain,
+										totalCitations: group.totalCitations,
+										urlCount: group.urlCount,
+										providers: Array.from(group.providers),
+									})),
+									sources: displayedSources,
+								});
+							}}
+							onExportCsv={() => {
+								const rows = [
+									...domainGroups.map((group) => ({
+										section: "domain",
+										domain: group.domain,
+										total_citations: group.totalCitations,
+										url_count: group.urlCount,
+										providers: Array.from(group.providers).join(", "),
+									})),
+									...displayedSources.map((source) => ({
+										section: "citation",
+										url: source.url,
+										title: source.title,
+										total_citations: source.totalSources ?? 0,
+										domain: getDomain(source.url) || "",
+									})),
+								];
+								downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
+							}}
+						/>
+						<Select value={selectedProvider} onValueChange={setSelectedProvider}>
+							<SelectTrigger className="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
+								<SelectValue placeholder="Select Provider" />
+							</SelectTrigger>
+							<SelectContent>
+								{modelSelectors.map(({ value, label }) => {
+									const icon = value === "All Models" ? "" : getModelFavicon(value);
+									return (
+										<SelectItem key={value} value={value}>
+											<div className="flex items-center gap-2">
+												{value === "All Models" ? (
+													<Bot className="h-4 w-4 text-muted-foreground" />
+												) : (
+													<img src={icon} alt={value} className="h-4 w-4 rounded-sm" />
+												)}
+												<span>{label}</span>
+											</div>
+										</SelectItem>
+									);
+								})}
+							</SelectContent>
+						</Select>
+					</div>
 				</div>
 
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

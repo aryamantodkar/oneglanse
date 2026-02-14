@@ -8,6 +8,8 @@ import {
 	useFetchAnalysedPrompts,
 	usePromptSources,
 } from "../prompts/_lib/queries/prompt.queries";
+import { ExportMenu } from "@/components/export-menu";
+import { downloadCsv, downloadJson } from "@/lib/export/download";
 
 // Components
 import { DashboardFilters } from "./_components/filters";
@@ -92,14 +94,69 @@ export default function Dashboard() {
 			<div className="mx-auto w-full max-w-[95vw] px-4 pt-4 pb-12 sm:px-6 lg:px-8 xl:max-w-[1600px]">
 				<div className="ui-stagger space-y-6">
 					{/* Filters */}
-					<DashboardFilters
-						brandName={metrics.brandName}
-						brandDomain={metrics.brandDomain}
-						modelFilter={modelFilter}
-						setModelFilter={setModelFilter}
-						timeFilter={timeFilter}
-						setTimeFilter={setTimeFilter}
-					/>
+					<div className="flex items-center justify-between gap-3">
+						<DashboardFilters
+							brandName={metrics.brandName}
+							brandDomain={metrics.brandDomain}
+							modelFilter={modelFilter}
+							setModelFilter={setModelFilter}
+							timeFilter={timeFilter}
+							setTimeFilter={setTimeFilter}
+						/>
+						<ExportMenu
+							disabled={!hasFilteredAnalysis}
+							onExportJson={() => {
+								const generatedAt = new Date().toISOString();
+								const promptRows = metrics.analyzedRecords.map((record) => ({
+									promptId: record.prompt_id,
+									prompt: record.prompt,
+									modelProvider: record.model_provider,
+									promptRunAt: record.prompt_run_at,
+									geoScore: record.brand_analysis?.geoScore?.overall ?? null,
+									sentiment: record.brand_analysis?.sentiment?.score ?? null,
+									visibility: record.brand_analysis?.presence?.visibility ?? null,
+									position: record.brand_analysis?.position?.rankPosition ?? null,
+									recommendation: record.brand_analysis?.recommendation?.type ?? null,
+									citations: record.sources?.length ?? 0,
+								}));
+
+								downloadJson(
+									`dashboard-${workspaceId}-${Date.now()}.json`,
+									{
+										generatedAt,
+										workspaceId,
+										filters: { modelFilter, timeFilter },
+										summary: {
+											brandName: metrics.brandName,
+											brandDomain: metrics.brandDomain,
+											presenceRate: metrics.aggregateStats.presenceRate,
+											avgRank: metrics.avgRank.position,
+											topSource: metrics.sourcesIntelligence[0]?.domain ?? null,
+											topCompetitor: metrics.aggregateStats.topCompetitor,
+											totalCitations: metrics.totalCitations,
+										},
+										competitors: metrics.competitorData,
+										sources: metrics.sourcesIntelligence,
+										prompts: promptRows,
+									},
+								);
+							}}
+							onExportCsv={() => {
+								const rows = metrics.analyzedRecords.map((record) => ({
+									prompt: record.prompt,
+									model: record.model_provider,
+									prompt_run_at: record.prompt_run_at,
+									geo_score: record.brand_analysis?.geoScore?.overall ?? "",
+									sentiment: record.brand_analysis?.sentiment?.score ?? "",
+									visibility: record.brand_analysis?.presence?.visibility ?? "",
+									position: record.brand_analysis?.position?.rankPosition ?? "",
+									recommendation: record.brand_analysis?.recommendation?.type ?? "",
+									citations: record.sources?.length ?? 0,
+								}));
+								downloadCsv(`dashboard-${workspaceId}-${Date.now()}.csv`, rows);
+							}}
+						/>
+					</div>
 
 					{/* Aggregate Stats */}
 					<AggregateStatsRow

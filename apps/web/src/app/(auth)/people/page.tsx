@@ -22,13 +22,17 @@ import {
 } from "@onescope/ui";
 import {
   Building2,
+  Download,
   Loader2,
+  Pencil,
   Plus,
   Settings,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { api } from "@/trpc/react";
+import { downloadCsv, downloadJson } from "@/lib/export/download";
 
 interface WorkspaceMember {
   memberId: string;
@@ -43,6 +47,7 @@ interface WorkspaceMember {
 export default function PeoplePage() {
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get("workspace") ?? "";
+  const utils = api.useUtils();
 
   // Workspace members state
   const [wsInviteEmail, setWsInviteEmail] = useState("");
@@ -65,6 +70,18 @@ export default function PeoplePage() {
   );
   const joinInfo = joinInfoQuery.data?.data;
   const joinInfoLoading = joinInfoQuery.isLoading;
+  const userPromptsQuery = api.prompt.fetchUserPrompts.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId }
+  );
+  const analysisQuery = api.analysis.fetchAnalysis.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId }
+  );
+  const sourcesQuery = api.prompt.fetchPromptSources.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId }
+  );
 
   const addWsMemberMutation = api.workspace.addMember.useMutation();
   const removeWsMemberMutation = api.workspace.removeMember.useMutation();
@@ -76,6 +93,8 @@ export default function PeoplePage() {
   const [organizationName, setOrganizationName] = useState("");
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [savingOrg, setSavingOrg] = useState(false);
+  const [isEditingWorkspace, setIsEditingWorkspace] = useState(false);
+  const [isEditingOrg, setIsEditingOrg] = useState(false);
 
   const workspace = workspaceQuery.data?.data;
   const organization = joinInfo?.organization;
@@ -170,12 +189,25 @@ export default function PeoplePage() {
       return;
     }
 
+    const nextName = workspaceName.trim();
+    const nextDomain = workspaceDomain.trim();
+    const brandChanged =
+      (workspace?.name ?? "").trim() !== nextName ||
+      (workspace?.domain ?? "").trim() !== nextDomain;
+
+    if (brandChanged) {
+      const confirmed = window.confirm(
+        "Changing brand details will erase all analyzed data for this workspace and require re-analysis. Prompt responses will remain intact. Continue?"
+      );
+      if (!confirmed) return;
+    }
+
     setSavingWorkspace(true);
     try {
       const result = await updateWorkspaceMutation.mutateAsync({
         workspaceId,
-        name: workspaceName.trim(),
-        domain: workspaceDomain.trim(),
+        name: nextName,
+        domain: nextDomain,
       });
 
       if (!result?.success) {
@@ -183,8 +215,17 @@ export default function PeoplePage() {
         return;
       }
 
-      toast.success("Workspace details updated.");
+      if ((result.data as any)?.analysisReset) {
+        toast.success("Brand details updated. Previous analysis was cleared and will be regenerated on next analysis run.");
+      } else {
+        toast.success("Workspace details updated.");
+      }
       await workspaceQuery.refetch();
+      await joinInfoQuery.refetch();
+      await utils.workspace.listAllForUser.invalidate();
+      await utils.workspace.getById.invalidate({ workspaceId });
+      await utils.workspace.getJoinInfo.invalidate({ workspaceId });
+      setIsEditingWorkspace(false);
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to update workspace details.");
     } finally {
@@ -212,11 +253,77 @@ export default function PeoplePage() {
 
       toast.success("Organization name updated.");
       await joinInfoQuery.refetch();
+      await utils.workspace.listAllForUser.invalidate();
+      await utils.workspace.getJoinInfo.invalidate({ workspaceId });
+      setIsEditingOrg(false);
     } catch (err: any) {
       toast.error(err?.message ?? "Only workspace owners can update organization name.");
     } finally {
       setSavingOrg(false);
     }
+  };
+
+  const handleExportAllJson = () => {
+    const userPrompts = userPromptsQuery.data?.data ?? [];
+    const analysisData = analysisQuery.data?.data ?? [];
+    const sourceData = sourcesQuery.data?.data ?? null;
+
+    downloadJson(`workspace-all-${workspaceId}-${Date.now()}.json`, {
+      generatedAt: new Date().toISOString(),
+      workspace: workspace ?? null,
+      organization: organization ?? null,
+      exports: {
+        dashboard: {
+          analysisCount: Array.isArray(analysisData) ? analysisData.length : 0,
+          records: analysisData,
+        },
+        prompts: {
+          promptCount: userPrompts.length,
+          prompts: userPrompts,
+          analyses: analysisData,
+        },
+        sources: sourceData,
+      },
+    });
+  };
+
+  const handleExportAllCsv = () => {
+    const userPrompts = userPromptsQuery.data?.data ?? [];
+    const analysisData = Array.isArray(analysisQuery.data?.data)
+      ? analysisQuery.data?.data
+      : [];
+    const sourceStats = sourcesQuery.data?.data?.sourceStats;
+    const combinedSources = sourceStats?.combined ?? [];
+
+    const rows: Array<Record<string, unknown>> = [
+      ...userPrompts.map((prompt) => ({
+        section: "prompts",
+        prompt_id: prompt.id,
+        prompt: prompt.prompt,
+        created_at: prompt.created_at,
+      })),
+      ...analysisData.map((record: any) => ({
+        section: "dashboard_analysis",
+        prompt_id: record.prompt_id,
+        prompt: record.prompt,
+        model: record.model_provider,
+        prompt_run_at: record.prompt_run_at,
+        geo_score: record.brand_analysis?.geoScore?.overall ?? "",
+        sentiment: record.brand_analysis?.sentiment?.score ?? "",
+        visibility: record.brand_analysis?.presence?.visibility ?? "",
+        position: record.brand_analysis?.position?.rankPosition ?? "",
+        recommendation: record.brand_analysis?.recommendation?.type ?? "",
+        citations: record.sources?.length ?? 0,
+      })),
+      ...combinedSources.map((source: any) => ({
+        section: "sources",
+        url: source.url,
+        title: source.title,
+        total_citations: source.totalSources ?? 0,
+      })),
+    ];
+
+    downloadCsv(`workspace-all-${workspaceId}-${Date.now()}.csv`, rows);
   };
 
   const getRoleBadgeClass = (role: string) => {
@@ -256,11 +363,30 @@ export default function PeoplePage() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-gray-500" />
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Brand Workspace</p>
+        <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+          <div className="flex h-full flex-col rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Brand Workspace</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  if (isEditingWorkspace) {
+                    setWorkspaceName(workspace?.name ?? "");
+                    setWorkspaceDomain(workspace?.domain ?? "");
+                    setIsEditingWorkspace(false);
+                    return;
+                  }
+                  setIsEditingWorkspace(true);
+                }}
+                aria-label={isEditingWorkspace ? "Cancel editing workspace" : "Edit workspace"}
+              >
+                {isEditingWorkspace ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+              </Button>
             </div>
             <div className="space-y-2">
               <Label htmlFor="settings-workspace-name">Brand Name</Label>
@@ -269,33 +395,80 @@ export default function PeoplePage() {
                 value={workspaceName}
                 onChange={(e) => setWorkspaceName(e.target.value)}
                 placeholder="e.g. Pipedrive"
+                disabled={!isEditingWorkspace}
               />
             </div>
-            <div className="space-y-2">
+            <div className="mt-3 space-y-2">
               <Label htmlFor="settings-workspace-domain">Brand Domain</Label>
               <Input
                 id="settings-workspace-domain"
                 value={workspaceDomain}
                 onChange={(e) => setWorkspaceDomain(e.target.value)}
                 placeholder="e.g. pipedrive.com"
+                disabled={!isEditingWorkspace}
               />
               <p className="text-xs text-gray-500">
                 Used to track your brand visibility and citations in AI responses.
               </p>
+              {isEditingWorkspace && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/60 dark:bg-amber-950/20">
+                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                    Warning: Changing brand details clears all analyzed data in this workspace.
+                    Raw prompt responses are not deleted.
+                  </p>
+                </div>
+              )}
             </div>
-            <Button
-              onClick={handleSaveWorkspaceDetails}
-              disabled={savingWorkspace || !workspaceName.trim() || !workspaceDomain.trim()}
-              className="w-full"
-            >
-              {savingWorkspace ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Workspace"}
-            </Button>
+
+            <div className="mt-auto flex items-center justify-end gap-2 pt-4">
+              {isEditingWorkspace && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-28"
+                    onClick={() => {
+                      setWorkspaceName(workspace?.name ?? "");
+                      setWorkspaceDomain(workspace?.domain ?? "");
+                      setIsEditingWorkspace(false);
+                    }}
+                    disabled={savingWorkspace}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveWorkspaceDetails}
+                    disabled={savingWorkspace || !workspaceName.trim() || !workspaceDomain.trim()}
+                    className="w-28"
+                  >
+                    {savingWorkspace ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-gray-500" />
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Organization</p>
+          <div className="flex h-full flex-col rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-gray-500" />
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Organization</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  if (isEditingOrg) {
+                    setOrganizationName(organization?.name ?? "");
+                    setIsEditingOrg(false);
+                    return;
+                  }
+                  setIsEditingOrg(true);
+                }}
+                aria-label={isEditingOrg ? "Cancel editing organization" : "Edit organization"}
+              >
+                {isEditingOrg ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+              </Button>
             </div>
             <div className="space-y-2">
               <Label htmlFor="settings-org-name">Organization Name</Label>
@@ -304,19 +477,76 @@ export default function PeoplePage() {
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
                 placeholder="Enter organization name"
+                disabled={!isEditingOrg}
               />
               <p className="text-xs text-gray-500">
                 Only workspace owners can rename the organization.
               </p>
             </div>
-            <Button
-              onClick={handleSaveOrganizationName}
-              disabled={savingOrg || !organizationName.trim()}
-              variant="outline"
-              className="w-full"
-            >
-              {savingOrg ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Organization"}
-            </Button>
+
+            <div className="mt-auto flex items-center justify-end gap-2 pt-4">
+              {isEditingOrg && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-28"
+                    onClick={() => {
+                      setOrganizationName(organization?.name ?? "");
+                      setIsEditingOrg(false);
+                    }}
+                    disabled={savingOrg}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveOrganizationName}
+                    disabled={savingOrg || !organizationName.trim()}
+                    className="w-28"
+                  >
+                    {savingOrg ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Export All Data</p>
+              <p className="text-xs text-gray-500">
+                Export Dashboard, Prompts, and Sources data together in one file.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExportAllJson}
+                disabled={
+                  userPromptsQuery.isLoading ||
+                  analysisQuery.isLoading ||
+                  sourcesQuery.isLoading
+                }
+              >
+                <Download className="h-4 w-4" />
+                Export All JSON
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExportAllCsv}
+                disabled={
+                  userPromptsQuery.isLoading ||
+                  analysisQuery.isLoading ||
+                  sourcesQuery.isLoading
+                }
+              >
+                <Download className="h-4 w-4" />
+                Export All CSV
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -337,6 +567,11 @@ export default function PeoplePage() {
             <p className="text-xs text-gray-500">
               Share the workspace code to let teammates join instantly.
             </p>
+            {joinInfo?.organization?.name && (
+              <p className="mt-1 text-xs text-gray-500">
+                Organization: <span className="font-medium text-gray-700 dark:text-gray-300">{joinInfo.organization.name}</span>
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {joinInfoLoading ? (

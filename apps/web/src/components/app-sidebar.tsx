@@ -305,12 +305,6 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
                     maxWidth: "var(--radix-dropdown-menu-trigger-width)",
                   }}
                 >
-                  <DropdownMenuItem>
-                    <span>Account</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Billing</span>
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     {isLoading ? (
                       <Loader2 className="size-4 animate-spin" />

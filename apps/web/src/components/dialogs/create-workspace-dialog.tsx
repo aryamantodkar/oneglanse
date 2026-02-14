@@ -119,18 +119,21 @@ export function CreateWorkspaceDialog({
         <DialogHeader>
           <DialogTitle>Create Workspace</DialogTitle>
           <DialogDescription>
-            Add a new workspace to this organization.
+            Add a new brand workspace to this organization.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="ws-name">Workspace Name</Label>
+            <Label htmlFor="ws-name">Brand Name</Label>
             <Input
               id="ws-name"
-              placeholder="My Workspace"
+              placeholder="e.g. Pipedrive"
               value={formData.name}
               onChange={(e) => handleNameChange(e.target.value)}
             />
+            <p className="text-xs text-gray-500">
+              Used as the tracked brand name in analysis.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="ws-slug">Slug</Label>
@@ -144,15 +147,18 @@ export function CreateWorkspaceDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ws-domain">Domain</Label>
+            <Label htmlFor="ws-domain">Brand Domain</Label>
             <Input
               id="ws-domain"
-              placeholder="example.com"
+              placeholder="e.g. pipedrive.com"
               value={formData.domain}
               onChange={(e) =>
                 setFormData({ ...formData, domain: e.target.value })
               }
             />
+            <p className="text-xs text-gray-500">
+              Used for source matching and brand visibility tracking.
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Location</Label>
