@@ -7,6 +7,7 @@ import { Clock, Loader2, Check } from "lucide-react";
 import { api } from "@/trpc/react";
 
 const SCHEDULE_OPTIONS = [
+  { label: "Every 3 hours", value: "0 */3 * * *", description: "Runs 8 times daily (midnight, 3 AM, 6 AM, 9 AM, noon, 3 PM, 6 PM, 9 PM)" },
   { label: "Every 6 hours", value: "0 */6 * * *", description: "Runs at midnight, 6 AM, noon, and 6 PM" },
   { label: "Every 12 hours", value: "0 */12 * * *", description: "Runs at midnight and noon" },
   { label: "Every day", value: "0 0 * * *", description: "Runs once daily at midnight" },
