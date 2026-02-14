@@ -5,7 +5,7 @@ import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToF
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 
-const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
+const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 1);
 const INITIAL_EXTRACTION_RETRY_DELAY = Number(process.env.EXTRACTION_RETRY_DELAY_MS ?? 2000);
 const MAX_EXTRACTION_RETRY_DELAY = Number(process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000);
 

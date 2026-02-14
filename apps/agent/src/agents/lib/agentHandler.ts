@@ -2,19 +2,32 @@ import { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "./runAgents.js";
 import { logger } from "../../lib/utils/logger.js";
 import { Provider, AskPromptResult, PromptPayload } from "@onescope/types";
-import { markProxyBad, fetchProxies } from "../../lib/browser/proxyPool.js";
+import { recordProxyResult, fetchProxies } from "../../lib/browser/proxyPool.js";
+import type { FailureType } from "../../lib/browser/pageHealthCheck.js";
 import { AuthError, IPRefreshNeededError } from "@onescope/errors";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
-const PROXIES_PER_CYCLE = 3;
-const MAX_CYCLES = 30; // More proxy refresh opportunities across all providers
-const INITIAL_BACKOFF = 10_000; // 10 seconds
+const PROXIES_PER_CYCLE = 5; // More proxies per cycle since health checks fail fast
+const MAX_CYCLES = 10; // Fewer cycles needed with fast-fail
+const INITIAL_BACKOFF = 5_000; // 5 seconds — shorter since bad proxies are caught quickly
 const MAX_CYCLE_BACKOFF = 60_000; // Cap cycle backoff at 60s
-const RETRY_DELAY = 3000; // 3 seconds
+const RETRY_DELAY = 2000; // 2 seconds between proxy attempts
 
 function getCycleBackoffMs(cycle: number): number {
   if (cycle <= 0) return 0;
   return Math.min(INITIAL_BACKOFF * Math.pow(2, cycle - 1), MAX_CYCLE_BACKOFF);
+}
+
+function classifyError(err: any): FailureType {
+  const msg = String(err?.message ?? "").toLowerCase();
+  if (/err_proxy|err_connection|err_ssl|err_timed_out/i.test(msg)) return "connection_error";
+  if (/bot.?detect|cloudflare|captcha|turnstile|challenge/i.test(msg)) return "bot_detection";
+  if (/logged.?out|login|auth.*missing|session.*invalid|authentication is false/i.test(msg)) return "logged_out";
+  if (/rate.?limit|too many|usage.?limit/i.test(msg)) return "rate_limited";
+  if (/no.*editor|editor.*not.*ready|no_editor/i.test(msg)) return "no_editor";
+  if (/extraction.*fail|empty.*response/i.test(msg)) return "extraction_failed";
+  if (/timed?\s*out/i.test(msg)) return "timeout";
+  return "unknown";
 }
 
 export async function agentHandler(
@@ -84,8 +97,11 @@ export async function agentHandler(
               ),
             ]);
 
-            // Success - combine with accumulated results and return
+            // Success — record good proxy and return results
           accumulatedResults.push(...result);
+          if (refs.proxy) {
+            recordProxyResult(refs.proxy, true, undefined, provider);
+          }
           return accumulatedResults;
         } catch (err: any) {
           if (err instanceof AuthError) {
@@ -108,9 +124,10 @@ export async function agentHandler(
 
             logger.log(`${label} saved ${err.partialResults.length} successful prompts, ${err.remainingPrompts.length} remaining`);
 
-            // Mark proxy as bad and continue to next attempt with new IP
+            // Record proxy failure with specific failure type for scoring
             if (refs.proxy) {
-              markProxyBad(refs.proxy);
+              const failureType = (err.failureType as FailureType) ?? classifyError(err);
+              recordProxyResult(refs.proxy, false, failureType, provider);
             }
 
             // Continue to next attempt (new IP)
@@ -120,11 +137,12 @@ export async function agentHandler(
             continue;
           }
 
-          // Regular error - log and mark proxy as bad
-          logger.error(`${label} failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}):`, err?.message ?? err);
+          // Regular error — classify and record for proxy scoring
+          const failureType = classifyError(err);
+          logger.error(`${label} failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}, type=${failureType}):`, err?.message ?? err);
 
           if (refs.proxy) {
-            markProxyBad(refs.proxy);
+            recordProxyResult(refs.proxy, false, failureType, provider);
           }
 
           if (attempt < PROXIES_PER_CYCLE - 1) {
