@@ -2,8 +2,12 @@ import { launchContext } from "../../lib/browser/launchContext.js";
 import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
-export async function launchAnthropic() {
-    const { browser, context, proxy } = await launchContext("anthropic");
+type LaunchAgentOptions = {
+    proxyPoolId?: string;
+};
+
+export async function launchAnthropic(options: LaunchAgentOptions = {}) {
+    const { browser, context, proxy } = await launchContext("anthropic", options.proxyPoolId);
     const page = await context.newPage();
 
     logger.log("📍 Navigating to https://claude.ai/new");

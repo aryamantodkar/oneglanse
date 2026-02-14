@@ -3,7 +3,6 @@ import { Job, Worker } from "bullmq";
 import { redis, waitForRedis, storePromptResponses, analysePromptsForWorkspace } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 import { AgentResult, ModelResult, PromptPayload, Provider, UserPrompt } from "@onescope/types";
-import { fetchProxies } from "./lib/browser/proxyPool.js";
 import { agentHandler } from "./agents/lib/agentHandler.js";
 import { openaiAgent } from "./agents/openai/openaiAgent.js";
 import { anthropicAgent } from "./agents/anthropic/anthropicAgent.js";
@@ -20,7 +19,7 @@ type ProviderJobData = {
 
 const providerConfig: Record<
   Provider,
-  { label: string; factory: () => Promise<any> }
+  { label: string; factory: (options: { proxyPoolId: string }) => Promise<any> }
 > = {
   openai: { label: "OpenAI", factory: openaiAgent },
   anthropic: { label: "Anthropic", factory: anthropicAgent },
@@ -29,7 +28,6 @@ const providerConfig: Record<
 
 async function startWorker() {
   await waitForRedis();
-  await fetchProxies();
 
   const worker = new Worker(
     "onescope-agent",
@@ -169,8 +167,9 @@ async function startWorker() {
         password: process.env.REDIS_PASSWORD,
       },
       concurrency: 3, // one job per provider in parallel
-      lockDuration: 60 * 60 * 1000, // 1 hour — must exceed worst-case job duration to prevent stall re-queues
-      stalledInterval: 60 * 60 * 1000,
+      lockDuration: 2 * 60 * 1000, // Renew lock frequently to avoid long stale-lock windows
+      stalledInterval: 30 * 1000, // Check stalled jobs every 30s
+      maxStalledCount: 3, // Allow transient disconnects/restarts before hard-failing a job
     }
   );
 

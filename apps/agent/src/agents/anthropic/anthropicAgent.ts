@@ -3,8 +3,12 @@ import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchAnthropic } from "./anthropic.js";
 
 
-export async function anthropicAgent() {
-    const anthropic = await launchAnthropic();
+type AgentFactoryOptions = {
+    proxyPoolId?: string;
+};
+
+export async function anthropicAgent(options: AgentFactoryOptions = {}) {
+    const anthropic = await launchAnthropic({ proxyPoolId: options.proxyPoolId });
     
     setupPage(anthropic.page, "anthropic");
 

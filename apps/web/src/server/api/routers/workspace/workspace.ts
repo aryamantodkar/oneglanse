@@ -28,6 +28,7 @@ export const workspaceRouter = createTRPCRouter({
     create: protectedProcedure
       .input(
         z.object({
+          organizationName: z.string().min(2).max(80).optional(),
           name: z.string().min(2).max(50),
           slug: z.string().min(2).max(50),
           domain: z.string().min(2).max(50),
@@ -42,13 +43,22 @@ export const workspaceRouter = createTRPCRouter({
             headers,
           } = ctx;
 
-          const { name, slug, domain, country, region } = input;
+          const { organizationName, name, slug, domain, country, region } = input;
 
           if (!name || !domain || !slug || !country) {
             throw new ValidationError("Please fill all the mandatory fields.");
           }
 
-          const res = await createNewWorkspace({name, slug, domain, country, region, userId, headers });
+          const res = await createNewWorkspace({
+            organizationName,
+            name,
+            slug,
+            domain,
+            country,
+            region,
+            userId,
+            headers,
+          });
 
           return ok(res, "Workspace created successfully.");
         })
@@ -117,6 +127,65 @@ export const workspaceRouter = createTRPCRouter({
           const { workspaceId } = ctx;
           const members = await getWorkspaceMembersWithUsers({ workspaceId });
           return ok(members, "Workspace members fetched successfully.");
+        });
+      }),
+
+    updateDetails: authorizedWorkspaceProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().min(1),
+          name: z.string().min(2).max(80),
+          domain: z.string().min(2).max(256),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return safeHandler(async () => {
+          if (ctx.membership.role !== "owner") {
+            throw new ValidationError("Only workspace owners can update workspace details.");
+          }
+
+          const { workspaceId, name, domain } = input;
+
+          await db
+            .update(schema.workspaces)
+            .set({
+              name: name.trim(),
+              domain: domain.trim(),
+            })
+            .where(and(eq(schema.workspaces.id, workspaceId), isNull(schema.workspaces.deletedAt)));
+
+          const workspace = await getWorkspaceById({ workspaceId });
+          return ok(workspace, "Workspace details updated successfully.");
+        });
+      }),
+
+    updateOrganizationName: authorizedWorkspaceProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().min(1),
+          organizationName: z.string().min(2).max(80),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return safeHandler(async () => {
+          if (ctx.membership.role !== "owner") {
+            throw new ValidationError("Only workspace owners can rename the organization.");
+          }
+
+          const workspace = await getWorkspaceById({ workspaceId: input.workspaceId });
+
+          await db
+            .update(schema.organization)
+            .set({
+              name: input.organizationName.trim(),
+            })
+            .where(eq(schema.organization.id, workspace.tenantId));
+
+          const organization = await db.query.organization.findFirst({
+            where: eq(schema.organization.id, workspace.tenantId),
+          });
+
+          return ok(organization, "Organization name updated successfully.");
         });
       }),
 

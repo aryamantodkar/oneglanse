@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Button,
   Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
@@ -20,8 +21,10 @@ import {
   toast,
 } from "@onescope/ui";
 import {
+  Building2,
   Loader2,
   Plus,
+  Settings,
   Trash2,
   Users,
 } from "lucide-react";
@@ -51,6 +54,10 @@ export default function PeoplePage() {
     { workspaceId },
     { enabled: !!workspaceId }
   );
+  const workspaceQuery = api.workspace.getById.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId }
+  );
   const wsMembers = (wsMembersQuery.data?.data ?? []) as WorkspaceMember[];
   const joinInfoQuery = api.workspace.getJoinInfo.useQuery(
     { workspaceId },
@@ -61,6 +68,26 @@ export default function PeoplePage() {
 
   const addWsMemberMutation = api.workspace.addMember.useMutation();
   const removeWsMemberMutation = api.workspace.removeMember.useMutation();
+  const updateWorkspaceMutation = api.workspace.updateDetails.useMutation();
+  const updateOrgMutation = api.workspace.updateOrganizationName.useMutation();
+
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceDomain, setWorkspaceDomain] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
+  const [savingWorkspace, setSavingWorkspace] = useState(false);
+  const [savingOrg, setSavingOrg] = useState(false);
+
+  const workspace = workspaceQuery.data?.data;
+  const organization = joinInfo?.organization;
+
+  useEffect(() => {
+    if (workspace?.name) setWorkspaceName(workspace.name);
+    if (workspace?.domain) setWorkspaceDomain(workspace.domain);
+  }, [workspace?.name, workspace?.domain]);
+
+  useEffect(() => {
+    if (organization?.name) setOrganizationName(organization.name);
+  }, [organization?.name]);
 
   const handleCopy = async (value: string, label: string) => {
     if (!value) return;
@@ -137,6 +164,61 @@ export default function PeoplePage() {
     }
   };
 
+  const handleSaveWorkspaceDetails = async () => {
+    if (!workspaceName.trim() || !workspaceDomain.trim()) {
+      toast.error("Please enter both brand name and brand domain.");
+      return;
+    }
+
+    setSavingWorkspace(true);
+    try {
+      const result = await updateWorkspaceMutation.mutateAsync({
+        workspaceId,
+        name: workspaceName.trim(),
+        domain: workspaceDomain.trim(),
+      });
+
+      if (!result?.success) {
+        toast.error(result?.message ?? "Failed to update workspace details.");
+        return;
+      }
+
+      toast.success("Workspace details updated.");
+      await workspaceQuery.refetch();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to update workspace details.");
+    } finally {
+      setSavingWorkspace(false);
+    }
+  };
+
+  const handleSaveOrganizationName = async () => {
+    if (!organizationName.trim()) {
+      toast.error("Please enter an organization name.");
+      return;
+    }
+
+    setSavingOrg(true);
+    try {
+      const result = await updateOrgMutation.mutateAsync({
+        workspaceId,
+        organizationName: organizationName.trim(),
+      });
+
+      if (!result?.success) {
+        toast.error(result?.message ?? "Failed to update organization name.");
+        return;
+      }
+
+      toast.success("Organization name updated.");
+      await joinInfoQuery.refetch();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Only workspace owners can update organization name.");
+    } finally {
+      setSavingOrg(false);
+    }
+  };
+
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
       case "owner":
@@ -166,6 +248,79 @@ export default function PeoplePage() {
 
   return (
     <div className="ui-page-enter ui-stagger mx-auto max-w-4xl space-y-8 py-6">
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <Settings className="h-5 w-5 text-gray-500" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Workspace Settings
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-gray-500" />
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Brand Workspace</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="settings-workspace-name">Brand Name</Label>
+              <Input
+                id="settings-workspace-name"
+                value={workspaceName}
+                onChange={(e) => setWorkspaceName(e.target.value)}
+                placeholder="e.g. Pipedrive"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="settings-workspace-domain">Brand Domain</Label>
+              <Input
+                id="settings-workspace-domain"
+                value={workspaceDomain}
+                onChange={(e) => setWorkspaceDomain(e.target.value)}
+                placeholder="e.g. pipedrive.com"
+              />
+              <p className="text-xs text-gray-500">
+                Used to track your brand visibility and citations in AI responses.
+              </p>
+            </div>
+            <Button
+              onClick={handleSaveWorkspaceDetails}
+              disabled={savingWorkspace || !workspaceName.trim() || !workspaceDomain.trim()}
+              className="w-full"
+            >
+              {savingWorkspace ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Workspace"}
+            </Button>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-gray-500" />
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Organization</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="settings-org-name">Organization Name</Label>
+              <Input
+                id="settings-org-name"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                placeholder="Enter organization name"
+              />
+              <p className="text-xs text-gray-500">
+                Only workspace owners can rename the organization.
+              </p>
+            </div>
+            <Button
+              onClick={handleSaveOrganizationName}
+              disabled={savingOrg || !organizationName.trim()}
+              variant="outline"
+              className="w-full"
+            >
+              {savingOrg ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Organization"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Workspace Members Section */}
       <section>
         <div className="mb-4 flex items-center gap-2">
