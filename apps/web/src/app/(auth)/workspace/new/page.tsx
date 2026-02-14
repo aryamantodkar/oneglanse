@@ -105,7 +105,9 @@ export default function NewWorkspace() {
         return;
       }
     
-      const { workspace, org } = response.data;  
+      const { workspace, org, isFirstWorkspace } = response.data as typeof response.data & {
+        isFirstWorkspace?: boolean;
+      };  
 
       try {
         await authClient.organization.setActive({
@@ -118,6 +120,9 @@ export default function NewWorkspace() {
       }
 
       router.refresh();
+      if (isFirstWorkspace) {
+        return router.push(`/onboarding?workspace=${workspace.id}`);
+      }
       return router.push(`/dashboard?workspace=${workspace.id}`);
     } finally {
       setLoading(false);

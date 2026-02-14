@@ -49,6 +49,14 @@ export const workspaceRouter = createTRPCRouter({
             throw new ValidationError("Please fill all the mandatory fields.");
           }
 
+          const existingMembership = await db.query.workspaceMembers.findFirst({
+            where: and(
+              eq(schema.workspaceMembers.userId, userId),
+              isNull(schema.workspaceMembers.deletedAt)
+            ),
+          });
+          const isFirstWorkspace = !existingMembership;
+
           const res = await createNewWorkspace({
             organizationName,
             name,
@@ -60,7 +68,7 @@ export const workspaceRouter = createTRPCRouter({
             headers,
           });
 
-          return ok(res, "Workspace created successfully.");
+          return ok({ ...res, isFirstWorkspace }, "Workspace created successfully.");
         })
       }),
 
@@ -113,11 +121,19 @@ export const workspaceRouter = createTRPCRouter({
             throw new ValidationError("Please fill all the mandatory fields.");
           }
 
+          const existingMembership = await db.query.workspaceMembers.findFirst({
+            where: and(
+              eq(schema.workspaceMembers.userId, userId),
+              isNull(schema.workspaceMembers.deletedAt)
+            ),
+          });
+          const isFirstWorkspace = !existingMembership;
+
           const res = await addWorkspaceToExistingOrg({
             name, slug, domain, country, region, userId, tenantId,
           });
 
-          return ok(res, "Workspace created successfully.");
+          return ok({ ...res, isFirstWorkspace }, "Workspace created successfully.");
         });
       }),
 

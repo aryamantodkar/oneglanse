@@ -13,6 +13,7 @@ export default function LayoutContent({ children, workspace, userName, userEmail
   const searchParams = useSearchParams();
   const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
+  const isOnboardingFlow = pathname?.startsWith("/onboarding");
   const shownJobsRef = useRef<Set<string>>(new Set());
 
   const workspaceIdFromUrl = searchParams.get("workspace") ?? "";
@@ -43,6 +44,16 @@ export default function LayoutContent({ children, workspace, userName, userEmail
 
           {/* Page content */}
           <div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">{children}</div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isOnboardingFlow) {
+    return (
+      <div className="ui-page-enter flex h-screen w-full">
+        <main className="flex flex-1 flex-col min-h-0">
+          <div className="ui-page-enter flex-1 min-h-0 overflow-auto">{children}</div>
         </main>
       </div>
     );
