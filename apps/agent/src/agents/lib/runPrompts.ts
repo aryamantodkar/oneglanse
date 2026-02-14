@@ -7,9 +7,9 @@ import { logger } from "../../lib/utils/logger.js";
 import { PromptPayload } from "@onescope/types";
 import { IPRefreshNeededError } from "@onescope/errors";
 
-const MAX_PROMPT_RETRIES = 3; // Fewer retries per IP; rely more on proxy rotation
-const INITIAL_RETRY_DELAY = 2000; // 2 seconds for first retry
-const MAX_RETRY_DELAY = 30000; // Cap at 30 seconds
+const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 2); // Faster IP rotation
+const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000); // 1 second default
+const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000); // Cap at 5 seconds
 
 /**
  * Calculate exponential backoff delay
@@ -18,7 +18,7 @@ const MAX_RETRY_DELAY = 30000; // Cap at 30 seconds
  */
 function getExponentialBackoffDelay(attempt: number): number {
   // Formula: initialDelay * (2 ^ (attempt - 2))
-  // Attempt 2: 2s, Attempt 3: 4s, Attempt 4: 8s, Attempt 5: 16s, Attempt 6: 32s (capped at 30s), Attempt 7: 30s
+  // With defaults: Attempt 2: 1s, Attempt 3: 2s, Attempt 4: 4s, then cap at 5s
   const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 2);
   return Math.min(delay, MAX_RETRY_DELAY);
 }
@@ -92,6 +92,13 @@ export async function runPrompts(payload: PromptPayload, page: Page, provider: P
         } catch (err: any) {
           lastError = err;
           logger.error(`❌ Attempt ${attempt}/${MAX_PROMPT_RETRIES} failed for prompt ${i + 1}: [${provider}] ${err.message}`);
+
+          const isExtractionFailure = /Markdown response extraction failed|Empty response extracted/i.test(
+            String(err?.message ?? "")
+          );
+          if (isExtractionFailure) {
+            logger.warn(`⚠️ Repeated extraction failure on current IP (prompt ${i + 1}, attempt ${attempt}/${MAX_PROMPT_RETRIES})`);
+          }
 
           if (attempt === MAX_PROMPT_RETRIES) {
             // Final attempt failed - throw error to trigger IP refresh
