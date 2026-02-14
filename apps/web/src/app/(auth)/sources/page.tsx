@@ -275,36 +275,93 @@ export default function SourcesPage() {
 										}))
 									)
 								);
+								const topDomains = domainGroups.slice(0, 10).map((group) => ({
+									domain: group.domain,
+									totalCitations: group.totalCitations,
+									share:
+										aggregate.totalCitations > 0
+											? Number(
+													((group.totalCitations / aggregate.totalCitations) * 100).toFixed(1),
+											  )
+											: 0,
+									urlCount: group.urlCount,
+								}));
+								const concentrationRisk =
+									aggregate.topDomainShare >= 45
+										? "high"
+										: aggregate.topDomainShare >= 30
+											? "moderate"
+											: "healthy";
 
 								downloadJson(`sources-${workspaceId}-${Date.now()}.json`, {
 									generatedAt: new Date().toISOString(),
 									workspaceId,
-									filters: {
-										selectedProvider,
-										activeTab,
+									report: {
+										title: "Sources Intelligence Export",
+										version: "2.0",
+										filters: {
+											selectedProvider,
+											activeTab,
+										},
 									},
-									aggregate,
-									domainGroups: domainGroups.map((group) => ({
-										domain: group.domain,
-										totalCitations: group.totalCitations,
-										urlCount: group.urlCount,
-										providers: Array.from(group.providers),
-									})),
-									sources: displayedSources,
-									citations: citationRows,
+									overview: {
+										totalDomains: aggregate.totalDomains,
+										totalUrls: aggregate.totalUrls,
+										totalCitations: aggregate.totalCitations,
+										avgCitationsPerUrl: aggregate.avgCitationsPerUrl,
+									},
+									impactSummary: {
+										topDomain: aggregate.topDomain,
+										topDomainShare: `${aggregate.topDomainShare}%`,
+										sourceConcentrationRisk: concentrationRisk,
+									},
+									leaderboards: {
+										topDomains,
+									},
+									detailedData: {
+										aggregate,
+										domainGroups: domainGroups.map((group) => ({
+											domain: group.domain,
+											totalCitations: group.totalCitations,
+											urlCount: group.urlCount,
+											providers: Array.from(group.providers),
+										})),
+										sources: displayedSources,
+										citations: citationRows,
+									},
 								});
 							}}
 							onExportCsv={() => {
 								const rows = [
+									{
+										section: "overview",
+										metric: "Domains",
+										value: aggregate.totalDomains,
+									},
+									{
+										section: "overview",
+										metric: "URLs",
+										value: aggregate.totalUrls,
+									},
+									{
+										section: "overview",
+										metric: "Citations",
+										value: aggregate.totalCitations,
+									},
+									{
+										section: "overview",
+										metric: "Top Domain Share",
+										value: `${aggregate.topDomainShare}%`,
+									},
 									...domainGroups.map((group) => ({
-										section: "domain",
+										section: "domain_performance",
 										domain: group.domain,
 										total_citations: group.totalCitations,
 										url_count: group.urlCount,
 										providers: Array.from(group.providers).join(", "),
 									})),
 									...displayedSources.map((source) => ({
-										section: "citation",
+										section: "url_performance",
 										url: source.url,
 										url_path: getUrlPath(source.url),
 										title: source.title,
@@ -314,12 +371,12 @@ export default function SourcesPage() {
 										cited_texts: (source.excerpts ?? [])
 											.map((e) => (e.cited_text ? cleanCitedText(e.cited_text) : ""))
 											.filter(Boolean)
-											.join(" | "),
+										.join(" | "),
 									})),
 									...domainGroups.flatMap((group) =>
 										group.urls.flatMap((source) =>
 											(source.excerpts ?? []).map((excerpt) => ({
-												section: "citation_excerpt",
+												section: "citation_excerpts",
 												domain: group.domain,
 												url: source.url,
 												url_path: getUrlPath(source.url),
