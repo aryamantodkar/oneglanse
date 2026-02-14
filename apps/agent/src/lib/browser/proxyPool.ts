@@ -223,11 +223,22 @@ export function getNextProxy(): string | null {
   // Sort by score descending
   candidates.sort((a, b) => b.score - a.score);
 
-  // 20% chance to explore a non-best proxy (rediscover recovered proxies)
+  // Get all proxies with the top score
+  const topScore = candidates[0]!.score;
+  const topScoredProxies = candidates.filter(c => c.score === topScore);
+
+  // If multiple proxies have the same top score, pick randomly among them
   let pick: Candidate;
-  if (candidates.length > 1 && Math.random() < EXPLORATION_RATE) {
+  if (topScoredProxies.length > 1) {
+    // Random selection from equal-scored proxies
+    const randomIdx = Math.floor(Math.random() * topScoredProxies.length);
+    pick = topScoredProxies[randomIdx]!;
+    logger.debug(`Randomly selected proxy from ${topScoredProxies.length} with score ${topScore.toFixed(2)}`);
+  } else if (candidates.length > 1 && Math.random() < EXPLORATION_RATE) {
+    // 20% chance to explore a lower-scored proxy (rediscover recovered proxies)
     const idx = 1 + Math.floor(Math.random() * (candidates.length - 1));
     pick = candidates[idx]!;
+    logger.debug(`Exploring proxy with score ${pick.score.toFixed(2)} (exploration rate)`);
   } else {
     pick = candidates[0]!;
   }
