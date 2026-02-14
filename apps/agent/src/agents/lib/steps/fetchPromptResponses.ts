@@ -5,8 +5,14 @@ import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToF
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 
-const MAX_EXTRACTION_RETRIES = 3;
-const EXTRACTION_RETRY_DELAY = 10000;
+const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
+const INITIAL_EXTRACTION_RETRY_DELAY = Number(process.env.EXTRACTION_RETRY_DELAY_MS ?? 2000);
+const MAX_EXTRACTION_RETRY_DELAY = Number(process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000);
+
+function getExtractionRetryDelay(attempt: number): number {
+  if (attempt <= 1) return INITIAL_EXTRACTION_RETRY_DELAY;
+  return Math.min(INITIAL_EXTRACTION_RETRY_DELAY * Math.pow(2, attempt - 1), MAX_EXTRACTION_RETRY_DELAY);
+}
 
 export async function fetchPromptResponses(
     page: Page,
@@ -21,9 +27,8 @@ export async function fetchPromptResponses(
 
     // 2️⃣ Extract markdown-only response with retries (no plain-text fallback)
     for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
-      // Some providers mark "done" before markdown blocks are fully mounted.
-      // Re-check stabilization each retry to reduce timing race conditions.
-      await waitForAssistantToFinish(page, provider).catch(() => {});
+      // Keep this short so we can rotate IPs faster if extraction keeps failing.
+      await page.waitForTimeout(500);
 
       const response = await extractAssistantMarkdown(page, provider);
 
@@ -33,8 +38,9 @@ export async function fetchPromptResponses(
       }
 
       if (attempt < MAX_EXTRACTION_RETRIES) {
-        logger.warn(`Extraction empty, retrying in ${EXTRACTION_RETRY_DELAY / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})...`);
-        await page.waitForTimeout(EXTRACTION_RETRY_DELAY);
+        const retryDelay = getExtractionRetryDelay(attempt);
+        logger.warn(`Extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})...`);
+        await page.waitForTimeout(retryDelay);
       }
     }
 
