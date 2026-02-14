@@ -5,7 +5,7 @@ import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToF
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 
-const MAX_EXTRACTION_RETRIES = 5;
+const MAX_EXTRACTION_RETRIES = 3;
 const EXTRACTION_RETRY_DELAY = 10000;
 
 export async function fetchPromptResponses(

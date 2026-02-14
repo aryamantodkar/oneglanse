@@ -267,6 +267,22 @@ export default function PeoplePage() {
     const userPrompts = userPromptsQuery.data?.data ?? [];
     const analysisData = analysisQuery.data?.data ?? [];
     const sourceData = sourcesQuery.data?.data ?? null;
+    const sourceStats = sourceData?.sourceStats;
+    const combinedSources = sourceStats?.combined ?? [];
+    const domainStatsRaw = sourceData?.domain_stats;
+    const domainStats = Array.isArray(domainStatsRaw)
+      ? domainStatsRaw
+      : domainStatsRaw?.combined ?? [];
+
+    const citationRows = combinedSources.flatMap((source: any) =>
+      (source.excerpts ?? []).map((excerpt: any) => ({
+        url: source.url ?? "",
+        title: source.title ?? "",
+        totalCitations: source.totalSources ?? 0,
+        modelProvider: excerpt.model_provider ?? "",
+        citedText: excerpt.cited_text ?? "",
+      }))
+    );
 
     downloadJson(`workspace-all-${workspaceId}-${Date.now()}.json`, {
       generatedAt: new Date().toISOString(),
@@ -282,7 +298,11 @@ export default function PeoplePage() {
           prompts: userPrompts,
           analyses: analysisData,
         },
-        sources: sourceData,
+        sources: {
+          domainStats,
+          groupedSources: combinedSources,
+          citations: citationRows,
+        },
       },
     });
   };
@@ -294,6 +314,10 @@ export default function PeoplePage() {
       : [];
     const sourceStats = sourcesQuery.data?.data?.sourceStats;
     const combinedSources = sourceStats?.combined ?? [];
+    const domainStatsRaw = sourcesQuery.data?.data?.domain_stats;
+    const domainStats = Array.isArray(domainStatsRaw)
+      ? domainStatsRaw
+      : domainStatsRaw?.combined ?? [];
 
     const rows: Array<Record<string, unknown>> = [
       ...userPrompts.map((prompt) => ({
@@ -314,12 +338,48 @@ export default function PeoplePage() {
         position: record.brand_analysis?.position?.rankPosition ?? "",
         recommendation: record.brand_analysis?.recommendation?.type ?? "",
         citations: record.sources?.length ?? 0,
+        source_urls: (record.sources ?? []).map((source: any) => source.url).filter(Boolean).join(" | "),
+        cited_texts: (record.sources ?? []).map((source: any) => source.cited_text).filter(Boolean).join(" | "),
+      })),
+      ...domainStats.map((domain: any) => ({
+        section: "source_domains",
+        domain: domain.domain,
+        total_sources: domain.total_sources ?? domain.totalSources ?? 0,
+        percentage: domain.percentage ?? "",
       })),
       ...combinedSources.map((source: any) => ({
         section: "sources",
         url: source.url,
         title: source.title,
         total_citations: source.totalSources ?? 0,
+        models: [...new Set((source.excerpts ?? []).map((e: any) => e.model_provider).filter(Boolean))].join(", "),
+        cited_texts: (source.excerpts ?? []).map((e: any) => e.cited_text).filter(Boolean).join(" | "),
+      })),
+      ...combinedSources.flatMap((source: any) =>
+        (source.excerpts ?? []).map((excerpt: any) => ({
+          section: "source_excerpts",
+          url: source.url,
+          title: source.title,
+          model: excerpt.model_provider ?? "",
+          cited_text: excerpt.cited_text ?? "",
+        }))
+      ),
+      ...analysisData.flatMap((record: any) =>
+        (record.sources ?? []).map((source: any) => ({
+          section: "analysis_source_rows",
+          prompt_id: record.prompt_id,
+          model: record.model_provider,
+          source_title: source.title ?? "",
+          source_url: source.url ?? "",
+          source_domain: source.domain ?? "",
+          source_cited_text: source.cited_text ?? "",
+        }))
+      ),
+      ...analysisData.map((record: any) => ({
+        section: "analysis_full_json",
+        prompt_id: record.prompt_id,
+        model: record.model_provider,
+        brand_analysis_json: JSON.stringify(record.brand_analysis ?? {}),
       })),
     ];
 
