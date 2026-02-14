@@ -62,7 +62,8 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       throw new Error("Typing failed: editor did not receive prompt");
     }
 
-    await page.waitForTimeout(2000);
+    // Wait for send button to appear after typing (dynamic UI)
+    await page.waitForTimeout(500);
 
     logger.debug("  📤 Submitting...");
 
@@ -70,61 +71,68 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
     const preSubmitContent = await input.evaluate(el => (el.textContent || "").trim());
     logger.debug(`  Editor content before submit (${preSubmitContent.length} chars): ${preSubmitContent.slice(0, 50)}...`);
 
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(2000);
+    // Find the send button AFTER typing (it appears dynamically)
+    const sendButton = await findEnabledSendButton(page);
 
-    // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
-    await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
+    // Use comprehensive generation detection (filter out pseudo-selectors for waitForSelector)
+    const cssSelectors = RESPONSE_GENERATION_SELECTORS.filter(s => !s.includes(':has-text('));
+    const generationSelector = cssSelectors.join(', ');
 
-    // Use comprehensive generation detection selectors
-    const generationSelector = RESPONSE_GENERATION_SELECTORS.join(', ');
+    if (!sendButton) {
+      logger.warn("Send button not found after typing, trying Enter key");
 
-    const generationStarted = await withTimeout(
-      page.waitForSelector(generationSelector, { state: "visible", timeout: 10000 })
-        .then(() => true)
-        .catch(() => {
-          logger.debug(`  No generation indicators found. Checked: ${RESPONSE_GENERATION_SELECTORS.slice(0, 3).join(', ')}`);
-          return false;
-        }),
-      15000,
-      false
-    );
+      // Ensure focus is on the input before pressing Enter
+      await input.focus();
+      await page.waitForTimeout(300);
 
-    if (!generationStarted) {
-      logger.warn("Enter did not start generation, using send button");
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(2000);
 
-      const sendButton = await findEnabledSendButton(page);
-      if (!sendButton) {
-        // Debug: check what's on the page
-        const pageInfo = await page.evaluate(() => ({
-          url: window.location.href,
-          editorExists: !!document.querySelector('#ask-input'),
-          editorContent: document.querySelector('#ask-input')?.textContent?.slice(0, 50),
-          editorEditable: document.querySelector('#ask-input')?.getAttribute('contenteditable'),
-          sendButtonsFound: Array.from(document.querySelectorAll('button')).slice(0, 5).map(b => ({
-            text: b.textContent?.trim(),
-            ariaLabel: b.getAttribute('aria-label'),
-            disabled: (b as HTMLButtonElement).disabled,
-          })),
-        })).catch(() => null);
+      // Wait for any navigation triggered by submit (e.g. Perplexity navigates to /search)
+      await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
 
-        logger.warn(`[${provider}] Page state: ${JSON.stringify(pageInfo, null, 2)}`);
-        throw new Error(`[${provider}] Send failed — no send button`);
-      }
-
-      await sendButton.click();
-      await page.waitForTimeout(1000);
-
-      const fallbackStarted = await withTimeout(
+      const generationStarted = await withTimeout(
         page.waitForSelector(generationSelector, { state: "visible", timeout: 10000 })
-          .then(() => true)
-          .catch(() => false),
+          .then(() => {
+            logger.debug(`  ✓ Generation started`);
+            return true;
+          })
+          .catch(() => {
+            logger.debug(`  No generation indicators found. Checked: ${cssSelectors.slice(0, 3).join(', ')}`);
+            return false;
+          }),
         15000,
         false
       );
 
-      if (!fallbackStarted) {
-        throw new Error(`[${provider}] Send failed — no generation after click`);
+      if (!generationStarted) {
+        throw new Error(`[${provider}] Submit failed — Enter key didn't work and no send button found`);
+      }
+    } else {
+      // Send button found - click it directly
+      logger.debug(`  Clicking send button...`);
+      await sendButton.click();
+      await page.waitForTimeout(1000);
+
+      // Wait for any navigation triggered by submit
+      await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
+
+      const generationStarted = await withTimeout(
+        page.waitForSelector(generationSelector, { state: "visible", timeout: 10000 })
+          .then(() => {
+            logger.debug(`  ✓ Generation started after button click`);
+            return true;
+          })
+          .catch(() => {
+            logger.debug(`  No generation indicators found after button click`);
+            return false;
+          }),
+        15000,
+        false
+      );
+
+      if (!generationStarted) {
+        throw new Error(`[${provider}] Send failed — no generation after button click`);
       }
     }
 }
