@@ -7,7 +7,7 @@ import { logger } from "../../lib/utils/logger.js";
 import { PromptPayload } from "@onescope/types";
 import { IPRefreshNeededError } from "@onescope/errors";
 
-const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 2); // Faster IP rotation
+const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 3); // Faster IP rotation
 const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000); // 1 second default
 const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000); // Cap at 5 seconds
 

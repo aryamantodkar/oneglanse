@@ -99,7 +99,7 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
           () =>
             Boolean(
               document.querySelector(
-                '[aria-label*="stop" i], [class*="loading"], [class*="typing"]'
+                '[aria-label*="stop" i], [class*="loading"], [class*="typing"], button[aria-label="Stop generating response"]'
               )
             ),
           { timeout: 10000 }
