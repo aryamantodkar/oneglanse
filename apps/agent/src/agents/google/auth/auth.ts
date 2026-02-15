@@ -7,23 +7,42 @@ export async function waitForGoogleAuthentication(
     page: Page,
     timeoutMs: number = 8 * 60 * 1000 // 8 minutes
   ): Promise<void> {
-    logger.debug("🔐 Waiting for Google login to complete…");
+    const deadline = Date.now() + timeoutMs;
+    const startTime = Date.now();
+    let checkCount = 0;
 
     await page.waitForTimeout(1000);
 
-    const deadline = Date.now() + timeoutMs;
-
     while (Date.now() < deadline) {
+      checkCount++;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.floor((deadline - Date.now()) / 1000);
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+
       await checkPageStability(page);
 
       if (await isGoogleAuthenticated(page)) {
-        logger.debug("✅ Google session detected");
+        // Clear progress line and show success
+        process.stdout.write(`\r${' '.repeat(80)}\r`);
+        logger.success(`✅ Google session detected (${elapsed}s)`);
         return;
       }
+
+      // Show live progress indicator
+      const spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      const spinnerFrame = spinner[checkCount % spinner.length];
+
+      process.stdout.write(
+        `\r${spinnerFrame} Waiting for login... ${minutes}m ${seconds}s remaining (check #${checkCount})`
+      );
 
       // Faster polling (reduced from 2000ms to 1000ms)
       await page.waitForTimeout(1000);
     }
 
-    logger.debug("❌ Google login timed out");
+    // Timeout - clear progress and show error
+    process.stdout.write(`\r${' '.repeat(80)}\r`);
+    logger.error(`❌ Google login timed out after 8 minutes`);
+    logger.warn(`💡 Try again or check your internet connection`);
   }

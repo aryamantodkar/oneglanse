@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { chromium } from "playwright-extra";
 import path from "path";
 import fs from "fs";
+import readline from "readline";
 import { waitForUserLogin } from "../lib/auth/waitForUserLogin.js";
 import { logger } from "../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
@@ -19,6 +20,20 @@ if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
 
 const USER_DATA_DIR = path.resolve(process.env.LOCAL_AUTH_PROFILE_PATH);
 
+function promptUser(question: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase());
+    });
+  });
+}
+
 export async function loginToProvider(provider: Provider): Promise<void> {
   const config = PROVIDERS[provider];
   const providerDir = path.join(USER_DATA_DIR, provider);
@@ -28,7 +43,25 @@ export async function loginToProvider(provider: Provider): Promise<void> {
     fs.mkdirSync(providerDir, { recursive: true });
   }
 
-  logger.log(`\n🚀 Starting ${provider} login...`);
+  // Show clear instructions before browser launch
+  logger.log(`\n${"=".repeat(70)}`);
+  logger.log(`🔐 ${config.name.toUpperCase()} AUTHENTICATION`);
+  logger.log(`${"=".repeat(70)}\n`);
+
+  logger.log(`📋 Instructions:`);
+  logger.log(`   1. A browser window will open in 3 seconds`);
+  logger.log(`   2. Please log in to ${config.name} in the browser`);
+  logger.log(`   3. The browser will close automatically once logged in`);
+  logger.log(`   4. Timeout: 8 minutes\n`);
+
+  logger.warn(`⏰ Preparing to open browser...`);
+
+  // Countdown before launch
+  for (let i = 3; i > 0; i--) {
+    process.stdout.write(`\r   Opening in ${i} seconds...`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  process.stdout.write(`\r   Opening browser now!     \n\n`);
 
   const browser = await chromium.launch({
     headless: false,
@@ -52,6 +85,9 @@ export async function loginToProvider(provider: Provider): Promise<void> {
   try {
     const loginPage = await loginContext.newPage();
 
+    logger.log(`✅ Browser opened - Please complete login in the browser window`);
+    logger.log(`⏳ Waiting for authentication...\n`);
+
     await loginPage.goto(config.url, {
       waitUntil: "domcontentloaded",
     });
@@ -62,7 +98,8 @@ export async function loginToProvider(provider: Provider): Promise<void> {
       path: authFile,
     });
 
-    logger.success(`${config.name} auth saved to: ${providerDir}`);
+    logger.success(`✅ ${config.name} authentication successful!`);
+    logger.log(`📁 Session saved to: ${authFile}\n`);
   } catch (err) {
     logger.error(`Failed to login to ${config.name}:`, err);
     throw err;
@@ -73,42 +110,155 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 }
 
 export async function loginToAll(): Promise<void> {
-  logger.log("🔐 Starting login process for all providers...\n");
+  logger.log("\n🔐 AUTHENTICATION SETUP");
+  logger.log(`${"=".repeat(70)}\n`);
+
+  logger.log(`📊 This will authenticate you with all AI providers:`);
+  logger.log(`   • OpenAI (ChatGPT)`);
+  logger.log(`   • Anthropic (Claude)`);
+  logger.log(`   • Perplexity AI`);
+  logger.log(`   • Google (Gemini)\n`);
+
+  const results: Record<Provider, 'success' | 'failed' | 'skipped'> = {
+    openai: 'skipped',
+    anthropic: 'skipped',
+    perplexity: 'skipped',
+    google: 'skipped'
+  };
 
   for (const provider of Object.keys(PROVIDERS) as Provider[]) {
+    // Prompt user if they want to authenticate this provider
+    logger.log(`\n❓ Authenticate with ${PROVIDERS[provider].name}?`);
+    const answer = await promptUser(`   Continue? (y/n): `);
+
+    if (answer !== 'y' && answer !== 'yes') {
+      logger.log(`⏭️  Skipping ${PROVIDERS[provider].name}\n`);
+      results[provider] = 'skipped';
+      continue;
+    }
+
     try {
       await loginToProvider(provider);
-      logger.log(`\n${"=".repeat(50)}\n`);
-    } catch (err) {
-      logger.error(`Failed to complete ${provider} login. Continuing...\n`);
+      results[provider] = 'success';
+    } catch (err: any) {
+      results[provider] = 'failed';
+
+      logger.error(`❌ ${PROVIDERS[provider].name} authentication failed`);
+      logger.error(`   Error: ${err.message}\n`);
+
+      logger.warn(`⚠️  Options:`);
+      logger.warn(`   • Continue to next provider`);
+      logger.warn(`   • Retry this provider later with: pnpm run auth:${provider}`);
+      logger.warn(`   • Skip if you don't need ${PROVIDERS[provider].name}\n`);
     }
   }
 
-  logger.success("All logins complete!");
+  // Summary
+  logger.log(`\n${"=".repeat(70)}`);
+  logger.log(`📊 AUTHENTICATION SUMMARY`);
+  logger.log(`${"=".repeat(70)}\n`);
+
+  const successCount = Object.values(results).filter(r => r === 'success').length;
+  const failedCount = Object.values(results).filter(r => r === 'failed').length;
+  const skippedCount = Object.values(results).filter(r => r === 'skipped').length;
+
+  for (const [provider, status] of Object.entries(results)) {
+    const icon = status === 'success' ? '✅' : status === 'failed' ? '❌' : '⏭️';
+    const label = (PROVIDERS[provider as Provider].name + ':').padEnd(15);
+    logger.log(`${icon} ${label} ${status.toUpperCase()}`);
+  }
+
+  logger.log();
+
+  const attemptedCount = 4 - skippedCount;
+
+  if (successCount === attemptedCount && attemptedCount > 0) {
+    logger.success(`🎉 All attempted providers authenticated successfully!`);
+    if (skippedCount > 0) {
+      logger.log(`⏭️  ${skippedCount} provider(s) skipped`);
+    }
+  } else if (successCount > 0) {
+    logger.warn(`⚠️  ${successCount}/${attemptedCount} attempted providers authenticated, ${failedCount} failed`);
+    if (skippedCount > 0) {
+      logger.log(`⏭️  ${skippedCount} provider(s) skipped`);
+    }
+    logger.log(`💡 You can retry failed providers individually`);
+  } else if (attemptedCount === 0) {
+    logger.warn(`⏭️  All providers skipped - no authentication performed`);
+  } else {
+    logger.error(`❌ All attempted authentications failed`);
+    logger.log(`💡 Check your internet connection and try again`);
+  }
+
+  logger.log();
 }
 
 export function checkAuthStatus(): void {
-  logger.log("\n📊 Authentication Status:\n");
+  logger.log(`\n${"=".repeat(70)}`);
+  logger.log(`📊 CURRENT AUTHENTICATION STATUS`);
+  logger.log(`${"=".repeat(70)}\n`);
+
+  const statuses: Array<{
+    provider: string;
+    authenticated: boolean;
+    lastUpdated?: string;
+  }> = [];
 
   for (const [key, config] of Object.entries(PROVIDERS)) {
     const authPath = path.join(USER_DATA_DIR, config.name);
-    const exists = fs.existsSync(authPath);
-    const status = exists ? "Auth session already exists in storage." : "❌ Not authenticated";
-    logger.log(`${config.name}: ${status}`);
-    
-    logger.log(`Revalidating session...`);
-    if (exists) {
-      const stats = fs.statSync(authPath);
-      logger.log(`Last updated: ${stats.mtime.toLocaleString()}`);
-    }
+    const authFile = path.join(authPath, `${config.name}-auth.json`);
+    const exists = fs.existsSync(authFile);
+
+    statuses.push({
+      provider: config.name,
+      authenticated: exists,
+      lastUpdated: exists ? fs.statSync(authFile).mtime.toLocaleString() : undefined
+    });
   }
-  logger.log();
+
+  // Display in table format
+  for (const status of statuses) {
+    const icon = status.authenticated ? '✅' : '❌';
+    const label = (status.provider + ':').padEnd(15);
+    const authStatus = status.authenticated ? 'AUTHENTICATED' : 'NOT AUTHENTICATED';
+
+    logger.log(`${icon} ${label} ${authStatus}`);
+
+    if (status.lastUpdated) {
+      logger.log(`${''.padEnd(20)}Last updated: ${status.lastUpdated}`);
+    }
+    logger.log();
+  }
+
+  const authenticatedCount = statuses.filter(s => s.authenticated).length;
+
+  if (authenticatedCount === 4) {
+    logger.success(`✅ All providers are authenticated\n`);
+  } else if (authenticatedCount > 0) {
+    logger.warn(`⚠️  ${authenticatedCount}/4 providers authenticated\n`);
+  } else {
+    logger.warn(`⚠️  No providers authenticated yet\n`);
+  }
 }
 
 async function runHeadedLogin(): Promise<void> {
   checkAuthStatus();
 
-  await loginToAll();
+  // Check if single provider mode
+  const targetProvider = process.env.PROVIDER as Provider | undefined;
+
+  if (targetProvider) {
+    if (!PROVIDERS[targetProvider]) {
+      logger.error(`❌ Unknown provider: ${targetProvider}`);
+      logger.log(`   Valid providers: ${Object.keys(PROVIDERS).join(', ')}`);
+      process.exit(1);
+    }
+
+    logger.log(`\n🎯 Single Provider Mode: ${PROVIDERS[targetProvider].name}\n`);
+    await loginToProvider(targetProvider);
+  } else {
+    await loginToAll();
+  }
 }
 
 if (process.env.RUN_INTERACTIVE_LOGIN === "true") {

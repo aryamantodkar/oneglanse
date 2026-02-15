@@ -42,7 +42,21 @@ export type HealthCheckResult = {
   healthy: boolean;
   reason?: string;
   failureType?: FailureType;
+  userMessage?: string;  // User-friendly error message
 };
+
+function getBotDetectionMessage(type: string): string {
+  switch (type) {
+    case 'cloudflare':
+      return 'Cloudflare detected automation. Try using a VPN or wait a bit.';
+    case 'captcha':
+      return 'CAPTCHA detected. Please solve it in the browser.';
+    case 'turnstile':
+      return 'Turnstile challenge detected. Please complete it in the browser.';
+    default:
+      return 'Bot detection triggered. Please try again.';
+  }
+}
 
 export async function pageHealthCheck(
   page: Page,
@@ -71,7 +85,12 @@ export async function pageHealthCheck(
 
     if (botDetection) {
       logger.warn(`[${provider}] Health check: bot detection (${botDetection}) in ${Date.now() - start}ms`);
-      return { healthy: false, reason: `bot_detection:${botDetection}`, failureType: "bot_detection" };
+      return {
+        healthy: false,
+        reason: `bot_detection:${botDetection}`,
+        failureType: "bot_detection",
+        userMessage: getBotDetectionMessage(botDetection)
+      };
     }
 
     // 2. Login/signup form visible (~0.5s)
@@ -90,7 +109,12 @@ export async function pageHealthCheck(
 
     if (loginVisible) {
       logger.warn(`[${provider}] Health check: login page detected in ${Date.now() - start}ms`);
-      return { healthy: false, reason: "logged_out", failureType: "logged_out" };
+      return {
+        healthy: false,
+        reason: "logged_out",
+        failureType: "logged_out",
+        userMessage: "You were logged out. Please log in again."
+      };
     }
 
     // 3. Rate limit detection (~0.5s)
@@ -102,7 +126,12 @@ export async function pageHealthCheck(
 
     if (rateLimited) {
       logger.warn(`[${provider}] Health check: rate limited in ${Date.now() - start}ms`);
-      return { healthy: false, reason: "rate_limited", failureType: "rate_limited" };
+      return {
+        healthy: false,
+        reason: "rate_limited",
+        failureType: "rate_limited",
+        userMessage: "Rate limited. Please wait a few minutes and try again."
+      };
     }
 
     // 4. Provider-specific editor presence with quick timeout
@@ -126,7 +155,12 @@ export async function pageHealthCheck(
 
     if (!editorFound) {
       logger.warn(`[${provider}] Health check: no editor found in ${Date.now() - start}ms`);
-      return { healthy: false, reason: "no_editor", failureType: "no_editor" };
+      return {
+        healthy: false,
+        reason: "no_editor",
+        failureType: "no_editor",
+        userMessage: "Page didn't load correctly. Please refresh and try again."
+      };
     }
 
     // 5. Verify the editor is actually interactive (not disabled/readonly)
@@ -152,7 +186,12 @@ export async function pageHealthCheck(
 
     if (!isEditable) {
       logger.warn(`[${provider}] Health check: editor found but not interactive in ${Date.now() - start}ms`);
-      return { healthy: false, reason: "editor_not_interactive", failureType: "no_editor" };
+      return {
+        healthy: false,
+        reason: "editor_not_interactive",
+        failureType: "no_editor",
+        userMessage: "Editor is not interactive. Please refresh and try again."
+      };
     }
 
     logger.debug(`[${provider}] Health check passed in ${Date.now() - start}ms`);
