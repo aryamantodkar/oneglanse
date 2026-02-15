@@ -5,7 +5,7 @@ import { logger } from "../../../lib/utils/logger.js";
 
 export async function waitForPerplexityAuthentication(
     page: Page,
-    timeoutMs = 8 * 60 * 1000
+    timeoutMs: number = 8 * 60 * 1000
   ): Promise<void> {
     logger.debug("🔐 Waiting for Perplexity authentication…");
 
