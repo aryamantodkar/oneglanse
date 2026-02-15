@@ -44,10 +44,11 @@ const server = createServer(async (req, res) => {
         const results = {
           anthropic: false,
           openai: false,
-          perplexity: false
+          perplexity: false,
+          google: false
         };
 
-        for (const provider of ["anthropic", "openai", "perplexity"]) {
+        for (const provider of ["anthropic", "openai", "perplexity", "google"]) {
           if (sessions[provider]) {
             const providerDir = path.join(VPS_AUTH_PROFILE_PATH, provider);
             const authFile = path.join(providerDir, `${provider}-auth.json`);
@@ -87,7 +88,8 @@ const server = createServer(async (req, res) => {
       sessions: {
         anthropic: fs.existsSync(path.join(AUTH_PROFILE_PATH, "anthropic", "anthropic-auth.json")),
         openai: fs.existsSync(path.join(AUTH_PROFILE_PATH, "openai", "openai-auth.json")),
-        perplexity: fs.existsSync(path.join(AUTH_PROFILE_PATH, "perplexity", "perplexity-auth.json"))
+        perplexity: fs.existsSync(path.join(AUTH_PROFILE_PATH, "perplexity", "perplexity-auth.json")),
+        google: fs.existsSync(path.join(AUTH_PROFILE_PATH, "google", "google-auth.json"))
       }
     };
 

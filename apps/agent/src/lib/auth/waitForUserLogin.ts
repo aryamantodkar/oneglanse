@@ -3,6 +3,7 @@ import { waitForAnthropicAuthentication } from "../../agents/anthropic/auth/auth
 import { waitForOpenaiAuthentication } from "../../agents/openai/auth/auth.js";
 import { waitForPerplexityAuthentication } from "../../agents/perplexity/auth/auth.js";
 import { Provider } from "@onescope/types";
+import { waitForGoogleAuthentication } from "../../agents/google/auth/auth.js";
 
 export async function waitForUserLogin(page: Page, provider: Provider): Promise<void> {
     if(provider=="openai"){
@@ -15,6 +16,10 @@ export async function waitForUserLogin(page: Page, provider: Provider): Promise<
     }
     if(provider=="perplexity"){
       await waitForPerplexityAuthentication(page);
+      return;
+    }
+    if(provider=="google"){
+      await waitForGoogleAuthentication(page);
       return;
     }
 }

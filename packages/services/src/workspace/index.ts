@@ -24,6 +24,7 @@ export async function createWorkspaceForTenant(args: {
     country,
     region: region || null,
     schedule: null,
+    enabledProviders: '["openai","anthropic","perplexity","google"]',
     createdAt: new Date(),
     deletedAt: null,
   };
@@ -88,6 +89,7 @@ export async function getWorkspacesForUser(args: {
       country: schema.workspaces.country,
       region: schema.workspaces.region,
       schedule: schema.workspaces.schedule,
+      enabledProviders: schema.workspaces.enabledProviders,
       createdAt: schema.workspaces.createdAt,
       deletedAt: schema.workspaces.deletedAt,
     })
@@ -243,6 +245,7 @@ export async function getAllWorkspacesForUser(args: { userId: string }) {
         country: schema.workspaces.country,
         region: schema.workspaces.region,
         schedule: schema.workspaces.schedule,
+        enabledProviders: schema.workspaces.enabledProviders,
         createdAt: schema.workspaces.createdAt,
         deletedAt: schema.workspaces.deletedAt,
       },

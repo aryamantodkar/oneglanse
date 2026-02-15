@@ -7,6 +7,7 @@ import { agentHandler } from "./agents/lib/agentHandler.js";
 import { openaiAgent } from "./agents/openai/openaiAgent.js";
 import { anthropicAgent } from "./agents/anthropic/anthropicAgent.js";
 import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
+import { googleAgent } from "./agents/google/googleAgent.js";
 
 type ProviderJobData = {
   jobGroupId: string;
@@ -24,6 +25,7 @@ const providerConfig: Record<
   openai: { label: "OpenAI", factory: openaiAgent },
   anthropic: { label: "Anthropic", factory: anthropicAgent },
   perplexity: { label: "Perplexity", factory: perplexityAgent },
+  google: { label: "Google", factory: googleAgent },
 };
 
 function runAnalysisInBackground(args: {
@@ -97,23 +99,19 @@ async function startWorker() {
         if (raw) return JSON.parse(raw);
 
         const totalPromptsRequested = prompts.length;
-        const expectedResponses = totalPromptsRequested * 3;
+        // Only initialize for the current provider
         const fallback = {
           status: "pending" as const,
           updateId: 0,
           providers: {
-            openai: "pending",
-            anthropic: "pending",
-            perplexity: "pending",
+            [provider]: "pending"
           } as Record<Provider, "pending" | "running" | "completed" | "failed">,
           results: {
-            openai: 0,
-            anthropic: 0,
-            perplexity: 0,
+            [provider]: 0
           } as Record<Provider, number>,
           stats: {
             totalPrompts: totalPromptsRequested,
-            expectedResponses,
+            expectedResponses: totalPromptsRequested,
             actualResponses: 0,
           },
         };
@@ -146,6 +144,7 @@ async function startWorker() {
           openai: { status: "rejected", data: [] },
           anthropic: { status: "rejected", data: [] },
           perplexity: { status: "rejected", data: [] },
+          google: { status: "rejected", data: [] },
         };
 
         const partialResults: ModelResult = {

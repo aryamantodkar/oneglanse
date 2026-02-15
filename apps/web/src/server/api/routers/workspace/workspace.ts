@@ -19,6 +19,7 @@ import {
 } from "@onescope/services";
 import { clickhouse, db, schema } from "@onescope/db";
 import { and, eq, isNull, or } from "drizzle-orm";
+import type { Provider } from "@onescope/types";
 import { authorizedWorkspaceProcedure, protectedProcedure } from "../../procedures";
 import { createNewWorkspace, addWorkspaceToExistingOrg } from "@/server/services/workspace/workspace";
 import { newId } from "@onescope/utils";
@@ -577,6 +578,39 @@ export const workspaceRouter = createTRPCRouter({
         });
       }),
 
+    getEnabledProviders: authorizedWorkspaceProcedure
+      .query(async ({ ctx }) => {
+        return safeHandler(async () => {
+          const { workspaceId } = ctx;
+          const workspace = await getWorkspaceById({ workspaceId });
+
+          const enabledProviders = workspace.enabledProviders
+            ? JSON.parse(workspace.enabledProviders)
+            : ["openai", "anthropic", "perplexity", "google"];
+
+          return ok({ enabledProviders }, "Enabled providers retrieved");
+        });
+      }),
+
+    setEnabledProviders: authorizedWorkspaceProcedure
+      .input(z.object({
+        providers: z.array(z.enum(["openai", "anthropic", "perplexity", "google"]))
+          .min(1, "At least one provider must be enabled")
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return safeHandler(async () => {
+          const { workspaceId } = ctx;
+          const { providers } = input;
+
+          await db
+            .update(schema.workspaces)
+            .set({ enabledProviders: JSON.stringify(providers) })
+            .where(eq(schema.workspaces.id, workspaceId));
+
+          return ok({ providers }, "Enabled providers updated");
+        });
+      }),
+
     setSchedule: authorizedWorkspaceProcedure
       .input(z.object({
         schedule: z.string().nullable(),
@@ -612,20 +646,32 @@ export const workspaceRouter = createTRPCRouter({
               const prompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });
               if (prompts && prompts.length > 0) {
                 const jobGroupId = randomUUID();
-                const providers = ["openai", "anthropic", "perplexity"] as const;
+
+                // Fetch workspace and parse enabled providers
+                const workspace = await getWorkspaceById({ workspaceId });
+                const enabledProvidersJson = workspace.enabledProviders ?? '["openai","anthropic","perplexity","google"]';
+                const enabledProviders = JSON.parse(enabledProvidersJson) as Provider[];
 
                 const progress = {
                   status: "pending" as const,
                   updateId: 0,
-                  providers: { openai: "pending", anthropic: "pending", perplexity: "pending" } as Record<string, string>,
-                  results: { openai: 0, anthropic: 0, perplexity: 0 } as Record<string, number>,
-                  stats: { totalPrompts: prompts.length, expectedResponses: prompts.length * 3, actualResponses: 0 },
+                  providers: Object.fromEntries(
+                    enabledProviders.map(p => [p, "pending"])
+                  ) as Record<string, string>,
+                  results: Object.fromEntries(
+                    enabledProviders.map(p => [p, 0])
+                  ) as Record<string, number>,
+                  stats: {
+                    totalPrompts: prompts.length,
+                    expectedResponses: prompts.length * enabledProviders.length,
+                    actualResponses: 0
+                  },
                 };
 
                 await redis.set(`job:${jobGroupId}:result`, JSON.stringify(progress), "EX", 60 * 60);
 
                 await Promise.all(
-                  providers.map((provider) =>
+                  enabledProviders.map((provider) =>
                     agentQueue.add("run-agent", {
                       jobGroupId,
                       provider,

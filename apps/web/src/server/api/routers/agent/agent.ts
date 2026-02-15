@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import { createTRPCRouter } from "../../trpc";
-import { agentQueue, fetchUserPromptsForWorkspace, redis } from "@onescope/services";
+import { agentQueue, fetchUserPromptsForWorkspace, redis, getWorkspaceById } from "@onescope/services";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 import { ok, safeHandler } from "@onescope/errors";
+import type { Provider } from "@onescope/types";
 
 export const agentRouter = createTRPCRouter({
   run: authorizedWorkspaceProcedure
@@ -21,24 +22,24 @@ export const agentRouter = createTRPCRouter({
             }
 
             const jobGroupId = randomUUID();
-            const providers = ["openai", "anthropic", "perplexity"] as const;
+
+            // Fetch workspace and parse enabled providers
+            const workspace = await getWorkspaceById({ workspaceId: workspaceId! });
+            const enabledProvidersJson = workspace.enabledProviders ?? '["openai","anthropic","perplexity","google"]';
+            const enabledProviders = JSON.parse(enabledProvidersJson) as Provider[];
 
             const progress = {
               status: "pending" as const,
               updateId: 0,
-              providers: {
-                openai: "pending",
-                anthropic: "pending",
-                perplexity: "pending",
-              },
-              results: {
-                openai: 0,
-                anthropic: 0,
-                perplexity: 0,
-              },
+              providers: Object.fromEntries(
+                enabledProviders.map(p => [p, "pending"])
+              ) as Record<string, string>,
+              results: Object.fromEntries(
+                enabledProviders.map(p => [p, 0])
+              ) as Record<string, number>,
               stats: {
                 totalPrompts: prompts.length,
-                expectedResponses: prompts.length * providers.length,
+                expectedResponses: prompts.length * enabledProviders.length,
                 actualResponses: 0,
               },
             };
@@ -51,7 +52,7 @@ export const agentRouter = createTRPCRouter({
             );
 
             await Promise.all(
-              providers.map((provider) =>
+              enabledProviders.map((provider) =>
                 agentQueue.add("run-agent", {
                   jobGroupId,
                   provider,

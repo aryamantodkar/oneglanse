@@ -22,6 +22,11 @@ export const EDITOR_SELECTORS = [
     '[data-lexical-editor="true"][contenteditable="true"]',
     'div.relative #ask-input[contenteditable="true"]',
     'div[contenteditable="true"][spellcheck="true"]',
+
+    // ======================
+    // Gemini
+    // ======================
+    'div.ql-editor[contenteditable="true"]',
   
     // ======================
     // Cross-platform fallbacks
@@ -51,6 +56,9 @@ export const SUBMIT_BTN_SELECTORS = [
   'button[aria-label*="ask" i]',
   'button[aria-label*="submit" i]',
 
+  // Gemini
+  'button.send-button',
+
   // Fallback
   'button[type="submit"]',
 ];
@@ -68,7 +76,8 @@ export const MODEL_RESPONSE_SELECTORS = [
 
   // Claude (older / fallback)
   '.font-claude-response',
-
+  'message-content',
+  
   // Perplexity
   'article',
   '[data-testid="answer"]',
@@ -82,6 +91,7 @@ export const RESPONSE_GENERATION_SELECTORS = [
   'button[aria-label*="stop" i]',
   'button[aria-label*="cancel" i]',
   'button[aria-label="Stop generating response"]',
+  'button[aria-label="Stop response"]',
 
   // Streaming states (Claude, ChatGPT)
   '[data-streaming="true"]',
