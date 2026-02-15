@@ -38,7 +38,7 @@ import {
 	getUniqueLinks,
 	modelSelectors,
 } from "@onescope/utils";
-import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
+import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -51,6 +51,46 @@ import {
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 
+type SortColumn = "prompt" | "geoScore" | "sentiment" | "visibility" | "position";
+
+function SortableHeader({
+	children,
+	column,
+	currentSort,
+	currentDirection,
+	onSort,
+}: {
+	children: React.ReactNode;
+	column: SortColumn;
+	currentSort: SortColumn;
+	currentDirection: "asc" | "desc";
+	onSort: (column: SortColumn) => void;
+}) {
+	const isActive = currentSort === column;
+
+	return (
+		<button
+			type="button"
+			onClick={(e) => {
+				e.stopPropagation();
+				onSort(column);
+			}}
+			className="flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100"
+		>
+			{children}
+			{isActive ? (
+				currentDirection === "asc" ? (
+					<ArrowUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+				) : (
+					<ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+				)
+			) : (
+				<ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+			)}
+		</button>
+	);
+}
+
 export default function Prompts() {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
@@ -60,9 +100,7 @@ export default function Prompts() {
 	const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">(
 		"all",
 	);
-	const [sortBy, setSortBy] = useState<
-		"prompt" | "geoScore" | "sentiment" | "visibility" | "position"
-	>("prompt");
+	const [sortBy, setSortBy] = useState<SortColumn>("prompt");
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [currentPrompt, setCurrentPrompt] = useState("");
 	const [dialogOpen, setDialogOpen] = useState(false);
@@ -312,22 +350,15 @@ export default function Prompts() {
 		return rows;
 	}, [promptsWithMetrics, sortBy, sortDirection]);
 
-	const handleColumnSort = (
-		field: "prompt" | "geoScore" | "sentiment" | "visibility" | "position",
-	) => {
-		if (sortBy === field) {
-			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-			return;
+	const handleColumnSort = (column: SortColumn) => {
+		if (sortBy === column) {
+			// Toggle direction if same column
+			setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+		} else {
+			// New column, default to ascending for text, descending for numbers
+			setSortBy(column);
+			setSortDirection(column === "prompt" ? "asc" : "desc");
 		}
-		setSortBy(field);
-		setSortDirection("asc");
-	};
-
-	const getSortIndicator = (
-		field: "prompt" | "geoScore" | "sentiment" | "visibility" | "position",
-	) => {
-		if (sortBy !== field) return "↕";
-		return sortDirection === "asc" ? "↑" : "↓";
 	};
 
 	const openPromptRecords = useMemo(() => {
@@ -788,69 +819,62 @@ export default function Prompts() {
 										/>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-left font-medium text-gray-500 text-sm dark:text-gray-400">
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleColumnSort("prompt");
-											}}
-											className="inline-flex items-center gap-1"
+										<SortableHeader
+											column="prompt"
+											currentSort={sortBy}
+											currentDirection={sortDirection}
+											onSort={handleColumnSort}
 										>
 											Prompt
-											<span className="text-[11px] text-gray-400">{getSortIndicator("prompt")}</span>
-										</button>
+										</SortableHeader>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleColumnSort("geoScore");
-											}}
-											className="mx-auto inline-flex items-center gap-1"
-										>
-											GEO Score
-											<span className="text-[11px] text-gray-400">{getSortIndicator("geoScore")}</span>
-										</button>
+										<div className="flex justify-center">
+											<SortableHeader
+												column="geoScore"
+												currentSort={sortBy}
+												currentDirection={sortDirection}
+												onSort={handleColumnSort}
+											>
+												GEO Score
+											</SortableHeader>
+										</div>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleColumnSort("sentiment");
-											}}
-											className="mx-auto inline-flex items-center gap-1"
-										>
-											Sentiment
-											<span className="text-[11px] text-gray-400">{getSortIndicator("sentiment")}</span>
-										</button>
+										<div className="flex justify-center">
+											<SortableHeader
+												column="sentiment"
+												currentSort={sortBy}
+												currentDirection={sortDirection}
+												onSort={handleColumnSort}
+											>
+												Sentiment
+											</SortableHeader>
+										</div>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleColumnSort("visibility");
-											}}
-											className="mx-auto inline-flex items-center gap-1"
-										>
-											Visibility
-											<span className="text-[11px] text-gray-400">{getSortIndicator("visibility")}</span>
-										</button>
+										<div className="flex justify-center">
+											<SortableHeader
+												column="visibility"
+												currentSort={sortBy}
+												currentDirection={sortDirection}
+												onSort={handleColumnSort}
+											>
+												Visibility
+											</SortableHeader>
+										</div>
 									</TableHead>
 									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-												handleColumnSort("position");
-											}}
-											className="mx-auto inline-flex items-center gap-1"
-										>
-											Position
-											<span className="text-[11px] text-gray-400">{getSortIndicator("position")}</span>
-										</button>
+										<div className="flex justify-center">
+											<SortableHeader
+												column="position"
+												currentSort={sortBy}
+												currentDirection={sortDirection}
+												onSort={handleColumnSort}
+											>
+												Position
+											</SortableHeader>
+										</div>
 									</TableHead>
 								</TableRow>
 							</TableHeader>

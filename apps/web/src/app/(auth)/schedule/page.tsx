@@ -13,11 +13,12 @@ function localHourToUTC(localHour: number): number {
   return now.getUTCHours();
 }
 
-// Helper to format date to exact date and time (for last run)
+// Helper to format date to exact date and time (for last run) in local time
 function formatAbsoluteTime(timestamp: string | null): string {
   if (!timestamp) return "Never";
 
   const date = new Date(timestamp);
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return date.toLocaleString(undefined, {
     month: 'short',
@@ -26,6 +27,7 @@ function formatAbsoluteTime(timestamp: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: timezone,
   });
 }
 
