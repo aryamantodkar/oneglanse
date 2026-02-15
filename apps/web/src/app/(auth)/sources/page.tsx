@@ -15,6 +15,11 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	Input,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	Button,
 } from "@onescope/ui";
 import {
 	AlertTriangle,
@@ -25,6 +30,8 @@ import {
 	Globe2,
 	Link2,
 	SearchX,
+	Filter,
+	X,
 } from "lucide-react";
 import type { GroupedSource, SourceGroupResult } from "@onescope/types";
 import { getDomain, getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
@@ -58,6 +65,97 @@ function cleanCitedText(text: string): string {
 	return text
 		.replace(/\s*(?:\.\.\.|…)?\s*read more\.?\s*$/i, "")
 		.trim();
+}
+
+function ColumnFilterPopover({
+	label,
+	filter,
+	onFilterChange,
+	onClear,
+}: {
+	label: string;
+	filter: ColumnFilter;
+	onFilterChange: (filter: ColumnFilter) => void;
+	onClear: () => void;
+}) {
+	const hasFilter = filter.min !== "" || filter.max !== "";
+
+	return (
+		<Popover>
+			<PopoverTrigger asChild>
+				<button className={`ml-1 inline-flex items-center transition-colors hover:text-gray-900 dark:hover:text-gray-100 ${hasFilter ? "text-blue-600 dark:text-blue-400" : ""}`}>
+					<Filter className="h-3.5 w-3.5" />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent className="w-64" align="start">
+				<div className="space-y-3">
+					<div className="flex items-center justify-between">
+						<h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+							Filter {label}
+						</h4>
+						{hasFilter && (
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={onClear}
+								className="h-6 px-2 text-xs"
+							>
+								<X className="h-3 w-3 mr-1" />
+								Clear
+							</Button>
+						)}
+					</div>
+					<div className="space-y-2">
+						<div>
+							<label className="text-xs text-muted-foreground">Min</label>
+							<Input
+								type="number"
+								placeholder="No minimum"
+								value={filter.min}
+								onChange={(e) => onFilterChange({ ...filter, min: e.target.value })}
+								className="mt-1 h-9"
+							/>
+						</div>
+						<div>
+							<label className="text-xs text-muted-foreground">Max</label>
+							<Input
+								type="number"
+								placeholder="No maximum"
+								value={filter.max}
+								onChange={(e) => onFilterChange({ ...filter, max: e.target.value })}
+								className="mt-1 h-9"
+							/>
+						</div>
+					</div>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
+function FaviconWithFallback({ url, size = "md" }: { url: string; size?: "sm" | "md" }) {
+	const [showFavicon, setShowFavicon] = useState(true);
+	const favicon = getFaviconUrls(url, "")[0];
+
+	const sizeClasses = size === "sm" ? "h-4 w-4" : "h-5 w-5";
+	const iconSizeClasses = size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3";
+
+	if (favicon && showFavicon) {
+		return (
+			<img
+				src={favicon}
+				alt=""
+				className={`${sizeClasses} rounded-sm`}
+				onError={() => setShowFavicon(false)}
+			/>
+		);
+	}
+
+	return (
+		<div className={`${sizeClasses} flex items-center justify-center rounded-sm bg-gray-100 dark:bg-gray-800`}>
+			<Globe2 className={`${iconSizeClasses} text-gray-500 dark:text-gray-400`} />
+		</div>
+	);
 }
 
 function MetricCard({
@@ -101,11 +199,21 @@ function MetricCard({
 	);
 }
 
+type ColumnFilter = {
+	min: string;
+	max: string;
+};
+
 export default function SourcesPage() {
 	const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
 	const [activeTab, setActiveTab] = useState<"domains" | "citations">("domains");
 	const [openDomain, setOpenDomain] = useState<string | null>(null);
 	const [openUrl, setOpenUrl] = useState<string | null>(null);
+
+	// Column filters
+	const [shareFilter, setShareFilter] = useState<ColumnFilter>({ min: "", max: "" });
+	const [citationsFilter, setCitationsFilter] = useState<ColumnFilter>({ min: "", max: "" });
+	const [urlsFilter, setUrlsFilter] = useState<ColumnFilter>({ min: "", max: "" });
 
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
@@ -159,6 +267,29 @@ export default function SourcesPage() {
 
 		return [...map.values()].sort((a, b) => b.totalCitations - a.totalCitations);
 	}, [displayedSources]);
+
+	// Filtered domain groups based on column filters
+	const filteredDomainGroups = useMemo<DomainGroup[]>(() => {
+		const totalCitations = domainGroups.reduce((sum, d) => sum + d.totalCitations, 0);
+
+		return domainGroups.filter((domain) => {
+			const share = totalCitations > 0 ? (domain.totalCitations / totalCitations) * 100 : 0;
+
+			// Share filter
+			if (shareFilter.min && share < parseFloat(shareFilter.min)) return false;
+			if (shareFilter.max && share > parseFloat(shareFilter.max)) return false;
+
+			// Citations filter
+			if (citationsFilter.min && domain.totalCitations < parseInt(citationsFilter.min)) return false;
+			if (citationsFilter.max && domain.totalCitations > parseInt(citationsFilter.max)) return false;
+
+			// URLs filter
+			if (urlsFilter.min && domain.urlCount < parseInt(urlsFilter.min)) return false;
+			if (urlsFilter.max && domain.urlCount > parseInt(urlsFilter.max)) return false;
+
+			return true;
+		});
+	}, [domainGroups, shareFilter, citationsFilter, urlsFilter]);
 
 	const aggregate = useMemo(() => {
 		const totalUrls = displayedSources.length;
@@ -490,13 +621,37 @@ export default function SourcesPage() {
 										Publisher
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Share of Citations
+										<div className="flex items-center">
+											Share of Citations
+											<ColumnFilterPopover
+												label="Share"
+												filter={shareFilter}
+												onFilterChange={setShareFilter}
+												onClear={() => setShareFilter({ min: "", max: "" })}
+											/>
+										</div>
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Total Citations
+										<div className="flex items-center">
+											Total Citations
+											<ColumnFilterPopover
+												label="Citations"
+												filter={citationsFilter}
+												onFilterChange={setCitationsFilter}
+												onClear={() => setCitationsFilter({ min: "", max: "" })}
+											/>
+										</div>
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										Unique URLs
+										<div className="flex items-center">
+											Unique URLs
+											<ColumnFilterPopover
+												label="URLs"
+												filter={urlsFilter}
+												onFilterChange={setUrlsFilter}
+												onClear={() => setUrlsFilter({ min: "", max: "" })}
+											/>
+										</div>
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 										Models
@@ -504,8 +659,7 @@ export default function SourcesPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{domainGroups.map((domain, idx) => {
-									const favicon = getFaviconUrls(domain.domain, "")[0];
+								{filteredDomainGroups.map((domain, idx) => {
 									const share = aggregate.totalCitations
 										? ((domain.totalCitations / aggregate.totalCitations) * 100).toFixed(1)
 										: "0.0";
@@ -521,16 +675,7 @@ export default function SourcesPage() {
 											</TableCell>
 											<TableCell className="px-4 py-5">
 												<div className="flex items-center gap-2">
-													{favicon && (
-														<img
-															src={favicon}
-															alt=""
-															className="h-5 w-5 rounded-sm"
-															onError={(e) => {
-																(e.target as HTMLImageElement).style.display = "none";
-															}}
-														/>
-													)}
+													<FaviconWithFallback url={domain.domain} />
 													<a
 														href={`https://${domain.domain}`}
 														target="_blank"
@@ -584,7 +729,6 @@ export default function SourcesPage() {
 							</TableHeader>
 							<TableBody>
 								{domainGroups.map((group) => {
-									const domainFavicon = getFaviconUrls(group.domain, "")[0];
 									const domainOpen = openDomain === group.domain;
 									const groupProviders = [...group.providers];
 
@@ -603,16 +747,7 @@ export default function SourcesPage() {
 																domainOpen ? "rotate-90" : ""
 															}`}
 														/>
-														{domainFavicon && (
-															<img
-																src={domainFavicon}
-																alt=""
-																className="h-5 w-5 rounded-sm"
-																onError={(e) => {
-																	(e.target as HTMLImageElement).style.display = "none";
-																}}
-															/>
-														)}
+														<FaviconWithFallback url={group.domain} />
 														<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
 															{group.domain}
 														</span>
@@ -640,7 +775,6 @@ export default function SourcesPage() {
 											{domainOpen &&
 												group.urls.map((source) => {
 													const urlOpen = openUrl === source.url;
-													const urlFavicon = getFaviconUrls(source.url, "")[0];
 													const providers = [...new Set(source.excerpts.map((e) => e.model_provider).filter(Boolean))] as string[];
 
 													return (
@@ -656,17 +790,10 @@ export default function SourcesPage() {
 																				urlOpen ? "rotate-90" : ""
 																			}`}
 																		/>
-																		{urlFavicon && (
-																			<img
-																				src={urlFavicon}
-																				alt=""
-																				className="mt-0.5 h-4 w-4 rounded-sm"
-																				onError={(e) => {
-																					(e.target as HTMLImageElement).style.display = "none";
-																				}}
-																			/>
-																		)}
-																			<div className="min-w-0">
+																		<div className="mt-0.5">
+																			<FaviconWithFallback url={source.url} size="sm" />
+																		</div>
+																		<div className="min-w-0">
 																				<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
 																					{source.title || "Untitled source"}
 																				</p>

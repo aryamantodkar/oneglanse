@@ -3,17 +3,119 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Skeleton, toast } from "@onescope/ui";
-import { Clock, Loader2, Check } from "lucide-react";
+import { Clock, Loader2, Check, Calendar, PlayCircle } from "lucide-react";
 import { api } from "@/trpc/react";
 
-const SCHEDULE_OPTIONS = [
-  { label: "Every 3 hours", value: "0 */3 * * *", description: "Runs 8 times daily (midnight, 3 AM, 6 AM, 9 AM, noon, 3 PM, 6 PM, 9 PM)" },
-  { label: "Every 6 hours", value: "0 */6 * * *", description: "Runs at midnight, 6 AM, noon, and 6 PM" },
-  { label: "Every 12 hours", value: "0 */12 * * *", description: "Runs at midnight and noon" },
-  { label: "Every day", value: "0 0 * * *", description: "Runs once daily at midnight" },
-  { label: "Every 2 days", value: "0 0 */2 * *", description: "Runs at midnight every other day" },
-  { label: "Every week", value: "0 0 * * 0", description: "Runs every Sunday at midnight" },
-] as const;
+// Helper to convert local hour to UTC hour
+function localHourToUTC(localHour: number): number {
+  const now = new Date();
+  now.setHours(localHour, 0, 0, 0);
+  return now.getUTCHours();
+}
+
+// Helper to convert UTC hour to local hour
+function utcHourToLocal(utcHour: number): number {
+  const now = new Date();
+  now.setUTCHours(utcHour, 0, 0, 0);
+  return now.getHours();
+}
+
+// Helper to format date to relative time or absolute time
+function formatTimestamp(timestamp: string | null): string {
+  if (!timestamp) return "Never";
+
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  // For future times
+  if (diffMs < 0) {
+    const futureMins = Math.abs(diffMins);
+    const futureHours = Math.abs(diffHours);
+    const futureDays = Math.abs(diffDays);
+
+    if (futureMins < 60) {
+      return `in ${futureMins} minute${futureMins !== 1 ? 's' : ''}`;
+    } else if (futureHours < 24) {
+      return `in ${futureHours} hour${futureHours !== 1 ? 's' : ''}`;
+    } else if (futureDays < 7) {
+      return `in ${futureDays} day${futureDays !== 1 ? 's' : ''}`;
+    }
+  }
+
+  // For past times
+  if (diffMins < 1) {
+    return "Just now";
+  } else if (diffMins < 60) {
+    return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  } else if (diffDays < 7) {
+    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  }
+
+  // Format absolute date
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// Generate schedule options based on user's local timezone
+function getScheduleOptions() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return [
+    {
+      label: "Every 3 hours",
+      value: "0 */3 * * *",
+      description: `Runs 8 times daily in your timezone (${timezone})`,
+    },
+    {
+      label: "Every 6 hours",
+      value: "0 */6 * * *",
+      description: `Runs every 6 hours in your timezone (${timezone})`,
+    },
+    {
+      label: "Every 12 hours",
+      value: "0 */12 * * *",
+      description: `Runs twice daily in your timezone (${timezone})`,
+    },
+    {
+      label: "Every day at midnight",
+      value: `0 ${localHourToUTC(0)} * * *`,
+      description: `Runs daily at midnight in your timezone (${timezone})`,
+    },
+    {
+      label: "Every day at 6 AM",
+      value: `0 ${localHourToUTC(6)} * * *`,
+      description: `Runs daily at 6 AM in your timezone (${timezone})`,
+    },
+    {
+      label: "Every day at noon",
+      value: `0 ${localHourToUTC(12)} * * *`,
+      description: `Runs daily at noon in your timezone (${timezone})`,
+    },
+    {
+      label: "Every 2 days at midnight",
+      value: `0 ${localHourToUTC(0)} */2 * *`,
+      description: `Runs at midnight every other day in your timezone (${timezone})`,
+    },
+    {
+      label: "Every week (Sunday midnight)",
+      value: `0 ${localHourToUTC(0)} * * 0`,
+      description: `Runs every Sunday at midnight in your timezone (${timezone})`,
+    },
+  ];
+}
+
+const SCHEDULE_OPTIONS = getScheduleOptions();
 
 function getScheduleLabel(cron: string | null): string {
   if (!cron) return "Not scheduled";
@@ -31,6 +133,11 @@ export default function SchedulePage() {
   const scheduleQuery = api.workspace.getSchedule.useQuery(
     { workspaceId },
     { enabled: !!workspaceId }
+  );
+
+  const cronTimingQuery = api.workspace.getCronTiming.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId, refetchInterval: 30000 } // Refetch every 30 seconds
   );
 
   const setScheduleMutation = api.workspace.setSchedule.useMutation();
@@ -52,7 +159,10 @@ export default function SchedulePage() {
         workspaceId,
         schedule: selected,
       });
-      await scheduleQuery.refetch();
+      await Promise.all([
+        scheduleQuery.refetch(),
+        cronTimingQuery.refetch(),
+      ]);
       toast.success(
         selected
           ? "Schedule saved! Your prompts will run shortly."
@@ -74,7 +184,10 @@ export default function SchedulePage() {
         schedule: null,
       });
       setSelected(null);
-      await scheduleQuery.refetch();
+      await Promise.all([
+        scheduleQuery.refetch(),
+        cronTimingQuery.refetch(),
+      ]);
       toast.success("Schedule disabled.");
     } catch (err) {
       console.error(err);
@@ -106,6 +219,46 @@ export default function SchedulePage() {
           Configure how often your prompts are automatically run across all AI providers and analyzed.
         </p>
       </div>
+
+      {/* Timing Information Cards */}
+      {cronTimingQuery.isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, idx) => (
+            <div key={`timing-skeleton-${idx}`} className="rounded-lg border border-gray-200 px-4 py-3">
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Next Scheduled Run */}
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Next Scheduled Run</span>
+            </div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {currentSchedule && cronTimingQuery.data?.data?.nextRun
+                ? formatTimestamp(cronTimingQuery.data.data.nextRun)
+                : "Not scheduled"}
+            </p>
+          </div>
+
+          {/* Last Prompt Run (Manual or Scheduled) */}
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <PlayCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Last Prompt Run</span>
+            </div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {cronTimingQuery.data?.data?.lastPromptRun
+                ? formatTimestamp(cronTimingQuery.data.data.lastPromptRun)
+                : "Never"}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Current status */}
       {scheduleQuery.isLoading ? (

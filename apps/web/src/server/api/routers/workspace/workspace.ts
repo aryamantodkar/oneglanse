@@ -647,4 +647,97 @@ export const workspaceRouter = createTRPCRouter({
           return ok({ schedule }, "Schedule updated successfully.");
         });
       }),
+
+    getCronTiming: authorizedWorkspaceProcedure
+      .query(async ({ ctx }) => {
+        return safeHandler(async () => {
+          const { workspaceId } = ctx;
+
+          // Get the workspace to find the schedule
+          const workspace = await getWorkspaceById({ workspaceId });
+          const cronSchedule = workspace.schedule;
+
+          let nextRun = null;
+          if (cronSchedule) {
+            try {
+              // Calculate next run time based on cron expression
+              // This is a simplified calculation - parse the cron expression
+              const cronParts = cronSchedule.split(' ');
+              // const minute = cronParts[0]; // Not used currently
+              const hour = cronParts[1];
+              const dayOfMonth = cronParts[2];
+              // const month = cronParts[3]; // Not used currently
+              const dayOfWeek = cronParts[4];
+
+              const now = new Date();
+              let next = new Date(now);
+
+              // Handle hourly patterns (*/N)
+              if (hour && hour.startsWith('*/')) {
+                const interval = parseInt(hour.substring(2));
+                const currentHour = now.getHours();
+                const nextHour = Math.ceil((currentHour + 1) / interval) * interval;
+                next.setHours(nextHour, 0, 0, 0);
+                if (next <= now) {
+                  next.setHours(next.getHours() + interval);
+                }
+              }
+              // Handle specific hour
+              else if (hour && hour !== '*') {
+                const targetHour = parseInt(hour);
+                next.setHours(targetHour, 0, 0, 0);
+                if (next <= now) {
+                  next.setDate(next.getDate() + 1);
+                }
+
+                // Handle day of week for weekly schedules
+                if (dayOfWeek && dayOfWeek !== '*') {
+                  const targetDay = parseInt(dayOfWeek);
+                  const currentDay = next.getDay();
+                  let daysToAdd = targetDay - currentDay;
+                  if (daysToAdd <= 0) {
+                    daysToAdd += 7;
+                  }
+                  next.setDate(next.getDate() + daysToAdd);
+                }
+
+                // Handle every N days
+                if (dayOfMonth && dayOfMonth.startsWith('*/')) {
+                  const interval = parseInt(dayOfMonth.substring(2));
+                  if (next <= now) {
+                    next.setDate(next.getDate() + interval);
+                  }
+                }
+              }
+
+              nextRun = next.toISOString();
+            } catch (err) {
+              console.error("Error calculating next run:", err);
+            }
+          }
+
+          // Get last prompt run time (manual or scheduled) from ClickHouse
+          let lastPromptRun = null;
+          try {
+            const promptRunResult = await clickhouse.query({
+              query: `
+                SELECT MAX(prompt_run_at) as last_run
+                FROM analytics.prompt_responses
+                WHERE workspace_id = {workspaceId:String}
+              `,
+              query_params: { workspaceId },
+              format: "JSONEachRow",
+            });
+
+            const data = await promptRunResult.json() as Array<{ last_run: string }>;
+            if (data.length > 0 && data[0]?.last_run) {
+              lastPromptRun = data[0].last_run;
+            }
+          } catch (err) {
+            console.error("Error fetching last prompt run:", err);
+          }
+
+          return ok({ nextRun, lastPromptRun }, "Cron timing fetched successfully.");
+        });
+      }),
   });
