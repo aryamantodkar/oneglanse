@@ -5,7 +5,7 @@ import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToF
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 
-const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 1);
+const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
 const INITIAL_EXTRACTION_RETRY_DELAY = Number(process.env.EXTRACTION_RETRY_DELAY_MS ?? 2000);
 const MAX_EXTRACTION_RETRY_DELAY = Number(process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000);
 
@@ -28,6 +28,8 @@ export async function fetchPromptResponses(
       logger.log("⏳ Waiting for response to complete...");
       // 1️⃣ Wait until model finishes generating
       await waitForAssistantToFinish(page, provider);
+
+      await page.waitForTimeout(1500);
     }
 
     logger.log("📄 Extracting response...");
