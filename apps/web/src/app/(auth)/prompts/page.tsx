@@ -181,14 +181,26 @@ export default function Prompts() {
 					metrics: null,
 					recordCount: 0,
 					modelProvider: null,
-					reason: "unanalyzed" as const,
+					reason: "no-responses" as const,
 				};
 			}
 
 			// If a specific model is selected, use that model's metrics
 			if (modelFilter !== "All Models") {
 				const record = records.find((r) => r.model_provider === modelFilter);
-				if (!record || !record.is_analysed) {
+				if (!record) {
+					return {
+						sourceIndex,
+						prompt,
+						metrics: null,
+						recordCount: records.length,
+						modelProvider: modelFilter,
+						reason: "no-responses" as const,
+					};
+				}
+
+				// If response exists but not analyzed, show as unanalyzed
+				if (!record.is_analysed) {
 					return {
 						sourceIndex,
 						prompt,
@@ -243,6 +255,7 @@ export default function Prompts() {
 			// "All Models" selected - calculate average metrics across all analyzed records
 			const analyzedRecords = records.filter((r) => r.is_analysed);
 
+			// If we have responses but none are analyzed yet
 			if (analyzedRecords.length === 0) {
 				return {
 					sourceIndex,
@@ -911,11 +924,13 @@ export default function Prompts() {
 													colSpan={5}
 												>
 													<span className="italic">
-														{reason === "unanalyzed"
-															? "No analysis data yet"
-															: reason === "brand-not-mentioned"
-																? "Brand not mentioned in this prompt"
-																: "No data available"}
+														{reason === "no-responses"
+															? "No responses yet"
+															: reason === "unanalyzed"
+																? "Analysis in progress..."
+																: reason === "brand-not-mentioned"
+																	? "Brand not mentioned in this prompt"
+																	: "No data available"}
 													</span>
 												</TableCell>
 											) : (
@@ -1137,6 +1152,18 @@ export default function Prompts() {
 																			)}
 																		</div>
 																	</div>
+																</div>
+															</div>
+														)}
+
+														{/* Analysis Status for Unanalyzed Responses */}
+														{!record.is_analysed && (
+															<div className="mb-4 border-gray-100 border-b pb-3 dark:border-gray-800">
+																<div className="flex items-center gap-2">
+																	<div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+																	<span className="text-xs text-gray-500 dark:text-gray-400">
+																		Analysis in progress...
+																	</span>
 																</div>
 															</div>
 														)}

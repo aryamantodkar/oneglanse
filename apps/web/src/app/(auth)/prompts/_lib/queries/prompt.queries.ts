@@ -3,7 +3,11 @@ import { api } from "@/trpc/react";
 export function useUserPrompts(workspaceId: string){
     return api.prompt.fetchUserPrompts.useQuery(
         { workspaceId },
-        { enabled: !!workspaceId }
+        {
+            enabled: !!workspaceId,
+            refetchOnWindowFocus: true, // Refetch when user returns to tab
+            staleTime: 30000, // Consider data fresh for 30 seconds
+        }
     );
 }
 
@@ -23,6 +27,9 @@ export function useFetchAnalysedPrompts(workspaceId: string) {
       { workspaceId },
       {
         enabled: !!workspaceId,
+        refetchOnWindowFocus: true, // Refetch when user returns to tab
+        staleTime: 30000, // Consider data fresh for 30 seconds
+        refetchInterval: 60000, // Light polling every 60 seconds only
       }
     );
   }
