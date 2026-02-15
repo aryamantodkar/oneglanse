@@ -19,6 +19,11 @@ export const PROVIDERS = {
       displayName: "Gemini",
       url: "https://gemini.google.com/"
     },
+    "google-overview": {
+      name: "google-overview",
+      displayName: "AI Overview",
+      url: "https://www.google.com/search"
+    },
 };
 
 /**

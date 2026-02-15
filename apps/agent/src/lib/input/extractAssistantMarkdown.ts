@@ -2,6 +2,7 @@ import { Page } from "playwright";
 import { Provider } from "@onescope/types";
 import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
 import TurndownService from "turndown";
+import { extractAIOverviewResponse } from "../../agents/google-overview/index.js";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -211,6 +212,11 @@ export async function extractAssistantMarkdown(
   page: Page,
   provider: Provider
 ): Promise<string> {
+  // Special handling for Google AI Overview
+  if (provider === "google-overview") {
+    return await extractAIOverviewResponse(page);
+  }
+
   for (const selector of MODEL_RESPONSE_SELECTORS) {
     const nodes = page.locator(selector);
     const count = await nodes.count();

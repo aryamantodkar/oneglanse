@@ -13,7 +13,7 @@ export const workspaces = pgTable("workspaces", {
     region: varchar("region", { length: 128 }),
     schedule: varchar("schedule", { length: 64 }),
     enabledProviders: text("enabled_providers")
-        .default('["openai","anthropic","perplexity","google"]')
+        .default('["openai","anthropic","perplexity","google","google-overview"]')
         .notNull(),
     createdAt: timestamp("created_at").notNull(),
     deletedAt: timestamp("deleted_at"),

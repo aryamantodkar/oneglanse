@@ -8,6 +8,7 @@ import { openaiAgent } from "./agents/openai/openaiAgent.js";
 import { anthropicAgent } from "./agents/anthropic/anthropicAgent.js";
 import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
 import { googleAgent } from "./agents/google/googleAgent.js";
+import { googleOverviewAgent } from "./agents/google-overview/google-overviewAgent.js";
 
 type ProviderJobData = {
   jobGroupId: string;
@@ -26,6 +27,7 @@ const providerConfig: Record<
   anthropic: { label: "Anthropic", factory: anthropicAgent },
   perplexity: { label: "Perplexity", factory: perplexityAgent },
   google: { label: "Google", factory: googleAgent },
+  "google-overview": { label: "Google AI Overview", factory: googleOverviewAgent },
 };
 
 function runAnalysisInBackground(args: {
@@ -145,6 +147,7 @@ async function startWorker() {
           anthropic: { status: "rejected", data: [] },
           perplexity: { status: "rejected", data: [] },
           google: { status: "rejected", data: [] },
+          "google-overview": { status: "rejected", data: [] },
         };
 
         const partialResults: ModelResult = {
