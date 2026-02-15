@@ -722,7 +722,7 @@ export const workspaceRouter = createTRPCRouter({
           try {
             const promptRunResult = await clickhouse.query({
               query: `
-                SELECT formatDateTime(MAX(prompt_run_at), '%Y-%m-%dT%H:%i:%SZ') as last_run
+                SELECT toUnixTimestamp(MAX(prompt_run_at)) as last_run_ts
                 FROM analytics.prompt_responses
                 WHERE workspace_id = {workspaceId:String}
               `,
@@ -730,9 +730,10 @@ export const workspaceRouter = createTRPCRouter({
               format: "JSONEachRow",
             });
 
-            const data = await promptRunResult.json() as Array<{ last_run: string }>;
-            if (data.length > 0 && data[0]?.last_run && data[0].last_run !== '1970-01-01T00:00:00Z') {
-              lastPromptRun = data[0].last_run;
+            const data = await promptRunResult.json() as Array<{ last_run_ts: number }>;
+            if (data.length > 0 && data[0]?.last_run_ts && data[0].last_run_ts > 0) {
+              // Convert Unix timestamp (seconds) to ISO string
+              lastPromptRun = new Date(data[0].last_run_ts * 1000).toISOString();
             }
           } catch (err) {
             console.error("Error fetching last prompt run:", err);

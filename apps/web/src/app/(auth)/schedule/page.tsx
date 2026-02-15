@@ -18,8 +18,8 @@ function formatAbsoluteTime(timestamp: string | null): string {
   if (!timestamp) return "Never";
 
   const date = new Date(timestamp);
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  // Use browser's local timezone for display
   return date.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -27,7 +27,7 @@ function formatAbsoluteTime(timestamp: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    timeZone: timezone,
+    hour12: true,
   });
 }
 
