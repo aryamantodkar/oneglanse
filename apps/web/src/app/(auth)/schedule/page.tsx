@@ -13,8 +13,8 @@ function localHourToUTC(localHour: number): number {
   return now.getUTCHours();
 }
 
-// Helper to format date to exact date and time
-function formatTimestamp(timestamp: string | null): string {
+// Helper to format date to exact date and time (for last run)
+function formatAbsoluteTime(timestamp: string | null): string {
   if (!timestamp) return "Never";
 
   const date = new Date(timestamp);
@@ -27,6 +27,37 @@ function formatTimestamp(timestamp: string | null): string {
     minute: '2-digit',
     second: '2-digit',
   });
+}
+
+// Helper to format date to relative time (for next run)
+function formatRelativeTime(timestamp: string | null): string {
+  if (!timestamp) return "Not scheduled";
+
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  // For past times (shouldn't happen for next run, but handle it)
+  if (diffMs < 0) {
+    return formatAbsoluteTime(timestamp);
+  }
+
+  // For future times
+  if (diffMins < 1) {
+    return "In less than a minute";
+  } else if (diffMins < 60) {
+    return `In ${diffMins} minute${diffMins !== 1 ? 's' : ''}`;
+  } else if (diffHours < 24) {
+    return `In ${diffHours} hour${diffHours !== 1 ? 's' : ''}`;
+  } else if (diffDays < 7) {
+    return `In ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+  } else {
+    // For far future times, show absolute
+    return formatAbsoluteTime(timestamp);
+  }
 }
 
 // Generate schedule options based on user's local timezone
@@ -200,7 +231,7 @@ export default function SchedulePage() {
             </div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {currentSchedule && cronTimingQuery.data?.data?.nextRun
-                ? formatTimestamp(cronTimingQuery.data.data.nextRun)
+                ? formatRelativeTime(cronTimingQuery.data.data.nextRun)
                 : "Not scheduled"}
             </p>
           </div>
@@ -213,7 +244,7 @@ export default function SchedulePage() {
             </div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {cronTimingQuery.data?.data?.lastPromptRun
-                ? formatTimestamp(cronTimingQuery.data.data.lastPromptRun)
+                ? formatAbsoluteTime(cronTimingQuery.data.data.lastPromptRun)
                 : "Never"}
             </p>
           </div>
