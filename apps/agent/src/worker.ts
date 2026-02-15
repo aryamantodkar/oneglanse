@@ -198,9 +198,9 @@ async function startWorker() {
       },
       // Default sequential execution to reduce Playwright/proxy contention.
       concurrency: workerConcurrency,
-      lockDuration: 2 * 60 * 1000, // Renew lock frequently to avoid long stale-lock windows
-      stalledInterval: 30 * 1000, // Check stalled jobs every 30s
-      maxStalledCount: 3, // Allow transient disconnects/restarts before hard-failing a job
+      lockDuration: 15 * 60 * 1000, // 15 minutes - browser automation can take time with retries
+      stalledInterval: 60 * 1000, // Check stalled jobs every 60s
+      maxStalledCount: 5, // Allow more stalls for browser automation with proxy retries
     }
   );
 

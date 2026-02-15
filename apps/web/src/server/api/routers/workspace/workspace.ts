@@ -636,11 +636,11 @@ export const workspaceRouter = createTRPCRouter({
             });
 
             // Trigger immediate first run.
-            const cooldownKey = `workspace:${workspaceId}:run-cooldown`;
-            const canRun = await redis.set(cooldownKey, "1", "EX", 3600, "NX");
+            // const cooldownKey = `workspace:${workspaceId}:run-cooldown`;
+            // const canRun = await redis.set(cooldownKey, "1", "EX", 3600, "NX");
 
             // Instantly run prompts
-            // const canRun = "OK";
+            const canRun = "OK";
 
             if (canRun) try {
               const prompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });
