@@ -14,7 +14,7 @@ type ProviderJobData = {
   prompts: UserPrompt[];
   user_id: string;
   workspace_id: string;
-  created_at: string;
+  created_at?: string; // Optional - worker generates fresh timestamp if not provided
 };
 
 const providerConfig: Record<
@@ -67,7 +67,7 @@ async function startWorker() {
     async (job: Job<ProviderJobData>) => {
       const data = job.data as ProviderJobData;
 
-      const { provider, jobGroupId, prompts, user_id, workspace_id, created_at } = data;
+      const { provider, jobGroupId, prompts, user_id, workspace_id } = data;
 
       if (!providerConfig[provider]) {
         throw new Error(`Unknown provider: ${provider}`);
@@ -77,6 +77,9 @@ async function startWorker() {
         throw new Error("Agent job received no prompts");
       }
 
+      // Generate fresh timestamp at execution time
+      const executionTime = new Date().toISOString();
+
       const PromptPayload: PromptPayload = {
         user_id,
         workspace_id,
@@ -84,7 +87,7 @@ async function startWorker() {
           id,
           prompt,
         })),
-        created_at
+        created_at: executionTime
       };
 
       const progressKey = `job:${jobGroupId}:result`;
@@ -154,7 +157,7 @@ async function startWorker() {
           results: partialResults,
           userId: user_id,
           workspaceId: workspace_id,
-          promptRunAt: created_at,
+          promptRunAt: executionTime,
         });
 
         // Trigger analysis asynchronously; do not block provider completion.
