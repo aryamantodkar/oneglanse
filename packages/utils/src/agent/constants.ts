@@ -84,6 +84,12 @@ export const MODEL_RESPONSE_SELECTORS = [
   '[data-testid="answer"]',
   '.answer',
 
+  // Google/Gemini (for regular Gemini chat responses)
+  '[data-message-author-role="model"]',
+  '.model-response-text',
+  'message-content',
+  '[role="region"] .markdown-content',
+
   // Fallback
   'main div:has(p)',
 ];

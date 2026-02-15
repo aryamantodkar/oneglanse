@@ -123,7 +123,8 @@ export async function loginToAll(): Promise<void> {
     openai: 'skipped',
     anthropic: 'skipped',
     perplexity: 'skipped',
-    google: 'skipped'
+    google: 'skipped',
+    'google-overview': 'skipped'
   };
 
   for (const provider of Object.keys(PROVIDERS) as Provider[]) {

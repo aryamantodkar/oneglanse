@@ -3,6 +3,8 @@ import { findLastAssistantBox } from "../../../lib/input/getLastAssistantText.js
 import { extractSourcesFromAnthropic } from "../../anthropic/lib/extractSources.js";
 import { exractSoucesFromOpenai } from "../../openai/lib/extractSources.js";
 import { exractSoucesFromPerplexity } from "../../perplexity/lib/extractSources.js";
+import { extractSourcesFromGoogle } from "../../google/lib/extractSources.js";
+import { extractGoogleOverviewSources } from "../../google-overview/lib/extractSources.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { Provider, Source } from "@onescope/types";
 import { SOURCES_SELECTORS } from "@onescope/utils";
@@ -66,7 +68,17 @@ export async function extractSourcesFromPanel(page: Page, provider: Provider): P
     if(provider=="anthropic"){
         return await extractSourcesFromAnthropic(page);
     }
-  
+
+    // Google AI Overview has custom extraction
+    if(provider=="google-overview"){
+        return await extractGoogleOverviewSources(page);
+    }
+
+    // Google/Gemini has custom extraction
+    if(provider=="google"){
+        return await extractSourcesFromGoogle(page);
+    }
+
     let sourcesButton = await findSourcesButton(page);
     let sources: Source[] = [];
   
