@@ -14,6 +14,7 @@ import {
 } from "@onescope/ui";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { api } from "@/trpc/react";
+import { getProviderDisplayName } from "@onescope/utils";
 
 const SUGGESTED_PROMPTS = [
   "What are the best alternatives to {brand} for growing teams?",
@@ -287,8 +288,8 @@ export default function FirstWorkspaceOnboardingPage() {
                         className="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
                       >
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium capitalize text-gray-900 dark:text-gray-100">
-                            {provider}
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {getProviderDisplayName(provider)}
                           </p>
                           {isDone ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />

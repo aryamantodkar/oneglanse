@@ -41,6 +41,7 @@ export const EDITOR_SELECTORS = [
     '[role="textbox"]',
     '[data-testid*="editor"]',
     '[aria-label*="message" i]',
+    '.text-input-field [contenteditable="true"]'
   ];
 
 export const SUBMIT_BTN_SELECTORS = [

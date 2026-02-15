@@ -1,20 +1,29 @@
 import { getDomain } from "./url/getDomain.js";
 
 export const getModelFavicon = (model: string): string => {
+    // Normalize model name to lowercase provider key
+    const normalizedModel = model.toLowerCase();
+
     const modelDomains: Record<string, string> = {
-      OpenAI: "openai.com",
-      Anthropic: "anthropic.com",
-      Perplexity: "perplexity.ai",
-      Mistral: "mistral.ai",
-      Google: "gemini.google.com",
-      Meta: "about.fb.com",
-      Cohere: "cohere.com",
+      // Provider keys (lowercase)
+      openai: "openai.com",
+      anthropic: "anthropic.com",
+      perplexity: "perplexity.ai",
+      google: "gemini.google.com",
+      mistral: "mistral.ai",
+      meta: "about.fb.com",
+      cohere: "cohere.com",
+
+      // Display names (for backward compatibility)
+      chatgpt: "openai.com",
+      claude: "anthropic.com",
+      gemini: "gemini.google.com",
     };
-  
-    // If "All Models", return empty string (we’ll use Bot icon instead)
+
+    // If "All Models", return empty string (we'll use Bot icon instead)
     if (model === "All Models") return "";
-  
-    const domain = modelDomains[model] || `${model.toLowerCase()}.com`;
+
+    const domain = modelDomains[normalizedModel] || `${normalizedModel}.com`;
     return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 };
 

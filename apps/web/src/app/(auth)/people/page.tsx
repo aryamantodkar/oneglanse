@@ -34,6 +34,7 @@ import {
 import { api } from "@/trpc/react";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import type { Provider } from "@onescope/types";
+import { getProviderDisplayName } from "@onescope/utils";
 
 interface WorkspaceMember {
   memberId: string;
@@ -544,7 +545,7 @@ export default function PeoplePage() {
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : provider === "perplexity" ? "Perplexity" : "Google"}
+                    {getProviderDisplayName(provider)}
                   </p>
                   <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                     {providerDescriptions[provider]}

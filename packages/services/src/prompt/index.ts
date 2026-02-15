@@ -51,8 +51,30 @@ export async function storePromptsForWorkspace(args: {
             format: "JSONEachRow",
           })
         }
-        catch(err){
-          throw new DatabaseError("Failed to insert user prompts", { table: "analytics.user_prompts", operation: "insert", values });
+        catch(err: any){
+          console.error("⚠️ Failed to insert user prompts:", err.message);
+
+          // Try individual inserts as fallback
+          let successCount = 0;
+          for (const value of values) {
+            try {
+              await clickhouse.insert({
+                table: "analytics.user_prompts",
+                values: [value],
+                format: "JSONEachRow",
+              });
+              successCount++;
+            } catch (individualErr) {
+              console.error(`Failed to insert prompt: "${value.prompt.slice(0, 50)}..."`);
+            }
+          }
+
+          console.warn(`User prompts insert: ${successCount}/${values.length} succeeded`);
+
+          // Only throw if all inserts failed
+          if (successCount === 0) {
+            throw new DatabaseError("Failed to insert user prompts", { table: "analytics.user_prompts", operation: "insert", count: values.length });
+          }
         }
       }
 
@@ -178,11 +200,50 @@ export async function storePromptResponses(args: {
 
     if (values.length === 0) return;
 
-    await clickhouse.insert({
-        table: "analytics.prompt_responses",
-        values,
-        format: "JSONEachRow",
-    });
+    try {
+        await clickhouse.insert({
+            table: "analytics.prompt_responses",
+            values,
+            format: "JSONEachRow",
+        });
+    } catch (err: any) {
+        console.error("⚠️ ClickHouse insert failed, attempting individual inserts...", err.message);
+
+        // Fallback: Try inserting records one by one to save what we can
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const value of values) {
+            try {
+                await clickhouse.insert({
+                    table: "analytics.prompt_responses",
+                    values: [value],
+                    format: "JSONEachRow",
+                });
+                successCount++;
+            } catch (individualErr: any) {
+                failCount++;
+                console.error(`Failed to insert individual record (prompt: "${value.prompt.slice(0, 50)}..."):`, individualErr.message);
+
+                // Log the problematic data for debugging
+                console.error("Problematic data:", {
+                    id: value.id,
+                    prompt_id: value.prompt_id,
+                    prompt: value.prompt.slice(0, 100),
+                    prompt_run_at: value.prompt_run_at,
+                    response_length: value.response.length,
+                    sources_count: value.sources.length
+                });
+            }
+        }
+
+        console.warn(`ClickHouse insert summary: ${successCount} succeeded, ${failCount} failed out of ${values.length} total`);
+
+        // Don't throw error - allow job to complete even if some inserts fail
+        if (successCount === 0) {
+            console.error("❌ All ClickHouse inserts failed, but job will continue");
+        }
+    }
 }
 
 export async function fetchPromptResponsesForWorkspace(args: {
