@@ -24,7 +24,6 @@ export const internalRouter = createTRPCRouter({
         }
 
         const jobGroupId = randomUUID();
-        const createdAt = prompts[0]?.created_at ?? new Date().toISOString();
         const providers = ["openai", "anthropic", "perplexity"] as const;
 
         const progress = {
@@ -62,7 +61,6 @@ export const internalRouter = createTRPCRouter({
               prompts,
               user_id: userId,
               workspace_id: workspaceId,
-              created_at: createdAt,
             })
           )
         );
