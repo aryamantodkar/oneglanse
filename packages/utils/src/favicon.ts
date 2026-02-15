@@ -24,27 +24,16 @@ export const getFaviconUrls = (
 ): string[] => {
   let hostname = getDomain(domain ?? "");
 
-  const fallbackName =
-    name?.trim() ||
-    hostname.split(".")[0] ||
-    "Brand";
+  if (!hostname) return [];
 
   return [
     // Google favicon (most reliable)
-    hostname &&
-      `https://www.google.com/s2/favicons?sz=64&domain=${hostname}`,
+    `https://www.google.com/s2/favicons?sz=64&domain=${hostname}`,
 
     // DuckDuckGo favicon
-    hostname &&
-      `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+    `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
 
     // Clearbit logo
-    hostname &&
-      `https://logo.clearbit.com/${hostname}`,
-
-    // Guaranteed fallback
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      fallbackName.toUpperCase()
-    )}&size=64&background=E5E7EB&color=374151&bold=true`,
+    `https://logo.clearbit.com/${hostname}`,
   ].filter(Boolean);
 };

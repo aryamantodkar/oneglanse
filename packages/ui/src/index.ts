@@ -22,6 +22,9 @@ export * from "./components/input.js";
 // Label
 export * from "./components/label.js";
 
+// Popover
+export * from "./components/popover.js";
+
 // Scroll Area
 export * from "./components/scroll-area.js";
 

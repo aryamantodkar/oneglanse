@@ -86,6 +86,7 @@ export function BrandComparisonChart({
 		topPct: number;
 		color: string;
 	} | null>(null);
+	const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
 
 	const rivals = competitors
 		.filter((c) => !c.isBrand)
@@ -239,27 +240,30 @@ export function BrandComparisonChart({
 								y: yFor(s.values[metric.key]),
 							}));
 							const d = buildPath(points);
+							const isHovered = hoveredBrand === s.name;
+							const isFaded = hoveredBrand && hoveredBrand !== s.name;
 							return (
 								<g key={s.name}>
 									<path
 										d={d}
 										fill="none"
 										stroke={color}
-										strokeWidth={s.isBrand ? 3 : 2}
+										strokeWidth={isHovered ? 4 : s.isBrand ? 3 : 2}
 										strokeLinecap="round"
 										strokeLinejoin="round"
-										opacity={s.isBrand ? 1 : 0.85}
+										opacity={isFaded ? 0.2 : s.isBrand ? 1 : 0.85}
 									/>
 									{points.map((p, pointIdx) => (
 										<circle
 											key={`${s.name}-${METRIC_CONFIG[pointIdx]?.key}`}
 											cx={p.x}
 											cy={p.y}
-											r={s.isBrand ? 4.5 : 3.5}
+											r={isHovered ? 6 : s.isBrand ? 4.5 : 3.5}
 											fill={color}
 											stroke="white"
-											strokeWidth={1.5}
+											strokeWidth={isHovered ? 2 : 1.5}
 											className="cursor-pointer"
+											opacity={isFaded ? 0.2 : 1}
 											onMouseEnter={() =>
 												setHoveredPoint({
 													name: s.name,
@@ -291,7 +295,7 @@ export function BrandComparisonChart({
 						</svg>
 					</div>
 
-					{hoveredPoint && (
+					{hoveredPoint && !hoveredBrand && (
 						<div
 							className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${hoveredPoint.topPct < 20 ? "translate-y-2" : "-translate-y-[110%]"}`}
 							style={{
@@ -316,6 +320,50 @@ export function BrandComparisonChart({
 							</p>
 						</div>
 					)}
+
+					{hoveredBrand &&
+						(() => {
+							const brandData = series.find((s) => s.name === hoveredBrand);
+							const brandIndex = series.findIndex((s) => s.name === hoveredBrand);
+							const color = SERIES_COLORS[brandIndex % SERIES_COLORS.length]!;
+
+							if (!brandData) return null;
+
+							return METRIC_CONFIG.map((metric, metricIdx) => {
+								const value = brandData.values[metric.key];
+								const x = xFor(metricIdx);
+								const y = yFor(value);
+								const leftPct = (x / width) * 100;
+								const topPct = (y / height) * 100;
+
+								return (
+									<div
+										key={`${hoveredBrand}-${metric.key}`}
+										className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${topPct < 20 ? "translate-y-2" : "-translate-y-[110%]"}`}
+										style={{
+											left: `${Math.max(10, Math.min(90, leftPct))}%`,
+											top: `${topPct}%`,
+										}}
+									>
+										<div className="flex items-center gap-1.5">
+											<span
+												className="h-2 w-2 rounded-full"
+												style={{ backgroundColor: color }}
+											/>
+											<p className="max-w-[170px] truncate text-[11px] font-semibold text-gray-900 dark:text-gray-100">
+												{brandData.name}
+											</p>
+										</div>
+										<p className="mt-1 text-[10px] text-muted-foreground">
+											{metric.label}:{" "}
+											<span className="font-semibold text-gray-900 dark:text-gray-100">
+												{value}
+											</span>
+										</p>
+									</div>
+								);
+							});
+						})()}
 				</div>
 
 				<div className="space-y-2">
@@ -324,11 +372,13 @@ export function BrandComparisonChart({
 						return (
 							<div
 								key={`legend-${s.name}`}
-								className={`ui-list-item rounded-xl border px-3 py-2 ${
+								className={`ui-list-item cursor-pointer rounded-xl border px-3 py-2 transition-all ${
 									s.isBrand
 										? "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
 										: "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
-								}`}
+								} ${hoveredBrand === s.name ? "ring-2 ring-blue-500 ring-opacity-50" : ""}`}
+								onMouseEnter={() => setHoveredBrand(s.name)}
+								onMouseLeave={() => setHoveredBrand(null)}
 							>
 								<div className="flex items-center justify-between gap-2">
 									<div className="flex min-w-0 items-center gap-2">
