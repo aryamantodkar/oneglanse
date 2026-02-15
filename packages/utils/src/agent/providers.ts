@@ -11,4 +11,8 @@ export const PROVIDERS = {
       name: "perplexity",
       url: "https://www.perplexity.ai/"
     },
+    google: {
+      name: "google",
+      url: "https://gemini.google.com//"
+    },
 };

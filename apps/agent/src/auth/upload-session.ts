@@ -14,6 +14,7 @@ interface SessionData {
   anthropic?: any;
   openai?: any;
   perplexity?: any;
+  google?: any;
 }
 
 async function uploadSessions() {
@@ -53,7 +54,7 @@ async function uploadSessions() {
 
   // Read session files
   const sessions: SessionData = {};
-  const providers = ["anthropic", "openai", "perplexity"];
+  const providers = ["anthropic", "openai", "perplexity", "google"];
 
   for (const provider of providers) {
     const authFile = path.join(AUTH_PROFILE_PATH, provider, `${provider}-auth.json`);
@@ -66,7 +67,7 @@ async function uploadSessions() {
     try {
       const sessionData = JSON.parse(fs.readFileSync(authFile, "utf-8"));
       sessions[provider as keyof SessionData] = sessionData;
-      logger.log(`Read session for ${provider} (${authFile})`);
+      logger.log(`✅ Read session for ${provider} (${authFile})`);
     } catch (err: any) {
       logger.error(`Failed to read session for ${provider}:`, err.message);
     }
@@ -78,28 +79,57 @@ async function uploadSessions() {
     process.exit(1);
   }
 
-  // Upload sessions to VPS
-  logger.log(`📤 Uploading ${Object.keys(sessions).length} sessions to VPS...`);
+  // Upload sessions one by one to avoid nginx size limits
+  logger.log(`📤 Uploading ${Object.keys(sessions).length} sessions to VPS (one by one)...\n`);
 
-  try {
-    const response = await fetch(`${VPS_API_URL}/upload-sessions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_AUTH_TOKEN}`,
-      },
-      body: JSON.stringify(sessions),
-    });
+  const uploadResults: Record<string, boolean> = {};
+  let successCount = 0;
+  let failCount = 0;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Upload failed (${response.status}): ${errorText}`);
+  for (const [provider, sessionData] of Object.entries(sessions)) {
+    try {
+      logger.log(`📤 Uploading ${provider} session...`);
+
+      const response = await fetch(`${VPS_API_URL}/upload-sessions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_AUTH_TOKEN}`,
+        },
+        body: JSON.stringify({ [provider]: sessionData }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed (${response.status}): ${errorText}`);
+      }
+
+      const result = await response.json();
+      uploadResults[provider] = true;
+      successCount++;
+      logger.success(`✅ ${provider} session uploaded successfully`);
+    } catch (err: any) {
+      uploadResults[provider] = false;
+      failCount++;
+      logger.error(`❌ Failed to upload ${provider} session:`, err.message);
     }
+  }
 
-    const result = await response.json();
-    logger.success("Upload successful:", result);
+  logger.log(`\n📊 Upload Summary: ${successCount} succeeded, ${failCount} failed\n`);
 
-    // Verify sessions on VPS
+  if (successCount === 0) {
+    logger.error("All uploads failed!");
+    process.exit(1);
+  }
+
+  if (failCount > 0) {
+    logger.warn(`Some uploads failed. Check errors above.`);
+  } else {
+    logger.success("All sessions uploaded successfully!");
+  }
+
+  // Verify sessions on VPS
+  try {
     logger.log("🔍 Verifying sessions on VPS...");
     const healthCheck = await fetch(`${VPS_API_URL}/health`);
     const health = await healthCheck.json();
@@ -108,12 +138,12 @@ async function uploadSessions() {
     logger.log(`   Anthropic: ${health.sessions.anthropic ? "✅" : "❌"}`);
     logger.log(`   OpenAI: ${health.sessions.openai ? "✅" : "❌"}`);
     logger.log(`   Perplexity: ${health.sessions.perplexity ? "✅" : "❌"}`);
+    logger.log(`   Google: ${health.sessions.google ? "✅" : "❌"}`);
 
-    logger.success("\nSession upload complete!");
+    logger.success("\nSession verification complete!");
     logger.log("👉 You can now run jobs on the VPS");
   } catch (err: any) {
-    logger.error("Upload failed:", err.message);
-    process.exit(1);
+    logger.warn("Could not verify sessions:", err.message);
   }
 }
 

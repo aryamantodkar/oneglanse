@@ -32,6 +32,10 @@ const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
     '[data-testid="composer"] #prompt-textarea',
     'textarea[name="prompt-textarea"]',
   ],
+  google: [
+    '[contenteditable="true"]',
+    'div.ql-editor[contenteditable="true"]',
+  ],
 };
 
 export type HealthCheckResult = {

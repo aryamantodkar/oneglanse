@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import type { Provider } from "@onescope/types";
 
 interface WorkspaceMember {
   memberId: string;
@@ -96,8 +97,33 @@ export default function PeoplePage() {
   const [isEditingWorkspace, setIsEditingWorkspace] = useState(false);
   const [isEditingOrg, setIsEditingOrg] = useState(false);
 
+  // Provider settings state
+  const [enabledProviders, setEnabledProviders] = useState<Provider[]>([]);
+
   const workspace = workspaceQuery.data?.data;
   const organization = joinInfo?.organization;
+
+  // Fetch enabled providers
+  const { data: providersData } = api.workspace.getEnabledProviders.useQuery(
+    { workspaceId },
+    { enabled: !!workspaceId, refetchOnMount: true }
+  );
+
+  // Update mutation for providers
+  const updateProvidersMutation = api.workspace.setEnabledProviders.useMutation({
+    onSuccess: () => {
+      toast.success("Provider settings updated");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
+  useEffect(() => {
+    if (providersData?.data?.enabledProviders) {
+      setEnabledProviders(providersData.data.enabledProviders);
+    }
+  }, [providersData]);
 
   useEffect(() => {
     setWorkspaceName(workspace?.name ?? "");
@@ -126,6 +152,29 @@ export default function PeoplePage() {
       console.error(err);
       toast.error("Failed to copy to clipboard.");
     }
+  };
+
+  // Provider descriptions
+  const providerDescriptions = {
+    openai: "ChatGPT - Powered by GPT-4",
+    anthropic: "Claude - Advanced reasoning and analysis",
+    perplexity: "Real-time web search and citations",
+    google: "Gemini - Google's latest AI model",
+  };
+
+  // Toggle provider handler
+  const handleProviderToggle = (provider: Provider, checked: boolean) => {
+    const newProviders = checked
+      ? [...enabledProviders, provider]
+      : enabledProviders.filter(p => p !== provider);
+
+    if (newProviders.length === 0) {
+      toast.error("At least one provider must be enabled");
+      return;
+    }
+
+    setEnabledProviders(newProviders);
+    updateProvidersMutation.mutate({ workspaceId, providers: newProviders });
   };
 
   // Workspace add member handler
@@ -460,6 +509,59 @@ export default function PeoplePage() {
 
   return (
     <div className="ui-page-enter ui-stagger mx-auto max-w-4xl space-y-8 py-6">
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          Preferences
+        </h1>
+      </div>
+
+      {/* Provider Settings */}
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <Settings className="h-5 w-5 text-gray-500" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Enabled Providers
+          </h2>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+          <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+            Select which AI providers you want to use for your prompts. Only enabled providers will be queried.
+          </p>
+
+          <div className="space-y-3">
+            {(["openai", "anthropic", "perplexity", "google"] as const).map((provider) => (
+              <label
+                key={provider}
+                className="flex items-center space-x-3 rounded-md border border-gray-200 bg-gray-50 p-3 cursor-pointer hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750"
+              >
+                <input
+                  type="checkbox"
+                  checked={enabledProviders.includes(provider)}
+                  onChange={(e) => handleProviderToggle(provider, e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600"
+                />
+                <div className="flex-1">
+                  <p className="font-medium capitalize text-gray-900 dark:text-gray-100">
+                    {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : provider === "perplexity" ? "Perplexity" : "Google"}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {providerDescriptions[provider]}
+                  </p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {enabledProviders.length === 0 && (
+            <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+              At least one provider must be enabled
+            </p>
+          )}
+        </div>
+      </section>
+
       <section>
         <div className="mb-4 flex items-center gap-2">
           <Settings className="h-5 w-5 text-gray-500" />

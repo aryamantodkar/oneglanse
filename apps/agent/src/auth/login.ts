@@ -17,10 +17,6 @@ if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
   throw new Error("LOCAL_AUTH_PROFILE_PATH is not set");
 }
 
-if (!process.env.PROXY_SERVER) {
-  throw new Error("PROXY_SERVER is not set");
-}
-
 const USER_DATA_DIR = path.resolve(process.env.LOCAL_AUTH_PROFILE_PATH);
 
 export async function loginToProvider(provider: Provider): Promise<void> {

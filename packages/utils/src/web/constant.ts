@@ -3,4 +3,5 @@ export const modelSelectors = [
     { value: "openai", label: "OpenAI" },
     { value: "perplexity", label: "Perplexity" },
     { value: "anthropic", label: "Anthropic" },
+    { value: "google", label: "Google" },
 ];

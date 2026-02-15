@@ -13,6 +13,7 @@ import {
   Check,
   User2,
   UserPlus,
+  Settings,
 } from "lucide-react"
 import {
   Sidebar,
@@ -108,9 +109,9 @@ export function AppSidebar({ workspace, userName, userEmail }: AppSidebarProps) 
 
     const settingsItems = [
       {
-        title: "Manage",
+        title: "Settings",
         url: `/settings?workspace=${activeWorkspace?.id ?? ""}`,
-        icon: Users,
+        icon: Settings,
       },
     ];
 
