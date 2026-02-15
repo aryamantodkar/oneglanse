@@ -39,7 +39,9 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       } else {
         await page.keyboard.type(char);
       }
-      await page.waitForTimeout(10);
+      // Random delay between keystrokes (10-30ms) to appear more human
+      const typingDelay = 10 + Math.floor(Math.random() * 20);
+      await page.waitForTimeout(typingDelay);
     }
 
     await page.waitForTimeout(500);
@@ -115,7 +117,8 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       await input.focus();
       await page.waitForTimeout(300);
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(1500);
+      // Longer wait for slower proxies (2-3 seconds)
+      await page.waitForTimeout(2000 + Math.floor(Math.random() * 1000));
       return await checkSubmissionSuccess();
     };
 
@@ -132,9 +135,10 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
 
       await button.scrollIntoViewIfNeeded().catch(() => {});
       await button.hover().catch(() => {});
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(200 + Math.floor(Math.random() * 200));
       await button.click({ force: true, timeout: 3000 });
-      await page.waitForTimeout(1500);
+      // Longer wait for slower proxies
+      await page.waitForTimeout(2000 + Math.floor(Math.random() * 1000));
       return await checkSubmissionSuccess();
     };
 
@@ -168,7 +172,8 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
         }
       }, handle);
 
-      await page.waitForTimeout(1500);
+      // Longer wait for slower proxies
+      await page.waitForTimeout(2000 + Math.floor(Math.random() * 1000));
       return await checkSubmissionSuccess();
     };
 
