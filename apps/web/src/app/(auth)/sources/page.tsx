@@ -15,11 +15,6 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-	Input,
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-	Button,
 } from "@onescope/ui";
 import {
 	AlertTriangle,
@@ -30,8 +25,9 @@ import {
 	Globe2,
 	Link2,
 	SearchX,
-	Filter,
-	X,
+	ArrowUpDown,
+	ArrowUp,
+	ArrowDown,
 } from "lucide-react";
 import type { GroupedSource, SourceGroupResult } from "@onescope/types";
 import { getDomain, getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
@@ -46,6 +42,9 @@ type DomainGroup = {
 	providers: Set<string>;
 	urls: GroupedSource[];
 };
+
+type SortColumn = "share" | "citations" | "urls" | null;
+type SortDirection = "asc" | "desc";
 
 function formatCitationLabel(count: number): string {
 	return `${count} citation${count === 1 ? "" : "s"}`;
@@ -67,69 +66,37 @@ function cleanCitedText(text: string): string {
 		.trim();
 }
 
-function ColumnFilterPopover({
-	label,
-	filter,
-	onFilterChange,
-	onClear,
+function SortableHeader({
+	children,
+	column,
+	currentSort,
+	currentDirection,
+	onSort,
 }: {
-	label: string;
-	filter: ColumnFilter;
-	onFilterChange: (filter: ColumnFilter) => void;
-	onClear: () => void;
+	children: React.ReactNode;
+	column: SortColumn;
+	currentSort: SortColumn;
+	currentDirection: SortDirection;
+	onSort: (column: SortColumn) => void;
 }) {
-	const hasFilter = filter.min !== "" || filter.max !== "";
+	const isActive = currentSort === column;
 
 	return (
-		<Popover>
-			<PopoverTrigger asChild>
-				<button className={`ml-1 inline-flex items-center transition-colors hover:text-gray-900 dark:hover:text-gray-100 ${hasFilter ? "text-blue-600 dark:text-blue-400" : ""}`}>
-					<Filter className="h-3.5 w-3.5" />
-				</button>
-			</PopoverTrigger>
-			<PopoverContent className="w-64" align="start">
-				<div className="space-y-3">
-					<div className="flex items-center justify-between">
-						<h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-							Filter {label}
-						</h4>
-						{hasFilter && (
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={onClear}
-								className="h-6 px-2 text-xs"
-							>
-								<X className="h-3 w-3 mr-1" />
-								Clear
-							</Button>
-						)}
-					</div>
-					<div className="space-y-2">
-						<div>
-							<label className="text-xs text-muted-foreground">Min</label>
-							<Input
-								type="number"
-								placeholder="No minimum"
-								value={filter.min}
-								onChange={(e) => onFilterChange({ ...filter, min: e.target.value })}
-								className="mt-1 h-9"
-							/>
-						</div>
-						<div>
-							<label className="text-xs text-muted-foreground">Max</label>
-							<Input
-								type="number"
-								placeholder="No maximum"
-								value={filter.max}
-								onChange={(e) => onFilterChange({ ...filter, max: e.target.value })}
-								className="mt-1 h-9"
-							/>
-						</div>
-					</div>
-				</div>
-			</PopoverContent>
-		</Popover>
+		<button
+			onClick={() => onSort(column)}
+			className="flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100"
+		>
+			{children}
+			{isActive ? (
+				currentDirection === "asc" ? (
+					<ArrowUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+				) : (
+					<ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+				)
+			) : (
+				<ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+			)}
+		</button>
 	);
 }
 
@@ -199,21 +166,15 @@ function MetricCard({
 	);
 }
 
-type ColumnFilter = {
-	min: string;
-	max: string;
-};
-
 export default function SourcesPage() {
 	const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
 	const [activeTab, setActiveTab] = useState<"domains" | "citations">("domains");
 	const [openDomain, setOpenDomain] = useState<string | null>(null);
 	const [openUrl, setOpenUrl] = useState<string | null>(null);
 
-	// Column filters
-	const [shareFilter, setShareFilter] = useState<ColumnFilter>({ min: "", max: "" });
-	const [citationsFilter, setCitationsFilter] = useState<ColumnFilter>({ min: "", max: "" });
-	const [urlsFilter, setUrlsFilter] = useState<ColumnFilter>({ min: "", max: "" });
+	// Sorting state
+	const [sortColumn, setSortColumn] = useState<SortColumn>("citations");
+	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
@@ -265,31 +226,46 @@ export default function SourcesPage() {
 			map.set(domain, existing);
 		}
 
-		return [...map.values()].sort((a, b) => b.totalCitations - a.totalCitations);
+		return [...map.values()];
 	}, [displayedSources]);
 
-	// Filtered domain groups based on column filters
-	const filteredDomainGroups = useMemo<DomainGroup[]>(() => {
+	// Sorted domain groups based on sort column and direction
+	const sortedDomainGroups = useMemo<DomainGroup[]>(() => {
 		const totalCitations = domainGroups.reduce((sum, d) => sum + d.totalCitations, 0);
 
-		return domainGroups.filter((domain) => {
-			const share = totalCitations > 0 ? (domain.totalCitations / totalCitations) * 100 : 0;
+		return [...domainGroups].sort((a, b) => {
+			let aValue: number;
+			let bValue: number;
 
-			// Share filter
-			if (shareFilter.min && share < parseFloat(shareFilter.min)) return false;
-			if (shareFilter.max && share > parseFloat(shareFilter.max)) return false;
+			if (sortColumn === "share") {
+				aValue = totalCitations > 0 ? (a.totalCitations / totalCitations) * 100 : 0;
+				bValue = totalCitations > 0 ? (b.totalCitations / totalCitations) * 100 : 0;
+			} else if (sortColumn === "citations") {
+				aValue = a.totalCitations;
+				bValue = b.totalCitations;
+			} else if (sortColumn === "urls") {
+				aValue = a.urlCount;
+				bValue = b.urlCount;
+			} else {
+				// Default sort by citations descending
+				return b.totalCitations - a.totalCitations;
+			}
 
-			// Citations filter
-			if (citationsFilter.min && domain.totalCitations < parseInt(citationsFilter.min)) return false;
-			if (citationsFilter.max && domain.totalCitations > parseInt(citationsFilter.max)) return false;
-
-			// URLs filter
-			if (urlsFilter.min && domain.urlCount < parseInt(urlsFilter.min)) return false;
-			if (urlsFilter.max && domain.urlCount > parseInt(urlsFilter.max)) return false;
-
-			return true;
+			const compareResult = aValue - bValue;
+			return sortDirection === "asc" ? compareResult : -compareResult;
 		});
-	}, [domainGroups, shareFilter, citationsFilter, urlsFilter]);
+	}, [domainGroups, sortColumn, sortDirection]);
+
+	const handleSort = (column: SortColumn) => {
+		if (sortColumn === column) {
+			// Toggle direction if same column
+			setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+		} else {
+			// New column, default to descending
+			setSortColumn(column);
+			setSortDirection("desc");
+		}
+	};
 
 	const aggregate = useMemo(() => {
 		const totalUrls = displayedSources.length;
@@ -621,37 +597,34 @@ export default function SourcesPage() {
 										Publisher
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										<div className="flex items-center">
+										<SortableHeader
+											column="share"
+											currentSort={sortColumn}
+											currentDirection={sortDirection}
+											onSort={handleSort}
+										>
 											Share of Citations
-											<ColumnFilterPopover
-												label="Share"
-												filter={shareFilter}
-												onFilterChange={setShareFilter}
-												onClear={() => setShareFilter({ min: "", max: "" })}
-											/>
-										</div>
+										</SortableHeader>
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										<div className="flex items-center">
+										<SortableHeader
+											column="citations"
+											currentSort={sortColumn}
+											currentDirection={sortDirection}
+											onSort={handleSort}
+										>
 											Total Citations
-											<ColumnFilterPopover
-												label="Citations"
-												filter={citationsFilter}
-												onFilterChange={setCitationsFilter}
-												onClear={() => setCitationsFilter({ min: "", max: "" })}
-											/>
-										</div>
+										</SortableHeader>
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-										<div className="flex items-center">
+										<SortableHeader
+											column="urls"
+											currentSort={sortColumn}
+											currentDirection={sortDirection}
+											onSort={handleSort}
+										>
 											Unique URLs
-											<ColumnFilterPopover
-												label="URLs"
-												filter={urlsFilter}
-												onFilterChange={setUrlsFilter}
-												onClear={() => setUrlsFilter({ min: "", max: "" })}
-											/>
-										</div>
+										</SortableHeader>
 									</TableHead>
 									<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 										Models
@@ -659,7 +632,7 @@ export default function SourcesPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredDomainGroups.map((domain, idx) => {
+								{sortedDomainGroups.map((domain, idx) => {
 									const share = aggregate.totalCitations
 										? ((domain.totalCitations / aggregate.totalCitations) * 100).toFixed(1)
 										: "0.0";
