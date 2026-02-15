@@ -13,6 +13,6 @@ export const PROVIDERS = {
     },
     google: {
       name: "google",
-      url: "https://gemini.google.com//"
+      url: "https://gemini.google.com/"
     },
 };
