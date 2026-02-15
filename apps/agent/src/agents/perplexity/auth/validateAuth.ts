@@ -4,10 +4,10 @@ import { pageHealthCheck } from "../../../lib/browser/pageHealthCheck.js";
 export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
   if (!page.url().startsWith("https://www.perplexity.ai")) return false;
 
-  // Wait for page to be interactive (reduced timeout for faster auth)
-  await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+  // Wait for the page to be interactive
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 
-  // Check for UI elements with retry logic (faster retries)
+  // Check for UI elements with retry logic
   let hasProfileUI = false;
   for (let i = 0; i < 3; i++) {
     hasProfileUI = await page.evaluate(() => {
@@ -33,8 +33,8 @@ export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
 
     if (hasProfileUI) break;
 
-    // Faster retry delay (reduced from 2000ms to 500ms)
-    await page.waitForTimeout(500);
+    // Wait a bit before retrying
+    await page.waitForTimeout(2000);
   }
 
   if (!hasProfileUI) return false;
