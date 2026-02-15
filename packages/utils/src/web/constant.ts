@@ -1,7 +1,7 @@
 export const modelSelectors = [
     { value: "All Models", label: "All Models" },
-    { value: "openai", label: "OpenAI" },
+    { value: "openai", label: "ChatGPT" },
     { value: "perplexity", label: "Perplexity" },
-    { value: "anthropic", label: "Anthropic" },
-    { value: "google", label: "Google" },
+    { value: "anthropic", label: "Claude" },
+    { value: "google", label: "Gemini" },
 ];
