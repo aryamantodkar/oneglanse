@@ -1,5 +1,6 @@
 export function formatDateToClickHouse(dt: Date) {
-    return dt.toISOString().slice(0, 19).replace("T", " "); 
+    // Return full ISO string - ClickHouse handles this correctly as UTC
+    return dt.toISOString();
 }
 
 export const getCleanUrl = (url: string) => {
