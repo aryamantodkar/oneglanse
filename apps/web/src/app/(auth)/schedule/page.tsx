@@ -13,104 +13,64 @@ function localHourToUTC(localHour: number): number {
   return now.getUTCHours();
 }
 
-// Helper to convert UTC hour to local hour
-function utcHourToLocal(utcHour: number): number {
-  const now = new Date();
-  now.setUTCHours(utcHour, 0, 0, 0);
-  return now.getHours();
-}
-
-// Helper to format date to relative time or absolute time
+// Helper to format date to exact date and time
 function formatTimestamp(timestamp: string | null): string {
   if (!timestamp) return "Never";
 
   const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
 
-  // For future times
-  if (diffMs < 0) {
-    const futureMins = Math.abs(diffMins);
-    const futureHours = Math.abs(diffHours);
-    const futureDays = Math.abs(diffDays);
-
-    if (futureMins < 60) {
-      return `in ${futureMins} minute${futureMins !== 1 ? 's' : ''}`;
-    } else if (futureHours < 24) {
-      return `in ${futureHours} hour${futureHours !== 1 ? 's' : ''}`;
-    } else if (futureDays < 7) {
-      return `in ${futureDays} day${futureDays !== 1 ? 's' : ''}`;
-    }
-  }
-
-  // For past times
-  if (diffMins < 1) {
-    return "Just now";
-  } else if (diffMins < 60) {
-    return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  } else if (diffHours < 24) {
-    return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  } else if (diffDays < 7) {
-    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-  }
-
-  // Format absolute date
   return date.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
   });
 }
 
 // Generate schedule options based on user's local timezone
 function getScheduleOptions() {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
   return [
     {
       label: "Every 3 hours",
       value: "0 */3 * * *",
-      description: `Runs 8 times daily in your timezone (${timezone})`,
+      description: `Runs 8 times daily starting at midnight`,
     },
     {
       label: "Every 6 hours",
       value: "0 */6 * * *",
-      description: `Runs every 6 hours in your timezone (${timezone})`,
+      description: `Runs 4 times daily starting at midnight`,
     },
     {
       label: "Every 12 hours",
       value: "0 */12 * * *",
-      description: `Runs twice daily in your timezone (${timezone})`,
+      description: `Runs twice daily starting at midnight`,
     },
     {
       label: "Every day at midnight",
       value: `0 ${localHourToUTC(0)} * * *`,
-      description: `Runs daily at midnight in your timezone (${timezone})`,
+      description: `Runs daily at midnight`,
     },
     {
       label: "Every day at 6 AM",
       value: `0 ${localHourToUTC(6)} * * *`,
-      description: `Runs daily at 6 AM in your timezone (${timezone})`,
+      description: `Runs daily at 6:00 AM`,
     },
     {
       label: "Every day at noon",
       value: `0 ${localHourToUTC(12)} * * *`,
-      description: `Runs daily at noon in your timezone (${timezone})`,
+      description: `Runs daily at noon`,
     },
     {
       label: "Every 2 days at midnight",
       value: `0 ${localHourToUTC(0)} */2 * *`,
-      description: `Runs at midnight every other day in your timezone (${timezone})`,
+      description: `Runs every other day at midnight`,
     },
     {
       label: "Every week (Sunday midnight)",
       value: `0 ${localHourToUTC(0)} * * 0`,
-      description: `Runs every Sunday at midnight in your timezone (${timezone})`,
+      description: `Runs every Sunday at midnight`,
     },
   ];
 }
