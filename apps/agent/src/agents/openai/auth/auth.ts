@@ -5,25 +5,44 @@ import { logger } from "../../../lib/utils/logger.js";
 
 export async function waitForOpenaiAuthentication(
     page: Page,
-    timeoutMs: number = 8 * 60 * 1000 // 5 minutes
-  ): Promise<void> {  
-    logger.debug("🔐 Waiting for ChatGPT login to complete…");
-  
-    await page.waitForTimeout(2000);
-    
+    timeoutMs: number = 8 * 60 * 1000 // 8 minutes
+  ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
-  
+    const startTime = Date.now();
+    let checkCount = 0;
+
+    await page.waitForTimeout(2000);
+
     while (Date.now() < deadline) {
+      checkCount++;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.floor((deadline - Date.now()) / 1000);
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+
       await checkPageStability(page);
-  
+
       if (await isOpenaiAuthenticated(page)) {
-        logger.debug("✅ ChatGPT session detected");
+        // Clear progress line and show success
+        process.stdout.write(`\r${' '.repeat(80)}\r`);
+        logger.success(`✅ ChatGPT session detected (${elapsed}s)`);
         return;
       }
-  
+
+      // Show live progress indicator
+      const spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      const spinnerFrame = spinner[checkCount % spinner.length];
+
+      process.stdout.write(
+        `\r${spinnerFrame} Waiting for login... ${minutes}m ${seconds}s remaining (check #${checkCount})`
+      );
+
       await page.waitForTimeout(2000);
     }
 
-    logger.debug("❌ Openai login timed out");
+    // Timeout - clear progress and show error
+    process.stdout.write(`\r${' '.repeat(80)}\r`);
+    logger.error(`❌ ChatGPT login timed out after 8 minutes`);
+    logger.warn(`💡 Try again or check your internet connection`);
   }
   
