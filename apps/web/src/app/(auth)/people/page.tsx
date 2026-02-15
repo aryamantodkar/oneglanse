@@ -521,20 +521,20 @@ export default function PeoplePage() {
         <div className="mb-4 flex items-center gap-2">
           <Settings className="h-5 w-5 text-gray-500" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Enabled Providers
+            AI Provider Settings
           </h2>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
-            Select which AI providers you want to use for your prompts. Only enabled providers will be queried.
+        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+          <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+            Select which AI providers to query for prompts
           </p>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
             {(["openai", "anthropic", "perplexity", "google"] as const).map((provider) => (
               <label
                 key={provider}
-                className="flex items-center space-x-3 rounded-md border border-gray-200 bg-gray-50 p-3 cursor-pointer hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750"
+                className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2 cursor-pointer transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800"
               >
                 <input
                   type="checkbox"
@@ -542,11 +542,11 @@ export default function PeoplePage() {
                   onChange={(e) => handleProviderToggle(provider, e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600"
                 />
-                <div className="flex-1">
-                  <p className="font-medium capitalize text-gray-900 dark:text-gray-100">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                     {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : provider === "perplexity" ? "Perplexity" : "Google"}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                     {providerDescriptions[provider]}
                   </p>
                 </div>
@@ -555,7 +555,7 @@ export default function PeoplePage() {
           </div>
 
           {enabledProviders.length === 0 && (
-            <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+            <p className="mt-2 text-xs text-red-600 dark:text-red-400">
               At least one provider must be enabled
             </p>
           )}
