@@ -7,7 +7,7 @@ export const getModelFavicon = (model: string): string => {
     const modelDomains: Record<string, string> = {
       // Provider keys (lowercase)
       openai: "openai.com",
-      anthropic: "anthropic.com",
+      anthropic: "claude.ai",
       perplexity: "perplexity.ai",
       google: "gemini.google.com",
       mistral: "mistral.ai",
@@ -16,7 +16,7 @@ export const getModelFavicon = (model: string): string => {
 
       // Display names (for backward compatibility)
       chatgpt: "openai.com",
-      claude: "anthropic.com",
+      claude: "claude.ai",
       gemini: "gemini.google.com",
     };
 
