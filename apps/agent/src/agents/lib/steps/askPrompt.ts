@@ -8,7 +8,67 @@ import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 
+async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
+    logger.debug(`\n🔍 Searching Google: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
+
+    // Find Google Search input box
+    const searchSelectors = [
+        'textarea[name="q"]',
+        'input[name="q"]',
+        'textarea[aria-label="Search"]',
+        'input[aria-label="Search"]',
+    ];
+
+    let searchInput = null;
+    for (const selector of searchSelectors) {
+        try {
+            searchInput = await page.locator(selector).first().waitFor({ state: "visible", timeout: 5000 });
+            searchInput = page.locator(selector).first();
+            logger.debug(`Found search input: ${selector}`);
+            break;
+        } catch {
+            // Try next selector
+        }
+    }
+
+    if (!searchInput) {
+        throw new Error("Google search input not found");
+    }
+
+    // Clear any existing content and type the search query
+    await searchInput.click();
+    await page.waitForTimeout(500);
+    await searchInput.fill("");
+    await page.waitForTimeout(300);
+
+    // Type the prompt character by character (more human-like)
+    for (const char of prompt) {
+        await page.keyboard.type(char);
+        const typingDelay = 30 + Math.floor(Math.random() * 40);
+        await page.waitForTimeout(typingDelay);
+    }
+
+    await page.waitForTimeout(500);
+
+    logger.debug("  📤 Submitting search...");
+
+    // Submit the search by pressing Enter
+    await page.keyboard.press("Enter");
+
+    // Wait for search results to load
+    await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+
+    logger.debug("  ✓ Search results loaded");
+}
+
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
+    // Google AI Overview uses search interface, not chat interface
+    if (provider === "google-overview") {
+        return await askGoogleOverview(page, prompt);
+    }
+
     logger.debug(`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
     await waitForAssistantToFinish(page, provider);

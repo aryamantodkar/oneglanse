@@ -18,10 +18,17 @@ export async function fetchPromptResponses(
     page: Page,
     provider: Provider
   ): Promise<string> {
-    logger.log("⏳ Waiting for response to complete...");
-
-    // 1️⃣ Wait until model finishes generating
-    await waitForAssistantToFinish(page, provider);
+    // Google AI Overview doesn't have a "generating" phase - results appear immediately
+    if (provider === "google-overview") {
+      logger.log("⏳ Waiting for search results to load...");
+      // Wait for page to be stable
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(2000); // Give AI Overview time to render
+    } else {
+      logger.log("⏳ Waiting for response to complete...");
+      // 1️⃣ Wait until model finishes generating
+      await waitForAssistantToFinish(page, provider);
+    }
 
     logger.log("📄 Extracting response...");
 
