@@ -3,63 +3,164 @@ import { getLastAssistantText, isGenerating } from "./getLastAssistantText.js";
 import { Provider } from "@onescope/types";
 import { logger } from "../utils/logger.js";
 
+// Shared polling helper - DRY principle
+async function pollUntilCondition(
+  checkFn: () => Promise<boolean>,
+  pollInterval: number,
+  maxWait: number,
+  timeoutError: string
+): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < maxWait) {
+    if (await checkFn()) return;
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+  throw new Error(timeoutError);
+}
+
 export async function waitForAssistantToFinish(page: Page, provider: Provider): Promise<void> {
   logger.debug("⏳ Waiting for assistant to finish…");
 
-  const MAX_WAIT = 20 * 60 * 1000; // 20 minutes
-  const STABLE_WINDOW = 1500; // 1.5s — normal exit when generation indicators are gone
-  const FORCE_STABLE_WINDOW = 15_000; // 15s — force exit even if isGenerating() is still true
-  const NO_OUTPUT_TIMEOUT = 45_000; // 45s — timeout if no output detected at all
-  const POLL = 300;
+  // Google AI Overview has different detection logic
+  if (provider === "google-overview") {
+    const MIN_CONTENT = 300;
+    const STABLE_MS = 2000;
+    let lastLength = 0;
+    let lastChange = Date.now();
 
-  const start = Date.now();
+    await pollUntilCondition(
+      async () => {
+        try {
+          const { contentLength, isReady, hasError } = await page.evaluate((minContent) => {
+            // Quick checks first (avoid expensive operations)
+            const docReady = document.readyState === 'complete';
+            const hasQuery = location.href.includes('?q=') || location.href.includes('&q=');
 
+            // Check for ready signal
+            const readySignal = Array.from(document.querySelectorAll('[aria-live]'))
+              .some(el => (el.textContent || '').includes('response is ready'));
+
+            // Check for errors
+            const bodyLower = document.body.innerText.toLowerCase();
+            const hasError = bodyLower.includes('error occurred') ||
+                           bodyLower.includes('something went wrong');
+
+            if (hasError) return { contentLength: 0, isReady: false, hasError: true };
+
+            // Only scan for content if doc is ready and we have query in URL
+            if (!docReady || !hasQuery) {
+              return { contentLength: 0, isReady: false, hasError: false };
+            }
+
+            // Fast content check - use existing DOM structure instead of scanning all divs
+            const mainContent = document.querySelector('main') || document.body;
+            const contentDivs = mainContent.querySelectorAll('div');
+            let maxLength = 0;
+
+            for (const div of contentDivs) {
+              const text = (div.innerText || '').trim();
+              const childDivs = div.querySelectorAll('div').length;
+
+              // Quick filters - skip obviously wrong elements
+              if (text.length < minContent || text.length > 15000 || childDivs > 100) continue;
+              if (text.includes('Sign in') || text.includes('Start a new thread')) continue;
+
+              const role = div.getAttribute('role');
+              if (role === 'navigation' || role === 'banner' || role === 'dialog') continue;
+
+              if (text.length > maxLength) maxLength = text.length;
+            }
+
+            // Response is ready if: ready signal OR (has content + doc ready + not loading)
+            const isLoading = bodyLower.includes('searching') ||
+                            bodyLower.includes('loading') ||
+                            document.querySelectorAll('[class*="loading"]').length > 0;
+
+            const isReady = readySignal || (maxLength >= minContent && !isLoading);
+
+            return { contentLength: maxLength, isReady, hasError: false };
+          }, MIN_CONTENT);
+
+          if (hasError) {
+            throw new Error(`[${provider}] AI Mode returned an error`);
+          }
+
+          // Track stability
+          if (contentLength !== lastLength) {
+            lastLength = contentLength;
+            lastChange = Date.now();
+          }
+
+          // Success: content ready + stable for 2s
+          if (isReady && contentLength >= MIN_CONTENT) {
+            const stableFor = Date.now() - lastChange;
+            if (stableFor >= STABLE_MS) {
+              logger.debug(`✅ AI Mode ready (${contentLength} chars, stable ${stableFor}ms)`);
+              return true;
+            }
+          }
+
+          return false;
+        } catch (err: any) {
+          if (err.message.includes(`[${provider}]`)) throw err;
+          return false; // Continue on transient errors
+        }
+      },
+      500, // Poll every 500ms
+      90_000, // 90s max wait
+      `[${provider}] Response wait timed out after 90s`
+    );
+    return;
+  }
+
+  // Chat providers (OpenAI, Anthropic, Perplexity, Google/Gemini)
   let lastText = "";
   let lastChange = Date.now();
   let seenOutput = false;
 
-  while (Date.now() - start < MAX_WAIT) {
-    const generating = await isGenerating(page);
-    const text = await getLastAssistantText(page, provider);
+  await pollUntilCondition(
+    async () => {
+      const [generating, text] = await Promise.all([
+        isGenerating(page),
+        getLastAssistantText(page, provider)
+      ]);
 
-    if (text.length > 0) {
-      seenOutput = true;
-    }
+      // Track output
+      if (text.length > 0) seenOutput = true;
 
-    if (text !== lastText) {
-      lastText = text;
-      lastChange = Date.now();
-    }
+      // Track changes
+      if (text !== lastText) {
+        lastText = text;
+        lastChange = Date.now();
+      }
 
-    if (generating && !seenOutput) {
-      await page.waitForTimeout(POLL);
-      continue;
-    }
+      const stableFor = Date.now() - lastChange;
+      const elapsed = Date.now() - lastChange;
 
-    const stableFor = Date.now() - lastChange;
-    const elapsedTime = Date.now() - start;
+      // Error: No output after 45s
+      if (!seenOutput && elapsed >= 45_000) {
+        throw new Error(`[${provider}] No response detected after 45s`);
+      }
 
-    // Timeout if no output seen within 60 seconds
-    if (!seenOutput && elapsedTime >= NO_OUTPUT_TIMEOUT) {
-      logger.error(`No output detected after ${NO_OUTPUT_TIMEOUT / 1000}s — generation may have failed`);
-      throw new Error(`[${provider}] No response detected after ${NO_OUTPUT_TIMEOUT / 1000}s`);
-    }
+      // Still generating and no output yet - keep waiting
+      if (generating && !seenOutput) return false;
 
-    // Normal exit: generation done + text stable for 1.5s
-    if (seenOutput && !generating && stableFor >= STABLE_WINDOW) {
-      logger.debug("✅ Assistant finished");
-      return;
-    }
+      // Success: output seen + not generating + stable for 1.5s
+      if (seenOutput && !generating && stableFor >= 1500) {
+        logger.debug("✅ Assistant finished");
+        return true;
+      }
 
-    // Force exit: text has been stable for 15s even though isGenerating() is still true
-    // This handles false-positive generation detection (e.g. a persistent loading class)
-    if (seenOutput && stableFor >= FORCE_STABLE_WINDOW) {
-      logger.warn("Assistant text stable for 15s but generation indicator still present — forcing exit");
-      return;
-    }
+      // Force exit: stable for 15s (handles stuck generation indicators)
+      if (seenOutput && stableFor >= 15_000) {
+        logger.warn("Text stable 15s but still generating — forcing exit");
+        return true;
+      }
 
-    await page.waitForTimeout(POLL);
-  }
-
-  logger.warn("Assistant finish wait timed out.");
+      return false;
+    },
+    300, // Poll every 300ms
+    20 * 60 * 1000, // 20 min max
+    `[${provider}] Assistant wait timed out`
+  );
 }

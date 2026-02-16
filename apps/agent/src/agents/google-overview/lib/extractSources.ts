@@ -9,152 +9,123 @@ export async function extractGoogleOverviewSources(page: Page): Promise<Source[]
       const seen = new Set<string>();
 
       try {
-        // Step 1: Find the AI Overview container
-        let aoContainer: HTMLElement | null = null;
+        // For Google AI Mode, sources are in list items below the response
+        // But we need to filter out navigation items
+        
+        const listItems = document.querySelectorAll('[role="listitem"], li, listitem');
+        console.log(`Found ${listItems.length} list items`);
 
-        // Method 1: Find by heading text
-        const headings = document.querySelectorAll('h1, h2, h3, [role="heading"]');
-        for (const heading of headings) {
-          if (heading.textContent?.toLowerCase().includes('ai overview')) {
-            // Traverse up to find the container with content
-            let current: HTMLElement | null = heading.parentElement;
-            for (let i = 0; i < 8; i++) {
-              if (!current) break;
+        for (const item of listItems) {
+          // Each source card has a link with the title
+          const link = item.querySelector('a[href]');
+          if (!link) continue;
 
-              // Check if this element contains the full AI Overview content
-              const innerText = current.innerText || '';
-              if (innerText.length > 500) {
-                aoContainer = current;
-                break;
-              }
-              current = current.parentElement;
-            }
-            break;
-          }
-        }
+          const url = (link as HTMLAnchorElement).href;
 
-        // Method 2: Find by generic container (if Method 1 failed)
-        if (!aoContainer) {
-          const allDivs = document.querySelectorAll('[role="region"], main > div, [data-sokoban-container]');
-          for (const div of allDivs) {
-            if (!(div instanceof HTMLElement)) continue;
-            const text = div.innerText || '';
-            if (text.includes('AI overview') && text.length > 500) {
-              aoContainer = div;
-              break;
-            }
-          }
-        }
-
-        if (!aoContainer) {
-          console.error('AI Overview container not found');
-          return results;
-        }
-
-        console.log('AI Overview container found');
-
-        // Step 2: Get all links within ONLY this container
-        const linksInAO = aoContainer.querySelectorAll('a[href]');
-        console.log(`Found ${linksInAO.length} links in AI Overview`);
-
-        // Step 3: Extract each link with context
-        for (const link of linksInAO) {
-          try {
-            // Make sure we are working with HTMLAnchorElement for .href property
-            if (!(link instanceof HTMLAnchorElement)) continue;
-            const url = link.href;
-
-            // Skip Google internal links
-            if (url.includes('google.com/search') || url.includes('google.com/')) {
-              continue;
-            }
-
-            const key = url;
-            if (seen.has(key)) continue;
-            seen.add(key);
-
-            // Extract domain
-            let domain: string | null = null;
-            try {
-              domain = new URL(url).hostname?.replace(/^www\\./, '') ?? null;
-            } catch {
-              domain = null;
-            }
-
-            // Get link title/text
-            let title = link.textContent?.trim() || '';
-            if (!title) {
-              title = domain || url;
-            }
-
-            // Get surrounding context as cited text
-            let citedText = '';
-
-            // Try to find the paragraph or container this link is in
-            let textNode: ChildNode | null = link.previousSibling;
-            while (textNode) {
-              if (textNode.nodeType === Node.TEXT_NODE) {
-                const text = textNode.textContent?.trim();
-                if (text && text.length > 10) {
-                  citedText = text.substring(0, 150);
-                  break;
-                }
-              } else if (textNode instanceof HTMLElement) {
-                const text = textNode.textContent?.trim();
-                if (text && text.length > 10) {
-                  citedText = text.substring(0, 150);
-                  break;
-                }
-              }
-              textNode = textNode.previousSibling;
-            }
-
-            // If no preceding text, look at the paragraph containing the link
-            if (!citedText) {
-              const paragraph = link.closest('li, p, div[role="paragraph"]');
-              if (paragraph) {
-                citedText = paragraph.textContent?.trim().substring(0, 200) || '';
-              }
-            }
-
-            // Fallback to title/domain
-            if (!citedText) {
-              citedText = title;
-            }
-
-            // Build favicon
-            const favicon = domain
-              ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-              : null;
-
-            results.push({
-              title: title.substring(0, 200),
-              cited_text: citedText,
-              url: url,
-              domain: domain,
-              favicon: favicon,
-            });
-
-            console.log(`Added: ${title}`);
-          } catch (error) {
-            console.warn('Error processing link:', error);
+          // Skip Google internal links, navigation items, and non-HTTP links
+          if (!url || !url.startsWith('http') || 
+              url.includes('google.com/search') || 
+              url.includes('google.com/url') ||
+              url.includes('google.com/webhp') ||
+              url.includes('maps.google.com') ||
+              url.includes('google.com/travel') ||
+              url.includes('google.com/finance')) {
             continue;
           }
+
+          // Avoid duplicates
+          if (seen.has(url)) continue;
+          seen.add(url);
+
+          // Extract title from the link text
+          // In AI Mode, the title is usually the main link text
+          let title = (link as HTMLElement).textContent?.trim() || '';
+          
+          // If title is too short or empty, look for nearby text
+          if (title.length < 10) {
+            // Look for generic elements or headings near the link
+            const parent = link.closest('[role="listitem"], li, listitem') || link.parentElement;
+            if (parent) {
+              const generics = parent.querySelectorAll('generic, h3, h4');
+              for (const gen of generics) {
+                const text = (gen.textContent || '').trim();
+                if (text.length > 10 && text.length < 200 && !text.includes('sites')) {
+                  title = text;
+                  break;
+                }
+              }
+            }
+          }
+
+          // Skip if still no valid title
+          if (!title || title.length < 10) continue;
+
+          // Extract domain
+          let domain: string | null = null;
+          try {
+            domain = new URL(url).hostname?.replace(/^www\\./, '') ?? null;
+          } catch {
+            domain = null;
+          }
+
+          // Extract cited text/description
+          // Usually follows the title in the list item
+          let citedText = '';
+          const parent = link.closest('[role="listitem"], li, listitem') || link.parentElement;
+          if (parent) {
+            const allText = (parent as HTMLElement).innerText || '';
+            
+            // Split by title and get the description after it
+            const parts = allText.split(title);
+            if (parts.length > 1 && parts[1]) {
+              // Get text after title, clean it up
+              const afterTitle = parts[1].trim();
+              // Extract first meaningful sentence (usually has a date prefix)
+              const lines = afterTitle.split('\\n');
+              for (const line of lines) {
+                const cleaned = line.trim();
+                // Look for description text (not just domain names or "About this result")
+                if (cleaned.length > 30 && 
+                    !cleaned.startsWith('http') && 
+                    !cleaned.includes('About this result') &&
+                    !cleaned.includes('Opens in new tab')) {
+                  citedText = cleaned.substring(0, 300);
+                  break;
+                }
+              }
+            }
+          }
+
+          // Build favicon URL
+          const favicon = domain
+            ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+            : null;
+
+          results.push({
+            title: title.substring(0, 200),
+            cited_text: citedText,
+            url: url,
+            domain: domain,
+            favicon: favicon,
+          });
+
+          console.log(`Added source: ${title.substring(0, 50)}`);
         }
 
-        console.log(`Total AI Overview sources extracted: ${results.length}`);
+        console.log(`Total AI Mode sources extracted: ${results.length}`);
         return results;
+
       } catch (error) {
-        console.error('Error in extractAIOverviewSources:', error);
+        console.error('Error in extractGoogleOverviewSources:', error);
         return results;
       }
     });
 
-    logger.debug(`Extracted ${sources.length} sources from AI Overview`);
+    logger.debug(`Extracted ${sources.length} sources from AI Mode`);
     return sources;
 
   } catch (err: any) {
-    logger.error(`Failed to extract AI Overview sources: ${err.message}`);
+    logger.error(`Failed to extract AI Mode sources: ${err.message}`);
     return [];
   }
 }
