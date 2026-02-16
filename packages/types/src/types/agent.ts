@@ -33,7 +33,7 @@ export interface AskPromptResult {
   sources: Source[];
 }
 
-export type Provider = "openai" | "anthropic" | "perplexity" | "google" | "google-overview";
+export type Provider = "openai" | "anthropic" | "perplexity" | "google" | "google-ai-overview";
 
 export type AgentResult =
   | { status: "fulfilled" | "rejected"; data: AskPromptResult[] };

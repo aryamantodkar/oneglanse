@@ -36,7 +36,7 @@ const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
     '[contenteditable="true"]',
     'div.ql-editor[contenteditable="true"]',
   ],
-  "google-overview": [
+  "google-ai-overview": [
     '[role="search"]',
     'input[name="q"]',
     'textarea[name="q"]',

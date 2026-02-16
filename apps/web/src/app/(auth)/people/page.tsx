@@ -166,7 +166,7 @@ export default function PeoplePage() {
     anthropic: "Claude - Advanced reasoning and analysis",
     perplexity: "Real-time web search and citations",
     google: "Gemini - Google's latest AI model",
-    "google-overview": "AI-powered search summaries from Google",
+    "google-ai-overview": "AI-powered search summaries from Google",
   };
 
   // Toggle provider handler (for edit mode)
@@ -584,7 +584,7 @@ export default function PeoplePage() {
                 Your prompts will be sent to these AI providers
               </p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {(["openai", "anthropic", "perplexity", "google", "google-overview"] as const).map((provider) => {
+                {(["openai", "anthropic", "perplexity", "google", "google-ai-overview"] as const).map((provider) => {
                   const isEnabled = enabledProviders.includes(provider);
                   return (
                     <div
@@ -625,7 +625,7 @@ export default function PeoplePage() {
                 Select which AI providers to query for prompts (at least one required)
               </p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {(["openai", "anthropic", "perplexity", "google", "google-overview"] as const).map((provider) => {
+                {(["openai", "anthropic", "perplexity", "google", "google-ai-overview"] as const).map((provider) => {
                   const isSelected = tempProviders.includes(provider);
                   return (
                     <button

@@ -4,5 +4,5 @@ export const modelSelectors = [
     { value: "perplexity", label: "Perplexity" },
     { value: "anthropic", label: "Claude" },
     { value: "google", label: "Gemini" },
-    { value: "google-overview", label: "AI Overview" },
+    { value: "google-ai-overview", label: "AI Overview" },
 ];

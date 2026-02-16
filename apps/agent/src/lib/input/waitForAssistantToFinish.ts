@@ -22,7 +22,7 @@ export async function waitForAssistantToFinish(page: Page, provider: Provider): 
   logger.debug("⏳ Waiting for assistant to finish…");
 
   // Google AI Overview has different detection logic
-  if (provider === "google-overview") {
+  if (provider === "google-ai-overview") {
     const MIN_CONTENT = 300;
     const STABLE_MS = 2000;
     let lastLength = 0;

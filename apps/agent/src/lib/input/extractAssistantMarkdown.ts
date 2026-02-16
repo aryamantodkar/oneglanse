@@ -2,7 +2,7 @@ import { Page } from "playwright";
 import { Provider } from "@onescope/types";
 import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
 import TurndownService from "turndown";
-import { extractAIOverviewResponse } from "../../agents/google-overview/index.js";
+import { extractAIOverviewResponse } from "../../agents/google-ai-overview/index.js";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -213,7 +213,7 @@ export async function extractAssistantMarkdown(
   provider: Provider
 ): Promise<string> {
   // Special handling for Google AI Overview
-  if (provider === "google-overview") {
+  if (provider === "google-ai-overview") {
     const html = await extractAIOverviewResponse(page);
     if (!html || html.length === 0) return "";
 

@@ -3,7 +3,7 @@ import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
 import { logger } from "../../lib/utils/logger.js";
 
 export async function launchGoogleOverview() {
-  const { browser, context, proxy } = await launchContext("google-overview");
+  const { browser, context, proxy } = await launchContext("google-ai-overview");
   const page = await context.newPage();
 
   logger.log("📍 Navigating to https://www.google.com/ai");

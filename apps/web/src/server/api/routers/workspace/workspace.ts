@@ -594,7 +594,7 @@ export const workspaceRouter = createTRPCRouter({
 
     setEnabledProviders: authorizedWorkspaceProcedure
       .input(z.object({
-        providers: z.array(z.enum(["openai", "anthropic", "perplexity", "google", "google-overview"]))
+        providers: z.array(z.enum(["openai", "anthropic", "perplexity", "google", "google-ai-overview"]))
           .min(1, "At least one provider must be enabled")
       }))
       .mutation(async ({ ctx, input }) => {
