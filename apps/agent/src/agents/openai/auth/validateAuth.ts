@@ -1,7 +1,7 @@
 import { Page } from "playwright";
 import { pageHealthCheck } from "../../../lib/browser/pageHealthCheck.js";
 
-export async function isOpenaiAuthenticated(page: Page): Promise<boolean> {
+export async function isOpenaiAuthenticated(page: Page, skipHealthCheck: boolean = false): Promise<boolean> {
     const url = page.url();
 
     const isChatGPT =
@@ -12,6 +12,11 @@ export async function isOpenaiAuthenticated(page: Page): Promise<boolean> {
         !url.includes("/callback");
 
     if (!isChatGPT) return false;
+
+    // Skip health check during local auth flow
+    if (skipHealthCheck) {
+        return true;
+    }
 
     // Deep page health check — catches bot detection, CAPTCHAs, rate limits, missing editor
     const health = await pageHealthCheck(page, "openai");

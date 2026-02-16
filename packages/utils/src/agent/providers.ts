@@ -22,7 +22,7 @@ export const PROVIDERS = {
     "google-ai-overview": {
       name: "google-ai-overview",
       displayName: "AI Overview",
-      url: "https://www.google.com/search"
+      url: "https://www.google.com/aimode"
     },
 };
 

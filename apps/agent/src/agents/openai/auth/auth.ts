@@ -5,7 +5,8 @@ import { logger } from "../../../lib/utils/logger.js";
 
 export async function waitForOpenaiAuthentication(
     page: Page,
-    timeoutMs: number = 8 * 60 * 1000 // 8 minutes
+    timeoutMs: number = 8 * 60 * 1000, // 8 minutes
+    skipHealthCheck: boolean = false
   ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const startTime = Date.now();
@@ -22,7 +23,7 @@ export async function waitForOpenaiAuthentication(
 
       await checkPageStability(page);
 
-      if (await isOpenaiAuthenticated(page)) {
+      if (await isOpenaiAuthenticated(page, skipHealthCheck)) {
         // Clear progress line and show success
         process.stdout.write(`\r${' '.repeat(80)}\r`);
         logger.success(`✅ ChatGPT session detected (${elapsed}s)`);

@@ -6,8 +6,8 @@ export async function launchGoogleOverview() {
   const { browser, context, proxy } = await launchContext("google-ai-overview");
   const page = await context.newPage();
 
-  logger.log("📍 Navigating to https://www.google.com/ai");
-  await navigateWithRetry(page, 'https://www.google.com/ai', {
+  logger.log("📍 Navigating to https://www.google.com/aimode");
+  await navigateWithRetry(page, 'https://www.google.com/aimode', {
     waitUntil: "domcontentloaded",
     timeout: 60000
   });

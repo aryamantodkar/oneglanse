@@ -21,16 +21,28 @@ if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
 const USER_DATA_DIR = path.resolve(process.env.LOCAL_AUTH_PROFILE_PATH);
 
 function promptUser(question: string): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
   return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase());
-    });
+    process.stdout.write(question);
+
+    // Enable raw mode to capture single keypress
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+
+    const onKeypress = (chunk: Buffer) => {
+      const key = chunk.toString().toLowerCase();
+
+      // Only accept 'y' or 'n'
+      if (key === 'y' || key === 'n') {
+        process.stdout.write(key + '\n'); // Echo the key and newline
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        process.stdin.removeListener('data', onKeypress);
+        resolve(key);
+      }
+      // Ignore other keys (just don't respond)
+    };
+
+    process.stdin.on('data', onKeypress);
   });
 }
 
@@ -92,7 +104,7 @@ export async function loginToProvider(provider: Provider): Promise<void> {
       waitUntil: "domcontentloaded",
     });
 
-    await waitForUserLogin(loginPage, provider);
+    await waitForUserLogin(loginPage, provider, true); // Skip health check for local auth
 
     await loginContext.storageState({
       path: authFile,
@@ -129,21 +141,15 @@ export async function loginToAll(): Promise<void> {
   };
 
   for (const provider of Object.keys(PROVIDERS) as Provider[]) {
-    // Show provider and wait for Enter to continue
-    logger.log(`\n🔐 Authenticating with ${PROVIDERS[provider].displayName}...`);
-    logger.log(`   Press Enter to continue (or Ctrl+C to skip)`);
+    // Ask user if they want to authenticate this provider
+    logger.log(`\n❓ Login to ${PROVIDERS[provider].displayName}?`);
+    const answer = await promptUser(`   (y/n): `);
 
-    await new Promise<void>((resolve) => {
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-
-      rl.question('', () => {
-        rl.close();
-        resolve();
-      });
-    });
+    if (answer !== 'y' && answer !== 'yes') {
+      logger.log(`⏭️  Skipped ${PROVIDERS[provider].displayName}\n`);
+      results[provider] = 'skipped';
+      continue;
+    }
 
     try {
       await loginToProvider(provider);

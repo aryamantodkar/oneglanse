@@ -4,7 +4,7 @@ import { logger } from "../../../lib/utils/logger.js";
 import path from "path";
 import fs from "fs";
 
-export async function isGoogleAuthenticated(page: Page): Promise<boolean> {
+export async function isGoogleAuthenticated(page: Page, skipHealthCheck: boolean = false): Promise<boolean> {
     // Check if on a Google domain
     if (!page.url().includes("google.com")) return false;
 
@@ -46,6 +46,11 @@ export async function isGoogleAuthenticated(page: Page): Promise<boolean> {
 
       // Wait before retrying
       await page.waitForTimeout(2000);
+    }
+
+    // Skip health check during local auth flow
+    if (skipHealthCheck) {
+      return isAuthenticated;
     }
 
     const health = await pageHealthCheck(page, "google");
