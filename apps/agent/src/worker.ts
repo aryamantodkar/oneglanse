@@ -8,7 +8,7 @@ import { openaiAgent } from "./agents/openai/openaiAgent.js";
 import { anthropicAgent } from "./agents/anthropic/anthropicAgent.js";
 import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
 import { googleAgent } from "./agents/google/googleAgent.js";
-import { googleOverviewAgent } from "./agents/google-ai-overview/google-overviewAgent.js";
+import { googleOverviewAgent } from "./agents/google-ai-overview/google-ai-overviewAgent.js";
 
 type ProviderJobData = {
   jobGroupId: string;
