@@ -18,14 +18,11 @@ export async function launchContext(
   const providerDir = path.join(USER_DATA_DIR, provider);
   const authFile = path.join(providerDir, `${provider}-auth.json`);
 
-  // Google AI Overview doesn't require authentication
-  if (provider !== "google-overview" && !fs.existsSync(authFile)) {
+  if (!fs.existsSync(authFile)) {
     throw new AuthError(`AUTH_SESSION_MISSING: ${provider} not authenticated`);
   }
 
-  if (provider !== "google-overview") {
-    logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
-  }
+  logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
 
   let proxy = getNextProxy();
 
@@ -58,7 +55,7 @@ export async function launchContext(
   });
 
   const context = await browser.newContext({
-    ...(provider !== "google-overview" && { storageState: authFile }),
+    storageState: authFile,
     viewport: { width: 1920, height: 1080 },
   });
 
