@@ -113,30 +113,37 @@ export async function loginToAll(): Promise<void> {
   logger.log("\n🔐 AUTHENTICATION SETUP");
   logger.log(`${"=".repeat(70)}\n`);
 
-  logger.log(`📊 This will authenticate you with all AI providers:`);
-  logger.log(`   • OpenAI (ChatGPT)`);
-  logger.log(`   • Anthropic (Claude)`);
-  logger.log(`   • Perplexity AI`);
-  logger.log(`   • Google (Gemini)\n`);
+  logger.log(`📊 This will authenticate you with all AI models:`);
+  logger.log(`   • ChatGPT`);
+  logger.log(`   • Claude`);
+  logger.log(`   • Perplexity`);
+  logger.log(`   • Gemini`);
+  logger.log(`   • Google AI Overview\n`);
 
   const results: Record<Provider, 'success' | 'failed' | 'skipped'> = {
     openai: 'skipped',
     anthropic: 'skipped',
     perplexity: 'skipped',
     google: 'skipped',
-    'google-overview': 'skipped'
+    'google-ai-overview': 'skipped'
   };
 
   for (const provider of Object.keys(PROVIDERS) as Provider[]) {
-    // Prompt user if they want to authenticate this provider
-    logger.log(`\n❓ Authenticate with ${PROVIDERS[provider].name}?`);
-    const answer = await promptUser(`   Continue? (y/n): `);
+    // Show provider and wait for Enter to continue
+    logger.log(`\n🔐 Authenticating with ${PROVIDERS[provider].displayName}...`);
+    logger.log(`   Press Enter to continue (or Ctrl+C to skip)`);
 
-    if (answer !== 'y' && answer !== 'yes') {
-      logger.log(`⏭️  Skipping ${PROVIDERS[provider].name}\n`);
-      results[provider] = 'skipped';
-      continue;
-    }
+    await new Promise<void>((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+
+      rl.question('', () => {
+        rl.close();
+        resolve();
+      });
+    });
 
     try {
       await loginToProvider(provider);

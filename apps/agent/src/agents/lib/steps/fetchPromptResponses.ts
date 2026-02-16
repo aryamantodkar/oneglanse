@@ -19,7 +19,7 @@ export async function fetchPromptResponses(
     provider: Provider
   ): Promise<string> {
     // Google AI Overview doesn't have a "generating" phase - results appear immediately
-    if (provider === "google-overview") {
+    if (provider === "google-ai-overview") {
       logger.log("⏳ Waiting for search results to load...");
       // Wait for page to be stable
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});

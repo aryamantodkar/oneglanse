@@ -66,7 +66,7 @@ async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
 
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
     // Google AI Overview uses search interface, not chat interface
-    if (provider === "google-overview") {
+    if (provider === "google-ai-overview") {
         return await askGoogleOverview(page, prompt);
     }
 

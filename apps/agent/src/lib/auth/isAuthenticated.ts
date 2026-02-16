@@ -19,7 +19,7 @@ export async function isAuthenticated(
     case "google":
       return isGoogleAuthenticated(page);
 
-    case "google-overview":
+    case "google-ai-overview":
       // google.com/ai uses same Google account auth as Gemini
       return isGoogleAuthenticated(page);
 

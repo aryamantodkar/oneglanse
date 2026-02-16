@@ -10,7 +10,7 @@ export const getModelFavicon = (model: string): string => {
       anthropic: "claude.ai",
       perplexity: "perplexity.ai",
       google: "gemini.google.com",
-      "google-overview": "google.com",
+      "google-ai-overview": "google.com",
       mistral: "mistral.ai",
       meta: "about.fb.com",
       cohere: "cohere.com",

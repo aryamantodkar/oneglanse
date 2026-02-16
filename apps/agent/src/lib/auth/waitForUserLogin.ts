@@ -22,7 +22,7 @@ export async function waitForUserLogin(page: Page, provider: Provider): Promise<
       await waitForGoogleAuthentication(page);
       return;
     }
-    if(provider=="google-overview"){
+    if(provider=="google-ai-overview"){
       // google.com/ai uses same Google account auth as Gemini
       await waitForGoogleAuthentication(page);
       return;

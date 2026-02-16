@@ -19,8 +19,8 @@ export const PROVIDERS = {
       displayName: "Gemini",
       url: "https://gemini.google.com/"
     },
-    "google-overview": {
-      name: "google-overview",
+    "google-ai-overview": {
+      name: "google-ai-overview",
       displayName: "AI Overview",
       url: "https://www.google.com/search"
     },
