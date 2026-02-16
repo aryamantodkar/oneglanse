@@ -5,7 +5,8 @@ import { logger } from "../../../lib/utils/logger.js";
 
 export async function waitForPerplexityAuthentication(
     page: Page,
-    timeoutMs: number = 8 * 60 * 1000 // 8 minutes
+    timeoutMs: number = 8 * 60 * 1000, // 8 minutes
+    skipHealthCheck: boolean = false
   ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const startTime = Date.now();
@@ -22,7 +23,7 @@ export async function waitForPerplexityAuthentication(
 
       await checkPageStability(page);
 
-      if (await isPerplexityAuthenticated(page)) {
+      if (await isPerplexityAuthenticated(page, skipHealthCheck)) {
         // Clear progress line and show success
         process.stdout.write(`\r${' '.repeat(80)}\r`);
         logger.success(`✅ Perplexity session detected (${elapsed}s)`);

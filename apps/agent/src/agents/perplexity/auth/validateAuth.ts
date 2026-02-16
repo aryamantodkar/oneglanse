@@ -1,7 +1,7 @@
 import { Page } from "playwright";
 import { pageHealthCheck } from "../../../lib/browser/pageHealthCheck.js";
 
-export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
+export async function isPerplexityAuthenticated(page: Page, skipHealthCheck: boolean = false): Promise<boolean> {
   if (!page.url().startsWith("https://www.perplexity.ai")) return false;
 
   // Wait for the page to be interactive
@@ -38,6 +38,11 @@ export async function isPerplexityAuthenticated(page: Page): Promise<boolean> {
   }
 
   if (!hasProfileUI) return false;
+
+  // Skip health check during local auth flow
+  if (skipHealthCheck) {
+    return true;
+  }
 
   // Deep page health check — catches bot detection, CAPTCHAs, rate limits
   const health = await pageHealthCheck(page, "perplexity");

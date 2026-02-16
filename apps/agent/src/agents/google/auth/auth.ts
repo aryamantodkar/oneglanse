@@ -5,7 +5,8 @@ import { isGoogleAuthenticated } from "./validateAuth.js";
 
 export async function waitForGoogleAuthentication(
     page: Page,
-    timeoutMs: number = 8 * 60 * 1000 // 8 minutes
+    timeoutMs: number = 8 * 60 * 1000, // 8 minutes
+    skipHealthCheck: boolean = false
   ): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const startTime = Date.now();
@@ -22,7 +23,7 @@ export async function waitForGoogleAuthentication(
 
       await checkPageStability(page);
 
-      if (await isGoogleAuthenticated(page)) {
+      if (await isGoogleAuthenticated(page, skipHealthCheck)) {
         // Clear progress line and show success
         process.stdout.write(`\r${' '.repeat(80)}\r`);
         logger.success(`✅ Google session detected (${elapsed}s)`);
