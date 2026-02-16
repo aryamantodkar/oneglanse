@@ -1,3 +1,4 @@
+import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchGoogleOverview } from "./google-overview.js";
 
@@ -8,8 +9,8 @@ export async function googleOverviewAgent() {
 
   await googleOverview.page.waitForTimeout(2000);
 
-  // No authentication needed for AI Overview
-  const auth = true;
+  // Check authentication (uses Google account - same as Gemini)
+  const auth = await isAuthenticated(googleOverview.page, "google-overview");
 
   return {
     browser: googleOverview.browser,
