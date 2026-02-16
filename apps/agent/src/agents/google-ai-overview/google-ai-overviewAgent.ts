@@ -1,6 +1,6 @@
 import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { setupPage } from "../../lib/browser/setupPage.js";
-import { launchGoogleOverview } from "./google-overview.js";
+import { launchGoogleOverview } from "./google-ai-overview.js";
 
 export async function googleOverviewAgent() {
   const googleOverview = await launchGoogleOverview();
