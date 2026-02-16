@@ -20,8 +20,9 @@ export async function isAuthenticated(
       return isGoogleAuthenticated(page);
 
     case "google-ai-overview":
-      // google.com/ai uses same Google account auth as Gemini
-      return isGoogleAuthenticated(page);
+      // google.com/aimode uses same Google account auth as Gemini
+      // Skip health check since AI Overview is a search interface, not a chat interface
+      return isGoogleAuthenticated(page, true);
 
     case "perplexity":
       return isPerplexityAuthenticated(page);
