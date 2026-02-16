@@ -214,7 +214,13 @@ export async function extractAssistantMarkdown(
 ): Promise<string> {
   // Special handling for Google AI Overview
   if (provider === "google-overview") {
-    return await extractAIOverviewResponse(page);
+    const html = await extractAIOverviewResponse(page);
+    if (!html || html.length === 0) return "";
+
+    // Convert HTML to markdown using the shared turndown service
+    // This gives us all custom rules: images, videos, tables, carousels, etc.
+    const markdown = turndown.turndown(html);
+    return markdown.replace(/\n{3,}/g, "\n\n").trim();
   }
 
   for (const selector of MODEL_RESPONSE_SELECTORS) {
