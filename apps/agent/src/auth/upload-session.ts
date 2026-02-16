@@ -3,6 +3,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { existsSync } from "node:fs";
 import { logger } from "../lib/utils/logger.js";
+import { PROVIDERS } from "@onescope/utils";
 
 if (fs.existsSync("apps/agent/.env")) {
   dotenv.config({ path: "apps/agent/.env" });
@@ -15,6 +16,7 @@ interface SessionData {
   openai?: any;
   perplexity?: any;
   google?: any;
+  "google-ai-overview"?: any;
 }
 
 async function uploadSessions() {
@@ -54,22 +56,22 @@ async function uploadSessions() {
 
   // Read session files
   const sessions: SessionData = {};
-  const providers = ["anthropic", "openai", "perplexity", "google"];
+  const providers = ["anthropic", "openai", "perplexity", "google", "google-ai-overview"];
 
   for (const provider of providers) {
     const authFile = path.join(AUTH_PROFILE_PATH, provider, `${provider}-auth.json`);
 
     if (!fs.existsSync(authFile)) {
-      logger.warn(`Session file not found for ${provider}: ${authFile}`);
+      logger.warn(`Session file not found for ${PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider}: ${authFile}`);
       continue;
     }
 
     try {
       const sessionData = JSON.parse(fs.readFileSync(authFile, "utf-8"));
       sessions[provider as keyof SessionData] = sessionData;
-      logger.log(`✅ Read session for ${provider} (${authFile})`);
+      logger.log(`✅ Read session for ${PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider} (${authFile})`);
     } catch (err: any) {
-      logger.error(`Failed to read session for ${provider}:`, err.message);
+      logger.error(`Failed to read session for ${PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider}:`, err.message);
     }
   }
 
@@ -88,7 +90,8 @@ async function uploadSessions() {
 
   for (const [provider, sessionData] of Object.entries(sessions)) {
     try {
-      logger.log(`📤 Uploading ${provider} session...`);
+      const modelName = PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider;
+      logger.log(`📤 Uploading ${modelName} session...`);
 
       const response = await fetch(`${VPS_API_URL}/upload-sessions`, {
         method: "POST",
@@ -107,11 +110,12 @@ async function uploadSessions() {
       const result = await response.json();
       uploadResults[provider] = true;
       successCount++;
-      logger.success(`✅ ${provider} session uploaded successfully`);
+      logger.success(`✅ ${modelName} session uploaded successfully`);
     } catch (err: any) {
+      const modelName = PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider;
       uploadResults[provider] = false;
       failCount++;
-      logger.error(`❌ Failed to upload ${provider} session:`, err.message);
+      logger.error(`❌ Failed to upload ${modelName} session:`, err.message);
     }
   }
 
@@ -135,10 +139,11 @@ async function uploadSessions() {
     const health = await healthCheck.json();
 
     logger.log("\n📊 Session status on VPS:");
-    logger.log(`   Anthropic: ${health.sessions.anthropic ? "✅" : "❌"}`);
-    logger.log(`   OpenAI: ${health.sessions.openai ? "✅" : "❌"}`);
-    logger.log(`   Perplexity: ${health.sessions.perplexity ? "✅" : "❌"}`);
-    logger.log(`   Google: ${health.sessions.google ? "✅" : "❌"}`);
+    logger.log(`   ${PROVIDERS.anthropic.displayName}: ${health.sessions.anthropic ? "✅" : "❌"}`);
+    logger.log(`   ${PROVIDERS.openai.displayName}: ${health.sessions.openai ? "✅" : "❌"}`);
+    logger.log(`   ${PROVIDERS.perplexity.displayName}: ${health.sessions.perplexity ? "✅" : "❌"}`);
+    logger.log(`   ${PROVIDERS.google.displayName}: ${health.sessions.google ? "✅" : "❌"}`);
+    logger.log(`   ${PROVIDERS["google-ai-overview"].displayName}: ${health.sessions["google-ai-overview"] ? "✅" : "❌"}`);
 
     logger.success("\nSession verification complete!");
     logger.log("👉 You can now run jobs on the VPS");
