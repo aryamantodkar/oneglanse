@@ -586,7 +586,7 @@ export const workspaceRouter = createTRPCRouter({
 
           const enabledProviders = workspace.enabledProviders
             ? JSON.parse(workspace.enabledProviders)
-            : ["openai", "anthropic", "perplexity", "google"];
+            : ["openai", "anthropic", "perplexity", "google", "google-ai-overview"];
 
           return ok({ enabledProviders }, "Enabled providers retrieved");
         });
@@ -649,7 +649,7 @@ export const workspaceRouter = createTRPCRouter({
 
                 // Fetch workspace and parse enabled providers
                 const workspace = await getWorkspaceById({ workspaceId });
-                const enabledProvidersJson = workspace.enabledProviders ?? '["openai","anthropic","perplexity","google"]';
+                const enabledProvidersJson = workspace.enabledProviders ?? '["openai","anthropic","perplexity","google","google-ai-overview"]';
                 const enabledProviders = JSON.parse(enabledProvidersJson) as Provider[];
 
                 const progress = {

@@ -9,12 +9,9 @@ import { Provider } from "@onescope/types";
 import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 
 async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
-  logger.debug(`\\n🔍 Searching Google AI Mode: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
+  logger.debug(`🔍 Searching Google: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
-  // Find Google AI Mode search input box
   const searchSelectors = [
-    'textarea[placeholder="Ask anything"]',
-    'input[placeholder="Ask anything"]',
     'textarea[name="q"]',
     'input[name="q"]',
     'textarea[aria-label="Search"]',
@@ -34,16 +31,14 @@ async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
   }
 
   if (!searchInput) {
-    throw new Error("Google AI Mode search input not found");
+    throw new Error("Google search input not found");
   }
 
-  // Clear any existing content and type the search query
   await searchInput.click();
   await page.waitForTimeout(500);
   await searchInput.fill("");
   await page.waitForTimeout(300);
 
-  // Type the prompt character by character (more human-like)
   for (const char of prompt) {
     await page.keyboard.type(char);
     const typingDelay = 30 + Math.floor(Math.random() * 40);
@@ -54,14 +49,15 @@ async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
 
   logger.debug("  📤 Submitting search...");
 
-  // Submit the search by pressing Enter
   await page.keyboard.press("Enter");
 
-  // Wait for navigation/page load to complete (but don't wait for AI response)
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 
-  logger.debug("  ✓ Search submitted");
+  // FIX: replaced networkidle (never fires on Google) with a DOM-ready sentinel
+  await page.waitForSelector('h1, h2, h3, [role="heading"]', { timeout: 15000 }).catch(() => {});
+
+  logger.debug("  ✓ Search results loaded");
 }
 
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
