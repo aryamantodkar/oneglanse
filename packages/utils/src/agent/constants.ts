@@ -27,6 +27,12 @@ export const EDITOR_SELECTORS = [
     // Gemini
     // ======================
     'div.ql-editor[contenteditable="true"]',
+
+    // ======================
+    // Google Search (AI Overview)
+    // ======================
+    'textarea[name="q"]',
+    'input[name="q"]',
   
     // ======================
     // Cross-platform fallbacks
@@ -59,6 +65,8 @@ export const SUBMIT_BTN_SELECTORS = [
 
   // Gemini
   'button.send-button',
+
+  'button[aria-label="Search"]',
 
   // Fallback
   'button[type="submit"]',
