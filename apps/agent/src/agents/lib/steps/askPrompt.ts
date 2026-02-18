@@ -20,7 +20,11 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
     await page.waitForTimeout(100);
 
     await input.evaluate(el => {
-      if (el instanceof HTMLElement) el.innerText = "";
+      if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+        el.value = "";
+      } else if (el instanceof HTMLElement) {
+        el.innerText = "";
+      }
     });
 
     const isMac = process.platform === "darwin";
@@ -48,7 +52,10 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
     logger.debug("  📤 Submitting...");
 
     // Store pre-submit state for success detection
-    const preSubmitContent = await input.evaluate(el => (el.textContent || "").trim());
+    const preSubmitContent = await input.evaluate(el => {
+      if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) return el.value.trim();
+      return (el.textContent || "").trim();
+    });
     const preSubmitUrl = page.url();
 
     // Verify we have content before attempting submission
@@ -76,7 +83,10 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       }
 
       // Signal 2: Editor cleared
-      const editorContent = await input.evaluate(el => (el.textContent || "").trim()).catch(() => "");
+      const editorContent = await input.evaluate(el => {
+        if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) return el.value.trim();
+        return (el.textContent || "").trim();
+      }).catch(() => "");
       if (preSubmitContent.length > 0 && editorContent.length === 0) {
         logger.debug(`  ✓ Submission detected via editor clear: ${preSubmitContent.length} → 0 chars`);
         return true;
