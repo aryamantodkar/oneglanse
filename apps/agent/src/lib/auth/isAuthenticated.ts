@@ -19,11 +19,6 @@ export async function isAuthenticated(
     case "google":
       return isGoogleAuthenticated(page);
 
-    case "google-ai-overview":
-      // google.com/aimode uses same Google account auth as Gemini
-      // Skip health check since AI Overview is a search interface, not a chat interface
-      return isGoogleAuthenticated(page, true);
-
     case "perplexity":
       return isPerplexityAuthenticated(page);
 

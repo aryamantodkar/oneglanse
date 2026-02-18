@@ -2,7 +2,7 @@ import { Page } from "playwright";
 import { Provider } from "@onescope/types";
 import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
 import TurndownService from "turndown";
-import { extractAIOverviewResponse } from "../../agents/google-ai-overview/index.js";
+import { extractAIOverviewResponse } from "../../agents/ai-overview/lib/extractResponse.js";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -212,13 +212,9 @@ export async function extractAssistantMarkdown(
   page: Page,
   provider: Provider
 ): Promise<string> {
-  // Special handling for Google AI Overview
   if (provider === "google-ai-overview") {
     const html = await extractAIOverviewResponse(page);
     if (!html || html.length === 0) return "";
-
-    // Convert HTML to markdown using the shared turndown service
-    // This gives us all custom rules: images, videos, tables, carousels, etc.
     const markdown = turndown.turndown(html);
     return markdown.replace(/\n{3,}/g, "\n\n").trim();
   }

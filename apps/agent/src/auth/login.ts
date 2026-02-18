@@ -130,7 +130,7 @@ export async function loginToAll(): Promise<void> {
   logger.log(`   • Claude`);
   logger.log(`   • Perplexity`);
   logger.log(`   • Gemini`);
-  logger.log(`   • Google AI Overview\n`);
+  logger.log(`   • Google AI\n`);
 
   const results: Record<Provider, 'success' | 'failed' | 'skipped'> = {
     openai: 'skipped',
