@@ -24,6 +24,12 @@ export async function fetchPromptResponses(
       // Wait for page to be stable
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
       await page.waitForTimeout(2000); // Give AI Overview time to render
+
+      // Bail early if Google hit us with a CAPTCHA page
+      const currentUrl = page.url();
+      if (currentUrl.includes("/sorry/")) {
+        throw new Error(`[${provider}] Google CAPTCHA detected — proxy IP is flagged`);
+      }
     } else {
       logger.log("⏳ Waiting for response to complete...");
       // 1️⃣ Wait until model finishes generating
