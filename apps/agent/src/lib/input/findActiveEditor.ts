@@ -44,10 +44,14 @@ export async function waitForEditorReady(
     const ready = await input.evaluate(el => {
       if (!(el instanceof HTMLElement)) return false;
       if (!el.isConnected) return false;
-      if (el.getAttribute("contenteditable") !== "true") return false;
 
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return false;
+
+      // Native inputs are inherently editable — skip the contenteditable check
+      if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") return true;
+
+      if (el.getAttribute("contenteditable") !== "true") return false;
 
       // Can we actually mutate it?
       const before = el.innerText;
