@@ -11,53 +11,17 @@ import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
   logger.debug(`🔍 Searching Google: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
-  const searchSelectors = [
-    'textarea[name="q"]',
-    'input[name="q"]',
-    'textarea[aria-label="Search"]',
-    'input[aria-label="Search"]',
-  ];
+  // Navigate directly to search URL to get standard results with AI Overview box.
+  // Using the search box + Enter redirects to AI Mode (?udm=50) which has no AI Overview heading.
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
+  await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
 
-  let searchInput = null;
-  for (const selector of searchSelectors) {
-    try {
-      searchInput = await page.locator(selector).first().waitFor({ state: "visible", timeout: 5000 });
-      searchInput = page.locator(selector).first();
-      logger.debug(`Found search input: ${selector}`);
-      break;
-    } catch {
-      // Try next selector
-    }
-  }
-
-  if (!searchInput) {
-    throw new Error("Google search input not found");
-  }
-
-  await searchInput.click();
-  await page.waitForTimeout(500);
-  await searchInput.fill("");
-  await page.waitForTimeout(300);
-
-  for (const char of prompt) {
-    await page.keyboard.type(char);
-    const typingDelay = 30 + Math.floor(Math.random() * 40);
-    await page.waitForTimeout(typingDelay);
-  }
-
-  await page.waitForTimeout(500);
-
-  logger.debug("  📤 Submitting search...");
-
-  await page.keyboard.press("Enter");
-
-  await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(2000);
 
-  // FIX: replaced networkidle (never fires on Google) with a DOM-ready sentinel
+  // Wait for search results to appear
   await page.waitForSelector('h1, h2, h3, [role="heading"]', { timeout: 15000 }).catch(() => {});
 
-  logger.debug("  ✓ Search results loaded");
+  logger.debug("  ✓ Search results loaded:", page.url());
 }
 
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
