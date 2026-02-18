@@ -18,7 +18,7 @@ export async function launchContext(
   const providerDir = path.join(USER_DATA_DIR, provider);
   const authFile = path.join(providerDir, `${provider}-auth.json`);
 
-  if (provider !== "google-ai-overview" && !fs.existsSync(authFile)) {
+  if (!fs.existsSync(authFile)) {
     throw new AuthError(`AUTH_SESSION_MISSING: ${provider} not authenticated`);
   }
 
@@ -55,7 +55,7 @@ export async function launchContext(
   });
 
   const context = await browser.newContext({
-    storageState: provider !== "google-ai-overview" ? authFile : undefined,
+    storageState: authFile,
     viewport: { width: 1920, height: 1080 },
   });
 
