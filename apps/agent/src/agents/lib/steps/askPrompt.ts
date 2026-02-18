@@ -11,15 +11,35 @@ import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
   logger.debug(`🔍 Searching Google: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
-  // Navigate directly to search URL to get standard results with AI Overview box.
-  // Using the search box + Enter redirects to AI Mode (?udm=50) which has no AI Overview heading.
-  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
-  await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+  // Find and click the Google search box
+  const searchInput = await page.waitForSelector('textarea[name="q"], input[name="q"]', { timeout: 15000 });
+  if (!searchInput) throw new Error("[google-ai-overview] Search input not found");
 
-  await page.waitForTimeout(2000);
+  await searchInput.click();
+  await page.waitForTimeout(300);
 
-  // Wait for search results to appear
+  // Clear any existing content
+  await page.keyboard.down("Control");
+  await page.keyboard.press("KeyA");
+  await page.keyboard.up("Control");
+  await page.keyboard.press("Backspace");
+  await page.waitForTimeout(200);
+
+  // Type query character by character with human-like delays
+  for (const char of prompt) {
+    await page.keyboard.type(char);
+    const typingDelay = 30 + Math.floor(Math.random() * 40);
+    await page.waitForTimeout(typingDelay);
+  }
+
+  await page.waitForTimeout(500);
+
+  // Submit with Enter
+  await page.keyboard.press("Enter");
+
+  // Wait for search results and headings to appear
   await page.waitForSelector('h1, h2, h3, [role="heading"]', { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(2000);
 
   logger.debug("  ✓ Search results loaded:", page.url());
 }
