@@ -1,6 +1,4 @@
 import { Page } from "playwright";
-import fs from "node:fs";
-import path from "node:path";
 import { waitForEditorReady } from "../../../lib/input/findActiveEditor.js";
 import { findEnabledSendButton } from "../../../lib/input/findEnabledSendButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToFinish.js";
@@ -8,52 +6,12 @@ import { logger } from "../../../lib/utils/logger.js";
 import { Provider } from "@onescope/types";
 import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
 
-async function askGoogleOverview(page: Page, prompt: string): Promise<void> {
-  logger.debug(`🔍 Searching Google: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
-
-  // Find and click the Google search box
-  const searchInput = await page.waitForSelector('textarea[name="q"], input[name="q"]', { timeout: 15000 });
-  if (!searchInput) throw new Error("[google-ai-overview] Search input not found");
-
-  await searchInput.click();
-  await page.waitForTimeout(300);
-
-  // Clear any existing content
-  await page.keyboard.down("Control");
-  await page.keyboard.press("KeyA");
-  await page.keyboard.up("Control");
-  await page.keyboard.press("Backspace");
-  await page.waitForTimeout(200);
-
-  // Type query character by character with human-like delays
-  for (const char of prompt) {
-    await page.keyboard.type(char);
-    const typingDelay = 30 + Math.floor(Math.random() * 40);
-    await page.waitForTimeout(typingDelay);
-  }
-
-  await page.waitForTimeout(500);
-
-  // Submit with Enter
-  await page.keyboard.press("Enter");
-
-  // Wait for search results and headings to appear
-  await page.waitForSelector('h1, h2, h3, [role="heading"]', { timeout: 15000 }).catch(() => {});
-  await page.waitForTimeout(2000);
-
-  logger.debug("  ✓ Search results loaded:", page.url());
-}
-
 export async function askPrompt(page: Page, prompt: string, provider: Provider): Promise<void> {
-    // Google AI Overview uses search interface, not chat interface
-    if (provider === "google-ai-overview") {
-        return await askGoogleOverview(page, prompt);
-    }
-
     logger.debug(`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? '...' : ''}"`);
 
-    await waitForAssistantToFinish(page, provider);
-
+    if (provider !== "google-ai-overview") {
+      await waitForAssistantToFinish(page, provider);
+    }
     const input = await waitForEditorReady(page, provider);
 
     logger.debug("Typing Prompt");
@@ -108,10 +66,10 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
 
     // Helper: Check if submission succeeded
     const checkSubmissionSuccess = async (): Promise<boolean> => {
-      // Signal 1: URL change (Perplexity-specific)
-      if (provider === "perplexity") {
+      // Signal 1: URL change (Perplexity / Google Search)
+      if (provider === "perplexity" || provider === "google-ai-overview") {
         const urlAfter = page.url();
-        if (urlAfter !== preSubmitUrl && urlAfter.includes('/search')) {
+        if (urlAfter !== preSubmitUrl) {
           logger.debug(`  ✓ Submission detected via URL: ${urlAfter}`);
           return true;
         }
