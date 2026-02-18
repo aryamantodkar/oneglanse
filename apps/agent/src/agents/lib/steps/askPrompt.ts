@@ -76,7 +76,10 @@ export async function askPrompt(page: Page, prompt: string, provider: Provider):
       // Signal 1: URL change (Perplexity / Google Search)
       if (provider === "perplexity" || provider === "google-ai-overview") {
         const urlAfter = page.url();
-        if (urlAfter !== preSubmitUrl) {
+        if (provider === "google-ai-overview" && urlAfter.includes("/sorry/")) {
+          throw new Error(`[${provider}] Google CAPTCHA detected — proxy IP is flagged`);
+        }
+        if (urlAfter !== preSubmitUrl && (provider !== "google-ai-overview" || urlAfter.includes("/search"))) {
           logger.debug(`  ✓ Submission detected via URL: ${urlAfter}`);
           return true;
         }
