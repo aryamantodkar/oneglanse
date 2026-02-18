@@ -9,11 +9,13 @@ export async function aiOverviewAgent() {
 
   await aiOverview.page.waitForTimeout(5000);
 
+  const auth = await isAuthenticated(aiOverview.page, "google-ai-overview");
+
   return {
     browser: aiOverview.browser,
     context: aiOverview.context,
     page: aiOverview.page,
-    auth: true,
+    auth,
     proxy: aiOverview.proxy
   };
 }
