@@ -16,7 +16,6 @@ interface SessionData {
   openai?: any;
   perplexity?: any;
   google?: any;
-  "google-ai-overview"?: any;
 }
 
 async function uploadSessions() {
@@ -56,7 +55,8 @@ async function uploadSessions() {
 
   // Read session files
   const sessions: SessionData = {};
-  const providers = ["anthropic", "openai", "perplexity", "google", "google-ai-overview"];
+  // google-ai-overview shares the google (Gemini) session — no separate file to upload
+  const providers = ["anthropic", "openai", "perplexity", "google"];
 
   for (const provider of providers) {
     const authFile = path.join(AUTH_PROFILE_PATH, provider, `${provider}-auth.json`);
@@ -142,8 +142,7 @@ async function uploadSessions() {
     logger.log(`   ${PROVIDERS.anthropic.displayName}: ${health.sessions.anthropic ? "✅" : "❌"}`);
     logger.log(`   ${PROVIDERS.openai.displayName}: ${health.sessions.openai ? "✅" : "❌"}`);
     logger.log(`   ${PROVIDERS.perplexity.displayName}: ${health.sessions.perplexity ? "✅" : "❌"}`);
-    logger.log(`   ${PROVIDERS.google.displayName}: ${health.sessions.google ? "✅" : "❌"}`);
-    logger.log(`   ${PROVIDERS["google-ai-overview"].displayName}: ${health.sessions["google-ai-overview"] ? "✅" : "❌"}`);
+    logger.log(`   ${PROVIDERS.google.displayName}: ${health.sessions.google ? "✅" : "❌"} (also used for AI Overview)`);
 
     logger.success("\nSession verification complete!");
     logger.log("👉 You can now run jobs on the VPS");

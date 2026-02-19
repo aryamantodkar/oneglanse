@@ -15,14 +15,16 @@ export async function launchContext(
   const USER_DATA_DIR = path.resolve(
     process.env.VPS_AUTH_PROFILE_PATH ?? "/storage"
   );
-  const providerDir = path.join(USER_DATA_DIR, provider);
-  const authFile = path.join(providerDir, `${provider}-auth.json`);
+  // google-ai-overview shares the same Google account session as google (Gemini)
+  const authProvider = provider === "google-ai-overview" ? "google" : provider;
+  const providerDir = path.join(USER_DATA_DIR, authProvider);
+  const authFile = path.join(providerDir, `${authProvider}-auth.json`);
 
   if (!fs.existsSync(authFile)) {
     throw new AuthError(`AUTH_SESSION_MISSING: ${provider} not authenticated`);
   }
 
-  logger.debug(`Loading authentication for ${provider} from: ${providerDir}`);
+  logger.debug(`Loading authentication for ${provider} from: ${providerDir}${provider !== authProvider ? ` (using ${authProvider} session)` : ""}`);
 
   let proxy = getNextProxy();
 

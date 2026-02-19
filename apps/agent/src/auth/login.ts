@@ -106,6 +106,16 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
     await waitForUserLogin(loginPage, provider, true); // Skip health check for local auth
 
+    // For Google providers: also visit www.google.com before saving state so that
+    // google.com-specific cookies (login_info, SIDCC, NID) are included in the session.
+    // Without this, loading the session directly on google.com shows "Sign in"
+    // because those www.google.com cookies were never set during Gemini-only auth.
+    if (provider === "google" || provider === "google-ai-overview") {
+      logger.log(`🔄 Visiting google.com to capture full session cookies...`);
+      await loginPage.goto("https://www.google.com", { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {});
+      await loginPage.waitForTimeout(2000);
+    }
+
     await loginContext.storageState({
       path: authFile,
     });
@@ -129,8 +139,7 @@ export async function loginToAll(): Promise<void> {
   logger.log(`   • ChatGPT`);
   logger.log(`   • Claude`);
   logger.log(`   • Perplexity`);
-  logger.log(`   • Gemini`);
-  logger.log(`   • Google AI\n`);
+  logger.log(`   • Gemini (also used for AI Overview)\n`);
 
   const results: Record<Provider, 'success' | 'failed' | 'skipped'> = {
     openai: 'skipped',
@@ -140,7 +149,10 @@ export async function loginToAll(): Promise<void> {
     'google-ai-overview': 'skipped'
   };
 
-  for (const provider of Object.keys(PROVIDERS) as Provider[]) {
+  // google-ai-overview shares the google (Gemini) session — skip it in the login loop
+  const loginProviders = (Object.keys(PROVIDERS) as Provider[]).filter(p => p !== "google-ai-overview");
+
+  for (const provider of loginProviders) {
     // Ask user if they want to authenticate this provider
     logger.log(`\n❓ Login to ${PROVIDERS[provider].displayName}?`);
     const answer = await promptUser(`   (y/n): `);
@@ -184,7 +196,7 @@ export async function loginToAll(): Promise<void> {
 
   logger.log();
 
-  const attemptedCount = 4 - skippedCount;
+  const attemptedCount = loginProviders.length - skippedCount;
 
   if (successCount === attemptedCount && attemptedCount > 0) {
     logger.success(`🎉 All attempted providers authenticated successfully!`);
@@ -219,6 +231,9 @@ export function checkAuthStatus(): void {
   }> = [];
 
   for (const [key, config] of Object.entries(PROVIDERS)) {
+    // google-ai-overview reuses google (Gemini) auth — skip its own file check
+    if (key === "google-ai-overview") continue;
+
     const authPath = path.join(USER_DATA_DIR, config.name);
     const authFile = path.join(authPath, `${config.name}-auth.json`);
     const exists = fs.existsSync(authFile);
@@ -245,11 +260,14 @@ export function checkAuthStatus(): void {
   }
 
   const authenticatedCount = statuses.filter(s => s.authenticated).length;
+  const total = statuses.length;
 
-  if (authenticatedCount === 4) {
+  logger.log(`ℹ️  AI Overview:      shares Gemini session\n`);
+
+  if (authenticatedCount === total) {
     logger.success(`✅ All providers are authenticated\n`);
   } else if (authenticatedCount > 0) {
-    logger.warn(`⚠️  ${authenticatedCount}/4 providers authenticated\n`);
+    logger.warn(`⚠️  ${authenticatedCount}/${total} providers authenticated\n`);
   } else {
     logger.warn(`⚠️  No providers authenticated yet\n`);
   }
