@@ -4,11 +4,19 @@ import { logger } from "../../../lib/utils/logger.js";
 export async function extractAIOverviewResponse(page: Page): Promise<string> {
     try {
       const result = await page.evaluate(() => {
+        const SOURCE_CARD_DATE_PATTERN = new RegExp(
+          '(' +
+          '[A-Z][a-z]+ \\\\d{1,2}, \\\\d{4}' +                          // "May 27, 2025"
+          '|\\\\d{1,2} [A-Z][a-z]+ \\\\d{4}' +                          // "27 Apr 2017"
+          '|\\\\d+ (second|minute|hour|day|week|month|year)s? ago' +   // "3 days ago"
+          '|[Yy]esterday' +                                           // "Yesterday"
+          '|\\\\b\\\\d{4}\\\\b (?:—|·)' +                                  // "2025 —" / "2025 ·"
+          ')'
+        );
+  
         const placeholder = document.querySelector('[data-container-id="model-response-placeholder"]');
         if (!placeholder) return { success: false, error: 'model-response-placeholder not found' };
   
-        // Layout A: main-col exists (prose is separate from source cards)
-        // Layout B: no main-col — prose and source cards are in same container
         const mainCol = placeholder.querySelector('[data-container-id="main-col"]');
         const targetEl = (mainCol || placeholder.querySelector('[data-hveid]')?.children[0]) as HTMLElement | null;
         if (!targetEl) return { success: false, error: 'response element not found' };
@@ -21,27 +29,23 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         });
         clone.querySelectorAll('sup').forEach(el => el.remove());
   
-        // Step 2: Remove rhs-col (source card column) if nested inside
+        // Step 2: Remove rhs-col (source card column)
         clone.querySelectorAll('[data-container-id="rhs-col"]').forEach(el => el.remove());
   
-        // Step 3: Remove all known source card / corroboration UI elements by class/attr
+        // Step 3: Remove known source card / corroboration UI selectors
         [
           '[data-xid="aim-aside-initial-corroboration-container"]',
           'ul.bTFeG',
           'ul.EJw9bc',
           '.HWMcu',
           '.BTkBWc',
-        ].forEach(sel => {
-          clone.querySelectorAll(sel).forEach(el => el.remove());
-        });
+        ].forEach(sel => clone.querySelectorAll(sel).forEach(el => el.remove()));
   
-        // Step 4: Safety net — remove any element whose text matches the source card date pattern
-        // e.g. "Best CRM Software - PCMag\\nJan 16, 2026 — Bigin by Zoho..."
-        // Only targets small containers (<5000 chars) to avoid removing the whole prose block
-        clone.querySelectorAll('ul, ol, div').forEach(el => {
+        // Step 4: Remove any element (<5000 chars) whose text matches a source card date pattern
+        clone.querySelectorAll('ul, ol, div, li').forEach(el => {
           if (
             (el.textContent || '').length < 5000 &&
-            /\\d{1,2} \\w+ \\d{4} —/.test(el.textContent || '')
+            SOURCE_CARD_DATE_PATTERN.test(el.textContent || '')
           ) {
             el.remove();
           }
