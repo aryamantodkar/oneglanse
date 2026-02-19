@@ -1,10 +1,11 @@
 import { Page } from "playwright";
 import { pageHealthCheck } from "../../../lib/browser/pageHealthCheck.js";
 import { logger } from "../../../lib/utils/logger.js";
+import { Provider } from "@onescope/types";
 import path from "path";
 import fs from "fs";
 
-export async function isGoogleAuthenticated(page: Page, skipHealthCheck: boolean = false): Promise<boolean> {
+export async function isGoogleAuthenticated(page: Page, skipHealthCheck: boolean = false, provider: Provider = "google"): Promise<boolean> {
     // Check if on a Google domain
     if (!page.url().includes("google.com")) return false;
 
@@ -53,7 +54,7 @@ export async function isGoogleAuthenticated(page: Page, skipHealthCheck: boolean
       return isAuthenticated;
     }
 
-    const health = await pageHealthCheck(page, "google");
+    const health = await pageHealthCheck(page, provider);
 
     // Take screenshot if authentication fails
     if (!health.healthy) {

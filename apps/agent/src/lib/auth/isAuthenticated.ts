@@ -17,8 +17,10 @@ export async function isAuthenticated(
       return isAnthropicAuthenticated(page);
 
     case "google":
+      return isGoogleAuthenticated(page, false, "google");
+
     case "google-ai-overview":
-      return isGoogleAuthenticated(page);
+      return isGoogleAuthenticated(page, false, "google-ai-overview");
 
     case "perplexity":
       return isPerplexityAuthenticated(page);
