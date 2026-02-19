@@ -4,6 +4,7 @@ import { logger } from "../../../lib/utils/logger.js";
 export async function extractAIOverviewResponse(page: Page): Promise<string> {
     try {
       const result = await page.evaluate(() => {
+  
         const SOURCE_CARD_DATE_PATTERN = new RegExp(
           '(' +
           '[A-Z][a-z]+ \\\\d{1,2}, \\\\d{4}' +                          // "May 27, 2025"
@@ -17,11 +18,8 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         const placeholder = document.querySelector('[data-container-id="model-response-placeholder"]');
         if (!placeholder) return { success: false, error: 'model-response-placeholder not found' };
   
-        const mainCol = placeholder.querySelector('[data-container-id="main-col"]');
-        const targetEl = (mainCol || placeholder.querySelector('[data-hveid]')?.children[0]) as HTMLElement | null;
-        if (!targetEl) return { success: false, error: 'response element not found' };
-  
-        const clone = targetEl.cloneNode(true) as HTMLElement;
+        // Clone the FULL placeholder — so rhs-col is always present and always removable
+        const clone = placeholder.cloneNode(true) as HTMLElement;
   
         // Step 1: Remove noise tags
         ['script', 'style', 'button', 'svg', 'noscript', 'iframe'].forEach(tag => {
@@ -29,7 +27,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         });
         clone.querySelectorAll('sup').forEach(el => el.remove());
   
-        // Step 2: Remove rhs-col (source card column)
+        // Step 2: ALWAYS remove rhs-col — guaranteed to work since we cloned placeholder
         clone.querySelectorAll('[data-container-id="rhs-col"]').forEach(el => el.remove());
   
         // Step 3: Remove known source card / corroboration UI selectors
@@ -41,7 +39,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
           '.BTkBWc',
         ].forEach(sel => clone.querySelectorAll(sel).forEach(el => el.remove()));
   
-        // Step 4: Remove any element (<5000 chars) whose text matches a source card date pattern
+        // Step 4: Remove any remaining source card date-pattern elements
         clone.querySelectorAll('ul, ol, div, li').forEach(el => {
           if (
             (el.textContent || '').length < 5000 &&
@@ -51,7 +49,9 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
           }
         });
   
-        const html = clone.outerHTML.trim();
+        // Step 5: Extract main-col prose (fallback to full cleaned clone if main-col absent)
+        const mainCol = clone.querySelector('[data-container-id="main-col"]');
+        const html = (mainCol || clone).outerHTML.trim();
         if (!html) return { success: false, error: 'AI Overview HTML was empty after extraction' };
   
         return { success: true, html };
