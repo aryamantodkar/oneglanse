@@ -35,7 +35,6 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
   
         return { success: true, html };
       });
-  
       if (!result || !result.success) {
         logger.warn(`AI Overview extraction failed: ${result?.error}`);
         return '';
