@@ -1,9 +1,9 @@
 import "../styles/globals.css";
-import { Toaster } from "@onescope/ui"
-import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { TRPCReactProvider } from "@/trpc/react";
+import { Toaster } from "@onescope/ui";
+import type { Metadata } from "next";
+import { ThemeProvider } from "next-themes";
+import { Geist } from "next/font/google";
 
 export const metadata: Metadata = {
 	title: "onescopeAI",
@@ -20,15 +20,15 @@ export default async function RootLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
-        <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
-            <body>
-                <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-                    <TRPCReactProvider>
-                        {children}
-                        <Toaster />
-                    </TRPCReactProvider>
-                </ThemeProvider>
-            </body>
-        </html>
-    );
+		<html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
+			<body>
+				<ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+					<TRPCReactProvider>
+						{children}
+						<Toaster />
+					</TRPCReactProvider>
+				</ThemeProvider>
+			</body>
+		</html>
+	);
 }

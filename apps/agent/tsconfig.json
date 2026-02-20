@@ -1,25 +1,25 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 
-    "rootDir": "src",
-    "outDir": "dist",
+		"rootDir": "src",
+		"outDir": "dist",
 
-    "noEmit": false,
-    "isolatedModules": true,
-    "composite": true,
+		"noEmit": false,
+		"isolatedModules": true,
+		"composite": true,
 
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*.ts"],
-  "references": [
-    { "path": "../../packages/types" },
-    { "path": "../../packages/errors" },
-    { "path": "../../packages/utils" },
-    { "path": "../../packages/services" }
-  ]
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true
+	},
+	"include": ["src/**/*.ts"],
+	"references": [
+		{ "path": "../../packages/types" },
+		{ "path": "../../packages/errors" },
+		{ "path": "../../packages/utils" },
+		{ "path": "../../packages/services" }
+	]
 }

@@ -1,30 +1,32 @@
 {
-  "name": "onescopeai",
-  "private": true,
-  "scripts": {
-    "build": "turbo build",
-    "deploy:web": "pnpm deploy --filter @onescope/web --prod /app/out",
-    "dev": "turbo dev",
-    "dev:web": "turbo dev --filter=@onescope/web",
-    "dev:agent": "turbo dev --filter=@onescope/agent",
-    "lint": "turbo lint",
-    "typecheck": "turbo typecheck",
-    "clean": "turbo clean && rm -rf node_modules",
-    "db:generate": "pnpm --filter @onescope/db db:generate",
-    "db:migrate": "pnpm --filter @onescope/db db:migrate",
-    "db:push": "pnpm --filter @onescope/db db:push",
-    "db:studio": "pnpm --filter @onescope/db db:studio",
-    "auth": "pnpm --filter=@onescope/agent auth",
-    "start:agent": "pnpm --filter=@onescope/agent start",
-    "start:api": "pnpm --filter=@onescope/agent start:api",
-    "start:worker": "pnpm --filter=@onescope/agent start:worker"
-  },
-  "devDependencies": {
-    "turbo": "^2.3.3",
-    "typescript": "^5.8.2"
-  },
-  "packageManager": "pnpm@10.16.0",
-  "engines": {
-    "node": ">=20"
-  }
+	"name": "onescopeai",
+	"private": true,
+	"scripts": {
+		"build": "turbo build",
+		"deploy:web": "pnpm deploy --filter @onescope/web --prod /app/out",
+		"dev": "turbo dev",
+		"dev:web": "turbo dev --filter=@onescope/web",
+		"dev:agent": "turbo dev --filter=@onescope/agent",
+		"lint": "turbo lint",
+		"typecheck": "turbo typecheck",
+		"clean": "turbo clean && rm -rf node_modules",
+		"db:generate": "pnpm --filter @onescope/db db:generate",
+		"db:migrate": "pnpm --filter @onescope/db db:migrate",
+		"db:push": "pnpm --filter @onescope/db db:push",
+		"db:studio": "pnpm --filter @onescope/db db:studio",
+		"auth": "pnpm --filter=@onescope/agent auth",
+		"start:agent": "pnpm --filter=@onescope/agent start",
+		"start:api": "pnpm --filter=@onescope/agent start:api",
+		"start:worker": "pnpm --filter=@onescope/agent start:worker",
+		"lint:fix": "biome check . --fix"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"turbo": "^2.3.3",
+		"typescript": "^5.8.2"
+	},
+	"packageManager": "pnpm@10.16.0",
+	"engines": {
+		"node": ">=20"
+	}
 }

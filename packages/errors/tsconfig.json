@@ -1,22 +1,20 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    /* 🚨 OVERRIDES */
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "noEmit": false,
-    "isolatedModules": true,
-    "composite": true,
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		/* 🚨 OVERRIDES */
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noEmit": false,
+		"isolatedModules": true,
+		"composite": true,
 
-    /* Output */
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "declaration": true,
-    "declarationMap": true
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../types" }
-  ]
+		/* Output */
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"declaration": true,
+		"declarationMap": true
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"],
+	"references": [{ "path": "../types" }]
 }

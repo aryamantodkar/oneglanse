@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Card } from "@onescope/ui";
-import type { CompetitorData } from "../_utils/types";
 import { LineChart } from "lucide-react";
+import { useState } from "react";
+import type { CompetitorData } from "../_utils/types";
 
 type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
 
@@ -117,8 +117,12 @@ export function BrandComparisonChart({
 			domain: r.domain,
 			isBrand: false,
 			values: {
-				presence: clampScore(totalResponses > 0 ? (r.appearances / totalResponses) * 100 : 0),
-				recommendation: clampScore(r.appearances > 0 ? (r.recCount / r.appearances) * 100 : 0),
+				presence: clampScore(
+					totalResponses > 0 ? (r.appearances / totalResponses) * 100 : 0,
+				),
+				recommendation: clampScore(
+					r.appearances > 0 ? (r.recCount / r.appearances) * 100 : 0,
+				),
 				sentiment: clampScore(r.avgSentiment),
 				rankStrength: rankToStrength(r.avgRank),
 			},
@@ -193,7 +197,8 @@ export function BrandComparisonChart({
 						Brand Comparison
 					</h1>
 					<p className="mt-2 text-xs text-muted-foreground">
-						Presence, recommendation strength, sentiment, and ranking strength in one view.
+						Presence, recommendation strength, sentiment, and ranking strength
+						in one view.
 					</p>
 				</div>
 				<span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800">
@@ -202,96 +207,95 @@ export function BrandComparisonChart({
 			</div>
 
 			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
-				<div
-					className="relative"
-					onMouseLeave={() => setHoveredPoint(null)}
-				>
+				<div className="relative" onMouseLeave={() => setHoveredPoint(null)}>
 					<div className="overflow-x-auto">
-						<svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full min-w-[680px]">
-						{[0, 25, 50, 75, 100].map((tick) => {
-							const y = yFor(tick);
-							return (
-								<g key={`grid-${tick}`}>
-									<line
-										x1={left}
-										y1={y}
-										x2={width - right}
-										y2={y}
-										stroke="currentColor"
-										className="text-gray-200 dark:text-gray-800"
-										strokeDasharray={tick === 0 ? "0" : "3 5"}
-									/>
-									<text
-										x={left - 10}
-										y={y + 4}
-										textAnchor="end"
-										className="fill-gray-400 text-[10px]"
-									>
-										{tick}
-									</text>
-								</g>
-							);
-						})}
-
-						{series.map((s, idx) => {
-							const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
-							const points = METRIC_CONFIG.map((metric, metricIndex) => ({
-								x: xFor(metricIndex),
-								y: yFor(s.values[metric.key]),
-							}));
-							const d = buildPath(points);
-							const isHovered = hoveredBrand === s.name;
-							const isFaded = hoveredBrand && hoveredBrand !== s.name;
-							return (
-								<g key={s.name}>
-									<path
-										d={d}
-										fill="none"
-										stroke={color}
-										strokeWidth={isHovered ? 4 : s.isBrand ? 3 : 2}
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										opacity={isFaded ? 0.2 : s.isBrand ? 1 : 0.85}
-									/>
-									{points.map((p, pointIdx) => (
-										<circle
-											key={`${s.name}-${METRIC_CONFIG[pointIdx]?.key}`}
-											cx={p.x}
-											cy={p.y}
-											r={isHovered ? 6 : s.isBrand ? 4.5 : 3.5}
-											fill={color}
-											stroke="white"
-											strokeWidth={isHovered ? 2 : 1.5}
-											className="cursor-pointer"
-											opacity={isFaded ? 0.2 : 1}
-											onMouseEnter={() =>
-												setHoveredPoint({
-													name: s.name,
-													metric: METRIC_CONFIG[pointIdx]!.label,
-													value: s.values[METRIC_CONFIG[pointIdx]!.key],
-													leftPct: (p.x / width) * 100,
-													topPct: (p.y / height) * 100,
-													color,
-												})
-											}
+						<svg
+							viewBox={`0 0 ${width} ${height}`}
+							className="h-[280px] w-full min-w-[680px]"
+						>
+							{[0, 25, 50, 75, 100].map((tick) => {
+								const y = yFor(tick);
+								return (
+									<g key={`grid-${tick}`}>
+										<line
+											x1={left}
+											y1={y}
+											x2={width - right}
+											y2={y}
+											stroke="currentColor"
+											className="text-gray-200 dark:text-gray-800"
+											strokeDasharray={tick === 0 ? "0" : "3 5"}
+										/>
+										<text
+											x={left - 10}
+											y={y + 4}
+											textAnchor="end"
+											className="fill-gray-400 text-[10px]"
 										>
-										</circle>
-									))}
-								</g>
-							);
-						})}
+											{tick}
+										</text>
+									</g>
+								);
+							})}
 
-						{METRIC_CONFIG.map((metric, idx) => (
-							<text
-								key={metric.key}
-								x={xFor(idx)}
-								y={height - 14}
-								textAnchor="middle"
-								className="fill-gray-500 text-[11px] font-medium"
-							>
-								{metric.label}
-							</text>
-						))}
+							{series.map((s, idx) => {
+								const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
+								const points = METRIC_CONFIG.map((metric, metricIndex) => ({
+									x: xFor(metricIndex),
+									y: yFor(s.values[metric.key]),
+								}));
+								const d = buildPath(points);
+								const isHovered = hoveredBrand === s.name;
+								const isFaded = hoveredBrand && hoveredBrand !== s.name;
+								return (
+									<g key={s.name}>
+										<path
+											d={d}
+											fill="none"
+											stroke={color}
+											strokeWidth={isHovered ? 4 : s.isBrand ? 3 : 2}
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											opacity={isFaded ? 0.2 : s.isBrand ? 1 : 0.85}
+										/>
+										{points.map((p, pointIdx) => (
+											<circle
+												key={`${s.name}-${METRIC_CONFIG[pointIdx]?.key}`}
+												cx={p.x}
+												cy={p.y}
+												r={isHovered ? 6 : s.isBrand ? 4.5 : 3.5}
+												fill={color}
+												stroke="white"
+												strokeWidth={isHovered ? 2 : 1.5}
+												className="cursor-pointer"
+												opacity={isFaded ? 0.2 : 1}
+												onMouseEnter={() =>
+													setHoveredPoint({
+														name: s.name,
+														metric: METRIC_CONFIG[pointIdx]!.label,
+														value: s.values[METRIC_CONFIG[pointIdx]!.key],
+														leftPct: (p.x / width) * 100,
+														topPct: (p.y / height) * 100,
+														color,
+													})
+												}
+											></circle>
+										))}
+									</g>
+								);
+							})}
+
+							{METRIC_CONFIG.map((metric, idx) => (
+								<text
+									key={metric.key}
+									x={xFor(idx)}
+									y={height - 14}
+									textAnchor="middle"
+									className="fill-gray-500 text-[11px] font-medium"
+								>
+									{metric.label}
+								</text>
+							))}
 						</svg>
 					</div>
 
@@ -324,7 +328,9 @@ export function BrandComparisonChart({
 					{hoveredBrand &&
 						(() => {
 							const brandData = series.find((s) => s.name === hoveredBrand);
-							const brandIndex = series.findIndex((s) => s.name === hoveredBrand);
+							const brandIndex = series.findIndex(
+								(s) => s.name === hoveredBrand,
+							);
 							const color = SERIES_COLORS[brandIndex % SERIES_COLORS.length]!;
 
 							if (!brandData) return null;

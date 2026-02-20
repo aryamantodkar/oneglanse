@@ -1,23 +1,21 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    /* 🚨 OVERRIDES */
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "noEmit": false,
-    "isolatedModules": true,
-    "composite": true,
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		/* 🚨 OVERRIDES */
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noEmit": false,
+		"isolatedModules": true,
+		"composite": true,
 
-    /* Output */
-    "jsx": "react-jsx",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "declaration": true,
-    "declarationMap": true
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../utils" }
-  ]
+		/* Output */
+		"jsx": "react-jsx",
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"declaration": true,
+		"declarationMap": true
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"exclude": ["node_modules", "dist"],
+	"references": [{ "path": "../utils" }]
 }

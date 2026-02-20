@@ -1,9 +1,9 @@
 import type { AnalysisInputSingle } from "@onescope/types";
 
 export function analysisPrompt(input: AnalysisInputSingle) {
-  const { prompt, response, brandDomain, brandName } = input;
+	const { prompt, response, brandDomain, brandName } = input;
 
-  return `
+	return `
 You are a precision instrument for Generative Engine Optimization (GEO) analysis. Your task: analyze exactly how "${brandName}" (${brandDomain}) appears in an LLM-generated response. You must produce perfectly calibrated, evidence-backed metrics.
 
 ## ABSOLUTE RULES

@@ -1,43 +1,43 @@
 import "server-only";
 
-import { t } from "../trpc";
-import { AuthError, ValidationError } from "@onescope/errors";
 import { schema } from "@onescope/db";
+import { AuthError, ValidationError } from "@onescope/errors";
+import { t } from "../trpc";
 
 export const validWorkspace = t.middleware(async ({ ctx, input, next }) => {
-  const user = ctx.session?.user;
+	const user = ctx.session?.user;
 
-  if (!user) {
+	if (!user) {
 		throw new AuthError("User Id is undefined.");
 	}
 
-  const parsed = schema.workspaceInput.safeParse(input);
-  
-  if (!parsed.success) {
-    throw new ValidationError("Workspace ID is missing or undefined.");
-  }
+	const parsed = schema.workspaceInput.safeParse(input);
 
-  const { workspaceId } = parsed.data;
+	if (!parsed.success) {
+		throw new ValidationError("Workspace ID is missing or undefined.");
+	}
 
-  const membership = await ctx.db.query.workspaceMembers.findFirst({
-    where: (wm, { eq, and, isNull }) =>
-      and(
-        eq(wm.workspaceId, workspaceId),
-        eq(wm.userId, user.id),
-        isNull(wm.deletedAt)
-      ),
-  });
+	const { workspaceId } = parsed.data;
 
-  if (!membership) {
-    throw new ValidationError("User does not have access to this workspace.");
-  }
+	const membership = await ctx.db.query.workspaceMembers.findFirst({
+		where: (wm, { eq, and, isNull }) =>
+			and(
+				eq(wm.workspaceId, workspaceId),
+				eq(wm.userId, user.id),
+				isNull(wm.deletedAt),
+			),
+	});
 
-  return next({
-    ctx: {
-      ...ctx,
-      user,
-      workspaceId,
-      membership,
-    },
-  });
+	if (!membership) {
+		throw new ValidationError("User does not have access to this workspace.");
+	}
+
+	return next({
+		ctx: {
+			...ctx,
+			user,
+			workspaceId,
+			membership,
+		},
+	});
 });

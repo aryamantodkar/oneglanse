@@ -1,13 +1,17 @@
-import { useMemo } from "react";
 import type { AnalysisRecord, BrandAnalysisResult } from "@onescope/types";
-import { filterAnalysisRecords, getDomain, removeUrlParams } from "@onescope/utils";
+import {
+	filterAnalysisRecords,
+	getDomain,
+	removeUrlParams,
+} from "@onescope/utils";
+import { useMemo } from "react";
 import { severityRank } from "../_utils/helpers";
 import type { DashboardMetrics } from "../_utils/types";
 
 export function useDashboardData(
 	analysedPromptData: any,
 	modelFilter: string,
-	timeFilter: "all" | "7d" | "14d" | "30d"
+	timeFilter: "all" | "7d" | "14d" | "30d",
 ): DashboardMetrics {
 	// ─── Data Extraction ─────────────────────────────────────────────────────
 
@@ -304,7 +308,13 @@ export function useDashboardData(
 		};
 
 		return [brandEntry, ...competitorList];
-	}, [analyzedRecords, brandName, brandDomain, avgSentiment.score, avgRank.position]);
+	}, [
+		analyzedRecords,
+		brandName,
+		brandDomain,
+		avgSentiment.score,
+		avgRank.position,
+	]);
 
 	const sentimentBreakdown = useMemo(() => {
 		const positiveCounts = new Map<string, number>();
@@ -391,10 +401,9 @@ export function useDashboardData(
 				const domain = getDomain(cleanUrl);
 				if (!domain) return;
 
-				const dedupeKey =
-					s.cited_text?.trim()
-						? `${s.title}::${r.model_provider}::${s.cited_text}`
-						: `${s.title}::${r.model_provider}::${cleanUrl}`;
+				const dedupeKey = s.cited_text?.trim()
+					? `${s.title}::${r.model_provider}::${s.cited_text}`
+					: `${s.title}::${r.model_provider}::${cleanUrl}`;
 				if (seenCitations.has(dedupeKey)) return;
 				seenCitations.add(dedupeKey);
 
@@ -422,11 +431,11 @@ export function useDashboardData(
 		});
 
 		const allDomains = [...domainMap.values()].sort(
-			(a, b) => b.citationCount - a.citationCount
+			(a, b) => b.citationCount - a.citationCount,
 		);
 		const totalCitations = allDomains.reduce(
 			(sum, d) => sum + d.citationCount,
-			0
+			0,
 		);
 		return { sources: allDomains.slice(0, 15), totalCitations };
 	}, [filteredRecords]);
@@ -492,7 +501,8 @@ export function useDashboardData(
 			const rankPositions = sortedGroupRecords
 				.map((r) => r.brand_analysis!.position.rankPosition)
 				.filter((r): r is number => r !== null);
-			const bestRank = rankPositions.length > 0 ? Math.min(...rankPositions) : null;
+			const bestRank =
+				rankPositions.length > 0 ? Math.min(...rankPositions) : null;
 
 			// Get best recommendation type (prioritize top_pick > strong_alternative > etc)
 			const recTypeOrder = [

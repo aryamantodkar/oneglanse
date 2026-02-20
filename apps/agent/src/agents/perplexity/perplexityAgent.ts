@@ -3,13 +3,19 @@ import { setupPage } from "../../lib/browser/setupPage.js";
 import { launchPerplexity } from "./perplexity.js";
 
 export async function perplexityAgent() {
-    const perplexity = await launchPerplexity();
-    
-    setupPage(perplexity.page, "perplexity");
+	const perplexity = await launchPerplexity();
 
-    await perplexity.page.waitForTimeout(2000);
+	setupPage(perplexity.page, "perplexity");
 
-    const auth = await isAuthenticated(perplexity.page, "perplexity");
+	await perplexity.page.waitForTimeout(2000);
 
-    return { browser: perplexity.browser, context: perplexity.context, page: perplexity.page, auth, proxy: perplexity.proxy }
+	const auth = await isAuthenticated(perplexity.page, "perplexity");
+
+	return {
+		browser: perplexity.browser,
+		context: perplexity.context,
+		page: perplexity.page,
+		auth,
+		proxy: perplexity.proxy,
+	};
 }

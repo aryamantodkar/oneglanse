@@ -1,14 +1,14 @@
 import "server-only";
 
-import { initTRPC, TRPCError } from "@trpc/server";
-import superjson from "superjson";
-import { ZodError } from "zod";
 import { auth } from "@lib/auth/auth";
 import { db } from "@onescope/db";
+import { TRPCError, initTRPC } from "@trpc/server";
+import superjson from "superjson";
+import { ZodError } from "zod";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
 	const session = await auth.api.getSession({ headers: opts.headers });
-	
+
 	return {
 		db,
 		auth,

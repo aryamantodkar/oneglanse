@@ -1,24 +1,24 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "strict": true,
-    "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true,
+	"compilerOptions": {
+		"target": "ES2022",
+		"strict": true,
+		"skipLibCheck": true,
+		"noUncheckedIndexedAccess": true,
 
-    /* Typechecking only */
-    "noEmit": true,
-    "baseUrl": ".",
-    "paths": {
-      "@onescope/*": ["packages/*/src", "packages/*/dist"]
-    }
-  },
-  "references": [
-    { "path": "packages/types" },
-    { "path": "packages/errors" },
-    { "path": "packages/utils" },
-    { "path": "packages/db" },
-    { "path": "packages/services" },
-    { "path": "packages/ui" },
-    { "path": "apps/agent" }
-  ]
+		/* Typechecking only */
+		"noEmit": true,
+		"baseUrl": ".",
+		"paths": {
+			"@onescope/*": ["packages/*/src", "packages/*/dist"]
+		}
+	},
+	"references": [
+		{ "path": "packages/types" },
+		{ "path": "packages/errors" },
+		{ "path": "packages/utils" },
+		{ "path": "packages/db" },
+		{ "path": "packages/services" },
+		{ "path": "packages/ui" },
+		{ "path": "apps/agent" }
+	]
 }

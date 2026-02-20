@@ -1,4 +1,4 @@
-import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { schema } from "./index.js";
 
 export type User = InferSelectModel<typeof schema.user>;
@@ -26,7 +26,9 @@ export type Workspace = InferSelectModel<typeof schema.workspaces>;
 export type InsertWorkspace = InferInsertModel<typeof schema.workspaces>;
 
 export type WorkspaceMember = InferSelectModel<typeof schema.workspaceMembers>;
-export type InsertWorkspaceMember = InferInsertModel<typeof schema.workspaceMembers>;
+export type InsertWorkspaceMember = InferInsertModel<
+	typeof schema.workspaceMembers
+>;
 
 export type Id = string;
 export type Timestamp = string;
