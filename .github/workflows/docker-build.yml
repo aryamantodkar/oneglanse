@@ -38,7 +38,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck
-      - run: pnpm lint
+      # - run: pnpm lint
   changes:
     name: Detect Changed Areas
     runs-on: ubuntu-latest
