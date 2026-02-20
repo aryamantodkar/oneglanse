@@ -1,15 +1,9 @@
 import "./api.js";
 import "./worker.js";
 
-const shutdown = async (signal: string) => {
+const shutdown = (signal: string) => {
 	console.log(`[agent] Received ${signal}. Shutting down...`);
-
-	try {
-	} catch (err) {
-		console.error("[agent] Shutdown error:", err);
-	} finally {
-		process.exit(0);
-	}
+	process.exit(0);
 };
 
 process.on("SIGTERM", shutdown);

@@ -18,6 +18,8 @@ services:
     depends_on:
       - redis
     command: pnpm start:api
+    networks:
+      - backend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3333/health"]
       interval: 10s
@@ -43,6 +45,17 @@ services:
       redis:
         condition: service_healthy
     command: pnpm start:worker
+    networks:
+      - backend
+      - data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]
       interval: 15s
@@ -62,6 +75,8 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
+    networks:
+      - data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -78,6 +93,16 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./packages/db/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
       interval: 5s
@@ -95,7 +120,16 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./packages/db/clickhouse-init:/docker-entrypoint-initdb.d
-    # clickhouse
+    networks:
+      - data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8123/ping"]
       interval: 10s
@@ -114,6 +148,10 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     env_file: .env
+    networks:
+      - frontend
+      - backend
+      - data
     depends_on:
       db:
         condition: service_healthy
@@ -136,25 +174,10 @@ services:
       db:
         condition: service_healthy
     restart: "no"
-    command: >
-      sh -lc '
-        set -e;
-        ROOT="";
-        for d in /workspace /app; do
-          if [ -f "$$d/package.json" ] && [ -d "$$d/packages/db" ]; then
-            ROOT="$$d";
-            break;
-          fi;
-        done;
-        if [ -z "$$ROOT" ]; then
-          echo "Unable to find monorepo root (/workspace or /app) with packages/db";
-          ls -la /;
-          exit 1;
-        fi;
-        echo "Running migrations from $$ROOT";
-        cd "$$ROOT";
-        pnpm --filter @onescope/db db:migrate
-      '
+    working_dir: /workspace
+    networks:
+      - data
+    command: pnpm --filter @onescope/db db:migrate
 
 # ----------------------------
 # Volumes
@@ -164,3 +187,11 @@ volumes:
   clickhouse_data:
   redis_data:
   agent_storage:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+  data:
+    driver: bridge

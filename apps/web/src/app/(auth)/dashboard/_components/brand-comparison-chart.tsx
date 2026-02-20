@@ -279,7 +279,7 @@ export function BrandComparisonChart({
 														color,
 													})
 												}
-											></circle>
+											/>
 										))}
 									</g>
 								);

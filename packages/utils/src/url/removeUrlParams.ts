@@ -10,9 +10,9 @@ export function removeUrlParams(rawUrl: string): string {
 		}
 
 		// Optional: remove other common junk params
-		["ref", "source", "fbclid", "gclid"].forEach((p) =>
-			url.searchParams.delete(p),
-		);
+		for (const p of ["ref", "source", "fbclid", "gclid"]) {
+			url.searchParams.delete(p);
+		}
 
 		// Clean trailing ?
 		url.search = url.searchParams.toString();

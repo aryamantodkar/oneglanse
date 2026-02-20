@@ -40,7 +40,7 @@ export function rowsToCsv(rows: Array<Record<string, unknown>>): string {
 	if (!rows.length) return "";
 	const headers = Array.from(
 		rows.reduce((set, row) => {
-			Object.keys(row).forEach((key) => set.add(key));
+			for (const key of Object.keys(row)) set.add(key);
 			return set;
 		}, new Set<string>()),
 	);
