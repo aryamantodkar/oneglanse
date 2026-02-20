@@ -5,9 +5,9 @@ export type ByModel<T> = Record<string, T[]>;
 export type BrandMetricMap = Record<string, BrandMetric>;
 
 export type BrandMetric = {
-    mentions: number;
-    sentiment: number;
-    visibility: number;
-    position: number | null;
-    website: string;
+	mentions: number;
+	sentiment: number;
+	visibility: number;
+	position: number | null;
+	website: string;
 };

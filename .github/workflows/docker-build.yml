@@ -19,6 +19,26 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
 
 jobs:
+  validate:
+    name: Typecheck & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+      - run: pnpm lint
   changes:
     name: Detect Changed Areas
     runs-on: ubuntu-latest
@@ -109,7 +129,7 @@ jobs:
 
   build-agent:
     name: Build Agent
-    needs: changes
+    needs: [validate, changes]
     if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.agent == 'true' }}
     runs-on: ubuntu-latest
     permissions:

@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { ExportMenu } from "@/components/export-menu";
+import { downloadCsv, downloadJson } from "@/lib/export/download";
+import type { GroupedSource, SourceGroupResult } from "@onescope/types";
 import {
 	Select,
 	SelectContent,
@@ -17,7 +18,16 @@ import {
 	TableRow,
 } from "@onescope/ui";
 import {
+	getDomain,
+	getFaviconUrls,
+	getModelFavicon,
+	modelSelectors,
+} from "@onescope/utils";
+import {
 	AlertTriangle,
+	ArrowDown,
+	ArrowUp,
+	ArrowUpDown,
 	BarChart3,
 	Bot,
 	ChevronRight,
@@ -25,15 +35,10 @@ import {
 	Globe2,
 	Link2,
 	SearchX,
-	ArrowUpDown,
-	ArrowUp,
-	ArrowDown,
 } from "lucide-react";
-import type { GroupedSource, SourceGroupResult } from "@onescope/types";
-import { getDomain, getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
+import { useSearchParams } from "next/navigation";
+import { Fragment, useMemo, useState } from "react";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
-import { ExportMenu } from "@/components/export-menu";
-import { downloadCsv, downloadJson } from "@/lib/export/download";
 
 type DomainGroup = {
 	domain: string;
@@ -61,9 +66,7 @@ function getUrlPath(url: string): string {
 }
 
 function cleanCitedText(text: string): string {
-	return text
-		.replace(/\s*(?:\.\.\.|…)?\s*read more\.?\s*$/i, "")
-		.trim();
+	return text.replace(/\s*(?:\.\.\.|…)?\s*read more\.?\s*$/i, "").trim();
 }
 
 function SortableHeader({
@@ -100,7 +103,10 @@ function SortableHeader({
 	);
 }
 
-function FaviconWithFallback({ url, size = "md" }: { url: string; size?: "sm" | "md" }) {
+function FaviconWithFallback({
+	url,
+	size = "md",
+}: { url: string; size?: "sm" | "md" }) {
 	const [showFavicon, setShowFavicon] = useState(true);
 	const favicon = getFaviconUrls(url, "")[0];
 
@@ -119,8 +125,12 @@ function FaviconWithFallback({ url, size = "md" }: { url: string; size?: "sm" | 
 	}
 
 	return (
-		<div className={`${sizeClasses} flex items-center justify-center rounded-sm bg-gray-100 dark:bg-gray-800`}>
-			<Globe2 className={`${iconSizeClasses} text-gray-500 dark:text-gray-400`} />
+		<div
+			className={`${sizeClasses} flex items-center justify-center rounded-sm bg-gray-100 dark:bg-gray-800`}
+		>
+			<Globe2
+				className={`${iconSizeClasses} text-gray-500 dark:text-gray-400`}
+			/>
 		</div>
 	);
 }
@@ -167,8 +177,11 @@ function MetricCard({
 }
 
 export default function SourcesPage() {
-	const [selectedProvider, setSelectedProvider] = useState<string>("All Models");
-	const [activeTab, setActiveTab] = useState<"domains" | "citations">("domains");
+	const [selectedProvider, setSelectedProvider] =
+		useState<string>("All Models");
+	const [activeTab, setActiveTab] = useState<"domains" | "citations">(
+		"domains",
+	);
 	const [openDomain, setOpenDomain] = useState<string | null>(null);
 	const [openUrl, setOpenUrl] = useState<string | null>(null);
 
@@ -178,7 +191,11 @@ export default function SourcesPage() {
 
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
-	const { data: promptSources, isLoading, error } = usePromptSources(workspaceId);
+	const {
+		data: promptSources,
+		isLoading,
+		error,
+	} = usePromptSources(workspaceId);
 
 	const sourceStats = useMemo<SourceGroupResult | null>(() => {
 		const data = promptSources?.data;
@@ -197,8 +214,10 @@ export default function SourcesPage() {
 		const rows =
 			selectedProvider === "All Models"
 				? sourceStats.combined
-				: sourceStats.byModel[selectedProvider] ?? [];
-		return [...rows].sort((a, b) => (b.totalSources ?? 0) - (a.totalSources ?? 0));
+				: (sourceStats.byModel[selectedProvider] ?? []);
+		return [...rows].sort(
+			(a, b) => (b.totalSources ?? 0) - (a.totalSources ?? 0),
+		);
 	}, [sourceStats, selectedProvider]);
 
 	const domainGroups = useMemo<DomainGroup[]>(() => {
@@ -231,15 +250,20 @@ export default function SourcesPage() {
 
 	// Sorted domain groups based on sort column and direction
 	const sortedDomainGroups = useMemo<DomainGroup[]>(() => {
-		const totalCitations = domainGroups.reduce((sum, d) => sum + d.totalCitations, 0);
+		const totalCitations = domainGroups.reduce(
+			(sum, d) => sum + d.totalCitations,
+			0,
+		);
 
 		return [...domainGroups].sort((a, b) => {
 			let aValue: number;
 			let bValue: number;
 
 			if (sortColumn === "share") {
-				aValue = totalCitations > 0 ? (a.totalCitations / totalCitations) * 100 : 0;
-				bValue = totalCitations > 0 ? (b.totalCitations / totalCitations) * 100 : 0;
+				aValue =
+					totalCitations > 0 ? (a.totalCitations / totalCitations) * 100 : 0;
+				bValue =
+					totalCitations > 0 ? (b.totalCitations / totalCitations) * 100 : 0;
 			} else if (sortColumn === "citations") {
 				aValue = a.totalCitations;
 				bValue = b.totalCitations;
@@ -270,7 +294,10 @@ export default function SourcesPage() {
 	const aggregate = useMemo(() => {
 		const totalUrls = displayedSources.length;
 		const totalDomains = domainGroups.length;
-		const totalCitations = displayedSources.reduce((sum, s) => sum + (s.totalSources ?? 0), 0);
+		const totalCitations = displayedSources.reduce(
+			(sum, s) => sum + (s.totalSources ?? 0),
+			0,
+		);
 		const avgCitationsPerUrl = totalUrls
 			? (totalCitations / totalUrls).toFixed(1)
 			: "0.0";
@@ -314,7 +341,10 @@ export default function SourcesPage() {
 					<Skeleton className="h-10 w-56" />
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 						{Array.from({ length: 4 }).map((_, i) => (
-							<Skeleton key={`sources-metric-${i}`} className="h-28 rounded-2xl" />
+							<Skeleton
+								key={`sources-metric-${i}`}
+								className="h-28 rounded-2xl"
+							/>
 						))}
 					</div>
 					<Skeleton className="h-[480px] rounded-2xl" />
@@ -333,7 +363,8 @@ export default function SourcesPage() {
 					Unable to load sources
 				</h2>
 				<p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-					We ran into an issue loading your source data. Please try again in a moment.
+					We ran into an issue loading your source data. Please try again in a
+					moment.
 				</p>
 			</div>
 		);
@@ -342,7 +373,9 @@ export default function SourcesPage() {
 	if (!sourceStats) {
 		return (
 			<div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
-				<p className="text-lg text-gray-500 dark:text-gray-400">No prompt responses yet.</p>
+				<p className="text-lg text-gray-500 dark:text-gray-400">
+					No prompt responses yet.
+				</p>
 				<p className="mt-2 text-sm text-gray-400">
 					If you&apos;ve just run prompts, please check back in a few minutes.
 				</p>
@@ -378,9 +411,11 @@ export default function SourcesPage() {
 											urlPath: getUrlPath(source.url),
 											totalCitations: source.totalSources ?? 0,
 											modelProvider: excerpt.model_provider ?? "",
-											citedText: excerpt.cited_text ? cleanCitedText(excerpt.cited_text) : "",
-										}))
-									)
+											citedText: excerpt.cited_text
+												? cleanCitedText(excerpt.cited_text)
+												: "",
+										})),
+									),
 								);
 								const topDomains = domainGroups.slice(0, 10).map((group) => ({
 									domain: group.domain,
@@ -388,8 +423,11 @@ export default function SourcesPage() {
 									share:
 										aggregate.totalCitations > 0
 											? Number(
-													((group.totalCitations / aggregate.totalCitations) * 100).toFixed(1),
-											  )
+													(
+														(group.totalCitations / aggregate.totalCitations) *
+														100
+													).toFixed(1),
+												)
 											: 0,
 									urlCount: group.urlCount,
 								}));
@@ -474,11 +512,19 @@ export default function SourcesPage() {
 										title: source.title,
 										total_citations: source.totalSources ?? 0,
 										domain: getDomain(source.url) || "",
-										models: [...new Set((source.excerpts ?? []).map((e) => e.model_provider).filter(Boolean))].join(", "),
+										models: [
+											...new Set(
+												(source.excerpts ?? [])
+													.map((e) => e.model_provider)
+													.filter(Boolean),
+											),
+										].join(", "),
 										cited_texts: (source.excerpts ?? [])
-											.map((e) => (e.cited_text ? cleanCitedText(e.cited_text) : ""))
+											.map((e) =>
+												e.cited_text ? cleanCitedText(e.cited_text) : "",
+											)
 											.filter(Boolean)
-										.join(" | "),
+											.join(" | "),
 									})),
 									...domainGroups.flatMap((group) =>
 										group.urls.flatMap((source) =>
@@ -489,28 +535,38 @@ export default function SourcesPage() {
 												url_path: getUrlPath(source.url),
 												title: source.title,
 												model: excerpt.model_provider ?? "",
-												cited_text: excerpt.cited_text ? cleanCitedText(excerpt.cited_text) : "",
-											}))
-										)
+												cited_text: excerpt.cited_text
+													? cleanCitedText(excerpt.cited_text)
+													: "",
+											})),
+										),
 									),
 								];
 								downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
 							}}
 						/>
-						<Select value={selectedProvider} onValueChange={setSelectedProvider}>
+						<Select
+							value={selectedProvider}
+							onValueChange={setSelectedProvider}
+						>
 							<SelectTrigger className="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
 								<SelectValue placeholder="Select Provider" />
 							</SelectTrigger>
 							<SelectContent>
 								{modelSelectors.map(({ value, label }) => {
-									const icon = value === "All Models" ? "" : getModelFavicon(value);
+									const icon =
+										value === "All Models" ? "" : getModelFavicon(value);
 									return (
 										<SelectItem key={value} value={value}>
 											<div className="flex items-center gap-2">
 												{value === "All Models" ? (
 													<Bot className="h-4 w-4 text-muted-foreground" />
 												) : (
-													<img src={icon} alt={value} className="h-4 w-4 rounded-sm" />
+													<img
+														src={icon}
+														alt={value}
+														className="h-4 w-4 rounded-sm"
+													/>
 												)}
 												<span>{label}</span>
 											</div>
@@ -634,7 +690,10 @@ export default function SourcesPage() {
 							<TableBody>
 								{sortedDomainGroups.map((domain, idx) => {
 									const share = aggregate.totalCitations
-										? ((domain.totalCitations / aggregate.totalCitations) * 100).toFixed(1)
+										? (
+												(domain.totalCitations / aggregate.totalCitations) *
+												100
+											).toFixed(1)
 										: "0.0";
 									const providers = [...domain.providers];
 
@@ -727,7 +786,9 @@ export default function SourcesPage() {
 													</div>
 												</TableCell>
 												<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
-													<span className="font-semibold">{formatCitationLabel(group.totalCitations)}</span>
+													<span className="font-semibold">
+														{formatCitationLabel(group.totalCitations)}
+													</span>
 													<span className="mx-2 text-gray-300">•</span>
 													{group.urlCount} URLs
 													<span className="mx-2 text-gray-300">•</span>
@@ -748,13 +809,21 @@ export default function SourcesPage() {
 											{domainOpen &&
 												group.urls.map((source) => {
 													const urlOpen = openUrl === source.url;
-													const providers = [...new Set(source.excerpts.map((e) => e.model_provider).filter(Boolean))] as string[];
+													const providers = [
+														...new Set(
+															source.excerpts
+																.map((e) => e.model_provider)
+																.filter(Boolean),
+														),
+													] as string[];
 
 													return (
 														<Fragment key={source.url}>
 															<TableRow
 																className="cursor-pointer border-b border-gray-100 bg-white hover:bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800/40"
-																onClick={() => setOpenUrl(urlOpen ? null : source.url)}
+																onClick={() =>
+																	setOpenUrl(urlOpen ? null : source.url)
+																}
 															>
 																<TableCell className="px-4 py-5 pl-12">
 																	<div className="flex items-start gap-2">
@@ -764,18 +833,21 @@ export default function SourcesPage() {
 																			}`}
 																		/>
 																		<div className="mt-0.5">
-																			<FaviconWithFallback url={source.url} size="sm" />
+																			<FaviconWithFallback
+																				url={source.url}
+																				size="sm"
+																			/>
 																		</div>
 																		<div className="min-w-0">
-																				<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-																					{source.title || "Untitled source"}
-																				</p>
-																				<div className="mt-1.5 flex items-center gap-2">
-																					<span className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-																						{getUrlPath(source.url)}
-																					</span>
-																					<a
-																						href={source.url}
+																			<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+																				{source.title || "Untitled source"}
+																			</p>
+																			<div className="mt-1.5 flex items-center gap-2">
+																				<span className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+																					{getUrlPath(source.url)}
+																				</span>
+																				<a
+																					href={source.url}
 																					target="_blank"
 																					rel="noreferrer noopener"
 																					onClick={(e) => e.stopPropagation()}
@@ -788,7 +860,9 @@ export default function SourcesPage() {
 																	</div>
 																</TableCell>
 																<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
-																	<span className="font-semibold">{formatCitationLabel(source.totalSources)}</span>
+																	<span className="font-semibold">
+																		{formatCitationLabel(source.totalSources)}
+																	</span>
 																	<span className="mx-2 text-gray-300">•</span>
 																	<div className="inline-flex items-center gap-1.5 align-middle">
 																		{providers.map((provider) => (
@@ -823,14 +897,22 @@ export default function SourcesPage() {
 																			{excerpt.model_provider ? (
 																				<div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-900">
 																					<img
-																						src={getModelFavicon(excerpt.model_provider)}
+																						src={getModelFavicon(
+																							excerpt.model_provider,
+																						)}
 																						alt=""
 																						className="h-3.5 w-3.5 rounded-sm"
 																					/>
-																					{modelSelectors.find((m) => m.value === excerpt.model_provider)?.label ?? excerpt.model_provider}
+																					{modelSelectors.find(
+																						(m) =>
+																							m.value ===
+																							excerpt.model_provider,
+																					)?.label ?? excerpt.model_provider}
 																				</div>
 																			) : (
-																				<span className="text-xs text-muted-foreground">Unknown model</span>
+																				<span className="text-xs text-muted-foreground">
+																					Unknown model
+																				</span>
 																			)}
 																		</TableCell>
 																	</TableRow>

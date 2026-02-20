@@ -18,6 +18,12 @@ services:
     depends_on:
       - redis
     command: pnpm start:api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   # ----------------------------
   # Agent Worker
@@ -35,19 +41,32 @@ services:
       - agent_storage:/storage
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
     command: pnpm start:worker
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # ----------------------------
   # Redis
   # ----------------------------
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     container_name: redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
-
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
   # ----------------------------
   # PostgreSQL (OFFICIAL IMAGE)
   # ----------------------------
@@ -56,8 +75,6 @@ services:
     container_name: postgres_db
     restart: always
     env_file: .env
-    ports:
-      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./packages/db/init-scripts:/docker-entrypoint-initdb.d
@@ -75,12 +92,16 @@ services:
     container_name: clickhouse_db
     restart: unless-stopped
     env_file: .env
-    ports:
-      - "9000:9000"
-      - "8123:8123"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./packages/db/clickhouse-init:/docker-entrypoint-initdb.d
+    # clickhouse
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # ----------------------------
   # Web App (Next.js / UI)
@@ -99,9 +120,9 @@ services:
       migrate:
         condition: service_completed_successfully
       redis:
-        condition: service_started
+        condition: service_healthy
       clickhouse:
-        condition: service_started
+        condition: service_healthy
 
   # ----------------------------
   # Database Migrations (ONE-SHOT)

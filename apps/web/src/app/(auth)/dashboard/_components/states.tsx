@@ -1,5 +1,5 @@
-import { BarChart3, Building2, Sparkles } from "lucide-react";
 import { Skeleton } from "@onescope/ui";
+import { BarChart3, Building2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 function CenterState({

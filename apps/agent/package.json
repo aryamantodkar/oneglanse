@@ -1,44 +1,44 @@
 {
-  "name": "@onescope/agent",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "description": "Local agent that runs a real browser to execute LLM prompts",
-  "scripts": {
-    "dev": "node --loader ts-node/esm src/index.ts",
-    "start:api": "node dist/api.js",
-    "start:worker": "node dist/worker.js",
-    "build": "tsc",
-    "auth": "node --loader ts-node/esm src/auth/auth.ts",
-    "login": "RUN_INTERACTIVE_LOGIN=true node --loader ts-node/esm src/auth/login.ts",
-    "auth:openai": "RUN_INTERACTIVE_LOGIN=true PROVIDER=openai node --loader ts-node/esm src/auth/login.ts",
-    "auth:anthropic": "RUN_INTERACTIVE_LOGIN=true PROVIDER=anthropic node --loader ts-node/esm src/auth/login.ts",
-    "auth:perplexity": "RUN_INTERACTIVE_LOGIN=true PROVIDER=perplexity node --loader ts-node/esm src/auth/login.ts",
-    "auth:google": "RUN_INTERACTIVE_LOGIN=true PROVIDER=google node --loader ts-node/esm src/auth/login.ts",
-    "upload-session": "node --loader ts-node/esm src/auth/upload-session.ts",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@onescope/errors": "workspace:*",
-    "@onescope/services": "workspace:*",
-    "@onescope/types": "workspace:*",
-    "@onescope/utils": "workspace:*",
-    "bullmq": "^5.66.4",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1",
-    "ioredis": "^5.9.1",
-    "playwright": "^1.57.0",
-    "playwright-extra": "^4.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "tar": "^7.5.2",
-    "turndown": "^7.2.2"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.0.3",
-    "@types/turndown": "^5.0.6",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  }
+	"name": "@onescope/agent",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Local agent that runs a real browser to execute LLM prompts",
+	"scripts": {
+		"dev": "node --loader ts-node/esm src/index.ts",
+		"start:api": "node dist/api.js",
+		"start:worker": "node dist/worker.js",
+		"build": "tsc",
+		"auth": "node --loader ts-node/esm src/auth/auth.ts",
+		"login": "RUN_INTERACTIVE_LOGIN=true node --loader ts-node/esm src/auth/login.ts",
+		"auth:openai": "RUN_INTERACTIVE_LOGIN=true PROVIDER=openai node --loader ts-node/esm src/auth/login.ts",
+		"auth:anthropic": "RUN_INTERACTIVE_LOGIN=true PROVIDER=anthropic node --loader ts-node/esm src/auth/login.ts",
+		"auth:perplexity": "RUN_INTERACTIVE_LOGIN=true PROVIDER=perplexity node --loader ts-node/esm src/auth/login.ts",
+		"auth:google": "RUN_INTERACTIVE_LOGIN=true PROVIDER=google node --loader ts-node/esm src/auth/login.ts",
+		"upload-session": "node --loader ts-node/esm src/auth/upload-session.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@onescope/errors": "workspace:*",
+		"@onescope/services": "workspace:*",
+		"@onescope/types": "workspace:*",
+		"@onescope/utils": "workspace:*",
+		"bullmq": "^5.66.4",
+		"dotenv": "^17.2.3",
+		"express": "^5.2.1",
+		"ioredis": "^5.9.1",
+		"playwright": "^1.57.0",
+		"playwright-extra": "^4.3.6",
+		"puppeteer-extra-plugin-stealth": "^2.11.2",
+		"tar": "^7.5.2",
+		"turndown": "^7.2.2"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.57.0",
+		"@types/express": "^5.0.6",
+		"@types/node": "^25.0.3",
+		"@types/turndown": "^5.0.6",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.3"
+	}
 }

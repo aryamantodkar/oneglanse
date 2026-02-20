@@ -37,7 +37,7 @@ export * from "./components/separator.js";
 // Sheet
 export * from "./components/sheet.js";
 
-export * from './components/sidebar.js'
+export * from "./components/sidebar.js";
 
 // Skeleton
 export * from "./components/skeleton.js";
@@ -59,4 +59,4 @@ export * from "./components/tooltip.js";
 
 export * from "./components/cell.js";
 
-export * from "./hooks/use-mobile.js"
+export * from "./hooks/use-mobile.js";

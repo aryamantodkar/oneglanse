@@ -1,5 +1,7 @@
 "use client";
 
+import { ExportMenu } from "@/components/export-menu";
+import { downloadCsv, downloadJson } from "@/lib/export/download";
 import type { AnalysisRecord, UserPrompt } from "@onescope/types";
 import type { Source } from "@onescope/types";
 import {
@@ -38,20 +40,31 @@ import {
 	getUniqueLinks,
 	modelSelectors,
 } from "@onescope/utils";
-import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+	ArrowDown,
+	ArrowUp,
+	ArrowUpDown,
+	Bot,
+	ChevronDown,
+	FilterX,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import {
-	useStorePrompt,
-} from "./_lib/mutations/prompt.mutations";
+import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import {
 	useFetchAnalysedPrompts,
 	useUserPrompts,
 } from "./_lib/queries/prompt.queries";
-import { ExportMenu } from "@/components/export-menu";
-import { downloadCsv, downloadJson } from "@/lib/export/download";
 
-type SortColumn = "prompt" | "geoScore" | "sentiment" | "visibility" | "position";
+type SortColumn =
+	| "prompt"
+	| "geoScore"
+	| "sentiment"
+	| "visibility"
+	| "position";
 
 function SortableHeader({
 	children,
@@ -464,7 +477,6 @@ export default function Prompts() {
 		});
 	};
 
-
 	const LoadingState = () => (
 		<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
 			<div className="mb-4 flex h-12 w-12 animate-pulse items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
@@ -691,34 +703,42 @@ export default function Prompts() {
 								);
 								const topPrompt = analyzedRows
 									.slice()
-									.sort((a, b) => (b.metrics?.geoScore ?? 0) - (a.metrics?.geoScore ?? 0))[0];
+									.sort(
+										(a, b) =>
+											(b.metrics?.geoScore ?? 0) - (a.metrics?.geoScore ?? 0),
+									)[0];
 								const weakestPrompt = analyzedRows
 									.slice()
-									.sort((a, b) => (a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0))[0];
-								const promptRows = sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
-									promptId: prompt.id,
-									prompt: prompt.prompt,
-									modelProvider,
-									geoScore: metrics?.geoScore ?? null,
-									sentiment: metrics?.sentiment ?? null,
-									visibility: metrics?.visibility ?? null,
-									position: metrics?.position ?? null,
-									reason: reason ?? null,
-									responses: filteredRecords
-										.filter((r) => r.prompt_id === prompt.id)
-										.map((r) => ({
-											model: r.model_provider,
-											promptRunAt: r.prompt_run_at,
-											response: r.response,
-											citations: r.sources?.length ?? 0,
-											sources: (r.sources ?? []).map((source) => ({
-												title: source.title ?? "",
-												url: source.url ?? "",
-												domain: source.domain ?? "",
-												citedText: source.cited_text ?? "",
+									.sort(
+										(a, b) =>
+											(a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0),
+									)[0];
+								const promptRows = sortedPromptsWithMetrics.map(
+									({ prompt, metrics, modelProvider, reason }) => ({
+										promptId: prompt.id,
+										prompt: prompt.prompt,
+										modelProvider,
+										geoScore: metrics?.geoScore ?? null,
+										sentiment: metrics?.sentiment ?? null,
+										visibility: metrics?.visibility ?? null,
+										position: metrics?.position ?? null,
+										reason: reason ?? null,
+										responses: filteredRecords
+											.filter((r) => r.prompt_id === prompt.id)
+											.map((r) => ({
+												model: r.model_provider,
+												promptRunAt: r.prompt_run_at,
+												response: r.response,
+												citations: r.sources?.length ?? 0,
+												sources: (r.sources ?? []).map((source) => ({
+													title: source.title ?? "",
+													url: source.url ?? "",
+													domain: source.domain ?? "",
+													citedText: source.cited_text ?? "",
+												})),
 											})),
-										})),
-								}));
+									}),
+								);
 
 								downloadJson(`prompts-${workspaceId}-${Date.now()}.json`, {
 									generatedAt: new Date().toISOString(),
@@ -731,7 +751,8 @@ export default function Prompts() {
 									overview: {
 										totalPrompts: sortedPromptsWithMetrics.length,
 										analyzedPrompts: analyzedRows.length,
-										unanalyzedPrompts: sortedPromptsWithMetrics.length - analyzedRows.length,
+										unanalyzedPrompts:
+											sortedPromptsWithMetrics.length - analyzedRows.length,
 									},
 									impactSummary: {
 										highestGeoPrompt: topPrompt?.prompt.prompt ?? null,
@@ -743,7 +764,9 @@ export default function Prompts() {
 										weakestPrompt
 											? `Improve weak prompt: "${weakestPrompt.prompt.prompt}" (GEO ${weakestPrompt.metrics?.geoScore ?? 0}).`
 											: null,
-										sortedPromptsWithMetrics.some((row) => row.reason === "brand-not-mentioned")
+										sortedPromptsWithMetrics.some(
+											(row) => row.reason === "brand-not-mentioned",
+										)
 											? "Revise prompts where brand is not mentioned to improve coverage."
 											: null,
 									].filter(Boolean),
@@ -770,30 +793,33 @@ export default function Prompts() {
 									{
 										section: "overview",
 										metric: "Unanalyzed Prompts",
-										value: sortedPromptsWithMetrics.length - analyzedPromptCount,
+										value:
+											sortedPromptsWithMetrics.length - analyzedPromptCount,
 									},
-									...sortedPromptsWithMetrics.map(({ prompt, metrics, modelProvider, reason }) => ({
-										section: "prompt_details",
-										prompt: prompt.prompt,
-										model: modelProvider,
-										geo_score: metrics?.geoScore ?? "",
-										sentiment: metrics?.sentiment ?? "",
-										visibility: metrics?.visibility ?? "",
-										position: metrics?.position ?? "",
-										status: reason ?? "ok",
-										source_urls: filteredRecords
-											.filter((r) => r.prompt_id === prompt.id)
-											.flatMap((r) => r.sources ?? [])
-											.map((source) => source.url)
-											.filter(Boolean)
-											.join(" | "),
-										cited_texts: filteredRecords
-											.filter((r) => r.prompt_id === prompt.id)
-											.flatMap((r) => r.sources ?? [])
-											.map((source) => source.cited_text)
-											.filter(Boolean)
-											.join(" | "),
-									})),
+									...sortedPromptsWithMetrics.map(
+										({ prompt, metrics, modelProvider, reason }) => ({
+											section: "prompt_details",
+											prompt: prompt.prompt,
+											model: modelProvider,
+											geo_score: metrics?.geoScore ?? "",
+											sentiment: metrics?.sentiment ?? "",
+											visibility: metrics?.visibility ?? "",
+											position: metrics?.position ?? "",
+											status: reason ?? "ok",
+											source_urls: filteredRecords
+												.filter((r) => r.prompt_id === prompt.id)
+												.flatMap((r) => r.sources ?? [])
+												.map((source) => source.url)
+												.filter(Boolean)
+												.join(" | "),
+											cited_texts: filteredRecords
+												.filter((r) => r.prompt_id === prompt.id)
+												.flatMap((r) => r.sources ?? [])
+												.map((source) => source.cited_text)
+												.filter(Boolean)
+												.join(" | "),
+										}),
+									),
 								];
 								downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
 							}}
@@ -894,13 +920,7 @@ export default function Prompts() {
 
 							<TableBody>
 								{sortedPromptsWithMetrics.map(
-									({
-										prompt,
-										metrics,
-										modelProvider,
-										reason,
-										sourceIndex,
-									}) => (
+									({ prompt, metrics, modelProvider, reason, sourceIndex }) => (
 										<TableRow
 											key={prompt.id}
 											onClick={() => setOpenPrompt(prompt)}

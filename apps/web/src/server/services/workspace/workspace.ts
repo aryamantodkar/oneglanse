@@ -2,65 +2,87 @@ import "server-only";
 
 import { auth } from "@lib/auth/auth";
 import { db, schema } from "@onescope/db";
-import { eq, and } from "drizzle-orm";
 import { ValidationError } from "@onescope/errors";
-import { createWorkspaceForTenant } from "@onescope/services"
+import { createWorkspaceForTenant } from "@onescope/services";
+import { and, eq } from "drizzle-orm";
 
 export async function createNewWorkspace(args: {
-    name: string;
-    slug: string;
-    domain: string;
-    organizationName?: string;
-    country: string;
-    region?: string | null;
-    userId: string;           
-    headers: Headers;
+	name: string;
+	slug: string;
+	domain: string;
+	organizationName?: string;
+	country: string;
+	region?: string | null;
+	userId: string;
+	headers: Headers;
 }) {
-    const { name, slug, domain, organizationName, country, region, userId, headers } = args;
+	const {
+		name,
+		slug,
+		domain,
+		organizationName,
+		country,
+		region,
+		userId,
+		headers,
+	} = args;
 
-    const orgData = await auth.api
-    .createOrganization({
-      body: {
-        name: organizationName?.trim() || name,
-        slug: slug,
-        keepCurrentActiveOrganization: true,
-      },
-      headers,
-    })
+	const orgData = await auth.api.createOrganization({
+		body: {
+			name: organizationName?.trim() || name,
+			slug: slug,
+			keepCurrentActiveOrganization: true,
+		},
+		headers,
+	});
 
-  if (!orgData?.id) {
-    throw new ValidationError("Organization ID is undefined.");
-  }
+	if (!orgData?.id) {
+		throw new ValidationError("Organization ID is undefined.");
+	}
 
-  const workspace = await createWorkspaceForTenant({name, slug, tenantId: orgData.id, domain, country, region, userId });
+	const workspace = await createWorkspaceForTenant({
+		name,
+		slug,
+		tenantId: orgData.id,
+		domain,
+		country,
+		region,
+		userId,
+	});
 
-  return { workspace, org: orgData };
+	return { workspace, org: orgData };
 }
 
 export async function addWorkspaceToExistingOrg(args: {
-    name: string;
-    slug: string;
-    domain: string;
-    country: string;
-    region?: string | null;
-    userId: string;
-    tenantId: string;
+	name: string;
+	slug: string;
+	domain: string;
+	country: string;
+	region?: string | null;
+	userId: string;
+	tenantId: string;
 }) {
-    const { name, slug, domain, country, region, userId, tenantId } = args;
+	const { name, slug, domain, country, region, userId, tenantId } = args;
 
-    // Verify user is a member of the organization
-    const membership = await db.query.member.findFirst({
-        where: (m, { eq, and }) =>
-            and(eq(m.organizationId, tenantId), eq(m.userId, userId)),
-    });
+	// Verify user is a member of the organization
+	const membership = await db.query.member.findFirst({
+		where: (m, { eq, and }) =>
+			and(eq(m.organizationId, tenantId), eq(m.userId, userId)),
+	});
 
-    if (!membership) {
-        throw new ValidationError("User is not a member of this organization.");
-    }
+	if (!membership) {
+		throw new ValidationError("User is not a member of this organization.");
+	}
 
-    const workspace = await createWorkspaceForTenant({
-        name, slug, domain, tenantId, country, region, userId,
-    });
+	const workspace = await createWorkspaceForTenant({
+		name,
+		slug,
+		domain,
+		tenantId,
+		country,
+		region,
+		userId,
+	});
 
-    return { workspace };
+	return { workspace };
 }

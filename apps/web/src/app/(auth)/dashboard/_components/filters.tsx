@@ -7,7 +7,11 @@ import {
 	SelectValue,
 	Separator,
 } from "@onescope/ui";
-import { getFaviconUrls, getModelFavicon, modelSelectors } from "@onescope/utils";
+import {
+	getFaviconUrls,
+	getModelFavicon,
+	modelSelectors,
+} from "@onescope/utils";
 import { Bot, FilterX } from "lucide-react";
 
 export function DashboardFilters({

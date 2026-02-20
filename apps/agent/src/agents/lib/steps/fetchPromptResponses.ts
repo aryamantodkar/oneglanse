@@ -1,68 +1,83 @@
-import { Page } from "playwright";
+import type { Provider } from "@onescope/types";
+import type { Page } from "playwright";
 import { extractAssistantMarkdown } from "../../../lib/input/extractAssistantMarkdown.js";
 import { getLastAssistantText } from "../../../lib/input/getLastAssistantText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
-import { Provider } from "@onescope/types";
 
 const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
-const INITIAL_EXTRACTION_RETRY_DELAY = Number(process.env.EXTRACTION_RETRY_DELAY_MS ?? 2000);
-const MAX_EXTRACTION_RETRY_DELAY = Number(process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000);
+const INITIAL_EXTRACTION_RETRY_DELAY = Number(
+	process.env.EXTRACTION_RETRY_DELAY_MS ?? 2000,
+);
+const MAX_EXTRACTION_RETRY_DELAY = Number(
+	process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000,
+);
 
 function getExtractionRetryDelay(attempt: number): number {
-  if (attempt <= 1) return INITIAL_EXTRACTION_RETRY_DELAY;
-  return Math.min(INITIAL_EXTRACTION_RETRY_DELAY * Math.pow(2, attempt - 1), MAX_EXTRACTION_RETRY_DELAY);
+	if (attempt <= 1) return INITIAL_EXTRACTION_RETRY_DELAY;
+	return Math.min(
+		INITIAL_EXTRACTION_RETRY_DELAY * 2 ** (attempt - 1),
+		MAX_EXTRACTION_RETRY_DELAY,
+	);
 }
 
 export async function fetchPromptResponses(
-    page: Page,
-    provider: Provider
-  ): Promise<string> {
-    // Google AI Overview doesn't have a "generating" phase - results appear immediately
-    if (provider === "google-ai-overview") {
-      logger.log("⏳ Waiting for search results to load...");
-      // Wait for page to be stable
-      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-      await page.waitForTimeout(2000); // Give AI Overview time to render
+	page: Page,
+	provider: Provider,
+): Promise<string> {
+	// Google AI Overview doesn't have a "generating" phase - results appear immediately
+	if (provider === "google-ai-overview") {
+		logger.log("⏳ Waiting for search results to load...");
+		// Wait for page to be stable
+		await page
+			.waitForLoadState("networkidle", { timeout: 10000 })
+			.catch(() => {});
+		await page.waitForTimeout(2000); // Give AI Overview time to render
 
-      // Bail early if Google hit us with a CAPTCHA page
-      const currentUrl = page.url();
-      if (currentUrl.includes("/sorry/")) {
-        throw new Error(`[${provider}] Google CAPTCHA detected — proxy IP is flagged`);
-      }
-    } else {
-      logger.log("⏳ Waiting for response to complete...");
-      // 1️⃣ Wait until model finishes generating
-      await waitForAssistantToFinish(page, provider);
+		// Bail early if Google hit us with a CAPTCHA page
+		const currentUrl = page.url();
+		if (currentUrl.includes("/sorry/")) {
+			throw new Error(
+				`[${provider}] Google CAPTCHA detected — proxy IP is flagged`,
+			);
+		}
+	} else {
+		logger.log("⏳ Waiting for response to complete...");
+		// 1️⃣ Wait until model finishes generating
+		await waitForAssistantToFinish(page, provider);
 
-      await page.waitForTimeout(1500);
-    }
+		await page.waitForTimeout(1500);
+	}
 
-    logger.log("📄 Extracting response...");
+	logger.log("📄 Extracting response...");
 
-    // 2️⃣ Extract markdown-only response with retries (no plain-text fallback)
-    for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
-      // Keep this short so we can rotate IPs faster if extraction keeps failing.
-      await page.waitForTimeout(500);
+	// 2️⃣ Extract markdown-only response with retries (no plain-text fallback)
+	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
+		// Keep this short so we can rotate IPs faster if extraction keeps failing.
+		await page.waitForTimeout(500);
 
-      const response = await extractAssistantMarkdown(page, provider);
+		const response = await extractAssistantMarkdown(page, provider);
 
-      if (response && response.length > 0) {
-        logger.success(`Got response (${response.length} chars)`);
-        return response;
-      }
+		if (response && response.length > 0) {
+			logger.success(`Got response (${response.length} chars)`);
+			return response;
+		}
 
-      if (attempt < MAX_EXTRACTION_RETRIES) {
-        const retryDelay = getExtractionRetryDelay(attempt);
-        logger.warn(`Extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})...`);
-        await page.waitForTimeout(retryDelay);
-      }
-    }
+		if (attempt < MAX_EXTRACTION_RETRIES) {
+			const retryDelay = getExtractionRetryDelay(attempt);
+			logger.warn(
+				`Extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})...`,
+			);
+			await page.waitForTimeout(retryDelay);
+		}
+	}
 
-    // Diagnostic only. We do not return plain text to avoid UI inconsistency.
-    const visibleText = await getLastAssistantText(page, provider, true).catch(() => "");
-    const visibleTextChars = visibleText?.trim().length ?? 0;
-    throw new Error(
-      `[${provider}] Markdown response extraction failed after ${MAX_EXTRACTION_RETRIES} retries (visibleTextChars=${visibleTextChars})`
-    );
-  }
+	// Diagnostic only. We do not return plain text to avoid UI inconsistency.
+	const visibleText = await getLastAssistantText(page, provider, true).catch(
+		() => "",
+	);
+	const visibleTextChars = visibleText?.trim().length ?? 0;
+	throw new Error(
+		`[${provider}] Markdown response extraction failed after ${MAX_EXTRACTION_RETRIES} retries (visibleTextChars=${visibleTextChars})`,
+	);
+}

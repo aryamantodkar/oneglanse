@@ -1,28 +1,28 @@
 {
-  "name": "@onescope/utils",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@onescope/types": "workspace:*",
-    "clsx": "^2.1.1",
-    "marked": "^17.0.1",
-    "tailwind-merge": "^3.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^25.0.10",
-    "typescript": "^5.8.2"
-  }
+	"name": "@onescope/utils",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@onescope/types": "workspace:*",
+		"clsx": "^2.1.1",
+		"marked": "^17.0.1",
+		"tailwind-merge": "^3.3.1"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.10",
+		"typescript": "^5.8.2"
+	}
 }
