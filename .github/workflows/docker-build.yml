@@ -124,8 +124,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/onescope-web:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/onescope-web:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-web:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-web:buildcache,mode=max
 
   build-agent:
     name: Build Agent
@@ -161,8 +161,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/onescope-agent:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/onescope-agent:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-agent:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-agent:buildcache,mode=max
 
   build-postgres:
     name: Build Postgres
@@ -198,5 +198,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/onescope-postgres:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/onescope-postgres:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-postgres:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-postgres:buildcache,mode=max
