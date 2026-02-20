@@ -13,12 +13,8 @@ import type {
 	UserPrompt,
 } from "@onescope/types";
 import { type Job, Worker } from "bullmq";
-import { openaiAgent } from "./agents/chatgpt/openaiAgent.js";
-import { anthropicAgent } from "./agents/claude/anthropicAgent.js";
-import { aiOverviewAgent } from "./agents/google/ai-overview/ai-overview.js";
-import { googleAgent } from "./agents/google/gemini/googleAgent.js";
 import { agentHandler } from "./agents/lib/agentHandler.js";
-import { perplexityAgent } from "./agents/perplexity/perplexityAgent.js";
+import { createAgent } from "./agents/lib/createAgent.js";
 import { logger } from "./lib/utils/logger.js";
 
 type ProviderJobData = {
@@ -32,15 +28,15 @@ type ProviderJobData = {
 
 const providerConfig: Record<
 	Provider,
-	{ label: string; factory: () => Promise<any> }
+	{ label: string; factory: () => ReturnType<typeof createAgent> }
 > = {
-	openai: { label: "OpenAI", factory: openaiAgent },
-	anthropic: { label: "Anthropic", factory: anthropicAgent },
-	perplexity: { label: "Perplexity", factory: perplexityAgent },
-	google: { label: "Google", factory: googleAgent },
+	openai: { label: "OpenAI", factory: () => createAgent("openai") },
+	anthropic: { label: "Anthropic", factory: () => createAgent("anthropic") },
+	perplexity: { label: "Perplexity", factory: () => createAgent("perplexity") },
+	google: { label: "Google", factory: () => createAgent("google") },
 	"google-ai-overview": {
 		label: "Google AI Overview",
-		factory: aiOverviewAgent,
+		factory: () => createAgent("google-ai-overview"),
 	},
 };
 

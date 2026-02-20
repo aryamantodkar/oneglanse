@@ -6,6 +6,14 @@ import path from "node:path";
 import { redis } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 
+const ALLOWED_PROVIDERS = new Set([
+	"anthropic",
+	"openai",
+	"perplexity",
+	"google",
+	"google-ai-overview",
+]);
+
 function safeTokenCompare(a: string, b: string): boolean {
 	if (a.length !== b.length) return false; // lengths must match first
 	return timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -61,16 +69,20 @@ const server = createServer(async (req, res) => {
 					"google-ai-overview": false,
 				};
 
-				for (const provider of [
-					"anthropic",
-					"openai",
-					"perplexity",
-					"google",
-					"google-ai-overview",
-				]) {
+				const basePath = path.resolve(VPS_AUTH_PROFILE_PATH);
+
+				for (const provider of ALLOWED_PROVIDERS) {
 					if (sessions[provider]) {
-						const providerDir = path.join(VPS_AUTH_PROFILE_PATH, provider);
-						const authFile = path.join(providerDir, `${provider}-auth.json`);
+						const providerDir = path.resolve(basePath, provider);
+						const authFile = path.resolve(providerDir, `${provider}-auth.json`);
+
+						if (
+							!providerDir.startsWith(basePath + path.sep) ||
+							!authFile.startsWith(basePath + path.sep)
+						) {
+							logger.error(`Path validation failed for provider: ${provider}`);
+							continue;
+						}
 
 						fs.mkdirSync(providerDir, { recursive: true });
 						fs.writeFileSync(

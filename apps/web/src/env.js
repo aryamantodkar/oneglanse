@@ -12,6 +12,9 @@ export const env = createEnv({
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
+		INTERNAL_CRON_SECRET: z.string().min(32,
+				'INTERNAL_CRON_SECRET must be at least 32 characters. Generate with: openssl rand -hex 32'
+		)
 	},
 
 	/**
@@ -30,6 +33,7 @@ export const env = createEnv({
 	runtimeEnv: {
 		DATABASE_URL: process.env.DATABASE_URL,
 		NODE_ENV: process.env.NODE_ENV,
+		INTERNAL_CRON_SECRET: process.env.INTERNAL_CRON_SECRET
 		// NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
 	},
 	/**

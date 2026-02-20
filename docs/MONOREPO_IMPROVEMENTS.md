@@ -62,226 +62,6 @@ The OneScope AI monorepo is architecturally sound — it has clean separation be
 
 ---
 
-## 3. Critical Security Fixes
-
-### 3.1 — Fix Exposed Database Ports
-
-**File:** `docker-compose.yml`
-
-**The Problem:**
-Port binding `"5432:5432"` is shorthand for `"0.0.0.0:5432:5432"`. The `0.0.0.0` address means Docker instructs the host operating system to listen on ALL network interfaces — including your VPS's public IP address. This means anyone on the internet who knows your server's IP can attempt to connect to PostgreSQL on port 5432 and ClickHouse on ports 9000 and 8123 directly, completely bypassing your Next.js application and all its auth middleware.
-
-**Why `127.0.0.1` fixes it:**
-`127.0.0.1` is the loopback interface — it only accepts connections from the same machine. No external connection can reach a port bound to `127.0.0.1`. nginx (your reverse proxy) runs on the same machine, so it can still reach port 3000. Your SSH session can still reach port 5432 for debugging. But internet traffic cannot.
-
-**The Change:**
-
-```yaml
-# docker-compose.yml
-
-# BEFORE (insecure — ports accessible from internet):
-db:
-  ports:
-    - "5432:5432"
-
-clickhouse:
-  ports:
-    - "9000:9000"
-    - "8123:8123"
-
-# AFTER (secure — only localhost can reach these ports):
-db:
-  ports:
-    - "127.0.0.1:5432:5432"
-
-clickhouse:
-  ports:
-    - "127.0.0.1:9000:9000"
-    - "127.0.0.1:8123:8123"
-```
-
-**How to verify it worked:**
-After applying and restarting (`docker compose down && docker compose up -d`):
-```bash
-# This should FAIL (connection refused from external perspective):
-nmap -p 5432,9000,8123 YOUR_SERVER_IP
-
-# This should SUCCEED (from the server itself):
-docker compose exec web curl -s http://localhost:8123/ping
-```
-
----
-
-### 3.2 — Fix Path Traversal in Agent API
-
-**File:** `apps/agent/src/api.ts`
-
-**The Problem:**
-The upload-sessions endpoint constructs file paths using the `provider` value from the request body:
-
-```typescript
-// Current code (VULNERABLE):
-const filePath = path.join(VPS_AUTH_PROFILE_PATH, provider, `${provider}-auth.json`);
-fs.writeFileSync(filePath, JSON.stringify(sessionData));
-```
-
-`path.join` does normalize paths, but it does NOT prevent directory traversal. If an attacker sends `provider: "../../etc/cron.d"`, the resulting path becomes:
-```
-/storage/../../etc/cron.d
-= /etc/cron.d
-```
-And now the attacker can write arbitrary content to `/etc/cron.d/` — which on Linux gets executed as a cron job. This is a Remote Code Execution (RCE) vulnerability.
-
-**The Fix:**
-
-```typescript
-// apps/agent/src/api.ts — add at the top of the file:
-import path from 'path';
-
-// Define the exact set of valid providers. This is your allowlist.
-// Any provider string NOT in this set gets rejected with 400.
-const ALLOWED_PROVIDERS = new Set([
-  'openai',
-  'anthropic',
-  'perplexity',
-  'google',
-  'google-ai-overview'
-]);
-
-// In your POST /upload-sessions handler, replace the path construction with:
-const { provider, ...sessionData } = req.body;
-
-// Step 1: Check against allowlist (fast reject — O(1) lookup)
-if (!ALLOWED_PROVIDERS.has(provider)) {
-  return res.status(400).json({
-    error: `Invalid provider. Must be one of: ${[...ALLOWED_PROVIDERS].join(', ')}`
-  });
-}
-
-// Step 2: Resolve the base path to an absolute path (resolves any .. in VPS_AUTH_PROFILE_PATH itself)
-const basePath = path.resolve(VPS_AUTH_PROFILE_PATH);
-
-// Step 3: Build the intended file path
-const filePath = path.resolve(basePath, provider, `${provider}-auth.json`);
-
-// Step 4: Verify the final path is still inside basePath
-// This is defense-in-depth — even if somehow provider contained a ../ that got through,
-// this check catches it. path.sep adds the trailing slash to prevent "../../storagex" attacks.
-if (!filePath.startsWith(basePath + path.sep)) {
-  return res.status(400).json({ error: 'Path validation failed' });
-}
-
-// Now safe to write:
-fs.mkdirSync(path.dirname(filePath), { recursive: true });
-fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
-```
-
-**Why both checks are needed:**
-The allowlist alone is sufficient IF your provider names never contain path characters. But the `startsWith(basePath + path.sep)` check is defense-in-depth — a security principle where you add redundant checks at different layers so that a bug in one layer doesn't create a vulnerability. Think of it as belt AND suspenders.
-
----
-
-### 3.3 — Fix the Undefined Environment Secret Bug
-
-**File:** `apps/web/src/server/api/middleware/isInternal.ts`
-
-**The Problem:**
-```typescript
-// Current code (BROKEN when env var is not set):
-const expectedToken = process.env.INTERNAL_CRON_SECRET;
-
-// If INTERNAL_CRON_SECRET is not in .env:
-// process.env.INTERNAL_CRON_SECRET === undefined
-// String comparison: token === undefined → converts to: token === "undefined"
-// So any attacker who sends the token "undefined" can call internal endpoints!
-```
-
-This is a subtle JavaScript type coercion bug. When you do `token === process.env.MISSING_VAR`, and the env var is not set, `process.env.MISSING_VAR` is `undefined` (the JS primitive). But when this gets compared in some contexts, or when constructing error messages, it becomes the string `"undefined"`. More critically, the timing-safe comparison functions often convert to string first.
-
-**The Fix — validate at startup, not at request time:**
-
-The correct approach is to validate all required environment variables when the process starts, before any requests are served. The codebase already has `apps/web/src/env.ts` which uses Zod for this purpose. Add the missing variable:
-
-```typescript
-// apps/web/src/env.ts — add to the server-side schema:
-export const env = createEnv({
-  server: {
-    DATABASE_URL: z.string().url(),
-    BETTER_AUTH_SECRET: z.string().min(32),
-
-    // ADD THIS:
-    INTERNAL_CRON_SECRET: z.string().min(32,
-      'INTERNAL_CRON_SECRET must be at least 32 characters. Generate with: openssl rand -hex 32'
-    ),
-
-    // ... rest of variables
-  },
-});
-```
-
-Then in the middleware, import from `env` instead of `process.env`:
-
-```typescript
-// apps/web/src/server/api/middleware/isInternal.ts
-import { env } from '~/env';  // ← validated at startup, guaranteed to be a string
-
-export function isInternal(token: string | undefined): boolean {
-  if (!token) return false;
-
-  // env.INTERNAL_CRON_SECRET is GUARANTEED to be a string here
-  // because if it was missing, the app would have crashed at startup with a clear error message
-  return timingSafeEqual(
-    Buffer.from(token),
-    Buffer.from(env.INTERNAL_CRON_SECRET)
-  );
-}
-```
-
-**What `createEnv` does:**
-When your Next.js app starts (or your Node process starts), `createEnv` runs the Zod schema against `process.env`. If any required variable is missing or invalid, it throws immediately with a human-readable error like:
-```
-❌ Invalid environment variables:
-  INTERNAL_CRON_SECRET: Required
-```
-This means deployment failures are caught during startup, not during a live request at 3am.
-
----
-
-### 3.4 — Fix the Regex Double-Escape Bug
-
-**File:** `apps/agent/src/agents/google/ai-overview/lib/extractResponse.ts`
-
-**The Problem:**
-This is one of the most subtle bugs in the codebase. When you write a regex in a JavaScript string (not a regex literal), backslashes need to be escaped TWICE:
-- Once for the string (JavaScript string literal escaping)
-- Once for the regex engine
-
-```typescript
-// BROKEN — what's in the code:
-const SOURCE_CARD_DATE_PATTERN = "[A-Z][a-z]+ \\\\d{1,2}, \\\\d{4}";
-// Each \\\\ is: string parses \\ as literal backslash,
-// then regex sees \\d which means "escaped d" = literal character "d"
-// So this pattern matches: "January d, d" — literally the letter "d", never a digit!
-
-// CORRECT option 1 — use String.raw (no string escaping):
-const SOURCE_CARD_DATE_PATTERN = String.raw`[A-Z][a-z]+ \d{1,2}, \d{4}`;
-// String.raw passes the string as-is, so \d reaches the regex engine as \d (match digit)
-
-// CORRECT option 2 — use a RegExp literal (no string involved at all):
-const SOURCE_CARD_DATE_RE = /[A-Z][a-z]+ \d{1,2}, \d{4}/;
-
-// CORRECT option 3 — double backslash properly (only 2 backslashes, not 4):
-const SOURCE_CARD_DATE_PATTERN = "[A-Z][a-z]+ \\d{1,2}, \\d{4}";
-// String parses \\ as \ and passes \d to the regex engine which matches a digit
-```
-
-**Why this bug is so dangerous:**
-This pattern is used to detect date strings like "January 15, 2025" in Google AI Overview source cards. When it silently fails to match dates, the date extraction returns `null` for every source. The agent continues without an error — it just quietly returns sources without dates. You'd only notice this by manually checking extracted data, making it nearly impossible to detect in production.
-
-**Always prefer regex literals over string-based regex.** The string approach is only needed when you're dynamically constructing patterns, which this case is not.
-
----
-
 ## 4. Aggressive Code Duplication Cleanup
 
 ### 4.1 — The 5 Agent Factories → 1 Generic Factory
@@ -326,14 +106,12 @@ export async function claudeAgent(proxy?: ProxyConfig) {
   return { browser, context, page, auth, proxy: p };
 }
 
-// perplexityAgent.ts (IDENTICAL except 2 strings + 1 extra scroll):
 export async function perplexityAgent(proxy?: ProxyConfig) {
   const { browser, context, proxy: p } = await launchContext("perplexity");
   let page = await context.newPage();
   await navigateWithRetry(page, 'https://www.perplexity.ai', { waitUntil: 'domcontentloaded' });
   setupPage(page, "perplexity");
   await page.waitForTimeout(3000);
-  await page.evaluate(() => window.scrollTo(0, 500)); // ← only difference
   const auth = await isAuthenticated(page, "perplexity");
   return { browser, context, page, auth, proxy: p };
 }
@@ -368,12 +146,6 @@ interface AgentConfig {
   entryUrl: string;
   /** How long to wait after navigation before checking auth (ms) */
   warmupDelay: number;
-  /**
-   * Optional: provider-specific setup to run after navigation but before auth check.
-   * Use this for things like scrolling, dismissing modals, etc.
-   * If not needed, omit the property — it won't be called.
-   */
-  preAuthSetup?: (page: Page) => Promise<void>;
 }
 
 /**
@@ -394,12 +166,7 @@ const AGENT_CONFIGS: Record<Provider, AgentConfig> = {
   },
   perplexity: {
     entryUrl: 'https://www.perplexity.ai',
-    warmupDelay: 3000,
-    // Perplexity renders some elements lazily, so we scroll to trigger them
-    // before checking authentication state
-    preAuthSetup: async (page) => {
-      await page.evaluate(() => window.scrollTo(0, 500));
-    },
+    warmupDelay: 2000,
   },
   google: {
     entryUrl: 'https://gemini.google.com/',
@@ -407,7 +174,7 @@ const AGENT_CONFIGS: Record<Provider, AgentConfig> = {
   },
   'google-ai-overview': {
     entryUrl: 'https://google.com/',
-    warmupDelay: 1500,
+    warmupDelay: 2000,
   },
 };
 

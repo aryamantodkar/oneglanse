@@ -56,31 +56,3 @@ Built Docker images are pushed without any vulnerability scanning. Known CVEs in
     exit-code: '1'       # Fail CI on HIGH/CRITICAL CVEs
     severity: 'HIGH,CRITICAL'
 ```
-
----
-
-## Turborepo Configuration Notes
-
-**File:** `turbo.json`
-
-Minor issues found:
-
-1. **Missing outputs for utility packages:** `packages/types`, `packages/errors`, and `packages/utils` produce `dist/` but this isn't declared in Turborepo outputs. This can cause cache misses.
-
-   **Fix:** Ensure each package's `turbo.json` or root config declares `"outputs": ["dist/**"]`.
-
-2. **No `test` task defined:** Tests cannot run as part of the Turbo pipeline.
-
-   **Fix:**
-   ```json
-   {
-     "tasks": {
-       "test": {
-         "dependsOn": ["^build"],
-         "cache": false
-       }
-     }
-   }
-   ```
-
----
