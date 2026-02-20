@@ -208,11 +208,11 @@ export function useDashboardData(
 		).length;
 
 		const competitorCounts = new Map<string, number>();
-		analyzedRecords.forEach((r) => {
-			r.brand_analysis.competitors.forEach((c) => {
+		for (const r of analyzedRecords) {
+			for (const c of r.brand_analysis.competitors) {
 				competitorCounts.set(c.name, (competitorCounts.get(c.name) ?? 0) + 1);
-			});
-		});
+			}
+		}
 		const topCompetitor =
 			[...competitorCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
 			"N/A";
@@ -243,8 +243,8 @@ export function useDashboardData(
 			}
 		>();
 
-		analyzedRecords.forEach((r) => {
-			r.brand_analysis.competitors.forEach((c) => {
+		for (const r of analyzedRecords) {
+			for (const c of r.brand_analysis.competitors) {
 				const existing = map.get(c.name) ?? {
 					name: c.name,
 					domain: c.domain ?? "",
@@ -263,15 +263,15 @@ export function useDashboardData(
 					existing.rankCount += 1;
 				}
 				if (c.isRecommended) existing.recCount += 1;
-				c.winsOver.forEach((w) =>
-					existing.winsOver.set(w, (existing.winsOver.get(w) ?? 0) + 1),
-				);
-				c.losesTo.forEach((l) =>
-					existing.losesTo.set(l, (existing.losesTo.get(l) ?? 0) + 1),
-				);
+				for (const w of c.winsOver) {
+					existing.winsOver.set(w, (existing.winsOver.get(w) ?? 0) + 1);
+				}
+				for (const l of c.losesTo) {
+					existing.losesTo.set(l, (existing.losesTo.get(l) ?? 0) + 1);
+				}
 				map.set(c.name, existing);
-			});
-		});
+			}
+		}
 
 		const competitorList = [...map.values()]
 			.map((c) => ({
@@ -319,14 +319,12 @@ export function useDashboardData(
 	const sentimentBreakdown = useMemo(() => {
 		const positiveCounts = new Map<string, number>();
 		const negativeCounts = new Map<string, number>();
-		analyzedRecords.forEach((r) => {
-			r.brand_analysis.sentiment.positives.forEach((p) =>
-				positiveCounts.set(p, (positiveCounts.get(p) ?? 0) + 1),
-			);
-			r.brand_analysis.sentiment.negatives.forEach((n) =>
-				negativeCounts.set(n, (negativeCounts.get(n) ?? 0) + 1),
-			);
-		});
+		for (const r of analyzedRecords) {
+			for (const p of r.brand_analysis.sentiment.positives)
+				positiveCounts.set(p, (positiveCounts.get(p) ?? 0) + 1);
+			for (const n of r.brand_analysis.sentiment.negatives)
+				negativeCounts.set(n, (negativeCounts.get(n) ?? 0) + 1);
+		}
 		return {
 			positives: [...positiveCounts.entries()]
 				.sort((a, b) => b[1] - a[1])
@@ -343,7 +341,7 @@ export function useDashboardData(
 		const claimCounts = new Map<string, number>();
 		const diffCounts = new Map<string, number>();
 
-		analyzedRecords.forEach((r) => {
+		for (const r of analyzedRecords) {
 			const p = r.brand_analysis.perception;
 			if (p.bestKnownFor)
 				bestKnownForCounts.set(
@@ -354,13 +352,11 @@ export function useDashboardData(
 				p.pricingPerception,
 				(pricingCounts.get(p.pricingPerception) ?? 0) + 1,
 			);
-			p.coreClaims.forEach((c) =>
-				claimCounts.set(c, (claimCounts.get(c) ?? 0) + 1),
-			);
-			p.differentiators.forEach((d) =>
-				diffCounts.set(d, (diffCounts.get(d) ?? 0) + 1),
-			);
-		});
+			for (const c of p.coreClaims)
+				claimCounts.set(c, (claimCounts.get(c) ?? 0) + 1);
+			for (const d of p.differentiators)
+				diffCounts.set(d, (diffCounts.get(d) ?? 0) + 1);
+		}
 
 		return {
 			bestKnownFor:
@@ -395,16 +391,16 @@ export function useDashboardData(
 		>();
 		const seenCitations = new Set<string>();
 
-		filteredRecords.forEach((r) => {
-			r.sources.forEach((s) => {
+		for (const r of filteredRecords) {
+			for (const s of r.sources) {
 				const cleanUrl = removeUrlParams(s.url);
 				const domain = getDomain(cleanUrl);
-				if (!domain) return;
+				if (!domain) continue;
 
 				const dedupeKey = s.cited_text?.trim()
 					? `${s.title}::${r.model_provider}::${s.cited_text}`
 					: `${s.title}::${r.model_provider}::${cleanUrl}`;
-				if (seenCitations.has(dedupeKey)) return;
+				if (seenCitations.has(dedupeKey)) continue;
 				seenCitations.add(dedupeKey);
 
 				const existing = domainMap.get(domain) ?? {
@@ -427,8 +423,8 @@ export function useDashboardData(
 					});
 				}
 				domainMap.set(domain, existing);
-			});
-		});
+			}
+		}
 
 		const allDomains = [...domainMap.values()].sort(
 			(a, b) => b.citationCount - a.citationCount,
@@ -445,9 +441,9 @@ export function useDashboardData(
 			string,
 			{ type: string; severity: string; detail: string; count: number }
 		>();
-		analyzedRecords.forEach((r) => {
-			if (!r.brand_analysis.risks.hasRisks) return;
-			r.brand_analysis.risks.items.forEach((risk) => {
+		for (const r of analyzedRecords) {
+			if (!r.brand_analysis.risks.hasRisks) continue;
+			for (const risk of r.brand_analysis.risks.items) {
 				const key = risk.detail.toLowerCase().trim();
 				const existing = riskMap.get(key);
 				if (
@@ -458,8 +454,8 @@ export function useDashboardData(
 				} else if (existing) {
 					existing.count += 1;
 				}
-			});
-		});
+			}
+		}
 		return [...riskMap.values()].sort((a, b) => {
 			const sevDiff = severityRank(b.severity) - severityRank(a.severity);
 			return sevDiff !== 0 ? sevDiff : b.count - a.count;
@@ -469,13 +465,13 @@ export function useDashboardData(
 	const groupedRecords = useMemo(() => {
 		const groups = new Map<string, AnalysisRecord[]>();
 
-		analyzedRecords.forEach((record) => {
+		for (const record of analyzedRecords) {
 			const prompt = record.prompt;
 			if (!groups.has(prompt)) {
 				groups.set(prompt, []);
 			}
 			groups.get(prompt)!.push(record);
-		});
+		}
 
 		return Array.from(groups.entries()).map(([prompt, records]) => {
 			// Sort records within group by model provider

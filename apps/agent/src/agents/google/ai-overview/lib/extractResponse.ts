@@ -21,25 +21,30 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 			const clone = placeholder.cloneNode(true) as HTMLElement;
 
 			// Step 1: Remove noise tags
-			["script", "style", "button", "svg", "noscript", "iframe"].forEach(
-				(tag) => {
-					clone.querySelectorAll(tag).forEach((el) => el.remove());
-				},
-			);
-			clone.querySelectorAll("sup").forEach((el) => el.remove());
+			for (const tag of [
+				"script",
+				"style",
+				"button",
+				"svg",
+				"noscript",
+				"iframe",
+			]) {
+				for (const el of clone.querySelectorAll(tag)) el.remove();
+			}
+			for (const el of clone.querySelectorAll("sup")) el.remove();
 
 			// Step 2: Remove source card containers using STABLE SEMANTIC selectors only
 			// (no obfuscated class names that break on every Google deploy)
-			[
+			for (const sel of [
 				// Semantic container IDs — "rhs-col" is Google's own stable name for the source panel
 				'[data-container-id="rhs-col"]',
 				// Semantic xid — stable identifier for the corroboration aside panel
 				'[data-xid="aim-aside-initial-corroboration-container"]',
 				// Hover corroboration dialog — identified by role + data-type, both semantic
 				'[role="dialog"][data-type="hovc"]',
-			].forEach((sel) =>
-				clone.querySelectorAll(sel).forEach((el) => el.remove()),
-			);
+			]) {
+				for (const el of clone.querySelectorAll(sel)) el.remove();
+			}
 
 			// Step 3: Remove any REMAINING source card blocks not caught by the above
 			// Source card links always have: target="_blank" + rel="noopener" + aria-label="...Opens in new tab."
@@ -51,7 +56,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 				),
 			);
 			const toRemove = new Set<Element>();
-			remainingSourceLinks.forEach((link) => {
+			for (const link of remainingSourceLinks) {
 				let el: Element = link;
 				while (el.parentElement && el.parentElement !== clone) {
 					const parent = el.parentElement;
@@ -68,12 +73,12 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 					el = parent;
 				}
 				toRemove.add(el);
-			});
-			toRemove.forEach((el) => el.remove());
+			}
+			for (const el of toRemove) el.remove();
 
 			// Step 4: Safety net — remove any remaining element whose text matches a date snippet pattern
 			// AND doesn't contain a heading (so we never accidentally remove prose sections)
-			clone.querySelectorAll("*").forEach((el) => {
+			for (const el of clone.querySelectorAll("*")) {
 				const text = el.textContent || "";
 				if (
 					text.length < 5000 &&
@@ -82,7 +87,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 				) {
 					el.remove();
 				}
-			});
+			}
 
 			// Step 5: Extract main-col prose only; fallback to full cleaned clone
 			const mainCol = clone.querySelector('[data-container-id="main-col"]');
