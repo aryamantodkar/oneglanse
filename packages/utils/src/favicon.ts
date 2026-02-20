@@ -1,30 +1,30 @@
 import { getDomain } from "./url/getDomain.js";
+import { PROVIDERS } from "./agent/providers.js";
 
 export const getModelFavicon = (model: string): string => {
 	// Normalize model name to lowercase provider key
 	const normalizedModel = model.toLowerCase();
 
-	const modelDomains: Record<string, string> = {
-		// Provider keys (lowercase)
-		openai: "openai.com",
-		anthropic: "claude.ai",
-		perplexity: "perplexity.ai",
-		google: "gemini.google.com",
-		"google-ai-overview": "google.com",
-		mistral: "mistral.ai",
-		meta: "about.fb.com",
-		cohere: "cohere.com",
-
-		// Display names (for backward compatibility)
-		chatgpt: "openai.com",
-		claude: "claude.ai",
-		gemini: "gemini.google.com",
-	};
-
 	// If "All Models", return empty string (we'll use Bot icon instead)
 	if (model === "All Models") return "";
 
-	const domain = modelDomains[normalizedModel] || `${normalizedModel}.com`;
+	// Check known provider keys first (openai, anthropic, perplexity, google, google-ai-overview)
+	const providerConfig = PROVIDERS[normalizedModel as keyof typeof PROVIDERS];
+	if (providerConfig) {
+		return `https://www.google.com/s2/favicons?sz=32&domain=${providerConfig.domain}`;
+	}
+
+	// Fallback: display name aliases and other models
+	const fallbackDomains: Record<string, string> = {
+		chatgpt: "openai.com",
+		claude: "claude.ai",
+		gemini: "gemini.google.com",
+		mistral: "mistral.ai",
+		meta: "about.fb.com",
+		cohere: "cohere.com",
+	};
+
+	const domain = fallbackDomains[normalizedModel] ?? `${normalizedModel}.com`;
 	return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
 };
 

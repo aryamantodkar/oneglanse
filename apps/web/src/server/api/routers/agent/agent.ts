@@ -7,6 +7,7 @@ import {
 	redis,
 } from "@onescope/services";
 import type { Provider } from "@onescope/types";
+import { ALL_PROVIDERS_JSON } from "@onescope/utils";
 import { z } from "zod";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 import { createTRPCRouter } from "../../trpc";
@@ -36,8 +37,7 @@ export const agentRouter = createTRPCRouter({
 			// Fetch workspace and parse enabled providers
 			const workspace = await getWorkspaceById({ workspaceId: workspaceId! });
 			const enabledProvidersJson =
-				workspace.enabledProviders ??
-				'["openai","anthropic","perplexity","google","google-ai-overview"]';
+				workspace.enabledProviders ?? ALL_PROVIDERS_JSON;
 			const enabledProviders = JSON.parse(enabledProvidersJson) as Provider[];
 
 			const progress = {

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { PROVIDER_LIST } from "@onescope/types";
 import { PROVIDERS } from "@onescope/utils";
 import dotenv from "dotenv";
 import { logger } from "../lib/utils/logger.js";
@@ -56,7 +57,7 @@ async function uploadSessions() {
 	// Read session files
 	const sessions: SessionData = {};
 	// google-ai-overview shares the google (Gemini) session — no separate file to upload
-	const providers = ["anthropic", "openai", "perplexity", "google"];
+	const providers = PROVIDER_LIST.filter((p) => p !== "google-ai-overview");
 
 	for (const provider of providers) {
 		const authFile = path.join(

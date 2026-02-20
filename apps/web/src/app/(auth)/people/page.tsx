@@ -2,7 +2,7 @@
 
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { api } from "@/trpc/react";
-import type { Provider } from "@onescope/types";
+import { PROVIDER_LIST, type Provider } from "@onescope/types";
 import {
 	Button,
 	Input,
@@ -21,7 +21,7 @@ import {
 	TableRow,
 	toast,
 } from "@onescope/ui";
-import { getModelFavicon, getProviderDisplayName } from "@onescope/utils";
+import { PROVIDERS, getModelFavicon, getProviderDisplayName } from "@onescope/utils";
 import {
 	Building2,
 	CheckCircle2,
@@ -160,15 +160,6 @@ export default function PeoplePage() {
 			console.error(err);
 			toast.error("Failed to copy to clipboard.");
 		}
-	};
-
-	// Provider descriptions
-	const providerDescriptions = {
-		openai: "ChatGPT - Powered by GPT-4",
-		anthropic: "Claude - Advanced reasoning and analysis",
-		perplexity: "Real-time web search and citations",
-		google: "Gemini - Google's latest AI model",
-		"google-ai-overview": "AI-powered search summaries from Google",
 	};
 
 	// Toggle provider handler (for edit mode)
@@ -624,15 +615,7 @@ export default function PeoplePage() {
 								Your prompts will be sent to these AI providers
 							</p>
 							<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-								{(
-									[
-										"openai",
-										"anthropic",
-										"perplexity",
-										"google",
-										"google-ai-overview",
-									] as const
-								).map((provider) => {
+								{PROVIDER_LIST.map((provider) => {
 									const isEnabled = enabledProviders.includes(provider);
 									return (
 										<div
@@ -658,7 +641,7 @@ export default function PeoplePage() {
 													{getProviderDisplayName(provider)}
 												</p>
 												<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-													{providerDescriptions[provider]}
+													{PROVIDERS[provider].description}
 												</p>
 											</div>
 										</div>
@@ -674,15 +657,7 @@ export default function PeoplePage() {
 								required)
 							</p>
 							<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-								{(
-									[
-										"openai",
-										"anthropic",
-										"perplexity",
-										"google",
-										"google-ai-overview",
-									] as const
-								).map((provider) => {
+								{PROVIDER_LIST.map((provider) => {
 									const isSelected = tempProviders.includes(provider);
 									return (
 										<button
@@ -710,7 +685,7 @@ export default function PeoplePage() {
 													{getProviderDisplayName(provider)}
 												</p>
 												<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-													{providerDescriptions[provider]}
+													{PROVIDERS[provider].description}
 												</p>
 											</div>
 										</button>

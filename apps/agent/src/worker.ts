@@ -5,13 +5,15 @@ import {
 	storePromptResponses,
 	waitForRedis,
 } from "@onescope/services";
-import type {
-	AgentResult,
-	ModelResult,
-	PromptPayload,
-	Provider,
-	UserPrompt,
+import {
+	PROVIDER_LIST,
+	type AgentResult,
+	type ModelResult,
+	type PromptPayload,
+	type Provider,
+	type UserPrompt,
 } from "@onescope/types";
+import { PROVIDERS } from "@onescope/utils";
 import { type Job, Worker } from "bullmq";
 import { agentHandler } from "./agents/lib/agentHandler.js";
 import { createAgent } from "./agents/lib/createAgent.js";
@@ -26,19 +28,12 @@ type ProviderJobData = {
 	created_at?: string; // Optional - worker generates fresh timestamp if not provided
 };
 
-const providerConfig: Record<
-	Provider,
-	{ label: string; factory: () => ReturnType<typeof createAgent> }
-> = {
-	openai: { label: "OpenAI", factory: () => createAgent("openai") },
-	anthropic: { label: "Anthropic", factory: () => createAgent("anthropic") },
-	perplexity: { label: "Perplexity", factory: () => createAgent("perplexity") },
-	google: { label: "Google", factory: () => createAgent("google") },
-	"google-ai-overview": {
-		label: "Google AI Overview",
-		factory: () => createAgent("google-ai-overview"),
-	},
-};
+const providerConfig = Object.fromEntries(
+	PROVIDER_LIST.map((p) => [
+		p,
+		{ label: PROVIDERS[p].label, factory: () => createAgent(p) },
+	]),
+) as Record<Provider, { label: string; factory: () => ReturnType<typeof createAgent> }>;
 
 function runAnalysisInBackground(args: {
 	workspaceId: string;
@@ -161,13 +156,9 @@ async function startWorker() {
 
 			// Store successful results immediately
 			if (wrapped.status === "fulfilled" && wrapped.data.length > 0) {
-				const emptyResult: Record<Provider, AgentResult> = {
-					openai: { status: "rejected", data: [] },
-					anthropic: { status: "rejected", data: [] },
-					perplexity: { status: "rejected", data: [] },
-					google: { status: "rejected", data: [] },
-					"google-ai-overview": { status: "rejected", data: [] },
-				};
+				const emptyResult = Object.fromEntries(
+					PROVIDER_LIST.map((p) => [p, { status: "rejected" as const, data: [] }]),
+				) as unknown as Record<Provider, AgentResult>;
 
 				const partialResults: ModelResult = {
 					...emptyResult,

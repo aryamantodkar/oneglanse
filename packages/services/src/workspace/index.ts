@@ -1,7 +1,7 @@
 import { db, schema } from "@onescope/db";
 import type { Workspace } from "@onescope/db";
 import { NotFoundError, ValidationError } from "@onescope/errors";
-import { newId } from "@onescope/utils";
+import { ALL_PROVIDERS_JSON, newId } from "@onescope/utils";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 export async function createWorkspaceForTenant(args: {
@@ -24,7 +24,7 @@ export async function createWorkspaceForTenant(args: {
 		country,
 		region: region || null,
 		schedule: null,
-		enabledProviders: '["openai","anthropic","perplexity","google"]',
+		enabledProviders: ALL_PROVIDERS_JSON,
 		createdAt: new Date(),
 		deletedAt: null,
 	};
