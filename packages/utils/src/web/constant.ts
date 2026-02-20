@@ -1,8 +1,7 @@
+import { PROVIDER_LIST } from "@onescope/types";
+import { PROVIDERS } from "../agent/providers.js";
+
 export const modelSelectors = [
 	{ value: "All Models", label: "All Models" },
-	{ value: "openai", label: "ChatGPT" },
-	{ value: "perplexity", label: "Perplexity" },
-	{ value: "anthropic", label: "Claude" },
-	{ value: "google", label: "Gemini" },
-	{ value: "google-ai-overview", label: "AI Overview" },
+	...PROVIDER_LIST.map((p) => ({ value: p, label: PROVIDERS[p].displayName })),
 ];

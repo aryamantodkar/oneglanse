@@ -33,12 +33,15 @@ export interface AskPromptResult {
 	sources: Source[];
 }
 
-export type Provider =
-	| "openai"
-	| "anthropic"
-	| "perplexity"
-	| "google"
-	| "google-ai-overview";
+export const PROVIDER_LIST = [
+	"openai",
+	"anthropic",
+	"perplexity",
+	"google",
+	"google-ai-overview",
+] as const;
+
+export type Provider = (typeof PROVIDER_LIST)[number];
 
 export type AgentResult = {
 	status: "fulfilled" | "rejected";

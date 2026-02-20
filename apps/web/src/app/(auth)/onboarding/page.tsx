@@ -11,6 +11,7 @@ import {
 	Textarea,
 	toast,
 } from "@onescope/ui";
+import { PROVIDER_LIST } from "@onescope/types";
 import { getProviderDisplayName } from "@onescope/utils";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -297,15 +298,7 @@ export default function FirstWorkspaceOnboardingPage() {
 								</div>
 
 								<div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-									{(
-										[
-											"openai",
-											"anthropic",
-											"perplexity",
-											"google",
-											"google-ai-overview",
-										] as const
-									).map((provider) => {
+									{PROVIDER_LIST.map((provider) => {
 										const state = providerStates[provider] ?? "pending";
 										const isDone = state === "completed";
 										const isFailed = state === "failed";

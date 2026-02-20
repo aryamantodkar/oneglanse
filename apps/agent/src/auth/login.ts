@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
-import type { Provider } from "@onescope/types";
+import { PROVIDER_LIST, type Provider } from "@onescope/types";
 import { PROVIDERS } from "@onescope/utils";
 import dotenv from "dotenv";
 import { chromium } from "playwright-extra";
@@ -148,13 +148,9 @@ export async function loginToAll(): Promise<void> {
 	logger.log("   • Perplexity");
 	logger.log("   • Gemini (also used for AI Overview)\n");
 
-	const results: Record<Provider, "success" | "failed" | "skipped"> = {
-		openai: "skipped",
-		anthropic: "skipped",
-		perplexity: "skipped",
-		google: "skipped",
-		"google-ai-overview": "skipped",
-	};
+	const results = Object.fromEntries(
+		PROVIDER_LIST.map((p) => [p, "skipped" as const]),
+	) as Record<Provider, "success" | "failed" | "skipped">;
 
 	// google-ai-overview shares the google (Gemini) session — skip it in the login loop
 	const loginProviders = (Object.keys(PROVIDERS) as Provider[]).filter(

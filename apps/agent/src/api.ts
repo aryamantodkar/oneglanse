@@ -3,16 +3,12 @@ import { timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
+import { PROVIDER_LIST } from "@onescope/types";
 import { redis } from "@onescope/services";
+import { PROVIDERS } from "@onescope/utils";
 import { logger } from "./lib/utils/logger.js";
 
-const ALLOWED_PROVIDERS = new Set([
-	"anthropic",
-	"openai",
-	"perplexity",
-	"google",
-	"google-ai-overview",
-]);
+const ALLOWED_PROVIDERS = new Set(PROVIDER_LIST);
 
 function safeTokenCompare(a: string, b: string): boolean {
 	if (a.length !== b.length) return false; // lengths must match first
@@ -61,13 +57,9 @@ const server = createServer(async (req, res) => {
 				const VPS_AUTH_PROFILE_PATH =
 					process.env.VPS_AUTH_PROFILE_PATH || "/storage";
 
-				const results = {
-					anthropic: false,
-					openai: false,
-					perplexity: false,
-					google: false,
-					"google-ai-overview": false,
-				};
+				const results = Object.fromEntries(
+					PROVIDER_LIST.map((p) => [p, false]),
+				) as Record<string, boolean>;
 
 				const basePath = path.resolve(VPS_AUTH_PROFILE_PATH);
 
@@ -121,27 +113,12 @@ const server = createServer(async (req, res) => {
 			status: "ok",
 			timestamp: new Date().toISOString(),
 			redis: false,
-			sessions: {
-				anthropic: fs.existsSync(
-					path.join(AUTH_PROFILE_PATH, "anthropic", "anthropic-auth.json"),
-				),
-				openai: fs.existsSync(
-					path.join(AUTH_PROFILE_PATH, "openai", "openai-auth.json"),
-				),
-				perplexity: fs.existsSync(
-					path.join(AUTH_PROFILE_PATH, "perplexity", "perplexity-auth.json"),
-				),
-				google: fs.existsSync(
-					path.join(AUTH_PROFILE_PATH, "google", "google-auth.json"),
-				),
-				"google-ai-overview": fs.existsSync(
-					path.join(
-						AUTH_PROFILE_PATH,
-						"google-ai-overview",
-						"google-ai-overview-auth.json",
-					),
-				),
-			},
+			sessions: Object.fromEntries(
+				PROVIDER_LIST.map((p) => [
+					p,
+					fs.existsSync(path.join(AUTH_PROFILE_PATH, p, `${p}-auth.json`)),
+				]),
+			) as Record<string, boolean>,
 		};
 
 		try {

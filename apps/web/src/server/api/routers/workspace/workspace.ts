@@ -31,8 +31,8 @@ import {
 	scheduleCronForPrompts,
 	unscheduleCronForPrompts,
 } from "@onescope/services";
-import type { Provider } from "@onescope/types";
-import { newId } from "@onescope/utils";
+import { PROVIDER_LIST, type Provider } from "@onescope/types";
+import { ALL_PROVIDERS_JSON, newId } from "@onescope/utils";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -645,7 +645,7 @@ export const workspaceRouter = createTRPCRouter({
 
 			const enabledProviders = workspace.enabledProviders
 				? JSON.parse(workspace.enabledProviders)
-				: ["openai", "anthropic", "perplexity", "google", "google-ai-overview"];
+				: [...PROVIDER_LIST];
 
 			return ok({ enabledProviders }, "Enabled providers retrieved");
 		});
@@ -656,13 +656,7 @@ export const workspaceRouter = createTRPCRouter({
 			z.object({
 				providers: z
 					.array(
-						z.enum([
-							"openai",
-							"anthropic",
-							"perplexity",
-							"google",
-							"google-ai-overview",
-						]),
+						z.enum([...PROVIDER_LIST] as [Provider, ...Provider[]]),
 					)
 					.min(1, "At least one provider must be enabled"),
 			}),
@@ -726,8 +720,7 @@ export const workspaceRouter = createTRPCRouter({
 								// Fetch workspace and parse enabled providers
 								const workspace = await getWorkspaceById({ workspaceId });
 								const enabledProvidersJson =
-									workspace.enabledProviders ??
-									'["openai","anthropic","perplexity","google","google-ai-overview"]';
+									workspace.enabledProviders ?? ALL_PROVIDERS_JSON;
 								const enabledProviders = JSON.parse(
 									enabledProvidersJson,
 								) as Provider[];

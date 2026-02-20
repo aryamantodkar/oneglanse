@@ -12,6 +12,10 @@ import {
 import z from "zod";
 import { schema } from "../index.js";
 
+// Keep in sync with PROVIDER_LIST in @onescope/types
+const DEFAULT_PROVIDERS_JSON =
+	'["openai","anthropic","perplexity","google","google-ai-overview"]';
+
 export const workspaces = pgTable("workspaces", {
 	id: varchar("id", { length: 256 }).primaryKey(),
 	name: varchar("name", { length: 256 }).notNull(),
@@ -22,9 +26,7 @@ export const workspaces = pgTable("workspaces", {
 	region: varchar("region", { length: 128 }),
 	schedule: varchar("schedule", { length: 64 }),
 	enabledProviders: text("enabled_providers")
-		.default(
-			'["openai","anthropic","perplexity","google","google-ai-overview"]',
-		)
+		.default(DEFAULT_PROVIDERS_JSON)
 		.notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	deletedAt: timestamp("deleted_at"),
