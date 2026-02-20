@@ -92,7 +92,7 @@ jobs:
 
   build-web:
     name: Build Web
-    needs: changes
+    needs: [validate, changes]
     if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -166,7 +166,7 @@ jobs:
 
   build-postgres:
     name: Build Postgres
-    needs: changes
+    needs: [validate, changes]
     if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     permissions:
