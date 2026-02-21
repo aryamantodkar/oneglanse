@@ -12,8 +12,6 @@ interface AgentHooks {
 	postNavigate?: (page: Page) => Promise<void>;
 }
 
-// Only providers that need special navigation hooks are listed here.
-// All static config (entryUrl, warmupDelay, etc.) lives in PROVIDERS.
 const AGENT_HOOKS: Partial<Record<Provider, AgentHooks>> = {
 	perplexity: {
 		postNavigate: async (page: Page) => {

@@ -5,18 +5,17 @@ import { checkPageStability } from "../browser/checkPageStability.js";
 import { logger } from "../utils/logger.js";
 import { isAuthenticated } from "./isAuthenticated.js";
 
+const TIMEOUT_MS = 8 * 60 * 1000;
+
 export async function waitForAuthentication(
 	page: Page,
 	provider: Provider,
-	timeoutMs: number = 8 * 60 * 1000,
 	skipHealthCheck = false,
 ): Promise<void> {
 	const displayName = PROVIDERS[provider].displayName;
-	// Google pages respond faster; all other providers use 2 s
-	const pollInterval =
-		provider === "google" || provider === "google-ai-overview" ? 1000 : 2000;
+	const pollInterval = 2000;
 
-	const deadline = Date.now() + timeoutMs;
+	const deadline = Date.now() + TIMEOUT_MS;
 	const startTime = Date.now();
 	let checkCount = 0;
 
