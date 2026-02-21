@@ -20,6 +20,14 @@ services:
     command: pnpm start:api
     networks:
       - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3333/health"]
       interval: 10s
@@ -53,9 +61,9 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 3G
+          memory: 4G
         reservations:
-          cpus: '0.5'
+          cpus: '1'
           memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]
@@ -78,6 +86,14 @@ services:
       - redis_data:/data
     networks:
       - data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -153,6 +169,14 @@ services:
       - frontend
       - backend
       - data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     depends_on:
       db:
         condition: service_healthy
