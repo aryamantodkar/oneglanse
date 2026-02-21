@@ -67,7 +67,11 @@ export async function analysePromptsForWorkspace(args: {
 		error: string;
 	}> = [];
 
-	// If analyzeAll is true, loop until all responses are analyzed
+	// offset advances the cursor independently of ClickHouse mutation completion.
+	// ALTER TABLE UPDATE is async — without OFFSET, the same rows are returned
+	// every iteration until the background mutation finishes, causing duplicate
+	// processing and a potential infinite loop.
+	let offset = 0;
 	let hasMore = true;
 	while (hasMore) {
 		const result = await clickhouse.query({
@@ -77,8 +81,9 @@ export async function analysePromptsForWorkspace(args: {
                 WHERE workspace_id = {workspaceId:String}
                   AND is_analysed = false
                 LIMIT {batchSize:UInt32}
+                OFFSET {offset:UInt32}
             `,
-			query_params: { workspaceId, batchSize },
+			query_params: { workspaceId, batchSize, offset },
 			format: "JSONEachRow",
 		});
 
@@ -157,6 +162,7 @@ export async function analysePromptsForWorkspace(args: {
 		totalAnalyzed += analysisRows.length;
 		totalFailed += errors.length;
 		allErrors = allErrors.concat(errors);
+		offset += batchSize;
 
 		// If not analyzing all, stop after first batch
 		if (!analyzeAll) {

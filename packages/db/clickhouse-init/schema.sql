@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
     user_id String,
     workspace_id String,
     model String,
-    model_provider String,
+    model_provider LowCardinality(String),
     response String,
     sources Array(Tuple(
         title String,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS analytics.prompt_responses (
     prompt_run_at DateTime,
     created_at DateTime DEFAULT now()
 )
-ENGINE = MergeTree()
+ENGINE = ReplacingMergeTree()
 PARTITION BY toYYYYMM(prompt_run_at)
 ORDER BY (workspace_id, prompt_run_at, model_provider, prompt_id);
 
