@@ -1,7 +1,7 @@
 import type { Provider, Source } from "@onescope/types";
 import { SOURCES_SELECTORS } from "@onescope/utils";
 import type { Locator, Page } from "playwright";
-import { findLastAssistantBox } from "../../../lib/input/getLastAssistantText.js";
+import { findLastAssistantBox } from "../../../lib/input/findAssistantElement.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { extractSourcesFromOpenai } from "../../chatgpt/lib/extractSources.js";
 import { extractSourcesFromAnthropic } from "../../claude/lib/extractSources.js";

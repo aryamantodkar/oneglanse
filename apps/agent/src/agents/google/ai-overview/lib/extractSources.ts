@@ -4,7 +4,7 @@ import { logger } from "../../../../lib/utils/logger.js";
 
 export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 	try {
-		const sources = await page.evaluate(() => {
+		const { sources, containerFound } = await page.evaluate(() => {
 			const results: any[] = [];
 			const seen = new Set<string>();
 
@@ -50,14 +50,10 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 				}
 
 				if (!aoContainer) {
-					console.error("AI Overview container not found");
-					return results;
+					return { sources: results, containerFound: false };
 				}
 
-				console.log("AI Overview container found");
-
 				const linksInAO = aoContainer.querySelectorAll("a[href]");
-				console.log(`Found ${linksInAO.length} links in AI Overview`);
 
 				for (const link of linksInAO) {
 					try {
@@ -137,20 +133,20 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 							domain: domain,
 							favicon: favicon,
 						});
-
-						console.log(`Added: ${title}`);
-					} catch (error) {
-						console.warn("Error processing link:", error);
+					} catch {
+						// Skip malformed links silently
 					}
 				}
 
-				console.log(`Total AI Overview sources extracted: ${results.length}`);
-				return results;
-			} catch (error) {
-				console.error("Error in extractAIOverviewSources:", error);
-				return results;
+				return { sources: results, containerFound: true };
+			} catch {
+				return { sources: results, containerFound: false };
 			}
 		});
+
+		if (!containerFound) {
+			logger.warn("AI Overview container not found — no sources extracted");
+		}
 
 		logger.debug(`Extracted ${sources.length} sources from AI Overview`);
 		return sources;
