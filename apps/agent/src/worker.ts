@@ -19,6 +19,10 @@ import { agentHandler } from "./agents/lib/agentHandler.js";
 import { createAgent } from "./agents/lib/createAgent.js";
 import { logger } from "./lib/utils/logger.js";
 
+// Exported so index.ts can call worker.close() during graceful shutdown.
+// Null until startWorker() completes Redis readiness check and construction.
+export let worker: Worker | null = null;
+
 type ProviderJobData = {
 	jobGroupId: string;
 	provider: Provider;
@@ -75,7 +79,7 @@ async function startWorker() {
 			? configuredConcurrency
 			: 1;
 
-	const worker = new Worker(
+	worker = new Worker(
 		"onescope-agent",
 		async (job: Job<ProviderJobData>) => {
 			const data = job.data as ProviderJobData;

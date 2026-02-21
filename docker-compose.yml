@@ -35,6 +35,7 @@ services:
     pull_policy: always
     container_name: onescope-agent-worker
     restart: unless-stopped
+    stop_grace_period: 16m
     env_file:
       - .env
       - apps/agent/.env
