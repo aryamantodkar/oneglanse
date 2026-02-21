@@ -304,11 +304,6 @@ export function recordProxyResult(
 	}
 }
 
-/** @deprecated Use recordProxyResult() instead */
-export function markProxyBad(proxy: string): void {
-	recordProxyResult(proxy, false, "unknown");
-}
-
 export function getAvailableCount(): number {
 	const now = Date.now();
 	let available = 0;

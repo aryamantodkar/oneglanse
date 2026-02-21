@@ -1,11 +1,12 @@
 import { AuthError, IPRefreshNeededError } from "@onescope/errors";
 import type { AskPromptResult, PromptPayload, Provider } from "@onescope/types";
 import type { Browser, BrowserContext, Page } from "playwright";
-import type { FailureType } from "../../lib/browser/pageHealthCheck.js";
 import {
 	fetchProxies,
 	recordProxyResult,
 } from "../../lib/browser/proxyPool.js";
+import { classifyError, type FailureType } from "./utils/classifyError.js";
+import { exponentialBackoff } from "./utils/backoff.js";
 import { logger } from "../../lib/utils/logger.js";
 import { runAgents } from "./runAgents.js";
 
@@ -16,29 +17,7 @@ const INITIAL_BACKOFF = 5_000; // 5 seconds — shorter since bad proxies are ca
 const MAX_CYCLE_BACKOFF = 60_000; // Cap cycle backoff at 60s
 const RETRY_DELAY = 2000; // 2 seconds between proxy attempts
 
-function getCycleBackoffMs(cycle: number): number {
-	if (cycle <= 0) return 0;
-	return Math.min(INITIAL_BACKOFF * 2 ** (cycle - 1), MAX_CYCLE_BACKOFF);
-}
 
-function classifyError(err: any): FailureType {
-	const msg = String(err?.message ?? "").toLowerCase();
-	if (/err_proxy|err_connection|err_ssl|err_timed_out/i.test(msg))
-		return "connection_error";
-	if (/bot.?detect|cloudflare|captcha|turnstile|challenge/i.test(msg))
-		return "bot_detection";
-	if (
-		/logged.?out|login|auth.*missing|session.*invalid|authentication is false/i.test(
-			msg,
-		)
-	)
-		return "logged_out";
-	if (/rate.?limit|too many|usage.?limit/i.test(msg)) return "rate_limited";
-	if (/no.*editor|editor.*not.*ready|no_editor/i.test(msg)) return "no_editor";
-	if (/extraction.*fail|empty.*response/i.test(msg)) return "extraction_failed";
-	if (/timed?\s*out/i.test(msg)) return "timeout";
-	return "unknown";
-}
 
 export async function agentHandler(
 	label: string,
@@ -64,7 +43,7 @@ export async function agentHandler(
 
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
 		if (cycle > 0) {
-			const backoff = getCycleBackoffMs(cycle);
+			const backoff = exponentialBackoff(cycle - 1, INITIAL_BACKOFF, MAX_CYCLE_BACKOFF);
 			logger.warn(
 				`${label} cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s, refreshing proxies...`,
 			);

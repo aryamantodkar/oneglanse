@@ -1,7 +1,6 @@
 import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
 import { PROVIDERS } from "@onescope/utils";
-import { checkPageStability } from "../browser/checkPageStability.js";
 import { logger } from "../utils/logger.js";
 import { isAuthenticated } from "./isAuthenticated.js";
 
@@ -28,7 +27,8 @@ export async function waitForAuthentication(
 		const minutes = Math.floor(remaining / 60);
 		const seconds = remaining % 60;
 
-		await checkPageStability(page);
+		await page.waitForLoadState("domcontentloaded").catch(() => {});
+		await page.waitForTimeout(2000);
 
 		if (await isAuthenticated(page, provider, skipHealthCheck)) {
 			process.stdout.write(`\r${" ".repeat(80)}\r`);

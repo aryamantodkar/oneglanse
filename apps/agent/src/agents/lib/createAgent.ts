@@ -4,7 +4,6 @@ import { PROVIDERS } from "@onescope/utils";
 import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { launchContext } from "../../lib/browser/launchContext.js";
 import { navigateWithRetry } from "../../lib/browser/navigateWithRetry.js";
-import { setupPage } from "../../lib/browser/setupPage.js";
 import { logger } from "../../lib/utils/logger.js";
 
 interface AgentHooks {
@@ -56,7 +55,13 @@ export async function createAgent(provider: Provider) {
 
 	logger.log("Loaded url:", page.url());
 
-	setupPage(page, provider);
+	page.setDefaultTimeout(0);
+	page.setDefaultNavigationTimeout(0);
+
+	page.on("console", (msg) => {
+		// console.log(`[${provider.toUpperCase()} PAGE]`, msg.text())
+	});
+
 	await page.waitForTimeout(providerConfig.warmupDelay);
 
 	const auth = await isAuthenticated(page, provider);

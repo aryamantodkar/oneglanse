@@ -3,6 +3,7 @@ import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
 import type { Page } from "playwright";
 import TurndownService from "turndown";
 import { extractAIOverviewResponse } from "../../agents/google/ai-overview/lib/extractResponse.js";
+import { extractAnthropicBlocks } from "./extractAnthropicBlocks.js";
 
 const turndown = new TurndownService({
 	headingStyle: "atx",
@@ -237,42 +238,13 @@ export async function extractAssistantMarkdown(
 			try {
 				if (!(await el.isVisible())) continue;
 
-				const html = await el.evaluate((root, provider) => {
-					if (!(root instanceof HTMLElement)) return "";
-
-					if (provider === "anthropic") {
-						const blocks = Array.from(
-							root.querySelectorAll<HTMLElement>(".standard-markdown"),
-						);
-
-						const visibleBlocks = blocks.filter((block) => {
-							let parent = block.parentElement;
-							while (parent && parent !== root) {
-								const style = window.getComputedStyle(parent);
-
-								if (
-									style.opacity === "0" ||
-									style.height === "0px" ||
-									style.display === "none" ||
-									(parent.classList.contains("overflow-hidden") &&
-										parent.style.height === "0px")
-								) {
-									return false;
-								}
-
-								parent = parent.parentElement;
-							}
-							return true;
-						});
-
-						return visibleBlocks
-							.map((b) => b.innerHTML?.trim() || "")
-							.filter(Boolean)
-							.join("<br><br>");
-					}
-
-					return root.innerHTML?.trim() || "";
-				}, provider);
+				const html =
+					provider === "anthropic"
+						? await extractAnthropicBlocks(el, "html")
+						: await el.evaluate((root) => {
+								if (!(root instanceof HTMLElement)) return "";
+								return root.innerHTML?.trim() || "";
+							});
 
 				if (html.length > 0) {
 					// Convert and normalize multiple newlines to double newlines
