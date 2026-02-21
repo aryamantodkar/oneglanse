@@ -5,7 +5,7 @@ import { PROVIDER_LIST, type Provider } from "@onescope/types";
 import { PROVIDERS } from "@onescope/utils";
 import dotenv from "dotenv";
 import { chromium } from "playwright-extra";
-import { waitForUserLogin } from "../lib/auth/waitForUserLogin.js";
+import { waitForAuthentication } from "../lib/auth/waitForAuthentication.js";
 import { logger } from "../lib/utils/logger.js";
 
 if (fs.existsSync("apps/agent/.env")) {
@@ -106,7 +106,7 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 			waitUntil: "domcontentloaded",
 		});
 
-		await waitForUserLogin(loginPage, provider, true); // Skip health check for local auth
+		await waitForAuthentication(loginPage, provider, true); // Skip health check for local auth
 
 		// For Google providers: also visit www.google.com before saving state so that
 		// google.com-specific cookies (login_info, SIDCC, NID) are included in the session.
