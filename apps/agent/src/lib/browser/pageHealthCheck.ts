@@ -1,5 +1,6 @@
 import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
+import { PROVIDER_EDITOR_SELECTORS } from "@onescope/utils";
 import { logger } from "../utils/logger.js";
 
 export type FailureType =
@@ -12,35 +13,6 @@ export type FailureType =
 	| "timeout"
 	| "unknown";
 
-// Provider-specific editor selectors (most reliable first)
-const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
-	perplexity: [
-		'#ask-input[contenteditable="true"]',
-		'[data-lexical-editor="true"][contenteditable="true"]',
-		'div.relative #ask-input[contenteditable="true"]',
-		'div[contenteditable="true"][spellcheck="true"]',
-	],
-	anthropic: [
-		'[data-testid="chat-input"][contenteditable="true"]',
-		'.ProseMirror[contenteditable="true"]',
-		'[data-testid="chat-input-grid-container"] [contenteditable="true"]',
-		'textarea[data-testid="chat-input-ssr"]',
-	],
-	openai: [
-		"#prompt-textarea",
-		'div#prompt-textarea[contenteditable="true"]',
-		'[data-testid="composer"] #prompt-textarea',
-		'textarea[name="prompt-textarea"]',
-	],
-	google: ['[contenteditable="true"]', 'div.ql-editor[contenteditable="true"]'],
-	"google-ai-overview": [
-		'[role="search"]',
-		'input[name="q"]',
-		'textarea[name="q"]',
-		'textarea[name="q"][role="combobox"]',
-		'textarea[aria-label="Search"]',
-	],
-};
 
 export type HealthCheckResult = {
 	healthy: boolean;

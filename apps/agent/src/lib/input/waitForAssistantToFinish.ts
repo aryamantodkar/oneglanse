@@ -1,7 +1,8 @@
 import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
 import { logger } from "../utils/logger.js";
-import { getLastAssistantText, isGenerating } from "./getLastAssistantText.js";
+import { getLastAssistantText } from "./getLastAssistantText.js";
+import { isGenerating } from "./isGenerating.js";
 
 // Shared polling helper - DRY principle
 async function pollUntilCondition(

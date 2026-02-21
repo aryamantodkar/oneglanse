@@ -1,9 +1,6 @@
 import type { Provider } from "@onescope/types";
-import {
-	MODEL_RESPONSE_SELECTORS,
-	RESPONSE_GENERATION_SELECTORS,
-} from "@onescope/utils";
-import type { Locator, Page } from "playwright";
+import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
+import type { Page } from "playwright";
 import { extractAnthropicBlocks } from "./extractAnthropicBlocks.js";
 
 export async function getLastAssistantText(
@@ -39,34 +36,4 @@ export async function getLastAssistantText(
 	}
 
 	return "";
-}
-
-export async function isGenerating(page: Page): Promise<boolean> {
-	for (const selector of RESPONSE_GENERATION_SELECTORS) {
-		if (
-			await page
-				.locator(selector)
-				.isVisible()
-				.catch(() => false)
-		) {
-			return true;
-		}
-	}
-	return false;
-}
-
-export async function findLastAssistantLocator(
-	page: Page,
-): Promise<Locator | null> {
-	for (const selector of MODEL_RESPONSE_SELECTORS) {
-		const locator = page.locator(selector);
-		if ((await locator.count()) === 0) continue;
-		return locator.last();
-	}
-	return null;
-}
-
-export async function findLastAssistantBox(page: Page) {
-	const locator = await findLastAssistantLocator(page);
-	return locator ? await locator.boundingBox() : null;
 }

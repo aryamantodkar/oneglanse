@@ -1,3 +1,42 @@
+import type { Provider } from "@onescope/types";
+
+// Provider-specific editor selectors used for health checks (most reliable first).
+// Keyed by provider so callers only test selectors relevant to the current session,
+// avoiding false positives and unnecessary timeout ticks on unrelated selectors.
+export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
+	openai: [
+		"#prompt-textarea",
+		'div#prompt-textarea[contenteditable="true"]',
+		'[data-testid="composer"] #prompt-textarea',
+		'textarea[name="prompt-textarea"]',
+	],
+	anthropic: [
+		'[data-testid="chat-input"][contenteditable="true"]',
+		'.ProseMirror[contenteditable="true"]',
+		'[data-testid="chat-input-grid-container"] [contenteditable="true"]',
+		'textarea[data-testid="chat-input-ssr"]',
+	],
+	perplexity: [
+		'#ask-input[contenteditable="true"]',
+		'[data-lexical-editor="true"][contenteditable="true"]',
+		'div.relative #ask-input[contenteditable="true"]',
+		'div[contenteditable="true"][spellcheck="true"]',
+	],
+	google: [
+		'[contenteditable="true"]',
+		'div.ql-editor[contenteditable="true"]',
+	],
+	"google-ai-overview": [
+		'[role="search"]',
+		'input[name="q"]',
+		'textarea[name="q"]',
+		'textarea[name="q"][role="combobox"]',
+		'textarea[aria-label="Search"]',
+	],
+};
+
+// Flat list of all editor selectors across providers, used when the provider is
+// unknown or when scanning for any available input (e.g. findActiveEditor).
 export const EDITOR_SELECTORS = [
 	// ======================
 	// ChatGPT
