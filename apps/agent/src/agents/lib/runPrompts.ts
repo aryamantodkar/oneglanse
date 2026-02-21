@@ -3,6 +3,8 @@ import type { AskPromptResult, Provider, Source } from "@onescope/types";
 import type { PromptPayload } from "@onescope/types";
 import type { Page } from "playwright";
 import { logger } from "../../lib/utils/logger.js";
+import { exponentialBackoff } from "./utils/backoff.js";
+import { classifyError } from "./utils/classifyError.js";
 import { askPrompt } from "./steps/askPrompt.js";
 import { checkAndExtractSources } from "./steps/extractSources.js";
 import { fetchPromptResponses } from "./steps/fetchPromptResponses.js";
@@ -11,23 +13,7 @@ const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 3);
 const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000);
 const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000);
 
-function getExponentialBackoffDelay(attempt: number): number {
-	const delay = INITIAL_RETRY_DELAY * 2 ** (attempt - 2);
-	return Math.min(delay, MAX_RETRY_DELAY);
-}
 
-function classifyFailureType(err: any): string | undefined {
-	const msg = String(err?.message ?? "").toLowerCase();
-	if (/err_proxy|err_connection|err_ssl|err_timed_out/i.test(msg))
-		return "connection_error";
-	if (/bot.?detect|cloudflare|captcha|turnstile/i.test(msg))
-		return "bot_detection";
-	if (/rate.?limit|too many|usage.?limit/i.test(msg)) return "rate_limited";
-	if (/extraction.*fail|empty.*response/i.test(msg)) return "extraction_failed";
-	if (/send failed|no send button|no generation/i.test(msg)) return "no_editor";
-	if (/typing failed/i.test(msg)) return "no_editor";
-	return undefined;
-}
 
 export async function runPrompts(
 	payload: PromptPayload,
@@ -74,7 +60,7 @@ export async function runPrompts(
 		for (let attempt = 1; attempt <= effectiveMaxRetries; attempt++) {
 			try {
 				if (attempt > 1) {
-					const backoffDelay = getExponentialBackoffDelay(attempt);
+					const backoffDelay = exponentialBackoff(attempt - 2, INITIAL_RETRY_DELAY, MAX_RETRY_DELAY);
 					logger.log(
 						`🔄 Retry attempt ${attempt}/${effectiveMaxRetries} for prompt ${i + 1} (waiting ${backoffDelay / 1000}s)`,
 					);
@@ -137,7 +123,7 @@ export async function runPrompts(
 						promptMetrics,
 						remainingPrompts,
 						i,
-						classifyFailureType(lastError),
+						classifyError(lastError),
 					);
 				}
 
@@ -165,7 +151,7 @@ export async function runPrompts(
 						promptMetrics,
 						remainingPrompts,
 						i,
-						classifyFailureType(lastError),
+						classifyError(lastError),
 					);
 				}
 			}

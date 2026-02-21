@@ -4,6 +4,7 @@ import {
 	RESPONSE_GENERATION_SELECTORS,
 } from "@onescope/utils";
 import type { Locator, Page } from "playwright";
+import { extractAnthropicBlocks } from "./extractAnthropicBlocks.js";
 
 export async function getLastAssistantText(
 	page: Page,
@@ -23,53 +24,13 @@ export async function getLastAssistantText(
 
 				let text = "";
 
-				if (!fetchingResponses) {
+				if (provider === "anthropic" && fetchingResponses) {
+					text = await extractAnthropicBlocks(el, "text");
+				} else {
 					text = await el.evaluate((el) => {
 						if (!(el instanceof HTMLElement)) return "";
 						return el.innerText?.trim() || el.textContent?.trim() || "";
 					});
-				} else {
-					text = await el.evaluate((root, provider) => {
-						if (!(root instanceof HTMLElement)) return "";
-
-						if (provider === "anthropic") {
-							// Find all standard-markdown blocks
-							const blocks = Array.from(
-								root.querySelectorAll<HTMLElement>(".standard-markdown"),
-							);
-
-							// Filter to only visible blocks (not inside collapsed/hidden containers)
-							const visibleBlocks = blocks.filter((block) => {
-								// Check if block is inside a hidden overflow container
-								let parent = block.parentElement;
-								while (parent && parent !== root) {
-									const style = window.getComputedStyle(parent);
-
-									// Skip if parent is hidden
-									if (
-										style.opacity === "0" ||
-										style.height === "0px" ||
-										style.display === "none" ||
-										(parent.classList.contains("overflow-hidden") &&
-											parent.style.height === "0px")
-									) {
-										return false;
-									}
-
-									parent = parent.parentElement;
-								}
-								return true;
-							});
-
-							// Return the text from visible blocks only
-							return visibleBlocks
-								.map((b) => b.innerText?.trim() || b.textContent?.trim() || "")
-								.filter(Boolean)
-								.join("\n\n");
-						}
-
-						return root.innerText?.trim() || root.textContent?.trim() || "";
-					}, provider);
 				}
 
 				if (text.length > 0) return text;

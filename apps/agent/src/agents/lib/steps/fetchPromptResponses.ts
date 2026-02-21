@@ -3,6 +3,7 @@ import type { Page } from "playwright";
 import { extractAssistantMarkdown } from "../../../lib/input/extractAssistantMarkdown.js";
 import { getLastAssistantText } from "../../../lib/input/getLastAssistantText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/waitForAssistantToFinish.js";
+import { exponentialBackoff } from "../utils/backoff.js";
 import { logger } from "../../../lib/utils/logger.js";
 
 const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
@@ -13,13 +14,6 @@ const MAX_EXTRACTION_RETRY_DELAY = Number(
 	process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000,
 );
 
-function getExtractionRetryDelay(attempt: number): number {
-	if (attempt <= 1) return INITIAL_EXTRACTION_RETRY_DELAY;
-	return Math.min(
-		INITIAL_EXTRACTION_RETRY_DELAY * 2 ** (attempt - 1),
-		MAX_EXTRACTION_RETRY_DELAY,
-	);
-}
 
 export async function fetchPromptResponses(
 	page: Page,
@@ -64,7 +58,10 @@ export async function fetchPromptResponses(
 		}
 
 		if (attempt < MAX_EXTRACTION_RETRIES) {
-			const retryDelay = getExtractionRetryDelay(attempt);
+			const retryDelay =
+				attempt <= 1
+					? INITIAL_EXTRACTION_RETRY_DELAY
+					: exponentialBackoff(attempt - 1, INITIAL_EXTRACTION_RETRY_DELAY, MAX_EXTRACTION_RETRY_DELAY);
 			logger.warn(
 				`Extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})...`,
 			);
