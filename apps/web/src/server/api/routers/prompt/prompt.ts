@@ -31,9 +31,9 @@ export const promptRouter = createTRPCRouter({
 				}
 
 				const res = await storePromptsForWorkspace({
-					prompts: prompts!,
-					workspaceId: workspaceId!,
-					userId: userId!,
+					prompts: prompts,
+					workspaceId: workspaceId,
+					userId: userId,
 				});
 				return ok(res, "Prompts stored successfully.");
 			});
@@ -47,8 +47,8 @@ export const promptRouter = createTRPCRouter({
 			} = ctx;
 
 			const res = await fetchPromptSourcesForWorkspace({
-				workspaceId: workspaceId!,
-				userId: userId!,
+				workspaceId: workspaceId,
+				userId: userId,
 			});
 
 			return ok(res, "Fetched prompt sources successfully.");
@@ -63,8 +63,8 @@ export const promptRouter = createTRPCRouter({
 			} = ctx;
 
 			const res = await fetchUserPromptsForWorkspace({
-				workspaceId: workspaceId!,
-				userId: userId!,
+				workspaceId: workspaceId,
+				userId: userId,
 			});
 
 			return ok(res, "Fetched user prompts successfully.");
