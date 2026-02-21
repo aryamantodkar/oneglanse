@@ -5,7 +5,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.16.0
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.json ./
 COPY apps/agent ./apps/agent
 COPY packages/db ./packages/db
 COPY packages/errors ./packages/errors

@@ -5,7 +5,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.16.0
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.json ./
 COPY apps/web ./apps/web
 COPY packages/db ./packages/db
 COPY packages/errors ./packages/errors
@@ -35,7 +35,7 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 RUN npm install -g pnpm@10.16.0
 
 WORKDIR /workspace
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/db ./packages/db
 RUN pnpm install --prod --frozen-lockfile --filter @onescope/db...
 
