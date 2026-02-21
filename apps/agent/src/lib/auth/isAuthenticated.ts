@@ -8,22 +8,23 @@ import { isPerplexityAuthenticated } from "../../agents/perplexity/auth/validate
 export async function isAuthenticated(
 	page: Page,
 	provider: Provider,
+	skipHealthCheck = false,
 ): Promise<boolean> {
 	switch (provider) {
 		case "openai":
-			return isOpenaiAuthenticated(page);
+			return isOpenaiAuthenticated(page, skipHealthCheck);
 
 		case "anthropic":
-			return isAnthropicAuthenticated(page);
+			return isAnthropicAuthenticated(page, skipHealthCheck);
 
 		case "google":
-			return isGoogleAuthenticated(page, false, "google");
+			return isGoogleAuthenticated(page, skipHealthCheck, "google");
 
 		case "google-ai-overview":
-			return isGoogleAuthenticated(page, false, "google-ai-overview");
+			return isGoogleAuthenticated(page, skipHealthCheck, "google-ai-overview");
 
 		case "perplexity":
-			return isPerplexityAuthenticated(page);
+			return isPerplexityAuthenticated(page, skipHealthCheck);
 
 		default:
 			throw new Error(`Unknown provider: ${provider}`);
