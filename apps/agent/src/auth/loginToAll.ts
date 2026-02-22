@@ -1,6 +1,6 @@
 import { PROVIDER_LIST, type Provider } from "@onescope/types";
-import { PROVIDERS } from "@onescope/utils";
 import { logger } from "../lib/utils/logger.js";
+import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { loginToProvider } from "./loginToProvider.js";
 
 function promptUser(question: string): Promise<string> {
@@ -44,17 +44,17 @@ export async function loginToAll(): Promise<void> {
 	) as Record<Provider, "success" | "failed" | "skipped">;
 
 	// google-ai-overview shares the google (Gemini) session — skip it in the login loop
-	const loginProviders = (Object.keys(PROVIDERS) as Provider[]).filter(
+	const loginProviders = (Object.keys(AGENT_PROVIDER_CONFIG) as Provider[]).filter(
 		(p) => p !== "google-ai-overview",
 	);
 
 	for (const provider of loginProviders) {
 		// Ask user if they want to authenticate this provider
-		logger.log(`\n❓ Login to ${PROVIDERS[provider].displayName}?`);
+		logger.log(`\n❓ Login to ${AGENT_PROVIDER_CONFIG[provider].displayName}?`);
 		const answer = await promptUser("   (y/n): ");
 
 		if (answer !== "y" && answer !== "yes") {
-			logger.log(`⏭️  Skipped ${PROVIDERS[provider].displayName}\n`);
+			logger.log(`⏭️  Skipped ${AGENT_PROVIDER_CONFIG[provider].displayName}\n`);
 			results[provider] = "skipped";
 			continue;
 		}
@@ -65,7 +65,7 @@ export async function loginToAll(): Promise<void> {
 		} catch (err: any) {
 			results[provider] = "failed";
 
-			logger.error(`❌ ${PROVIDERS[provider].name} authentication failed`);
+			logger.error(`❌ ${provider} authentication failed`);
 			logger.error(`   Error: ${err.message}\n`);
 
 			logger.warn("⚠️  Options:");
@@ -73,7 +73,7 @@ export async function loginToAll(): Promise<void> {
 			logger.warn(
 				`   • Retry this provider later with: pnpm run auth:${provider}`,
 			);
-			logger.warn(`   • Skip if you don't need ${PROVIDERS[provider].name}\n`);
+			logger.warn(`   • Skip if you don't need ${provider}\n`);
 		}
 	}
 
@@ -94,7 +94,7 @@ export async function loginToAll(): Promise<void> {
 
 	for (const [provider, status] of Object.entries(results)) {
 		const icon = status === "success" ? "✅" : status === "failed" ? "❌" : "⏭️";
-		const label = `${PROVIDERS[provider as Provider].name}:`.padEnd(15);
+		const label = `${provider}:`.padEnd(15);
 		logger.log(`${icon} ${label} ${status.toUpperCase()}`);
 	}
 

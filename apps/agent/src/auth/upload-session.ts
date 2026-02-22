@@ -2,8 +2,8 @@ import fs from "node:fs";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { PROVIDER_LIST } from "@onescope/types";
-import { PROVIDERS } from "@onescope/utils";
 import dotenv from "dotenv";
+import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { logger } from "../lib/utils/logger.js";
 
 if (fs.existsSync("apps/agent/.env")) {
@@ -68,7 +68,7 @@ async function uploadSessions() {
 
 		if (!fs.existsSync(authFile)) {
 			logger.warn(
-				`Session file not found for ${PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider}: ${authFile}`,
+				`Session file not found for ${AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider}: ${authFile}`,
 			);
 			continue;
 		}
@@ -77,11 +77,11 @@ async function uploadSessions() {
 			const sessionData = JSON.parse(fs.readFileSync(authFile, "utf-8"));
 			sessions[provider as keyof SessionData] = sessionData;
 			logger.log(
-				`✅ Read session for ${PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider} (${authFile})`,
+				`✅ Read session for ${AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider} (${authFile})`,
 			);
 		} catch (err: any) {
 			logger.error(
-				`Failed to read session for ${PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider}:`,
+				`Failed to read session for ${AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider}:`,
 				err.message,
 			);
 		}
@@ -105,7 +105,7 @@ async function uploadSessions() {
 	for (const [provider, sessionData] of Object.entries(sessions)) {
 		try {
 			const modelName =
-				PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider;
+				AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider;
 			logger.log(`📤 Uploading ${modelName} session...`);
 
 			const response = await fetch(`${VPS_API_URL}/upload-sessions`, {
@@ -128,7 +128,7 @@ async function uploadSessions() {
 			logger.success(`✅ ${modelName} session uploaded successfully`);
 		} catch (err: any) {
 			const modelName =
-				PROVIDERS[provider as keyof typeof PROVIDERS]?.displayName || provider;
+				AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider;
 			uploadResults[provider] = false;
 			failCount++;
 			logger.error(`❌ Failed to upload ${modelName} session:`, err.message);
@@ -158,16 +158,16 @@ async function uploadSessions() {
 
 		logger.log("\n📊 Session status on VPS:");
 		logger.log(
-			`   ${PROVIDERS.anthropic.displayName}: ${health.sessions.anthropic ? "✅" : "❌"}`,
+			`   ${AGENT_PROVIDER_CONFIG.anthropic.displayName}: ${health.sessions.anthropic ? "✅" : "❌"}`,
 		);
 		logger.log(
-			`   ${PROVIDERS.openai.displayName}: ${health.sessions.openai ? "✅" : "❌"}`,
+			`   ${AGENT_PROVIDER_CONFIG.openai.displayName}: ${health.sessions.openai ? "✅" : "❌"}`,
 		);
 		logger.log(
-			`   ${PROVIDERS.perplexity.displayName}: ${health.sessions.perplexity ? "✅" : "❌"}`,
+			`   ${AGENT_PROVIDER_CONFIG.perplexity.displayName}: ${health.sessions.perplexity ? "✅" : "❌"}`,
 		);
 		logger.log(
-			`   ${PROVIDERS.google.displayName}: ${health.sessions.google ? "✅" : "❌"} (also used for AI Overview)`,
+			`   ${AGENT_PROVIDER_CONFIG.google.displayName}: ${health.sessions.google ? "✅" : "❌"} (also used for AI Overview)`,
 		);
 
 		logger.success("\nSession verification complete!");

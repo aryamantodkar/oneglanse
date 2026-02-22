@@ -1,14 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Provider } from "@onescope/types";
-import { PROVIDERS } from "@onescope/utils";
 import { chromium } from "playwright-extra";
+import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { waitForAuthentication } from "../lib/auth/waitForAuthentication.js";
 import { logger } from "../lib/utils/logger.js";
 import { USER_DATA_DIR } from "./config.js";
 
 export async function loginToProvider(provider: Provider): Promise<void> {
-	const config = PROVIDERS[provider];
+	const config = AGENT_PROVIDER_CONFIG[provider];
 	const providerDir = path.join(USER_DATA_DIR, provider);
 	const authFile = path.join(providerDir, `${provider}-auth.json`);
 
@@ -18,12 +18,12 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 
 	// Show clear instructions before browser launch
 	logger.log(`\n${"=".repeat(70)}`);
-	logger.log(`🔐 ${config.name.toUpperCase()} AUTHENTICATION`);
+	logger.log(`🔐 ${provider.toUpperCase()} AUTHENTICATION`);
 	logger.log(`${"=".repeat(70)}\n`);
 
 	logger.log("📋 Instructions:");
 	logger.log("   1. A browser window will open in 3 seconds");
-	logger.log(`   2. Please log in to ${config.name} in the browser`);
+	logger.log(`   2. Please log in to ${provider} in the browser`);
 	logger.log("   3. The browser will close automatically once logged in");
 	logger.log("   4. Timeout: 8 minutes\n");
 
@@ -88,10 +88,10 @@ export async function loginToProvider(provider: Provider): Promise<void> {
 			path: authFile,
 		});
 
-		logger.success(`✅ ${config.name} authentication successful!`);
+		logger.success(`✅ ${provider} authentication successful!`);
 		logger.log(`📁 Session saved to: ${authFile}\n`);
 	} catch (err) {
-		logger.error(`Failed to login to ${config.name}:`, err);
+		logger.error(`Failed to login to ${provider}:`, err);
 		throw err;
 	} finally {
 		await loginContext.close();

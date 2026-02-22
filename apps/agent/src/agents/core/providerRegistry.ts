@@ -10,9 +10,12 @@ import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { findSourcesButton } from "../../lib/input/sources/findButton.js";
 import { logger } from "../../lib/utils/logger.js";
 
-export interface ProviderConfig {
+export interface AgentProviderConfig {
+	url: string;
 	entryUrl: string;
 	warmupDelayMs: number;
+	label: string;
+	displayName: string;
 	preNavigationHook?: (page: Page) => Promise<void>;
 	postNavigationHook?: (page: Page) => Promise<void>;
 	extractSources: (page: Page) => Promise<Source[]>;
@@ -38,10 +41,13 @@ async function openSourcesPanel(page: Page, btn: Locator): Promise<void> {
 	await page.waitForTimeout(1000);
 }
 
-export const AGENT_PROVIDER_CONFIG: Record<Provider, ProviderConfig> = {
+export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 	openai: {
+		url: "https://chatgpt.com/auth/login",
 		entryUrl: "https://chatgpt.com/auth/login",
 		warmupDelayMs: 5000,
+		label: "OpenAI",
+		displayName: "ChatGPT",
 		extractSources: async (page) => {
 			const btn = await findSourcesButton(page);
 			if (!btn) return [];
@@ -52,14 +58,20 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, ProviderConfig> = {
 	},
 
 	anthropic: {
+		url: "https://claude.ai/login",
 		entryUrl: "https://claude.ai/new",
 		warmupDelayMs: 5000,
+		label: "Anthropic",
+		displayName: "Claude",
 		extractSources: (page) => extractSourcesFromAnthropic(page),
 	},
 
 	perplexity: {
+		url: "https://www.perplexity.ai/",
 		entryUrl: "https://www.perplexity.ai",
 		warmupDelayMs: 5000,
+		label: "Perplexity",
+		displayName: "Perplexity",
 		postNavigationHook: async (page) => {
 			// Human-like random delays to avoid bot detection
 			const randomDelay = 2000 + Math.floor(Math.random() * 3000);
@@ -76,14 +88,20 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, ProviderConfig> = {
 	},
 
 	google: {
+		url: "https://gemini.google.com/",
 		entryUrl: "https://gemini.google.com/",
 		warmupDelayMs: 5000,
+		label: "Google",
+		displayName: "Gemini",
 		extractSources: (page) => extractSourcesFromGoogle(page),
 	},
 
 	"google-ai-overview": {
+		url: "https://www.google.com",
 		entryUrl: "https://www.google.com",
 		warmupDelayMs: 5000,
+		label: "Google AI Overview",
+		displayName: "AI Overview",
 		preNavigationHook: async (page) => {
 			logger.log("📍 Activating session via https://gemini.google.com/");
 			await navigateWithRetry(page, "https://gemini.google.com/", {
