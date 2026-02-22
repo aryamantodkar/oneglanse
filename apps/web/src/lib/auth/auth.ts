@@ -7,6 +7,11 @@ import * as authSchema from "../../../../../packages/db/src/schema/auth";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
 export const auth = betterAuth({
+	secret:
+		process.env.BETTER_AUTH_SECRET ??
+		(process.env.NEXT_PHASE === "phase-production-build"
+			? "build-placeholder"
+			: undefined),
 	socialProviders: {
 		google: {
 			clientId: process.env.GOOGLE_CLIENT_ID as string,
