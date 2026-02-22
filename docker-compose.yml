@@ -15,8 +15,6 @@ services:
       NODE_ENV: production
     volumes:
       - agent_storage:/storage
-    depends_on:
-      - redis
     command: pnpm start:api
     networks:
       - backend

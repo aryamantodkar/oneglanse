@@ -4,7 +4,6 @@ import fs from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { PROVIDER_LIST } from "@onescope/types";
-import { redis } from "@onescope/services";
 import { logger } from "./lib/utils/logger.js";
 
 const ALLOWED_PROVIDERS = new Set(PROVIDER_LIST);
@@ -111,7 +110,6 @@ const server = createServer(async (req, res) => {
 		const healthStatus = {
 			status: "ok",
 			timestamp: new Date().toISOString(),
-			redis: false,
 			sessions: Object.fromEntries(
 				PROVIDER_LIST.map((p) => [
 					p,
@@ -119,13 +117,6 @@ const server = createServer(async (req, res) => {
 				]),
 			) as Record<string, boolean>,
 		};
-
-		try {
-			await redis.ping();
-			healthStatus.redis = true;
-		} catch (err) {
-			healthStatus.redis = false;
-		}
 
 		res.setHeader("Content-Type", "application/json");
 		res.statusCode = 200;
