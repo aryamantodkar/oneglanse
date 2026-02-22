@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { pageHealthCheck } from "../../../lib/browser/pageHealthCheck.js";
+import { pageHealthCheck } from "../../../lib/browser/healthCheck.js";
 
 export async function isAnthropicAuthenticated(
 	page: Page,

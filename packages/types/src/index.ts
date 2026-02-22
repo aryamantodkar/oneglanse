@@ -5,3 +5,4 @@ export * from "./types/entities.js";
 export * from "./types/metrics.js";
 export * from "./types/prompts.js";
 export * from "./types/sources.js";
+export * from "./types/browser.js";
