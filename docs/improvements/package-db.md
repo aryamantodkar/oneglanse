@@ -1,17 +1,5 @@
 # package-db Audit (`@onescope/db`)
 
-## 1. Structural Issues
-- Circular import pattern in schema layer:
-  - `packages/db/src/schema/workspace.ts` imports `schema` from `packages/db/src/index.ts`.
-  - `packages/db/src/index.ts` imports `./schema/index.js`.
-- Exact move/fix:
-  - In `packages/db/src/schema/workspace.ts`, replace `import { schema } from "../index.js"` with direct import from `./auth.js` for `user` table reference.
-- Connection/bootstrap concerns are mixed in one file:
-  - `packages/db/src/index.ts` contains db init, clickhouse init, and exports.
-- Move:
-  - `packages/db/src/index.ts` client construction code
-  - to `packages/db/src/clients/postgres.ts` and `packages/db/src/clients/clickhouse.ts`.
-
 ## 2. Architectural Problems
 - Package is cohesive in intent but has infra/bootstrap anti-patterns.
 - Violates strict layer separation by mixing config defaults with runtime client creation.
@@ -22,20 +10,6 @@
   - `schema/` for table definitions only
   - `types/` for inferred models
   - `config/` for validated env schema
-
-## 3. Code Quality Audit
-- `packages/db/src/schema/workspace.ts`
-  - Problem: indirect schema import through package root causes fragile initialization ordering.
-  - Change: direct table import from schema file.
-  - Production impact: brittle module initialization and harder static analysis.
-- `packages/db/src/index.ts`
-  - Problem: fallback default credentials/hosts for ClickHouse in runtime code.
-  - Change: fail fast when critical env vars are missing in non-dev mode.
-  - Production impact: accidental insecure deployments.
-- `packages/db/drizzle.config.ts`
-  - Problem: non-null assertion `process.env.DATABASE_URL!` without guarded validation.
-  - Change: explicit env validation with descriptive failure.
-  - Production impact: cryptic migration runtime failures.
 
 ## 4. Testing Requirements
 ### Missing Unit Tests

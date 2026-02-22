@@ -10,7 +10,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import z from "zod";
-import { schema } from "../index.js";
+import { user } from "./auth.js";
 
 // Keep in sync with PROVIDER_LIST in @onescope/types
 const DEFAULT_PROVIDERS_JSON =
@@ -43,7 +43,7 @@ export const workspaceMembers = pgTable(
 
 		userId: text("user_id")
 			.notNull()
-			.references(() => schema.user.id, { onDelete: "cascade" }),
+			.references(() => user.id, { onDelete: "cascade" }),
 
 		role: text("role").notNull().default("owner"),
 
