@@ -1,15 +1,12 @@
 import type { Provider } from "@onescope/types";
 import { logger } from "../lib/utils/logger.js";
 import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
-import { checkAuthStatus } from "./checkStatus.js";
 import { loginToAll } from "./loginToAll.js";
 import { loginToProvider } from "./loginToProvider.js";
 
-export { checkAuthStatus, loginToAll, loginToProvider };
+export { loginToAll, loginToProvider };
 
 async function runHeadedLogin(): Promise<void> {
-	checkAuthStatus();
-
 	// Check if single provider mode
 	const targetProvider = process.env.PROVIDER as Provider | undefined;
 

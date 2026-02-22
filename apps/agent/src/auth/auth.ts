@@ -1,19 +1,32 @@
 import { execSync } from "node:child_process";
 import { logger } from "../lib/utils/logger.js";
 
-function run(cmd: string) {
-	logger.log(`\n▶ ${cmd}`);
-	execSync(cmd, { stdio: "inherit" });
+function runStep(name: string, cmd: string): boolean {
+	logger.log(`\n${name}`);
+	try {
+		execSync(cmd, { stdio: "inherit" });
+		return true;
+	} catch {
+		logger.error(`${name} failed`);
+		return false;
+	}
 }
 
 async function main() {
-	logger.log("🔐 Starting authentication flow");
+	logger.log("Auth flow");
 
-	run("pnpm run login"); // headed, user logs in
-	run("pnpm run upload-session"); // send to VPS
+	const loginOk = runStep("Step 1/2: Login providers", "pnpm -s run login");
+	if (!loginOk) {
+		process.exit(1);
+	}
 
-	logger.log("✅ Authentication flow complete");
-	logger.log("👉 You can now start/restart the agent on the VPS");
+	const uploadOk = runStep("Step 2/2: Upload sessions", "pnpm -s run upload-session");
+	if (!uploadOk) {
+		logger.error("Upload failed. Check VPS /health and API logs.");
+		process.exit(1);
+	}
+
+	logger.success("Auth flow complete. Sessions uploaded.");
 }
 
 main();
