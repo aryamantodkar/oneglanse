@@ -1,6 +1,6 @@
 import type { Provider } from "@onescope/types";
-import { PROVIDERS } from "@onescope/utils";
 import { logger } from "../lib/utils/logger.js";
+import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { checkAuthStatus } from "./checkStatus.js";
 import { loginToAll } from "./loginToAll.js";
 import { loginToProvider } from "./loginToProvider.js";
@@ -14,14 +14,14 @@ async function runHeadedLogin(): Promise<void> {
 	const targetProvider = process.env.PROVIDER as Provider | undefined;
 
 	if (targetProvider) {
-		if (!PROVIDERS[targetProvider]) {
+		if (!AGENT_PROVIDER_CONFIG[targetProvider]) {
 			logger.error(`❌ Unknown provider: ${targetProvider}`);
-			logger.log(`   Valid providers: ${Object.keys(PROVIDERS).join(", ")}`);
+			logger.log(`   Valid providers: ${Object.keys(AGENT_PROVIDER_CONFIG).join(", ")}`);
 			process.exit(1);
 		}
 
 		logger.log(
-			`\n🎯 Single Provider Mode: ${PROVIDERS[targetProvider].name}\n`,
+			`\n🎯 Single Provider Mode: ${targetProvider}\n`,
 		);
 		await loginToProvider(targetProvider);
 	} else {

@@ -5,7 +5,6 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { PROVIDER_LIST } from "@onescope/types";
 import { redis } from "@onescope/services";
-import { PROVIDERS } from "@onescope/utils";
 import { logger } from "./lib/utils/logger.js";
 
 const ALLOWED_PROVIDERS = new Set(PROVIDER_LIST);

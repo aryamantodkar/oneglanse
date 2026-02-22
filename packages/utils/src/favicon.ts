@@ -1,5 +1,5 @@
 import { getDomain } from "./url/getDomain.js";
-import { PROVIDERS } from "./agent/providers.js";
+import { PROVIDER_DISPLAY } from "./agent/providers.js";
 
 export const getModelFavicon = (model: string): string => {
 	// Normalize model name to lowercase provider key
@@ -9,7 +9,7 @@ export const getModelFavicon = (model: string): string => {
 	if (model === "All Models") return "";
 
 	// Check known provider keys first (openai, anthropic, perplexity, google, google-ai-overview)
-	const providerConfig = PROVIDERS[normalizedModel as keyof typeof PROVIDERS];
+	const providerConfig = PROVIDER_DISPLAY[normalizedModel as keyof typeof PROVIDER_DISPLAY];
 	if (providerConfig) {
 		return `https://www.google.com/s2/favicons?sz=32&domain=${providerConfig.domain}`;
 	}

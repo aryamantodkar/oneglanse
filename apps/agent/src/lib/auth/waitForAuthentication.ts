@@ -1,7 +1,7 @@
 import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
-import { PROVIDERS } from "@onescope/utils";
 import { logger } from "../utils/logger.js";
+import { AGENT_PROVIDER_CONFIG } from "../../agents/core/providerRegistry.js";
 import { isAuthenticated } from "./isAuthenticated.js";
 
 const TIMEOUT_MS = 8 * 60 * 1000;
@@ -11,7 +11,7 @@ export async function waitForAuthentication(
 	provider: Provider,
 	skipHealthCheck = false,
 ): Promise<void> {
-	const displayName = PROVIDERS[provider].displayName;
+	const displayName = AGENT_PROVIDER_CONFIG[provider].displayName;
 	const pollInterval = 2000;
 
 	const deadline = Date.now() + TIMEOUT_MS;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PROVIDERS } from "@onescope/utils";
 import { logger } from "../lib/utils/logger.js";
+import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { USER_DATA_DIR } from "./config.js";
 
 export function checkAuthStatus(): void {
@@ -15,16 +15,16 @@ export function checkAuthStatus(): void {
 		lastUpdated?: string;
 	}> = [];
 
-	for (const [key, config] of Object.entries(PROVIDERS)) {
+	for (const key of Object.keys(AGENT_PROVIDER_CONFIG)) {
 		// google-ai-overview reuses google (Gemini) auth — skip its own file check
 		if (key === "google-ai-overview") continue;
 
-		const authPath = path.join(USER_DATA_DIR, config.name);
-		const authFile = path.join(authPath, `${config.name}-auth.json`);
+		const authPath = path.join(USER_DATA_DIR, key);
+		const authFile = path.join(authPath, `${key}-auth.json`);
 		const exists = fs.existsSync(authFile);
 
 		statuses.push({
-			provider: config.name,
+			provider: key,
 			authenticated: exists,
 			lastUpdated: exists
 				? fs.statSync(authFile).mtime.toLocaleString()

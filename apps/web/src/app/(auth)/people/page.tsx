@@ -21,7 +21,7 @@ import {
 	TableRow,
 	toast,
 } from "@onescope/ui";
-import { PROVIDERS, getModelFavicon, getProviderDisplayName } from "@onescope/utils";
+import { PROVIDER_DISPLAY, getModelFavicon, getProviderDisplayName } from "@onescope/utils";
 import {
 	Building2,
 	CheckCircle2,
@@ -621,7 +621,7 @@ export default function PeoplePage() {
 													{getProviderDisplayName(provider)}
 												</p>
 												<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-													{PROVIDERS[provider].description}
+													{PROVIDER_DISPLAY[provider].description}
 												</p>
 											</div>
 										</div>
@@ -665,7 +665,7 @@ export default function PeoplePage() {
 													{getProviderDisplayName(provider)}
 												</p>
 												<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-													{PROVIDERS[provider].description}
+													{PROVIDER_DISPLAY[provider].description}
 												</p>
 											</div>
 										</button>

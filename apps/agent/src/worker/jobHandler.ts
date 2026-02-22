@@ -7,10 +7,10 @@ import {
 	type Provider,
 	type UserPrompt,
 } from "@onescope/types";
-import { PROVIDERS } from "@onescope/utils";
 import { type Job } from "bullmq";
 import { agentHandler } from "../agents/core/agentHandler.js";
 import { createAgent } from "../agents/core/createAgent.js";
+import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { logger } from "../lib/utils/logger.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
@@ -26,7 +26,7 @@ type ProviderJobData = {
 const providerConfig = Object.fromEntries(
 	PROVIDER_LIST.map((p) => [
 		p,
-		{ label: PROVIDERS[p].label, factory: () => createAgent(p) },
+		{ label: AGENT_PROVIDER_CONFIG[p].label, factory: () => createAgent(p) },
 	]),
 ) as Record<Provider, { label: string; factory: () => ReturnType<typeof createAgent> }>;
 
