@@ -6,12 +6,12 @@ import { isAuthenticated } from "./middleware/isAuthenticated";
 import { isInternal } from "./middleware/isInternal";
 import { timingMiddleware } from "./middleware/timingMiddleware";
 import { validWorkspace } from "./middleware/validWorkspace";
-import { t } from "./trpc";
+import { baseProcedure } from "./trpc";
 
-export const publicProcedure = t.procedure.use(timingMiddleware);
-export const protectedProcedure = t.procedure.use(isAuthenticated);
-export const authorizedWorkspaceProcedure = t.procedure
+export const publicProcedure = baseProcedure.use(timingMiddleware);
+export const protectedProcedure = baseProcedure.use(isAuthenticated);
+export const authorizedWorkspaceProcedure = baseProcedure
 	.input(schema.workspaceInput)
 	.use(validWorkspace);
 
-export const internalProcedure = t.procedure.use(isInternal);
+export const internalProcedure = baseProcedure.use(isInternal);

@@ -53,7 +53,7 @@ export default function Dashboard() {
 	// Computed data
 	const metrics = useDashboardData(analysedPromptData, modelFilter, timeFilter);
 	const hasAnyAnalysisInWorkspace = useMemo(() => {
-		const data = analysedPromptData?.data;
+		const data = analysedPromptData;
 		if (!data) return false;
 
 		const records = Array.isArray(data)
@@ -93,9 +93,9 @@ export default function Dashboard() {
 	}
 	if (isLoading) return <DashboardSkeleton />;
 	if (
-		!analysedPromptData?.data ||
-		(Array.isArray(analysedPromptData.data) &&
-			analysedPromptData.data.length === 0)
+		!analysedPromptData ||
+		(Array.isArray(analysedPromptData) &&
+			analysedPromptData.length === 0)
 	) {
 		return <EmptyState />;
 	}

@@ -55,8 +55,8 @@ export default function FirstWorkspaceOnboardingPage() {
 		{ enabled: !!jobId && !!workspaceId, refetchInterval: 2000 },
 	);
 
-	const brandName = workspaceQuery.data?.data?.name ?? "your brand";
-	const brandDomain = workspaceQuery.data?.data?.domain ?? "";
+	const brandName = workspaceQuery.data?.name ?? "your brand";
+	const brandDomain = workspaceQuery.data?.domain ?? "";
 
 	const suggestedPrompts = useMemo(
 		() =>
@@ -104,7 +104,7 @@ export default function FirstWorkspaceOnboardingPage() {
 	}, [jobStatusQuery.data?.response]);
 
 	const analysisCount = useMemo(() => {
-		const data = analysisQuery.data?.data;
+		const data = analysisQuery.data;
 		if (!data) return 0;
 		if (Array.isArray(data)) return data.length;
 		if (
@@ -115,7 +115,7 @@ export default function FirstWorkspaceOnboardingPage() {
 			return (data as any).records.length;
 		}
 		return 0;
-	}, [analysisQuery.data?.data]);
+	}, [analysisQuery.data]);
 
 	useEffect(() => {
 		if (!started || redirecting || analysisCount === 0) return;
@@ -160,7 +160,7 @@ export default function FirstWorkspaceOnboardingPage() {
 		try {
 			await storePrompts.mutateAsync({ workspaceId, prompts });
 			const run = await runAgent.mutateAsync({ workspaceId });
-			const nextJobId = run?.data?.jobId;
+			const nextJobId = run?.jobId;
 			if (!nextJobId) {
 				toast.error("Prompts were saved, but run could not be started.");
 				return;

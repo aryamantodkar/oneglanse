@@ -68,7 +68,7 @@ export function AppSidebar({
 
 	// Fetch all workspaces across all orgs for this user
 	const allWorkspacesQuery = api.workspace.listAllForUser.useQuery();
-	const groupedWorkspaces = allWorkspacesQuery.data?.data ?? [];
+	const groupedWorkspaces = allWorkspacesQuery.data ?? [];
 
 	// Flat list of all workspaces for lookup
 	const allWorkspaces = useMemo(() => {

@@ -85,12 +85,7 @@ export function CreateWorkspaceDialog({
 				tenantId,
 			});
 
-			if (!response?.success || !response.data) {
-				toast.error(response?.message ?? "Workspace creation failed.");
-				return;
-			}
-
-			const { workspace, isFirstWorkspace } = response.data as {
+			const { workspace, isFirstWorkspace } = response as {
 				workspace: { id: string };
 				isFirstWorkspace?: boolean;
 			};

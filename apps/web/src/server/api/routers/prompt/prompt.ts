@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
-import { ValidationError, ok, safeHandler } from "@onescope/errors";
+import { ValidationError } from "@onescope/errors";
 import {
 	fetchPromptSourcesForWorkspace,
 	fetchUserPromptsForWorkspace,
@@ -18,56 +18,45 @@ export const promptRouter = createTRPCRouter({
 			}),
 		)
 		.mutation(async ({ input, ctx }) => {
-			return safeHandler(async () => {
-				const { prompts } = input;
+			const { prompts } = input;
 
-				const {
-					user: { id: userId },
-					workspaceId,
-				} = ctx;
+			const {
+				user: { id: userId },
+				workspaceId,
+			} = ctx;
 
-				if (!prompts?.length) {
-					throw new ValidationError("Missing required fields: Prompts");
-				}
+			if (!prompts?.length) {
+				throw new ValidationError("Missing required fields: Prompts");
+			}
 
-				const res = await storePromptsForWorkspace({
-					prompts: prompts,
-					workspaceId: workspaceId,
-					userId: userId,
-				});
-				return ok(res, "Prompts stored successfully.");
+			return storePromptsForWorkspace({
+				prompts: prompts,
+				workspaceId: workspaceId,
+				userId: userId,
 			});
 		}),
 
 	fetchPromptSources: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		return safeHandler(async () => {
-			const {
-				user: { id: userId },
-				workspaceId,
-			} = ctx;
+		const {
+			user: { id: userId },
+			workspaceId,
+		} = ctx;
 
-			const res = await fetchPromptSourcesForWorkspace({
-				workspaceId: workspaceId,
-				userId: userId,
-			});
-
-			return ok(res, "Fetched prompt sources successfully.");
+		return fetchPromptSourcesForWorkspace({
+			workspaceId: workspaceId,
+			userId: userId,
 		});
 	}),
 
 	fetchUserPrompts: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		return safeHandler(async () => {
-			const {
-				user: { id: userId },
-				workspaceId,
-			} = ctx;
+		const {
+			user: { id: userId },
+			workspaceId,
+		} = ctx;
 
-			const res = await fetchUserPromptsForWorkspace({
-				workspaceId: workspaceId,
-				userId: userId,
-			});
-
-			return ok(res, "Fetched user prompts successfully.");
+		return fetchUserPromptsForWorkspace({
+			workspaceId: workspaceId,
+			userId: userId,
 		});
 	}),
 });
