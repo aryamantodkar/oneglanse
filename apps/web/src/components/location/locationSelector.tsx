@@ -26,8 +26,8 @@ export function LocationSelector({
 	);
 
 	useEffect(() => {
-		if (countriesQuery.data?.data) {
-			setCountries(countriesQuery.data.data);
+		if (countriesQuery.data) {
+			setCountries(countriesQuery.data);
 		}
 	}, [countriesQuery.data]);
 
@@ -38,8 +38,8 @@ export function LocationSelector({
 
 	// Set regions when statesQuery changes
 	useEffect(() => {
-		if (statesQuery.data?.data) {
-			setRegions(statesQuery.data.data);
+		if (statesQuery.data) {
+			setRegions(statesQuery.data);
 		} else {
 			setRegions([]);
 		}

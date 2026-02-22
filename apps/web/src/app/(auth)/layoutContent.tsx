@@ -36,7 +36,7 @@ export default function LayoutContent({
 		{ enabled: shouldFetchWorkspace },
 	);
 
-	const resolvedWorkspace = workspaceQuery.data?.data ?? workspace ?? null;
+	const resolvedWorkspace = workspaceQuery.data ?? workspace ?? null;
 
 	useEffect(() => {
 		shownJobsRef.current.clear();

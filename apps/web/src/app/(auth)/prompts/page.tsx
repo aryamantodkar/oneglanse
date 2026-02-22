@@ -145,16 +145,16 @@ export default function Prompts() {
 	const storePromptMutation = useStorePrompt();
 
 	useEffect(() => {
-		if (userPrompts?.data?.length) {
-			setPromptData(userPrompts.data);
-			setInitialPrompts(userPrompts.data);
+		if (userPrompts?.length) {
+			setPromptData(userPrompts);
+			setInitialPrompts(userPrompts);
 		}
 	}, [userPrompts]);
 
 	useEffect(() => {
-		if (!analysedPromptData?.data) return;
+		if (!analysedPromptData) return;
 
-		const data = analysedPromptData.data;
+		const data = analysedPromptData;
 		const records: AnalysisRecord[] = Array.isArray(data)
 			? data
 			: data &&

@@ -198,7 +198,7 @@ export default function SourcesPage() {
 	} = usePromptSources(workspaceId);
 
 	const sourceStats = useMemo<SourceGroupResult | null>(() => {
-		const data = promptSources?.data;
+		const data = promptSources;
 		if (
 			!data ||
 			!data.sourceStats ||

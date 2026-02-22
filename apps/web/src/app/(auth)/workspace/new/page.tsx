@@ -45,12 +45,7 @@ export default function NewWorkspace() {
 	const createWorkspaceMutation = api.workspace.create.useMutation({
 		onSuccess: async (response) => {
 			try {
-				if (!response?.success || !response.data) {
-					toast.error(response?.message ?? "Workspace creation failed");
-					return;
-				}
-
-				const { workspace, org } = response.data;
+				const { workspace, org } = response;
 
 				await authClient.organization.setActive({
 					organizationId: org.id,
@@ -100,13 +95,8 @@ export default function NewWorkspace() {
 				region: selectedLocation.regionName || null,
 			});
 
-			if (!response?.success || !response.data) {
-				toast.error(response?.message ?? "Workspace creation failed");
-				return;
-			}
-
 			const { workspace, org, isFirstWorkspace } =
-				response.data as typeof response.data & {
+				response as typeof response & {
 					isFirstWorkspace?: boolean;
 				};
 

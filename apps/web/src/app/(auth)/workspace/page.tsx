@@ -39,20 +39,15 @@ export default function WorkspaceGateway() {
 
 		try {
 			const result = await joinMutation.mutateAsync({ code: joinCode.trim() });
-			if (!result?.success || !result.data) {
-				toast.error(result?.message ?? "Unable to join workspace.");
-				return;
-			}
-
-			if (result.data.status === "select-workspace") {
+			if (result.status === "select-workspace") {
 				setSelection({
-					organization: result.data.organization,
-					workspaces: result.data.workspaces,
+					organization: result.organization,
+					workspaces: result.workspaces,
 				});
 				return;
 			}
 
-			const data = result.data as any;
+			const data = result as any;
 			const workspace = data.workspace as {
 				id: string;
 				name: string;

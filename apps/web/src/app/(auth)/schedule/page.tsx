@@ -137,12 +137,12 @@ export default function SchedulePage() {
 
 	// Sync selected state with fetched schedule
 	useEffect(() => {
-		if (scheduleQuery.data?.data) {
-			setSelected(scheduleQuery.data.data.schedule);
+		if (scheduleQuery.data) {
+			setSelected(scheduleQuery.data.schedule);
 		}
 	}, [scheduleQuery.data]);
 
-	const currentSchedule = scheduleQuery.data?.data?.schedule ?? null;
+	const currentSchedule = scheduleQuery.data?.schedule ?? null;
 	const hasChanges = selected !== currentSchedule;
 
 	const handleSave = async () => {
@@ -232,8 +232,8 @@ export default function SchedulePage() {
 							</span>
 						</div>
 						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-							{currentSchedule && cronTimingQuery.data?.data?.nextRun
-								? formatRelativeTime(cronTimingQuery.data.data.nextRun)
+							{currentSchedule && cronTimingQuery.data?.nextRun
+								? formatRelativeTime(cronTimingQuery.data.nextRun)
 								: "Not scheduled"}
 						</p>
 					</div>
@@ -247,8 +247,8 @@ export default function SchedulePage() {
 							</span>
 						</div>
 						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-							{cronTimingQuery.data?.data?.lastPromptRun
-								? formatAbsoluteTime(cronTimingQuery.data.data.lastPromptRun)
+							{cronTimingQuery.data?.lastPromptRun
+								? formatAbsoluteTime(cronTimingQuery.data.lastPromptRun)
 								: "Never"}
 						</p>
 					</div>

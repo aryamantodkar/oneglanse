@@ -66,12 +66,12 @@ export default function PeoplePage() {
 		{ workspaceId },
 		{ enabled: !!workspaceId },
 	);
-	const wsMembers = (wsMembersQuery.data?.data ?? []) as WorkspaceMember[];
+	const wsMembers = (wsMembersQuery.data ?? []) as WorkspaceMember[];
 	const joinInfoQuery = api.workspace.getJoinInfo.useQuery(
 		{ workspaceId },
 		{ enabled: !!workspaceId },
 	);
-	const joinInfo = joinInfoQuery.data?.data;
+	const joinInfo = joinInfoQuery.data;
 	const joinInfoLoading = joinInfoQuery.isLoading;
 	const userPromptsQuery = api.prompt.fetchUserPrompts.useQuery(
 		{ workspaceId },
@@ -105,7 +105,7 @@ export default function PeoplePage() {
 	const [isEditingProviders, setIsEditingProviders] = useState(false);
 	const [savingProviders, setSavingProviders] = useState(false);
 
-	const workspace = workspaceQuery.data?.data;
+	const workspace = workspaceQuery.data;
 	const organization = joinInfo?.organization;
 
 	// Fetch enabled providers
@@ -127,9 +127,9 @@ export default function PeoplePage() {
 	);
 
 	useEffect(() => {
-		if (providersData?.data?.enabledProviders) {
-			setEnabledProviders(providersData.data.enabledProviders);
-			setTempProviders(providersData.data.enabledProviders);
+		if (providersData?.enabledProviders) {
+			setEnabledProviders(providersData.enabledProviders);
+			setTempProviders(providersData.enabledProviders);
 		}
 	}, [providersData]);
 
@@ -217,12 +217,7 @@ export default function PeoplePage() {
 				role: wsInviteRole as "owner" | "member",
 			});
 
-			if (!result?.success) {
-				toast.error(result?.message ?? "Failed to add member.");
-				return;
-			}
-
-			if (result.data?.status === "not-found") {
+			if (result?.status === "not-found") {
 				toast.error(
 					"User not found. Share your workspace code so they can join after signing up.",
 				);
@@ -230,7 +225,7 @@ export default function PeoplePage() {
 				return;
 			}
 
-			if (result.data?.status === "already-member") {
+			if (result?.status === "already-member") {
 				toast.success("This user is already a workspace member.");
 				setWsInviteEmail("");
 				return;
@@ -255,11 +250,6 @@ export default function PeoplePage() {
 				userId,
 				role,
 			});
-
-			if (!result?.success) {
-				toast.error(result?.message ?? "Failed to remove member.");
-				return;
-			}
 
 			toast.success("Member removed from workspace.");
 			await wsMembersQuery.refetch();
@@ -297,12 +287,7 @@ export default function PeoplePage() {
 				domain: nextDomain,
 			});
 
-			if (!result?.success) {
-				toast.error(result?.message ?? "Failed to update workspace details.");
-				return;
-			}
-
-			if ((result.data as any)?.analysisReset) {
+			if ((result as any)?.analysisReset) {
 				toast.success(
 					"Brand details updated. Previous analysis was cleared and will be regenerated on next analysis run.",
 				);
@@ -336,11 +321,6 @@ export default function PeoplePage() {
 				organizationName: organizationName.trim(),
 			});
 
-			if (!result?.success) {
-				toast.error(result?.message ?? "Failed to update organization name.");
-				return;
-			}
-
 			toast.success("Organization name updated.");
 			await joinInfoQuery.refetch();
 			await utils.workspace.listAllForUser.invalidate();
@@ -356,9 +336,9 @@ export default function PeoplePage() {
 	};
 
 	const handleExportAllJson = () => {
-		const userPrompts = userPromptsQuery.data?.data ?? [];
-		const analysisData = analysisQuery.data?.data ?? [];
-		const sourceData = sourcesQuery.data?.data ?? null;
+		const userPrompts = userPromptsQuery.data ?? [];
+		const analysisData = analysisQuery.data ?? [];
+		const sourceData = sourcesQuery.data ?? null;
 		const sourceStats = sourceData?.sourceStats;
 		const combinedSources = sourceStats?.combined ?? [];
 		const domainStatsRaw = sourceData?.domain_stats;
@@ -411,13 +391,13 @@ export default function PeoplePage() {
 	};
 
 	const handleExportAllCsv = () => {
-		const userPrompts = userPromptsQuery.data?.data ?? [];
-		const analysisData = Array.isArray(analysisQuery.data?.data)
-			? analysisQuery.data?.data
+		const userPrompts = userPromptsQuery.data ?? [];
+		const analysisData = Array.isArray(analysisQuery.data)
+			? analysisQuery.data
 			: [];
-		const sourceStats = sourcesQuery.data?.data?.sourceStats;
+		const sourceStats = sourcesQuery.data?.sourceStats;
 		const combinedSources = sourceStats?.combined ?? [];
-		const domainStatsRaw = sourcesQuery.data?.data?.domain_stats;
+		const domainStatsRaw = sourcesQuery.data?.domain_stats;
 		const domainStats = Array.isArray(domainStatsRaw)
 			? domainStatsRaw
 			: (domainStatsRaw?.combined ?? []);

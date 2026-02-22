@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
-import { ok, safeHandler } from "@onescope/errors";
 import {
 	analysePromptsForWorkspace,
 	fetchAnalysedPrompts,
@@ -17,34 +16,29 @@ export const analysisRouter = createTRPCRouter({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			return safeHandler(async () => {
-				const {
-					workspaceId,
-					user: { id: userId },
-				} = ctx;
-
-				const { analyzeAll } = input;
-
-				const res = await analysePromptsForWorkspace({
-					workspaceId,
-					userId,
-					analyzeAll: analyzeAll ?? true,
-				} as Parameters<typeof analysePromptsForWorkspace>[0]);
-				return ok(res, "Prompts Response analysed successfully.");
-			});
-		}),
-	fetchAnalysis: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		return safeHandler(async () => {
 			const {
-				user: { id: userId },
 				workspaceId,
+				user: { id: userId },
 			} = ctx;
 
-			const res = await fetchAnalysedPrompts({
-				workspaceId: workspaceId,
-				userId: userId,
-			});
-			return ok(res, "Fetched analysed prompt data successfully.");
+			const { analyzeAll } = input;
+
+			return analysePromptsForWorkspace({
+				workspaceId,
+				userId,
+				analyzeAll: analyzeAll ?? true,
+			} as Parameters<typeof analysePromptsForWorkspace>[0]);
+		}),
+
+	fetchAnalysis: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
+		const {
+			user: { id: userId },
+			workspaceId,
+		} = ctx;
+
+		return fetchAnalysedPrompts({
+			workspaceId: workspaceId,
+			userId: userId,
 		});
 	}),
 });
