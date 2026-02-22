@@ -1,6 +1,6 @@
 import type { Source } from "@onescope/types";
 import type { Page } from "playwright";
-import { findLastAssistantLocator } from "../../../lib/input/findAssistantElement.js";
+import { findLastAssistantLocator } from "../../../lib/input/response/findElement.js";
 
 export async function extractSourcesFromAnthropic(
 	page: Page,

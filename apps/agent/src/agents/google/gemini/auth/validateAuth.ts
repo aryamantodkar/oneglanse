@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
-import { pageHealthCheck } from "../../../../lib/browser/pageHealthCheck.js";
+import { pageHealthCheck } from "../../../../lib/browser/healthCheck.js";
 import { logger } from "../../../../lib/utils/logger.js";
 
 export async function isGoogleAuthenticated(

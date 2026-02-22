@@ -182,3 +182,11 @@ export const SOURCES_SELECTORS = [
 	'[data-testid*="source" i]',
 	'[data-testid*="citation" i]',
 ];
+
+export const RETRYABLE_ERRORS = [
+	"ERR_SSL_PROTOCOL_ERROR",
+	"ERR_CONNECTION",
+	"ERR_TIMED_OUT",
+	"ERR_PROXY_CONNECTION_FAILED",
+	"Timeout",
+];
