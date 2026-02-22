@@ -5,6 +5,7 @@ import { getText } from "../../../lib/input/response/getText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { exponentialBackoff } from "@onescope/utils";
+import { NoAIOverviewError } from "../errors.js";
 
 const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
 const INITIAL_EXTRACTION_RETRY_DELAY = Number(
@@ -30,32 +31,27 @@ export async function fetchPromptResponses(
 
 		// Bail early if Google hit us with a CAPTCHA page
 		const currentUrl = page.url();
-		logger.debug(`Current URL: ${currentUrl}`);
 		if (currentUrl.includes("/sorry/")) {
 			throw new Error(
 				`[${provider}] Google CAPTCHA detected — proxy IP is flagged`,
 			);
 		}
 
-		// Wait specifically for AI Overview content to appear in main-col
-		// (renders asynchronously after networkidle, via JS/streaming)
-		logger.debug("⏳ Waiting for AI Overview content to render...");
-		await page
-			.waitForFunction(
-				() => {
-					const mainCol = document.querySelector(
-						'[data-container-id="main-col"]',
-					);
-					return (
-						mainCol !== null &&
-						(mainCol.textContent?.trim().length ?? 0) > 100
-					);
-				},
-				{ timeout: 25000 },
-			)
-			.catch(() => {
-				logger.warn("AI Overview content did not appear within timeout");
-			});
+		// Check whether Google is actually showing an AI Overview for this query.
+		// If main-col has no text, Google served a different layout (Videos, News, etc.)
+		// — no proxy rotation needed, this is a query-level signal.
+		const hasAIOverview = await page.evaluate(() => {
+			const mainCol = document.querySelector(
+				'[data-container-id="main-col"]',
+			);
+			return mainCol !== null && (mainCol.textContent?.trim().length ?? 0) > 50;
+		});
+
+		if (!hasAIOverview) {
+			throw new NoAIOverviewError(
+				`[${provider}] No AI Overview for this query — Google showed a different result layout`,
+			);
+		}
 	} else {
 		logger.log("⏳ Waiting for response to complete...");
 		// 1️⃣ Wait until model finishes generating
