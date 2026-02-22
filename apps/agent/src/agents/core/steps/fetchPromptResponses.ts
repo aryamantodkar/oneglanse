@@ -30,11 +30,32 @@ export async function fetchPromptResponses(
 
 		// Bail early if Google hit us with a CAPTCHA page
 		const currentUrl = page.url();
+		logger.debug(`Current URL: ${currentUrl}`);
 		if (currentUrl.includes("/sorry/")) {
 			throw new Error(
 				`[${provider}] Google CAPTCHA detected — proxy IP is flagged`,
 			);
 		}
+
+		// Wait specifically for AI Overview content to appear in main-col
+		// (renders asynchronously after networkidle, via JS/streaming)
+		logger.debug("⏳ Waiting for AI Overview content to render...");
+		await page
+			.waitForFunction(
+				() => {
+					const mainCol = document.querySelector(
+						'[data-container-id="main-col"]',
+					);
+					return (
+						mainCol !== null &&
+						(mainCol.textContent?.trim().length ?? 0) > 100
+					);
+				},
+				{ timeout: 25000 },
+			)
+			.catch(() => {
+				logger.warn("AI Overview content did not appear within timeout");
+			});
 	} else {
 		logger.log("⏳ Waiting for response to complete...");
 		// 1️⃣ Wait until model finishes generating

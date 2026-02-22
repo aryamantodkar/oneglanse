@@ -2,6 +2,7 @@ import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
 import { waitForEditorReady } from "../../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../../lib/input/editor/findSendButton.js";
+import { getText } from "../../../lib/input/response/getText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
 import {
@@ -22,7 +23,10 @@ export async function askPrompt(
 	);
 
 	if (provider !== "google-ai-overview") {
-		await waitForAssistantToFinish(page, provider);
+		const existingText = await getText(page, provider).catch(() => "");
+		if (existingText.length > 0) {
+			await waitForAssistantToFinish(page, provider);
+		}
 	}
 	const input = await waitForEditorReady(page, provider);
 
