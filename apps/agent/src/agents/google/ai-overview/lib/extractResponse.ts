@@ -5,7 +5,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
   try {
     const result = await page.evaluate(() => {
       const SOURCE_CARD_DATE_PATTERN =
-        /([A-Z][a-z]+ \\d{1,2}, \\d{4}|\\d{1,2} [A-Z][a-z]+ \\d{4}|\\d+\\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\\b\\d{4}\\b\\s(?:—|·))/;
+        /([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2} [A-Z][a-z]+ \d{4}|\d+\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\b\d{4}\b\s(?:—|·))/;
 
       // ── Pre-flight: confirm AI Overview is actually present ──────────────
       const placeholder = document.querySelector(

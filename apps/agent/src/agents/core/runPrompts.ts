@@ -7,7 +7,6 @@ import { logger } from "../../lib/utils/logger.js";
 import { askPrompt } from "./steps/askPrompt.js";
 import { checkAndExtractSources } from "./steps/extractSources.js";
 import { fetchPromptResponses } from "./steps/fetchPromptResponses.js";
-import { NoAIOverviewError } from "./errors.js";
 
 const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 3);
 const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000);
@@ -130,9 +129,6 @@ async function runPromptWithPolicy(
 
 			return { result, proxyNowProven };
 		} catch (err: any) {
-			// NoAIOverviewError is not a proxy issue — bubble it up to skip this prompt
-			if (err instanceof NoAIOverviewError) throw err;
-
 			lastError = err;
 			logger.error(
 				`❌ Attempt ${attempt}/${effectiveMaxRetries} failed for prompt ${promptIndex + 1}: [${provider}] ${err.message}`,
@@ -210,30 +206,18 @@ export async function runPrompts(
 		logger.debug(`📝 ${promptEntry.prompt}\n`);
 
 		// runPromptWithPolicy throws IPRefreshNeededError on terminal failure — propagates up
-		let result: AskPromptResult;
-		let proxyNowProven: boolean;
-		try {
-			({ result, proxyNowProven } = await runPromptWithPolicy(
-				page,
-				promptEntry,
-				provider,
-				userId,
-				workspaceId,
-				i,
-				promptsArray.length,
-				promptMetrics,
-				promptsArray.slice(i),
-				proxyProven,
-			));
-		} catch (err) {
-			if (err instanceof NoAIOverviewError) {
-				logger.warn(
-					`⏭️ Prompt ${i + 1}/${promptsArray.length} skipped — no AI Overview for this query`,
-				);
-				continue;
-			}
-			throw err;
-		}
+		const { result, proxyNowProven } = await runPromptWithPolicy(
+			page,
+			promptEntry,
+			provider,
+			userId,
+			workspaceId,
+			i,
+			promptsArray.length,
+			promptMetrics,
+			promptsArray.slice(i),
+			proxyProven,
+		);
 
 		promptMetrics.push(result);
 		if (proxyNowProven) proxyProven = true;
