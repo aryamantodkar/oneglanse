@@ -6,7 +6,6 @@ import { BaseError } from "@onescope/errors";
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { errorMappingMiddleware } from "./middleware/errorMapping";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
 	const session = await auth.api.getSession({ headers: opts.headers });
@@ -36,8 +35,6 @@ export const t = initTRPC.context<typeof createTRPCContext>().create({
 		};
 	},
 });
-
-export const baseProcedure = t.procedure.use(errorMappingMiddleware);
 
 export const createCallerFactory = t.createCallerFactory;
 
