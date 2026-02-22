@@ -13,3 +13,7 @@ if (!process.env.LOCAL_AUTH_PROFILE_PATH) {
 }
 
 export const USER_DATA_DIR = path.resolve(process.env.LOCAL_AUTH_PROFILE_PATH);
+export const LOCAL_AUTH_BROWSER_PROFILE_PATH = path.resolve(
+	process.env.LOCAL_AUTH_BROWSER_PROFILE_PATH ??
+		path.join(process.env.LOCAL_AUTH_PROFILE_PATH, ".browser-profile"),
+);

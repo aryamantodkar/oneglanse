@@ -42,6 +42,31 @@ async function openSourcesPanel(page: Page, btn: Locator): Promise<void> {
 }
 
 export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
+	google: {
+		url: "https://gemini.google.com/",
+		entryUrl: "https://gemini.google.com/",
+		warmupDelayMs: 5000,
+		label: "Google",
+		displayName: "Gemini",
+		extractSources: (page) => extractSourcesFromGoogle(page),
+	},
+
+	"google-ai-overview": {
+		url: "https://www.google.com",
+		entryUrl: "https://www.google.com",
+		warmupDelayMs: 5000,
+		label: "Google AI Overview",
+		displayName: "AI Overview",
+		preNavigationHook: async (page) => {
+			logger.log("📍 Activating session via https://gemini.google.com/");
+			await navigateWithRetry(page, "https://gemini.google.com/", {
+				waitUntil: "domcontentloaded",
+				timeout: 60000,
+			});
+			await page.waitForTimeout(1500);
+		},
+		extractSources: (page) => extractAIOverviewSources(page),
+	},
 	openai: {
 		url: "https://chatgpt.com/auth/login",
 		entryUrl: "https://chatgpt.com/auth/login",
@@ -56,7 +81,6 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 			return extractSourcesFromOpenai(page, btn);
 		},
 	},
-
 	anthropic: {
 		url: "https://claude.ai/login",
 		entryUrl: "https://claude.ai/new",
@@ -85,31 +109,5 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 			// extractSourcesFromPerplexity closes the panel via Escape internally
 			return extractSourcesFromPerplexity(page);
 		},
-	},
-
-	google: {
-		url: "https://gemini.google.com/",
-		entryUrl: "https://gemini.google.com/",
-		warmupDelayMs: 5000,
-		label: "Google",
-		displayName: "Gemini",
-		extractSources: (page) => extractSourcesFromGoogle(page),
-	},
-
-	"google-ai-overview": {
-		url: "https://www.google.com",
-		entryUrl: "https://www.google.com",
-		warmupDelayMs: 5000,
-		label: "Google AI Overview",
-		displayName: "AI Overview",
-		preNavigationHook: async (page) => {
-			logger.log("📍 Activating session via https://gemini.google.com/");
-			await navigateWithRetry(page, "https://gemini.google.com/", {
-				waitUntil: "domcontentloaded",
-				timeout: 60000,
-			});
-			await page.waitForTimeout(1500);
-		},
-		extractSources: (page) => extractAIOverviewSources(page),
-	},
+	}
 };
