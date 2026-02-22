@@ -31,11 +31,7 @@ export async function analysePromptResponse(args: {
 		prompt,
 	});
 
-	if (!result.data) {
-		throw new Error("Analysis failed - no data returned");
-	}
-
-	result.data.metadata = {
+	result.metadata = {
 		brandName: workspace.name,
 		brandDomain: workspace.domain,
 		prompt: prompt,
@@ -43,7 +39,7 @@ export async function analysePromptResponse(args: {
 		analyzedAt: new Date().toISOString(),
 	};
 
-	return result.data;
+	return result;
 }
 
 export async function analysePromptsForWorkspace(args: {

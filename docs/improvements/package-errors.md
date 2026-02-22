@@ -1,35 +1,5 @@
 # package-errors Audit (`@onescope/errors`)
 
-## 1. Structural Issues
-- Error transport policy and logging policy are bundled together in one package without clear boundary.
-- `safeHandler` is generic but gets used inside tRPC, effectively bypassing native tRPC error semantics.
-- Suggested move:
-  - keep error classes in `@onescope/errors`.
-  - move framework-specific handler wrappers (like tRPC response wrapping) into app/framework adapters.
-
-## 2. Architectural Problems
-- Package is cohesive for error types, but adapter logic is misplaced.
-- `safeHandler` returning `ApiResponse` is fine for REST handlers, not for tRPC procedures where throwing typed errors is the correct contract.
-- Dependency inversion issue:
-  - app/framework consumers depend on this package for transport policy instead of pure domain error taxonomy.
-- Corrected architecture:
-  - `@onescope/errors`: classes + classifiers + shared error utilities.
-  - app layer: transport adapters (`toTrpcError`, `toHttpResponse`).
-
-## 3. Code Quality Audit
-- `packages/errors/src/errorHandling.ts`
-  - Problem: `mapErrorToResponse` uses `const anyErr = err as any`.
-  - Change: use typed guards for external error shapes.
-  - Production impact: brittle mapping and hidden edge cases.
-- `packages/errors/src/logger.ts`
-  - Problem: logging is raw console, no structure/correlation, no severity metadata schema.
-  - Change: introduce structured logger interface.
-  - Production impact: poor incident debugging and traceability.
-- `safeHandler` in tRPC context (indirect issue)
-  - Problem: swallows throw-based error semantics and normalizes into success-path payload object.
-  - Change: use `TRPCError` propagation in routers; reserve `safeHandler` for non-tRPC contexts.
-  - Production impact: client-side error handling ambiguity and incorrect API behavior assumptions.
-
 ## 4. Testing Requirements
 ### Missing Unit Tests
 - `packages/errors/src/errorHandling.ts` map cases for:
