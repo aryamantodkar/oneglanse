@@ -7,7 +7,7 @@ export async function warmUpEditor(page: Page) {
 
 	const editor = await findActiveEditor(page);
 
-	await editor.click();
+	await editor.click({ force: true });
 	await page.waitForTimeout(300);
 
 	const isMac = process.platform === "darwin";
