@@ -3,9 +3,9 @@ import path from "node:path";
 import dotenv from "dotenv";
 
 if (fs.existsSync("apps/agent/.env")) {
-	dotenv.config({ path: "apps/agent/.env" });
+	dotenv.config({ path: "apps/agent/.env", quiet: true });
 } else if (fs.existsSync(".env")) {
-	dotenv.config();
+	dotenv.config({ quiet: true });
 }
 
 if (!process.env.LOCAL_AUTH_PROFILE_PATH) {

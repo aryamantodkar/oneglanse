@@ -134,6 +134,7 @@ export async function loginToProvider(
 	options: LoginToProviderOptions = {},
 ): Promise<void> {
 	const config = AGENT_PROVIDER_CONFIG[provider];
+	const displayName = config.displayName;
 	const providerDir = path.join(USER_DATA_DIR, provider);
 	const authFile = path.join(providerDir, `${provider}-auth.json`);
 
@@ -144,36 +145,19 @@ export async function loginToProvider(
 		fs.mkdirSync(LOCAL_AUTH_BROWSER_PROFILE_PATH, { recursive: true });
 	}
 
-	// Show clear instructions before browser launch
-	logger.log(`\n${"=".repeat(70)}`);
-	logger.log(`🔐 ${provider.toUpperCase()} AUTHENTICATION`);
-	logger.log(`${"=".repeat(70)}\n`);
-
-	logger.log("📋 Instructions:");
+	logger.log(`\n${displayName}: starting login`);
 	logger.log(
-		options.skipCountdown
-			? "   1. A browser window is opening now"
-			: "   1. A browser window will open in 3 seconds",
+		`Action: sign in to ${displayName} in the browser, then press Enter in terminal to save and continue.`,
 	);
-	logger.log(`   2. Please log in to ${provider} in the browser`);
-	logger.log(
-		options.loginContext
-			? "   3. Browser will stay open for the next provider"
-			: "   3. The browser will close automatically once logged in",
-	);
-	logger.log("   4. Timeout: 8 minutes\n");
 
 	const createdContext = !options.loginContext;
 
 	if (!options.skipCountdown) {
-		logger.warn("⏰ Preparing to open browser...");
-
-		// Countdown before launch
 		for (let i = 3; i > 0; i--) {
-			process.stdout.write(`\r   Opening in ${i} seconds...`);
+			process.stdout.write(`\rOpening browser in ${i}s...`);
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
-		process.stdout.write("\r   Opening browser now!     \n\n");
+		process.stdout.write("\rOpening browser now.   \n");
 	}
 
 	const loginContext =
@@ -196,21 +180,16 @@ export async function loginToProvider(
 		}
 		enforceGoogleAccountChooser(loginPage);
 
-		logger.log(
-			"✅ Browser opened - Please complete login in the browser window",
-		);
-		logger.log(
-			"🛑 Auto auth detection is disabled. Switch accounts if needed, then press Enter here to save this session.\n",
-		);
-
 		await loginPage.goto(config.url, {
 			waitUntil: "domcontentloaded",
 		});
 
-		await waitForEnter("Press Enter after login/account switching is complete...");
+		await waitForEnter(
+			`Press Enter to save ${displayName} session and continue to next provider...`,
+		);
 
 		if (provider === "google" || provider === "google-ai-overview") {
-			logger.log("🔄 Visiting google.com to capture full session cookies...");
+			logger.log("Google: finalizing session cookies...");
 			await loginPage
 				.goto("https://www.google.com", {
 					waitUntil: "domcontentloaded",
@@ -224,10 +203,9 @@ export async function loginToProvider(
 			path: authFile,
 		});
 
-		logger.success(`✅ ${provider} authentication successful!`);
-		logger.log(`📁 Session saved to: ${authFile}\n`);
+		logger.success(`${displayName}: session saved`);
 	} catch (err) {
-		logger.error(`Failed to login to ${provider}:`, err);
+		logger.error(`${displayName}: login failed`, err);
 		throw err;
 	} finally {
 		if (createdContext) {

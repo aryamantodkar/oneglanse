@@ -5,7 +5,6 @@ import type { BrowserContext, Page } from "playwright";
 import { chromium } from "playwright-extra";
 import { logger } from "../lib/utils/logger.js";
 import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
-import { isAuthenticated } from "../lib/auth/isAuthenticated.js";
 import {
 	LOCAL_AUTH_BROWSER_PROFILE_PATH,
 	USER_DATA_DIR,
@@ -17,16 +16,7 @@ function getAuthFile(provider: Provider): string {
 }
 
 export async function loginToAll(): Promise<void> {
-	logger.log("\n🔐 AUTHENTICATION SETUP");
-	logger.log(`${"=".repeat(70)}\n`);
-
-	logger.log("📊 This will authenticate you with all AI models:");
-	logger.log("   • ChatGPT");
-	logger.log("   • Claude");
-	logger.log("   • Perplexity");
-	logger.log("   • Gemini (also used for AI Overview)\n");
-	logger.log("⚡ Frictionless mode: no per-provider prompts; only missing/expired sessions will open login.");
-	logger.log();
+	logger.log("\nLogin providers");
 
 	const results = Object.fromEntries(
 		PROVIDER_LIST.map((p) => [p, "skipped" as const]),
@@ -40,28 +30,22 @@ export async function loginToAll(): Promise<void> {
 	const providersNeedingAuth: Provider[] = [];
 	for (const provider of loginProviders) {
 		const authFile = getAuthFile(provider);
-		const displayName = AGENT_PROVIDER_CONFIG[provider].displayName;
 
 		if (!fs.existsSync(authFile)) {
-			logger.log(`🆕 ${displayName}: no saved session, login required.`);
 			providersNeedingAuth.push(provider);
 			continue;
 		}
 
-		const lastUpdated = fs.statSync(authFile).mtime.toLocaleString();
-		logger.log(`✅ ${displayName}: saved session found (${lastUpdated}) — skipping`);
 		results[provider] = "skipped";
 	}
 
 	if (providersNeedingAuth.length === 0) {
-		logger.success("✅ All providers already have valid sessions. No interactive login needed.");
+		logger.success("No login needed. All provider sessions already exist.");
 		logger.log();
 		return;
 	}
 
-	logger.log(
-		`\n🌐 Opening one shared browser window for ${providersNeedingAuth.length} provider(s) that need auth.\n`,
-	);
+	logger.log(`Need login: ${providersNeedingAuth.length} provider(s)`);
 
 	let sharedContext: BrowserContext | undefined;
 	let sharedPage: Page | undefined;
@@ -82,28 +66,10 @@ export async function loginToAll(): Promise<void> {
 	sharedPage = await sharedContext.newPage();
 
 	try {
-		for (const provider of providersNeedingAuth) {
-			const authFile = getAuthFile(provider);
+		for (const [index, provider] of providersNeedingAuth.entries()) {
 			const displayName = AGENT_PROVIDER_CONFIG[provider].displayName;
 
-			logger.log(`🔎 ${displayName}: checking existing account in shared browser...`);
-			await sharedPage
-				.goto(AGENT_PROVIDER_CONFIG[provider].url, {
-					waitUntil: "domcontentloaded",
-					timeout: 45000,
-				})
-				.catch(() => {});
-			await sharedPage.waitForTimeout(1200);
-
-			const alreadyLoggedIn = await isAuthenticated(sharedPage, provider, true);
-			if (alreadyLoggedIn) {
-				await sharedContext.storageState({ path: authFile });
-				logger.log(
-					`✅ ${displayName}: existing account detected, session exported automatically.`,
-				);
-				results[provider] = "success";
-				continue;
-			}
+			logger.log(`[${index + 1}/${providersNeedingAuth.length}] ${displayName}`);
 
 			try {
 				await loginToProvider(provider, {
@@ -115,13 +81,8 @@ export async function loginToAll(): Promise<void> {
 			} catch (err: any) {
 				results[provider] = "failed";
 
-				logger.error(`❌ ${provider} authentication failed`);
-				logger.error(`   Error: ${err.message}\n`);
-
-				logger.warn("⚠️  Options:");
-				logger.warn("   • Continue to next provider");
-				logger.warn(`   • Retry this provider later with: pnpm run auth:${provider}`);
-				logger.warn(`   • Skip if you don't need ${provider}\n`);
+				logger.error(`${displayName}: failed`);
+				logger.error(`Reason: ${err.message}`);
 			}
 		}
 	} finally {
@@ -129,11 +90,6 @@ export async function loginToAll(): Promise<void> {
 			await sharedContext.close().catch(() => {});
 		}
 	}
-
-	// Summary
-	logger.log(`\n${"=".repeat(70)}`);
-	logger.log("📊 AUTHENTICATION SUMMARY");
-	logger.log(`${"=".repeat(70)}\n`);
 
 	const successCount = Object.values(results).filter(
 		(r) => r === "success",
@@ -145,34 +101,17 @@ export async function loginToAll(): Promise<void> {
 		(r) => r === "skipped",
 	).length;
 
-	for (const [provider, status] of Object.entries(results)) {
-		const icon = status === "success" ? "✅" : status === "failed" ? "❌" : "⏭️";
-		const label = `${provider}:`.padEnd(15);
-		logger.log(`${icon} ${label} ${status.toUpperCase()}`);
-	}
-
-	logger.log();
-
 	const attemptedCount = loginProviders.length - skippedCount;
 
 	if (successCount === attemptedCount && attemptedCount > 0) {
-		logger.success("🎉 All attempted providers authenticated successfully!");
-		if (skippedCount > 0) {
-			logger.log(`⏭️  ${skippedCount} provider(s) skipped`);
-		}
+		logger.success(`Login complete: success=${successCount}, skipped=${skippedCount}, failed=${failedCount}`);
 	} else if (successCount > 0) {
-		logger.warn(
-			`⚠️  ${successCount}/${attemptedCount} attempted providers authenticated, ${failedCount} failed`,
-		);
-		if (skippedCount > 0) {
-			logger.log(`⏭️  ${skippedCount} provider(s) skipped`);
-		}
-		logger.log("💡 You can retry failed providers individually");
+		logger.warn(`Login complete: success=${successCount}, skipped=${skippedCount}, failed=${failedCount}`);
+		logger.warn("Retry failed providers: pnpm run auth:<provider>");
 	} else if (attemptedCount === 0) {
-		logger.warn("⏭️  All providers skipped - no authentication performed");
+		logger.warn("No login actions were needed.");
 	} else {
-		logger.error("❌ All attempted authentications failed");
-		logger.log("💡 Check your internet connection and try again");
+		logger.error("All provider logins failed.");
 	}
 
 	logger.log();

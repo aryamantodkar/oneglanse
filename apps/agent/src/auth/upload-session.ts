@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { PROVIDER_LIST } from "@onescope/types";
 import dotenv from "dotenv";
@@ -7,9 +6,9 @@ import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
 import { logger } from "../lib/utils/logger.js";
 
 if (fs.existsSync("apps/agent/.env")) {
-	dotenv.config({ path: "apps/agent/.env" });
+	dotenv.config({ path: "apps/agent/.env", quiet: true });
 } else if (fs.existsSync(".env")) {
-	dotenv.config();
+	dotenv.config({ quiet: true });
 }
 
 interface SessionData {
@@ -19,12 +18,65 @@ interface SessionData {
 	google?: any;
 }
 
+type StorageCookie = {
+	domain?: string;
+};
+
+type StorageOrigin = {
+	origin?: string;
+};
+
+type StorageState = {
+	cookies?: StorageCookie[];
+	origins?: StorageOrigin[];
+};
+
+const PROVIDER_DOMAIN_SUFFIXES: Record<keyof SessionData, string[]> = {
+	openai: ["chatgpt.com", "openai.com"],
+	anthropic: ["claude.ai", "anthropic.com"],
+	perplexity: ["perplexity.ai"],
+	google: ["google.com", "googleusercontent.com", "gstatic.com"],
+};
+
+function matchesSuffix(hostOrDomain: string, suffixes: string[]): boolean {
+	const normalized = hostOrDomain.replace(/^\./, "").toLowerCase();
+	return suffixes.some(
+		(suffix) => normalized === suffix || normalized.endsWith(`.${suffix}`),
+	);
+}
+
+function compactStorageStateForProvider(
+	provider: keyof SessionData,
+	state: StorageState,
+): StorageState {
+	const suffixes = PROVIDER_DOMAIN_SUFFIXES[provider];
+
+	const cookies = (state.cookies ?? []).filter((cookie) => {
+		const domain = cookie.domain;
+		if (!domain) return false;
+		return matchesSuffix(domain, suffixes);
+	});
+
+	const origins = (state.origins ?? []).filter((originEntry) => {
+		try {
+			const origin = originEntry.origin;
+			if (!origin) return false;
+			const host = new URL(origin).hostname;
+			return matchesSuffix(host, suffixes);
+		} catch {
+			return false;
+		}
+	});
+
+	return { cookies, origins };
+}
+
 async function uploadSessions() {
 	const VPS_API_URL = process.env.VPS_API_URL;
 	const API_AUTH_TOKEN = process.env.API_AUTH_TOKEN;
 	const AUTH_PROFILE_PATH = process.env.LOCAL_AUTH_PROFILE_PATH || "./storage";
 
-	logger.log("📤 Starting session upload via HTTP...");
+	logger.log("Upload sessions");
 
 	if (!API_AUTH_TOKEN) {
 		logger.error("API_AUTH_TOKEN not set in environment");
@@ -39,18 +91,16 @@ async function uploadSessions() {
 	}
 
 	// Check VPS health first
-	logger.log(`🔍 Checking VPS health at ${VPS_API_URL}/health...`);
+	logger.log("Health check");
 	try {
 		const healthResponse = await fetch(`${VPS_API_URL}/health`);
 		if (!healthResponse.ok) {
 			throw new Error(`VPS health check failed: ${healthResponse.status}`);
 		}
-		const health = await healthResponse.json();
-		logger.log("✅ VPS is healthy:", health);
+		logger.success("Health check passed");
 	} catch (err: any) {
-		logger.error("Failed to connect to VPS:", err.message);
-		logger.error("Make sure the VPS is running and accessible");
-		logger.error(`Tried to connect to: ${VPS_API_URL}/health`);
+		logger.error(`VPS health check failed: ${err.message}`);
+		logger.error(`Health endpoint: ${VPS_API_URL}/health`);
 		process.exit(1);
 	}
 
@@ -67,17 +117,24 @@ async function uploadSessions() {
 		);
 
 		if (!fs.existsSync(authFile)) {
-			logger.warn(
-				`Session file not found for ${AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider}: ${authFile}`,
-			);
 			continue;
 		}
 
 		try {
-			const sessionData = JSON.parse(fs.readFileSync(authFile, "utf-8"));
-			sessions[provider as keyof SessionData] = sessionData;
-			logger.log(
-				`✅ Read session for ${AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider} (${authFile})`,
+			const rawSession = JSON.parse(fs.readFileSync(authFile, "utf-8"));
+			const typedProvider = provider as keyof SessionData;
+			const compactSession = compactStorageStateForProvider(
+				typedProvider,
+				rawSession,
+			);
+			const rawSize = Buffer.byteLength(JSON.stringify(rawSession), "utf-8");
+			const compactSize = Buffer.byteLength(
+				JSON.stringify(compactSession),
+				"utf-8",
+			);
+			sessions[typedProvider] = compactSession;
+			logger.debug(
+				`${AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider}: ${Math.round(rawSize / 1024)}KB -> ${Math.round(compactSize / 1024)}KB`,
 			);
 		} catch (err: any) {
 			logger.error(
@@ -94,9 +151,7 @@ async function uploadSessions() {
 	}
 
 	// Upload sessions one by one to avoid nginx size limits
-	logger.log(
-		`📤 Uploading ${Object.keys(sessions).length} sessions to VPS (one by one)...\n`,
-	);
+	logger.log(`Uploading ${Object.keys(sessions).length} session(s)`);
 
 	const uploadResults: Record<string, boolean> = {};
 	let successCount = 0;
@@ -106,8 +161,6 @@ async function uploadSessions() {
 		try {
 			const modelName =
 				AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider;
-			logger.log(`📤 Uploading ${modelName} session...`);
-
 			const response = await fetch(`${VPS_API_URL}/upload-sessions`, {
 				method: "POST",
 				headers: {
@@ -119,25 +172,28 @@ async function uploadSessions() {
 
 			if (!response.ok) {
 				const errorText = await response.text();
+				if (response.status === 413) {
+					throw new Error(
+						"Upload failed (413): payload too large for server. Increase nginx client_max_body_size or reduce stored browser profile data.",
+					);
+				}
 				throw new Error(`Upload failed (${response.status}): ${errorText}`);
 			}
 
-			const result = await response.json();
+			await response.json();
 			uploadResults[provider] = true;
 			successCount++;
-			logger.success(`✅ ${modelName} session uploaded successfully`);
+			logger.debug(`${modelName}: uploaded`);
 		} catch (err: any) {
 			const modelName =
 				AGENT_PROVIDER_CONFIG[provider as keyof typeof AGENT_PROVIDER_CONFIG]?.displayName || provider;
 			uploadResults[provider] = false;
 			failCount++;
-			logger.error(`❌ Failed to upload ${modelName} session:`, err.message);
+			logger.error(`${modelName}: upload failed - ${err.message}`);
 		}
 	}
 
-	logger.log(
-		`\n📊 Upload Summary: ${successCount} succeeded, ${failCount} failed\n`,
-	);
+	logger.log(`Upload summary: success=${successCount}, failed=${failCount}`);
 
 	if (successCount === 0) {
 		logger.error("All uploads failed!");
@@ -145,35 +201,23 @@ async function uploadSessions() {
 	}
 
 	if (failCount > 0) {
-		logger.warn("Some uploads failed. Check errors above.");
+		logger.warn("Some uploads failed.");
 	} else {
-		logger.success("All sessions uploaded successfully!");
+		logger.success("All sessions uploaded.");
 	}
 
 	// Verify sessions on VPS
 	try {
-		logger.log("🔍 Verifying sessions on VPS...");
+		logger.log("Verification");
 		const healthCheck = await fetch(`${VPS_API_URL}/health`);
 		const health = await healthCheck.json();
 
-		logger.log("\n📊 Session status on VPS:");
-		logger.log(
-			`   ${AGENT_PROVIDER_CONFIG.anthropic.displayName}: ${health.sessions.anthropic ? "✅" : "❌"}`,
-		);
-		logger.log(
-			`   ${AGENT_PROVIDER_CONFIG.openai.displayName}: ${health.sessions.openai ? "✅" : "❌"}`,
-		);
-		logger.log(
-			`   ${AGENT_PROVIDER_CONFIG.perplexity.displayName}: ${health.sessions.perplexity ? "✅" : "❌"}`,
-		);
-		logger.log(
-			`   ${AGENT_PROVIDER_CONFIG.google.displayName}: ${health.sessions.google ? "✅" : "❌"} (also used for AI Overview)`,
-		);
-
-		logger.success("\nSession verification complete!");
-		logger.log("👉 You can now run jobs on the VPS");
+		const okCount = ["anthropic", "openai", "perplexity", "google"].filter(
+			(key) => Boolean(health.sessions?.[key]),
+		).length;
+		logger.success(`Verification: ${okCount}/4 sessions present on VPS`);
 	} catch (err: any) {
-		logger.warn("Could not verify sessions:", err.message);
+		logger.warn(`Verification failed: ${err.message}`);
 	}
 }
 
