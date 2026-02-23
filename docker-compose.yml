@@ -112,7 +112,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
+      test: ["CMD-SHELL", "clickhouse-client --user ${CLICKHOUSE_USER:-default} --password ${CLICKHOUSE_PASSWORD:-password} --query 'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 5
