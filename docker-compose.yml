@@ -59,7 +59,7 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping"]
       interval: 5s
       timeout: 3s
       retries: 5
