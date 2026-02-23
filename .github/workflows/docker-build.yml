@@ -1,9 +1,8 @@
-name: Build and Push Docker Images
-
+name: Oneglanse Build
 on:
   push:
     branches:
-      - onescope-monorepo
+      - 'feat/no-auth-providers'
     paths:
       - "apps/**"
       - "packages/**"

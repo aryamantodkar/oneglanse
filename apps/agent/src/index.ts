@@ -1,4 +1,3 @@
-import "./api.js";
 import "./worker.js";
 import { redis } from "@onescope/services";
 import { worker } from "./worker.js";

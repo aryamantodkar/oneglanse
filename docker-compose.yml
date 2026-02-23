@@ -1,39 +1,5 @@
 services:
   # ----------------------------
-  # Agent API
-  # ----------------------------
-  agent-api:
-    image: ghcr.io/aryamantodkar/onescope-agent:latest
-    pull_policy: always
-    container_name: onescope-agent-api
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3333:3333"
-    env_file:
-      - apps/agent/.env
-    environment:
-      NODE_ENV: production
-    volumes:
-      - agent_storage:/storage
-    command: pnpm start:api
-    networks:
-      - backend
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3333/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
-  # ----------------------------
   # Agent Worker
   # ----------------------------
   agent-worker:
