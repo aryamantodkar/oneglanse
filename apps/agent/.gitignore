@@ -51,8 +51,6 @@ storage
 
 *.tar.gz
 
-auth.json
-
 dump.rdb
 
 .claude/

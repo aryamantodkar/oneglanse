@@ -1,4 +1,4 @@
-import { AuthError, classifyError, IPRefreshNeededError } from "@onescope/errors";
+import { classifyError, IPRefreshNeededError } from "@onescope/errors";
 import { exponentialBackoff } from "@onescope/utils";
 import type { AskPromptResult, FailureType, PromptPayload, Provider } from "@onescope/types";
 import type { Browser, BrowserContext, Page } from "playwright";
@@ -20,7 +20,6 @@ type AgentFactory = () => Promise<{
 	browser: Browser;
 	context: BrowserContext;
 	page: Page;
-	auth: boolean;
 	proxy?: string | null;
 }>;
 
@@ -60,14 +59,6 @@ async function runSingleProxyAttempt(
 			refs.browser = agent.browser;
 			refs.context = agent.context;
 			refs.proxy = agent.proxy ?? null;
-
-			logger.log(`${label} authentication status: ${agent.auth}`);
-
-			if (!agent.auth) {
-				throw new Error(
-					`${provider} authentication is false or using invalid proxy.`,
-				);
-			}
 
 			return await runAgents(currentPayload, agent.page, provider);
 		})(),
@@ -113,10 +104,6 @@ async function runProxyCycle(
 			}
 			return { done: true };
 		} catch (err: any) {
-			if (err instanceof AuthError) {
-				throw err; // propagates to agentHandler's catch
-			}
-
 			if (err instanceof IPRefreshNeededError) {
 				logger.warn(
 					`${label} needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`,
@@ -206,23 +193,15 @@ export async function agentHandler(
 
 			currentPayload = outcome.updatedPayload;
 		} catch (err: any) {
-			if (err instanceof AuthError) {
-				logger.error(
-					`🔴 ${label} authentication is missing or invalid. Stopping retries.`,
-				);
-				throw new Error(
-					`${provider} not authenticated — re-login required. Run: pnpm --filter @onescope/agent run auth`,
-				);
-			}
 			throw err;
 		}
 	}
 
 	const totalAttempts = MAX_CYCLES * PROXIES_PER_CYCLE;
 	logger.error(
-		`🔴 ${label} SESSION EXPIRED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles. Please re-login to ${provider}.`,
+		`🔴 ${label} EXHAUSTED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles for ${provider}.`,
 	);
 	throw new Error(
-		`${provider} session expired — re-login required. Run: pnpm --filter @onescope/agent run auth`,
+		`${provider} failed all ${totalAttempts} proxy attempts across ${MAX_CYCLES} cycles — no valid proxy found.`,
 	);
 }

@@ -1,6 +1,4 @@
 import type { Provider } from "@onescope/types";
-import type { Page } from "playwright";
-import { isAuthenticated } from "../../lib/auth/isAuthenticated.js";
 import { launchContext } from "../../lib/browser/launch.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";
@@ -16,8 +14,8 @@ export async function createAgent(provider: Provider) {
 		await config.preNavigationHook(page);
 	}
 
-	logger.log(`📍 Navigating to ${config.entryUrl}`);
-	await navigateWithRetry(page, config.entryUrl, {
+	logger.log(`📍 Navigating to ${config.url}`);
+	await navigateWithRetry(page, config.url, {
 		waitUntil: "domcontentloaded",
 		timeout: 60000,
 	});
@@ -37,7 +35,5 @@ export async function createAgent(provider: Provider) {
 
 	await page.waitForTimeout(config.warmupDelayMs);
 
-	const auth = await isAuthenticated(page, provider);
-
-	return { browser, context, page, auth, proxy };
+	return { browser, context, page, proxy };
 }

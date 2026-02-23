@@ -12,7 +12,6 @@ import { logger } from "../../lib/utils/logger.js";
 
 export interface AgentProviderConfig {
 	url: string;
-	entryUrl: string;
 	warmupDelayMs: number;
 	label: string;
 	displayName: string;
@@ -44,7 +43,6 @@ async function openSourcesPanel(page: Page, btn: Locator): Promise<void> {
 export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 	google: {
 		url: "https://gemini.google.com/",
-		entryUrl: "https://gemini.google.com/",
 		warmupDelayMs: 5000,
 		label: "Google",
 		displayName: "Gemini",
@@ -59,7 +57,6 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 
 	"google-ai-overview": {
 		url: "https://www.google.com",
-		entryUrl: "https://www.google.com",
 		warmupDelayMs: 5000,
 		label: "Google AI Overview",
 		displayName: "AI Overview",
@@ -74,8 +71,7 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		extractSources: (page) => extractAIOverviewSources(page),
 	},
 	openai: {
-		url: "https://chatgpt.com/auth/login",
-		entryUrl: "https://chatgpt.com/auth/login",
+		url: "https://chatgpt.com/",
 		warmupDelayMs: 5000,
 		label: "OpenAI",
 		displayName: "ChatGPT",
@@ -88,8 +84,7 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		},
 	},
 	anthropic: {
-		url: "https://claude.ai/login",
-		entryUrl: "https://claude.ai/new",
+		url: "https://claude.ai/new",
 		warmupDelayMs: 5000,
 		label: "Anthropic",
 		displayName: "Claude",
@@ -98,7 +93,6 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 
 	perplexity: {
 		url: "https://www.perplexity.ai/",
-		entryUrl: "https://www.perplexity.ai",
 		warmupDelayMs: 5000,
 		label: "Perplexity",
 		displayName: "Perplexity",

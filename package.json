@@ -14,9 +14,7 @@
 		"db:migrate": "pnpm --filter @onescope/db db:migrate",
 		"db:push": "pnpm --filter @onescope/db db:push",
 		"db:studio": "pnpm --filter @onescope/db db:studio",
-		"auth": "pnpm --filter=@onescope/agent auth",
 		"start:agent": "pnpm --filter=@onescope/agent start",
-		"start:api": "pnpm --filter=@onescope/agent start:api",
 		"start:worker": "pnpm --filter=@onescope/agent start:worker",
 		"lint:fix": "biome check . --fix"
 	},
