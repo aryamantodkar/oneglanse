@@ -15,6 +15,7 @@ export interface AgentProviderConfig {
 	warmupDelayMs: number;
 	label: string;
 	displayName: string;
+	skip?: boolean;
 	preNavigationHook?: (page: Page) => Promise<void>;
 	postNavigationHook?: (page: Page) => Promise<void>;
 	extractSources: (page: Page) => Promise<Source[]>;
@@ -54,22 +55,6 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 			return extractSourcesFromGemini(page, btn);
 		},
 	},
-
-	"google-ai-overview": {
-		url: "https://www.google.com",
-		warmupDelayMs: 5000,
-		label: "Google AI Overview",
-		displayName: "AI Overview",
-		preNavigationHook: async (page) => {
-			logger.log("📍 Activating session via https://gemini.google.com/");
-			await navigateWithRetry(page, "https://gemini.google.com/", {
-				waitUntil: "domcontentloaded",
-				timeout: 60000,
-			});
-			await page.waitForTimeout(1500);
-		},
-		extractSources: (page) => extractAIOverviewSources(page),
-	},
 	openai: {
 		url: "https://chatgpt.com/",
 		warmupDelayMs: 5000,
@@ -83,14 +68,6 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 			return extractSourcesFromOpenai(page, btn);
 		},
 	},
-	anthropic: {
-		url: "https://claude.ai/new",
-		warmupDelayMs: 5000,
-		label: "Anthropic",
-		displayName: "Claude",
-		extractSources: (page) => extractSourcesFromAnthropic(page),
-	},
-
 	perplexity: {
 		url: "https://www.perplexity.ai/",
 		warmupDelayMs: 5000,
@@ -108,5 +85,20 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 
 			return extractSourcesFromPerplexity(page);
 		},
-	}
+	},
+	anthropic: {
+		url: "https://claude.ai/new",
+		warmupDelayMs: 5000,
+		skip: true,
+		label: "Anthropic",
+		displayName: "Claude",
+		extractSources: (page) => extractSourcesFromAnthropic(page),
+	},
+	"google-ai-overview": {
+		url: "https://www.google.com",
+		warmupDelayMs: 5000,
+		label: "Google AI Overview",
+		displayName: "AI Overview",
+		extractSources: (page) => extractAIOverviewSources(page),
+	},
 };
