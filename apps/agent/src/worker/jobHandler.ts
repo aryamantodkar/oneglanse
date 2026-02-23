@@ -39,6 +39,11 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		throw new Error(`Unknown provider: ${provider}`);
 	}
 
+	if (AGENT_PROVIDER_CONFIG[provider].skip) {
+		logger.warn(`[${provider}] skipped (skip: true in providerRegistry)`);
+		return true;
+	}
+
 	if (!prompts || prompts.length === 0) {
 		throw new Error("Agent job received no prompts");
 	}
