@@ -4,7 +4,7 @@ import type { Locator, Page } from "playwright";
 import { extractSourcesFromAnthropic } from "../claude/lib/extractSources.js";
 import { extractSourcesFromOpenai } from "../chatgpt/lib/extractSources.js";
 import { extractSourcesFromPerplexity } from "../perplexity/lib/extractSources.js";
-import { extractSourcesFromGoogle } from "../google/gemini/lib/extractSources.js";
+import { extractSourcesFromGemini } from "../google/gemini/lib/extractSources.js";
 import { extractAIOverviewSources } from "../google/ai-overview/lib/extractSources.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { findSourcesButton } from "../../lib/input/sources/findButton.js";
@@ -48,7 +48,13 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		warmupDelayMs: 5000,
 		label: "Google",
 		displayName: "Gemini",
-		extractSources: (page) => extractSourcesFromGoogle(page),
+		extractSources: async (page) => {
+			const btn = await findSourcesButton(page);
+			if (!btn) return [];
+			await openSourcesPanel(page, btn);
+			
+			return extractSourcesFromGemini(page, btn);
+		},
 	},
 
 	"google-ai-overview": {
@@ -77,7 +83,7 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 			const btn = await findSourcesButton(page);
 			if (!btn) return [];
 			await openSourcesPanel(page, btn);
-			// extractSourcesFromOpenai extracts sources then clicks btn again to close
+
 			return extractSourcesFromOpenai(page, btn);
 		},
 	},
@@ -97,7 +103,6 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		label: "Perplexity",
 		displayName: "Perplexity",
 		postNavigationHook: async (page) => {
-			// Human-like random delays to avoid bot detection
 			const randomDelay = 2000 + Math.floor(Math.random() * 3000);
 			await page.waitForTimeout(randomDelay);
 			await page.waitForTimeout(1000 + Math.floor(Math.random() * 1000));
@@ -106,7 +111,7 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 			const btn = await findSourcesButton(page);
 			if (!btn) return [];
 			await openSourcesPanel(page, btn);
-			// extractSourcesFromPerplexity closes the panel via Escape internally
+
 			return extractSourcesFromPerplexity(page);
 		},
 	}
