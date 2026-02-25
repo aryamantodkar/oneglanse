@@ -22,12 +22,6 @@ export async function askPrompt(
 		`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}"`,
 	);
 
-	if (provider !== "google-ai-overview") {
-		const existingText = await getText(page, provider).catch(() => "");
-		if (existingText.length > 0) {
-			await waitForAssistantToFinish(page, provider);
-		}
-	}
 	const input = await waitForEditorReady(page, provider);
 
 	logger.debug("Typing Prompt");

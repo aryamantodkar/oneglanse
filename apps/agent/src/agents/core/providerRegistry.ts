@@ -4,11 +4,10 @@ import type { Locator, Page } from "playwright";
 import { extractSourcesFromAnthropic } from "../claude/lib/extractSources.js";
 import { extractSourcesFromOpenai } from "../chatgpt/lib/extractSources.js";
 import { extractSourcesFromPerplexity } from "../perplexity/lib/extractSources.js";
-import { extractSourcesFromGemini } from "../google/gemini/lib/extractSources.js";
-import { extractAIOverviewSources } from "../google/ai-overview/lib/extractSources.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { findSourcesButton } from "../../lib/input/sources/findButton.js";
 import { logger } from "../../lib/utils/logger.js";
+import { extractSourcesFromGemini } from "../gemini/lib/extractSources.js";
 
 export interface AgentProviderConfig {
 	url: string;
@@ -93,12 +92,5 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		label: "Anthropic",
 		displayName: "Claude",
 		extractSources: (page) => extractSourcesFromAnthropic(page),
-	},
-	"google-ai-overview": {
-		url: "https://www.google.com",
-		warmupDelayMs: 5000,
-		label: "Google AI Overview",
-		displayName: "AI Overview",
-		extractSources: (page) => extractAIOverviewSources(page),
-	},
+	}
 };

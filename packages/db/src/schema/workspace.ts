@@ -14,7 +14,7 @@ import { user } from "./auth.js";
 
 // Keep in sync with PROVIDER_LIST in @onescope/types
 const DEFAULT_PROVIDERS_JSON =
-	'["openai","anthropic","perplexity","google","google-ai-overview"]';
+	'["openai","anthropic","perplexity","google"]';
 
 export const workspaces = pgTable("workspaces", {
 	id: varchar("id", { length: 256 }).primaryKey(),
