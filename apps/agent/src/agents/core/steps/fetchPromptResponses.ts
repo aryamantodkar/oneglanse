@@ -19,32 +19,11 @@ export async function fetchPromptResponses(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	// Google AI Overview doesn't have a "generating" phase - results appear immediately
-	if (provider === "google-ai-overview") {
-		logger.log("⏳ Waiting for search results to load...");
-		// Wait for page to be stable
-		await page
-			.waitForLoadState("networkidle", { timeout: 10000 })
-			.catch(() => {});
-		await page.waitForTimeout(2000); // Give AI Overview time to render
+	logger.log("⏳ Waiting for response to complete...");
+	// 1️⃣ Wait until model finishes generating
+	await waitForAssistantToFinish(page, provider);
 
-		// Bail early if Google hit us with a CAPTCHA page
-		const currentUrl = page.url();
-		logger.debug(`Current URL: ${currentUrl}`);
-		if (currentUrl.includes("/sorry/")) {
-			throw new Error(
-				`[${provider}] Google CAPTCHA detected — proxy IP is flagged`,
-			);
-		}
-
-		page.waitForTimeout(500);
-	} else {
-		logger.log("⏳ Waiting for response to complete...");
-		// 1️⃣ Wait until model finishes generating
-		await waitForAssistantToFinish(page, provider);
-
-		await page.waitForTimeout(1500);
-	}
+	await page.waitForTimeout(1500);
 
 	logger.log("📄 Extracting response...");
 

@@ -1,7 +1,6 @@
 import type { Provider } from "@onescope/types";
 import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
 import type { Page } from "playwright";
-import { extractAIOverviewResponse } from "../../../agents/google/ai-overview/lib/extractResponse.js";
 import { extractAnthropicBlocks } from "./anthropicBlocks.js";
 import { turndown } from "./converter.js";
 
@@ -9,13 +8,6 @@ export async function extractAssistantMarkdown(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	if (provider === "google-ai-overview") {
-		const html = await extractAIOverviewResponse(page);
-		if (!html || html.length === 0) return "";
-		const markdown = turndown.turndown(html);
-		return markdown.replace(/\n{3,}/g, "\n\n").trim();
-	}
-
 	for (const selector of MODEL_RESPONSE_SELECTORS) {
 		const nodes = page.locator(selector);
 		const count = await nodes.count();
