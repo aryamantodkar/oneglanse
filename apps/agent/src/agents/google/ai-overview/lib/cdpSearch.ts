@@ -17,6 +17,26 @@ import {
 	STEALTH_INIT_SCRIPT,
 } from "../../../../lib/browser/stealth.js";
 
+type AIOverviewAbsenceDiagnostics = {
+	finalUrl: string;
+	title: string;
+	hasCaptcha: boolean;
+	hasConsent: boolean;
+	hasAiOverviewText: boolean;
+	resultStatsVisible: boolean;
+	bodySnippet: string;
+};
+
+export class NoAIOverviewError extends Error {
+	readonly diagnostics: AIOverviewAbsenceDiagnostics;
+
+	constructor(message: string, diagnostics: AIOverviewAbsenceDiagnostics) {
+		super(message);
+		this.name = "NoAIOverviewError";
+		this.diagnostics = diagnostics;
+	}
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getFreePort(): Promise<number> {
@@ -85,20 +105,42 @@ async function waitForCDPEndpoint(
 	);
 }
 
+async function inspectNoAIOverviewState(
+	page: Parameters<Parameters<typeof extractAIOverviewResponse>[0]["evaluate"]>[0] extends never
+		? never
+		: any,
+): Promise<AIOverviewAbsenceDiagnostics> {
+	return await page.evaluate(() => {
+		const bodyText = (document.body?.innerText || "").replace(/\s+/g, " ").trim();
+		return {
+			finalUrl: window.location.href,
+			title: document.title || "",
+			hasCaptcha:
+				bodyText.includes("Our systems have detected unusual traffic") ||
+				/body.*unusual traffic/i.test(bodyText) ||
+				Boolean(document.querySelector('form#captcha-form, iframe[src*="recaptcha"]')),
+			hasConsent: Boolean(
+				document.querySelector(
+					'form[action*="consent"], #consent-bump, [aria-label*="consent"], button#L2AGLb',
+				),
+			),
+			hasAiOverviewText: /ai overview/i.test(bodyText),
+			resultStatsVisible: Boolean(document.querySelector("#result-stats")),
+			bodySnippet: bodyText.slice(0, 300),
+		};
+	});
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
-/**
- * Returns AskPromptResult on success, or null if the page loaded but Google
- * did not serve an AI Overview (query-dependent / proxy-reputation issue).
- * Throws only for real failures: navigation timeout, CDP connection error, etc.
- */
 export async function searchGoogleAIOverview(
 	userId: string,
 	workspaceId: string,
 	promptId: string,
 	prompt: string,
-): Promise<AskPromptResult | null> {
-	const proxy = getNextProxy();
+	proxyOverride?: string | null,
+): Promise<AskPromptResult> {
+	const proxy = proxyOverride ?? getNextProxy();
 	const port = await getFreePort();
 	const userDataDir = `/tmp/cdp-${port}`;
 
@@ -107,6 +149,9 @@ export async function searchGoogleAIOverview(
 	);
 
 	let chromProcess: ChildProcess | null = null;
+	let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | null = null;
+	let context: Awaited<ReturnType<Awaited<ReturnType<typeof chromium.connectOverCDP>>["newContext"]>> | null =
+		null;
 
 	try {
 		chromProcess = spawnChromiumCDP(port, userDataDir);
@@ -114,7 +159,7 @@ export async function searchGoogleAIOverview(
 
 		// connectOverCDP = Playwright as remote debugger, not launcher.
 		// Chrome has no knowledge it was started for automation.
-		const browser = await chromium.connectOverCDP(wsEndpoint);
+		browser = await chromium.connectOverCDP(wsEndpoint);
 
 		const contextOptions: Parameters<typeof browser.newContext>[0] = {
 			...STEALTH_CONTEXT_OPTIONS,
@@ -126,70 +171,60 @@ export async function searchGoogleAIOverview(
 			logger.warn("[google-ai-overview] No proxy — using direct connection");
 		}
 
-		const context = await browser.newContext(contextOptions);
+		context = await browser.newContext(contextOptions);
 
 		// Inject stealth patches before ANY page JS runs
 		await context.addInitScript(STEALTH_INIT_SCRIPT);
 
 		const page = await context.newPage();
 
-		try {
-			// gl=us + pws=0: request US results, no personalisation.
-			// This avoids EU cookie consent pages from proxy IPs in Europe.
-			const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&gl=us&pws=0`;
-			await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
+		// gl=us + pws=0: request US results, no personalisation.
+		// This avoids EU cookie consent pages from proxy IPs in Europe.
+		const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&gl=us&pws=0`;
+		await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
 
-			// Handle cookie/consent gate (shown when proxy IP is in a consent region)
-			await page
-				.locator(
-					'button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]',
-				)
-				.first()
-				.click({ timeout: 3_000 })
-				.catch(() => null);
+		// Handle cookie/consent gate (shown when proxy IP is in a consent region)
+		await page
+			.locator(
+				'button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]',
+			)
+			.first()
+			.click({ timeout: 3_000 })
+			.catch(() => null);
 
-			// AI Overview is not present for all queries — check before attempting extraction.
-			// waitForSelector resolves to null (via catch) when the element never appears;
-			// this is not a proxy failure — the proxy connected and served a real Google page.
-			const aiOverviewPresent = await page
-				.waitForSelector('[data-container-id="model-response-placeholder"]', {
-					timeout: 15_000,
-				})
-				.then(() => true)
-				.catch(() => false);
+		const aiOverviewPresent = await page
+			.waitForSelector('[data-container-id="model-response-placeholder"]', {
+				timeout: 15_000,
+			})
+			.then(() => true)
+			.catch(() => false);
 
-			if (!aiOverviewPresent) {
-				// The proxy worked fine — Google simply didn't serve an AI Overview.
-				// Don't penalize the proxy; let the caller decide whether to retry.
-				logger.warn(
-					`[google-ai-overview] AI Overview not present for query — proxy healthy, no result`,
-				);
-				if (proxy) {
-					recordProxyResult(proxy, true, undefined, "google-ai-overview");
-				}
-				return null;
-			}
-
-			const rawHtml = await extractAIOverviewResponse(page);
-			const responseMarkdown = rawHtml ? turndown.turndown(rawHtml) : "";
-			const sources = await extractAIOverviewSources(page);
-
-			if (proxy) {
-				recordProxyResult(proxy, true, undefined, "google-ai-overview");
-			}
-
-			logger.log(
-				`[google-ai-overview] Done: ${responseMarkdown.length} chars, ${sources.length} sources`,
-			);
-
-			return { userId, workspaceId, promptId, prompt, response: responseMarkdown, sources };
-		} finally {
-			await context.close().catch(() => null);
-			await browser.close().catch(() => null);
+		if (!aiOverviewPresent) {
+			const diagnostics = await inspectNoAIOverviewState(page);
+			const message = `[google-ai-overview] AI Overview not present (url=${diagnostics.finalUrl}, title="${diagnostics.title}", captcha=${diagnostics.hasCaptcha}, consent=${diagnostics.hasConsent}, aiOverviewText=${diagnostics.hasAiOverviewText}, resultStats=${diagnostics.resultStatsVisible})`;
+			logger.warn(message);
+			throw new NoAIOverviewError(message, diagnostics);
 		}
+
+		const rawHtml = await extractAIOverviewResponse(page);
+		const responseMarkdown = rawHtml ? turndown.turndown(rawHtml) : "";
+		const sources = await extractAIOverviewSources(page);
+		if (!responseMarkdown.trim()) {
+			throw new Error("Empty AI Overview response extracted");
+		}
+
+		if (proxy) {
+			recordProxyResult(proxy, true, undefined, "google-ai-overview");
+		}
+
+		logger.log(
+			`[google-ai-overview] Done: ${responseMarkdown.length} chars, ${sources.length} sources`,
+		);
+
+		return { userId, workspaceId, promptId, prompt, response: responseMarkdown, sources };
 	} catch (err: any) {
 		// Only reaches here for real failures: CDP connect, page.goto timeout, etc.
-		if (proxy) {
+		if (proxy && !(err instanceof NoAIOverviewError)) {
 			const isTimeout =
 				err?.message?.includes("timeout") || err?.message?.includes("Timeout");
 			recordProxyResult(
@@ -202,9 +237,16 @@ export async function searchGoogleAIOverview(
 		logger.error(`[google-ai-overview] CDP search failed: ${err?.message ?? err}`);
 		throw err;
 	} finally {
+		await context?.close().catch(() => null);
+		await browser?.close().catch(() => null);
+
 		if (chromProcess) {
 			try {
 				chromProcess.kill("SIGTERM");
+				await new Promise((r) => setTimeout(r, 250));
+				if (chromProcess.exitCode === null) {
+					chromProcess.kill("SIGKILL");
+				}
 			} catch {
 				// Process may have already exited
 			}

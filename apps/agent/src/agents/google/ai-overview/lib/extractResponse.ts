@@ -8,15 +8,16 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         /([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2} [A-Z][a-z]+ \d{4}|\d+\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\b\d{4}\b\s(?:—|·))/;
 
       // ── Pre-flight: confirm AI Overview is actually present ──────────────
-      const placeholder = document.querySelector(
-        '[data-container-id="model-response-placeholder"]',
-      );
+      const placeholder =
+        document.querySelector('[data-container-id="model-response-placeholder"]') ||
+        document.querySelector('div:has(> [data-container-id="main-col"])') ||
+        document.querySelector('[data-container-id="main-col"]')?.parentElement;
       if (!placeholder)
         return { success: false, error: "model-response-placeholder not found" };
 
-      const mainColText = (
-        placeholder.querySelector('[data-container-id="main-col"]')?.textContent || ""
-      ).trim();
+      const mainCol =
+        placeholder.querySelector('[data-container-id="main-col"]') || placeholder;
+      const mainColText = (mainCol.textContent || "").trim();
       if (mainColText.length < 50)
         return { success: false, error: "no-ai-overview: main-col empty" };
       // ────────────────────────────────────────────────────────────────────
@@ -65,11 +66,16 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 
       // Step 4: Safety net for leftover source cards — but NEVER touch main-col
       // FIX: grab main-col reference FIRST, then skip it and its descendants
-      const mainCol = clone.querySelector('[data-container-id="main-col"]');
+      const extractedMainCol =
+        clone.querySelector('[data-container-id="main-col"]') || clone;
 
       for (const el of clone.querySelectorAll("*")) {
         // ✅ NEW: skip main-col itself and anything inside it
-        if (mainCol && (el === mainCol || mainCol.contains(el))) continue;
+        if (
+          extractedMainCol &&
+          (el === extractedMainCol || extractedMainCol.contains(el))
+        )
+          continue;
 
         const text = el.textContent || "";
         if (
@@ -82,7 +88,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
       }
 
       // Step 5: Extract main-col prose only; fallback to full cleaned clone
-      const html = (mainCol || clone).outerHTML.trim();
+      const html = (extractedMainCol || clone).outerHTML.trim();
       if (!html)
         return { success: false, error: "AI Overview HTML was empty after extraction" };
 

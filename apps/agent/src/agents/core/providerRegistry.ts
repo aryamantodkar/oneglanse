@@ -8,6 +8,7 @@ import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { findSourcesButton } from "../../lib/input/sources/findButton.js";
 import { logger } from "../../lib/utils/logger.js";
 import { extractSourcesFromGemini } from "../gemini/lib/extractSources.js";
+import { extractAIOverviewSources } from "../google/ai-overview/lib/extractSources.js";
 
 export interface AgentProviderConfig {
 	url: string;
@@ -94,12 +95,10 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		extractSources: (page) => extractSourcesFromAnthropic(page),
 	},
 	"google-ai-overview": {
-		url: "https://www.google.com",
+		url: "https://www.google.com/?hl=en&pws=0",
 		warmupDelayMs: 0,
 		label: "Google AI Overview",
 		displayName: "AI Overview",
-		// Sources are extracted by the Python curl_cffi script — this Playwright
-		// path is never called for this provider (jobHandler branches before it).
-		extractSources: async () => [],
+		extractSources: (page) => extractAIOverviewSources(page),
 	},
 };

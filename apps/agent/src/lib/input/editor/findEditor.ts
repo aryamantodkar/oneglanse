@@ -1,9 +1,17 @@
-import { EDITOR_SELECTORS } from "@onescope/utils";
+import type { Provider } from "@onescope/types";
+import { EDITOR_SELECTORS, PROVIDER_EDITOR_SELECTORS } from "@onescope/utils";
 import type { Locator, Page } from "playwright";
 import { logger } from "../../utils/logger.js";
 
-export async function findActiveEditor(page: Page): Promise<Locator> {
-	for (const selector of EDITOR_SELECTORS) {
+export async function findActiveEditor(
+	page: Page,
+	provider?: Provider,
+): Promise<Locator> {
+	const selectors = provider
+		? PROVIDER_EDITOR_SELECTORS[provider] || EDITOR_SELECTORS
+		: EDITOR_SELECTORS;
+
+	for (const selector of selectors) {
 		const nodes = page.locator(selector);
 
 		const count = await nodes.count();
