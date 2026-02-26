@@ -3,7 +3,9 @@ import { exponentialBackoff } from "@onescope/utils";
 import type { AskPromptResult, Provider, Source } from "@onescope/types";
 import type { PromptPayload } from "@onescope/types";
 import type { Page } from "playwright";
+import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";
+import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
 import { askPrompt } from "./steps/askPrompt.js";
 import { checkAndExtractSources } from "./steps/extractSources.js";
 import { fetchPromptResponses } from "./steps/fetchPromptResponses.js";
@@ -221,6 +223,19 @@ export async function runPrompts(
 
 		promptMetrics.push(result);
 		if (proxyNowProven) proxyProven = true;
+
+		// Google Search keeps the query in the URL/input; reset to a clean page
+		// between prompts so each query starts from the same initial state.
+		const hasMorePrompts = i < promptsArray.length - 1;
+		if (provider === "google-ai-overview" && hasMorePrompts) {
+			const resetUrl = AGENT_PROVIDER_CONFIG[provider].url;
+			logger.debug(`[${provider}] Resetting page before next prompt: ${resetUrl}`);
+			await navigateWithRetry(page, resetUrl, {
+				waitUntil: "domcontentloaded",
+				timeout: 30000,
+			});
+			await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+		}
 	}
 
 	const successCount = promptMetrics.length;
