@@ -136,6 +136,7 @@ export const MODEL_RESPONSE_SELECTORS = [
 	".model-response-text",
 	"message-content",
 	'[role="region"] .markdown-content',
+	'[data-container-id="model-response-placeholder"] [data-container-id="main-col"]',
 
 	// Fallback
 	"main div:has(p)",

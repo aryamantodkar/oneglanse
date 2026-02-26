@@ -11,7 +11,6 @@ import { type Job } from "bullmq";
 import { agentHandler } from "../agents/core/agentHandler.js";
 import { createAgent } from "../agents/core/createAgent.js";
 import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
-import { runGoogleAIOverview } from "../agents/google/ai-overview/runGoogleAIOverview.js";
 import { logger } from "../lib/utils/logger.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
@@ -97,34 +96,21 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 
 	let wrapped: AgentResult = { status: "rejected", data: [] };
 
-	// ── Google AI Overview: CDP path via self-spawned Chromium ───────────────
-	if (provider === "google-ai-overview") {
-		try {
-			const httpResults = await runGoogleAIOverview(prompts, user_id, workspace_id);
-			wrapped = {
-				status: httpResults.length > 0 ? "fulfilled" : "rejected",
-				data: httpResults,
-			};
-		} catch (err: any) {
-			logger.error(`[google-ai-overview] HTTP handler failed:`, err?.message ?? err);
-		}
-	} else {
-		// ── All other providers: Playwright browser path ───────────────────────
-		try {
-			const { label, factory } = providerConfig[provider];
-			const result = await agentHandler(
-				label,
-				factory,
-				PromptPayload,
-				provider,
-			);
-			wrapped = {
-				status: result.length > 0 ? "fulfilled" : "rejected",
-				data: result,
-			};
-		} catch (err: any) {
-			logger.error(`${provider} failed:`, err?.message ?? err);
-		}
+	// ── All providers: Playwright browser path ───────────────────────────────
+	try {
+		const { label, factory } = providerConfig[provider];
+		const result = await agentHandler(
+			label,
+			factory,
+			PromptPayload,
+			provider,
+		);
+		wrapped = {
+			status: result.length > 0 ? "fulfilled" : "rejected",
+			data: result,
+		};
+	} catch (err: any) {
+		logger.error(`${provider} failed:`, err?.message ?? err);
 	}
 
 	// Store successful results immediately

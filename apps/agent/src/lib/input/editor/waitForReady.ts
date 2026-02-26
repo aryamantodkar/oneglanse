@@ -10,7 +10,7 @@ export async function waitForEditorReady(
 	const TIMEOUT = 30000;
 
 	while (Date.now() - start < TIMEOUT) {
-		const input = await findActiveEditor(page).catch(() => null);
+		const input = await findActiveEditor(page, provider).catch(() => null);
 		if (!input) {
 			await page.waitForTimeout(200);
 			continue;
