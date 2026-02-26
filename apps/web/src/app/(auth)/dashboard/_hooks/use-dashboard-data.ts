@@ -16,18 +16,8 @@ export function useDashboardData(
 	// ─── Data Extraction ─────────────────────────────────────────────────────
 
 	const allRecords = useMemo<AnalysisRecord[]>(() => {
-		const data = analysedPromptData?.data;
-		if (!data) return [];
-
-		if (Array.isArray(data)) return data;
-		if (
-			data &&
-			typeof data === "object" &&
-			"records" in data &&
-			Array.isArray((data as any).records)
-		) {
-			return (data as any).records;
-		}
+		if (!analysedPromptData) return [];
+		if (Array.isArray(analysedPromptData)) return analysedPromptData;
 		return [];
 	}, [analysedPromptData]);
 

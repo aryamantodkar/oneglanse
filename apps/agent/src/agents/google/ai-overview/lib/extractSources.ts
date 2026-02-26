@@ -129,7 +129,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 						results.push({
 							title: title.substring(0, 200),
 							cited_text: citedText,
-							url: url,
+							url: key,
 							domain: domain,
 							favicon: favicon,
 						});
