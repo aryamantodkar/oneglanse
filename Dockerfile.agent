@@ -22,7 +22,7 @@ RUN cd /app/out && npx playwright install chromium
 
 FROM node:20-bookworm-slim AS runner
 
-# Playwright system deps
+# Playwright system deps + Python for curl_cffi Google AI Overview
 RUN apt-get update && apt-get install -y \
   libnss3 \
   libatk1.0-0 \
@@ -40,6 +40,9 @@ RUN apt-get update && apt-get install -y \
   libgtk-3-0 \
   ca-certificates \
   fonts-liberation \
+  python3 \
+  python3-pip \
+  && pip3 install curl_cffi --break-system-packages \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -51,4 +54,4 @@ RUN npm install -g pnpm@10.16.0
 COPY --from=builder /app/out ./
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
-CMD ["pnpm", "start:api"]
+CMD ["pnpm", "start:worker"]

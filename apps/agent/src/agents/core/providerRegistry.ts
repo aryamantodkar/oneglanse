@@ -92,5 +92,14 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		label: "Anthropic",
 		displayName: "Claude",
 		extractSources: (page) => extractSourcesFromAnthropic(page),
-	}
+	},
+	"google-ai-overview": {
+		url: "https://www.google.com",
+		warmupDelayMs: 0,
+		label: "Google AI Overview",
+		displayName: "AI Overview",
+		// Sources are extracted by the Python curl_cffi script — this Playwright
+		// path is never called for this provider (jobHandler branches before it).
+		extractSources: async () => [],
+	},
 };

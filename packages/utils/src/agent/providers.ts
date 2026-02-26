@@ -27,7 +27,12 @@ export const PROVIDER_DISPLAY = {
 		displayName: "Gemini",
 		domain: "gemini.google.com",
 		description: "Gemini - Google's latest AI model",
-	}
+	},
+	"google-ai-overview": {
+		displayName: "AI Overview",
+		domain: "google.com",
+		description: "AI-powered search summaries from Google",
+	},
 } satisfies Record<Provider, ProviderDisplayConfig>;
 
 export const ALL_PROVIDERS_JSON = JSON.stringify([...PROVIDER_LIST]);

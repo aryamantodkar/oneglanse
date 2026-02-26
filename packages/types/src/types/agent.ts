@@ -38,6 +38,7 @@ export const PROVIDER_LIST = [
 	"anthropic",
 	"perplexity",
 	"google",
+	"google-ai-overview",
 ] as const;
 
 export type Provider = (typeof PROVIDER_LIST)[number];

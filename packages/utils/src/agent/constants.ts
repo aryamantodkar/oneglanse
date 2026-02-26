@@ -25,7 +25,14 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	google: [
 		'[contenteditable="true"]',
 		'div.ql-editor[contenteditable="true"]',
-	]
+	],
+	"google-ai-overview": [
+		'[role="search"]',
+		'input[name="q"]',
+		'textarea[name="q"]',
+		'textarea[name="q"][role="combobox"]',
+		'textarea[aria-label="Search"]',
+	],
 };
 
 // Flat list of all editor selectors across providers, used when the provider is
