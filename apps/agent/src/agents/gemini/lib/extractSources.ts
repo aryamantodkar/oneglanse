@@ -17,6 +17,7 @@ export async function extractSourcesFromGemini(page: Page, sourcesButton: Locato
 		// Normalize URL
 		try {
 		  href = new URL(href, window.location.origin).toString();
+		  href = href.split("#")[0] ?? "";
 		} catch {
 		  continue;
 		}

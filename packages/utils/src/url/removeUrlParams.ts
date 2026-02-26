@@ -17,6 +17,9 @@ export function removeUrlParams(rawUrl: string): string {
 		// Clean trailing ?
 		url.search = url.searchParams.toString();
 
+		// Strip URL fragment (#anchor, #:~:text=...)
+		url.hash = "";
+
 		return url.toString();
 	} catch {
 		// If URL parsing fails, return original

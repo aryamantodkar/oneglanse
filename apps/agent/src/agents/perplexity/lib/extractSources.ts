@@ -33,7 +33,7 @@ export async function extractSourcesFromPerplexity(
 		);
 
 		for (const a of anchors) {
-			const href = a.href;
+			const href = a.href.replace(/#.*$/, "");
 			if (!href) continue;
 
 			let domain: string | null = null;
