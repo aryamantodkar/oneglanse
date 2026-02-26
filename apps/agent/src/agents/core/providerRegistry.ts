@@ -1,7 +1,6 @@
 import type { Source } from "@onescope/types";
 import type { Provider } from "@onescope/types";
 import type { Locator, Page } from "playwright";
-import { extractSourcesFromAnthropic } from "../claude/lib/extractSources.js";
 import { extractSourcesFromOpenai } from "../chatgpt/lib/extractSources.js";
 import { extractSourcesFromPerplexity } from "../perplexity/lib/extractSources.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
@@ -92,7 +91,9 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		skip: true,
 		label: "Anthropic",
 		displayName: "Claude",
-		extractSources: (page) => extractSourcesFromAnthropic(page),
+		extractSources: async (page) => {
+			return [];
+		},
 	},
 	"google-ai-overview": {
 		url: "https://www.google.com/?hl=en&pws=0",

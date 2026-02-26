@@ -47,6 +47,7 @@ export async function extractSourcesFromOpenai(
 
 				try {
 					href = new URL(href, location.origin).toString();
+					href = href.replace(/#.*$/, "") ?? "";
 				} catch {
 					continue;
 				}
