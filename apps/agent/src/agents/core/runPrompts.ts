@@ -5,6 +5,7 @@ import type { PromptPayload } from "@onescope/types";
 import type { Page } from "playwright";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";
+import { validateResponse } from "../../lib/validation/validateResponse.js";
 import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
 import { askPrompt } from "./steps/askPrompt.js";
 import { checkAndExtractSources } from "./steps/extractSources.js";
@@ -16,9 +17,9 @@ const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000);
 
 const STEP_WAIT_MS = 1500; // pause between pipeline steps for page stability
 
-// Matches both flavours of extraction failure thrown by fetchPromptResponses
+// Matches extraction failures and invalid (garbage/too-short) responses
 const EXTRACTION_FAILURE_RE =
-	/Markdown response extraction failed|Empty response extracted/i;
+	/Markdown response extraction failed|Empty response extracted|Invalid response/i;
 
 // Canary policy: the first prompt on an unproven proxy gets only one shot — fail fast.
 // A single success "proves" the proxy and unlocks MAX_PROMPT_RETRIES for subsequent prompts.
@@ -69,6 +70,14 @@ async function executePromptAttempt(
 		throw new Error(
 			`[${provider}] Empty response extracted; blocking source extraction and retrying prompt`,
 		);
+	}
+
+	const validation = validateResponse(response, provider);
+	if (!validation.valid) {
+		logger.warn(
+			`⚠️ [${provider}] Invalid response (${response.trim().length} chars): ${validation.reason} — retrying`,
+		);
+		throw new Error(`[${provider}] Invalid response: ${validation.reason}`);
 	}
 
 	await page.waitForTimeout(STEP_WAIT_MS);
