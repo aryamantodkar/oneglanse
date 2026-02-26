@@ -11,7 +11,7 @@ import { type Job } from "bullmq";
 import { agentHandler } from "../agents/core/agentHandler.js";
 import { createAgent } from "../agents/core/createAgent.js";
 import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
-import { runHttpPrompts } from "../agents/google/ai-overview/runHttpPrompts.js";
+import { runGoogleAIOverview } from "../agents/google/ai-overview/runGoogleAIOverview.js";
 import { logger } from "../lib/utils/logger.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
@@ -97,10 +97,10 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 
 	let wrapped: AgentResult = { status: "rejected", data: [] };
 
-	// ── Google AI Overview: HTTP path via curl_cffi (no Playwright browser) ──
+	// ── Google AI Overview: CDP path via self-spawned Chromium ───────────────
 	if (provider === "google-ai-overview") {
 		try {
-			const httpResults = await runHttpPrompts(prompts, user_id, workspace_id);
+			const httpResults = await runGoogleAIOverview(prompts, user_id, workspace_id);
 			wrapped = {
 				status: httpResults.length > 0 ? "fulfilled" : "rejected",
 				data: httpResults,
