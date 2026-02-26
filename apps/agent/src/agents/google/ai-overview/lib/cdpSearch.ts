@@ -87,12 +87,17 @@ async function waitForCDPEndpoint(
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+/**
+ * Returns AskPromptResult on success, or null if the page loaded but Google
+ * did not serve an AI Overview (query-dependent / proxy-reputation issue).
+ * Throws only for real failures: navigation timeout, CDP connection error, etc.
+ */
 export async function searchGoogleAIOverview(
 	userId: string,
 	workspaceId: string,
 	promptId: string,
 	prompt: string,
-): Promise<AskPromptResult> {
+): Promise<AskPromptResult | null> {
 	const proxy = getNextProxy();
 	const port = await getFreePort();
 	const userDataDir = `/tmp/cdp-${port}`;
@@ -143,19 +148,31 @@ export async function searchGoogleAIOverview(
 				.click({ timeout: 3_000 })
 				.catch(() => null);
 
-			// AI Overview is not present for all queries — that's expected
-			await page
+			// AI Overview is not present for all queries — check before attempting extraction.
+			// waitForSelector resolves to null (via catch) when the element never appears;
+			// this is not a proxy failure — the proxy connected and served a real Google page.
+			const aiOverviewPresent = await page
 				.waitForSelector('[data-container-id="model-response-placeholder"]', {
 					timeout: 15_000,
 				})
-				.catch(() => null);
+				.then(() => true)
+				.catch(() => false);
+
+			if (!aiOverviewPresent) {
+				// The proxy worked fine — Google simply didn't serve an AI Overview.
+				// Don't penalize the proxy; let the caller decide whether to retry.
+				logger.warn(
+					`[google-ai-overview] AI Overview not present for query — proxy healthy, no result`,
+				);
+				if (proxy) {
+					recordProxyResult(proxy, true, undefined, "google-ai-overview");
+				}
+				return null;
+			}
 
 			const rawHtml = await extractAIOverviewResponse(page);
 			const responseMarkdown = rawHtml ? turndown.turndown(rawHtml) : "";
 			const sources = await extractAIOverviewSources(page);
-			if (!responseMarkdown.trim()) {
-				throw new Error("Empty AI Overview response extracted");
-			}
 
 			if (proxy) {
 				recordProxyResult(proxy, true, undefined, "google-ai-overview");
@@ -171,6 +188,7 @@ export async function searchGoogleAIOverview(
 			await browser.close().catch(() => null);
 		}
 	} catch (err: any) {
+		// Only reaches here for real failures: CDP connect, page.goto timeout, etc.
 		if (proxy) {
 			const isTimeout =
 				err?.message?.includes("timeout") || err?.message?.includes("Timeout");
