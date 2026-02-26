@@ -13,6 +13,10 @@ import {
 	tryForceClick,
 } from "./submitStrategies.js";
 
+const SUBMISSION_PHASE_TIMEOUT_MS = Number(
+	process.env.SUBMISSION_PHASE_TIMEOUT_MS ?? 30000,
+);
+
 export async function askPrompt(
 	page: Page,
 	prompt: string,
@@ -78,10 +82,13 @@ export async function askPrompt(
 
 	// Find send button AFTER typing (appears dynamically)
 	// Wait a bit longer if needed for button to appear
-	let sendButton = await findEnabledSendButton(page);
-	if (!sendButton) {
-		await page.waitForTimeout(500);
+	let sendButton = null;
+	if (provider !== "google-ai-overview") {
 		sendButton = await findEnabledSendButton(page);
+		if (!sendButton) {
+			await page.waitForTimeout(500);
+			sendButton = await findEnabledSendButton(page);
+		}
 	}
 
 	const ctx: SubmitContext = {
@@ -93,10 +100,27 @@ export async function askPrompt(
 		preSubmitUrl,
 	};
 
-	// Try submission methods in order
-	let success = await tryEnterSubmit(ctx);
-	if (!success && sendButton) success = await tryForceClick(ctx);
-	if (!success && sendButton) success = await tryDispatchClick(ctx);
+	const success = await Promise.race([
+		(async () => {
+			let submitted = await tryEnterSubmit(ctx);
+			if (provider !== "google-ai-overview") {
+				if (!submitted && sendButton) submitted = await tryForceClick(ctx);
+				if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
+			}
+			return submitted;
+		})(),
+		new Promise<boolean>((_, reject) =>
+			setTimeout(
+				() =>
+					reject(
+						new Error(
+							`[${provider}] Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
+						),
+					),
+				SUBMISSION_PHASE_TIMEOUT_MS,
+			),
+		),
+	]);
 
 	if (!success) {
 		throw new Error(`[${provider}] All submission methods failed`);

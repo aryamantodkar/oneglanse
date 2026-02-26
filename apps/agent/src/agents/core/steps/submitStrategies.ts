@@ -2,6 +2,10 @@ import type { Provider } from "@onescope/types";
 import type { Locator, Page } from "playwright";
 import { logger } from "../../../lib/utils/logger.js";
 
+const SUBMIT_METHOD_TIMEOUT_MS = Number(
+	process.env.SUBMIT_METHOD_TIMEOUT_MS ?? 10000,
+);
+
 export type SubmitContext = {
 	page: Page;
 	provider: Provider;
@@ -11,11 +15,40 @@ export type SubmitContext = {
 	preSubmitUrl: string;
 };
 
+async function withTimeout<T>(
+	label: string,
+	fn: () => Promise<T>,
+	timeoutMs = SUBMIT_METHOD_TIMEOUT_MS,
+): Promise<T> {
+	return await Promise.race([
+		fn(),
+		new Promise<T>((_, reject) =>
+			setTimeout(
+				() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+				timeoutMs,
+			),
+		),
+	]);
+}
+
 export async function checkSubmissionSuccess(
 	ctx: SubmitContext,
 ): Promise<boolean> {
-	const { page, input, preSubmitContent, preSubmitUrl } = ctx;
+	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
 	await page.waitForTimeout(800);
+
+	// Google Search submits by navigation; treat ?q= URL mutation as success.
+	if (provider === "google-ai-overview") {
+		const currentUrl = page.url();
+		if (currentUrl !== preSubmitUrl) {
+			try {
+				const parsed = new URL(currentUrl);
+				if (parsed.searchParams.get("q")?.trim()) return true;
+			} catch {
+				return true;
+			}
+		}
+	}
 
 	// Check 1: Input cleared (most reliable signal)
 	const currentContent = await input
@@ -47,9 +80,11 @@ export async function checkSubmissionSuccess(
 export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 	const { page, input } = ctx;
 	try {
-		await input.focus();
-		await page.keyboard.press("Enter");
-		const success = await checkSubmissionSuccess(ctx);
+		const success = await withTimeout("Enter submit", async () => {
+			await input.focus();
+			await page.keyboard.press("Enter");
+			return await checkSubmissionSuccess(ctx);
+		});
 		if (success) {
 			logger.debug("  ✅ Submitted via Enter key");
 			return true;
@@ -64,8 +99,10 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
 	try {
-		await sendButton.click({ force: true });
-		const success = await checkSubmissionSuccess(ctx);
+		const success = await withTimeout("Force-click submit", async () => {
+			await sendButton.click({ force: true, timeout: SUBMIT_METHOD_TIMEOUT_MS });
+			return await checkSubmissionSuccess(ctx);
+		});
 		if (success) {
 			logger.debug("  ✅ Submitted via force click");
 			return true;
@@ -80,21 +117,26 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 	const { page, sendButton } = ctx;
 	if (!sendButton) return false;
 	try {
-		const handle = await sendButton.elementHandle();
+		const handle = await withTimeout(
+			"Dispatch-click submit",
+			async () => await sendButton.elementHandle(),
+		);
 		if (handle) {
-			await page.evaluate((el) => {
-				if (el instanceof HTMLElement) {
-					el.dispatchEvent(
-						new MouseEvent("click", {
-							bubbles: true,
-							cancelable: true,
-							composed: true,
-							view: window,
-						}),
-					);
-				}
-			}, handle);
-			const success = await checkSubmissionSuccess(ctx);
+			const success = await withTimeout("Dispatch-click submit", async () => {
+				await page.evaluate((el) => {
+					if (el instanceof HTMLElement) {
+						el.dispatchEvent(
+							new MouseEvent("click", {
+								bubbles: true,
+								cancelable: true,
+								composed: true,
+								view: window,
+							}),
+						);
+					}
+				}, handle);
+				return await checkSubmissionSuccess(ctx);
+			});
 			if (success) {
 				logger.debug("  ✅ Submitted via dispatched click");
 				return true;
