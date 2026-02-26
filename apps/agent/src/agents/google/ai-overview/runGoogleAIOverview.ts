@@ -9,7 +9,7 @@ const RETRY_DELAY_MS = 2_000;
 /**
  * Runs CDP-based Google AI Overview search for each prompt.
  * Retries up to MAX_RETRIES times per prompt, rotating the proxy pool on failure.
- * Returns partial results — succeeded prompts are stored even if some fail.
+ * Throws if any prompt fails all retries.
  */
 export async function runGoogleAIOverview(
 	prompts: UserPrompt[],
@@ -55,10 +55,9 @@ export async function runGoogleAIOverview(
 		}
 
 		if (!succeeded) {
-			logger.error(
-				`[google-ai-overview] All ${MAX_RETRIES} attempts failed for prompt "${prompt.slice(0, 40)}...": ${lastError?.message}`,
-			);
-			// Skip this prompt — partial results are still stored for other prompts
+			const terminalMessage = `[google-ai-overview] All ${MAX_RETRIES} attempts failed for prompt "${prompt.slice(0, 40)}...": ${lastError?.message}`;
+			logger.error(terminalMessage);
+			throw new Error(terminalMessage);
 		}
 	}
 
