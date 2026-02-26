@@ -27,11 +27,11 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 		'div.ql-editor[contenteditable="true"]',
 	],
 	"google-ai-overview": [
-		'[role="search"]',
-		'input[name="q"]',
 		'textarea[name="q"]',
 		'textarea[name="q"][role="combobox"]',
+		'input[name="q"]',
 		'textarea[aria-label="Search"]',
+		'input[aria-label="Search"]',
 	],
 };
 
