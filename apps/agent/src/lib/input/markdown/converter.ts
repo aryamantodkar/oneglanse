@@ -73,142 +73,25 @@ turndown.addRule("table", {
 	},
 });
 
-// Custom rule for images
-turndown.addRule("image", {
-	filter: "img",
-	replacement(_content, node) {
-		const element = node as HTMLElement;
-		const alt = element.getAttribute("alt") || "image";
-		const src = element.getAttribute("src") || "";
-		const title = element.getAttribute("title");
-
-		if (!src) return ""; // Skip images without src
-
-		// Skip data URLs (base64 images) - too large for markdown
-		if (src.startsWith("data:")) {
-			return `[${alt}]`;
-		}
-
-		// Return markdown image syntax
-		if (title) {
-			return `![${alt}](${src} "${title}")`;
-		}
-		return `![${alt}](${src})`;
-	},
-});
-
-// Custom rule for figures (contains img + caption)
-turndown.addRule("figure", {
-	filter: "figure",
-	replacement(_content, node) {
-		const element = node as HTMLElement;
-		const img = element.querySelector("img");
-		const figcaption = element.querySelector("figcaption");
-
-		if (!img) return _content; // No image, just return text
-
-		const alt = img.getAttribute("alt") || "figure";
-		const src = img.getAttribute("src") || "";
-		const caption = figcaption ? figcaption.textContent?.trim() : "";
-
-		if (!src || src.startsWith("data:")) {
-			return caption ? `*${caption}*` : _content;
-		}
-
-		let result = `![${alt}](${src})`;
-		if (caption) {
-			result += `\n*${caption}*`;
-		}
-		return result;
-	},
-});
-
-// Custom rule for picture elements (responsive images)
-turndown.addRule("picture", {
-	filter: "picture",
-	replacement(_content, node) {
-		const element = node as HTMLElement;
-		const img = element.querySelector("img");
-		if (!img) return "";
-
-		const alt = img.getAttribute("alt") || "image";
-		const src = img.getAttribute("src") || "";
-
-		if (!src || src.startsWith("data:")) return "";
-
-		return `![${alt}](${src})`;
-	},
-});
-
-// Custom rule for videos (convert to link)
-turndown.addRule("video", {
-	filter: "video",
-	replacement(_content, node) {
-		const element = node as HTMLElement;
-		const src =
-			element.getAttribute("src") ||
-			element.querySelector("source")?.getAttribute("src") ||
-			"";
-
-		if (!src) return "";
-
-		return `[🎥 Video](${src})`;
-	},
-});
-
-// Custom rule for iframes (embeds like YouTube)
-turndown.addRule("iframe", {
-	filter: "iframe",
-	replacement(_content, node) {
-		const element = node as HTMLElement;
-		const src = element.getAttribute("src") || "";
-		const title = element.getAttribute("title") || "embedded content";
-
-		if (!src) return "";
-
-		// Detect YouTube/Vimeo embeds
-		if (src.includes("youtube.com") || src.includes("youtu.be")) {
-			return `[▶️ ${title}](${src})`;
-		}
-
-		return `[🔗 ${title}](${src})`;
-	},
-});
-
-// Custom rule for carousels/galleries
+// Strip all visual media — only plain text responses are needed
+turndown.addRule("image", { filter: "img", replacement: () => "" });
+turndown.addRule("figure", { filter: "figure", replacement: () => "" });
+turndown.addRule("picture", { filter: "picture", replacement: () => "" });
+turndown.addRule("video", { filter: "video", replacement: () => "" });
+turndown.addRule("iframe", { filter: "iframe", replacement: () => "" });
 turndown.addRule("carousel", {
 	filter(node) {
-		const element = node as HTMLElement;
-		// Match common carousel class names
-		const className = element.className || "";
+		const el = node as HTMLElement;
+		const cn = el.className || "";
 		return (
-			element.nodeName === "DIV" &&
-			(className.includes("carousel") ||
-				className.includes("gallery") ||
-				className.includes("slider") ||
-				className.includes("swiper"))
+			el.nodeName === "DIV" &&
+			(cn.includes("carousel") ||
+				cn.includes("gallery") ||
+				cn.includes("slider") ||
+				cn.includes("swiper"))
 		);
 	},
-	replacement(_content, node) {
-		const element = node as HTMLElement;
-		// Extract all images from carousel
-		const images = Array.from(element.querySelectorAll("img"));
-
-		if (images.length === 0) return _content;
-
-		// Convert each image to markdown
-		const imageMarkdown = images
-			.map((img) => {
-				const alt = img.getAttribute("alt") || "carousel image";
-				const src = img.getAttribute("src") || "";
-				if (!src || src.startsWith("data:")) return null;
-				return `![${alt}](${src})`;
-			})
-			.filter(Boolean)
-			.join("\n\n");
-
-		return imageMarkdown || _content;
-	},
+	replacement: () => "",
 });
 
 export { turndown };
