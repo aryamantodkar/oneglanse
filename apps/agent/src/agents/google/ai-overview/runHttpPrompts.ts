@@ -1,10 +1,11 @@
 import type { AskPromptResult, UserPrompt } from "@onescope/types";
 import { fetchProxies } from "../../../lib/browser/proxy/pool.js";
 import { logger } from "../../../lib/utils/logger.js";
-import { searchGoogleAIOverview } from "./lib/searchGoogle.js";
+import { RateLimitedError, searchGoogleAIOverview } from "./lib/searchGoogle.js";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2_000;
+const RATE_LIMIT_BACKOFF_MS = 8_000; // base backoff when Google 429s — multiplied by attempt
 
 /**
  * Runs HTTP-based (curl_cffi) Google AI Overview search for each prompt.
@@ -37,18 +38,30 @@ export async function runHttpPrompts(
 				break;
 			} catch (err: any) {
 				lastError = err instanceof Error ? err : new Error(String(err));
-				logger.warn(
-					`[google-ai-overview] Attempt ${attempt}/${MAX_RETRIES} failed for prompt "${prompt.slice(0, 40)}...": ${lastError.message}`,
-				);
 
-				if (attempt < MAX_RETRIES) {
-					// Refresh proxies between retries so we rotate to a different IP
-					try {
-						await fetchProxies({ forceRefresh: true });
-					} catch {
-						// Non-fatal — continue with existing pool
+				if (err instanceof RateLimitedError) {
+					// Proxy is fine — Google rate-limited the request.
+					// Backing off is more effective than burning through proxies.
+					const backoffMs = RATE_LIMIT_BACKOFF_MS * attempt;
+					logger.warn(
+						`[google-ai-overview] Rate limited, attempt ${attempt}/${MAX_RETRIES} — backing off ${backoffMs / 1000}s`,
+					);
+					if (attempt < MAX_RETRIES) {
+						await new Promise((r) => setTimeout(r, backoffMs));
 					}
-					await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+				} else {
+					// Real failure (network, parse error) — rotate to a different proxy
+					logger.warn(
+						`[google-ai-overview] Attempt ${attempt}/${MAX_RETRIES} failed for prompt "${prompt.slice(0, 40)}...": ${lastError.message}`,
+					);
+					if (attempt < MAX_RETRIES) {
+						try {
+							await fetchProxies({ forceRefresh: true });
+						} catch {
+							// Non-fatal — continue with existing pool
+						}
+						await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+					}
 				}
 			}
 		}

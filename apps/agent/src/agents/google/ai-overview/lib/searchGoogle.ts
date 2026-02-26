@@ -13,6 +13,15 @@ interface PythonResult {
 	response: string;
 	sources: Source[];
 	error?: string;
+	rate_limited?: boolean;
+}
+
+/** Thrown when Google returns 429. The proxy is healthy — caller should backoff, not rotate. */
+export class RateLimitedError extends Error {
+	constructor() {
+		super("[google-ai-overview] Rate limited by Google (429)");
+		this.name = "RateLimitedError";
+	}
 }
 
 /**
@@ -72,8 +81,14 @@ export async function searchGoogleAIOverview(
 				);
 			}
 
+			if (parsed.rate_limited) {
+				// Proxy is healthy — Google rate-limited the query. Don't penalise the proxy.
+				logger.warn(`[google-ai-overview] Rate limited (429) via proxy ${proxy}`);
+				return reject(new RateLimitedError());
+			}
+
 			if (parsed.error) {
-				// Script encountered an error but returned gracefully
+				// Script returned gracefully but hit a non-429 HTTP error
 				recordProxyResult(proxy, false, "connection_error", "google-ai-overview");
 				return reject(new Error(`[google-ai-overview] Script error: ${parsed.error}`));
 			}
