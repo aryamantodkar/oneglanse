@@ -226,23 +226,61 @@ def _extract_domain(url: str) -> str | None:
 
 # ── Core search function ───────────────────────────────────────────────────────
 
-def search(query: str, proxy: str) -> dict:
-    params = urllib.parse.urlencode({"q": query, "hl": "en", "gl": "us"})
-    url = f"https://www.google.com/search?{params}"
+_PROXIES_ARG = lambda proxy: {"http": proxy, "https": proxy}
 
-    resp = cffi_requests.get(
-        url,
-        impersonate="chrome124",
-        proxies={"http": proxy, "https": proxy},
-        headers={
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "no-cache",
-        },
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return _extract_ai_overview(resp.text)
+_SESSION_KWARGS = dict(
+    impersonate="chrome124",
+    # Let curl_cffi set ALL HTTP headers from the Chrome fingerprint.
+    # Do NOT override Accept/Accept-Language/Cache-Control here — those
+    # are baked into the impersonation profile. Adding them yourself creates
+    # a mismatch (Chrome TLS fingerprint + Firefox-style Accept header = detected).
+)
+
+
+def _check_status(resp, label: str) -> None:
+    """Raise or return a rate_limited sentinel depending on the status code."""
+    if resp.status_code == 429:
+        raise _RateLimitedSignal()
+    if resp.status_code != 200:
+        raise Exception(f"HTTP {resp.status_code} ({label})")
+
+
+class _RateLimitedSignal(Exception):
+    """Internal sentinel — converted to the JSON rate_limited flag at the call site."""
+
+
+def search(query: str, proxy: str) -> dict:
+    proxies = _PROXIES_ARG(proxy)
+
+    try:
+        with cffi_requests.Session(**_SESSION_KWARGS) as session:
+            # ── Warmup: fetch google.com so the session accumulates SOCS / NID /
+            #    1P_JAR / AEC cookies. A real Chrome browser always has these from
+            #    prior visits; going straight to /search with zero cookies is one
+            #    of Google's strongest bot signals.
+            warmup = session.get(
+                "https://www.google.com/",
+                proxies=proxies,
+                timeout=20,
+            )
+            _check_status(warmup, "warmup")
+
+            # ── Actual search ──────────────────────────────────────────────────
+            params = urllib.parse.urlencode({"q": query, "hl": "en", "gl": "us"})
+            search_url = f"https://www.google.com/search?{params}"
+
+            resp = session.get(
+                search_url,
+                proxies=proxies,
+                headers={"Referer": "https://www.google.com/"},
+                timeout=30,
+            )
+            _check_status(resp, "search")
+
+            return _extract_ai_overview(resp.text)
+
+    except _RateLimitedSignal:
+        return {"response": "", "sources": [], "rate_limited": True}
 
 
 def _extract_ai_overview(html: str) -> dict:
@@ -272,8 +310,9 @@ if __name__ == "__main__":
     try:
         result = search(_query, _proxy)
         print(json.dumps(result))
+        # Exit 0 whether we got a response, an empty result, or a rate_limited signal.
+        # Only network/parse failures (exceptions) exit with code 1.
     except Exception as exc:
-        # Graceful fallback — empty result, no crash cascade in Node
         sys.stderr.write(f"google_search.py error: {exc}\n")
         print(json.dumps({"response": "", "sources": [], "error": str(exc)}))
         sys.exit(1)
