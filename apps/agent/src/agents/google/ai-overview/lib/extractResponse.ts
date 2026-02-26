@@ -90,8 +90,9 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
     });
 
     if (!result || !result.success) {
-      logger.warn(`AI Overview extraction failed: ${result?.error}`);
-      return "";
+      const message = result?.error || "unknown extraction failure";
+      logger.warn(`AI Overview extraction failed: ${message}`);
+      throw new Error(message);
     }
 
     const html = result.html || "";
@@ -99,6 +100,6 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
     return html;
   } catch (error: any) {
     logger.error(`AI Overview extraction error: ${error.message}`);
-    return "";
+    throw error;
   }
 }
