@@ -13,9 +13,11 @@ export async function runAgents(
 	page: Page,
 	provider: Provider,
 ): Promise<AskPromptResult[]> {
-	await page.waitForTimeout(3000);
-
-	await runStep(`Warming up ${provider}`, page, () => runWarmUp(page));
+	// google-ai-overview has no persistent chat UI; warmup makes no sense for it
+	if (provider !== "google-ai-overview") {
+		await page.waitForTimeout(3000);
+		await runStep(`Warming up ${provider}`, page, () => runWarmUp(page));
+	}
 
 	return await runPrompts(prompts, page, provider);
 }

@@ -127,8 +127,8 @@ export const STEALTH_INIT_SCRIPT = `(function () {
 
 // ── Chrome launch flags ───────────────────────────────────────────────────────
 // Extra flags beyond the 3 base sandbox flags (--no-sandbox, --disable-setuid-sandbox,
-// --disable-blink-features=AutomationControlled). Applied to both CDP spawn and
-// playwright-extra launch to ensure consistent fingerprinting across all providers.
+// --disable-blink-features=AutomationControlled). Applied to all CDP spawn
+// launches to ensure consistent fingerprinting across all providers.
 export const STEALTH_CHROME_ARGS = [
 	"--disable-dev-shm-usage", // critical on Linux VPS / Docker (prevents /dev/shm OOM)
 	"--disable-gpu", // no GPU on VPS

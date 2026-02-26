@@ -2,12 +2,9 @@ import type { Provider } from "@onescope/types";
 import type { Page } from "playwright";
 import { waitForEditorReady } from "../../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../../lib/input/editor/findSendButton.js";
-import { getText } from "../../../lib/input/response/getText.js";
-import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
 import {
 	type SubmitContext,
-	checkSubmissionSuccess,
 	tryDispatchClick,
 	tryEnterSubmit,
 	tryForceClick,
@@ -25,6 +22,21 @@ export async function askPrompt(
 	logger.debug(
 		`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}"`,
 	);
+
+	if (provider === "google-ai-overview") {
+		const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&pws=0`;
+		logger.debug(`  🔎 Navigating via Google query URL: ${searchUrl.slice(0, 120)}`);
+		await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
+		await page
+			.locator(
+				'button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]',
+			)
+			.first()
+			.click({ timeout: 3000 })
+			.catch(() => null);
+		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+		return;
+	}
 
 	const input = await waitForEditorReady(page, provider);
 
@@ -82,13 +94,10 @@ export async function askPrompt(
 
 	// Find send button AFTER typing (appears dynamically)
 	// Wait a bit longer if needed for button to appear
-	let sendButton = null;
-	if (provider !== "google-ai-overview") {
+	let sendButton = await findEnabledSendButton(page);
+	if (!sendButton) {
+		await page.waitForTimeout(500);
 		sendButton = await findEnabledSendButton(page);
-		if (!sendButton) {
-			await page.waitForTimeout(500);
-			sendButton = await findEnabledSendButton(page);
-		}
 	}
 
 	const ctx: SubmitContext = {
@@ -103,10 +112,8 @@ export async function askPrompt(
 	const success = await Promise.race([
 		(async () => {
 			let submitted = await tryEnterSubmit(ctx);
-			if (provider !== "google-ai-overview") {
-				if (!submitted && sendButton) submitted = await tryForceClick(ctx);
-				if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
-			}
+			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
+			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
 			return submitted;
 		})(),
 		new Promise<boolean>((_, reject) =>

@@ -21,17 +21,20 @@ type AgentFactory = () => Promise<{
 	context: BrowserContext;
 	page: Page;
 	proxy?: string | null;
+	cleanup?: () => Promise<void>;
 }>;
 
 type Refs = {
 	browser: Browser | null;
 	context: BrowserContext | null;
 	proxy: string | null;
+	cleanup?: (() => Promise<void>) | null;
 };
 
 async function closeContextAndBrowser(refs: Refs, label: string): Promise<void> {
 	await refs.context?.close().catch(() => {});
 	await refs.browser?.close().catch(() => {});
+	await refs.cleanup?.().catch(() => {});
 	logger.debug(`${label} browser instance closed successfully.`);
 }
 
@@ -59,6 +62,7 @@ async function runSingleProxyAttempt(
 			refs.browser = agent.browser;
 			refs.context = agent.context;
 			refs.proxy = agent.proxy ?? null;
+			refs.cleanup = agent.cleanup ?? null;
 
 			return await runAgents(currentPayload, agent.page, provider);
 		})(),
@@ -86,7 +90,7 @@ async function runProxyCycle(
 		const totalAttempt = cycle * PROXIES_PER_CYCLE + attempt + 1;
 		const totalMax = MAX_CYCLES * PROXIES_PER_CYCLE;
 
-		const refs: Refs = { browser: null, context: null, proxy: null };
+		const refs: Refs = { browser: null, context: null, proxy: null, cleanup: null };
 
 		try {
 			const result = await runSingleProxyAttempt(

@@ -19,6 +19,38 @@ const AI_OVERVIEW_WAIT_TIMEOUT_MS = Number(
 	process.env.AI_OVERVIEW_WAIT_TIMEOUT_MS ?? 15000,
 );
 
+async function inspectAIOverviewAbsence(page: Page): Promise<void> {
+	try {
+		const diag = await page.evaluate(() => {
+			const bodyText = (document.body?.innerText || "").replace(/\s+/g, " ").trim();
+			return {
+				finalUrl: window.location.href,
+				title: document.title || "",
+				hasCaptcha:
+					bodyText.includes("Our systems have detected unusual traffic") ||
+					/body.*unusual traffic/i.test(bodyText) ||
+					Boolean(document.querySelector('form#captcha-form, iframe[src*="recaptcha"]')),
+				hasConsent: Boolean(
+					document.querySelector(
+						'form[action*="consent"], #consent-bump, [aria-label*="consent"], button#L2AGLb',
+					),
+				),
+				hasAiOverviewText: /ai overview/i.test(bodyText),
+				resultStatsVisible: Boolean(document.querySelector("#result-stats")),
+				bodySnippet: bodyText.slice(0, 300),
+			};
+		});
+		logger.warn(
+			`[google-ai-overview] Absence diagnostics: captcha=${diag.hasCaptcha}, consent=${diag.hasConsent}, aiOverviewText=${diag.hasAiOverviewText}, resultStats=${diag.resultStatsVisible}, url=${diag.finalUrl}, title="${diag.title}"`,
+		);
+		if (diag.bodySnippet) {
+			logger.debug(`[google-ai-overview] Body snippet: ${diag.bodySnippet}`);
+		}
+	} catch {
+		// Diagnostic is best-effort; never block the error path
+	}
+}
+
 async function waitForAIOverviewContainer(page: Page): Promise<void> {
 	const selectors = [
 		'[data-container-id="model-response-placeholder"]',
@@ -39,6 +71,7 @@ async function waitForAIOverviewContainer(page: Page): Promise<void> {
 		await page.waitForTimeout(300);
 	}
 
+	await inspectAIOverviewAbsence(page);
 	throw new Error(
 		`[google-ai-overview] AI Overview container not found within ${AI_OVERVIEW_WAIT_TIMEOUT_MS}ms`,
 	);
