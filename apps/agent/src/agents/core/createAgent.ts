@@ -7,7 +7,7 @@ import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
 export async function createAgent(provider: Provider) {
 	const config = AGENT_PROVIDER_CONFIG[provider];
 
-	const { browser, context, proxy } = await launchContext(provider);
+	const { browser, context, proxy, cleanup } = await launchContext(provider);
 	const page = await context.newPage();
 
 	if (config.preNavigationHook) {
@@ -35,5 +35,5 @@ export async function createAgent(provider: Provider) {
 
 	await page.waitForTimeout(config.warmupDelayMs);
 
-	return { browser, context, page, proxy };
+	return { browser, context, page, proxy, cleanup };
 }

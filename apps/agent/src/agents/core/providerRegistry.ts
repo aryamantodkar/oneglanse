@@ -99,6 +99,15 @@ export const AGENT_PROVIDER_CONFIG: Record<Provider, AgentProviderConfig> = {
 		warmupDelayMs: 0,
 		label: "Google AI Overview",
 		displayName: "AI Overview",
+		postNavigationHook: async (page) => {
+			await page
+				.locator(
+					'button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]',
+				)
+				.first()
+				.click({ timeout: 3000 })
+				.catch(() => null);
+		},
 		extractSources: (page) => extractAIOverviewSources(page),
 	},
 };

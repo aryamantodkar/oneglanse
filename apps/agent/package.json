@@ -19,8 +19,6 @@
 		"dotenv": "^17.2.3",
 		"ioredis": "^5.9.1",
 		"playwright": "^1.57.0",
-		"playwright-extra": "^4.3.6",
-		"puppeteer-extra-plugin-stealth": "^2.11.2",
 		"tar": "^7.5.2",
 		"turndown": "^7.2.2"
 	},
