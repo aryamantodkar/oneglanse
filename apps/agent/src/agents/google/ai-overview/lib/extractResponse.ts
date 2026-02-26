@@ -30,6 +30,15 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
       }
       for (const el of clone.querySelectorAll("sup")) el.remove();
 
+      // Step 1b: Unwrap inline Google entity chip links (e.g. <a href="google.com/search?q=HubSpot">HubSpot</a>)
+      // These are not source citations — they're inline links within prose text that turndown
+      // would otherwise convert to [text](google-search-url) markdown noise.
+      for (const a of clone.querySelectorAll('a[href*="google.com/search"]')) {
+        const span = document.createElement("span");
+        span.textContent = a.textContent;
+        a.parentNode?.replaceChild(span, a);
+      }
+
       // Step 2: Remove source card containers
       for (const sel of [
         '[data-container-id="rhs-col"]',
