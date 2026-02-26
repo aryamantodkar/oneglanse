@@ -277,10 +277,34 @@ def search(query: str, proxy: str) -> dict:
             )
             _check_status(resp, "search")
 
-            return _extract_ai_overview(resp.text)
+            html = resp.text
+            # Debug: surface enough HTML for diagnosis without flooding logs
+            _debug_html(html)
+            return _extract_ai_overview(html)
 
     except _RateLimitedSignal:
         return {"response": "", "sources": [], "rate_limited": True}
+
+
+def _debug_html(html: str) -> None:
+    """Write structural markers to stderr so Node.js logs can diagnose parse failures."""
+    has_ao = "model-response-placeholder" in html
+    has_main_col = 'data-container-id="main-col"' in html
+    has_rhs_col = 'data-container-id="rhs-col"' in html
+    has_consent = "consent.google.com" in html or "CONSENT" in html
+    has_captcha = "captcha" in html.lower() or "recaptcha" in html.lower()
+
+    sys.stderr.write(
+        f"[debug] html_len={len(html)} "
+        f"ao_container={has_ao} main_col={has_main_col} rhs_col={has_rhs_col} "
+        f"consent_page={has_consent} captcha={has_captcha}\n"
+    )
+    if not has_ao:
+        # Show first 800 chars of body text to understand what Google returned
+        import re as _re
+        body_text = _re.sub(r"<[^>]+>", " ", html)
+        body_text = _re.sub(r"\s+", " ", body_text).strip()
+        sys.stderr.write(f"[debug] body_preview: {body_text[:800]}\n")
 
 
 def _extract_ai_overview(html: str) -> dict:
