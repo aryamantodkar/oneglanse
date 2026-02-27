@@ -1,7 +1,7 @@
 **
 
-!Dockerfile.agent
-!Dockerfile.agent.dockerignore
+!apps/web/Dockerfile
+!apps/web/Dockerfile.dockerignore
 !.npmrc
 !package.json
 !pnpm-lock.yaml
@@ -10,8 +10,8 @@
 !tsconfig.json
 
 !apps
-!apps/agent
-!apps/agent/**
+!apps/web
+!apps/web/**
 
 !packages
 !packages/db
@@ -22,5 +22,7 @@
 !packages/services/**
 !packages/types
 !packages/types/**
+!packages/ui
+!packages/ui/**
 !packages/utils
 !packages/utils/**
