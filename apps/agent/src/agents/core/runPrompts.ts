@@ -61,6 +61,17 @@ async function executePromptAttempt(
 			`🔄 Retry attempt ${attempt}/${effectiveMaxRetries} for prompt ${promptIndex + 1} (waiting ${backoffDelay / 1000}s)`,
 		);
 		await page.waitForTimeout(backoffDelay);
+
+		// Google changes the URL on every submission (/search?q=...), so retry
+		// attempts must navigate back to the base URL for a clean starting state.
+		if (provider === "google-ai-overview") {
+			const resetUrl = AGENT_PROVIDER_CONFIG[provider].url;
+			logger.debug(`[${provider}] Navigating back to base URL before retry: ${resetUrl}`);
+			await navigateWithRetry(page, resetUrl, {
+				waitUntil: "domcontentloaded",
+				timeout: 30000,
+			});
+		}
 	}
 
 	await askPrompt(page, prompt, provider);
