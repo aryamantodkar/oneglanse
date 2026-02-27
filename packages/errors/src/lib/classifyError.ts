@@ -1,9 +1,10 @@
 import type { FailureType } from "@oneglanse/types";
+import { toErrorMessage } from "./toErrorMessage.js";
 
 export type { FailureType };
 
 export function classifyError(err: unknown): FailureType {
-	const msg = String((err as any)?.message ?? "").toLowerCase();
+	const msg = toErrorMessage(err).toLowerCase();
 
 	if (/err_proxy|err_connection|err_ssl|err_timed_out/i.test(msg))
 		return "connection_error";

@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { BaseError, ExternalServiceError } from "@oneglanse/errors";
+import { BaseError, ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import { SELECTORS } from "../../../../config/selectors.js";
 import { logger } from "../../../../lib/utils/logger.js";
 
@@ -108,9 +108,10 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
     const html = result.html || "";
     logger.debug(`✅ Extracted AI Overview HTML (${html.length} chars)`);
     return html;
-  } catch (error: any) {
-    logger.error(`AI Overview extraction error: ${error.message}`);
+  } catch (error) {
+    const msg = toErrorMessage(error);
+    logger.error(`AI Overview extraction error: ${msg}`);
     if (error instanceof BaseError) throw error;
-    throw new ExternalServiceError("google-ai-overview", error.message, 500, undefined, error);
+    throw new ExternalServiceError("google-ai-overview", msg, 500, undefined, error);
   }
 }

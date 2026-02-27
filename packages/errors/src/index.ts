@@ -9,3 +9,4 @@ export * from "./error/DatabaseError.js";
 export * from "./error/IPRefreshNeededError.js";
 export * from "./logger.js";
 export * from "./lib/classifyError.js";
+export * from "./lib/toErrorMessage.js";

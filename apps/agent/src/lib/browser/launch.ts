@@ -1,4 +1,4 @@
-import { ExternalServiceError } from "@oneglanse/errors";
+import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { ChildProcess } from "node:child_process";
 import { rm } from "node:fs/promises";
@@ -24,8 +24,8 @@ export async function launchContext(
 		try {
 			await fetchProxies({ forceRefresh: true });
 			proxy = getNextProxy();
-		} catch (err: any) {
-			logger.error(`[${provider}] Failed to refresh proxy pool:`, err?.message);
+		} catch (err) {
+			logger.error(`[${provider}] Failed to refresh proxy pool:`, toErrorMessage(err));
 		}
 	}
 
@@ -76,10 +76,10 @@ export async function launchContext(
 
 		await context.addInitScript(STEALTH_INIT_SCRIPT);
 		return { browser, context, proxy, cleanup };
-	} catch (err: any) {
+	} catch (err) {
 		if (proxy) {
 			const isTimeout =
-				err?.message?.includes("timeout") || err?.message?.includes("Timeout");
+				toErrorMessage(err).toLowerCase().includes("timeout");
 			recordProxyResult(
 				proxy,
 				false,
@@ -90,7 +90,7 @@ export async function launchContext(
 		await cleanup();
 		throw new ExternalServiceError(
 			"browser",
-			err?.message ?? String(err),
+			toErrorMessage(err),
 			502,
 			{ provider },
 			err,

@@ -1,4 +1,5 @@
 import { clickhouse } from "@oneglanse/db";
+import { toErrorMessage } from "@oneglanse/errors";
 import type {
 	AnalysisMetadata,
 	AnalysisRecord,
@@ -120,8 +121,8 @@ export async function analysePromptsForWorkspace(args: {
 				});
 
 				responseIdsToMark.push(resp.id);
-			} catch (err: any) {
-				const errorMessage = err?.message || String(err);
+			} catch (err) {
+				const errorMessage = toErrorMessage(err);
 				console.error(
 					`Failed to analyze response ${resp.id} (${resp.model_provider}):`,
 					errorMessage,

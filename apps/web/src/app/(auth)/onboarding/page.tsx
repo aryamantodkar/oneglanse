@@ -170,8 +170,9 @@ export default function FirstWorkspaceOnboardingPage(): React.JSX.Element {
 			toast.success(
 				"Prompts are running now. We’ll redirect you to the dashboard as soon as first data is available.",
 			);
-		} catch (err: any) {
-			toast.error(err?.message ?? "Failed to start onboarding run.");
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to start onboarding run.");
 		}
 	};
 

@@ -1,3 +1,4 @@
+import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider, HealthCheckResult } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { getBotDetectionMessage, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
@@ -173,8 +174,8 @@ export async function pageHealthCheck(
 			`[${provider}] Health check passed in ${Date.now() - start}ms`,
 		);
 		return { healthy: true };
-	} catch (err: any) {
-		logger.warn(`[${provider}] Health check error: ${err?.message}`);
-		return { healthy: false, reason: err?.message, failureType: "unknown" };
+	} catch (err) {
+		logger.warn(`[${provider}] Health check error: ${toErrorMessage(err)}`);
+		return { healthy: false, reason: toErrorMessage(err), failureType: "unknown" };
 	}
 }

@@ -689,7 +689,7 @@ export const workspaceRouter = createTRPCRouter({
 								),
 							);
 						}
-					} catch (err: any) {
+					} catch (err) {
 						console.error("Failed to trigger immediate run:", err);
 					}
 			} else {

@@ -1,5 +1,6 @@
 import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { toErrorMessage } from "@oneglanse/errors";
 import { SELECTORS } from "../../../../config/selectors.js";
 import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 import { logger } from "../../../../lib/utils/logger.js";
@@ -142,8 +143,8 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 
 		logger.debug(`Extracted ${sources.length} sources from AI Overview`);
 		return sources;
-	} catch (err: any) {
-		logger.error(`Failed to extract AI Overview sources: ${err.message}`);
+	} catch (err) {
+		logger.error(`Failed to extract AI Overview sources: ${toErrorMessage(err)}`);
 		return [];
 	}
 }

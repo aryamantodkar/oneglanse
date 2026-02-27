@@ -1,4 +1,5 @@
 import { analysePromptsForWorkspace } from "@oneglanse/services";
+import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "../lib/utils/logger.js";
 
@@ -22,10 +23,10 @@ export function runAnalysisInBackground(args: {
 			logger.success(
 				`Background analysis completed after ${provider} for job group ${jobGroupId}`,
 			);
-		} catch (err: any) {
+		} catch (err) {
 			logger.error(
 				`Background analysis failed after ${provider} for job group ${jobGroupId}:`,
-				err?.message ?? err,
+				toErrorMessage(err),
 			);
 		}
 	})();
