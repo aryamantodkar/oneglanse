@@ -32,7 +32,6 @@ const asBoolean = (fallback = false) =>
 const AgentEnvSchema = z.object({
 	NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 	DEBUG_ENABLED: asBoolean(false).default(false),
-	SIMPLE_LOGS: asBoolean(false).default(false),
 	MIN_RESPONSE_CHARS: asNumber(600).default(600),
 	STEP_EXECUTION_TIMEOUT_MS: asNumber(180_000).default(180_000),
 	PAGE_DEFAULT_TIMEOUT_MS: asNumber(30_000).default(30_000),

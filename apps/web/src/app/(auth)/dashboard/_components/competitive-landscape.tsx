@@ -196,7 +196,7 @@ export function CompetitiveLandscape({
 				{/* Sort Filter */}
 				<Select
 					value={competitorSort}
-					onValueChange={(v) => setCompetitorSort(v as any)}
+					onValueChange={(v) => setCompetitorSort(v as "appearances" | "sentiment" | "rank")}
 				>
 					<SelectTrigger className="h-9 w-32 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
 						<SelectValue />

@@ -2,6 +2,7 @@
 
 import { LocationSelector } from "@/components/location/locationSelector";
 import { api } from "@/trpc/react";
+import type { WorkspaceLocation } from "@oneglanse/types";
 import {
 	Button,
 	Dialog,
@@ -34,12 +35,7 @@ export function CreateWorkspaceDialog({
 		slug: "",
 		domain: "",
 	});
-	const [selectedLocation, setSelectedLocation] = useState<{
-		country: string;
-		countryName: string;
-		region?: string;
-		regionName?: string;
-	}>({ country: "", countryName: "" });
+	const [selectedLocation, setSelectedLocation] = useState<WorkspaceLocation>({ country: "", countryName: "" });
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
 	const utils = api.useUtils();
@@ -164,7 +160,11 @@ export function CreateWorkspaceDialog({
 					</div>
 					<div className="space-y-2">
 						<Label>Location</Label>
-						<LocationSelector onSelect={setSelectedLocation} />
+						<LocationSelector
+						onSelect={(loc) =>
+							setSelectedLocation(loc)
+						}
+					/>
 					</div>
 				</div>
 				<DialogFooter>

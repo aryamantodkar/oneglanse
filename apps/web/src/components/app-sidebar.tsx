@@ -72,7 +72,7 @@ export function AppSidebar({
 
 	// Flat list of all workspaces for lookup
 	const allWorkspaces = useMemo(() => {
-		return groupedWorkspaces.flatMap((g: any) => g.workspaces) as Workspace[];
+		return groupedWorkspaces.flatMap((g) => g.workspaces);
 	}, [groupedWorkspaces]);
 
 	// Derive active workspace from URL params, falling back to server prop
@@ -195,7 +195,7 @@ export function AppSidebar({
 											<span>Loading...</span>
 										</DropdownMenuItem>
 									) : groupedWorkspaces.length > 0 ? (
-										groupedWorkspaces.map((group: any, idx: number) => (
+										groupedWorkspaces.map((group, idx) => (
 											<div key={group.organization.id}>
 												{idx > 0 && <DropdownMenuSeparator />}
 												{groupedWorkspaces.length > 1 && (

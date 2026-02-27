@@ -51,21 +51,9 @@ export default function Dashboard(): React.JSX.Element {
 	);
 
 	// Computed data
-	const metrics = useDashboardData(analysedPromptData, modelFilter, timeFilter);
+	const metrics = useDashboardData(analysedPromptData ?? [], modelFilter, timeFilter);
 	const hasAnyAnalysisInWorkspace = useMemo(() => {
-		const data = analysedPromptData;
-		if (!data) return false;
-
-		const records = Array.isArray(data)
-			? data
-			: typeof data === "object" &&
-					data &&
-					"records" in data &&
-					Array.isArray((data as any).records)
-				? (data as any).records
-				: [];
-
-		return records.some((r: any) =>
+		return analysedPromptData?.some((r) =>
 			Boolean(r?.is_analysed && r?.brand_analysis),
 		);
 	}, [analysedPromptData]);

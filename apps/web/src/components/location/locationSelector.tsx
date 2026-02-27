@@ -1,5 +1,6 @@
 "use client";
 import { api } from "@/trpc/react";
+import type { WorkspaceLocation } from "@oneglanse/types";
 import {
 	Select,
 	SelectContent,
@@ -11,7 +12,9 @@ import { useEffect, useState } from "react";
 
 export function LocationSelector({
 	onSelect,
-}: { onSelect: (loc: any) => void }): React.JSX.Element {
+}: {
+	onSelect: (loc: WorkspaceLocation) => void;
+}){
 	const [countries, setCountries] = useState<
 		{ iso2: string; name: string; emoji?: string }[]
 	>([]);
@@ -48,7 +51,7 @@ export function LocationSelector({
 	// Call onSelect only when selection changes
 	useEffect(() => {
 		onSelect({
-			country: selectedCountry || null,
+			country: selectedCountry ?? "",
 			countryName:
 				countries.find((c) => c.iso2 === selectedCountry)?.name || null,
 			region: selectedRegion || null,
