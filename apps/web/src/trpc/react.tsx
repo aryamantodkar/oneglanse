@@ -7,7 +7,6 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
-import { env } from "@/env";
 import type { AppRouter } from "@/server/api/root";
 import { createQueryClient } from "./query-client";
 
@@ -47,7 +46,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }): React.J
 			links: [
 				loggerLink({
 					enabled: (op) =>
-						env.NODE_ENV === "development" ||
+						process.env.NODE_ENV === "development" ||
 						(op.direction === "down" && op.result instanceof Error),
 				}),
 				httpBatchStreamLink({
@@ -77,11 +76,11 @@ function getBaseUrl() {
 	if (typeof window !== "undefined") return window.location.origin;
 
 	// 2️⃣ Running in Vercel (production)
-	if (env.NEXT_PUBLIC_API_URL) return env.NEXT_PUBLIC_API_URL;
+	if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
 
-	// 3️⃣ Server runtime fallback (Docker/local)
-	if (env.APP_URL) return env.APP_URL;
+	// 3️⃣ Running inside Docker
+	if (process.env.DOCKER_ENV === "true") return "http://web:3000";
 
-	// 4️⃣ Default: local dev fallback
-	return "http://localhost:3000";
+	// 4️⃣ Default: local dev (not in Docker)
+	return `http://localhost:${process.env.PORT ?? 3000}`;
 }
