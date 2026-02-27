@@ -1,13 +1,22 @@
 import type { Source } from "@onescope/types";
 import type { Locator, Page } from "playwright";
+import {
+	buildSources,
+	clickButtonViaDispatch,
+	type RawSource,
+} from "../../../lib/extraction/sourceUtils.js";
 
 export async function extractSourcesFromOpenai(
 	page: Page,
 	sourcesButton: Locator,
 ): Promise<Source[]> {
-	const sources = await page.evaluate(() => {
-		const results: Source[] = [];
-		const seen = new Set<string>();
+	const rawSources = await page.evaluate(() => {
+		const results: Array<{
+			rawHref: string;
+			title: string;
+			citedText: string;
+			imgSrc: string | null;
+		}> = [];
 
 		const flyout =
 			// ChatGPT
@@ -52,62 +61,27 @@ export async function extractSourcesFromOpenai(
 					continue;
 				}
 
-				const domain = (() => {
-					try {
-						return new URL(href).hostname.replace(/^www\./, "");
-					} catch {
-						return null;
-					}
-				})();
-
 				const blocks = Array.from(a.children).filter(
 					(el) => el instanceof HTMLElement,
 				) as HTMLElement[];
 
-				const title = blocks[1]?.textContent?.trim() || domain || href;
-
+				const title = blocks[1]?.textContent?.trim() || "";
 				const citedText = blocks[2]?.textContent?.trim() || "";
+				const imgSrc = a.querySelector("img")?.getAttribute("src") ?? null;
 
-				const favicon =
-					a.querySelector("img")?.getAttribute("src") ??
-					(domain
-						? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-						: null);
-
-				const key = `${href}|${title}|${citedText}`;
-				if (seen.has(key)) continue;
-				seen.add(key);
-
-				results.push({
-					title,
-					cited_text: citedText,
-					url: href,
-					domain,
-					favicon,
-				});
+				results.push({ rawHref: href, title, citedText, imgSrc });
 			}
 		}
 
 		return results;
-	});
+	}) as RawSource[];
 
-	const handle = await sourcesButton.elementHandle();
-	if (!handle) return [];
-
-	await page.evaluate((el) => {
-		if (el instanceof HTMLElement) {
-			el.dispatchEvent(
-				new MouseEvent("click", {
-					bubbles: true,
-					cancelable: true,
-					composed: true,
-					view: window,
-				}),
-			);
-		}
-	}, handle);
-
+	if (!(await clickButtonViaDispatch(page, sourcesButton))) return [];
 	await page.waitForTimeout(300);
 
-	return sources;
+	// Preserve original dedup key: same URL+title can appear with different citedText
+	return buildSources(
+		rawSources,
+		(url, title, citedText) => `${url}|${title}|${citedText}`,
+	);
 }
