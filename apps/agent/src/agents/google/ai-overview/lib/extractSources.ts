@@ -1,12 +1,17 @@
 import type { Source } from "@onescope/types";
 import type { Page } from "playwright";
+import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 import { logger } from "../../../../lib/utils/logger.js";
 
 export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 	try {
-		const { sources, containerFound } = await page.evaluate(() => {
-			const results: any[] = [];
-			const seen = new Set<string>();
+		const { rawSources, containerFound } = await page.evaluate(() => {
+			const results: Array<{
+				rawHref: string;
+				title: string;
+				citedText: string;
+				imgSrc: string | null;
+			}> = [];
 
 			try {
 				let aoContainer: HTMLElement | null = null;
@@ -50,7 +55,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 				}
 
 				if (!aoContainer) {
-					return { sources: results, containerFound: false };
+					return { rawSources: results, containerFound: false };
 				}
 
 				const linksInAO = aoContainer.querySelectorAll("a[href]");
@@ -68,28 +73,20 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 							continue;
 						}
 
-						// FIX: deduplicate on base URL (ignore #:~:text= fragment anchors)
-						const key = url?.split("#")[0];
-						if (!key || seen.has(key)) continue;
-						seen.add(key);
+						const rawHref = url?.split("#")[0];
+						if (!rawHref) continue;
 
-						let domain: string | null = null;
-						try {
-							domain = new URL(url).hostname?.replace(/^www\\./, "") ?? null;
-						} catch {
-							domain = null;
-						}
-
-						// FIX: prefer aria-label / title attribute over raw textContent to avoid UI chrome
+						// Prefer aria-label / title attribute over raw textContent to avoid UI chrome
 						let title =
 							link.getAttribute("aria-label")?.trim() ||
 							link.getAttribute("title")?.trim() ||
 							link.textContent?.trim() ||
 							"";
 						if (!title) {
-							title = domain || url;
+							title = rawHref;
 						}
 
+						// Walk preceding siblings for cited text context
 						let citedText = "";
 
 						let textNode: ChildNode | null = link.previousSibling;
@@ -122,31 +119,29 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 							citedText = title;
 						}
 
-						const favicon = domain
-							? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-							: null;
-
 						results.push({
-							title: title.substring(0, 200),
-							cited_text: citedText,
-							url: key,
-							domain: domain,
-							favicon: favicon,
+							rawHref,
+							title,
+							citedText,
+							imgSrc: null, // AI Overview source links have no favicon img element
 						});
 					} catch {
 						// Skip malformed links silently
 					}
 				}
 
-				return { sources: results, containerFound: true };
+				return { rawSources: results, containerFound: true };
 			} catch {
-				return { sources: results, containerFound: false };
+				return { rawSources: results, containerFound: false };
 			}
 		});
 
 		if (!containerFound) {
 			logger.warn("AI Overview container not found — no sources extracted");
 		}
+
+		// Deduplicate by URL only (original behaviour: same URL = same source regardless of title)
+		const sources = buildSources(rawSources as RawSource[], (url) => url);
 
 		logger.debug(`Extracted ${sources.length} sources from AI Overview`);
 		return sources;
