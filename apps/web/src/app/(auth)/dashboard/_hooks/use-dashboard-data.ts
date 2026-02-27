@@ -1,9 +1,9 @@
-import type { AnalysisRecord, BrandAnalysisResult } from "@onescope/types";
+import type { AnalysisRecord, BrandAnalysisResult } from "@oneglanse/types";
 import {
 	filterAnalysisRecords,
 	getDomain,
 	removeUrlParams,
-} from "@onescope/utils";
+} from "@oneglanse/utils";
 import { useMemo } from "react";
 import { severityRank } from "../_utils/helpers";
 import type { DashboardMetrics } from "../_utils/types";

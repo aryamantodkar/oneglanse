@@ -1,7 +1,7 @@
 // Procedures
 import "server-only";
 
-import { schema } from "@onescope/db";
+import { schema } from "@oneglanse/db";
 import { isAuthenticated } from "./middleware/isAuthenticated";
 import { isInternal } from "./middleware/isInternal";
 import { timingMiddleware } from "./middleware/timingMiddleware";

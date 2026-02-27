@@ -1,5 +1,5 @@
 {
-	"name": "@onescope/services",
+	"name": "@oneglanse/services",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -18,10 +18,10 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.63.1",
-		"@onescope/db": "workspace:*",
-		"@onescope/errors": "workspace:*",
-		"@onescope/types": "workspace:*",
-		"@onescope/utils": "workspace:*",
+		"@oneglanse/db": "workspace:*",
+		"@oneglanse/errors": "workspace:*",
+		"@oneglanse/types": "workspace:*",
+		"@oneglanse/utils": "workspace:*",
 		"@perplexity-ai/perplexity_ai": "^0.12.0",
 		"better-auth": "^1.4.17",
 		"bullmq": "^5.67.0",

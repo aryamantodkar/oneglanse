@@ -1,4 +1,4 @@
-import { PROVIDER_LIST } from "@onescope/types";
+import { PROVIDER_LIST } from "@oneglanse/types";
 import { PROVIDER_DISPLAY } from "../agent/providers.js";
 
 export const modelSelectors = [

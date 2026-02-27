@@ -1,4 +1,4 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 import { launchContext } from "../../lib/browser/launch.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";

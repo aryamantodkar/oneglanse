@@ -1,4 +1,4 @@
-import type { DomainStats, PromptResponse } from "@onescope/types";
+import type { DomainStats, PromptResponse } from "@oneglanse/types";
 import { getDomain } from "../url/getDomain.js";
 
 type DomainAccumulator = { totalOccurrences: number; sourceTextCount: number };

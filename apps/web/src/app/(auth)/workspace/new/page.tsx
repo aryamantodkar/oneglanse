@@ -15,7 +15,7 @@ import {
 	Label,
 	Skeleton,
 	toast,
-} from "@onescope/ui";
+} from "@oneglanse/ui";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

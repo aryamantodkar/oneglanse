@@ -1,4 +1,4 @@
-import { RESPONSE_GENERATION_SELECTORS } from "@onescope/utils";
+import { RESPONSE_GENERATION_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
 
 export async function isGenerating(page: Page): Promise<boolean> {

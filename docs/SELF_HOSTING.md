@@ -1,6 +1,6 @@
-# OneScope AI — Complete Self-Hosting Guide
+# OneGlanse — Complete Self-Hosting Guide
 
-This guide walks you through hosting OneScope AI on your own server, from a completely fresh Ubuntu 22.04 VPS to a fully running production stack. Every command is explained so you understand what each step does and why it's necessary.
+This guide walks you through hosting OneGlanse on your own server, from a completely fresh Ubuntu 22.04 VPS to a fully running production stack. Every command is explained so you understand what each step does and why it's necessary.
 
 ---
 
@@ -30,7 +30,7 @@ This guide walks you through hosting OneScope AI on your own server, from a comp
 
 ## 1. What You're Deploying
 
-OneScope AI runs as 7 Docker containers managed by Docker Compose. Here's what each service does and how they communicate:
+OneGlanse runs as 7 Docker containers managed by Docker Compose. Here's what each service does and how they communicate:
 
 ```
                           Internet
@@ -61,7 +61,7 @@ OneScope AI runs as 7 Docker containers managed by Docker Compose. Here's what e
      │             │
      │    ┌────────▼───────────────────────────────┐
      │    │              Redis                       │
-     │    │  - BullMQ job queue ("onescope-agent")   │
+     │    │  - BullMQ job queue ("oneglanse-agent")   │
      │    │  - Job progress tracking (key-value)     │
      │    │  - Session cache                         │
      │    └────────────────────────────────────────┘
@@ -213,21 +213,21 @@ apt install -y \
 **Never run your application as root.** If a container escapes, root access means full server compromise. Create a dedicated user:
 
 ```bash
-# Create user named 'onescope':
-useradd -m -s /bin/bash onescope
+# Create user named 'oneglanse':
+useradd -m -s /bin/bash oneglanse
 
 # Set a strong password:
-passwd onescope
+passwd oneglanse
 
 # Give the user sudo access (for admin tasks):
-usermod -aG sudo onescope
+usermod -aG sudo oneglanse
 
 # Add to docker group so they can run docker without sudo:
 # (Do this AFTER installing Docker in Step 5)
-# usermod -aG docker onescope
+# usermod -aG docker oneglanse
 
 # Switch to the new user for the rest of setup:
-su - onescope
+su - oneglanse
 ```
 
 ---
@@ -265,11 +265,11 @@ docker compose version
 ### Add Your User to the Docker Group
 
 ```bash
-# Allow the 'onescope' user to run docker without sudo:
-usermod -aG docker onescope
+# Allow the 'oneglanse' user to run docker without sudo:
+usermod -aG docker oneglanse
 
 # IMPORTANT: You must log out and back in for this to take effect:
-su - onescope
+su - oneglanse
 
 # Verify (should NOT require sudo):
 docker ps
@@ -341,17 +341,17 @@ certbot renew --dry-run
 
 ### Configure nginx
 
-Create the nginx configuration for OneScope AI:
+Create the nginx configuration for OneGlanse:
 
 ```bash
 # Create the configuration file:
-nano /etc/nginx/sites-available/onescope
+nano /etc/nginx/sites-available/oneglanse
 ```
 
 Paste the following configuration (replace `yourdomain.com` throughout):
 
 ```nginx
-# /etc/nginx/sites-available/onescope
+# /etc/nginx/sites-available/oneglanse
 
 # Redirect all HTTP traffic to HTTPS:
 server {
@@ -450,7 +450,7 @@ Activate the configuration:
 ```bash
 # Create a symlink from sites-available to sites-enabled:
 # (This is the nginx convention for enabling configurations)
-ln -s /etc/nginx/sites-available/onescope /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/oneglanse /etc/nginx/sites-enabled/
 
 # Remove the default nginx page (it conflicts on port 80):
 rm /etc/nginx/sites-enabled/default
@@ -469,14 +469,14 @@ systemctl reload nginx
 
 ```bash
 # Switch to your application user:
-su - onescope
+su - oneglanse
 
 # Create the application directory:
-mkdir -p /opt/onescope
-cd /opt/onescope
+mkdir -p /opt/oneglanse
+cd /opt/oneglanse
 
 # Clone the repository:
-git clone https://github.com/YOUR_USERNAME/onescopeAI.git .
+git clone https://github.com/YOUR_USERNAME/oneglanseAI.git .
 # Note the trailing dot — clones into the current directory
 
 # You should now see:
@@ -507,12 +507,12 @@ Fill in the file as follows (replace all `CHANGE_ME` values):
 # Connection string format: postgresql://USER:PASS@HOST:PORT/DB
 # HOST is 'db' because Docker Compose creates a DNS name for each service.
 # Inside Docker, containers reach each other by service name.
-DATABASE_URL=postgresql://onescope:CHANGE_ME_DB_PASSWORD@db:5432/onescope
+DATABASE_URL=postgresql://oneglanse:CHANGE_ME_DB_PASSWORD@db:5432/oneglanse
 
 # PostgreSQL credentials used by the Dockerfile.postgres to initialize the database:
-POSTGRES_USER=onescope
+POSTGRES_USER=oneglanse
 POSTGRES_PASSWORD=CHANGE_ME_DB_PASSWORD  # Must match the password in DATABASE_URL
-POSTGRES_DB=onescope
+POSTGRES_DB=oneglanse
 
 # ════════════════════════════════════════════════════════
 # CLICKHOUSE (Analytics Database)
@@ -630,7 +630,7 @@ REDIS_PORT=6379
 # ════════════════════════════════════════════════════════
 
 # Your VPS username (used by upload-session script to SSH/SCP files):
-VPS_USER=onescope
+VPS_USER=oneglanse
 
 # The public-facing URL of your agent API (for uploading sessions from local):
 VPS_API_URL=https://yourdomain.com
@@ -711,7 +711,7 @@ Google OAuth allows users to sign in with their Google account. Here's how to se
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
 2. Click the project dropdown at the top → **New Project**
-3. Name it "OneScope AI" (or anything descriptive)
+3. Name it "OneGlanse" (or anything descriptive)
 4. Click **Create**
 5. Make sure the new project is selected in the dropdown
 
@@ -726,7 +726,7 @@ Google OAuth allows users to sign in with their Google account. Here's how to se
 
 1. Choose **External** (allows any Google account to sign in)
 2. Fill in:
-   - **App name:** OneScope AI
+   - **App name:** OneGlanse
    - **User support email:** your@email.com
    - **Developer contact:** your@email.com
 3. Click **Save and Continue** through the remaining steps
@@ -739,7 +739,7 @@ Google OAuth allows users to sign in with their Google account. Here's how to se
 1. Go to **APIs & Services** → **Credentials**
 2. Click **+ Create Credentials** → **OAuth Client ID**
 3. Choose **Web application**
-4. Name it "OneScope AI Web"
+4. Name it "OneGlanse Web"
 5. Under **Authorized JavaScript origins**, add:
    ```
    https://yourdomain.com
@@ -809,8 +809,8 @@ Create a text file with one proxy per line:
 
 ```bash
 # On your server, create the proxy list file:
-mkdir -p /opt/onescope/storage
-nano /opt/onescope/storage/proxies.txt
+mkdir -p /opt/oneglanse/storage
+nano /opt/oneglanse/storage/proxies.txt
 ```
 
 Format (one per line):
@@ -948,15 +948,15 @@ If you forked the repo and built your own images, use your own registry credenti
 ### Pull Images
 
 ```bash
-cd /opt/onescope
+cd /opt/oneglanse
 
 # Pull all images defined in docker-compose.yml:
 docker compose pull
 
 # This downloads:
-# - ghcr.io/aryamantodkar/onescope-web:latest    (~500MB)
-# - ghcr.io/aryamantodkar/onescope-agent:latest  (~1.5GB — includes Chromium)
-# - ghcr.io/aryamantodkar/onescope-postgres:latest (~400MB)
+# - ghcr.io/aryamantodkar/oneglanse-web:latest    (~500MB)
+# - ghcr.io/aryamantodkar/oneglanse-agent:latest  (~1.5GB — includes Chromium)
+# - ghcr.io/aryamantodkar/oneglanse-postgres:latest (~400MB)
 # - redis:7-alpine                                 (~30MB)
 # - clickhouse/clickhouse-server:latest            (~600MB)
 ```
@@ -971,7 +971,7 @@ docker compose run --rm migrate
 
 # This:
 # 1. Starts just the 'db' and 'migrate' containers
-# 2. Runs 'pnpm --filter @onescope/db db:migrate'
+# 2. Runs 'pnpm --filter @oneglanse/db db:migrate'
 # 3. Creates all PostgreSQL tables
 # 4. Exits with code 0 on success
 ```
@@ -989,10 +989,10 @@ docker compose ps
 Expected output:
 ```
 NAME                    IMAGE                          STATUS
-onescope-web            onescope-web:latest            Up (healthy)
-onescope-agent-api      onescope-agent:latest          Up (healthy)
-onescope-agent-worker   onescope-agent:latest          Up
-postgres_db             onescope-postgres:latest       Up (healthy)
+oneglanse-web            oneglanse-web:latest            Up (healthy)
+oneglanse-agent-api      oneglanse-agent:latest          Up (healthy)
+oneglanse-agent-worker   oneglanse-agent:latest          Up
+postgres_db             oneglanse-postgres:latest       Up (healthy)
 clickhouse_db           clickhouse-server:latest       Up
 redis                   redis:7-alpine                 Up
 ```
@@ -1024,7 +1024,7 @@ curl -v https://yourdomain.com 2>&1 | grep -E "SSL|certificate|expire"
 
 ```bash
 # Connect to PostgreSQL from inside the Docker network:
-docker compose exec db psql -U onescope -d onescope -c "\dt"
+docker compose exec db psql -U oneglanse -d oneglanse -c "\dt"
 # Should list all tables (user, session, workspace, etc.)
 
 # Test ClickHouse:
@@ -1103,32 +1103,32 @@ Backups protect against data loss from hardware failures, accidental deletions, 
 | PostgreSQL | `db_data` Docker volume | CRITICAL — user accounts, workspaces |
 | ClickHouse | `clickhouse_data` Docker volume | HIGH — all analysis results |
 | Agent sessions | `agent_storage` Docker volume | MEDIUM — can re-authenticate if lost |
-| Configuration | `/opt/onescope/*.env` | HIGH — secrets can't be recovered |
+| Configuration | `/opt/oneglanse/*.env` | HIGH — secrets can't be recovered |
 
 ### Backup Script
 
 Create the backup script:
 
 ```bash
-nano /opt/onescope/backup.sh
+nano /opt/oneglanse/backup.sh
 ```
 
 ```bash
 #!/bin/bash
-# /opt/onescope/backup.sh — Daily backup script for OneScope AI
+# /opt/oneglanse/backup.sh — Daily backup script for OneGlanse
 
 set -e  # Exit immediately if any command fails
 
 # Configuration:
-BACKUP_DIR="/opt/backups/onescope"
-COMPOSE_DIR="/opt/onescope"
+BACKUP_DIR="/opt/backups/oneglanse"
+COMPOSE_DIR="/opt/oneglanse"
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 RETENTION_DAYS=30  # Keep backups for 30 days
 
 # Create backup directory if it doesn't exist:
 mkdir -p "$BACKUP_DIR"
 
-echo "[$(date)] Starting OneScope backup..."
+echo "[$(date)] Starting OneGlanse backup..."
 
 # ── PostgreSQL Backup ──────────────────────────────────────────────────────────
 echo "[$(date)] Backing up PostgreSQL..."
@@ -1137,8 +1137,8 @@ echo "[$(date)] Backing up PostgreSQL..."
 # The -T flag excludes tables that don't need to be backed up.
 docker compose -f "$COMPOSE_DIR/docker-compose.yml" exec -T db \
   pg_dump \
-    --username=onescope \
-    --dbname=onescope \
+    --username=oneglanse \
+    --dbname=oneglanse \
     --format=custom \              # Custom format: compressed, faster restore
     --verbose \
   | gzip > "$BACKUP_DIR/postgres_$DATE.dump.gz"
@@ -1190,23 +1190,23 @@ echo "[$(date)] Backup size: $(du -sh $BACKUP_DIR | cut -f1)"
 Make it executable and test:
 
 ```bash
-chmod +x /opt/onescope/backup.sh
+chmod +x /opt/oneglanse/backup.sh
 
 # Test the backup script:
-/opt/onescope/backup.sh
+/opt/oneglanse/backup.sh
 
 # Verify backup files were created:
-ls -lh /opt/backups/onescope/
+ls -lh /opt/backups/oneglanse/
 ```
 
 ### Schedule Automatic Backups
 
 ```bash
-# Open the cron editor for the onescope user:
+# Open the cron editor for the oneglanse user:
 crontab -e
 
 # Add this line (runs at 3:00 AM every day):
-0 3 * * * /opt/onescope/backup.sh >> /var/log/onescope-backup.log 2>&1
+0 3 * * * /opt/oneglanse/backup.sh >> /var/log/oneglanse-backup.log 2>&1
 
 # The >> appends to the log file; 2>&1 redirects stderr to the same file
 ```
@@ -1221,11 +1221,11 @@ apt install -y rclone
 rclone config  # Follow interactive setup for your cloud storage provider
 
 # Add to backup.sh after the cleanup section:
-rclone sync "$BACKUP_DIR" remote:onescope-backups/
+rclone sync "$BACKUP_DIR" remote:oneglanse-backups/
 echo "[$(date)] Synced to remote storage"
 
 # Option B: rsync to another server:
-rsync -avz "$BACKUP_DIR" backup-user@backup-server.com:/backups/onescope/
+rsync -avz "$BACKUP_DIR" backup-user@backup-server.com:/backups/oneglanse/
 ```
 
 ### Restore from Backup
@@ -1234,14 +1234,14 @@ rsync -avz "$BACKUP_DIR" backup-user@backup-server.com:/backups/onescope/
 # Restore PostgreSQL:
 docker compose exec -T db \
   pg_restore \
-    --username=onescope \
-    --dbname=onescope \
+    --username=oneglanse \
+    --dbname=oneglanse \
     --verbose \
     --clean \              # Drop existing objects before restoring
-  < <(gunzip -c /opt/backups/onescope/postgres_2025-01-15_03-00-00.dump.gz)
+  < <(gunzip -c /opt/backups/oneglanse/postgres_2025-01-15_03-00-00.dump.gz)
 
 # Restore ClickHouse:
-gunzip -c /opt/backups/onescope/clickhouse_prompt_responses_2025-01-15.csv.gz | \
+gunzip -c /opt/backups/oneglanse/clickhouse_prompt_responses_2025-01-15.csv.gz | \
   docker compose exec -T clickhouse \
     clickhouse-client \
       --database=analytics \
@@ -1280,7 +1280,7 @@ docker stats
 
 # Disk usage:
 df -h /var/lib/docker/volumes
-du -sh /opt/backups/onescope/
+du -sh /opt/backups/oneglanse/
 ```
 
 ### Self-Hosted Uptime Monitor (Uptime Kuma)
@@ -1328,7 +1328,7 @@ Set up notifications (email, Slack, Discord, Telegram) so you're alerted when se
 ### Zero-Downtime Rolling Update
 
 ```bash
-cd /opt/onescope
+cd /opt/oneglanse
 
 # 1. Pull the latest code (for docker-compose.yml changes):
 git pull
@@ -1363,8 +1363,8 @@ If the new version is broken:
 
 ```bash
 # Pull the previous version (by SHA tag if you know it):
-docker pull ghcr.io/aryamantodkar/onescope-web:sha-abc1234
-docker pull ghcr.io/aryamantodkar/onescope-agent:sha-abc1234
+docker pull ghcr.io/aryamantodkar/oneglanse-web:sha-abc1234
+docker pull ghcr.io/aryamantodkar/oneglanse-agent:sha-abc1234
 
 # Or roll back the entire stack:
 git checkout previous-working-tag
@@ -1414,7 +1414,7 @@ PasswordAuthentication no
 PermitRootLogin no
 
 # Allow only specific users:
-AllowUsers onescope
+AllowUsers oneglanse
 
 # Use only SSH protocol version 2:
 Protocol 2
@@ -1432,7 +1432,7 @@ ClientAliveCountMax 1
 systemctl restart sshd
 
 # Test in a new terminal that you can still connect before closing the old one:
-ssh onescope@yourdomain.com
+ssh oneglanse@yourdomain.com
 ```
 
 ### fail2ban Configuration
@@ -1493,8 +1493,8 @@ docker compose exec agent-worker redis-cli -h redis ping
 
 # 2. Job queue has stalled jobs:
 docker compose exec redis redis-cli
-> LLEN bull:onescope-agent:wait      # Number of waiting jobs
-> LLEN bull:onescope-agent:active    # Number of in-progress (stalled) jobs
+> LLEN bull:oneglanse-agent:wait      # Number of waiting jobs
+> LLEN bull:oneglanse-agent:active    # Number of in-progress (stalled) jobs
 
 # 3. Environment variable missing:
 docker compose exec agent-worker env | grep REDIS
@@ -1548,7 +1548,7 @@ echo $DATABASE_URL  # Should be: postgresql://user:pass@db:5432/dbname
 # Check: docker compose logs db | grep "database system was shut down"
 
 # 3. Migration file has a syntax error:
-docker compose exec db psql -U onescope -d onescope -c "SELECT * FROM drizzle.__drizzle_migrations"
+docker compose exec db psql -U oneglanse -d oneglanse -c "SELECT * FROM drizzle.__drizzle_migrations"
 ```
 
 ### Google OAuth "redirect_uri_mismatch" Error
@@ -1613,7 +1613,7 @@ migrate depends on → db (healthy)
 ### File Layout on Server
 
 ```
-/opt/onescope/
+/opt/oneglanse/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── Dockerfile.agent
@@ -1627,11 +1627,11 @@ migrate depends on → db (healthy)
         ├── init-scripts/       ← PostgreSQL init SQL (committed)
         └── clickhouse-init/    ← ClickHouse init SQL (committed)
 
-/opt/backups/onescope/
+/opt/backups/oneglanse/
 ├── postgres_2025-01-15_03-00-00.dump.gz
 ├── clickhouse_prompt_responses_2025-01-15.csv.gz
 └── config_2025-01-15.tar.gz
 
 /var/log/
-└── onescope-backup.log         ← Backup execution logs
+└── oneglanse-backup.log         ← Backup execution logs
 ```

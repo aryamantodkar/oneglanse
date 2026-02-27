@@ -1,4 +1,4 @@
-import type { FailureType } from "@onescope/types";
+import type { FailureType } from "@oneglanse/types";
 
 export type { FailureType };
 

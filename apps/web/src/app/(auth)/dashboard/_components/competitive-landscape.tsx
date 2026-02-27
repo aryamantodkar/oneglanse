@@ -8,8 +8,8 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@onescope/ui";
-import { getFaviconUrls } from "@onescope/utils";
+} from "@oneglanse/ui";
+import { getFaviconUrls } from "@oneglanse/utils";
 import { CircleHelp, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { CompetitorData } from "../_utils/types";

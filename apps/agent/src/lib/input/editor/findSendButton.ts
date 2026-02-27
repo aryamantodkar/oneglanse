@@ -1,4 +1,4 @@
-import { SUBMIT_BTN_SELECTORS } from "@onescope/utils";
+import { SUBMIT_BTN_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
 export async function findEnabledSendButton(

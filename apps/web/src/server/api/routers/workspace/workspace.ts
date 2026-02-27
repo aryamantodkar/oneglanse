@@ -10,8 +10,8 @@ import {
 	addWorkspaceToExistingOrg,
 	createNewWorkspace,
 } from "@/server/services/workspace/workspace";
-import { clickhouse, db, schema } from "@onescope/db";
-import { AuthError, NotFoundError, ValidationError } from "@onescope/errors";
+import { clickhouse, db, schema } from "@oneglanse/db";
+import { AuthError, NotFoundError, ValidationError } from "@oneglanse/errors";
 import {
 	addMemberToWorkspace,
 	agentQueue,
@@ -24,9 +24,9 @@ import {
 	removeMemberFromWorkspace,
 	scheduleCronForPrompts,
 	unscheduleCronForPrompts,
-} from "@onescope/services";
-import { PROVIDER_LIST, type Provider } from "@onescope/types";
-import { ALL_PROVIDERS_JSON, newId } from "@onescope/utils";
+} from "@oneglanse/services";
+import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
+import { ALL_PROVIDERS_JSON, newId } from "@oneglanse/utils";
 import { CronExpressionParser } from "cron-parser";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";

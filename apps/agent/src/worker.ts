@@ -1,5 +1,5 @@
 import "./env.js";
-import { waitForRedis } from "@onescope/services";
+import { waitForRedis } from "@oneglanse/services";
 import { Worker } from "bullmq";
 import { handleJob } from "./worker/jobHandler.js";
 import { logger } from "./lib/utils/logger.js";
@@ -19,7 +19,7 @@ async function startWorker() {
 			? configuredConcurrency
 			: 1;
 
-	worker = new Worker("onescope-agent", handleJob, {
+	worker = new Worker("oneglanse-agent", handleJob, {
 		connection: {
 			host: process.env.REDIS_HOST || "redis",
 			port: process.env.REDIS_PORT

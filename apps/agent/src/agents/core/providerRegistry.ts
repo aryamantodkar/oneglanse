@@ -1,5 +1,5 @@
-import type { Source } from "@onescope/types";
-import type { Provider } from "@onescope/types";
+import type { Source } from "@oneglanse/types";
+import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
 import { extractSourcesFromOpenai } from "../chatgpt/lib/extractSources.js";
 import { extractSourcesFromPerplexity } from "../perplexity/lib/extractSources.js";

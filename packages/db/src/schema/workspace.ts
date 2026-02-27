@@ -12,7 +12,7 @@ import {
 import z from "zod";
 import { user } from "./auth.js";
 
-// Keep in sync with PROVIDER_LIST in @onescope/types
+// Keep in sync with PROVIDER_LIST in @oneglanse/types
 const DEFAULT_PROVIDERS_JSON =
 	'["openai","anthropic","perplexity","google","google-ai-overview"]';
 

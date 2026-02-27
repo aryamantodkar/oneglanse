@@ -1,4 +1,4 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 
 const MIN_RESPONSE_CHARS = Number(process.env.MIN_RESPONSE_CHARS ?? 600);
 

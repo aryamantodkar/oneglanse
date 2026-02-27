@@ -1,5 +1,5 @@
-import type { Provider } from "@onescope/types";
-import { PROVIDER_LIST } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
+import { PROVIDER_LIST } from "@oneglanse/types";
 
 interface ProviderDisplayConfig {
 	displayName: string;

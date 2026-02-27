@@ -1,4 +1,4 @@
-# OneScope AI — Complete Testing Guide
+# OneGlanse — Complete Testing Guide
 
 This guide takes you from **zero tests** to a fully tested, production-grade monorepo. Every section explains the *why* behind each decision, not just the *what*. By the end, you'll understand how to write tests at every layer of the stack.
 
@@ -26,7 +26,7 @@ This guide takes you from **zero tests** to a fully tested, production-grade mon
 
 ## 1. Why Testing Matters for This Codebase Specifically
 
-OneScope AI is uniquely vulnerable to undetected failures for these reasons:
+OneGlanse is uniquely vulnerable to undetected failures for these reasons:
 
 **Browser automation is fragile by nature.** When ChatGPT changes their UI — which happens every few weeks — your source extractor silently returns empty arrays instead of citations. Without tests that assert "this function returns at least one citation for this known HTML structure," you only discover the breakage when a customer reports that their sources dashboard is empty.
 
@@ -56,7 +56,7 @@ The test pyramid is a ratio guide for how many tests of each type to write:
  /------------------\
 ```
 
-**For OneScope AI specifically:**
+**For OneGlanse specifically:**
 - **Unit tests:** Test pure functions — domain extraction, URL normalization, date formatting, proxy scoring, deduplication, markdown conversion rules, error class hierarchy
 - **Integration tests:** Test functions that hit the database — storePromptsForWorkspace, analysePromptsForWorkspace, workspace CRUD operations, tRPC routers with real database
 - **E2E tests:** Test critical user flows in a real browser — login → create workspace → submit prompt → view dashboard
@@ -102,18 +102,18 @@ The project already has Playwright installed as a dev dependency for browser aut
 
 ```bash
 # Add vitest to ALL packages (run from monorepo root):
-pnpm --filter @onescope/utils add -D vitest
-pnpm --filter @onescope/errors add -D vitest
-pnpm --filter @onescope/types add -D vitest
+pnpm --filter @oneglanse/utils add -D vitest
+pnpm --filter @oneglanse/errors add -D vitest
+pnpm --filter @oneglanse/types add -D vitest
 
 # Services needs coverage too:
-pnpm --filter @onescope/services add -D vitest @vitest/coverage-v8
+pnpm --filter @oneglanse/services add -D vitest @vitest/coverage-v8
 
 # Agent app needs both vitest and some mocking utilities:
-pnpm --filter @onescope/agent add -D vitest @vitest/coverage-v8
+pnpm --filter @oneglanse/agent add -D vitest @vitest/coverage-v8
 
 # Web app:
-pnpm --filter @onescope/web add -D vitest @vitest/coverage-v8 @playwright/test
+pnpm --filter @oneglanse/web add -D vitest @vitest/coverage-v8 @playwright/test
 ```
 
 ### Step 2: Create `vitest.config.ts` in each package
@@ -235,7 +235,7 @@ Now you can run all tests from the root:
 ```bash
 pnpm test                          # Run all tests
 pnpm test:coverage                 # Run all tests with coverage
-pnpm --filter @onescope/utils test # Run only utils tests
+pnpm --filter @oneglanse/utils test # Run only utils tests
 ```
 
 ---
@@ -727,13 +727,13 @@ export async function setup() {
 
   // Use a separate database for tests to avoid corrupting development data
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL
-    ?? 'postgresql://postgres:postgres@localhost:5432/onescope_test';
+    ?? 'postgresql://postgres:postgres@localhost:5432/oneglanse_test';
   process.env.CLICKHOUSE_URL = process.env.TEST_CLICKHOUSE_URL
     ?? 'http://localhost:8123';
 
   // Run migrations against the test database
   // This ensures the test database schema matches the current codebase
-  execSync('pnpm --filter @onescope/db db:migrate', {
+  execSync('pnpm --filter @oneglanse/db db:migrate', {
     env: {
       ...process.env,
       DATABASE_URL: process.env.DATABASE_URL,
@@ -755,8 +755,8 @@ export async function teardown() {
 // packages/services/src/__tests__/testSetup.ts
 // This file runs before EACH TEST FILE (not each test)
 
-import { db } from '@onescope/db';
-import { workspaces, workspaceMembers } from '@onescope/db/schema';
+import { db } from '@oneglanse/db';
+import { workspaces, workspaceMembers } from '@oneglanse/db/schema';
 
 // Clear database tables between test files to prevent test pollution
 // (tests writing data that affects other tests)
@@ -775,7 +775,7 @@ Repeating the "create a user, create an org, create a workspace" sequence in eve
 ```typescript
 // packages/services/src/__tests__/helpers.ts
 
-import { db } from '@onescope/db';
+import { db } from '@oneglanse/db';
 import { randomUUID } from 'crypto';
 
 export async function createTestUser(overrides: Partial<{ email: string; name: string }> = {}) {
@@ -1090,7 +1090,7 @@ export default defineConfig({
 
   // Start the Next.js dev server before running tests:
   webServer: {
-    command: 'pnpm --filter @onescope/web dev',
+    command: 'pnpm --filter @oneglanse/web dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,  // In CI, always start fresh
     timeout: 120_000,                       // 2 minutes to start Next.js
@@ -1268,7 +1268,7 @@ it('falls back to force-click when Enter key fails', async () => {
 import { vi } from 'vitest';
 
 // Mock OpenAI client so tests don't make real API calls:
-vi.mock('@onescope/services/llm', () => ({
+vi.mock('@oneglanse/services/llm', () => ({
   getLLMClient: () => ({
     chat: {
       completions: {
@@ -1325,7 +1325,7 @@ test:
     postgres:
       image: postgres:16
       env:
-        POSTGRES_DB: onescope_test
+        POSTGRES_DB: oneglanse_test
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
       ports:
@@ -1351,7 +1351,7 @@ test:
     # or run ClickHouse integration tests in a separate job with a custom Docker setup.
 
   env:
-    TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/onescope_test
+    TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/oneglanse_test
     REDIS_URL: redis://localhost:6379
     # Dummy values for required env vars (tests use mocked clients):
     OPENAI_API_KEY: sk-test

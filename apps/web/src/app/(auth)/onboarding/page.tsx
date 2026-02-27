@@ -10,9 +10,9 @@ import {
 	CardTitle,
 	Textarea,
 	toast,
-} from "@onescope/ui";
-import { PROVIDER_LIST } from "@onescope/types";
-import { getProviderDisplayName } from "@onescope/utils";
+} from "@oneglanse/ui";
+import { PROVIDER_LIST } from "@oneglanse/types";
+import { getProviderDisplayName } from "@oneglanse/utils";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";

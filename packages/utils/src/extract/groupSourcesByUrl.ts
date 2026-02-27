@@ -1,4 +1,4 @@
-import type { GroupedSource, Source } from "@onescope/types";
+import type { GroupedSource, Source } from "@oneglanse/types";
 
 export function groupSourcesByUrl(
 	sources: (Source & { modelProvider?: string })[],

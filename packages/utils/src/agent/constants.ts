@@ -1,4 +1,4 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 
 // Provider-specific editor selectors used for health checks (most reliable first).
 // Keyed by provider so callers only test selectors relevant to the current session,

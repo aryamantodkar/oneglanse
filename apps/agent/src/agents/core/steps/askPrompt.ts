@@ -1,4 +1,4 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { waitForEditorReady } from "../../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../../lib/input/editor/findSendButton.js";

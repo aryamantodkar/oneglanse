@@ -1,4 +1,4 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
 import { logger } from "../../../lib/utils/logger.js";
 import { withTimeout } from "../../../lib/utils/withTimeout.js";

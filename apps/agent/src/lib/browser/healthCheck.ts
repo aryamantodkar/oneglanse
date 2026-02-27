@@ -1,6 +1,6 @@
-import type { Provider, HealthCheckResult } from "@onescope/types";
+import type { Provider, HealthCheckResult } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { getBotDetectionMessage, PROVIDER_EDITOR_SELECTORS } from "@onescope/utils";
+import { getBotDetectionMessage, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import { logger } from "../utils/logger.js";
 
 export async function pageHealthCheck(

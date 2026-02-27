@@ -2,7 +2,7 @@
 
 import { authClient } from "@/lib/auth/auth-client";
 import { api } from "@/trpc/react";
-import type { Workspace } from "@onescope/db";
+import type { Workspace } from "@oneglanse/db";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -21,8 +21,8 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	toast,
-} from "@onescope/ui";
-import { getFaviconUrls } from "@onescope/utils";
+} from "@oneglanse/ui";
+import { getFaviconUrls } from "@oneglanse/utils";
 import {
 	Check,
 	ChevronDown,

@@ -52,7 +52,7 @@ Improvements: Split into server vs client sections and add notes on required/opt
 
 File: `.github/workflows/docker-build.yml`
 Purpose: Build and push Docker images for web, agent, and postgres.
-Issues: Builds on `onescope-monorepo` only; no CI checks (lint/test/typecheck) before image push.
+Issues: Builds on `oneglanse-monorepo` only; no CI checks (lint/test/typecheck) before image push.
 Improvements: Add separate CI job for tests and typecheck; gate image pushes on successful checks.
 
 File: `.gitignore`
@@ -952,7 +952,7 @@ Improvements: Add `noUnusedLocals` to keep types clean.
 
 File: `packages/ui/package.json`
 Purpose: UI package manifest.
-Issues: Depends on `@onescope/utils` for `cn`; but no CSS tokens defined in package itself.
+Issues: Depends on `@oneglanse/utils` for `cn`; but no CSS tokens defined in package itself.
 Improvements: Add a UI README describing usage and required CSS variables.
 
 File: `packages/ui/src/components/button.tsx`
@@ -1238,7 +1238,7 @@ Improvements: Consider removing build dependency for faster iteration.
 **4. Architectural Improvements**
 Structural changes: Split runtime services into `packages/data` (DB/ClickHouse), `packages/analysis` (LLM analysis), and `packages/agent` (automation runtime) to reduce coupling. Keep `apps/web` thin and move data-heavy logic into services.
 Refactoring suggestions: Introduce a background job queue for analysis and prompt runs, with explicit job state schema; normalize provider IDs into a single enum across `types`, `utils`, and agent; consolidate env validation into a single package shared by all apps.
-Dependency cleanup: Remove unused deps (`node-fetch` in web, `drizzle-kit` in db runtime); avoid importing `@onescope/ui` from `packages/ui` internals; add subpath exports to reduce bundle size.
+Dependency cleanup: Remove unused deps (`node-fetch` in web, `drizzle-kit` in db runtime); avoid importing `@oneglanse/ui` from `packages/ui` internals; add subpath exports to reduce bundle size.
 
 **5. Security Findings**
 Severity: Critical. Impact: XSS via untrusted markdown rendering. Fix: Sanitize markdown output or render via safe markdown component (`DOMPurify`, `rehype-sanitize`).

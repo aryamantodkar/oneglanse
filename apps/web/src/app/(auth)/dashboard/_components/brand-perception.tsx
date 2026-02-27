@@ -1,4 +1,4 @@
-import { Card } from "@onescope/ui";
+import { Card } from "@oneglanse/ui";
 import { Info } from "lucide-react";
 import { pricingLabels } from "../_utils/constants";
 import { DashboardEmptyState } from "./empty-state";

@@ -1,5 +1,5 @@
 import { auth } from "@lib/auth/auth";
-import { db } from "@onescope/db";
+import { db } from "@oneglanse/db";
 import { headers } from "next/headers";
 
 export async function getWorkspace() {

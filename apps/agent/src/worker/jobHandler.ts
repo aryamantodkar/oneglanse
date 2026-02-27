@@ -1,4 +1,4 @@
-import { redis, storePromptResponses } from "@onescope/services";
+import { redis, storePromptResponses } from "@oneglanse/services";
 import {
 	PROVIDER_LIST,
 	type AgentResult,
@@ -6,7 +6,7 @@ import {
 	type PromptPayload,
 	type Provider,
 	type UserPrompt,
-} from "@onescope/types";
+} from "@oneglanse/types";
 import { type Job } from "bullmq";
 import { agentHandler } from "../agents/core/agentHandler.js";
 import { createAgent } from "../agents/core/createAgent.js";

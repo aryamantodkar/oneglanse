@@ -1,4 +1,4 @@
-import { Card } from "@onescope/ui";
+import { Card } from "@oneglanse/ui";
 import { LineChart } from "lucide-react";
 import { useState } from "react";
 import type { CompetitorData } from "../_utils/types";

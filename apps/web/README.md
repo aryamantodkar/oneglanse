@@ -1,4 +1,4 @@
-# onescopeAI
+# oneglanse
 
 An open-source alternative to PeecAI — built with the [T3 Stack](https://create.t3.gg/) (Next.js, tRPC, Tailwind, Drizzle ORM, PostgreSQL) and [Better Auth](https://better-auth.com/) for authentication.
 

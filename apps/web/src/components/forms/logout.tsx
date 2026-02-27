@@ -1,6 +1,6 @@
 "use client";
 import { authClient } from "@/lib/auth/auth-client";
-import { Button, toast } from "@onescope/ui";
+import { Button, toast } from "@oneglanse/ui";
 import { Loader2, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

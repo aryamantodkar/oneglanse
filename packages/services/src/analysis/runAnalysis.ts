@@ -1,5 +1,5 @@
-import { ExternalServiceError, ValidationError } from "@onescope/errors";
-import type { AnalysisInputSingle, BrandAnalysisResult } from "@onescope/types";
+import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
+import type { AnalysisInputSingle, BrandAnalysisResult } from "@oneglanse/types";
 import { openai } from "../llm/index.js";
 import { analysisPrompt } from "./analysisPrompt.js";
 

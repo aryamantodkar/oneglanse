@@ -2,7 +2,7 @@
 
 import type * as React from "react";
 
-import { cn } from "@onescope/utils";
+import { cn } from "@oneglanse/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
 	return (

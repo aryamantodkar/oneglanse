@@ -1,5 +1,5 @@
-import { clickhouse, pool } from "@onescope/db";
-import { DatabaseError } from "@onescope/errors";
+import { clickhouse, pool } from "@oneglanse/db";
+import { DatabaseError } from "@oneglanse/errors";
 import type {
 	DomainStats,
 	ModelResult,
@@ -7,12 +7,12 @@ import type {
 	Provider,
 	Source,
 	UserPrompt,
-} from "@onescope/types";
+} from "@oneglanse/types";
 import {
 	extractDomainStats,
 	extractSourceStats,
 	formatDateToClickHouse,
-} from "@onescope/utils";
+} from "@oneglanse/utils";
 import { v4 as uuidv4 } from "uuid";
 
 export async function storePromptsForWorkspace(args: {

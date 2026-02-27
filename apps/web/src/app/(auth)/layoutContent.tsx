@@ -3,8 +3,8 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { api } from "@/trpc/react";
-import type { Workspace } from "@onescope/db";
-import { SidebarTrigger } from "@onescope/ui";
+import type { Workspace } from "@oneglanse/db";
+import { SidebarTrigger } from "@oneglanse/ui";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 

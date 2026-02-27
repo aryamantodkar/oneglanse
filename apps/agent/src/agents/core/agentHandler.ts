@@ -1,6 +1,6 @@
-import { classifyError, IPRefreshNeededError } from "@onescope/errors";
-import { exponentialBackoff } from "@onescope/utils";
-import type { AskPromptResult, FailureType, PromptPayload, Provider } from "@onescope/types";
+import { classifyError, IPRefreshNeededError } from "@oneglanse/errors";
+import { exponentialBackoff } from "@oneglanse/utils";
+import type { AskPromptResult, FailureType, PromptPayload, Provider } from "@oneglanse/types";
 import type { Browser, BrowserContext, Page } from "playwright";
 import {
 	fetchProxies,

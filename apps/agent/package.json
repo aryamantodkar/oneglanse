@@ -1,5 +1,5 @@
 {
-	"name": "@onescope/agent",
+	"name": "@oneglanse/agent",
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
@@ -11,10 +11,10 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@onescope/errors": "workspace:*",
-		"@onescope/services": "workspace:*",
-		"@onescope/types": "workspace:*",
-		"@onescope/utils": "workspace:*",
+		"@oneglanse/errors": "workspace:*",
+		"@oneglanse/services": "workspace:*",
+		"@oneglanse/types": "workspace:*",
+		"@oneglanse/utils": "workspace:*",
 		"bullmq": "^5.66.4",
 		"dotenv": "^17.2.3",
 		"ioredis": "^5.9.1",

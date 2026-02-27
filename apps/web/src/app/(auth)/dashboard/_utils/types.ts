@@ -1,4 +1,4 @@
-import type { AnalysisRecord } from "@onescope/types";
+import type { AnalysisRecord } from "@oneglanse/types";
 
 export interface CompetitorData {
 	name: string;

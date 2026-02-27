@@ -1,4 +1,4 @@
-import type { FailureType, Provider } from "@onescope/types";
+import type { FailureType, Provider } from "@oneglanse/types";
 import { logger } from "../../utils/logger.js";
 import {
 	EXPLORATION_RATE,

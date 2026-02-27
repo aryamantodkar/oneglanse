@@ -1,4 +1,4 @@
-import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
+import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
 export async function findLastAssistantLocator(
