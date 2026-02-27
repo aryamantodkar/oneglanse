@@ -6,9 +6,9 @@ on:
     paths:
       - "apps/**"
       - "packages/**"
-      - "Dockerfile"
-      - "Dockerfile.agent"
-      - "Dockerfile.postgres"
+      - "apps/web/Dockerfile"
+      - "apps/agent/Dockerfile"
+      - "packages/db/Dockerfile"
       - "packages/db/**"
       - ".github/workflows/**"
   workflow_dispatch:
@@ -59,8 +59,8 @@ jobs:
               - 'packages/types/**'
               - 'packages/ui/**'
               - 'packages/utils/**'
-              - 'Dockerfile'
-              - 'Dockerfile.dockerignore'
+              - 'apps/web/Dockerfile'
+              - 'apps/web/Dockerfile.dockerignore'
               - '.dockerignore'
               - 'package.json'
               - 'pnpm-lock.yaml'
@@ -75,8 +75,8 @@ jobs:
               - 'packages/services/**'
               - 'packages/types/**'
               - 'packages/utils/**'
-              - 'Dockerfile.agent'
-              - 'Dockerfile.agent.dockerignore'
+              - 'apps/agent/Dockerfile'
+              - 'apps/agent/Dockerfile.dockerignore'
               - '.dockerignore'
               - 'package.json'
               - 'pnpm-lock.yaml'
@@ -85,7 +85,7 @@ jobs:
               - 'tsconfig.json'
               - '.github/workflows/docker-build.yml'
             postgres:
-              - 'Dockerfile.postgres'
+              - 'packages/db/Dockerfile'
               - 'packages/db/init-scripts/**'
               - '.github/workflows/docker-build.yml'
 
@@ -119,7 +119,7 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./apps/web/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -156,7 +156,7 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.agent
+          file: ./apps/agent/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -193,7 +193,7 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.postgres
+          file: ./packages/db/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
