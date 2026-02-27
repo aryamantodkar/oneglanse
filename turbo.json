@@ -13,6 +13,7 @@
 		},
 
 		"typecheck": {
+			"dependsOn": ["^build"],
 			"outputs": []
 		},
 
