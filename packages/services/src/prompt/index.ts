@@ -1,5 +1,5 @@
-import { clickhouse, db, pool, schema } from "@onescope/db";
-import { DatabaseError, NotFoundError } from "@onescope/errors";
+import { clickhouse, pool } from "@onescope/db";
+import { DatabaseError } from "@onescope/errors";
 import type {
 	DomainStats,
 	ModelResult,
@@ -12,9 +12,7 @@ import {
 	extractDomainStats,
 	extractSourceStats,
 	formatDateToClickHouse,
-	getCleanUrl,
 } from "@onescope/utils";
-import { and, eq, isNull } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 export async function storePromptsForWorkspace(args: {
@@ -114,6 +112,43 @@ export async function storePromptsForWorkspace(args: {
 	return prompts;
 }
 
+/**
+ * Writes the API base URL and cron secret into PostgreSQL GUCs so the
+ * pg_cron job can read them via current_setting() without storing the
+ * raw secret value in the cron.job table.
+ *
+ * Must be called once at service startup before any schedules are created.
+ * Requires the DB role to have been granted ALTER on itself, or the call
+ * must happen as a superuser role. Falls back to a no-op with a warning.
+ */
+export async function configureSchedulerSecrets() {
+	const apiBaseUrl = process.env.API_BASE_URL;
+	const cronSecret = process.env.INTERNAL_CRON_SECRET;
+	if (!apiBaseUrl || !cronSecret) {
+		console.warn(
+			"[scheduler] API_BASE_URL or INTERNAL_CRON_SECRET not set — cron schedules will not fire correctly",
+		);
+		return;
+	}
+	try {
+		// current_user here is the app role; ALTER ROLE ... SET persists the GUC
+		// for every future session opened by that role, including pg_cron workers.
+		await pool.query(
+			`ALTER ROLE CURRENT_USER SET app.api_base_url = $1`,
+			[apiBaseUrl],
+		);
+		await pool.query(
+			`ALTER ROLE CURRENT_USER SET app.cron_secret = $1`,
+			[cronSecret],
+		);
+	} catch (err: any) {
+		console.warn(
+			"[scheduler] Could not persist GUCs via ALTER ROLE — cron secret may still be stored inline:",
+			err.message,
+		);
+	}
+}
+
 export async function scheduleCronForPrompts(args: {
 	workspaceId: string;
 	userId: string;
@@ -123,9 +158,13 @@ export async function scheduleCronForPrompts(args: {
 
 	const scheduleName = `auto_run_prompts_${workspaceId}`;
 
+	// Secret and API URL are read at execution time via current_setting() so
+	// they are NOT stored as literals in cron.job. configureSchedulerSecrets()
+	// must have been called at startup to persist these GUCs for the app role.
+	// workspaceId and userId are UUID-validated above so interpolation is safe.
 	const scheduledSQL = `
         SELECT http_post(
-          '${process.env.API_BASE_URL}/api/trpc/internal.runPrompts?batch=1',
+          current_setting('app.api_base_url') || '/api/trpc/internal.runPrompts?batch=1',
           jsonb_build_object(
             '0',
             jsonb_build_object(
@@ -137,7 +176,7 @@ export async function scheduleCronForPrompts(args: {
             )
           ),
           jsonb_build_object(
-            'Authorization', 'Bearer ${process.env.INTERNAL_CRON_SECRET}',
+            'Authorization', 'Bearer ' || current_setting('app.cron_secret'),
             'Content-Type', 'application/json'
           )
         );
@@ -285,8 +324,9 @@ export async function fetchPromptResponsesForWorkspace(args: {
 		query: `
         SELECT *
         FROM analytics.prompt_responses
-        WHERE workspace_id = '${workspaceId}'
+        WHERE workspace_id = {workspaceId:String}
       `,
+		query_params: { workspaceId },
 		format: "JSONEachRow",
 	});
 
@@ -325,8 +365,9 @@ export async function fetchUserPromptsForWorkspace(args: {
 		query: `
         SELECT *
         FROM analytics.user_prompts
-        WHERE workspace_id = '${workspaceId}'
+        WHERE workspace_id = {workspaceId:String}
       `,
+		query_params: { workspaceId },
 		format: "JSONEachRow",
 	});
 
