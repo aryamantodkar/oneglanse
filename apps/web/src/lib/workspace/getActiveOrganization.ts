@@ -1,4 +1,4 @@
-import { db, schema } from "@onescope/db";
+import { db, schema } from "@oneglanse/db";
 import { eq } from "drizzle-orm";
 
 export async function getActiveOrganization(userId: string | undefined) {

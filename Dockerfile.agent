@@ -16,8 +16,8 @@ COPY packages/utils ./packages/utils
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
-RUN pnpm turbo build --filter=@onescope/agent...
-RUN pnpm deploy --filter @onescope/agent --prod /app/out
+RUN pnpm turbo build --filter=@oneglanse/agent...
+RUN pnpm deploy --filter @oneglanse/agent --prod /app/out
 RUN cd /app/out && npx playwright install chromium
 
 FROM node:20-bookworm-slim AS runner

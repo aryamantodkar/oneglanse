@@ -1,4 +1,4 @@
-import { clickhouse } from "@onescope/db";
+import { clickhouse } from "@oneglanse/db";
 import type {
 	AnalysisMetadata,
 	AnalysisRecord,
@@ -9,7 +9,7 @@ import type {
 	PromptAnalysis,
 	PromptResponse,
 	Source,
-} from "@onescope/types";
+} from "@oneglanse/types";
 import { v4 as uuidv4 } from "uuid";
 import { getWorkspaceById } from "../workspace/index.js";
 import { runAnalysis } from "./runAnalysis.js";

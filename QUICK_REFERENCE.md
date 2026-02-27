@@ -1,4 +1,4 @@
-# Quick Reference - OneScope AI Deployment
+# Quick Reference - OneGlanse Deployment
 
 ## 🚀 Common Commands
 
@@ -76,9 +76,9 @@ docker compose down -v
 
 All images are hosted on GitHub Container Registry:
 
-- Web: `ghcr.io/aryamantodkar/onescope-web:latest`
-- Agent: `ghcr.io/aryamantodkar/onescope-agent:latest`
-- PostgreSQL: `ghcr.io/aryamantodkar/onescope-postgres:latest`
+- Web: `ghcr.io/aryamantodkar/oneglanse-web:latest`
+- Agent: `ghcr.io/aryamantodkar/oneglanse-agent:latest`
+- PostgreSQL: `ghcr.io/aryamantodkar/oneglanse-postgres:latest`
 
 ## 🔄 Workflow
 
@@ -86,7 +86,7 @@ All images are hosted on GitHub Container Registry:
 
 1. Make changes locally
 2. Test with `docker compose up`
-3. Commit and push to `onescope-monorepo` branch
+3. Commit and push to `oneglanse-monorepo` branch
 4. GitHub Actions builds and pushes images (~5-10 min)
 5. Deploy to VPS with `./scripts/deploy-vps.sh`
 
@@ -118,7 +118,7 @@ docker login ghcr.io
 cat ~/.docker/config.json
 
 # Manual pull
-docker pull ghcr.io/aryamantodkar/onescope-web:latest
+docker pull ghcr.io/aryamantodkar/oneglanse-web:latest
 ```
 
 ### Service Won't Start
@@ -219,7 +219,7 @@ docker compose config | grep -A 5 resources
 
 ## 📚 Links
 
-- GitHub Actions: https://github.com/aryamantodkar/onescopeAI/actions
+- GitHub Actions: https://github.com/aryamantodkar/oneglanse/actions
 - GitHub Packages: https://github.com/aryamantodkar?tab=packages
 - Docker Compose Docs: https://docs.docker.com/compose/
 
@@ -256,7 +256,7 @@ echo $DATABASE_URL
 ls -la /storage/*/state.json
 
 # Re-run agent login locally
-pnpm --filter @onescope/agent login
+pnpm --filter @oneglanse/agent login
 
 # Copy state files to VPS
 scp -r ./agent-data/* user@vps:/path/to/onescope/agent-data/

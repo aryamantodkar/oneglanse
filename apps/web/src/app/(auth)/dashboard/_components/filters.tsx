@@ -6,12 +6,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
-} from "@onescope/ui";
+} from "@oneglanse/ui";
 import {
 	getFaviconUrls,
 	getModelFavicon,
 	modelSelectors,
-} from "@onescope/utils";
+} from "@oneglanse/utils";
 import { Bot, FilterX } from "lucide-react";
 
 export function DashboardFilters({

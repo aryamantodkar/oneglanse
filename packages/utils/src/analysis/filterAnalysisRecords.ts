@@ -1,4 +1,4 @@
-import type { AnalysisFilters, AnalysisRecord } from "@onescope/types";
+import type { AnalysisFilters, AnalysisRecord } from "@oneglanse/types";
 import { isWithinRange } from "../format/dateFilter.js";
 
 export function filterAnalysisRecords(

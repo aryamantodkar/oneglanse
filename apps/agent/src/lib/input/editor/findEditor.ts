@@ -1,5 +1,5 @@
-import type { Provider } from "@onescope/types";
-import { EDITOR_SELECTORS, PROVIDER_EDITOR_SELECTORS } from "@onescope/utils";
+import type { Provider } from "@oneglanse/types";
+import { EDITOR_SELECTORS, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { logger } from "../../utils/logger.js";
 

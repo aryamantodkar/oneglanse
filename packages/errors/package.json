@@ -1,5 +1,5 @@
 {
-	"name": "@onescope/errors",
+	"name": "@oneglanse/errors",
 	"version": "0.1.0",
 	"private": true,
 	"main": "./dist/index.js",
@@ -16,7 +16,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@onescope/types": "workspace:*"
+		"@oneglanse/types": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.10",

@@ -20,16 +20,16 @@ importers:
 
   apps/agent:
     dependencies:
-      '@onescope/errors':
+      '@oneglanse/errors':
         specifier: workspace:*
         version: link:../../packages/errors
-      '@onescope/services':
+      '@oneglanse/services':
         specifier: workspace:*
         version: link:../../packages/services
-      '@onescope/types':
+      '@oneglanse/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@onescope/utils':
+      '@oneglanse/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       bullmq:
@@ -84,22 +84,22 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.3))
-      '@onescope/db':
+      '@oneglanse/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@onescope/errors':
+      '@oneglanse/errors':
         specifier: workspace:*
         version: link:../../packages/errors
-      '@onescope/services':
+      '@oneglanse/services':
         specifier: workspace:*
         version: link:../../packages/services
-      '@onescope/types':
+      '@oneglanse/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@onescope/ui':
+      '@oneglanse/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@onescope/utils':
+      '@oneglanse/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       '@perplexity-ai/perplexity_ai':
@@ -275,7 +275,7 @@ importers:
 
   packages/errors:
     dependencies:
-      '@onescope/types':
+      '@oneglanse/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
@@ -291,16 +291,16 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.63.1
         version: 0.63.1(zod@3.25.76)
-      '@onescope/db':
+      '@oneglanse/db':
         specifier: workspace:*
         version: link:../db
-      '@onescope/errors':
+      '@oneglanse/errors':
         specifier: workspace:*
         version: link:../errors
-      '@onescope/types':
+      '@oneglanse/types':
         specifier: workspace:*
         version: link:../types
-      '@onescope/utils':
+      '@oneglanse/utils':
         specifier: workspace:*
         version: link:../utils
       '@perplexity-ai/perplexity_ai':
@@ -337,7 +337,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@onescope/utils':
+      '@oneglanse/utils':
         specifier: workspace:*
         version: link:../utils
       '@radix-ui/react-checkbox':
@@ -407,7 +407,7 @@ importers:
 
   packages/utils:
     dependencies:
-      '@onescope/types':
+      '@oneglanse/types':
         specifier: workspace:*
         version: link:../types
       clsx:

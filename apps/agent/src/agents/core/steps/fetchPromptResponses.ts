@@ -1,10 +1,10 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { getText } from "../../../lib/input/response/getText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
-import { exponentialBackoff } from "@onescope/utils";
+import { exponentialBackoff } from "@oneglanse/utils";
 import { extractAIOverviewResponse } from "../../google/ai-overview/lib/extractResponse.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 

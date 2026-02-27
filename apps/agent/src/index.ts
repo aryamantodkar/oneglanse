@@ -1,5 +1,5 @@
 import "./worker.js";
-import { redis } from "@onescope/services";
+import { redis } from "@oneglanse/services";
 import { worker } from "./worker.js";
 import { logger } from "./lib/utils/logger.js";
 

@@ -1,12 +1,12 @@
 import "../styles/globals.css";
 import { TRPCReactProvider } from "@/trpc/react";
-import { Toaster } from "@onescope/ui";
+import { Toaster } from "@oneglanse/ui";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Geist } from "next/font/google";
 
 export const metadata: Metadata = {
-	title: "onescopeAI",
+	title: "OneGlanse",
 	description: "The open-source alternative to PeecAI",
 	icons: [{ rel: "icon", url: "/favicon.ico" }],
 };

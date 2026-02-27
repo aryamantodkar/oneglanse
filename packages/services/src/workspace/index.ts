@@ -1,7 +1,7 @@
-import { db, schema } from "@onescope/db";
-import type { Workspace } from "@onescope/db";
-import { NotFoundError, ValidationError } from "@onescope/errors";
-import { ALL_PROVIDERS_JSON, newId } from "@onescope/utils";
+import { db, schema } from "@oneglanse/db";
+import type { Workspace } from "@oneglanse/db";
+import { NotFoundError, ValidationError } from "@oneglanse/errors";
+import { ALL_PROVIDERS_JSON, newId } from "@oneglanse/utils";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 export async function createWorkspaceForTenant(args: {

@@ -1,4 +1,4 @@
-import { cn } from "@onescope/utils";
+import { cn } from "@oneglanse/utils";
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
 	return (

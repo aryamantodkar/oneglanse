@@ -1,5 +1,5 @@
-import type { FailureType } from "@onescope/types";
-import type { Provider } from "@onescope/types";
+import type { FailureType } from "@oneglanse/types";
+import type { Provider } from "@oneglanse/types";
 
 // ── Types ────────────────────────────────────────────────────────────────
 

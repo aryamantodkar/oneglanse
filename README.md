@@ -1,11 +1,11 @@
-# onescopeAI
+# oneglanse
 
 A monorepo for AI-powered analytics and monitoring.
 
 ## Structure
 
 ```
-onescopeAI/
+oneglanse/
 ├── apps/
 │   ├── web/          # Next.js web application
 │   └── agent/        # Browser automation agent
@@ -76,42 +76,42 @@ pnpm typecheck
 
 ## Packages
 
-### @onescope/types
+### @oneglanse/types
 
 Shared TypeScript type definitions used across all apps.
 
 ```typescript
-import type { UserPrompt, PromptResponse } from "@onescope/types";
+import type { UserPrompt, PromptResponse } from "@oneglanse/types";
 ```
 
-### @onescope/db
+### @oneglanse/db
 
 Database schema, connection utilities, and entity types.
 
 ```typescript
-import { db, schema } from "@onescope/db";
-import type { User, Workspace } from "@onescope/db";
+import { db, schema } from "@oneglanse/db";
+import type { User, Workspace } from "@oneglanse/db";
 ```
 
-### @onescope/ui
+### @oneglanse/ui
 
 Shared React UI components built with Radix UI and Tailwind CSS.
 
 ```typescript
-import { Button, Card, Dialog } from "@onescope/ui";
+import { Button, Card, Dialog } from "@oneglanse/ui";
 ```
 
-### @onescope/utils
+### @oneglanse/utils
 
 Shared utility functions.
 
 ```typescript
-import { cn } from "@onescope/utils";
+import { cn } from "@oneglanse/utils";
 ```
 
 ## Apps
 
-### @onescope/web
+### @oneglanse/web
 
 Next.js 15 web application with:
 - tRPC API
@@ -119,7 +119,7 @@ Next.js 15 web application with:
 - Drizzle ORM with PostgreSQL
 - Tailwind CSS 4
 
-### @onescope/agent
+### @oneglanse/agent
 
 Browser automation agent with:
 - Playwright for browser control

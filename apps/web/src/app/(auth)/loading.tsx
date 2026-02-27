@@ -1,4 +1,4 @@
-import { Skeleton } from "@onescope/ui";
+import { Skeleton } from "@oneglanse/ui";
 
 export default function Loading() {
 	return (

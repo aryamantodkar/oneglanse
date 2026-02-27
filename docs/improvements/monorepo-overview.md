@@ -15,7 +15,7 @@
 - Why: infinite timeouts can hang workers and block queue throughput.
 
 3. `apps/web/src/lib/auth/auth.ts:6`
-- Fix: replace deep import from `packages/db/src/schema/auth` with `@onescope/db` export.
+- Fix: replace deep import from `packages/db/src/schema/auth` with `@oneglanse/db` export.
 - Why: deep source imports break package boundaries and build graph stability.
 
 4. `apps/agent/tsconfig.json:18`

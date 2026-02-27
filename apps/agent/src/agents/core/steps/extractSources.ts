@@ -1,4 +1,4 @@
-import type { Provider, Source } from "@onescope/types";
+import type { Provider, Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { logger } from "../../../lib/utils/logger.js";
 import { AGENT_PROVIDER_CONFIG } from "../providerRegistry.js";

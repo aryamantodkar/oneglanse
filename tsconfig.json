@@ -9,7 +9,7 @@
 		"noEmit": true,
 		"baseUrl": ".",
 		"paths": {
-			"@onescope/*": ["packages/*/src", "packages/*/dist"]
+			"@oneglanse/*": ["packages/*/src", "packages/*/dist"]
 		}
 	},
 	"references": [

@@ -1,6 +1,6 @@
 import type { Page } from "playwright";
 import { logger } from "../utils/logger.js";
-import { RETRYABLE_ERRORS } from "@onescope/utils";
+import { RETRYABLE_ERRORS } from "@oneglanse/utils";
 
 export async function navigateWithRetry(
 	page: Page,

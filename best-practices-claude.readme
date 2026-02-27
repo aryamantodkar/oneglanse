@@ -1,4 +1,4 @@
-# onescopeAI - Production Audit & Best Practices Review
+# oneglanse - Production Audit & Best Practices Review
 
 > **Auditor:** Claude Opus 4.6 (Senior Staff Engineer Simulation)
 > **Date:** 2026-02-10
@@ -355,7 +355,7 @@ The codebase has solid architectural foundations but contains critical security 
 - **Purpose:** Better-auth server configuration
 - **Issues:**
   - `process.env.GOOGLE_CLIENT_ID as string` - unsafe cast, will be `undefined` at runtime if not set, causing a cryptic error
-  - Imports `authSchema` via relative path `"../../../../../packages/db/src/schema/auth"` instead of using the package alias `@onescope/db`
+  - Imports `authSchema` via relative path `"../../../../../packages/db/src/schema/auth"` instead of using the package alias `@oneglanse/db`
   - `databaseHooks.session.create.before` queries the database for active organization on EVERY session creation
 - **Improvements:** Validate env vars at startup, use package imports, cache org lookup
 

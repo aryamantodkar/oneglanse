@@ -1,12 +1,12 @@
 import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
-import { ValidationError } from "@onescope/errors";
+import { ValidationError } from "@oneglanse/errors";
 import {
 	fetchPromptSourcesForWorkspace,
 	fetchUserPromptsForWorkspace,
 	storePromptsForWorkspace,
-} from "@onescope/services";
+} from "@oneglanse/services";
 import { z } from "zod";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 

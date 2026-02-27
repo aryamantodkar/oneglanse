@@ -1,5 +1,5 @@
-import { analysePromptsForWorkspace } from "@onescope/services";
-import type { Provider } from "@onescope/types";
+import { analysePromptsForWorkspace } from "@oneglanse/services";
+import type { Provider } from "@oneglanse/types";
 import { logger } from "../lib/utils/logger.js";
 
 export function runAnalysisInBackground(args: {

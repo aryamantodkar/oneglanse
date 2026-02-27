@@ -1,4 +1,4 @@
-import type { Source } from "@onescope/types";
+import type { Source } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
 import {
 	buildSources,

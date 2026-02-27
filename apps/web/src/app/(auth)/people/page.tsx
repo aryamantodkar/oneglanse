@@ -2,7 +2,7 @@
 
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { api } from "@/trpc/react";
-import { PROVIDER_LIST, type Provider } from "@onescope/types";
+import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
 import {
 	Button,
 	Input,
@@ -20,8 +20,8 @@ import {
 	TableHeader,
 	TableRow,
 	toast,
-} from "@onescope/ui";
-import { PROVIDER_DISPLAY, getModelFavicon, getProviderDisplayName } from "@onescope/utils";
+} from "@oneglanse/ui";
+import { PROVIDER_DISPLAY, getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
 import {
 	Building2,
 	CheckCircle2,

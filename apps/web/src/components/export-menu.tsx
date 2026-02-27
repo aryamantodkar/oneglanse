@@ -6,7 +6,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@onescope/ui";
+} from "@oneglanse/ui";
 import { Download } from "lucide-react";
 
 export function ExportMenu({

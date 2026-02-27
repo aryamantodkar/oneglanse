@@ -1,4 +1,4 @@
-import { Skeleton } from "@onescope/ui";
+import { Skeleton } from "@oneglanse/ui";
 import { BarChart3, Building2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 

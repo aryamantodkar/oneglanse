@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 
-export const agentQueue = new Queue("onescope-agent", {
+export const agentQueue = new Queue("oneglanse-agent", {
 	connection: {
 		host: process.env.REDIS_HOST || "redis",
 		port: process.env.REDIS_PORT

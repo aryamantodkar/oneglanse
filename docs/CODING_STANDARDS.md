@@ -1,4 +1,4 @@
-# OneScope AI — Coding Standards
+# OneGlanse — Coding Standards
 
 Only standards with real violations in this codebase are listed. Each entry shows the actual offending code, the corrected version, and why it matters.
 
@@ -150,8 +150,8 @@ throw new Error(`Proxy API returned ${res.status}: ${res.statusText}`);
 
 **Fix:**
 ```typescript
-// Use the existing error classes from @onescope/errors:
-import { ValidationError, NotFoundError, DatabaseError } from '@onescope/errors';
+// Use the existing error classes from @oneglanse/errors:
+import { ValidationError, NotFoundError, DatabaseError } from '@oneglanse/errors';
 
 throw new ValidationError(`Unknown provider: ${provider}`, { provider });
 throw new NotFoundError('No active prompt editor found');
@@ -159,7 +159,7 @@ throw new DatabaseError('Redis not available');
 throw new DatabaseError(`Proxy API error ${res.status}`, { status: res.status, statusText: res.statusText });
 ```
 
-**Explanation:** `@onescope/errors` already exports `DatabaseError`, `NotFoundError`, `AuthError`, `ValidationError`. Using them means error monitoring (Sentry, logs) can group by error class, not by message string. A `DatabaseError` in a dashboard tells you immediately it's a DB issue — `Error: Redis not available` does not.
+**Explanation:** `@oneglanse/errors` already exports `DatabaseError`, `NotFoundError`, `AuthError`, `ValidationError`. Using them means error monitoring (Sentry, logs) can group by error class, not by message string. A `DatabaseError` in a dashboard tells you immediately it's a DB issue — `Error: Redis not available` does not.
 
 ---
 
@@ -404,7 +404,7 @@ logger.error('Step failed', { step: name, error: err instanceof Error ? err.mess
 
 **Fix** (web — server-side tRPC routers):
 ```typescript
-import { logger } from '@onescope/errors';
+import { logger } from '@oneglanse/errors';
 
 logger.error('Failed to calculate next run', {
   cronSchedule,

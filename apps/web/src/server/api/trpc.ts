@@ -1,8 +1,8 @@
 import "server-only";
 
 import { auth } from "@lib/auth/auth";
-import { db } from "@onescope/db";
-import { BaseError } from "@onescope/errors";
+import { db } from "@oneglanse/db";
+import { BaseError } from "@oneglanse/errors";
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";

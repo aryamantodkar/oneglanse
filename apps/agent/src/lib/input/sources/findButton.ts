@@ -1,4 +1,4 @@
-import { SOURCES_SELECTORS } from "@onescope/utils";
+import { SOURCES_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { findLastAssistantBox } from "../response/findElement.js";
 

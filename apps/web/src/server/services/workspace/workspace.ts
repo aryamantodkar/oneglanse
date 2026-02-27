@@ -1,9 +1,9 @@
 import "server-only";
 
 import { auth } from "@lib/auth/auth";
-import { db, schema } from "@onescope/db";
-import { ValidationError } from "@onescope/errors";
-import { createWorkspaceForTenant } from "@onescope/services";
+import { db, schema } from "@oneglanse/db";
+import { ValidationError } from "@oneglanse/errors";
+import { createWorkspaceForTenant } from "@oneglanse/services";
 import { and, eq } from "drizzle-orm";
 
 export async function createNewWorkspace(args: {

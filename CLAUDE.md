@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OneScope AI is a Turborepo monorepo for AI-powered analytics and monitoring that combines browser automation with multi-provider LLM support (OpenAI, Anthropic, Perplexity).
+OneGlanse is a Turborepo monorepo for AI-powered analytics and monitoring that combines browser automation with multi-provider LLM support (OpenAI, Anthropic, Perplexity).
 
 ## Prerequisites
 
@@ -88,9 +88,9 @@ pnpm start:worker
 pnpm build
 
 # Build specific package
-pnpm --filter @onescope/web build
-pnpm --filter @onescope/agent build
-pnpm --filter @onescope/db build
+pnpm --filter @oneglanse/web build
+pnpm --filter @oneglanse/agent build
+pnpm --filter @oneglanse/db build
 ```
 
 ### Docker Deployment
@@ -117,7 +117,7 @@ docker compose run --rm migrate
 ### Monorepo Structure
 
 ```
-onescopeAI/
+oneglanse/
 ├── apps/
 │   ├── web/          # Next.js 15 application with tRPC API
 │   └── agent/        # Browser automation agent (Playwright)
@@ -268,10 +268,10 @@ Workers process jobs in parallel per provider.
 Tests use Playwright Test framework:
 ```bash
 # Run all tests
-pnpm --filter @onescope/agent test
+pnpm --filter @oneglanse/agent test
 
 # Run specific test file
-pnpm --filter @onescope/agent test src/__tests__/agent.spec.ts
+pnpm --filter @oneglanse/agent test src/__tests__/agent.spec.ts
 ```
 
 ## Deployment
@@ -288,10 +288,10 @@ pnpm --filter @onescope/agent test src/__tests__/agent.spec.ts
 
 ### CI/CD
 
-GitHub Actions builds and pushes Docker images to GitHub Container Registry on push to `onescope-monorepo` branch:
-- `ghcr.io/aryamantodkar/onescope-web:latest`
-- `ghcr.io/aryamantodkar/onescope-agent:latest`
-- `ghcr.io/aryamantodkar/onescope-postgres:latest`
+GitHub Actions builds and pushes Docker images to GitHub Container Registry on push to `feat/no-auth-providers` branch:
+- `ghcr.io/aryamantodkar/oneglanse-web:latest`
+- `ghcr.io/aryamantodkar/oneglanse-agent:latest`
+- `ghcr.io/aryamantodkar/oneglanse-postgres:latest`
 
 ## Workspace Dependencies
 

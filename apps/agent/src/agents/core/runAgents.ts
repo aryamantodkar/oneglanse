@@ -1,4 +1,4 @@
-import type { AskPromptResult, PromptPayload, Provider } from "@onescope/types";
+import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { warmUpEditor } from "../../lib/input/editor/warmUp.js";
 import { runStep } from "../../lib/utils/runStep.js";

@@ -21,7 +21,7 @@ ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 ENV BETTER_AUTH_SECRET=docker-build-secret
 
-RUN pnpm turbo build --filter=@onescope/web...
+RUN pnpm turbo build --filter=@oneglanse/web...
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
@@ -37,7 +37,7 @@ RUN npm install -g pnpm@10.16.0
 WORKDIR /workspace
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/db ./packages/db
-RUN pnpm install --prod --frozen-lockfile --filter @onescope/db...
+RUN pnpm install --prod --frozen-lockfile --filter @oneglanse/db...
 
 WORKDIR /app
 

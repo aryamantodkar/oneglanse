@@ -13,7 +13,7 @@ import {
 	Input,
 	Label,
 	toast,
-} from "@onescope/ui";
+} from "@oneglanse/ui";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

@@ -1,4 +1,4 @@
-import { EnvError } from "@onescope/errors";
+import { EnvError } from "@oneglanse/errors";
 import OpenAI from "openai";
 
 let client: OpenAI | null = null;

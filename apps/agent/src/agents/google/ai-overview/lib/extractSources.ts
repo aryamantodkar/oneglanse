@@ -1,4 +1,4 @@
-import type { Source } from "@onescope/types";
+import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 import { logger } from "../../../../lib/utils/logger.js";

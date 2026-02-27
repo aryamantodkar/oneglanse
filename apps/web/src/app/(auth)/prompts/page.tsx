@@ -2,8 +2,8 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import type { AnalysisRecord, UserPrompt } from "@onescope/types";
-import type { Source } from "@onescope/types";
+import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
+import type { Source } from "@oneglanse/types";
 import {
 	Button,
 	Checkbox,
@@ -28,8 +28,8 @@ import {
 	TableRow,
 	Textarea,
 	toast,
-} from "@onescope/ui";
-import { PositionMetricCell, SentimentMetricCell } from "@onescope/ui";
+} from "@oneglanse/ui";
+import { PositionMetricCell, SentimentMetricCell } from "@oneglanse/ui";
 import {
 	filterAnalysisRecords,
 	formatDate,
@@ -39,7 +39,7 @@ import {
 	getModelFavicon,
 	getUniqueLinks,
 	modelSelectors,
-} from "@onescope/utils";
+} from "@oneglanse/utils";
 import {
 	ArrowDown,
 	ArrowUp,

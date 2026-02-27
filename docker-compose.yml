@@ -3,9 +3,9 @@ services:
   # Agent Worker
   # ----------------------------
   agent-worker:
-    image: ghcr.io/aryamantodkar/onescope-agent:latest
+    image: ghcr.io/aryamantodkar/oneglanse-agent:latest
     pull_policy: always
-    container_name: onescope-agent-worker
+    container_name: oneglanse-agent-worker
     restart: unless-stopped
     stop_grace_period: 16m
     env_file:
@@ -67,7 +67,7 @@ services:
   # PostgreSQL (OFFICIAL IMAGE)
   # ----------------------------
   db:
-    image: ghcr.io/aryamantodkar/onescope-postgres:latest
+    image: ghcr.io/aryamantodkar/oneglanse-postgres:latest
     container_name: postgres_db
     restart: always
     env_file: .env
@@ -122,9 +122,9 @@ services:
   # Web App (Next.js / UI)
   # ----------------------------
   web:
-    image: ghcr.io/aryamantodkar/onescope-web:latest
+    image: ghcr.io/aryamantodkar/oneglanse-web:latest
     pull_policy: always
-    container_name: onescope-web
+    container_name: oneglanse-web
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"
@@ -158,9 +158,9 @@ services:
   # Database Migrations (ONE-SHOT)
   # ----------------------------
   migrate:
-    image: ghcr.io/aryamantodkar/onescope-web:latest
+    image: ghcr.io/aryamantodkar/oneglanse-web:latest
     pull_policy: always
-    container_name: onescope-migrate
+    container_name: oneglanse-migrate
     env_file: .env
     depends_on:
       db:
@@ -169,7 +169,7 @@ services:
     working_dir: /workspace
     networks:
       - data
-    command: pnpm --filter @onescope/db db:migrate
+    command: pnpm --filter @oneglanse/db db:migrate
 
 # ----------------------------
 # Volumes

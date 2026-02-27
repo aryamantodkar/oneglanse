@@ -1,5 +1,5 @@
-import { Card } from "@onescope/ui";
-import { getFaviconUrls } from "@onescope/utils";
+import { Card } from "@oneglanse/ui";
+import { getFaviconUrls } from "@oneglanse/utils";
 import { FileQuestion } from "lucide-react";
 import type { SourceData } from "../_utils/types";
 import { DashboardEmptyState } from "./empty-state";

@@ -1,4 +1,4 @@
-import type { Provider } from "@onescope/types";
+import type { Provider } from "@oneglanse/types";
 import type { ChildProcess } from "node:child_process";
 import { rm } from "node:fs/promises";
 import { chromium } from "playwright";

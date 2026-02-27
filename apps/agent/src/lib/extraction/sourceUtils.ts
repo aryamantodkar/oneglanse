@@ -1,5 +1,5 @@
-import type { Source } from "@onescope/types";
-import { getDomain, getFaviconUrls } from "@onescope/utils";
+import type { Source } from "@oneglanse/types";
+import { getDomain, getFaviconUrls } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
 /**

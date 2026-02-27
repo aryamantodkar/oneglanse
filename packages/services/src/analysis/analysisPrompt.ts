@@ -1,4 +1,4 @@
-import type { AnalysisInputSingle } from "@onescope/types";
+import type { AnalysisInputSingle } from "@oneglanse/types";
 
 export function analysisPrompt(input: AnalysisInputSingle) {
 	const { prompt, response, brandDomain, brandName } = input;

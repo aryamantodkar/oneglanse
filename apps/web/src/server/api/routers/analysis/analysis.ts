@@ -4,7 +4,7 @@ import { createTRPCRouter } from "@/server/api/trpc";
 import {
 	analysePromptsForWorkspace,
 	fetchAnalysedPrompts,
-} from "@onescope/services";
+} from "@oneglanse/services";
 import { z } from "zod";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 

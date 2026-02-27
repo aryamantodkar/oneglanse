@@ -2,7 +2,7 @@ import "../../styles/globals.css";
 import { auth } from "@/lib/auth/auth";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { TRPCReactProvider } from "@/trpc/react";
-import { SidebarProvider } from "@onescope/ui";
+import { SidebarProvider } from "@oneglanse/ui";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cookies, headers } from "next/headers";
@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import LayoutContent from "./layoutContent";
 
 export const metadata: Metadata = {
-	title: "onescopeAI",
+	title: "OneGlanse",
 	description: "The open-source alternative to PeecAI",
 	icons: [{ rel: "icon", url: "/favicon.ico" }],
 };

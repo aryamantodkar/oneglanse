@@ -17,7 +17,7 @@ src/index.ts
   ├─ src/api.ts          # HTTP server (:3333)
   │   ├─ POST /upload-sessions
   │   └─ GET  /health
-  └─ src/worker.ts       # BullMQ worker ("onescope-agent")
+  └─ src/worker.ts       # BullMQ worker ("oneglanse-agent")
       └─ src/agents/lib/agentHandler.ts
           └─ src/agents/lib/runAgents.ts
               └─ src/agents/lib/runPrompts.ts
@@ -34,8 +34,8 @@ src/index.ts
 
 ```bash
 pnpm install
-pnpm --filter @onescope/agent build
-pnpm --filter @onescope/agent typecheck
+pnpm --filter @oneglanse/agent build
+pnpm --filter @oneglanse/agent typecheck
 pnpm exec playwright install chromium
 ```
 
@@ -50,28 +50,28 @@ cp apps/agent/.env.example apps/agent/.env
 Run local login and upload in sequence:
 
 ```bash
-pnpm --filter @onescope/agent run auth
+pnpm --filter @oneglanse/agent run auth
 ```
 
 Run only interactive login:
 
 ```bash
-pnpm --filter @onescope/agent run login
+pnpm --filter @oneglanse/agent run login
 ```
 
 Run one provider:
 
 ```bash
-pnpm --filter @onescope/agent run auth:openai
-pnpm --filter @onescope/agent run auth:anthropic
-pnpm --filter @onescope/agent run auth:perplexity
-pnpm --filter @onescope/agent run auth:google
+pnpm --filter @oneglanse/agent run auth:openai
+pnpm --filter @oneglanse/agent run auth:anthropic
+pnpm --filter @oneglanse/agent run auth:perplexity
+pnpm --filter @oneglanse/agent run auth:google
 ```
 
 Upload existing local sessions:
 
 ```bash
-pnpm --filter @onescope/agent run upload-session
+pnpm --filter @oneglanse/agent run upload-session
 ```
 
 ## Running
@@ -79,15 +79,15 @@ pnpm --filter @onescope/agent run upload-session
 Development:
 
 ```bash
-pnpm --filter @onescope/agent run dev
+pnpm --filter @oneglanse/agent run dev
 ```
 
 Production-style split:
 
 ```bash
-pnpm --filter @onescope/agent run build
-pnpm --filter @onescope/agent run start:api
-pnpm --filter @onescope/agent run start:worker
+pnpm --filter @oneglanse/agent run build
+pnpm --filter @oneglanse/agent run start:api
+pnpm --filter @oneglanse/agent run start:worker
 ```
 
 ## Environment Variables
@@ -146,7 +146,7 @@ Retry/tuning:
 ## Troubleshooting
 
 - `Unknown provider`: verify queue payload provider matches supported list.
-- `not authenticated`: run `pnpm --filter @onescope/agent run auth`.
+- `not authenticated`: run `pnpm --filter @oneglanse/agent run auth`.
 - `proxy pool exhausted`: verify `PROXY_MANUAL_FILE` or `PROXY_API_URL`.
 - frequent CAPTCHA/bot detection: rotate/refresh proxy source and reduce concurrency.
 
@@ -262,7 +262,7 @@ Current modules:
 
 Refactor:
 - share generic selector iteration helpers.
-- keep provider selector lists from `@onescope/utils` untouched.
+- keep provider selector lists from `@oneglanse/utils` untouched.
 
 #### `src/lib/input/waitForAssistantToFinish.ts`
 
@@ -338,8 +338,8 @@ Optimization:
 
 ### Validation Checklist Per Phase
 
-- `pnpm --filter @onescope/agent run typecheck`
-- `pnpm --filter @onescope/agent run build`
+- `pnpm --filter @oneglanse/agent run typecheck`
+- `pnpm --filter @oneglanse/agent run build`
 - Smoke run:
   - one auth check
   - one provider job with sources extraction

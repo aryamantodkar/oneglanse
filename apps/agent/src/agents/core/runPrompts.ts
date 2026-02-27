@@ -1,7 +1,7 @@
-import { classifyError, IPRefreshNeededError } from "@onescope/errors";
-import { exponentialBackoff } from "@onescope/utils";
-import type { AskPromptResult, Provider, Source } from "@onescope/types";
-import type { PromptPayload } from "@onescope/types";
+import { classifyError, IPRefreshNeededError } from "@oneglanse/errors";
+import { exponentialBackoff } from "@oneglanse/utils";
+import type { AskPromptResult, Provider, Source } from "@oneglanse/types";
+import type { PromptPayload } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";

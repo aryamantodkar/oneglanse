@@ -4,9 +4,9 @@ import {
 	fetchUserPromptsForWorkspace,
 	getWorkspaceById,
 	redis,
-} from "@onescope/services";
-import type { Provider } from "@onescope/types";
-import { ALL_PROVIDERS_JSON } from "@onescope/utils";
+} from "@oneglanse/services";
+import type { Provider } from "@oneglanse/types";
+import { ALL_PROVIDERS_JSON } from "@oneglanse/utils";
 import { z } from "zod";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 import { createTRPCRouter } from "../../trpc";

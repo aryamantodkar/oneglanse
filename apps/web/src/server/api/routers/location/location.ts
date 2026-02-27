@@ -3,7 +3,7 @@ import "server-only";
 import fs from "fs";
 import path from "path";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { NotFoundError } from "@onescope/errors";
+import { NotFoundError } from "@oneglanse/errors";
 import { z } from "zod";
 import { publicProcedure } from "../../procedures";
 

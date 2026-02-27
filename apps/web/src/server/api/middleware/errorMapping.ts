@@ -1,4 +1,4 @@
-import { BaseError, captureException } from "@onescope/errors";
+import { BaseError, captureException } from "@oneglanse/errors";
 import { TRPCError } from "@trpc/server";
 import { t } from "../trpc";
 

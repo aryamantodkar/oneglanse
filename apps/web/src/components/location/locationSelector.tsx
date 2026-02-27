@@ -6,7 +6,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@onescope/ui";
+} from "@oneglanse/ui";
 import { useEffect, useState } from "react";
 
 export function LocationSelector({

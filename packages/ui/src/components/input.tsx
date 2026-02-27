@@ -1,6 +1,6 @@
 import type * as React from "react";
 
-import { cn } from "@onescope/utils";
+import { cn } from "@oneglanse/utils";
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 	return (

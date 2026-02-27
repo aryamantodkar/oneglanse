@@ -111,7 +111,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.IMAGE_PREFIX }}/onescope-web
+          images: ${{ env.IMAGE_PREFIX }}/oneglanse-web
           tags: |
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
@@ -123,8 +123,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-web:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-web:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-web:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-web:buildcache,mode=max
 
   build-agent:
     name: Build Agent
@@ -148,7 +148,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.IMAGE_PREFIX }}/onescope-agent
+          images: ${{ env.IMAGE_PREFIX }}/oneglanse-agent
           tags: |
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
@@ -160,8 +160,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-agent:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-agent:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-agent:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-agent:buildcache,mode=max
 
   build-postgres:
     name: Build Postgres
@@ -185,7 +185,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.IMAGE_PREFIX }}/onescope-postgres
+          images: ${{ env.IMAGE_PREFIX }}/oneglanse-postgres
           tags: |
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
@@ -197,5 +197,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-postgres:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/onescope-postgres:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-postgres:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-postgres:buildcache,mode=max

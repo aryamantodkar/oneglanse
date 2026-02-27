@@ -2,7 +2,7 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import type { GroupedSource, SourceGroupResult } from "@onescope/types";
+import type { GroupedSource, SourceGroupResult } from "@oneglanse/types";
 import {
 	Select,
 	SelectContent,
@@ -16,13 +16,13 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@onescope/ui";
+} from "@oneglanse/ui";
 import {
 	getDomain,
 	getFaviconUrls,
 	getModelFavicon,
 	modelSelectors,
-} from "@onescope/utils";
+} from "@oneglanse/utils";
 import {
 	AlertTriangle,
 	ArrowDown,

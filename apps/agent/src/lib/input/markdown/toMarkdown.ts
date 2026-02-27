@@ -1,5 +1,5 @@
-import type { Provider } from "@onescope/types";
-import { MODEL_RESPONSE_SELECTORS } from "@onescope/utils";
+import type { Provider } from "@oneglanse/types";
+import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { extractAnthropicBlocks } from "./anthropicBlocks.js";
 import { turndown } from "./converter.js";

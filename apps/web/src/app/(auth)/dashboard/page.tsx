@@ -2,7 +2,7 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import type { AnalysisRecord } from "@onescope/types";
+import type { AnalysisRecord } from "@oneglanse/types";
 import { AlertTriangle, Info } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";

@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import { Button, Skeleton, toast } from "@onescope/ui";
+import { Button, Skeleton, toast } from "@oneglanse/ui";
 import { Calendar, Check, Clock, Loader2, PlayCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
