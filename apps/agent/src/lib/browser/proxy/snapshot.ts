@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
+import { ExternalServiceError, toErrorMessage, ValidationError } from "@oneglanse/errors";
 import { env } from "../../../env.js";
 import { logger } from "../../utils/logger.js";
 import { normalizeProxy } from "./scoring.js";
@@ -27,9 +27,9 @@ function parseProxyFile(): string[] {
 			.map((line) => normalizeProxy(line))
 			.filter(Boolean);
 		return list;
-	} catch (err: any) {
+	} catch (err) {
 		logger.warn(
-			`Failed to read PROXY_MANUAL_FILE (${filePath}): ${err?.message ?? err}`,
+			`Failed to read PROXY_MANUAL_FILE (${filePath}): ${toErrorMessage(err)}`,
 		);
 		return [];
 	}

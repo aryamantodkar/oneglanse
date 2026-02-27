@@ -1,4 +1,4 @@
-import { classifyError, ExternalServiceError, IPRefreshNeededError, ValidationError } from "@oneglanse/errors";
+import { classifyError, ExternalServiceError, IPRefreshNeededError, toErrorMessage, ValidationError } from "@oneglanse/errors";
 import { exponentialBackoff } from "@oneglanse/utils";
 import type { AskPromptResult, Provider, Source } from "@oneglanse/types";
 import type { PromptPayload } from "@oneglanse/types";
@@ -155,10 +155,10 @@ async function runPromptWithPolicy(
 			}
 
 			return { result, proxyNowProven };
-		} catch (err: any) {
+		} catch (err) {
 			lastError = err;
 			logger.error(
-				`❌ Attempt ${attempt}/${effectiveMaxRetries} failed for prompt ${promptIndex + 1}: [${provider}] ${err.message}`,
+				`❌ Attempt ${attempt}/${effectiveMaxRetries} failed for prompt ${promptIndex + 1}: [${provider}] ${toErrorMessage(err)}`,
 			);
 
 			// Canary failed: immediately rotate IP without retrying
@@ -167,7 +167,7 @@ async function runPromptWithPolicy(
 					"⚡ Canary prompt failed on unproven proxy — rotating IP immediately",
 				);
 				throw buildIpRefreshNeededError(
-					`${provider} canary prompt failed — rotating IP. Error: ${(lastError as any)?.message}`,
+					`${provider} canary prompt failed — rotating IP. Error: ${toErrorMessage(lastError)}`,
 					partialResults,
 					remainingPrompts,
 					promptIndex,
@@ -175,7 +175,7 @@ async function runPromptWithPolicy(
 				);
 			}
 
-			if (EXTRACTION_FAILURE_RE.test(String((err as any)?.message ?? ""))) {
+			if (EXTRACTION_FAILURE_RE.test(toErrorMessage(err))) {
 				logger.warn(
 					`⚠️ Repeated extraction failure on current IP (prompt ${promptIndex + 1}, attempt ${attempt}/${effectiveMaxRetries})`,
 				);
@@ -183,11 +183,11 @@ async function runPromptWithPolicy(
 
 			if (attempt === effectiveMaxRetries) {
 				logger.error(
-					`🔴 Prompt ${promptIndex + 1} failed after ${effectiveMaxRetries} attempts. Final error: ${(lastError as any)?.message}`,
+					`🔴 Prompt ${promptIndex + 1} failed after ${effectiveMaxRetries} attempts. Final error: ${toErrorMessage(lastError)}`,
 				);
 				logger.error("🔴 Triggering IP refresh for remaining prompts.");
 				throw buildIpRefreshNeededError(
-					`${provider} failed ${effectiveMaxRetries} consecutive attempts — refreshing IP. Last error: ${(lastError as any)?.message}`,
+					`${provider} failed ${effectiveMaxRetries} consecutive attempts — refreshing IP. Last error: ${toErrorMessage(lastError)}`,
 					partialResults,
 					remainingPrompts,
 					promptIndex,

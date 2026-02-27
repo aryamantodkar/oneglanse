@@ -1,5 +1,6 @@
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
+import { toErrorMessage } from "@oneglanse/errors";
 import { env } from "../../../env.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { withTimeout } from "../../../lib/utils/withTimeout.js";
@@ -73,8 +74,8 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 			logger.debug("  ✅ Submitted via Enter key");
 			return true;
 		}
-	} catch (err: any) {
-		logger.debug(`  ℹ️ Enter submit failed: ${err?.message}`);
+	} catch (err) {
+		logger.debug(`  ℹ️ Enter submit failed: ${toErrorMessage(err)}`);
 	}
 	return false;
 }
@@ -91,8 +92,8 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 			logger.debug("  ✅ Submitted via force click");
 			return true;
 		}
-	} catch (err: any) {
-		logger.debug(`  ℹ️ Force click failed: ${err?.message}`);
+	} catch (err) {
+		logger.debug(`  ℹ️ Force click failed: ${toErrorMessage(err)}`);
 	}
 	return false;
 }
@@ -127,8 +128,8 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 				return true;
 			}
 		}
-	} catch (err: any) {
-		logger.debug(`  ℹ️ Dispatch click failed: ${err?.message}`);
+	} catch (err) {
+		logger.debug(`  ℹ️ Dispatch click failed: ${toErrorMessage(err)}`);
 	}
 	return false;
 }

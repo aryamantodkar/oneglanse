@@ -234,9 +234,9 @@ export default function PeoplePage(): React.JSX.Element {
 			toast.success("Member added to workspace!");
 			setWsInviteEmail("");
 			await wsMembersQuery.refetch();
-		} catch (err: any) {
+		} catch (err) {
 			console.error(err);
-			toast.error(err?.message ?? "Failed to add member to workspace.");
+			toast.error("Failed to add member to workspace.");
 		} finally {
 			setWsAdding(false);
 		}
@@ -253,9 +253,9 @@ export default function PeoplePage(): React.JSX.Element {
 
 			toast.success("Member removed from workspace.");
 			await wsMembersQuery.refetch();
-		} catch (err: any) {
+		} catch (err) {
 			console.error(err);
-			toast.error(err?.message ?? "Failed to remove member.");
+			toast.error(err instanceof Error ? err.message : "Failed to remove member.");
 		}
 	};
 
@@ -300,8 +300,8 @@ export default function PeoplePage(): React.JSX.Element {
 			await utils.workspace.getById.invalidate({ workspaceId });
 			await utils.workspace.getJoinInfo.invalidate({ workspaceId });
 			setIsEditingWorkspace(false);
-		} catch (err: any) {
-			toast.error(err?.message ?? "Failed to update workspace details.");
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Failed to update workspace details.");
 		} finally {
 			setSavingWorkspace(false);
 		}
@@ -326,9 +326,9 @@ export default function PeoplePage(): React.JSX.Element {
 			await utils.workspace.listAllForUser.invalidate();
 			await utils.workspace.getJoinInfo.invalidate({ workspaceId });
 			setIsEditingOrg(false);
-		} catch (err: any) {
+		} catch (err) {
 			toast.error(
-				err?.message ?? "Only workspace owners can update organization name.",
+				err instanceof Error ? err.message : "Only workspace owners can update organization name.",
 			);
 		} finally {
 			setSavingOrg(false);

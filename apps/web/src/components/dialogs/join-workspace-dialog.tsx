@@ -86,9 +86,9 @@ export function JoinWorkspaceDialog({
 			onOpenChange(false);
 			router.refresh();
 			router.push(`/dashboard?workspace=${workspace.id}`);
-		} catch (err: any) {
+		} catch (err) {
 			console.error(err);
-			toast.error(err?.message ?? "Unable to join workspace.");
+			toast.error("Unable to join workspace.");
 		}
 	};
 

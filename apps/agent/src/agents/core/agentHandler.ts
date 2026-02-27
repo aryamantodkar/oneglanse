@@ -1,4 +1,4 @@
-import { classifyError, ExternalServiceError, IPRefreshNeededError } from "@oneglanse/errors";
+import { classifyError, ExternalServiceError, IPRefreshNeededError, toErrorMessage } from "@oneglanse/errors";
 import { exponentialBackoff } from "@oneglanse/utils";
 import type { AskPromptResult, FailureType, PromptPayload, Provider } from "@oneglanse/types";
 import type { Browser, BrowserContext, Page } from "playwright";
@@ -107,7 +107,7 @@ async function runProxyCycle(
 				recordProxyResult(refs.proxy, true, undefined, provider);
 			}
 			return { done: true };
-		} catch (err: any) {
+		} catch (err) {
 			if (err instanceof IPRefreshNeededError) {
 				logger.warn(
 					`${label} needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`,
@@ -132,7 +132,7 @@ async function runProxyCycle(
 			const failureType = classifyError(err);
 			logger.error(
 				`${label} failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}, type=${failureType}):`,
-				err?.message ?? err,
+				toErrorMessage(err),
 			);
 
 			if (refs.proxy) {
@@ -162,8 +162,8 @@ export async function agentHandler(
 	try {
 		await fetchProxies({ resetBadProxies: true });
 		logger.log(`${label} initialized proxy pool`);
-	} catch (err: any) {
-		logger.error(`${label} failed to initialize proxy pool:`, err?.message);
+	} catch (err) {
+		logger.error(`${label} failed to initialize proxy pool:`, toErrorMessage(err));
 	}
 
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
@@ -176,8 +176,8 @@ export async function agentHandler(
 
 			try {
 				await fetchProxies({ forceRefresh: true });
-			} catch (err: any) {
-				logger.error(`${label} failed to refresh proxies:`, err?.message);
+			} catch (err) {
+				logger.error(`${label} failed to refresh proxies:`, toErrorMessage(err));
 			}
 		}
 

@@ -1,5 +1,5 @@
 import { clickhouse, pool } from "@oneglanse/db";
-import { DatabaseError } from "@oneglanse/errors";
+import { DatabaseError, toErrorMessage } from "@oneglanse/errors";
 import type {
 	DomainStats,
 	FetchPromptResponsesForWorkspaceArgs,
@@ -67,8 +67,8 @@ export async function storePromptsForWorkspace(
 				values,
 				format: "JSONEachRow",
 			});
-		} catch (err: any) {
-			console.error("⚠️ Failed to insert user prompts:", err.message);
+		} catch (err) {
+			console.error("⚠️ Failed to insert user prompts:", toErrorMessage(err));
 
 			// Try individual inserts as fallback
 			let successCount = 0;
@@ -148,10 +148,10 @@ export async function configureSchedulerSecrets(): Promise<void> {
 			`ALTER ROLE CURRENT_USER SET app.cron_secret = $1`,
 			[cronSecret],
 		);
-	} catch (err: any) {
+	} catch (err) {
 		console.warn(
 			"[scheduler] Could not persist GUCs via ALTER ROLE — cron secret may still be stored inline:",
-			err.message,
+			toErrorMessage(err),
 		);
 	}
 }
@@ -268,10 +268,10 @@ export async function storePromptResponses(
 			values,
 			format: "JSONEachRow",
 		});
-	} catch (err: any) {
+	} catch (err) {
 		console.error(
 			"⚠️ ClickHouse insert failed, attempting individual inserts...",
-			err.message,
+			toErrorMessage(err),
 		);
 
 		// Fallback: Try inserting records one by one to save what we can
@@ -286,11 +286,11 @@ export async function storePromptResponses(
 					format: "JSONEachRow",
 				});
 				successCount++;
-			} catch (individualErr: any) {
+			} catch (individualErr) {
 				failCount++;
 				console.error(
 					`Failed to insert individual record (prompt: "${value.prompt.slice(0, 50)}..."):`,
-					individualErr.message,
+					toErrorMessage(individualErr),
 				);
 
 				// Log the problematic data for debugging

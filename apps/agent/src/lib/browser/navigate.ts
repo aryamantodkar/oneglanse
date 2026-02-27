@@ -1,4 +1,4 @@
-import { ExternalServiceError } from "@oneglanse/errors";
+import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Page } from "playwright";
 import { RETRYABLE_ERRORS } from "@oneglanse/utils";
 import { logger } from "../utils/logger.js";
@@ -14,14 +14,14 @@ export async function navigateWithRetry(
 		try {
 			await page.goto(url, options);
 			return;
-		} catch (err: any) {
-			const message = err?.message ?? "";
+		} catch (err) {
+			const message = toErrorMessage(err);
 			const isRetryable = RETRYABLE_ERRORS.some((e) => message.includes(e));
 
 			if (!isRetryable || attempt === maxRetries) {
 				throw new ExternalServiceError(
 					"navigation",
-					err?.message ?? String(err),
+					toErrorMessage(err),
 					502,
 					{ url, attempt },
 					err,

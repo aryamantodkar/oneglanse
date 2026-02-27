@@ -1,4 +1,4 @@
-import { ValidationError } from "@oneglanse/errors";
+import { toErrorMessage, ValidationError } from "@oneglanse/errors";
 import { redis, storePromptResponses } from "@oneglanse/services";
 import {
 	PROVIDER_LIST,
@@ -145,8 +145,8 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 			status: result.length > 0 ? "fulfilled" : "rejected",
 			data: result,
 		};
-	} catch (err: any) {
-		logger.error(`${provider} failed:`, err?.message ?? err);
+	} catch (err) {
+		logger.error(`${provider} failed:`, toErrorMessage(err));
 	}
 
 	// Store successful results immediately
