@@ -1,14 +1,14 @@
 import { ExternalServiceError, NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
-import { getText } from "../../../lib/input/response/getText.js";
-import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
-import { logger } from "../../../lib/utils/logger.js";
+import { extractAssistantMarkdown } from "../../lib/input/markdown/toMarkdown.js";
+import { getText } from "../../lib/input/response/getText.js";
+import { waitForAssistantToFinish } from "../../lib/input/response/waitForFinish.js";
+import { logger } from "../../lib/utils/logger.js";
 import { exponentialBackoff } from "@oneglanse/utils";
-import { env } from "../../../env.js";
-import { extractAIOverviewResponse } from "../../google/ai-overview/lib/extractResponse.js";
-import { turndown } from "../../../lib/input/markdown/converter.js";
+import { env } from "../../env.js";
+import { extractAIOverviewResponse } from "../../agents/ai-overview/lib/extractResponse.js";
+import { turndown } from "../../lib/input/markdown/converter.js";
 
 const MAX_EXTRACTION_RETRIES = env.MAX_EXTRACTION_RETRIES;
 const INITIAL_EXTRACTION_RETRY_DELAY = env.EXTRACTION_RETRY_DELAY_MS;

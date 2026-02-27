@@ -5,8 +5,8 @@ import type { Browser, BrowserContext, Page } from "playwright";
 import {
 	fetchProxies,
 	recordProxyResult,
-} from "../../lib/browser/proxy/pool.js";
-import { logger } from "../../lib/utils/logger.js";
+} from "../lib/browser/proxy/pool.js";
+import { logger } from "../lib/utils/logger.js";
 import { runAgents } from "./runAgents.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes

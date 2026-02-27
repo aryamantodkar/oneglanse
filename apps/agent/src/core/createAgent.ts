@@ -1,10 +1,10 @@
 import type { Provider } from "@oneglanse/types";
 import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
-import { env } from "../../env.js";
-import { launchContext } from "../../lib/browser/launch.js";
-import { navigateWithRetry } from "../../lib/browser/navigate.js";
-import { logger } from "../../lib/utils/logger.js";
-import { withTimeout } from "../../lib/utils/withTimeout.js";
+import { env } from "../env.js";
+import { launchContext } from "../lib/browser/launch.js";
+import { navigateWithRetry } from "../lib/browser/navigate.js";
+import { logger } from "../lib/utils/logger.js";
+import { withTimeout } from "../lib/utils/withTimeout.js";
 import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
 
 const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
