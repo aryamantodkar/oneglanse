@@ -4,13 +4,6 @@
 - Claims referencing removed/relocated AI-overview execution paths are outdated.
 
 ## New Improvements Missed Last Time
-1. `apps/web/middleware.ts:9`
-- Fix: remove session logging immediately.
-- Why: direct PII leakage risk.
-
-2. `packages/services/src/prompt/index.ts:126-144`
-- Fix: remove interpolated secrets/IDs from scheduled SQL payload text.
-- Why: unsafe construction and secret exposure in query text.
 
 3. `packages/utils/src/format/formatMarkdown.ts:10`
 - Fix: enforce sanitization boundary before any `dangerouslySetInnerHTML` rendering path.
