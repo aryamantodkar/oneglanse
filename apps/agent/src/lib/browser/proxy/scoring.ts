@@ -20,7 +20,7 @@ export interface ProxyRecord {
 // ── Constants ────────────────────────────────────────────────────────────
 
 export const MAX_EVENTS = 20;
-export const DECAY_HALF_LIFE = 10 * 60 * 1000; // 10 minutes
+const DECAY_HALF_LIFE = 10 * 60 * 1000; // 10 minutes
 export const EXPLORATION_RATE = 0.2; // 20% chance to try a non-best proxy
 
 // ── Pure helpers ─────────────────────────────────────────────────────────

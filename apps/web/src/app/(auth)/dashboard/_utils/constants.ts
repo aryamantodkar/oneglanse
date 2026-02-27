@@ -1,13 +1,13 @@
 import { AlertCircle, Info } from "lucide-react";
 
-export const priorityColors: Record<string, string> = {
+const priorityColors: Record<string, string> = {
 	critical: "bg-red-500",
 	high: "bg-orange-500",
 	medium: "bg-amber-500",
 	low: "bg-blue-500",
 };
 
-export const defaultSeverityStyle = {
+const defaultSeverityStyle = {
 	bg: "bg-blue-50 dark:bg-blue-950/30",
 	border: "border-blue-200 dark:border-blue-900/50",
 	text: "text-blue-700 dark:text-blue-300",
@@ -15,7 +15,7 @@ export const defaultSeverityStyle = {
 	icon: Info as typeof AlertCircle,
 };
 
-export const severityStyles: Record<
+const severityStyles: Record<
 	string,
 	{
 		bg: string;
@@ -48,7 +48,7 @@ export const severityStyles: Record<
 	},
 };
 
-export const recTypeLabels: Record<string, string> = {
+const recTypeLabels: Record<string, string> = {
 	top_pick: "Top Pick",
 	strong_alternative: "Strong Alternative",
 	conditional: "Conditional",
@@ -57,7 +57,7 @@ export const recTypeLabels: Record<string, string> = {
 	not_mentioned: "Not Mentioned",
 };
 
-export const recTypeColors: Record<string, string> = {
+const recTypeColors: Record<string, string> = {
 	top_pick:
 		"bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
 	strong_alternative:

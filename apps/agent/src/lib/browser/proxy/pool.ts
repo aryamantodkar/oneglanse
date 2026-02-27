@@ -135,7 +135,7 @@ export function recordProxyResult(
 	}
 }
 
-export function getAvailableCount(): number {
+function getAvailableCount(): number {
 	const now = Date.now();
 	let available = 0;
 	for (const raw of proxies) {
@@ -146,7 +146,7 @@ export function getAvailableCount(): number {
 	return available;
 }
 
-export function clearProxyPool(): void {
+function clearProxyPool(): void {
 	proxies = [];
 	proxyRecords = new Map();
 }

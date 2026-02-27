@@ -16,7 +16,7 @@ export type SubmitContext = {
 	preSubmitUrl: string;
 };
 
-export async function checkSubmissionSuccess(
+async function checkSubmissionSuccess(
 	ctx: SubmitContext,
 ): Promise<boolean> {
 	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;

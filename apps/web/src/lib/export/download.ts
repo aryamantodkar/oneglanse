@@ -1,4 +1,4 @@
-export function downloadBlob(
+function downloadBlob(
 	filename: string,
 	mimeType: string,
 	content: string,
@@ -36,7 +36,7 @@ function escapeCsvValue(value: unknown): string {
 	return stringValue;
 }
 
-export function rowsToCsv(rows: Array<Record<string, unknown>>): string {
+function rowsToCsv(rows: Array<Record<string, unknown>>): string {
 	if (!rows.length) return "";
 	const headers = Array.from(
 		rows.reduce((set, row) => {

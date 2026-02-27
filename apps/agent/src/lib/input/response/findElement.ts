@@ -1,7 +1,7 @@
 import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
-export async function findLastAssistantLocator(
+async function findLastAssistantLocator(
 	page: Page,
 ): Promise<Locator | null> {
 	for (const selector of MODEL_RESPONSE_SELECTORS) {

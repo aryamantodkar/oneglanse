@@ -17,14 +17,11 @@
 		"@oneglanse/utils": "workspace:*",
 		"bullmq": "^5.66.4",
 		"dotenv": "^17.2.3",
-		"ioredis": "^5.9.1",
 		"playwright": "^1.57.0",
-		"tar": "^7.5.2",
 		"turndown": "^7.2.2",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.57.0",
 		"@types/node": "^25.0.3",
 		"@types/turndown": "^5.0.6",
 		"ts-node": "^10.9.2",

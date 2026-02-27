@@ -8,10 +8,6 @@
 - Fix: use pnpm `10.16.0` to match root `package.json:26`.
 - Why: toolchain mismatch causes non-reproducible CI behavior.
 
-2. `packages/db/package.json` (`dependencies.drizzle-kit`)
-- Fix: move to `devDependencies`.
-- Why: build-time tool should not be shipped runtime dependency.
-
 3. `apps/agent/package.json` / `apps/web/package.json`
 - Fix: run `knip`/dep audit and remove unused runtime SDKs.
 - Why: lower install surface, fewer CVE vectors, smaller images.

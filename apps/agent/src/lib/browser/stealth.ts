@@ -153,7 +153,7 @@ export const STEALTH_CHROME_ARGS = [
 // ── User-Agent ────────────────────────────────────────────────────────────────
 // Linux UA matches the VPS platform — no navigator.platform mismatch.
 // Playwright 1.57 ships Chromium 131, so the version is accurate.
-export const STEALTH_USER_AGENT =
+const STEALTH_USER_AGENT =
 	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 // ── Context options ───────────────────────────────────────────────────────────
