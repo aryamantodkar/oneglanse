@@ -1,6 +1,7 @@
 import type { Provider } from "@onescope/types";
 import type { Locator, Page } from "playwright";
 import { logger } from "../../../lib/utils/logger.js";
+import { withTimeout } from "../../../lib/utils/withTimeout.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = Number(
 	process.env.SUBMIT_METHOD_TIMEOUT_MS ?? 10000,
@@ -14,22 +15,6 @@ export type SubmitContext = {
 	preSubmitContent: string;
 	preSubmitUrl: string;
 };
-
-async function withTimeout<T>(
-	label: string,
-	fn: () => Promise<T>,
-	timeoutMs = SUBMIT_METHOD_TIMEOUT_MS,
-): Promise<T> {
-	return await Promise.race([
-		fn(),
-		new Promise<T>((_, reject) =>
-			setTimeout(
-				() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
-				timeoutMs,
-			),
-		),
-	]);
-}
 
 export async function checkSubmissionSuccess(
 	ctx: SubmitContext,
@@ -84,7 +69,7 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 			await input.focus();
 			await page.keyboard.press("Enter");
 			return await checkSubmissionSuccess(ctx);
-		});
+		}, SUBMIT_METHOD_TIMEOUT_MS);
 		if (success) {
 			logger.debug("  ✅ Submitted via Enter key");
 			return true;
@@ -102,7 +87,7 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 		const success = await withTimeout("Force-click submit", async () => {
 			await sendButton.click({ force: true, timeout: SUBMIT_METHOD_TIMEOUT_MS });
 			return await checkSubmissionSuccess(ctx);
-		});
+		}, SUBMIT_METHOD_TIMEOUT_MS);
 		if (success) {
 			logger.debug("  ✅ Submitted via force click");
 			return true;
@@ -120,6 +105,7 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 		const handle = await withTimeout(
 			"Dispatch-click submit",
 			async () => await sendButton.elementHandle(),
+			SUBMIT_METHOD_TIMEOUT_MS,
 		);
 		if (handle) {
 			const success = await withTimeout("Dispatch-click submit", async () => {
@@ -136,7 +122,7 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 					}
 				}, handle);
 				return await checkSubmissionSuccess(ctx);
-			});
+			}, SUBMIT_METHOD_TIMEOUT_MS);
 			if (success) {
 				logger.debug("  ✅ Submitted via dispatched click");
 				return true;
