@@ -66,16 +66,6 @@ function formatRelativeTime(timestamp: string | null): string {
 function getScheduleOptions() {
 	return [
 		{
-			label: "Every 3 hours",
-			value: "0 */3 * * *",
-			description: `Runs 8 times daily starting at midnight`,
-		},
-		{
-			label: "Every 6 hours",
-			value: "0 */6 * * *",
-			description: `Runs 4 times daily starting at midnight`,
-		},
-		{
 			label: "Every 12 hours",
 			value: "0 */12 * * *",
 			description: `Runs twice daily starting at midnight`,
