@@ -15,7 +15,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 	useIsMobile,
-} from "@onescope/ui";
+} from "../index.js";
 import { cn } from "@onescope/utils";
 import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";

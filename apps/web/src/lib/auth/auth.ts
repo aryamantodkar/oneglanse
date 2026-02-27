@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
-import * as authSchema from "../../../../../packages/db/src/schema/auth";
+import * as authSchema from "@onescope/db";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
 export const auth = betterAuth({

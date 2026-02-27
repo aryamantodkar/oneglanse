@@ -16,19 +16,9 @@ export async function runStep(
 		logger.success(`${name} (${Date.now() - start}ms)`);
 	} catch (err) {
 		logger.error(`${name} FAILED after ${Date.now() - start}ms`);
+		const url = page.url();
+		logger.error(`URL at failure: ${url}`);
 
-		// Capture diagnostics
-		try {
-			await page.screenshot({
-				path: `debug-${name.replace(/\s+/g, "_")}.png`,
-				fullPage: true,
-			});
-			logger.log("📸 Screenshot saved");
-		} catch {}
-
-		try {
-			const url = page.url();
-			logger.error(`URL at failure: ${url}`);
-		} catch {}
+		throw err;
 	}
 }
