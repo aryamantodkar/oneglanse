@@ -190,7 +190,7 @@ docker stats
 docker system df
 
 # Image sizes
-docker images | grep onescope
+docker images | grep oneglanse
 
 # Container resource limits
 docker compose config | grep -A 5 resources
@@ -259,5 +259,5 @@ ls -la /storage/*/state.json
 pnpm --filter @oneglanse/agent login
 
 # Copy state files to VPS
-scp -r ./agent-data/* user@vps:/path/to/onescope/agent-data/
+scp -r ./agent-data/* user@vps:/path/to/oneglanse/agent-data/
 ```

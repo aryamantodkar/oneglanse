@@ -13,12 +13,12 @@ const config = {
 		SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
 	},
 	transpilePackages: [
-		"@onescope/ui",
-		"@onescope/utils",
-		"@onescope/db",
-		"@onescope/errors",
-		"@onescope/services",
-		"@onescope/types",
+		"@oneglanse/ui",
+		"@oneglanse/utils",
+		"@oneglanse/db",
+		"@oneglanse/errors",
+		"@oneglanse/services",
+		"@oneglanse/types",
 	],
 	webpack: (config) => {
 		// Ensure webpack follows symlinks for workspace packages
