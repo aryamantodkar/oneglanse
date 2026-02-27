@@ -2,7 +2,14 @@ import type { Provider } from "@onescope/types";
 import { launchContext } from "../../lib/browser/launch.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";
+import { withTimeout } from "../../lib/utils/withTimeout.js";
 import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
+
+const DEFAULT_PAGE_TIMEOUT_MS = Number(process.env.PAGE_DEFAULT_TIMEOUT_MS ?? 30_000);
+const DEFAULT_NAV_TIMEOUT_MS = Number(
+	process.env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS ?? 60_000,
+);
+const HOOK_TIMEOUT_MS = Number(process.env.PROVIDER_HOOK_TIMEOUT_MS ?? 60_000);
 
 export async function createAgent(provider: Provider) {
 	const config = AGENT_PROVIDER_CONFIG[provider];
@@ -11,7 +18,11 @@ export async function createAgent(provider: Provider) {
 	const page = await context.newPage();
 
 	if (config.preNavigationHook) {
-		await config.preNavigationHook(page);
+		await withTimeout(
+			`[${provider}] preNavigationHook`,
+			async () => config.preNavigationHook!(page),
+			HOOK_TIMEOUT_MS,
+		);
 	}
 
 	logger.log(`📍 Navigating to ${config.url}`);
@@ -21,13 +32,19 @@ export async function createAgent(provider: Provider) {
 	});
 
 	if (config.postNavigationHook) {
-		await config.postNavigationHook(page);
+		await withTimeout(
+			`[${provider}] postNavigationHook`,
+			async () => config.postNavigationHook!(page),
+			HOOK_TIMEOUT_MS,
+		);
 	}
 
 	logger.log("Loaded url:", page.url());
 
-	page.setDefaultTimeout(0);
-	page.setDefaultNavigationTimeout(0);
+	// Keep finite defaults to prevent indefinite hangs in locator/actions.
+	// Long-running response generation is handled separately via explicit waits.
+	page.setDefaultTimeout(DEFAULT_PAGE_TIMEOUT_MS);
+	page.setDefaultNavigationTimeout(DEFAULT_NAV_TIMEOUT_MS);
 
 	page.on("console", (_msg) => {
 		// console.log(`[${provider.toUpperCase()} PAGE]`, _msg.text())
