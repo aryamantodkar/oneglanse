@@ -116,7 +116,7 @@ function getScheduleLabel(cron: string | null): string {
 	return match?.label ?? cron;
 }
 
-export default function SchedulePage() {
+export default function SchedulePage(): React.JSX.Element {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 

@@ -28,7 +28,7 @@ export function DashboardFilters({
 	setModelFilter: (v: string) => void;
 	timeFilter: "all" | "7d" | "14d" | "30d";
 	setTimeFilter: (v: "all" | "7d" | "14d" | "30d") => void;
-}) {
+}): React.JSX.Element {
 	const faviconUrls = getFaviconUrls(brandDomain);
 
 	return (

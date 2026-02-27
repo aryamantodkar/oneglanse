@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 
 export function LocationSelector({
 	onSelect,
-}: { onSelect: (loc: any) => void }) {
+}: { onSelect: (loc: any) => void }): React.JSX.Element {
 	const [countries, setCountries] = useState<
 		{ iso2: string; name: string; emoji?: string }[]
 	>([]);

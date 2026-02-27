@@ -16,7 +16,7 @@ export function StatCard({
 	icon: LucideIcon;
 	valueClassName?: string;
 	domain?: string;
-}) {
+}): React.JSX.Element {
 	const isStringValue = typeof value === "string";
 	const showFavicon =
 		isStringValue && (label === "Top Source" || label === "Top Competitor");
@@ -74,7 +74,7 @@ export function AggregateStatsRow({
 	topCompetitor: string;
 	topCompetitorDomain?: string;
 	noData?: boolean;
-}) {
+}): React.JSX.Element {
 	const emptySubtitle = "No analysis data for selected filters";
 
 	return (

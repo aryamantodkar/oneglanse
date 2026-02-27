@@ -1,6 +1,6 @@
 import type { AnalysisInputSingle } from "@oneglanse/types";
 
-export function analysisPrompt(input: AnalysisInputSingle) {
+export function analysisPrompt(input: AnalysisInputSingle): string {
 	const { prompt, response, brandDomain, brandName } = input;
 
 	return `

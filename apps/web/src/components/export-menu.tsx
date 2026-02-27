@@ -17,7 +17,7 @@ export function ExportMenu({
 	onExportJson: () => void;
 	onExportCsv: () => void;
 	disabled?: boolean;
-}) {
+}): React.JSX.Element {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>

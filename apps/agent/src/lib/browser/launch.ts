@@ -2,13 +2,21 @@ import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { ChildProcess } from "node:child_process";
 import { rm } from "node:fs/promises";
+import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
 import { logger } from "../utils/logger.js";
 import { fetchProxies, getNextProxy, recordProxyResult } from "./proxy/pool.js";
 import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
 import { getFreePort, spawnChromiumCDP, waitForCDPEndpoint } from "./cdp.js";
 
-export async function launchContext(provider: Provider) {
+export async function launchContext(
+	provider: Provider,
+): Promise<{
+	browser: Browser;
+	context: BrowserContext;
+	proxy: string | null;
+	cleanup: () => Promise<void>;
+}> {
 	let proxy = getNextProxy();
 
 	if (!proxy) {

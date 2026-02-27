@@ -28,7 +28,7 @@ import { TopSources } from "./_components/top-sources";
 // Hooks
 import { useDashboardData } from "./_hooks/use-dashboard-data";
 
-export default function Dashboard() {
+export default function Dashboard(): React.JSX.Element {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 

@@ -18,7 +18,7 @@ const geist = Geist({
 
 export default async function RootLayout({
 	children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: Readonly<{ children: React.ReactNode }>): Promise<React.JSX.Element> {
 	return (
 		<html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
 			<body>

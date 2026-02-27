@@ -3,7 +3,9 @@ import type { AnalysisInputSingle, BrandAnalysisResult } from "@oneglanse/types"
 import { openai } from "../llm/index.js";
 import { analysisPrompt } from "./analysisPrompt.js";
 
-export async function runAnalysis(input: AnalysisInputSingle) {
+export async function runAnalysis(
+	input: AnalysisInputSingle,
+): Promise<BrandAnalysisResult> {
 	const prompt = analysisPrompt(input);
 
 	const systemPrompt =

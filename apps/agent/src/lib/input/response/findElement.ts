@@ -12,7 +12,7 @@ export async function findLastAssistantLocator(
 	return null;
 }
 
-export async function findLastAssistantBox(page: Page) {
+export async function findLastAssistantBox(page: Page): Promise<{ x: number; y: number; width: number; height: number; } | null> {
 	const locator = await findLastAssistantLocator(page);
 	return locator ? await locator.boundingBox() : null;
 }

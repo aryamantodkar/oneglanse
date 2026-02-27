@@ -13,7 +13,7 @@ export function BrandPerceptionCard({
 	pricingPerception: string;
 	coreClaims: string[];
 	differentiators: string[];
-}) {
+}): React.JSX.Element {
 	const hasData =
 		bestKnownFor || coreClaims.length > 0 || differentiators.length > 0;
 

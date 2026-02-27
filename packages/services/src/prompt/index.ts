@@ -2,10 +2,18 @@ import { clickhouse, pool } from "@oneglanse/db";
 import { DatabaseError } from "@oneglanse/errors";
 import type {
 	DomainStats,
+	FetchPromptResponsesForWorkspaceArgs,
+	FetchPromptSourcesForWorkspaceArgs,
+	FetchPromptSourcesForWorkspaceResult,
+	FetchUserPromptsForWorkspaceArgs,
 	ModelResult,
 	PromptResponse,
 	Provider,
+	ScheduleCronForPromptsArgs,
 	Source,
+	StorePromptResponsesArgs,
+	StorePromptsForWorkspaceArgs,
+	UnscheduleCronForPromptsArgs,
 	UserPrompt,
 } from "@oneglanse/types";
 import {
@@ -16,11 +24,9 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../env.js";
 
-export async function storePromptsForWorkspace(args: {
-	prompts: string[];
-	workspaceId: string;
-	userId: string;
-}) {
+export async function storePromptsForWorkspace(
+	args: StorePromptsForWorkspaceArgs,
+): Promise<string[]> {
 	const { prompts, workspaceId, userId } = args;
 
 	const nonEmptyPrompts = prompts.map((p) => p.trim()).filter((p) => p !== "");
@@ -122,7 +128,7 @@ export async function storePromptsForWorkspace(args: {
  * Requires the DB role to have been granted ALTER on itself, or the call
  * must happen as a superuser role. Falls back to a no-op with a warning.
  */
-export async function configureSchedulerSecrets() {
+export async function configureSchedulerSecrets(): Promise<void> {
 	const apiBaseUrl = env.API_BASE_URL;
 	const cronSecret = env.INTERNAL_CRON_SECRET;
 	if (!apiBaseUrl || !cronSecret) {
@@ -150,11 +156,9 @@ export async function configureSchedulerSecrets() {
 	}
 }
 
-export async function scheduleCronForPrompts(args: {
-	workspaceId: string;
-	userId: string;
-	cronExpression: string;
-}) {
+export async function scheduleCronForPrompts(
+	args: ScheduleCronForPromptsArgs,
+): Promise<void> {
 	const { workspaceId, userId, cronExpression } = args;
 
 	const scheduleName = `auto_run_prompts_${workspaceId}`;
@@ -197,9 +201,9 @@ export async function scheduleCronForPrompts(args: {
 	]);
 }
 
-export async function unscheduleCronForPrompts(args: {
-	workspaceId: string;
-}) {
+export async function unscheduleCronForPrompts(
+	args: UnscheduleCronForPromptsArgs,
+): Promise<void> {
 	const { workspaceId } = args;
 	const scheduleName = `auto_run_prompts_${workspaceId}`;
 
@@ -210,12 +214,9 @@ export async function unscheduleCronForPrompts(args: {
 	}
 }
 
-export async function storePromptResponses(args: {
-	results: ModelResult;
-	userId: string;
-	workspaceId: string;
-	promptRunAt: string;
-}) {
+export async function storePromptResponses(
+	args: StorePromptResponsesArgs,
+): Promise<void> {
 	const { results, userId, workspaceId, promptRunAt } = args;
 
 	const values: Array<{
@@ -315,10 +316,9 @@ export async function storePromptResponses(args: {
 	}
 }
 
-export async function fetchPromptResponsesForWorkspace(args: {
-	workspaceId: string;
-	userId: string;
-}) {
+export async function fetchPromptResponsesForWorkspace(
+	args: FetchPromptResponsesForWorkspaceArgs,
+): Promise<PromptResponse[]> {
 	const { workspaceId } = args;
 
 	const result = await clickhouse.query({
@@ -336,10 +336,9 @@ export async function fetchPromptResponsesForWorkspace(args: {
 	return responses;
 }
 
-export async function fetchPromptSourcesForWorkspace(args: {
-	workspaceId: string;
-	userId: string;
-}) {
+export async function fetchPromptSourcesForWorkspace(
+	args: FetchPromptSourcesForWorkspaceArgs,
+): Promise<FetchPromptSourcesForWorkspaceResult> {
 	const { workspaceId, userId } = args;
 
 	const promptResponses = await fetchPromptResponsesForWorkspace({
@@ -356,10 +355,9 @@ export async function fetchPromptSourcesForWorkspace(args: {
 	};
 }
 
-export async function fetchUserPromptsForWorkspace(args: {
-	workspaceId: string;
-	userId: string;
-}) {
+export async function fetchUserPromptsForWorkspace(
+	args: FetchUserPromptsForWorkspaceArgs,
+): Promise<UserPrompt[]> {
 	const { workspaceId } = args;
 
 	const result = await clickhouse.query({

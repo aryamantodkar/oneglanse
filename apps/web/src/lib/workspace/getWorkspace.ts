@@ -1,8 +1,9 @@
 import { auth } from "@lib/auth/auth";
 import { db } from "@oneglanse/db";
+import type { Workspace } from "@oneglanse/db";
 import { headers } from "next/headers";
 
-export async function getWorkspace() {
+export async function getWorkspace(): Promise<Workspace | null> {
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

@@ -1,18 +1,40 @@
 import { db, schema } from "@oneglanse/db";
 import type { Workspace } from "@oneglanse/db";
 import { NotFoundError, ValidationError } from "@oneglanse/errors";
+import type {
+	AddMemberToWorkspaceArgs,
+	AddMemberToWorkspaceResult,
+	CreateWorkspaceForTenantArgs,
+	GetAllWorkspacesForUserArgs,
+	GetWorkspaceByIdArgs,
+	GetWorkspaceMembersWithUsersArgs,
+	GetWorkspacesForUserArgs,
+	RemoveMemberFromWorkspaceArgs,
+	RemoveMemberFromWorkspaceResult,
+} from "@oneglanse/types";
+
+// JOIN result type — aliased columns from workspaceMembers + user
+type WorkspaceMemberWithUser = {
+	memberId: string;
+	userId: string;
+	role: string;
+	joinedAt: Date;
+	userName: string;
+	userEmail: string;
+	userImage: string | null;
+};
+
+// Grouping type — workspaces scoped to an organization
+type OrganizationWorkspaceGroup = {
+	organization: { id: string; name: string; slug: string | null };
+	workspaces: Workspace[];
+};
 import { ALL_PROVIDERS_JSON, newId } from "@oneglanse/utils";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
-export async function createWorkspaceForTenant(args: {
-	name: string;
-	slug: string;
-	domain: string;
-	tenantId: string;
-	country: string;
-	region?: string | null;
-	userId: string;
-}) {
+export async function createWorkspaceForTenant(
+	args: CreateWorkspaceForTenantArgs,
+): Promise<Workspace> {
 	const { name, slug, domain, tenantId, country, region, userId } = args;
 
 	const workspace: Workspace = {
@@ -40,9 +62,9 @@ export async function createWorkspaceForTenant(args: {
 	return workspace;
 }
 
-export async function getWorkspaceById(args: {
-	workspaceId: string;
-}) {
+export async function getWorkspaceById(
+	args: GetWorkspaceByIdArgs,
+): Promise<Workspace> {
 	const { workspaceId } = args;
 
 	if (!workspaceId || workspaceId.trim() === "") {
@@ -67,10 +89,9 @@ export async function getWorkspaceById(args: {
 	return workspace;
 }
 
-export async function getWorkspacesForUser(args: {
-	tenantId: string;
-	userId: string;
-}) {
+export async function getWorkspacesForUser(
+	args: GetWorkspacesForUserArgs,
+): Promise<Workspace[]> {
 	const { tenantId, userId } = args;
 
 	if (!tenantId || tenantId.trim() === "") {
@@ -111,9 +132,9 @@ export async function getWorkspacesForUser(args: {
 	return workspaces;
 }
 
-export async function getWorkspaceMembersWithUsers(args: {
-	workspaceId: string;
-}) {
+export async function getWorkspaceMembersWithUsers(
+	args: GetWorkspaceMembersWithUsersArgs,
+): Promise<WorkspaceMemberWithUser[]> {
 	const { workspaceId } = args;
 
 	if (!workspaceId || workspaceId.trim() === "") {
@@ -143,11 +164,9 @@ export async function getWorkspaceMembersWithUsers(args: {
 	return members;
 }
 
-export async function addMemberToWorkspace(args: {
-	workspaceId: string;
-	userId: string;
-	role?: string;
-}) {
+export async function addMemberToWorkspace(
+	args: AddMemberToWorkspaceArgs,
+): Promise<AddMemberToWorkspaceResult> {
 	const { workspaceId, userId, role = "member" } = args;
 
 	// Check if already an active member
@@ -173,10 +192,9 @@ export async function addMemberToWorkspace(args: {
 	return { workspaceId, userId, role };
 }
 
-export async function removeMemberFromWorkspace(args: {
-	workspaceId: string;
-	userId: string;
-}) {
+export async function removeMemberFromWorkspace(
+	args: RemoveMemberFromWorkspaceArgs,
+): Promise<RemoveMemberFromWorkspaceResult> {
 	const { workspaceId, userId } = args;
 
 	// Prevent removing the last owner
@@ -225,7 +243,9 @@ export async function removeMemberFromWorkspace(args: {
 	return { workspaceId, userId };
 }
 
-export async function getAllWorkspacesForUser(args: { userId: string }) {
+export async function getAllWorkspacesForUser(
+	args: GetAllWorkspacesForUserArgs,
+): Promise<OrganizationWorkspaceGroup[]> {
 	const { userId } = args;
 
 	// Get all active workspace memberships with workspace + org details in one query

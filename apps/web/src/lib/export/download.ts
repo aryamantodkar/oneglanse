@@ -2,7 +2,7 @@ export function downloadBlob(
 	filename: string,
 	mimeType: string,
 	content: string,
-) {
+): void {
 	const blob = new Blob([content], { type: mimeType });
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
@@ -14,7 +14,7 @@ export function downloadBlob(
 	URL.revokeObjectURL(url);
 }
 
-export function downloadJson(filename: string, data: unknown) {
+export function downloadJson(filename: string, data: unknown): void {
 	downloadBlob(
 		filename,
 		"application/json;charset=utf-8",
@@ -55,7 +55,7 @@ export function rowsToCsv(rows: Array<Record<string, unknown>>): string {
 export function downloadCsv(
 	filename: string,
 	rows: Array<Record<string, unknown>>,
-) {
+): void {
 	const csv = rowsToCsv(rows);
 	downloadBlob(filename, "text/csv;charset=utf-8", csv);
 }

@@ -18,7 +18,7 @@ export default function LayoutContent({
 	workspace: Workspace | null;
 	userName: string;
 	userEmail: string;
-}) {
+}): React.JSX.Element {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";

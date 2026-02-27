@@ -31,7 +31,7 @@ type WorkspaceSelection = {
 export function JoinWorkspaceDialog({
 	open,
 	onOpenChange,
-}: JoinWorkspaceDialogProps) {
+}: JoinWorkspaceDialogProps): React.JSX.Element {
 	const [code, setCode] = useState("");
 	const [selection, setSelection] = useState<WorkspaceSelection | null>(null);
 	const router = useRouter();

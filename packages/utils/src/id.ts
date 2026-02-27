@@ -1,3 +1,3 @@
-export function newId(prefix: string) {
+export function newId(prefix: string): string {
 	return `${prefix}_${crypto.randomUUID()}`;
 }

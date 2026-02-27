@@ -1,4 +1,4 @@
-export function isWithinRange(dateStr: string, days: number) {
+export function isWithinRange(dateStr: string, days: number): boolean {
 	const date = new Date(dateStr);
 	const now = new Date();
 	const diffMs = now.getTime() - date.getTime();

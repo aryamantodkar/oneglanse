@@ -24,7 +24,7 @@ export default async function RootLayout({
 	children,
 }: {
 	children: React.ReactNode;
-}) {
+}): Promise<any> {
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

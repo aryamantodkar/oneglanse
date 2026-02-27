@@ -1,4 +1,4 @@
-export function formatDateToClickHouse(dt: Date) {
+export function formatDateToClickHouse(dt: Date): string {
 	// ClickHouse DateTime expects format: YYYY-MM-DD HH:MM:SS (no milliseconds, no timezone)
 	const year = dt.getUTCFullYear();
 	const month = String(dt.getUTCMonth() + 1).padStart(2, "0");

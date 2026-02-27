@@ -77,7 +77,7 @@ export function BrandComparisonChart({
 	brandRecommendationRate: number;
 	brandSentimentScore: number;
 	brandAvgRank: number | null;
-}) {
+}): React.JSX.Element {
 	const [hoveredPoint, setHoveredPoint] = useState<{
 		name: string;
 		metric: string;

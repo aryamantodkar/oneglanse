@@ -19,8 +19,8 @@ export const agentRouter = createTRPCRouter({
 		} = ctx;
 
 		const prompts = await fetchUserPromptsForWorkspace({
-			workspaceId: workspaceId!,
-			userId: userId!,
+			workspaceId,
+			userId,
 		});
 
 		if (!prompts || prompts.length === 0) {
@@ -30,7 +30,7 @@ export const agentRouter = createTRPCRouter({
 		const jobGroupId = randomUUID();
 
 		// Fetch workspace and parse enabled providers
-		const workspace = await getWorkspaceById({ workspaceId: workspaceId! });
+		const workspace = await getWorkspaceById({ workspaceId });
 		const enabledProvidersJson =
 			workspace.enabledProviders ?? ALL_PROVIDERS_JSON;
 		const enabledProviders = JSON.parse(enabledProvidersJson) as Provider[];

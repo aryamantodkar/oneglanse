@@ -14,7 +14,7 @@ export function TopSources({
 }: {
 	sources: SourceData[];
 	totalCitations?: number;
-}) {
+}): React.JSX.Element {
 	return (
 		<Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
 			{/* Header */}

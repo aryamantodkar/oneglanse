@@ -92,7 +92,7 @@ export function CompetitiveLandscape({
 }: {
 	competitors: CompetitorData[];
 	modelFilter: string;
-}) {
+}): React.JSX.Element {
 	const [competitorSort, setCompetitorSort] = useState<
 		"appearances" | "sentiment" | "rank"
 	>("rank");

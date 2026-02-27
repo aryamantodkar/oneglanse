@@ -176,7 +176,7 @@ function MetricCard({
 	);
 }
 
-export default function SourcesPage() {
+export default function SourcesPage(): React.JSX.Element {
 	const [selectedProvider, setSelectedProvider] =
 		useState<string>("All Models");
 	const [activeTab, setActiveTab] = useState<"domains" | "citations">(
