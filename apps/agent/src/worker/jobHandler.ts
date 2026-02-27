@@ -1,3 +1,4 @@
+import { ValidationError } from "@oneglanse/errors";
 import { redis, storePromptResponses } from "@oneglanse/services";
 import {
 	PROVIDER_LIST,
@@ -83,7 +84,7 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	const { provider, jobGroupId, prompts, user_id, workspace_id } = data;
 
 	if (!providerConfig[provider]) {
-		throw new Error(`Unknown provider: ${provider}`);
+		throw new ValidationError(`Unknown provider: ${provider}`, { provider });
 	}
 
 	if (AGENT_PROVIDER_CONFIG[provider].skip) {
@@ -92,7 +93,7 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	}
 
 	if (!prompts || prompts.length === 0) {
-		throw new Error("Agent job received no prompts");
+		throw new ValidationError("Agent job received no prompts", { provider, jobGroupId });
 	}
 
 	// Generate fresh timestamp at execution time

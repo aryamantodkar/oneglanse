@@ -1,22 +1,24 @@
 import type { Page } from "playwright";
+import { BaseError, ExternalServiceError } from "@oneglanse/errors";
+import { SELECTORS } from "../../../../config/selectors.js";
 import { logger } from "../../../../lib/utils/logger.js";
 
 export async function extractAIOverviewResponse(page: Page): Promise<string> {
   try {
-    const result = await page.evaluate(() => {
+    const result = await page.evaluate((sels) => {
       const SOURCE_CARD_DATE_PATTERN =
         /([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2} [A-Z][a-z]+ \d{4}|\d+\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\b\d{4}\b\s(?:—|·))/;
 
       // ── Pre-flight: confirm AI Overview is actually present ──────────────
       const placeholder =
-        document.querySelector('[data-container-id="model-response-placeholder"]') ||
-        document.querySelector('div:has(> [data-container-id="main-col"])') ||
-        document.querySelector('[data-container-id="main-col"]')?.parentElement;
+        document.querySelector(sels.placeholder) ||
+        document.querySelector(sels.placeholderWrapper) ||
+        document.querySelector(sels.mainCol)?.parentElement;
       if (!placeholder)
         return { success: false, error: "model-response-placeholder not found" };
 
       const mainCol =
-        placeholder.querySelector('[data-container-id="main-col"]') || placeholder;
+        placeholder.querySelector(sels.mainCol) || placeholder;
       const mainColText = (mainCol.textContent || "").trim();
       if (mainColText.length < 50)
         return { success: false, error: "no-ai-overview: main-col empty" };
@@ -24,47 +26,40 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 
       const clone = placeholder.cloneNode(true) as HTMLElement;
 
-      // Step 1: Remove noise tags
-      for (const tag of ["script", "style", "button", "svg", "noscript", "iframe"]) {
+      // Step 1: Remove noise tags (merged into single pass)
+      for (const tag of sels.noiseTags) {
         for (const el of clone.querySelectorAll(tag)) el.remove();
       }
-      for (const el of clone.querySelectorAll("sup")) el.remove();
 
       // Step 1b: Unwrap inline Google entity chip links (e.g. <a href="google.com/search?q=HubSpot">HubSpot</a>)
       // These are not source citations — they're inline links within prose text that turndown
       // would otherwise convert to [text](google-search-url) markdown noise.
-      for (const a of clone.querySelectorAll('a[href*="google.com/search"]')) {
+      for (const a of clone.querySelectorAll(sels.googleChip)) {
         const span = document.createElement("span");
         span.textContent = a.textContent;
         a.parentNode?.replaceChild(span, a);
       }
 
       // Step 2: Remove source card containers
-      for (const sel of [
-        '[data-container-id="rhs-col"]',
-        '[data-xid="aim-aside-initial-corroboration-container"]',
-        '[role="dialog"][data-type="hovc"]',
-      ]) {
+      for (const sel of sels.sourceContainers) {
         for (const el of clone.querySelectorAll(sel)) el.remove();
       }
 
       // Step 3: Remove remaining source card blocks via ARIA link pattern
       const remainingSourceLinks = Array.from(
-        clone.querySelectorAll(
-          'a[target="_blank"][rel="noopener"][aria-label*="Opens in"]',
-        ),
+        clone.querySelectorAll(sels.sourceLink),
       );
       const toRemove = new Set<Element>();
       for (const link of remainingSourceLinks) {
         let el: Element = link;
         while (el.parentElement && el.parentElement !== clone) {
           const parent = el.parentElement;
-          if (parent.querySelector('[role="heading"]')) break;
+          if (parent.querySelector(sels.heading)) break;
           const hasNonSourceSibling = Array.from(parent.children).some(
             (sib) =>
               sib !== el &&
               (sib.textContent || "").length > 100 &&
-              !sib.querySelector('a[aria-label*="Opens in"]'),
+              !sib.querySelector(sels.inlineSourceLink),
           );
           if (hasNonSourceSibling) break;
           el = parent;
@@ -76,7 +71,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
       // Step 4: Safety net for leftover source cards — but NEVER touch main-col
       // FIX: grab main-col reference FIRST, then skip it and its descendants
       const extractedMainCol =
-        clone.querySelector('[data-container-id="main-col"]') || clone;
+        clone.querySelector(sels.mainCol) || clone;
 
       for (const el of clone.querySelectorAll("*")) {
         // ✅ NEW: skip main-col itself and anything inside it
@@ -90,7 +85,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         if (
           text.length < 5000 &&
           SOURCE_CARD_DATE_PATTERN.test(text) &&
-          !el.querySelector('[role="heading"]')
+          !el.querySelector(sels.heading)
         ) {
           el.remove();
         }
@@ -102,12 +97,12 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         return { success: false, error: "AI Overview HTML was empty after extraction" };
 
       return { success: true, html };
-    });
+    }, SELECTORS.googleAiOverviewResponse);
 
     if (!result || !result.success) {
       const message = result?.error || "unknown extraction failure";
       logger.warn(`AI Overview extraction failed: ${message}`);
-      throw new Error(message);
+      throw new ExternalServiceError("google-ai-overview", message);
     }
 
     const html = result.html || "";
@@ -115,6 +110,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
     return html;
   } catch (error: any) {
     logger.error(`AI Overview extraction error: ${error.message}`);
-    throw error;
+    if (error instanceof BaseError) throw error;
+    throw new ExternalServiceError("google-ai-overview", error.message, 500, undefined, error);
   }
 }

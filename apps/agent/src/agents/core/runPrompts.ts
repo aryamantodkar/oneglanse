@@ -1,8 +1,9 @@
-import { classifyError, IPRefreshNeededError } from "@oneglanse/errors";
+import { classifyError, ExternalServiceError, IPRefreshNeededError, ValidationError } from "@oneglanse/errors";
 import { exponentialBackoff } from "@oneglanse/utils";
 import type { AskPromptResult, Provider, Source } from "@oneglanse/types";
 import type { PromptPayload } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { env } from "../../env.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";
 import { validateResponse } from "../../lib/validation/validateResponse.js";
@@ -11,9 +12,9 @@ import { askPrompt } from "./steps/askPrompt.js";
 import { checkAndExtractSources } from "./steps/extractSources.js";
 import { fetchPromptResponses } from "./steps/fetchPromptResponses.js";
 
-const MAX_PROMPT_RETRIES = Number(process.env.MAX_PROMPT_RETRIES_PER_IP ?? 3);
-const INITIAL_RETRY_DELAY = Number(process.env.PROMPT_RETRY_DELAY_MS ?? 1000);
-const MAX_RETRY_DELAY = Number(process.env.MAX_PROMPT_RETRY_DELAY_MS ?? 5000);
+const MAX_PROMPT_RETRIES = env.MAX_PROMPT_RETRIES_PER_IP;
+const INITIAL_RETRY_DELAY = env.PROMPT_RETRY_DELAY_MS;
+const MAX_RETRY_DELAY = env.MAX_PROMPT_RETRY_DELAY_MS;
 
 const STEP_WAIT_MS = 1500; // pause between pipeline steps for page stability
 
@@ -67,8 +68,9 @@ async function executePromptAttempt(
 
 	const response = await fetchPromptResponses(page, provider);
 	if (!response || response.trim().length === 0) {
-		throw new Error(
-			`[${provider}] Empty response extracted; blocking source extraction and retrying prompt`,
+		throw new ExternalServiceError(
+			provider,
+			"Empty response extracted; blocking source extraction and retrying prompt",
 		);
 	}
 
@@ -77,7 +79,10 @@ async function executePromptAttempt(
 		logger.warn(
 			`⚠️ [${provider}] Invalid response (${response.trim().length} chars): ${validation.reason} — retrying`,
 		);
-		throw new Error(`[${provider}] Invalid response: ${validation.reason}`);
+		throw new ValidationError(`[${provider}] Invalid response: ${validation.reason}`, {
+			provider,
+			reason: validation.reason,
+		});
 	}
 
 	await page.waitForTimeout(STEP_WAIT_MS);
@@ -182,7 +187,7 @@ async function runPromptWithPolicy(
 	}
 
 	// Unreachable — loop always returns or throws
-	throw new Error("runPromptWithPolicy: unexpected exit without result or error");
+	throw new ValidationError("runPromptWithPolicy: unexpected exit without result or error");
 }
 
 export async function runPrompts(

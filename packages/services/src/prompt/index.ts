@@ -14,6 +14,7 @@ import {
 	formatDateToClickHouse,
 } from "@oneglanse/utils";
 import { v4 as uuidv4 } from "uuid";
+import { env } from "../env.js";
 
 export async function storePromptsForWorkspace(args: {
 	prompts: string[];
@@ -122,8 +123,8 @@ export async function storePromptsForWorkspace(args: {
  * must happen as a superuser role. Falls back to a no-op with a warning.
  */
 export async function configureSchedulerSecrets() {
-	const apiBaseUrl = process.env.API_BASE_URL;
-	const cronSecret = process.env.INTERNAL_CRON_SECRET;
+	const apiBaseUrl = env.API_BASE_URL;
+	const cronSecret = env.INTERNAL_CRON_SECRET;
 	if (!apiBaseUrl || !cronSecret) {
 		console.warn(
 			"[scheduler] API_BASE_URL or INTERNAL_CRON_SECRET not set — cron schedules will not fire correctly",

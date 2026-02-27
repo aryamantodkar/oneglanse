@@ -1,11 +1,12 @@
 import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { SELECTORS } from "../../../../config/selectors.js";
 import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 import { logger } from "../../../../lib/utils/logger.js";
 
 export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 	try {
-		const { rawSources, containerFound } = await page.evaluate(() => {
+		const { rawSources, containerFound } = await page.evaluate((sels) => {
 			const results: Array<{
 				rawHref: string;
 				title: string;
@@ -17,9 +18,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 				let aoContainer: HTMLElement | null = null;
 
 				// Method 1: Find by heading text
-				const headings = document.querySelectorAll(
-					'h1, h2, h3, [role="heading"]',
-				);
+				const headings = document.querySelectorAll(sels.headings);
 				for (const heading of headings) {
 					if (heading.textContent?.toLowerCase().includes("ai overview")) {
 						let current: HTMLElement | null = heading.parentElement;
@@ -38,9 +37,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 
 				// Method 2: Find by generic container (if Method 1 failed)
 				if (!aoContainer) {
-					const allDivs = document.querySelectorAll(
-						'[role="region"], main > div, [data-sokoban-container]',
-					);
+					const allDivs = document.querySelectorAll(sels.containers);
 					for (const div of allDivs) {
 						if (!(div instanceof HTMLElement)) continue;
 						const text = div.innerText || "";
@@ -58,7 +55,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 					return { rawSources: results, containerFound: false };
 				}
 
-				const linksInAO = aoContainer.querySelectorAll("a[href]");
+				const linksInAO = aoContainer.querySelectorAll(sels.anchor);
 
 				for (const link of linksInAO) {
 					try {
@@ -108,7 +105,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 						}
 
 						if (!citedText) {
-							const paragraph = link.closest('li, p, div[role="paragraph"]');
+							const paragraph = link.closest(sels.paragraph);
 							if (paragraph) {
 								citedText =
 									paragraph.textContent?.trim().substring(0, 200) || "";
@@ -134,7 +131,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 			} catch {
 				return { rawSources: results, containerFound: false };
 			}
-		});
+		}, SELECTORS.googleAiOverview);
 
 		if (!containerFound) {
 			logger.warn("AI Overview container not found — no sources extracted");

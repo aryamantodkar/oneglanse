@@ -1,0 +1,56 @@
+export const SELECTORS = {
+	openai: {
+		flyout: {
+			threadFlyout: 'div[class*="threadFlyOut"]',
+			aside: "aside",
+			dialog: '[role="dialog"]',
+			testId: '[data-testid*="sources"]',
+			classSources: '[class*="sources"]',
+			classCitation: '[class*="citation"]',
+		},
+		anchor: 'a[href^="http"]',
+		listItem: "li",
+		img: "img",
+	},
+	gemini: {
+		sourceCard: "inline-source-card",
+		anchor: "a",
+		title: ".title",
+		titleFallback: ".source-path",
+		snippet: ".snippet",
+		icon: "img.icon-image, img",
+	},
+	googleAiOverview: {
+		headings: 'h1, h2, h3, [role="heading"]',
+		containers: '[role="region"], main > div, [data-sokoban-container]',
+		anchor: "a[href]",
+		paragraph: 'li, p, div[role="paragraph"]',
+	},
+	googleAiOverviewResponse: {
+		placeholder: '[data-container-id="model-response-placeholder"]',
+		placeholderWrapper: 'div:has(> [data-container-id="main-col"])',
+		mainCol: '[data-container-id="main-col"]',
+		noiseTags: [
+			"script",
+			"style",
+			"button",
+			"svg",
+			"noscript",
+			"iframe",
+			"sup",
+		],
+		googleChip: 'a[href*="google.com/search"]',
+		sourceContainers: [
+			'[data-container-id="rhs-col"]',
+			'[data-xid="aim-aside-initial-corroboration-container"]',
+			'[role="dialog"][data-type="hovc"]',
+		],
+		sourceLink: 'a[target="_blank"][rel="noopener"][aria-label*="Opens in"]',
+		heading: '[role="heading"]',
+		inlineSourceLink: 'a[aria-label*="Opens in"]',
+	},
+	perplexity: {
+		anchor: 'a[href^="http"]',
+		img: "img",
+	},
+} as const;

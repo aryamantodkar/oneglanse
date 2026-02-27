@@ -1,11 +1,10 @@
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
+import { env } from "../../../env.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { withTimeout } from "../../../lib/utils/withTimeout.js";
 
-const SUBMIT_METHOD_TIMEOUT_MS = Number(
-	process.env.SUBMIT_METHOD_TIMEOUT_MS ?? 10000,
-);
+const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
 
 export type SubmitContext = {
 	page: Page;

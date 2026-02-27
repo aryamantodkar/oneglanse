@@ -1,3 +1,4 @@
+import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { EDITOR_SELECTORS, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
@@ -31,5 +32,5 @@ export async function findActiveEditor(
 		}
 	}
 
-	throw new Error("❌ No active prompt editor found");
+	throw new NotFoundError("active prompt editor");
 }

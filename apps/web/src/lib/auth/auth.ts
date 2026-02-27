@@ -4,18 +4,19 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import * as authSchema from "@oneglanse/db";
+import { env } from "@/env";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
 export const auth = betterAuth({
 	secret:
-		process.env.BETTER_AUTH_SECRET ??
-		(process.env.NEXT_PHASE === "phase-production-build"
+		env.BETTER_AUTH_SECRET ??
+		(env.NEXT_PHASE === "phase-production-build"
 			? "build-placeholder"
 			: undefined),
 	socialProviders: {
 		google: {
-			clientId: process.env.GOOGLE_CLIENT_ID as string,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+			clientId: env.GOOGLE_CLIENT_ID as string,
+			clientSecret: env.GOOGLE_CLIENT_SECRET as string,
 		},
 	},
 	emailAndPassword: {

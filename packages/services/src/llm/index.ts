@@ -1,12 +1,13 @@
 import { EnvError } from "@oneglanse/errors";
 import OpenAI from "openai";
+import { env } from "../env.js";
 
 let client: OpenAI | null = null;
 
 function init(): OpenAI {
 	if (client) return client;
 
-	const apiKey = process.env.OPENAI_API_KEY;
+	const apiKey = env.OPENAI_API_KEY;
 	if (!apiKey) {
 		throw new EnvError(
 			"OPENAI_API_KEY",

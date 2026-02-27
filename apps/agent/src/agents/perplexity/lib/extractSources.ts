@@ -1,11 +1,12 @@
 import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { SELECTORS } from "../../../config/selectors.js";
 import { buildSources, type RawSource } from "../../../lib/extraction/sourceUtils.js";
 
 export async function extractSourcesFromPerplexity(
 	page: Page,
 ): Promise<Source[]> {
-	const rawSources = await page.evaluate(() => {
+	const rawSources = await page.evaluate((sels) => {
 		const results: Array<{
 			rawHref: string;
 			title: string;
@@ -14,6 +15,7 @@ export async function extractSourcesFromPerplexity(
 		}> = [];
 
 		// Perplexity sources panel = fixed right-side container with many links
+		// Note: position/right computed style check is behavioral detection, not a CSS selector
 		const flyout = Array.from(
 			document.querySelectorAll<HTMLDivElement>("div"),
 		).find((d) => {
@@ -21,7 +23,7 @@ export async function extractSourcesFromPerplexity(
 			return (
 				style.position === "fixed" &&
 				style.right === "0px" &&
-				d.querySelectorAll('a[href^="http"]').length >= 5
+				d.querySelectorAll(sels.anchor).length >= 5
 			);
 		});
 
@@ -29,10 +31,10 @@ export async function extractSourcesFromPerplexity(
 
 		// Each source is a full clickable card (<a>) with a favicon
 		const anchors = Array.from(
-			flyout.querySelectorAll<HTMLAnchorElement>('a[href^="http"]'),
+			flyout.querySelectorAll<HTMLAnchorElement>(sels.anchor),
 		).filter(
 			(a) =>
-				a.querySelector("img") && // favicon present
+				a.querySelector(sels.img) && // favicon present
 				a.offsetHeight > 40, // real card, not icon/link
 		);
 
@@ -67,13 +69,13 @@ export async function extractSourcesFromPerplexity(
 					)
 					.at(-1) || "";
 
-			const imgSrc = a.querySelector("img")?.getAttribute("src") ?? null;
+			const imgSrc = a.querySelector(sels.img)?.getAttribute("src") ?? null;
 
 			results.push({ rawHref: href, title, citedText, imgSrc });
 		}
 
 		return results;
-	}) as RawSource[];
+	}, SELECTORS.perplexity) as RawSource[];
 
 	await page.keyboard.press("Escape").catch(() => {});
 	await page.waitForTimeout(300);

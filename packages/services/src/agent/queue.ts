@@ -1,12 +1,11 @@
 import { Queue } from "bullmq";
+import { env } from "../env.js";
 
 export const agentQueue = new Queue("oneglanse-agent", {
 	connection: {
-		host: process.env.REDIS_HOST || "redis",
-		port: process.env.REDIS_PORT
-			? Number.parseInt(process.env.REDIS_PORT, 10)
-			: 6379,
-		password: process.env.REDIS_PASSWORD,
+		host: env.REDIS_HOST,
+		port: env.REDIS_PORT,
+		password: env.REDIS_PASSWORD,
 	},
 	defaultJobOptions: {
 		attempts: 1,

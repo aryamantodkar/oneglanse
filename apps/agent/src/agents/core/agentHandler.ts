@@ -1,4 +1,4 @@
-import { classifyError, IPRefreshNeededError } from "@oneglanse/errors";
+import { classifyError, ExternalServiceError, IPRefreshNeededError } from "@oneglanse/errors";
 import { exponentialBackoff } from "@oneglanse/utils";
 import type { AskPromptResult, FailureType, PromptPayload, Provider } from "@oneglanse/types";
 import type { Browser, BrowserContext, Page } from "playwright";
@@ -70,7 +70,7 @@ async function runSingleProxyAttempt(
 			setTimeout(
 				() =>
 					reject(
-						new Error(`${label} timed out after ${PROVIDER_TIMEOUT / 1000}s`),
+						new ExternalServiceError(label, `timed out after ${PROVIDER_TIMEOUT / 1000}s`),
 					),
 				PROVIDER_TIMEOUT,
 			),
@@ -181,31 +181,30 @@ export async function agentHandler(
 			}
 		}
 
-		try {
-			const outcome = await runProxyCycle(
-				label,
-				provider,
-				agentFactory,
-				accumulatedResults,
-				currentPayload,
-				cycle,
-			);
+		const outcome = await runProxyCycle(
+			label,
+			provider,
+			agentFactory,
+			accumulatedResults,
+			currentPayload,
+			cycle,
+		);
 
-			if (outcome.done) {
-				return accumulatedResults;
-			}
-
-			currentPayload = outcome.updatedPayload;
-		} catch (err: any) {
-			throw err;
+		if (outcome.done) {
+			return accumulatedResults;
 		}
+
+		currentPayload = outcome.updatedPayload;
 	}
 
 	const totalAttempts = MAX_CYCLES * PROXIES_PER_CYCLE;
 	logger.error(
 		`🔴 ${label} EXHAUSTED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles for ${provider}.`,
 	);
-	throw new Error(
-		`${provider} failed all ${totalAttempts} proxy attempts across ${MAX_CYCLES} cycles — no valid proxy found.`,
+	throw new ExternalServiceError(
+		provider,
+		`failed all ${totalAttempts} proxy attempts across ${MAX_CYCLES} cycles — no valid proxy found`,
+		503,
+		{ totalAttempts, cycles: MAX_CYCLES },
 	);
 }

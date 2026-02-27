@@ -1,3 +1,4 @@
+import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
 import { findActiveEditor } from "./findEditor.js";
@@ -44,5 +45,5 @@ export async function waitForEditorReady(
 		await page.waitForTimeout(200);
 	}
 
-	throw new Error(`Editor not ready for ${provider}`);
+	throw new NotFoundError(`editor for ${provider}`);
 }
