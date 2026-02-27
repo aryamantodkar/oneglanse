@@ -27,6 +27,7 @@ import {
 } from "@onescope/services";
 import { PROVIDER_LIST, type Provider } from "@onescope/types";
 import { ALL_PROVIDERS_JSON, newId } from "@onescope/utils";
+import { CronExpressionParser } from "cron-parser";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -705,64 +706,18 @@ export const workspaceRouter = createTRPCRouter({
 		const workspace = await getWorkspaceById({ workspaceId });
 		const cronSchedule = workspace.schedule;
 
-		let nextRun = null;
-		if (cronSchedule) {
-			try {
-				// Calculate next run time based on cron expression
-				// This is a simplified calculation - parse the cron expression
-				const cronParts = cronSchedule.split(" ");
-				// const minute = cronParts[0]; // Not used currently
-				const hour = cronParts[1];
-				const dayOfMonth = cronParts[2];
-				// const month = cronParts[3]; // Not used currently
-				const dayOfWeek = cronParts[4];
-
-				const now = new Date();
-				const next = new Date(now);
-
-				// Handle hourly patterns (*/N)
-				if (hour && hour.startsWith("*/")) {
-					const interval = Number.parseInt(hour.substring(2));
-					const currentHour = now.getHours();
-					const nextHour = Math.ceil((currentHour + 1) / interval) * interval;
-					next.setHours(nextHour, 0, 0, 0);
-					if (next <= now) {
-						next.setHours(next.getHours() + interval);
-					}
+			let nextRun = null;
+			if (cronSchedule) {
+				try {
+					// Parse and validate cron with library support instead of manual split/parse.
+					const expression = CronExpressionParser.parse(cronSchedule, {
+						currentDate: new Date(),
+					});
+					nextRun = expression.next().toDate().toISOString();
+				} catch (err) {
+					console.error("Error calculating next run:", err);
 				}
-				// Handle specific hour
-				else if (hour && hour !== "*") {
-					const targetHour = Number.parseInt(hour);
-					next.setHours(targetHour, 0, 0, 0);
-					if (next <= now) {
-						next.setDate(next.getDate() + 1);
-					}
-
-					// Handle day of week for weekly schedules
-					if (dayOfWeek && dayOfWeek !== "*") {
-						const targetDay = Number.parseInt(dayOfWeek);
-						const currentDay = next.getDay();
-						let daysToAdd = targetDay - currentDay;
-						if (daysToAdd <= 0) {
-							daysToAdd += 7;
-						}
-						next.setDate(next.getDate() + daysToAdd);
-					}
-
-					// Handle every N days
-					if (dayOfMonth && dayOfMonth.startsWith("*/")) {
-						const interval = Number.parseInt(dayOfMonth.substring(2));
-						if (next <= now) {
-							next.setDate(next.getDate() + interval);
-						}
-					}
-				}
-
-				nextRun = next.toISOString();
-			} catch (err) {
-				console.error("Error calculating next run:", err);
 			}
-		}
 
 		// Get last prompt run time (manual or scheduled) from ClickHouse
 		let lastPromptRun = null;
