@@ -76,16 +76,6 @@ function getScheduleOptions() {
 			description: `Runs daily at midnight`,
 		},
 		{
-			label: "Every day at 6 AM",
-			value: `0 ${localHourToUTC(6)} * * *`,
-			description: `Runs daily at 6:00 AM`,
-		},
-		{
-			label: "Every day at noon",
-			value: `0 ${localHourToUTC(12)} * * *`,
-			description: `Runs daily at noon`,
-		},
-		{
 			label: "Every 2 days at midnight",
 			value: `0 ${localHourToUTC(0)} */2 * *`,
 			description: `Runs every other day at midnight`,
