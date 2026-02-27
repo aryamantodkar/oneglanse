@@ -10,12 +10,6 @@ export function classifyError(err: unknown): FailureType {
 		return "connection_error";
 	if (/bot.?detect|cloudflare|captcha|turnstile|challenge/i.test(msg))
 		return "bot_detection";
-	if (
-		/logged.?out|login|auth.*missing|session.*invalid|authentication is false/i.test(
-			msg,
-		)
-	)
-		return "logged_out";
 	if (/rate.?limit|too many|usage.?limit/i.test(msg)) return "rate_limited";
 	if (
 		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed/i.test(

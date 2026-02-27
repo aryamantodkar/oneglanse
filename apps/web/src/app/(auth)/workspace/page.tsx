@@ -47,17 +47,7 @@ export default function WorkspaceGateway(): React.JSX.Element {
 				return;
 			}
 
-			const data = result as any;
-			const workspace = data.workspace as {
-				id: string;
-				name: string;
-				slug: string;
-			};
-			const organization = data.organization as {
-				id: string;
-				name: string;
-				slug: string | null;
-			};
+			const { workspace, organization } = result;
 			await authClient.organization.setActive({
 				organizationId: organization.id,
 				organizationSlug: organization.slug ?? undefined,

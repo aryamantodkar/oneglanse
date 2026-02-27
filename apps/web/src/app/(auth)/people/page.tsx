@@ -2,7 +2,15 @@
 
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { api } from "@/trpc/react";
-import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
+import {
+	PROVIDER_LIST,
+	type AnalysisRecord,
+	type DomainStats,
+	type GroupedSource,
+	type Provider,
+	type Source,
+	type SourceExcerpt,
+} from "@oneglanse/types";
 import {
 	Button,
 	Input,
@@ -287,7 +295,7 @@ export default function PeoplePage(): React.JSX.Element {
 				domain: nextDomain,
 			});
 
-			if ((result as any)?.analysisReset) {
+			if (result?.analysisReset) {
 				toast.success(
 					"Brand details updated. Previous analysis was cleared and will be regenerated on next analysis run.",
 				);
@@ -346,8 +354,8 @@ export default function PeoplePage(): React.JSX.Element {
 			? domainStatsRaw
 			: (domainStatsRaw?.combined ?? []);
 
-		const citationRows = combinedSources.flatMap((source: any) =>
-			(source.excerpts ?? []).map((excerpt: any) => ({
+		const citationRows = combinedSources.flatMap((source: GroupedSource) =>
+			(source.excerpts ?? []).map((excerpt: SourceExcerpt) => ({
 				url: source.url ?? "",
 				title: source.title ?? "",
 				totalCitations: source.totalSources ?? 0,
@@ -422,7 +430,7 @@ export default function PeoplePage(): React.JSX.Element {
 				section: "overview",
 				metric: "Citation Excerpts",
 				value: combinedSources.reduce(
-					(count: number, source: any) =>
+					(count: number, source: GroupedSource) =>
 						count + (source.excerpts?.length ?? 0),
 					0,
 				),
@@ -433,7 +441,7 @@ export default function PeoplePage(): React.JSX.Element {
 				prompt: prompt.prompt,
 				created_at: prompt.created_at,
 			})),
-			...analysisData.map((record: any) => ({
+			...analysisData.map((record: AnalysisRecord) => ({
 				section: "analysis_metrics",
 				prompt_id: record.prompt_id,
 				prompt: record.prompt,
@@ -446,21 +454,21 @@ export default function PeoplePage(): React.JSX.Element {
 				recommendation: record.brand_analysis?.recommendation?.type ?? "",
 				citations: record.sources?.length ?? 0,
 				source_urls: (record.sources ?? [])
-					.map((source: any) => source.url)
+					.map((source: Source) => source.url)
 					.filter(Boolean)
 					.join(" | "),
 				cited_texts: (record.sources ?? [])
-					.map((source: any) => source.cited_text)
+					.map((source: Source) => source.cited_text)
 					.filter(Boolean)
 					.join(" | "),
 			})),
-			...domainStats.map((domain: any) => ({
+			...domainStats.map((domain: DomainStats) => ({
 				section: "source_domain_performance",
 				domain: domain.domain,
-				total_sources: domain.total_sources ?? domain.totalSources ?? 0,
-				percentage: domain.percentage ?? "",
+				total_sources: domain.totalOccurrences,
+				percentage: domain.usedPercentageAcrossAllDomains,
 			})),
-			...combinedSources.map((source: any) => ({
+			...combinedSources.map((source: GroupedSource) => ({
 				section: "source_url_performance",
 				url: source.url,
 				title: source.title,
@@ -468,17 +476,17 @@ export default function PeoplePage(): React.JSX.Element {
 				models: [
 					...new Set(
 						(source.excerpts ?? [])
-							.map((e: any) => e.model_provider)
+							.map((e: SourceExcerpt) => e.model_provider)
 							.filter(Boolean),
 					),
 				].join(", "),
 				cited_texts: (source.excerpts ?? [])
-					.map((e: any) => e.cited_text)
+					.map((e: SourceExcerpt) => e.cited_text)
 					.filter(Boolean)
 					.join(" | "),
 			})),
-			...combinedSources.flatMap((source: any) =>
-				(source.excerpts ?? []).map((excerpt: any) => ({
+			...combinedSources.flatMap((source: GroupedSource) =>
+				(source.excerpts ?? []).map((excerpt: SourceExcerpt) => ({
 					section: "source_excerpts",
 					url: source.url,
 					title: source.title,
@@ -486,8 +494,8 @@ export default function PeoplePage(): React.JSX.Element {
 					cited_text: excerpt.cited_text ?? "",
 				})),
 			),
-			...analysisData.flatMap((record: any) =>
-				(record.sources ?? []).map((source: any) => ({
+			...analysisData.flatMap((record: AnalysisRecord) =>
+				(record.sources ?? []).map((source: Source) => ({
 					section: "analysis_sources",
 					prompt_id: record.prompt_id,
 					model: record.model_provider,
@@ -497,7 +505,7 @@ export default function PeoplePage(): React.JSX.Element {
 					source_cited_text: source.cited_text ?? "",
 				})),
 			),
-			...analysisData.map((record: any) => ({
+			...analysisData.map((record: AnalysisRecord) => ({
 				section: "analysis_full_json",
 				prompt_id: record.prompt_id,
 				model: record.model_provider,

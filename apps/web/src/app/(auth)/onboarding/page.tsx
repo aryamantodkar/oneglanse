@@ -104,18 +104,8 @@ export default function FirstWorkspaceOnboardingPage(): React.JSX.Element {
 	}, [jobStatusQuery.data?.response]);
 
 	const analysisCount = useMemo(() => {
-		const data = analysisQuery.data;
-		if (!data) return 0;
-		if (Array.isArray(data)) return data.length;
-		if (
-			typeof data === "object" &&
-			"records" in data &&
-			Array.isArray((data as any).records)
-		) {
-			return (data as any).records.length;
-		}
-		return 0;
-	}, [analysisQuery.data]);
+		return analysisQuery.data?.length ?? 0;
+	  }, [analysisQuery.data]);
 
 	useEffect(() => {
 		if (!started || redirecting || analysisCount === 0) return;

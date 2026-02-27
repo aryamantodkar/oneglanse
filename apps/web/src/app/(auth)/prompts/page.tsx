@@ -154,15 +154,7 @@ export default function Prompts(): React.JSX.Element {
 	useEffect(() => {
 		if (!analysedPromptData) return;
 
-		const data = analysedPromptData;
-		const records: AnalysisRecord[] = Array.isArray(data)
-			? data
-			: data &&
-					typeof data === "object" &&
-					"records" in data &&
-					Array.isArray((data as any).records)
-				? (data as any).records
-				: [];
+		const records = analysedPromptData;
 
 		setAnalysisRecords(records);
 	}, [analysedPromptData]);

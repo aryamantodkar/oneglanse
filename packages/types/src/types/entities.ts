@@ -1,6 +1,8 @@
 export interface WorkspaceLocation {
-	workspaceCountry: string;
-	workspaceRegion?: string | null;
+	country: string;
+	countryName?: string | null;
+	region?: string | null;
+	regionName?: string | null;
 }
 
 export type CompetitorInput = {

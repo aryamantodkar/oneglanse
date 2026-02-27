@@ -231,7 +231,9 @@ export async function fetchAnalysedPrompts(args: {
 		format: "JSONEachRow",
 	});
 
-	const rows: any[] = await result.json();
+	const rows = (await result.json()) as Array<
+		PromptResponse & { brand_analysis?: string | BrandAnalysisResult }
+	>;
 
 	// Transform to flat array - handle both analyzed and unanalyzed
 	const records: AnalysisRecord[] = rows.map((row) => ({

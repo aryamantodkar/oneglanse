@@ -1,5 +1,5 @@
 import { api } from "@/trpc/react";
 
-export function useStorePrompt(): any {
+export function useStorePrompt() {
 	return api.prompt.store.useMutation();
 }

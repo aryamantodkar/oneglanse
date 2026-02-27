@@ -9,7 +9,7 @@ import { severityRank } from "../_utils/helpers";
 import type { DashboardMetrics } from "../_utils/types";
 
 export function useDashboardData(
-	analysedPromptData: any,
+	analysedPromptData: AnalysisRecord[],
 	modelFilter: string,
 	timeFilter: "all" | "7d" | "14d" | "30d",
 ): DashboardMetrics {

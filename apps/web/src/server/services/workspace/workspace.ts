@@ -16,7 +16,7 @@ export async function createNewWorkspace(args: {
 	region?: string | null;
 	userId: string;
 	headers: Headers;
-}): Promise<{ workspace: Workspace; org: any }> {
+}) {
 	const {
 		name,
 		slug,

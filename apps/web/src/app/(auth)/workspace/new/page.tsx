@@ -3,6 +3,7 @@
 import { LocationSelector } from "@/components/location/locationSelector";
 import { authClient } from "@/lib/auth/auth-client";
 import { api } from "@/trpc/react";
+import type { WorkspaceLocation } from "@oneglanse/types";
 import {
 	Button,
 	Card,
@@ -28,12 +29,7 @@ export default function NewWorkspace(): React.JSX.Element {
 		domain: "",
 	});
 
-	const [selectedLocation, setSelectedLocation] = useState<{
-		country: string;
-		countryName: string;
-		region?: string;
-		regionName?: string;
-	}>({ country: "", countryName: "" });
+	const [selectedLocation, setSelectedLocation] = useState<WorkspaceLocation>({ country: "", countryName: "" });
 
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
@@ -92,7 +88,7 @@ export default function NewWorkspace(): React.JSX.Element {
 				slug: formData.workspaceSlug.trim(),
 				domain: formData.domain.trim(),
 				country: selectedLocation.country,
-				region: selectedLocation.regionName || null,
+				region: selectedLocation.region || null,
 			});
 
 			const { workspace, org, isFirstWorkspace } =
@@ -120,7 +116,7 @@ export default function NewWorkspace(): React.JSX.Element {
 		}
 	};
 
-	const handleLocationSelect = (loc: any) => {
+	const handleLocationSelect = (loc: WorkspaceLocation) => {
 		setSelectedLocation(loc);
 	};
 
@@ -210,7 +206,7 @@ export default function NewWorkspace(): React.JSX.Element {
 								<Label htmlFor="workspace-location">Workspace Location</Label>
 								<LocationSelector onSelect={handleLocationSelect} />
 								<p className="text-sm text-gray-500 mt-1">
-									{selectedLocation?.regionName
+									{selectedLocation?.region
 										? `Prompts in this workspace will run inside ${selectedLocation.regionName}, ${selectedLocation.countryName}.`
 										: `Prompts in this workspace will run inside ${selectedLocation.countryName}.`}
 								</p>
