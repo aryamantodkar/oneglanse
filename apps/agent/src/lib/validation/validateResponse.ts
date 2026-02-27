@@ -25,7 +25,7 @@ const FALSE_RESPONSE_PATTERNS: RegExp[] = [
 	/access denied/i,
 ];
 
-export type ValidationResult =
+type ValidationResult =
 	| { valid: true }
 	| { valid: false; reason: string };
 

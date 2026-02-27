@@ -1,13 +1,15 @@
 import { env } from "../env.js";
 
-if (
-	env.NODE_ENV === "production" &&
-	env.NEXT_PHASE !== "phase-production-build" &&
-	!env.DATABASE_URL
-) {
-	throw new Error("DATABASE_URL is not defined");
-}
-
-export const postgresConfig = {
+const postgresConfig = {
 	databaseUrl: env.DATABASE_URL,
 };
+
+export function getRequiredDatabaseUrl(): string {
+	if (!env.DATABASE_URL) {
+		throw new Error(
+			"DATABASE_URL is not defined. Set DATABASE_URL before starting the application.",
+		);
+	}
+
+	return env.DATABASE_URL;
+}

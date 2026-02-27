@@ -19,7 +19,7 @@ export async function checkAndExtractSources(
 	return sources;
 }
 
-export async function extractSourcesFromPanel(
+async function extractSourcesFromPanel(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {

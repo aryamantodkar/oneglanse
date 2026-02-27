@@ -9,7 +9,7 @@ import { logger } from "../../lib/utils/logger.js";
 import { extractSourcesFromGemini } from "../gemini/lib/extractSources.js";
 import { extractAIOverviewSources } from "../google/ai-overview/lib/extractSources.js";
 
-export interface AgentProviderConfig {
+interface AgentProviderConfig {
 	url: string;
 	warmupDelayMs: number;
 	label: string;

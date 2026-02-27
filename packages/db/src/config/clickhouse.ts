@@ -11,7 +11,7 @@ if (
 
 export const clickhouseConfig = {
 	url: env.CLICKHOUSE_URL ?? "http://clickhouse:8123",
-	username: env.CLICKHOUSE_USER ?? "default",
-	password: env.CLICKHOUSE_PASSWORD ?? "password",
-	database: env.CLICKHOUSE_DB ?? "analytics",
+	username: env.CLICKHOUSE_USER,
+	password: env.CLICKHOUSE_PASSWORD,
+	database: env.CLICKHOUSE_DB,
 };
