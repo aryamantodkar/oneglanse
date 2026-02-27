@@ -55,7 +55,7 @@ export async function runAnalysis(input: AnalysisInputSingle) {
 	}
 
 	if (typeof parsed !== "object" || parsed === null) {
-		throw new Error("Invalid JSON shape");
+		throw new ValidationError("Invalid JSON shape", { type: typeof parsed });
 	}
 
 	return parsed as BrandAnalysisResult;

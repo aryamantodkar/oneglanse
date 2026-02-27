@@ -4,6 +4,7 @@ import postgres from "postgres";
 
 import * as schema from "../schema/index.js";
 import { postgresConfig } from "../config/postgres.js";
+import { env } from "../env.js";
 
 const globalForDb = globalThis as unknown as {
 	conn: postgres.Sql | undefined;
@@ -14,7 +15,7 @@ const { databaseUrl } = postgresConfig;
 
 const conn = databaseUrl ? (globalForDb.conn ?? postgres(databaseUrl)) : null;
 
-if (conn && process.env.NODE_ENV !== "production") {
+if (conn && env.NODE_ENV !== "production") {
 	globalForDb.conn = conn;
 }
 
@@ -40,6 +41,6 @@ export const pool = databaseUrl
 			},
 		});
 
-if (databaseUrl && process.env.NODE_ENV !== "production") {
+if (databaseUrl && env.NODE_ENV !== "production") {
 	globalForDb.pool = pool as Pool;
 }

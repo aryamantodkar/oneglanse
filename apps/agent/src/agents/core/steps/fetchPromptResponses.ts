@@ -1,3 +1,4 @@
+import { ExternalServiceError, NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
@@ -5,19 +6,14 @@ import { getText } from "../../../lib/input/response/getText.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { logger } from "../../../lib/utils/logger.js";
 import { exponentialBackoff } from "@oneglanse/utils";
+import { env } from "../../../env.js";
 import { extractAIOverviewResponse } from "../../google/ai-overview/lib/extractResponse.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 
-const MAX_EXTRACTION_RETRIES = Number(process.env.MAX_EXTRACTION_RETRIES ?? 2);
-const INITIAL_EXTRACTION_RETRY_DELAY = Number(
-	process.env.EXTRACTION_RETRY_DELAY_MS ?? 2000,
-);
-const MAX_EXTRACTION_RETRY_DELAY = Number(
-	process.env.MAX_EXTRACTION_RETRY_DELAY_MS ?? 5000,
-);
-const AI_OVERVIEW_WAIT_TIMEOUT_MS = Number(
-	process.env.AI_OVERVIEW_WAIT_TIMEOUT_MS ?? 15000,
-);
+const MAX_EXTRACTION_RETRIES = env.MAX_EXTRACTION_RETRIES;
+const INITIAL_EXTRACTION_RETRY_DELAY = env.EXTRACTION_RETRY_DELAY_MS;
+const MAX_EXTRACTION_RETRY_DELAY = env.MAX_EXTRACTION_RETRY_DELAY_MS;
+const AI_OVERVIEW_WAIT_TIMEOUT_MS = env.AI_OVERVIEW_WAIT_TIMEOUT_MS;
 
 async function inspectAIOverviewAbsence(page: Page): Promise<void> {
 	try {
@@ -72,9 +68,7 @@ async function waitForAIOverviewContainer(page: Page): Promise<void> {
 	}
 
 	await inspectAIOverviewAbsence(page);
-	throw new Error(
-		`[google-ai-overview] AI Overview container not found within ${AI_OVERVIEW_WAIT_TIMEOUT_MS}ms`,
-	);
+	throw new NotFoundError("AI Overview container", { timeoutMs: AI_OVERVIEW_WAIT_TIMEOUT_MS });
 }
 
 export async function fetchPromptResponses(
@@ -126,7 +120,10 @@ export async function fetchPromptResponses(
 		() => "",
 	);
 	const visibleTextChars = visibleText?.trim().length ?? 0;
-	throw new Error(
-		`[${provider}] Markdown response extraction failed after ${MAX_EXTRACTION_RETRIES} retries (visibleTextChars=${visibleTextChars})`,
+	throw new ExternalServiceError(
+		provider,
+		`Markdown response extraction failed after ${MAX_EXTRACTION_RETRIES} retries`,
+		502,
+		{ visibleTextChars, retries: MAX_EXTRACTION_RETRIES },
 	);
 }

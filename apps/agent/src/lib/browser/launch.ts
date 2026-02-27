@@ -1,3 +1,4 @@
+import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { ChildProcess } from "node:child_process";
 import { rm } from "node:fs/promises";
@@ -79,6 +80,12 @@ export async function launchContext(provider: Provider) {
 			);
 		}
 		await cleanup();
-		throw err;
+		throw new ExternalServiceError(
+			"browser",
+			err?.message ?? String(err),
+			502,
+			{ provider },
+			err,
+		);
 	}
 }

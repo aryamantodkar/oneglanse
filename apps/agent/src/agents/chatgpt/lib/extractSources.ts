@@ -1,5 +1,6 @@
 import type { Source } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
+import { SELECTORS } from "../../../config/selectors.js";
 import {
 	buildSources,
 	clickButtonViaDispatch,
@@ -10,7 +11,7 @@ export async function extractSourcesFromOpenai(
 	page: Page,
 	sourcesButton: Locator,
 ): Promise<Source[]> {
-	const rawSources = await page.evaluate(() => {
+	const rawSources = await page.evaluate((sels) => {
 		const results: Array<{
 			rawHref: string;
 			title: string;
@@ -20,26 +21,27 @@ export async function extractSourcesFromOpenai(
 
 		const flyout =
 			// ChatGPT
-			document.querySelector('div[class*="threadFlyOut"]') ||
-			document.querySelector("aside") ||
+			[sels.flyout.threadFlyout, sels.flyout.aside]
+				.map((s) => document.querySelector(s))
+				.find(Boolean) ||
 			// Claude / generic dialogs
-			Array.from(document.querySelectorAll('[role="dialog"]')).find((d) =>
-				d.querySelector('a[href^="http"]'),
+			Array.from(document.querySelectorAll(sels.flyout.dialog)).find((d) =>
+				d.querySelector(sels.anchor),
 			) ||
 			// Perplexity
-			document.querySelector('[data-testid*="sources"]') ||
-			document.querySelector('[class*="sources"]') ||
-			document.querySelector('[class*="citation"]') ||
+			[sels.flyout.testId, sels.flyout.classSources, sels.flyout.classCitation]
+				.map((s) => document.querySelector(s))
+				.find(Boolean) ||
 			// Last-resort fallback (panel already open)
 			Array.from(document.querySelectorAll("div")).find(
 				(d) =>
-					d.querySelectorAll('a[href^="http"]').length >= 2 &&
-					d.offsetHeight > 100,
+					d.querySelectorAll(sels.anchor).length >= 2 &&
+					(d as HTMLElement).offsetHeight > 100,
 			);
 
 		if (!flyout) return results;
 
-		const headers = Array.from(flyout.querySelectorAll("li"));
+		const headers = Array.from(flyout.querySelectorAll(sels.listItem));
 
 		for (const header of headers) {
 			const label = header.textContent?.trim().toLowerCase();
@@ -48,7 +50,7 @@ export async function extractSourcesFromOpenai(
 			const ul = header.nextElementSibling;
 			if (!(ul instanceof HTMLUListElement)) continue;
 
-			const anchors = ul.querySelectorAll<HTMLAnchorElement>("a[href^='http']");
+			const anchors = ul.querySelectorAll<HTMLAnchorElement>(sels.anchor);
 
 			for (const a of Array.from(anchors)) {
 				let href = a.getAttribute("href");
@@ -67,14 +69,15 @@ export async function extractSourcesFromOpenai(
 
 				const title = blocks[1]?.textContent?.trim() || "";
 				const citedText = blocks[2]?.textContent?.trim() || "";
-				const imgSrc = a.querySelector("img")?.getAttribute("src") ?? null;
+				const imgSrc =
+					a.querySelector(sels.img)?.getAttribute("src") ?? null;
 
 				results.push({ rawHref: href, title, citedText, imgSrc });
 			}
 		}
 
 		return results;
-	}) as RawSource[];
+	}, SELECTORS.openai) as RawSource[];
 
 	if (!(await clickButtonViaDispatch(page, sourcesButton))) return [];
 	await page.waitForTimeout(300);

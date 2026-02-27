@@ -1,3 +1,4 @@
+import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { logger } from "../../utils/logger.js";
@@ -9,14 +10,14 @@ async function pollUntilCondition(
 	checkFn: () => Promise<boolean>,
 	pollInterval: number,
 	maxWait: number,
-	timeoutError: string,
+	timeoutError: ExternalServiceError,
 ): Promise<void> {
 	const start = Date.now();
 	while (Date.now() - start < maxWait) {
 		if (await checkFn()) return;
 		await new Promise((resolve) => setTimeout(resolve, pollInterval));
 	}
-	throw new Error(timeoutError);
+	throw timeoutError;
 }
 
 export async function waitForAssistantToFinish(
@@ -50,7 +51,7 @@ export async function waitForAssistantToFinish(
 
 			// Error: No output after 45s
 			if (!seenOutput && elapsed >= 45_000) {
-				throw new Error(`[${provider}] No response detected after 45s`);
+				throw new ExternalServiceError(provider, "No response detected after 45s");
 			}
 
 			// Still generating and no output yet - keep waiting
@@ -72,6 +73,6 @@ export async function waitForAssistantToFinish(
 		},
 		300, // Poll every 300ms
 		20 * 60 * 1000, // 20 min max
-		`[${provider}] Assistant wait timed out`,
+		new ExternalServiceError(provider, "Assistant wait timed out"),
 	);
 }

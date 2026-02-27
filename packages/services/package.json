@@ -28,7 +28,8 @@
 		"drizzle-orm": "^0.41.0",
 		"ioredis": "^5.9.2",
 		"openai": "^5.23.2",
-		"uuid": "^13.0.0"
+		"uuid": "^13.0.0",
+		"zod": "^3.24.1"
 	},
 	"devDependencies": {
 		"typescript": "^5.9.3"

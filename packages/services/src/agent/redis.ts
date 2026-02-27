@@ -1,9 +1,11 @@
+import { DatabaseError } from "@oneglanse/errors";
 import { Redis } from "ioredis";
+import { env } from "../env.js";
 
 export const redis = new Redis({
-	host: process.env.REDIS_HOST || "redis",
-	password: process.env.REDIS_PASSWORD,
-	port: 6379,
+	host: env.REDIS_HOST,
+	password: env.REDIS_PASSWORD,
+	port: env.REDIS_PORT,
 	maxRetriesPerRequest: null,
 	lazyConnect: true,
 });
@@ -28,5 +30,5 @@ export async function waitForRedis() {
 		}
 	}
 
-	throw new Error("Redis not available");
+	throw new DatabaseError("Redis not available");
 }

@@ -1,5 +1,7 @@
+import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { env } from "../../../env.js";
 import { waitForEditorReady } from "../../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../../lib/input/editor/findSendButton.js";
 import { logger } from "../../../lib/utils/logger.js";
@@ -10,9 +12,7 @@ import {
 	tryForceClick,
 } from "./submitStrategies.js";
 
-const SUBMISSION_PHASE_TIMEOUT_MS = Number(
-	process.env.SUBMISSION_PHASE_TIMEOUT_MS ?? 30000,
-);
+const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
 
 export async function askPrompt(
 	page: Page,
@@ -87,9 +87,7 @@ export async function askPrompt(
 
 	// Verify we have content before attempting submission
 	if (!preSubmitContent || preSubmitContent.length === 0) {
-		throw new Error(
-			`[${provider}] Typing failed: editor did not receive prompt`,
-		);
+		throw new ExternalServiceError(provider, "Typing failed: editor did not receive prompt");
 	}
 
 	// Find send button AFTER typing (appears dynamically)
@@ -120,8 +118,9 @@ export async function askPrompt(
 			setTimeout(
 				() =>
 					reject(
-						new Error(
-							`[${provider}] Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
+						new ExternalServiceError(
+							provider,
+							`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
 						),
 					),
 				SUBMISSION_PHASE_TIMEOUT_MS,
@@ -130,7 +129,7 @@ export async function askPrompt(
 	]);
 
 	if (!success) {
-		throw new Error(`[${provider}] All submission methods failed`);
+		throw new ExternalServiceError(provider, "All submission methods failed");
 	}
 
 	// Wait for page stabilization

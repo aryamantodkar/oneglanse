@@ -1,15 +1,14 @@
 import type { Provider } from "@oneglanse/types";
+import { env } from "../../env.js";
 import { launchContext } from "../../lib/browser/launch.js";
 import { navigateWithRetry } from "../../lib/browser/navigate.js";
 import { logger } from "../../lib/utils/logger.js";
 import { withTimeout } from "../../lib/utils/withTimeout.js";
 import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
 
-const DEFAULT_PAGE_TIMEOUT_MS = Number(process.env.PAGE_DEFAULT_TIMEOUT_MS ?? 30_000);
-const DEFAULT_NAV_TIMEOUT_MS = Number(
-	process.env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS ?? 60_000,
-);
-const HOOK_TIMEOUT_MS = Number(process.env.PROVIDER_HOOK_TIMEOUT_MS ?? 60_000);
+const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
+const DEFAULT_NAV_TIMEOUT_MS = env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS;
+const HOOK_TIMEOUT_MS = env.PROVIDER_HOOK_TIMEOUT_MS;
 
 export async function createAgent(provider: Provider) {
 	const config = AGENT_PROVIDER_CONFIG[provider];

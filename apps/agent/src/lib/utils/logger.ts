@@ -1,6 +1,7 @@
-const DEBUG_ENABLED =
-	process.env.DEBUG_ENABLED === "true" || process.env.NODE_ENV !== "production";
-const SIMPLE_LOGS = process.env.SIMPLE_LOGS === "true";
+import { env } from "../../env.js";
+
+const DEBUG_ENABLED = env.DEBUG_ENABLED || env.NODE_ENV !== "production";
+const SIMPLE_LOGS = env.SIMPLE_LOGS;
 
 function formatArgs(args: any[]) {
 	return args.map((arg) =>

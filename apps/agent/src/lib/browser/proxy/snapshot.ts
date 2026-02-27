@@ -1,10 +1,12 @@
 import fs from "node:fs";
+import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
+import { env } from "../../../env.js";
 import { logger } from "../../utils/logger.js";
 import { normalizeProxy } from "./scoring.js";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
-const PROXY_CACHE_TTL_MS = Number(process.env.PROXY_CACHE_TTL_MS ?? 10_000);
+const PROXY_CACHE_TTL_MS = env.PROXY_CACHE_TTL_MS;
 
 // ── Cache state ───────────────────────────────────────────────────────────
 
@@ -15,7 +17,7 @@ let inFlightSnapshotFetch: Promise<string[]> | null = null;
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 function parseProxyFile(): string[] {
-	const filePath = process.env.PROXY_MANUAL_FILE?.trim();
+	const filePath = env.PROXY_MANUAL_FILE?.trim();
 	if (!filePath) return [];
 
 	try {
@@ -53,13 +55,13 @@ export async function fetchProxySnapshot(
 	}
 
 	inFlightSnapshotFetch = (async () => {
-		const mode = (process.env.PROXY_SOURCE_MODE ?? "auto").trim().toLowerCase();
+		const mode = env.PROXY_SOURCE_MODE.trim().toLowerCase();
 		const manual = parseProxyFile();
 
 		// manual mode: always use provided file
 		if (mode === "manual") {
 			if (manual.length === 0) {
-				throw new Error(
+				throw new ValidationError(
 					"PROXY_SOURCE_MODE=manual but PROXY_MANUAL_FILE is empty or not set",
 				);
 			}
@@ -70,12 +72,17 @@ export async function fetchProxySnapshot(
 		}
 
 		// api/auto mode: use API if present
-		const apiUrl = process.env.PROXY_API_URL?.trim();
+		const apiUrl = env.PROXY_API_URL?.trim();
 		if (apiUrl) {
 			logger.log("Fetching proxies from API...");
 			const res = await fetch(apiUrl);
 			if (!res.ok) {
-				throw new Error(`Proxy API returned ${res.status}: ${res.statusText}`);
+				throw new ExternalServiceError(
+					"Proxy API",
+					`HTTP ${res.status}: ${res.statusText}`,
+					res.status,
+					{ url: apiUrl },
+				);
 			}
 
 			const text = await res.text();
@@ -106,7 +113,7 @@ export async function fetchProxySnapshot(
 			return manual;
 		}
 
-		throw new Error(
+		throw new ValidationError(
 			"No proxies available: configure PROXY_API_URL or PROXY_MANUAL_FILE",
 		);
 	})();

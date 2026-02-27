@@ -1,4 +1,4 @@
-import "./env.js";
+import { env } from "./env.js";
 import { waitForRedis } from "@oneglanse/services";
 import { Worker } from "bullmq";
 import { handleJob } from "./worker/jobHandler.js";
@@ -10,10 +10,7 @@ export let worker: Worker | null = null;
 
 async function startWorker() {
 	await waitForRedis();
-	const configuredConcurrency = Number.parseInt(
-		process.env.AGENT_WORKER_CONCURRENCY ?? "1",
-		10,
-	);
+	const configuredConcurrency = env.AGENT_WORKER_CONCURRENCY;
 	const workerConcurrency =
 		Number.isFinite(configuredConcurrency) && configuredConcurrency > 0
 			? configuredConcurrency
@@ -21,11 +18,9 @@ async function startWorker() {
 
 	worker = new Worker("oneglanse-agent", handleJob, {
 		connection: {
-			host: process.env.REDIS_HOST || "redis",
-			port: process.env.REDIS_PORT
-				? Number.parseInt(process.env.REDIS_PORT, 10)
-				: 6379,
-			password: process.env.REDIS_PASSWORD,
+			host: env.REDIS_HOST,
+			port: env.REDIS_PORT,
+			password: env.REDIS_PASSWORD,
 		},
 		// Default sequential execution to reduce Playwright/proxy contention.
 		concurrency: workerConcurrency,

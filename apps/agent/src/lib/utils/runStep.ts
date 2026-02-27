@@ -1,11 +1,11 @@
+import { ExternalServiceError } from "@oneglanse/errors";
 import type { Page } from "playwright";
+import { env } from "../../env.js";
 import { logger } from "./logger.js";
 import { withTimeout } from "./withTimeout.js";
 
 type StepFn = () => Promise<void>;
-const STEP_EXECUTION_TIMEOUT_MS = Number(
-	process.env.STEP_EXECUTION_TIMEOUT_MS ?? 180_000,
-);
+const STEP_EXECUTION_TIMEOUT_MS = env.STEP_EXECUTION_TIMEOUT_MS;
 
 export async function runStep(
 	name: string,
@@ -23,6 +23,12 @@ export async function runStep(
 		const url = page.url();
 		logger.error(`URL at failure: ${url}`);
 
-		throw err;
+		throw new ExternalServiceError(
+			"step",
+			err instanceof Error ? err.message : String(err),
+			500,
+			{ step: name, url },
+			err instanceof Error ? err : undefined,
+		);
 	}
 }

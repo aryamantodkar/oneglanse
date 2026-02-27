@@ -1,4 +1,4 @@
-name: Oneglanse Build
+name: OneGlanse Build
 on:
   push:
     branches:

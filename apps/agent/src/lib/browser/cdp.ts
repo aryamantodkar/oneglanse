@@ -1,5 +1,6 @@
 import { createServer } from "node:net";
 import { spawn, type ChildProcess } from "node:child_process";
+import { ExternalServiceError } from "@oneglanse/errors";
 import { chromium } from "playwright";
 import { STEALTH_CHROME_ARGS } from "./stealth.js";
 
@@ -12,7 +13,9 @@ export function getFreePort(): Promise<number> {
 		server.listen(0, "127.0.0.1", () => {
 			const address = server.address();
 			if (!address || typeof address === "string") {
-				server.close(() => reject(new Error("Could not get free port")));
+				server.close(() =>
+					reject(new ExternalServiceError("cdp", "Could not get free port")),
+				);
 				return;
 			}
 			const port = address.port;
@@ -66,7 +69,10 @@ export async function waitForCDPEndpoint(
 		await new Promise((r) => setTimeout(r, 200));
 	}
 
-	throw new Error(
-		`CDP endpoint at port ${port} not ready within ${timeoutMs}ms`,
+	throw new ExternalServiceError(
+		"cdp",
+		`endpoint not ready within ${timeoutMs}ms`,
+		503,
+		{ port, timeoutMs },
 	);
 }
