@@ -23,21 +23,6 @@ export async function askPrompt(
 		`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}"`,
 	);
 
-	if (provider === "google-ai-overview") {
-		const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&pws=0`;
-		logger.debug(`  🔎 Navigating via Google query URL: ${searchUrl.slice(0, 120)}`);
-		await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
-		await page
-			.locator(
-				'button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]',
-			)
-			.first()
-			.click({ timeout: 3000 })
-			.catch(() => null);
-		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-		return;
-	}
-
 	const input = await waitForEditorReady(page, provider);
 
 	logger.debug("Typing Prompt");
