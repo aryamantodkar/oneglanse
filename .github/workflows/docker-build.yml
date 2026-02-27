@@ -16,6 +16,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+  PNPM_VERSION: 10.16.0
 
 jobs:
   validate:
@@ -25,9 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v4
         with:
@@ -120,6 +121,8 @@ jobs:
         with:
           context: .
           file: ./apps/web/Dockerfile
+          build-args: |
+            PNPM_VERSION=${{ env.PNPM_VERSION }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -157,6 +160,8 @@ jobs:
         with:
           context: .
           file: ./apps/agent/Dockerfile
+          build-args: |
+            PNPM_VERSION=${{ env.PNPM_VERSION }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

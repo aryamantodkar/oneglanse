@@ -1,3 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+injectWorkspacePackages: true
+syncInjectedDepsAfterScripts:
+  - build

@@ -2,7 +2,8 @@
 
 FROM node:20-bookworm-slim AS base
 WORKDIR /app
-RUN npm install -g pnpm@10.16.0
+ARG PNPM_VERSION=10.16.0
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.json ./
@@ -27,12 +28,13 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ARG PNPM_VERSION=10.16.0
 
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
-RUN npm install -g pnpm@10.16.0
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 WORKDIR /workspace
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
