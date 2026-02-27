@@ -1,7 +1,7 @@
 import type { Page } from "playwright";
 import { BaseError, ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import { SELECTORS } from "../../../../config/selectors.js";
-import { logger } from "../../../../lib/utils/logger.js";
+import { SELECTORS } from "../../../config/selectors.js";
+import { logger } from "../../../lib/utils/logger.js";
 
 export async function extractAIOverviewResponse(page: Page): Promise<string> {
   try {

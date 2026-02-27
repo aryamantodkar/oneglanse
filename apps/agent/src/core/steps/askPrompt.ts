@@ -1,10 +1,10 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { env } from "../../../env.js";
-import { waitForEditorReady } from "../../../lib/input/editor/waitForReady.js";
-import { findEnabledSendButton } from "../../../lib/input/editor/findSendButton.js";
-import { logger } from "../../../lib/utils/logger.js";
+import { env } from "../../env.js";
+import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
+import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
+import { logger } from "../../lib/utils/logger.js";
 import {
 	type SubmitContext,
 	tryDispatchClick,
@@ -30,7 +30,7 @@ export async function askPrompt(
 	await input.click({ force: true });
 	await page.waitForTimeout(100);
 
-	await input.evaluate((el) => {
+	await input.evaluate((el: Element) => {
 		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
 			el.value = "";
 		} else if (el instanceof HTMLElement) {
@@ -63,7 +63,7 @@ export async function askPrompt(
 	logger.debug("  📤 Submitting...");
 
 	// Store pre-submit state for success detection
-	const preSubmitContent = await input.evaluate((el) => {
+	const preSubmitContent = await input.evaluate((el: Element) => {
 		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement)
 			return el.value.trim();
 		return (el.textContent || "").trim();

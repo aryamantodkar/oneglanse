@@ -1,9 +1,9 @@
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
 import { toErrorMessage } from "@oneglanse/errors";
-import { env } from "../../../env.js";
-import { logger } from "../../../lib/utils/logger.js";
-import { withTimeout } from "../../../lib/utils/withTimeout.js";
+import { env } from "../../env.js";
+import { logger } from "../../lib/utils/logger.js";
+import { withTimeout } from "../../lib/utils/withTimeout.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
 

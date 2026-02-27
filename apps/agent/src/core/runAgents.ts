@@ -1,7 +1,7 @@
 import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { warmUpEditor } from "../../lib/input/editor/warmUp.js";
-import { runStep } from "../../lib/utils/runStep.js";
+import { warmUpEditor } from "../lib/input/editor/warmUp.js";
+import { runStep } from "../lib/utils/runStep.js";
 import { runPrompts } from "./runPrompts.js";
 
 async function runWarmUp(page: Page): Promise<void> {

@@ -9,9 +9,9 @@ import {
 	type UserPrompt,
 } from "@oneglanse/types";
 import { type Job } from "bullmq";
-import { agentHandler } from "../agents/core/agentHandler.js";
-import { createAgent } from "../agents/core/createAgent.js";
-import { AGENT_PROVIDER_CONFIG } from "../agents/core/providerRegistry.js";
+import { agentHandler } from "../core/agentHandler.js";
+import { createAgent } from "../core/createAgent.js";
+import { AGENT_PROVIDER_CONFIG } from "../core/providerRegistry.js";
 import { logger } from "../lib/utils/logger.js";
 import { runAnalysisInBackground } from "./analysis.js";
 

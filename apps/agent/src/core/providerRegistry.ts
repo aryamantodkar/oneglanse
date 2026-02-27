@@ -1,13 +1,11 @@
 import type { Source } from "@oneglanse/types";
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
-import { extractSourcesFromOpenai } from "../chatgpt/lib/extractSources.js";
-import { extractSourcesFromPerplexity } from "../perplexity/lib/extractSources.js";
-import { navigateWithRetry } from "../../lib/browser/navigate.js";
-import { findSourcesButton } from "../../lib/input/sources/findButton.js";
-import { logger } from "../../lib/utils/logger.js";
-import { extractSourcesFromGemini } from "../gemini/lib/extractSources.js";
-import { extractAIOverviewSources } from "../google/ai-overview/lib/extractSources.js";
+import { extractSourcesFromOpenai } from "../agents/chatgpt/lib/extractSources.js";
+import { extractSourcesFromPerplexity } from "../agents/perplexity/lib/extractSources.js";
+import { findSourcesButton } from "../lib/input/sources/findButton.js";
+import { extractSourcesFromGemini } from "../agents/gemini/lib/extractSources.js";
+import { extractAIOverviewSources } from "../agents/ai-overview/lib/extractSources.js";
 
 interface AgentProviderConfig {
 	url: string;
