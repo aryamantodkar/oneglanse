@@ -1,6 +1,6 @@
 import { api } from "@/trpc/react";
 
-export function useWorkspaceById(workspaceId: string) {
+export function useWorkspaceById(workspaceId: string): any {
 	return api.workspace.getById.useQuery(
 		{ workspaceId },
 		{

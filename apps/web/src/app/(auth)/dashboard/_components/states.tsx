@@ -28,7 +28,7 @@ function CenterState({
 	);
 }
 
-export function DashboardSkeleton() {
+export function DashboardSkeleton(): React.JSX.Element {
 	return (
 		<div className="min-h-screen dark:bg-black">
 			<div className="mx-auto w-full max-w-[95vw] px-4 py-4 sm:px-6 lg:px-8 xl:max-w-[1600px]">
@@ -65,7 +65,7 @@ export function DashboardSkeleton() {
 	);
 }
 
-export function NoWorkspaceState() {
+export function NoWorkspaceState(): React.JSX.Element {
 	return (
 		<CenterState
 			icon={Building2}
@@ -75,7 +75,7 @@ export function NoWorkspaceState() {
 	);
 }
 
-export function EmptyState() {
+export function EmptyState(): React.JSX.Element {
 	return (
 		<CenterState
 			icon={BarChart3}
@@ -85,7 +85,7 @@ export function EmptyState() {
 	);
 }
 
-export function NoAnalysisState() {
+export function NoAnalysisState(): React.JSX.Element {
 	return (
 		<CenterState
 			icon={Sparkles}

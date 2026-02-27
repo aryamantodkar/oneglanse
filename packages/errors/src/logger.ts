@@ -7,7 +7,7 @@ export const Logger = {
 export function captureException(
 	err: unknown,
 	context?: Record<string, unknown>,
-) {
+): void {
 	// Hook to send to Sentry or another error tracker
 	Logger.error("Captured exception:", err, context);
 }

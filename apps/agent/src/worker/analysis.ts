@@ -7,7 +7,7 @@ export function runAnalysisInBackground(args: {
 	userId: string;
 	provider: Provider;
 	jobGroupId: string;
-}) {
+}): void {
 	const { workspaceId, userId, provider, jobGroupId } = args;
 	void (async () => {
 		try {

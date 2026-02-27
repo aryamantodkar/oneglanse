@@ -18,7 +18,7 @@ redis.on("error", (err) => {
 	console.log("Redis error", err);
 });
 
-export async function waitForRedis() {
+export async function waitForRedis(): Promise<void> {
 	for (let i = 0; i < 10; i++) {
 		try {
 			await redis.ping();

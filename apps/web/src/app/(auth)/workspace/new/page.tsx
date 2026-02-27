@@ -20,7 +20,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function NewWorkspace() {
+export default function NewWorkspace(): React.JSX.Element {
 	const [formData, setFormData] = useState({
 		organizationName: "",
 		workspaceName: "",

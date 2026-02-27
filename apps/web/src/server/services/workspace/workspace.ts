@@ -2,6 +2,7 @@ import "server-only";
 
 import { auth } from "@lib/auth/auth";
 import { db, schema } from "@oneglanse/db";
+import type { Workspace } from "@oneglanse/db";
 import { ValidationError } from "@oneglanse/errors";
 import { createWorkspaceForTenant } from "@oneglanse/services";
 import { and, eq } from "drizzle-orm";
@@ -15,7 +16,7 @@ export async function createNewWorkspace(args: {
 	region?: string | null;
 	userId: string;
 	headers: Headers;
-}) {
+}): Promise<{ workspace: Workspace; org: any }> {
 	const {
 		name,
 		slug,
@@ -61,7 +62,7 @@ export async function addWorkspaceToExistingOrg(args: {
 	region?: string | null;
 	userId: string;
 	tenantId: string;
-}) {
+}): Promise<{ workspace: Workspace }> {
 	const { name, slug, domain, country, region, userId, tenantId } = args;
 
 	// Verify user is a member of the organization

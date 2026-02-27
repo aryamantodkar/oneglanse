@@ -5,7 +5,7 @@ import { Loader2, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function Logout() {
+export function Logout(): React.JSX.Element {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 

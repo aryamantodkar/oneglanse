@@ -2,7 +2,7 @@ import type { Page } from "playwright";
 import { logger } from "../../utils/logger.js";
 import { findActiveEditor } from "./findEditor.js";
 
-export async function warmUpEditor(page: Page) {
+export async function warmUpEditor(page: Page): Promise<void> {
 	logger.debug("🔥 Warming up prompt editor...");
 
 	const editor = await findActiveEditor(page);

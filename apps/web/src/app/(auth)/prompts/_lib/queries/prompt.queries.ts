@@ -1,6 +1,6 @@
 import { api } from "@/trpc/react";
 
-export function useUserPrompts(workspaceId: string) {
+export function useUserPrompts(workspaceId: string): any {
 	return api.prompt.fetchUserPrompts.useQuery(
 		{ workspaceId },
 		{
@@ -11,7 +11,7 @@ export function useUserPrompts(workspaceId: string) {
 	);
 }
 
-export function usePromptSources(workspaceId: string) {
+export function usePromptSources(workspaceId: string): any {
 	return api.prompt.fetchPromptSources.useQuery(
 		{ workspaceId },
 		{
@@ -22,7 +22,7 @@ export function usePromptSources(workspaceId: string) {
 	);
 }
 
-export function useFetchAnalysedPrompts(workspaceId: string) {
+export function useFetchAnalysedPrompts(workspaceId: string): any {
 	return api.analysis.fetchAnalysis.useQuery(
 		{ workspaceId },
 		{

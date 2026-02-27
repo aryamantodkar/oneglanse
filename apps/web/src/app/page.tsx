@@ -3,7 +3,7 @@ import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function Home() {
+export default async function Home(): Promise<any> {
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

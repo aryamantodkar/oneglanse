@@ -22,7 +22,7 @@ type JoinSelection = {
 	workspaces: { id: string; name: string; slug: string }[];
 };
 
-export default function WorkspaceGateway() {
+export default function WorkspaceGateway(): React.JSX.Element {
 	const router = useRouter();
 	const [code, setCode] = useState("");
 	const [selection, setSelection] = useState<JoinSelection | null>(null);

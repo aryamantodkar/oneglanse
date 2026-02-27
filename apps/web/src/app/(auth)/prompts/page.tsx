@@ -104,7 +104,7 @@ function SortableHeader({
 	);
 }
 
-export default function Prompts() {
+export default function Prompts(): React.JSX.Element {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 

@@ -9,6 +9,7 @@ import {
 	normalizeProxy,
 } from "./scoring.js";
 import { fetchProxySnapshot } from "./snapshot.js";
+import { NotFoundError } from "@oneglanse/errors";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -63,8 +64,8 @@ export function getNextProxy(): string | null {
 	// Sort by score descending
 	candidates.sort((a, b) => b.score - a.score);
 
-	// Get all proxies with the top score
-	const topScore = candidates[0]!.score;
+	const topScore = candidates[0]?.score ?? 0;
+	
 	const topScoredProxies = candidates.filter((c) => c.score === topScore);
 
 	// If multiple proxies have the same top score, pick randomly among them

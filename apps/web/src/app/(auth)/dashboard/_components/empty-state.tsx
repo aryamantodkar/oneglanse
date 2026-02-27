@@ -8,7 +8,7 @@ export function DashboardEmptyState({
 	icon: LucideIcon;
 	title: string;
 	description: string;
-}) {
+}): React.JSX.Element {
 	return (
 		<div className="flex flex-1 items-center justify-center py-5">
 			<div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-6 py-8 text-center shadow-sm dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">

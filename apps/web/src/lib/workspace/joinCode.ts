@@ -1,11 +1,11 @@
 export function formatWorkspaceJoinCode(
 	orgCode: string,
 	workspaceCode: string,
-) {
+): string {
 	return `${orgCode}/${workspaceCode}`;
 }
 
-export function parseWorkspaceJoinCode(code: string) {
+export function parseWorkspaceJoinCode(code: string): { orgCode: string; workspaceCode: string; } | null {
 	const trimmed = code.trim();
 	if (!trimmed) return null;
 
