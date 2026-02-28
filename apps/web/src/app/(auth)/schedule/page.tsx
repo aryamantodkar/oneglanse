@@ -2,7 +2,6 @@
 
 import { api } from "@/trpc/react";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
-import { getProviderDisplayName } from "@oneglanse/utils";
 import { Calendar, Check, Clock, Loader2, PlayCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -102,7 +101,6 @@ export default function SchedulePage(): React.JSX.Element {
 	const workspaceId = searchParams.get("workspace") ?? "";
 
 	const [selected, setSelected] = useState<string | null>(null);
-	const [expandedPrompts, setExpandedPrompts] = useState(false);
 	const [saving, setSaving] = useState(false);
 
 	const scheduleQuery = api.workspace.getSchedule.useQuery(
@@ -117,10 +115,6 @@ export default function SchedulePage(): React.JSX.Element {
 			refetchInterval: 60000,
 			refetchIntervalInBackground: false,
 		},
-	);
-	const promptRunPreviewQuery = api.workspace.getPromptRunPreview.useQuery(
-		{ workspaceId },
-		{ enabled: !!workspaceId, refetchInterval: 10000 },
 	);
 
 	const setScheduleMutation = api.workspace.setSchedule.useMutation();
@@ -242,91 +236,6 @@ export default function SchedulePage(): React.JSX.Element {
 								: "Never"}
 						</p>
 					</div>
-				</div>
-			)}
-
-			{/* Prompt Run Preview */}
-			{promptRunPreviewQuery.isLoading ? (
-				<div className="rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 space-y-3">
-					<Skeleton className="h-4 w-40" />
-					{Array.from({ length: 3 }).map((_, idx) => (
-						<Skeleton key={`preview-skeleton-${idx}`} className="h-4 w-full" />
-					))}
-				</div>
-			) : (
-				<div className="rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3">
-					<div className="flex items-center justify-between gap-3 mb-3">
-						<div>
-							<p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-								{promptRunPreviewQuery.data?.mode === "running"
-									? "Running Right Now"
-									: "Next Scheduled Prompt Set"}
-							</p>
-							<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-								{promptRunPreviewQuery.data?.mode === "running"
-									? "Current prompt execution"
-									: "Preview of prompts for the next run"}
-							</p>
-						</div>
-						<span className="text-xs text-gray-500 dark:text-gray-400">
-							{promptRunPreviewQuery.data?.prompts.length ?? 0} prompts
-						</span>
-					</div>
-
-					{promptRunPreviewQuery.data?.mode === "running" &&
-						(promptRunPreviewQuery.data.providersRunning?.length ?? 0) > 0 && (
-							<div className="mb-3 flex flex-wrap gap-2">
-									{promptRunPreviewQuery.data.providersRunning.map(
-										(provider: string) => (
-										<span
-											key={provider}
-											className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300"
-										>
-											Running: {getProviderDisplayName(provider)}
-										</span>
-										),
-									)}
-							</div>
-						)}
-
-					{(promptRunPreviewQuery.data?.prompts.length ?? 0) === 0 ? (
-						<p className="text-sm text-gray-500 dark:text-gray-400">
-							No prompts configured yet.
-						</p>
-					) : (
-						<>
-							<ul className="space-y-2">
-								{(expandedPrompts
-									? promptRunPreviewQuery.data?.prompts
-									: promptRunPreviewQuery.data?.prompts.slice(0, 5)
-									)?.map(
-										(prompt: { id: string; prompt: string }, idx: number) => (
-										<li
-											key={prompt.id}
-											className="text-sm text-gray-700 dark:text-gray-300"
-										>
-										<span className="text-gray-400 dark:text-gray-500 mr-2">
-											{idx + 1}.
-										</span>
-											{prompt.prompt}
-										</li>
-										),
-									)}
-							</ul>
-
-							{(promptRunPreviewQuery.data?.prompts.length ?? 0) > 5 && (
-								<button
-									type="button"
-									className="mt-3 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-									onClick={() => setExpandedPrompts((prev) => !prev)}
-								>
-									{expandedPrompts
-										? "Show fewer prompts"
-										: `Show all ${promptRunPreviewQuery.data?.prompts.length} prompts`}
-								</button>
-							)}
-						</>
-					)}
 				</div>
 			)}
 

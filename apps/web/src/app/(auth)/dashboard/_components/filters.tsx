@@ -13,6 +13,7 @@ import {
 	modelSelectors,
 } from "@oneglanse/utils";
 import { Bot, FilterX } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function DashboardFilters({
 	brandName,
@@ -28,8 +29,22 @@ export function DashboardFilters({
 	setModelFilter: (v: string) => void;
 	timeFilter: "all" | "7d" | "14d" | "30d";
 	setTimeFilter: (v: "all" | "7d" | "14d" | "30d") => void;
-}): React.JSX.Element {
+}) {
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const faviconUrls = getFaviconUrls(brandDomain);
+
+	const clearFilters = () => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.delete("model");
+		params.delete("time");
+
+		setModelFilter("All Models");
+		setTimeFilter("all");
+		
+		const query = params.toString();
+		router.push(query ? `?${query}` : "?", { scroll: false });
+	};
 
 	return (
 		<div className="flex items-center gap-3">
@@ -95,10 +110,7 @@ export function DashboardFilters({
 					<Button
 						variant="ghost"
 						size="sm"
-						onClick={() => {
-							setModelFilter("All Models");
-							setTimeFilter("all");
-						}}
+						onClick={clearFilters}
 						className="gap-2 text-gray-500 transition-[color,transform] duration-200 hover:text-gray-700"
 					>
 						<FilterX size={14} />
