@@ -3,7 +3,7 @@
 import { ExportMenu } from "@/components/export-menu";
 import type { AnalysisRecord } from "@oneglanse/types";
 import { AlertTriangle, Info } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
 	useFetchAnalysedPrompts,
@@ -29,6 +29,7 @@ import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 import { useDashboardData } from "./_hooks/use-dashboard-data";
 
 export default function Dashboard(): React.JSX.Element {
+	const router = useRouter();
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
@@ -41,14 +42,31 @@ export default function Dashboard(): React.JSX.Element {
 		usePromptSources(workspaceId);
 	const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
 
-	// Filters
-	const [modelFilter, setModelFilter] = useState("All Models");
-	const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">(
-		"all",
-	);
+	// Filters — persisted in URL so they survive navigation and are bookmarkable
+	const modelFilter = searchParams.get("model") ?? "All Models";
+	const timeFilter = (searchParams.get("time") ?? "all") as
+		| "all"
+		| "7d"
+		| "14d"
+		| "30d";
+
+	const setModelFilter = (value: string) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("model", value);
+		router.push(`?${params.toString()}`, { scroll: false });
+	};
+
+	const setTimeFilter = (value: "all" | "7d" | "14d" | "30d") => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("time", value);
+		router.push(`?${params.toString()}`, { scroll: false });
+	};
+
 	const [selectedRecord, setSelectedRecord] = useState<AnalysisRecord | null>(
 		null,
 	);
+	void selectedRecord;
+	void setSelectedRecord;
 
 	// Computed data
 	const metrics = useDashboardData(analysedPromptData ?? [], modelFilter, timeFilter);

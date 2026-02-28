@@ -14,6 +14,7 @@ import {
 	getWorkspaceById,
 	getWorkspaceJoinInfo,
 	getWorkspaceMembersWithUsers,
+	getWorkspacePromptRunPreview,
 	getWorkspacesForUser,
 	joinWorkspaceByCode,
 	removeMemberFromWorkspace,
@@ -291,5 +292,12 @@ export const workspaceRouter = createTRPCRouter({
 		}
 
 		return { nextRun, lastPromptRun };
+	}),
+
+	getPromptRunPreview: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
+		return getWorkspacePromptRunPreview({
+			workspaceId: ctx.workspaceId,
+			userId: ctx.user.id,
+		});
 	}),
 });
