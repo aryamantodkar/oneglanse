@@ -75,6 +75,39 @@ export async function createWorkspaceForTenant(
 	return workspace;
 }
 
+export async function addWorkspaceToExistingOrg(args: {
+	name: string;
+	slug: string;
+	domain: string;
+	country: string;
+	region?: string | null;
+	userId: string;
+	tenantId: string;
+}): Promise<{ workspace: Workspace }> {
+	const { name, slug, domain, country, region, userId, tenantId } = args;
+
+	const membership = await db.query.member.findFirst({
+		where: (m, { eq, and }) =>
+			and(eq(m.organizationId, tenantId), eq(m.userId, userId)),
+	});
+
+	if (!membership) {
+		throw new ValidationError("User is not a member of this organization.");
+	}
+
+	const workspace = await createWorkspaceForTenant({
+		name,
+		slug,
+		domain,
+		tenantId,
+		country,
+		region,
+		userId,
+	});
+
+	return { workspace };
+}
+
 export async function getWorkspaceById(
 	args: GetWorkspaceByIdArgs,
 ): Promise<Workspace> {

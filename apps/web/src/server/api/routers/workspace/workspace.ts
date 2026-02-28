@@ -1,14 +1,13 @@
 import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
-import {
-	addWorkspaceToExistingOrg,
-	createNewWorkspace,
-} from "@/server/services/workspace/workspace";
+import { auth } from "@lib/auth/auth";
 import { AuthError, ValidationError } from "@oneglanse/errors";
 import {
+	addWorkspaceToExistingOrg,
 	addMemberToWorkspaceByEmail,
 	checkIsFirstWorkspace,
+	createWorkspaceForTenant,
 	getAllWorkspacesForUser,
 	getLastPromptRunTime,
 	getWorkspaceById,
@@ -68,18 +67,30 @@ export const workspaceRouter = createTRPCRouter({
 			}
 
 			const isFirstWorkspace = await checkIsFirstWorkspace({ userId });
-			const res = await createNewWorkspace({
-				organizationName,
-				name,
-				slug,
-				domain,
-				country,
-				region,
-				userId,
+			const org = await auth.api.createOrganization({
+				body: {
+					name: organizationName?.trim() || name,
+					slug,
+					keepCurrentActiveOrganization: true,
+				},
 				headers,
 			});
 
-			return { ...res, isFirstWorkspace };
+			if (!org?.id) {
+				throw new ValidationError("Organization ID is undefined.");
+			}
+
+			const workspace = await createWorkspaceForTenant({
+				name,
+				slug,
+				domain,
+				tenantId: org.id,
+				country,
+				region,
+				userId,
+			});
+
+			return { workspace, org, isFirstWorkspace };
 		}),
 
 	getById: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
