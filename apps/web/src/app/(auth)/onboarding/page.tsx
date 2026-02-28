@@ -30,7 +30,7 @@ const SUGGESTED_PROMPTS = [
 
 type ProviderState = "pending" | "running" | "completed" | "failed";
 
-export default function FirstWorkspaceOnboardingPage(): React.JSX.Element {
+export default function FirstWorkspaceOnboardingPage(){
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";

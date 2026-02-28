@@ -34,7 +34,7 @@ const formSchema = z.object({
 export function SignupForm({
 	className,
 	...props
-}: React.ComponentProps<"div">): React.JSX.Element {
+}: React.ComponentProps<"div">){
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 

@@ -38,7 +38,7 @@ type RouterInputs = inferRouterInputs<AppRouter>;
  */
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export function TRPCReactProvider(props: { children: React.ReactNode }): React.JSX.Element {
+export function TRPCReactProvider(props: { children: React.ReactNode }){
 	const queryClient = getQueryClient();
 
 	const [trpcClient] = useState(() =>

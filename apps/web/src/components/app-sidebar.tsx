@@ -55,7 +55,7 @@ export function AppSidebar({
 	workspace,
 	userName,
 	userEmail,
-}: AppSidebarProps): React.JSX.Element {
+}: AppSidebarProps){
 	const [isLoading, setIsLoading] = useState(false);
 	const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] =
 		useState(false);

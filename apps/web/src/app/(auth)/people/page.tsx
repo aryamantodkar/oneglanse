@@ -55,7 +55,7 @@ interface WorkspaceMember {
 	userImage: string | null;
 }
 
-export default function PeoplePage(): React.JSX.Element {
+export default function PeoplePage(){
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 	const utils = api.useUtils();
