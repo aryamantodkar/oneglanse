@@ -47,6 +47,22 @@ export function spawnChromiumCDP(port: number, userDataDir: string): ChildProces
 }
 
 /**
+ * Gracefully terminate a Chromium process spawned via spawnChromiumCDP.
+ * Sends SIGTERM first, then SIGKILL if the process hasn't exited after 250ms.
+ */
+export async function killChromiumProcess(proc: ChildProcess): Promise<void> {
+	try {
+		proc.kill("SIGTERM");
+		await new Promise((r) => setTimeout(r, 250));
+		if (proc.exitCode === null) {
+			proc.kill("SIGKILL");
+		}
+	} catch {
+		// Process may have already exited
+	}
+}
+
+/**
  * Poll the CDP /json/version endpoint until webSocketDebuggerUrl is available.
  */
 export async function waitForCDPEndpoint(
