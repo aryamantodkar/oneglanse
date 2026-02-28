@@ -40,7 +40,7 @@ export default async function RootLayout({
 	try {
 		workspace = await getWorkspace();
 	} catch {
-		// workspace remains null
+		return redirect("/workspace");
 	}
 
 	return (

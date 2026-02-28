@@ -30,9 +30,9 @@ services:
           cpus: '1'
           memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "kill -0 1"]
+      test: ["CMD", "node", "-e", "require('ioredis').default({host:'redis'}).ping().then(()=>process.exit(0)).catch(()=>process.exit(1))"]
       interval: 15s
-      timeout: 5s
+      timeout: 10s
       retries: 3
       start_period: 20s
 

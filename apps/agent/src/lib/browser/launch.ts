@@ -1,13 +1,45 @@
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { ChildProcess } from "node:child_process";
-import { rm } from "node:fs/promises";
+import { readdir, rm, stat } from "node:fs/promises";
 import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
 import { logger } from "@oneglanse/utils";
 import { fetchProxies, getNextProxy, recordProxyResult } from "./proxy/pool.js";
 import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
 import { getFreePort, killChromiumProcess, spawnChromiumCDP, waitForCDPEndpoint } from "./cdp.js";
+
+const CDP_DIR_PREFIX = "cdp-";
+const CDP_DIR_CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
+const CDP_DIR_STALE_AGE_MS = 30 * 60 * 1000;
+let lastCdpCleanupAt = 0;
+
+async function cleanupStaleCdpDirs(): Promise<void> {
+	const now = Date.now();
+	if (now - lastCdpCleanupAt < CDP_DIR_CLEANUP_INTERVAL_MS) return;
+	lastCdpCleanupAt = now;
+
+	try {
+		const entries = await readdir("/tmp", { withFileTypes: true });
+		for (const entry of entries) {
+			if (!entry.isDirectory() || !entry.name.startsWith(CDP_DIR_PREFIX)) continue;
+			const dirPath = `/tmp/${entry.name}`;
+			try {
+				const info = await stat(dirPath);
+				const ageMs = now - info.mtimeMs;
+				if (ageMs < CDP_DIR_STALE_AGE_MS) continue;
+				await rm(dirPath, { recursive: true, force: true });
+				logger.warn(
+					`Removed stale CDP profile dir ${dirPath} (age ${(ageMs / 60000).toFixed(0)}m)`,
+				);
+			} catch (err) {
+				logger.error(`Failed cleaning stale CDP dir ${dirPath}:`, toErrorMessage(err));
+			}
+		}
+	} catch (err) {
+		logger.error("Failed scanning /tmp for stale CDP profile dirs:", toErrorMessage(err));
+	}
+}
 
 export async function launchContext(
 	provider: Provider,
@@ -17,6 +49,8 @@ export async function launchContext(
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
+	await cleanupStaleCdpDirs();
+
 	let proxy = getNextProxy();
 
 	if (!proxy) {
@@ -50,7 +84,11 @@ export async function launchContext(
 	const cleanup = async () => {
 		await browser?.close().catch(() => null);
 		if (chromeProcess) await killChromiumProcess(chromeProcess);
-		await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
+		try {
+			await rm(userDataDir, { recursive: true, force: true });
+		} catch (err) {
+			logger.error(`Failed to remove CDP profile dir ${userDataDir}:`, toErrorMessage(err));
+		}
 	};
 
 	try {
