@@ -17,7 +17,6 @@ export function runAnalysisInBackground(args: {
 			);
 			await analysePromptsForWorkspace({
 				workspaceId,
-				userId,
 				analyzeAll: true,
 			});
 			logger.success(

@@ -24,6 +24,44 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../env.js";
 
+// Private — shared batch-insert pattern: tries a single batch, falls back to
+// individual inserts on failure, logs a summary, and optionally re-throws.
+async function insertClickHouseWithFallback<T extends Record<string, unknown>>(
+	table: string,
+	values: T[],
+	opts: {
+		throwOnAllFailed?: boolean;
+		onRecordFailed?: (value: T, err: unknown) => void;
+	} = {},
+): Promise<void> {
+	const { throwOnAllFailed = false, onRecordFailed } = opts;
+	try {
+		await clickhouse.insert({ table, values, format: "JSONEachRow" });
+	} catch (batchErr) {
+		console.error(`⚠️ ClickHouse batch insert failed for ${table}:`, toErrorMessage(batchErr));
+		let successCount = 0;
+		for (const value of values) {
+			try {
+				await clickhouse.insert({ table, values: [value], format: "JSONEachRow" });
+				successCount++;
+			} catch (individualErr) {
+				onRecordFailed?.(value, individualErr);
+			}
+		}
+		console.warn(`${table}: ${successCount}/${values.length} records saved`);
+		if (successCount === 0) {
+			if (throwOnAllFailed) {
+				throw new DatabaseError(`Failed to insert all records into ${table}`, {
+					table,
+					operation: "insert",
+					count: values.length,
+				});
+			}
+			console.error(`❌ All inserts failed for ${table}, but job will continue`);
+		}
+	}
+}
+
 export async function storePromptsForWorkspace(
 	args: StorePromptsForWorkspaceArgs,
 ): Promise<string[]> {
@@ -61,45 +99,12 @@ export async function storePromptsForWorkspace(
 			created_at: formatDateToClickHouse(new Date()),
 		}));
 
-		try {
-			await clickhouse.insert({
-				table: "analytics.user_prompts",
-				values,
-				format: "JSONEachRow",
-			});
-		} catch (err) {
-			console.error("⚠️ Failed to insert user prompts:", toErrorMessage(err));
-
-			// Try individual inserts as fallback
-			let successCount = 0;
-			for (const value of values) {
-				try {
-					await clickhouse.insert({
-						table: "analytics.user_prompts",
-						values: [value],
-						format: "JSONEachRow",
-					});
-					successCount++;
-				} catch (individualErr) {
-					console.error(
-						`Failed to insert prompt: "${value.prompt.slice(0, 50)}..."`,
-					);
-				}
-			}
-
-			console.warn(
-				`User prompts insert: ${successCount}/${values.length} succeeded`,
-			);
-
-			// Only throw if all inserts failed
-			if (successCount === 0) {
-				throw new DatabaseError("Failed to insert user prompts", {
-					table: "analytics.user_prompts",
-					operation: "insert",
-					count: values.length,
-				});
-			}
-		}
+		await insertClickHouseWithFallback("analytics.user_prompts", values, {
+			throwOnAllFailed: true,
+			onRecordFailed: (value) => {
+				console.error(`Failed to insert prompt: "${value.prompt.slice(0, 50)}..."`);
+			},
+		});
 	}
 
 	if (promptsToDelete.length > 0) {
@@ -284,58 +289,23 @@ export async function storePromptResponses(
 
 	if (values.length === 0) return;
 
-	try {
-		await clickhouse.insert({
-			table: "analytics.prompt_responses",
-			values,
-			format: "JSONEachRow",
-		});
-	} catch (err) {
-		console.error(
-			"⚠️ ClickHouse insert failed, attempting individual inserts...",
-			toErrorMessage(err),
-		);
-
-		// Fallback: Try inserting records one by one to save what we can
-		let successCount = 0;
-		let failCount = 0;
-
-		for (const value of values) {
-			try {
-				await clickhouse.insert({
-					table: "analytics.prompt_responses",
-					values: [value],
-					format: "JSONEachRow",
-				});
-				successCount++;
-			} catch (individualErr) {
-				failCount++;
-				console.error(
-					`Failed to insert individual record (prompt: "${value.prompt.slice(0, 50)}..."):`,
-					toErrorMessage(individualErr),
-				);
-
-				// Log the problematic data for debugging
-				console.error("Problematic data:", {
-					id: value.id,
-					prompt_id: value.prompt_id,
-					prompt: value.prompt.slice(0, 100),
-					prompt_run_at: value.prompt_run_at,
-					response_length: value.response.length,
-					sources_count: value.sources.length,
-				});
-			}
-		}
-
-		console.warn(
-			`ClickHouse insert summary: ${successCount} succeeded, ${failCount} failed out of ${values.length} total`,
-		);
-
-		// Don't throw error - allow job to complete even if some inserts fail
-		if (successCount === 0) {
-			console.error("❌ All ClickHouse inserts failed, but job will continue");
-		}
-	}
+	await insertClickHouseWithFallback("analytics.prompt_responses", values, {
+		throwOnAllFailed: false,
+		onRecordFailed: (value, err) => {
+			console.error(
+				`Failed to insert record (prompt: "${value.prompt.slice(0, 50)}..."):`,
+				toErrorMessage(err),
+			);
+			console.error("Problematic data:", {
+				id: value.id,
+				prompt_id: value.prompt_id,
+				prompt: value.prompt.slice(0, 100),
+				prompt_run_at: value.prompt_run_at,
+				response_length: value.response.length,
+				sources_count: value.sources.length,
+			});
+		},
+	});
 }
 
 export async function fetchPromptResponsesForWorkspace(
@@ -361,12 +331,9 @@ export async function fetchPromptResponsesForWorkspace(
 export async function fetchPromptSourcesForWorkspace(
 	args: FetchPromptSourcesForWorkspaceArgs,
 ): Promise<FetchPromptSourcesForWorkspaceResult> {
-	const { workspaceId, userId } = args;
+	const { workspaceId } = args;
 
-	const promptResponses = await fetchPromptResponsesForWorkspace({
-		workspaceId,
-		userId,
-	});
+	const promptResponses = await fetchPromptResponsesForWorkspace({ workspaceId });
 
 	const domainStats = extractDomainStats(promptResponses);
 	const sourceStats = extractSourceStats(promptResponses);

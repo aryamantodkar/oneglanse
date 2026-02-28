@@ -12,29 +12,38 @@ import type {
 	Provider,
 	RemoveMemberFromWorkspaceArgs,
 	RemoveMemberFromWorkspaceResult,
+	WorkspaceJoinInfo,
+	WorkspaceMemberWithUser,
 } from "@oneglanse/types";
-import { formatWorkspaceJoinCode, parseWorkspaceJoinCode } from "@oneglanse/utils";
+import { ALL_PROVIDERS_JSON, formatWorkspaceJoinCode, newId, parseWorkspaceJoinCode } from "@oneglanse/utils";
+import { and, eq, isNull } from "drizzle-orm";
 import { resetWorkspaceAnalysis } from "../analysis/analysis.js";
 import { scheduleCronForPrompts, unscheduleCronForPrompts } from "../prompt/index.js";
 
-// JOIN result type — aliased columns from workspaceMembers + user
-type WorkspaceMemberWithUser = {
-	memberId: string;
-	userId: string;
-	role: string;
-	joinedAt: Date;
-	userName: string;
-	userEmail: string;
-	userImage: string | null;
-};
-
-// Grouping type — workspaces scoped to an organization
+// Grouping type — workspaces scoped to an organization (uses db Workspace, stays in services)
 type OrganizationWorkspaceGroup = {
 	organization: { id: string; name: string; slug: string | null };
 	workspaces: Workspace[];
 };
-import { ALL_PROVIDERS_JSON, newId } from "@oneglanse/utils";
-import { and, eq, isNull, sql } from "drizzle-orm";
+
+type JoinByCodeOrganization = { id: string; name: string; slug: string | null };
+type JoinByCodeWorkspace = { id: string; name: string; slug: string };
+
+// Private — ensures a user belongs to an org, inserting a member row if missing.
+async function ensureOrgMembership(organizationId: string, userId: string): Promise<void> {
+	const existing = await db.query.member.findFirst({
+		where: (m, { eq, and }) => and(eq(m.organizationId, organizationId), eq(m.userId, userId)),
+	});
+	if (!existing) {
+		await db.insert(schema.member).values({
+			id: newId("member"),
+			organizationId,
+			userId,
+			role: "member",
+			createdAt: new Date(),
+		});
+	}
+}
 
 export async function createWorkspaceForTenant(
 	args: CreateWorkspaceForTenantArgs,
@@ -173,25 +182,16 @@ export async function addMemberToWorkspace(
 ): Promise<AddMemberToWorkspaceResult> {
 	const { workspaceId, userId, role = "member" } = args;
 
-	// Check if already an active member
 	const existing = await db.query.workspaceMembers.findFirst({
 		where: (wm, { eq, and, isNull }) =>
-			and(
-				eq(wm.workspaceId, workspaceId),
-				eq(wm.userId, userId),
-				isNull(wm.deletedAt),
-			),
+			and(eq(wm.workspaceId, workspaceId), eq(wm.userId, userId), isNull(wm.deletedAt)),
 	});
 
 	if (existing) {
 		throw new ValidationError("User is already a member of this workspace.");
 	}
 
-	await db.insert(schema.workspaceMembers).values({
-		workspaceId,
-		userId,
-		role,
-	});
+	await db.insert(schema.workspaceMembers).values({ workspaceId, userId, role });
 
 	return { workspaceId, userId, role };
 }
@@ -201,37 +201,34 @@ export async function removeMemberFromWorkspace(
 ): Promise<RemoveMemberFromWorkspaceResult> {
 	const { workspaceId, userId } = args;
 
-	// Prevent removing the last owner
-	const owners = await db
-		.select({ id: schema.workspaceMembers.id })
-		.from(schema.workspaceMembers)
-		.where(
-			and(
-				eq(schema.workspaceMembers.workspaceId, workspaceId),
-				eq(schema.workspaceMembers.role, "owner"),
-				isNull(schema.workspaceMembers.deletedAt),
-			),
-		)
-		.execute();
-
 	const memberToRemove = await db.query.workspaceMembers.findFirst({
 		where: (wm, { eq, and, isNull }) =>
-			and(
-				eq(wm.workspaceId, workspaceId),
-				eq(wm.userId, userId),
-				isNull(wm.deletedAt),
-			),
+			and(eq(wm.workspaceId, workspaceId), eq(wm.userId, userId), isNull(wm.deletedAt)),
 	});
 
 	if (!memberToRemove) {
 		throw new NotFoundError("Member not found in this workspace.");
 	}
 
-	if (memberToRemove.role === "owner" && owners.length <= 1) {
-		throw new ValidationError("Cannot remove the last owner of a workspace.");
+	// Only query owner count when the member being removed is an owner
+	if (memberToRemove.role === "owner") {
+		const owners = await db
+			.select({ id: schema.workspaceMembers.id })
+			.from(schema.workspaceMembers)
+			.where(
+				and(
+					eq(schema.workspaceMembers.workspaceId, workspaceId),
+					eq(schema.workspaceMembers.role, "owner"),
+					isNull(schema.workspaceMembers.deletedAt),
+				),
+			)
+			.execute();
+
+		if (owners.length <= 1) {
+			throw new ValidationError("Cannot remove the last owner of a workspace.");
+		}
 	}
 
-	// Soft delete
 	await db
 		.update(schema.workspaceMembers)
 		.set({ deletedAt: new Date() })
@@ -252,7 +249,6 @@ export async function getAllWorkspacesForUser(
 ): Promise<OrganizationWorkspaceGroup[]> {
 	const { userId } = args;
 
-	// Get all active workspace memberships with workspace + org details in one query
 	const rows = await db
 		.select({
 			workspace: {
@@ -294,7 +290,6 @@ export async function getAllWorkspacesForUser(
 		)
 		.execute();
 
-	// Group by organization
 	const orgMap = new Map<
 		string,
 		{
@@ -306,10 +301,7 @@ export async function getAllWorkspacesForUser(
 	for (const row of rows) {
 		const orgId = row.organization.id;
 		if (!orgMap.has(orgId)) {
-			orgMap.set(orgId, {
-				organization: row.organization,
-				workspaces: [],
-			});
+			orgMap.set(orgId, { organization: row.organization, workspaces: [] });
 		}
 		orgMap.get(orgId)!.workspaces.push(row.workspace);
 	}
@@ -317,9 +309,7 @@ export async function getAllWorkspacesForUser(
 	return Array.from(orgMap.values());
 }
 
-export async function checkIsFirstWorkspace(args: {
-	userId: string;
-}): Promise<boolean> {
+export async function checkIsFirstWorkspace(args: { userId: string }): Promise<boolean> {
 	const { userId } = args;
 	const existing = await db.query.workspaceMembers.findFirst({
 		where: (wm, { eq, and, isNull }) =>
@@ -344,15 +334,14 @@ export async function updateWorkspaceDetails(args: {
 	await db
 		.update(schema.workspaces)
 		.set({ name: nextName, domain: nextDomain })
-		.where(
-			and(eq(schema.workspaces.id, workspaceId), isNull(schema.workspaces.deletedAt)),
-		);
+		.where(and(eq(schema.workspaces.id, workspaceId), isNull(schema.workspaces.deletedAt)));
 
 	if (brandChanged) {
 		await resetWorkspaceAnalysis({ workspaceId });
 	}
 
-	const workspace = await getWorkspaceById({ workspaceId });
+	// Build the updated workspace from the pre-update record — avoids a second DB roundtrip
+	const workspace = { ...current, name: nextName, domain: nextDomain };
 	return { workspace, analysisReset: brandChanged };
 }
 
@@ -392,12 +381,7 @@ export async function updateOrganizationName(args: {
 	});
 }
 
-export async function getWorkspaceJoinInfo(args: { workspaceId: string }): Promise<{
-	orgCode: string;
-	workspaceCode: string;
-	organization: { id: string; name: string; slug: string | null };
-	workspace: { id: string; name: string; slug: string };
-}> {
+export async function getWorkspaceJoinInfo(args: { workspaceId: string }): Promise<WorkspaceJoinInfo> {
 	const { workspaceId } = args;
 	const workspace = await getWorkspaceById({ workspaceId });
 
@@ -440,20 +424,7 @@ export async function addMemberToWorkspaceByEmail(args: {
 		return { status: "not-found" };
 	}
 
-	const orgMembership = await db.query.member.findFirst({
-		where: (m, { eq, and }) =>
-			and(eq(m.organizationId, workspace.tenantId), eq(m.userId, targetUser.id)),
-	});
-
-	if (!orgMembership) {
-		await db.insert(schema.member).values({
-			id: newId("member"),
-			organizationId: workspace.tenantId,
-			userId: targetUser.id,
-			role: "member",
-			createdAt: new Date(),
-		});
-	}
+	await ensureOrgMembership(workspace.tenantId, targetUser.id);
 
 	const existingWsMember = await db.query.workspaceMembers.findFirst({
 		where: (wm, { eq, and, isNull }) =>
@@ -467,9 +438,6 @@ export async function addMemberToWorkspaceByEmail(args: {
 	const res = await addMemberToWorkspace({ workspaceId, userId: targetUser.id, role });
 	return { status: "added", ...res };
 }
-
-type JoinByCodeOrganization = { id: string; name: string; slug: string | null };
-type JoinByCodeWorkspace = { id: string; name: string; slug: string };
 
 export async function joinWorkspaceByCode(args: {
 	code: string;
@@ -542,15 +510,9 @@ export async function joinWorkspaceByCode(args: {
 				};
 			}
 
-			const onlyWorkspace = orgWorkspaces[0]!;
-			const workspaceRecord = await db.query.workspaces.findFirst({
-				where: (ws, { and, eq, isNull }) =>
-					and(eq(ws.id, onlyWorkspace.id), isNull(ws.deletedAt)),
-			});
-			if (!workspaceRecord) throw new NotFoundError("Workspace not found for this code.");
-
+			// Single workspace — reuse already-fetched data, no second DB call needed
 			organization = { id: orgRecord.id, name: orgRecord.name, slug: orgRecord.slug };
-			workspace = { id: workspaceRecord.id, name: workspaceRecord.name, slug: workspaceRecord.slug };
+			workspace = orgWorkspaces[0]!;
 		}
 	}
 
@@ -558,20 +520,7 @@ export async function joinWorkspaceByCode(args: {
 		throw new NotFoundError("Invalid workspace code.");
 	}
 
-	const orgMembership = await db.query.member.findFirst({
-		where: (m, { eq, and }) =>
-			and(eq(m.organizationId, organization!.id), eq(m.userId, userId)),
-	});
-
-	if (!orgMembership) {
-		await db.insert(schema.member).values({
-			id: newId("member"),
-			organizationId: organization.id,
-			userId,
-			role: "member",
-			createdAt: new Date(),
-		});
-	}
+	await ensureOrgMembership(organization.id, userId);
 
 	const existingWsMember = await db.query.workspaceMembers.findFirst({
 		where: (wm, { eq, and, isNull }) =>

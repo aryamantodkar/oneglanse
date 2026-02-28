@@ -77,12 +77,27 @@ export interface StorePromptResponsesArgs {
 
 export interface FetchPromptResponsesForWorkspaceArgs {
 	workspaceId: string;
-	userId: string;
 }
 
 export interface FetchPromptSourcesForWorkspaceArgs {
 	workspaceId: string;
+}
+
+export interface WorkspaceMemberWithUser {
+	memberId: string;
 	userId: string;
+	role: string;
+	joinedAt: Date;
+	userName: string;
+	userEmail: string;
+	userImage: string | null;
+}
+
+export interface WorkspaceJoinInfo {
+	orgCode: string;
+	workspaceCode: string;
+	organization: { id: string; name: string; slug: string | null };
+	workspace: { id: string; name: string; slug: string };
 }
 
 export interface FetchPromptSourcesForWorkspaceResult {
