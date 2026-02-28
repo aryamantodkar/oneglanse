@@ -8,7 +8,11 @@ import { env } from "@/env";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
 export const auth = betterAuth({
-	secret: env.BETTER_AUTH_SECRET,
+	secret:
+		env.BETTER_AUTH_SECRET ??
+		(env.NEXT_PHASE === "phase-production-build"
+			? "build-placeholder"
+			: undefined),
 	socialProviders: {
 		google: {
 			clientId: env.GOOGLE_CLIENT_ID as string,
