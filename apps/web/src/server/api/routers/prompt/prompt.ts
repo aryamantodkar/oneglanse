@@ -14,7 +14,7 @@ export const promptRouter = createTRPCRouter({
 	store: authorizedWorkspaceProcedure
 		.input(
 			z.object({
-				prompts: z.array(z.string()),
+				prompts: z.array(z.string().min(1).max(500)).min(1).max(100),
 			}),
 		)
 		.mutation(async ({ input, ctx }) => {

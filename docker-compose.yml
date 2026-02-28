@@ -41,9 +41,9 @@ services:
   # ----------------------------
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     container_name: redis
     restart: unless-stopped
     volumes:
@@ -59,7 +59,7 @@ services:
           cpus: '0.1'
           memory: 128M
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:?REDIS_PASSWORD is required}\" --no-auth-warning ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -98,6 +98,10 @@ services:
     container_name: clickhouse_db
     restart: unless-stopped
     env_file: .env
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:?CLICKHOUSE_USER is required}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD is required}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:?CLICKHOUSE_DB is required}
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./packages/db/clickhouse-init:/docker-entrypoint-initdb.d
@@ -112,7 +116,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "clickhouse-client --user ${CLICKHOUSE_USER:-default} --password ${CLICKHOUSE_PASSWORD:-password} --query 'SELECT 1'"]
+      test: ["CMD-SHELL", "clickhouse-client --user ${CLICKHOUSE_USER:?CLICKHOUSE_USER is required} --password ${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD is required} --query 'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -19,6 +19,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 RUN pnpm turbo build --filter=@oneglanse/agent...
 RUN pnpm deploy --filter @oneglanse/agent --prod /app/out
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN cd /app/out && npx playwright install chromium
 
 FROM node:20-bookworm-slim AS runner
@@ -46,11 +47,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 COPY --from=builder /app/out ./
-COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
+COPY --from=builder /ms-playwright /ms-playwright
+
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /ms-playwright
+USER appuser
 
 CMD ["pnpm", "start:worker"]
