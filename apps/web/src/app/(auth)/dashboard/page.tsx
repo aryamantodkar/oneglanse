@@ -28,7 +28,7 @@ import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 // Hooks
 import { useDashboardData } from "./_hooks/use-dashboard-data";
 
-export default function Dashboard(): React.JSX.Element {
+export default function Dashboard(){
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";

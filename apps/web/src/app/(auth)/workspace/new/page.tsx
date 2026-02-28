@@ -34,7 +34,7 @@ function toDomainFromSlug(slug: string): string {
 	return slug ? `www.${slug}.com` : "";
 }
 
-export default function NewWorkspace(): React.JSX.Element {
+export default function NewWorkspace(){
 	const [formData, setFormData] = useState({
 		organizationName: "",
 		workspaceName: "",

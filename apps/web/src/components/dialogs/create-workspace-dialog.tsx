@@ -29,7 +29,7 @@ export function CreateWorkspaceDialog({
 	open,
 	onOpenChange,
 	tenantId,
-}: CreateWorkspaceDialogProps): React.JSX.Element {
+}: CreateWorkspaceDialogProps){
 	const [formData, setFormData] = useState({
 		name: "",
 		slug: "",

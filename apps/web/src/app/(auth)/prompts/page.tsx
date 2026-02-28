@@ -64,7 +64,7 @@ type SortColumn =
 	| "visibility"
 	| "position";
 
-export default function Prompts(): React.JSX.Element {
+export default function Prompts(){
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
