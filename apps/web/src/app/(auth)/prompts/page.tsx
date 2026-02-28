@@ -41,9 +41,6 @@ import {
 	modelSelectors,
 } from "@oneglanse/utils";
 import {
-	ArrowDown,
-	ArrowUp,
-	ArrowUpDown,
 	Bot,
 	ChevronDown,
 	FilterX,
@@ -51,6 +48,7 @@ import {
 	Plus,
 	Trash2,
 } from "lucide-react";
+import { SortableHeader } from "../_components/sortable-header";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
@@ -65,44 +63,6 @@ type SortColumn =
 	| "sentiment"
 	| "visibility"
 	| "position";
-
-function SortableHeader({
-	children,
-	column,
-	currentSort,
-	currentDirection,
-	onSort,
-}: {
-	children: React.ReactNode;
-	column: SortColumn;
-	currentSort: SortColumn;
-	currentDirection: "asc" | "desc";
-	onSort: (column: SortColumn) => void;
-}) {
-	const isActive = currentSort === column;
-
-	return (
-		<button
-			type="button"
-			onClick={(e) => {
-				e.stopPropagation();
-				onSort(column);
-			}}
-			className="flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100"
-		>
-			{children}
-			{isActive ? (
-				currentDirection === "asc" ? (
-					<ArrowUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-				) : (
-					<ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-				)
-			) : (
-				<ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
-			)}
-		</button>
-	);
-}
 
 export default function Prompts(): React.JSX.Element {
 	const searchParams = useSearchParams();

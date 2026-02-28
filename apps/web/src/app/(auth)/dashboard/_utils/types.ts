@@ -20,22 +20,6 @@ export interface SourceData {
 	models: Set<string>;
 }
 
-export interface RiskData {
-	type: string;
-	severity: string;
-	detail: string;
-	count: number;
-}
-
-export interface GroupedRecord {
-	prompt: string;
-	records: AnalysisRecord[];
-	avgScore: number;
-	avgSentiment: number;
-	bestRank: number | null;
-	topRecType: string;
-}
-
 export interface DashboardMetrics {
 	brandName: string;
 	brandDomain: string;
@@ -61,10 +45,6 @@ export interface DashboardMetrics {
 		topCompetitor: string;
 	};
 	competitorData: CompetitorData[];
-	sentimentBreakdown: {
-		positives: { text: string; count: number }[];
-		negatives: { text: string; count: number }[];
-	};
 	brandPerception: {
 		bestKnownFor: string | null;
 		pricingPerception: string;
@@ -73,7 +53,5 @@ export interface DashboardMetrics {
 	};
 	sourcesIntelligence: SourceData[];
 	totalCitations: number;
-	aggregatedRisks: RiskData[];
-	groupedRecords: GroupedRecord[];
 	analyzedRecords: AnalysisRecord[];
 }

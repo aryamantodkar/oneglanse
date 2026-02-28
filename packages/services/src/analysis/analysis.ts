@@ -197,8 +197,9 @@ export async function analysePromptsForWorkspace(args: {
  */
 export async function fetchAnalysedPrompts(args: {
 	workspaceId: string;
+	limit?: number;
 }): Promise<AnalysisRecord[]> {
-	const { workspaceId } = args;
+	const { workspaceId, limit = 10_000 } = args;
 
 	// Query from prompt_responses (source of truth) and join analysis data
 	const result = await clickhouse.query({
@@ -224,8 +225,9 @@ export async function fetchAnalysedPrompts(args: {
               AND pr.workspace_id = pa.workspace_id
             WHERE pr.workspace_id = {workspaceId:String}
             ORDER BY pr.prompt_run_at DESC
+            LIMIT {limit:UInt32}
         `,
-		query_params: { workspaceId },
+		query_params: { workspaceId, limit },
 		format: "JSONEachRow",
 	});
 
