@@ -17,9 +17,8 @@ import type {
 } from "@oneglanse/types";
 import { ALL_PROVIDERS_JSON, formatWorkspaceJoinCode, newId, parseWorkspaceJoinCode } from "@oneglanse/utils";
 import { and, eq, isNull } from "drizzle-orm";
-import { agentQueue } from "../agent/queue.js";
 import { resetWorkspaceAnalysis } from "../analysis/analysis.js";
-import { fetchUserPromptsForWorkspace, scheduleCronForPrompts, unscheduleCronForPrompts } from "../prompt/index.js";
+import { scheduleCronForPrompts, unscheduleCronForPrompts } from "../prompt/index.js";
 
 // Grouping type — workspaces scoped to an organization (uses db Workspace, stays in services)
 type OrganizationWorkspaceGroup = {
@@ -29,12 +28,6 @@ type OrganizationWorkspaceGroup = {
 
 type JoinByCodeOrganization = { id: string; name: string; slug: string | null };
 type JoinByCodeWorkspace = { id: string; name: string; slug: string };
-type ProviderJobData = {
-	jobGroupId: string;
-	provider: Provider;
-	prompts: Array<{ id: string; prompt: string }>;
-	workspace_id: string;
-};
 
 // Private — ensures a user belongs to an org, inserting a member row if missing.
 async function ensureOrgMembership(organizationId: string, userId: string): Promise<void> {
@@ -50,69 +43,6 @@ async function ensureOrgMembership(organizationId: string, userId: string): Prom
 			createdAt: new Date(),
 		});
 	}
-}
-
-export async function getWorkspacePromptRunPreview(args: {
-	workspaceId: string;
-	userId: string;
-}): Promise<{
-	mode: "running" | "next";
-	providersRunning: Provider[];
-	prompts: Array<{ id: string; prompt: string }>;
-}> {
-	const { workspaceId, userId } = args;
-
-	const activeJobs = await agentQueue.getActive(0, 200);
-	const activeForWorkspace = activeJobs.filter(
-		(job) => (job.data as ProviderJobData | undefined)?.workspace_id === workspaceId,
-	);
-
-	if (activeForWorkspace.length > 0) {
-		const latestActive = [...activeForWorkspace].sort((a, b) => {
-			const aTime = a.processedOn ?? a.timestamp ?? 0;
-			const bTime = b.processedOn ?? b.timestamp ?? 0;
-			return bTime - aTime;
-		})[0];
-
-		const latestGroupId = (latestActive?.data as ProviderJobData | undefined)?.jobGroupId;
-		const groupJobs = latestGroupId
-			? activeForWorkspace.filter(
-					(job) => (job.data as ProviderJobData | undefined)?.jobGroupId === latestGroupId,
-			  )
-			: activeForWorkspace;
-
-		const providersRunning = Array.from(
-			new Set(
-				groupJobs
-					.map((job) => (job.data as ProviderJobData | undefined)?.provider)
-					.filter((p): p is Provider => Boolean(p)),
-			),
-		);
-
-		const promptsRaw = (latestActive?.data as ProviderJobData | undefined)?.prompts ?? [];
-		const seen = new Set<string>();
-		const prompts = promptsRaw
-			.filter((p) => Boolean(p?.id && p?.prompt))
-			.filter((p) => {
-				if (seen.has(p.id)) return false;
-				seen.add(p.id);
-				return true;
-			})
-			.map((p) => ({ id: p.id, prompt: p.prompt }));
-
-		return {
-			mode: "running",
-			providersRunning,
-			prompts,
-		};
-	}
-
-	const nextPrompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });
-	return {
-		mode: "next",
-		providersRunning: [],
-		prompts: nextPrompts.map((p) => ({ id: p.id, prompt: p.prompt })),
-	};
 }
 
 export async function createWorkspaceForTenant(
