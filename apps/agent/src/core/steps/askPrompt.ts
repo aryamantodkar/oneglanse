@@ -4,6 +4,7 @@ import type { Page } from "playwright";
 import { env } from "../../env.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
+import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
 import { logger } from "@oneglanse/utils";
 import {
 	type SubmitContext,
@@ -27,23 +28,7 @@ export async function askPrompt(
 
 	logger.debug("Typing Prompt");
 
-	await input.click({ force: true });
-	await page.waitForTimeout(100);
-
-	await input.evaluate((el: Element) => {
-		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
-			el.value = "";
-		} else if (el instanceof HTMLElement) {
-			el.innerText = "";
-		}
-	});
-
-	const isMac = process.platform === "darwin";
-	await page.keyboard.down(isMac ? "Meta" : "Control");
-	await page.keyboard.press("KeyA");
-	await page.keyboard.up(isMac ? "Meta" : "Control");
-	await page.keyboard.press("Backspace");
-	await page.waitForTimeout(200);
+	await clearEditorInput(page, input, { waitAfterMs: 200 });
 
 	for (const char of prompt) {
 		if (char === "\n") {

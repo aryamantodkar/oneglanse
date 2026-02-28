@@ -3,15 +3,16 @@ import { extractAIOverviewSources } from "./lib/extractSources.js";
 import { extractAIOverviewResponse } from "./lib/extractResponse.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
-import { logger } from "@oneglanse/utils";
+import { clearEditorInput } from "../../../lib/input/editor/clearInput.js";
+import { findActiveEditor } from "../../../lib/input/editor/findEditor.js";
+import { logger, SELECTORS } from "@oneglanse/utils";
 import { env } from "../../../env.js";
 import type { ProviderConfig } from "../types.js";
 
 // AI Overview is a Google Search result block, not a chat interface.
 // It has no streaming indicator — we wait for its container to appear instead.
 const BASE_URL = "https://www.google.com/?hl=en&pws=0";
-const RESPONSE_CONTAINER_SELECTORS =
-	'[data-container-id="model-response-placeholder"], [data-container-id="main-col"]';
+const RESPONSE_CONTAINER_SELECTORS = `${SELECTORS.googleAiOverviewResponse.placeholder}, ${SELECTORS.googleAiOverviewResponse.mainCol}`;
 
 export const aiOverviewConfig: ProviderConfig = {
 	url: BASE_URL,
@@ -39,14 +40,33 @@ export const aiOverviewConfig: ProviderConfig = {
 		return turndown.turndown(html);
 	},
 	beforeRetryHook: async (page) => {
-		logger.debug("[google-ai-overview] Navigating back to base URL before retry");
+		const input = await findActiveEditor(page, "google-ai-overview").catch(() => null);
+		const cleared = input
+			? await clearEditorInput(page, input, { dismissWithEscape: true })
+			: false;
+		if (cleared) {
+			logger.debug("[google-ai-overview] Cleared search input before retry");
+			return;
+		}
+
+		logger.debug("[google-ai-overview] Could not clear input; navigating to base URL before retry");
 		await navigateWithRetry(page, BASE_URL, {
 			waitUntil: "domcontentloaded",
 			timeout: 30000,
 		});
 	},
 	betweenPromptsHook: async (page) => {
-		// Navigate back to the base search page so the next prompt starts clean.
+		const input = await findActiveEditor(page, "google-ai-overview").catch(() => null);
+		const cleared = input
+			? await clearEditorInput(page, input, { dismissWithEscape: true })
+			: false;
+		if (cleared) {
+			logger.debug("[google-ai-overview] Cleared search input between prompts");
+			await page.waitForTimeout(400);
+			return;
+		}
+
+		// Fallback: navigate back to the base search page so the next prompt starts clean.
 		await navigateWithRetry(page, BASE_URL, {
 			waitUntil: "domcontentloaded",
 			timeout: 30000,
