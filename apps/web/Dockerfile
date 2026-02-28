@@ -43,6 +43,9 @@ RUN pnpm install --prod --frozen-lockfile --filter @oneglanse/db...
 
 WORKDIR /app
 
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /workspace
+USER appuser
+
 EXPOSE 3000
 
 CMD ["node", "apps/web/server.js"]

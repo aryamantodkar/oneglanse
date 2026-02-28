@@ -53,7 +53,7 @@ const AgentEnvSchema = z.object({
 	AGENT_WORKER_CONCURRENCY: asNumber(1).default(1),
 	REDIS_HOST: z.string().trim().default("redis"),
 	REDIS_PORT: asNumber(6379).default(6379),
-	REDIS_PASSWORD: z.string().optional(),
+	REDIS_PASSWORD: z.string().min(1),
 });
 
 export const env = AgentEnvSchema.parse(process.env);

@@ -166,8 +166,11 @@ export async function scheduleCronForPrompts(
 	// Secret and API URL are read at execution time via current_setting() so
 	// they are NOT stored as literals in cron.job. configureSchedulerSecrets()
 	// must have been called at startup to persist these GUCs for the app role.
-	// workspaceId and userId are UUID-validated above so interpolation is safe.
-	const scheduledSQL = `
+	// workspaceId/userId are injected via format(%L, ...) to avoid raw interpolation.
+	const builtSql = await pool.query<{ scheduled_sql: string }>(
+		`
+      SELECT format(
+        $fmt$
         SELECT http_post(
           current_setting('app.api_base_url') || '/api/trpc/internal.runPrompts?batch=1',
           jsonb_build_object(
@@ -175,8 +178,8 @@ export async function scheduleCronForPrompts(
             jsonb_build_object(
               'json',
               jsonb_build_object(
-                'workspaceId', '${workspaceId}',
-                'userId', '${userId}'
+                'workspaceId', %L,
+                'userId', %L
               )
             )
           ),
@@ -185,7 +188,26 @@ export async function scheduleCronForPrompts(
             'Content-Type', 'application/json'
           )
         );
-      `;
+        $fmt$,
+        $1::text,
+        $2::text
+      ) AS scheduled_sql;
+    `,
+		[workspaceId, userId],
+	);
+	if (!builtSql.rows.length) {
+		throw new Error("Failed to generate scheduled SQL");
+	}
+	
+	const scheduledSQL = builtSql.rows[0]?.scheduled_sql;
+	
+	if (!scheduledSQL) {
+		throw new DatabaseError("Failed to build cron scheduled SQL", {
+			workspaceId,
+			userId,
+			operation: "schedule",
+		});
+	}
 
 	// Remove existing schedule first (ignore errors if it doesn't exist)
 	try {

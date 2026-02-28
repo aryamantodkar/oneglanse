@@ -35,6 +35,19 @@ import {
 	protectedProcedure,
 } from "../../procedures";
 
+function parseCronExpressionOrThrow(cronExpression: string) {
+	try {
+		return CronExpressionParser.parse(cronExpression, {
+			currentDate: new Date(),
+		});
+	} catch (err) {
+		throw new ValidationError("Invalid cron expression", {
+			cronExpression,
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
+}
+
 export const workspaceRouter = createTRPCRouter({
 	create: protectedProcedure
 		.input(
@@ -611,16 +624,20 @@ export const workspaceRouter = createTRPCRouter({
 				schedule: z.string().nullable(),
 			}),
 		)
-		.mutation(async ({ ctx, input }) => {
-			const { workspaceId } = ctx;
-			const userId = ctx.user.id;
-			const { schedule } = input;
+			.mutation(async ({ ctx, input }) => {
+				const { workspaceId } = ctx;
+				const userId = ctx.user.id;
+				const { schedule } = input;
 
-			// Update workspace schedule in DB
-			await db
-				.update(schema.workspaces)
-				.set({ schedule })
-				.where(eq(schema.workspaces.id, workspaceId));
+				if (schedule) {
+					parseCronExpressionOrThrow(schedule);
+				}
+
+				// Update workspace schedule in DB
+				await db
+					.update(schema.workspaces)
+					.set({ schedule })
+					.where(eq(schema.workspaces.id, workspaceId));
 
 			// Manage pg_cron job
 			if (schedule) {
@@ -706,18 +723,16 @@ export const workspaceRouter = createTRPCRouter({
 		const workspace = await getWorkspaceById({ workspaceId });
 		const cronSchedule = workspace.schedule;
 
-			let nextRun = null;
-			if (cronSchedule) {
-				try {
-					// Parse and validate cron with library support instead of manual split/parse.
-					const expression = CronExpressionParser.parse(cronSchedule, {
-						currentDate: new Date(),
-					});
-					nextRun = expression.next().toDate().toISOString();
-				} catch (err) {
-					console.error("Error calculating next run:", err);
+				let nextRun = null;
+				if (cronSchedule) {
+					try {
+						// Parse and validate cron with library support instead of manual split/parse.
+						const expression = parseCronExpressionOrThrow(cronSchedule);
+						nextRun = expression.next().toDate().toISOString();
+					} catch (err) {
+						console.error("Error calculating next run:", err);
+					}
 				}
-			}
 
 		// Get last prompt run time (manual or scheduled) from ClickHouse
 		let lastPromptRun = null;

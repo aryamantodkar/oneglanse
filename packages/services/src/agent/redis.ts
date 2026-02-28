@@ -6,7 +6,14 @@ export const redis = new Redis({
 	host: env.REDIS_HOST,
 	password: env.REDIS_PASSWORD,
 	port: env.REDIS_PORT,
-	maxRetriesPerRequest: null,
+	connectTimeout: 10_000,
+	commandTimeout: 10_000,
+	maxRetriesPerRequest: 2,
+	enableOfflineQueue: false,
+	retryStrategy: (times) => {
+		if (times > 10) return null;
+		return Math.min(times * 200, 2_000);
+	},
 	lazyConnect: true,
 });
 
