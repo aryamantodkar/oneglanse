@@ -64,7 +64,6 @@ export function LoginForm({
 			toast.success("Signed in successfully!");
 			router.push("/");
 		} catch (err) {
-			console.log(err);
 			toast.error("Failed to sign in!");
 		}
 

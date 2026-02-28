@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { logger } from "../utils/logger.js";
 import { fetchProxies, getNextProxy, recordProxyResult } from "./proxy/pool.js";
 import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
-import { getFreePort, spawnChromiumCDP, waitForCDPEndpoint } from "./cdp.js";
+import { getFreePort, killChromiumProcess, spawnChromiumCDP, waitForCDPEndpoint } from "./cdp.js";
 
 export async function launchContext(
 	provider: Provider,
@@ -44,27 +44,17 @@ export async function launchContext(
 		`[${provider}] Starting CDP browser on port ${port}${proxy ? " (proxy)" : " (direct)"}`,
 	);
 
-	let chromProcess: ChildProcess | null = null;
+	let chromeProcess: ChildProcess | null = null;
 	let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | null = null;
 
 	const cleanup = async () => {
 		await browser?.close().catch(() => null);
-		if (chromProcess) {
-			try {
-				chromProcess.kill("SIGTERM");
-				await new Promise((r) => setTimeout(r, 250));
-				if (chromProcess.exitCode === null) {
-					chromProcess.kill("SIGKILL");
-				}
-			} catch {
-				// Process may have already exited
-			}
-		}
+		if (chromeProcess) await killChromiumProcess(chromeProcess);
 		await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
 	};
 
 	try {
-		chromProcess = spawnChromiumCDP(port, userDataDir);
+		chromeProcess = spawnChromiumCDP(port, userDataDir);
 		const wsEndpoint = await waitForCDPEndpoint(port);
 		browser = await chromium.connectOverCDP(wsEndpoint);
 
