@@ -10,8 +10,8 @@ export const env = createEnv({
 		// Allow empty during build, validated at runtime when actually used
 		DATABASE_URL: z.string().url().optional(),
 		APP_URL: z.string().url().optional(),
-		INTERNAL_CRON_SECRET: z.string().min(1),
-		BETTER_AUTH_SECRET: z.string().min(1),
+		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
+		BETTER_AUTH_SECRET: z.string().min(1).optional(),
 		GOOGLE_CLIENT_ID: z.string().min(1).optional(),
 		GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
 		NEXT_PHASE: z.string().optional(),
