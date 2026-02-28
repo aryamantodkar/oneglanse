@@ -5,8 +5,9 @@ export function useUserPrompts(workspaceId: string) {
 		{ workspaceId },
 		{
 			enabled: !!workspaceId,
-			refetchOnWindowFocus: true, // Refetch when user returns to tab
-			staleTime: 30000, // Consider data fresh for 30 seconds
+			staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
+			gcTime: 10 * 60 * 1000, // Cache for 10 minutes
+			refetchOnWindowFocus: false,
 		},
 	);
 }
@@ -16,8 +17,10 @@ export function usePromptSources(workspaceId: string) {
 		{ workspaceId },
 		{
 			retry: 2,
-			refetchOnWindowFocus: false,
 			enabled: !!workspaceId,
+			staleTime: 5 * 60 * 1000,
+			gcTime: 10 * 60 * 1000,
+			refetchOnWindowFocus: false,
 		},
 	);
 }
@@ -27,9 +30,11 @@ export function useFetchAnalysedPrompts(workspaceId: string) {
 		{ workspaceId },
 		{
 			enabled: !!workspaceId,
-			refetchOnWindowFocus: true, // Refetch when user returns to tab
-			staleTime: 30000, // Consider data fresh for 30 seconds
-			refetchInterval: 60000, // Light polling every 60 seconds only
+			staleTime: 5 * 60 * 1000,
+			gcTime: 10 * 60 * 1000,
+			refetchOnWindowFocus: false,
+			refetchInterval: 60000, // Poll every 60s — users expect live analysis results
+			refetchIntervalInBackground: false,
 		},
 	);
 }

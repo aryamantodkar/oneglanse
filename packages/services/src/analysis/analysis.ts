@@ -166,6 +166,13 @@ export async function analysePromptsForWorkspace(args: {
 		} else {
 			// Check if there are more to process
 			hasMore = responses.length === batchSize;
+			// Give ClickHouse 100ms to process the async ALTER TABLE mutation
+			// before the next SELECT. Without this, a narrow window exists where
+			// the mutation hasn't landed yet and the OFFSET cursor is the only
+			// safeguard against duplicate processing.
+			if (hasMore) {
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
 		}
 	}
 
