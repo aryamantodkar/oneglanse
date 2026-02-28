@@ -16,8 +16,8 @@ import { recordProxyResult } from "./pool.js";
 import { runAgents } from "../../../core/runAgents.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
-export const PROXIES_PER_CYCLE = 10;
-export const MAX_CYCLES = 10;
+const PROXIES_PER_CYCLE = 10;
+const MAX_CYCLES = 10;
 const INITIAL_BACKOFF = 5_000;
 const MAX_CYCLE_BACKOFF = 60_000;
 const RETRY_DELAY = 2000;
