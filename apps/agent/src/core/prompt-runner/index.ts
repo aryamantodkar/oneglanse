@@ -1,0 +1,66 @@
+import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
+import type { Page } from "playwright";
+import { logger } from "@oneglanse/utils";
+import { PROVIDER_CONFIGS } from "../providers/index.js";
+import { executePromptWithRetry } from "./retryPolicy.js";
+
+/**
+ * Loops over all prompts in the payload and runs each through the retry policy.
+ * Propagates IPRefreshNeededError immediately so the outer job handler can rotate the proxy.
+ *
+ * Between-prompt page resets are handled by the provider's betweenPromptsHook —
+ * this loop has no knowledge of what "reset" means for any given provider.
+ */
+export async function runPrompts(
+	payload: PromptPayload,
+	page: Page,
+	provider: Provider,
+): Promise<AskPromptResult[]> {
+	logger.debug("🤖 Running prompts...\n");
+
+	const { user_id: userId, workspace_id: workspaceId, prompts: promptsArray } = payload;
+
+	await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
+
+	const config = PROVIDER_CONFIGS[provider];
+	const results: AskPromptResult[] = [];
+	let proxyProven = false;
+
+	for (let i = 0; i < promptsArray.length; i++) {
+		const promptEntry = promptsArray[i];
+		if (!promptEntry) {
+			logger.error(`Prompt at index ${i} is undefined.`);
+			continue;
+		}
+
+		logger.debug(`\n${"=".repeat(70)}`);
+		logger.debug(`Prompt ${i + 1}/${promptsArray.length}`);
+		logger.debug(`${"=".repeat(70)}`);
+		logger.debug(`📝 ${promptEntry.prompt}\n`);
+
+		// Throws IPRefreshNeededError on terminal failure — propagates to job handler.
+		const { result, proxyNowProven } = await executePromptWithRetry(
+			page,
+			promptEntry,
+			provider,
+			userId,
+			workspaceId,
+			i,
+			promptsArray.length,
+			results,
+			promptsArray.slice(i),
+			proxyProven,
+		);
+
+		results.push(result);
+		if (proxyNowProven) proxyProven = true;
+
+		const hasMorePrompts = i < promptsArray.length - 1;
+		if (config.betweenPromptsHook && hasMorePrompts) {
+			await config.betweenPromptsHook(page);
+		}
+	}
+
+	logger.success(`✅ All prompts completed successfully (${results.length}/${promptsArray.length})`);
+	return results;
+}

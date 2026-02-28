@@ -1,6 +1,7 @@
-import { env } from "../../env.js";
-
-const DEBUG_ENABLED = env.DEBUG_ENABLED || env.NODE_ENV !== "production";
+const DEBUG_ENABLED =
+	process.env["DEBUG_ENABLED"] === "true" ||
+	process.env["DEBUG_ENABLED"] === "1" ||
+	process.env["NODE_ENV"] !== "production";
 
 function formatArgs(args: unknown[]) {
 	return args.map((arg) =>

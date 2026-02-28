@@ -1,7 +1,7 @@
 import { analysePromptsForWorkspace } from "@oneglanse/services";
 import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { logger } from "../lib/utils/logger.js";
+import { logger } from "@oneglanse/utils";
 
 export function runAnalysisInBackground(args: {
 	workspaceId: string;

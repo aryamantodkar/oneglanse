@@ -11,8 +11,8 @@ import {
 import { type Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
-import { AGENT_PROVIDER_CONFIG } from "../core/providerRegistry.js";
-import { logger } from "../lib/utils/logger.js";
+import { PROVIDER_CONFIGS } from "../core/providers/index.js";
+import { logger } from "@oneglanse/utils";
 import { runAnalysisInBackground } from "./analysis.js";
 
 type ProviderJobData = {
@@ -29,7 +29,7 @@ type ProviderStatus = "pending" | "running" | "completed" | "failed";
 const providerConfig = Object.fromEntries(
 	PROVIDER_LIST.map((p) => [
 		p,
-		{ label: AGENT_PROVIDER_CONFIG[p].label, factory: () => createAgent(p) },
+		{ label: PROVIDER_CONFIGS[p].label, factory: () => createAgent(p) },
 	]),
 ) as Record<Provider, { label: string; factory: () => ReturnType<typeof createAgent> }>;
 
@@ -87,7 +87,7 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		throw new ValidationError(`Unknown provider: ${provider}`, { provider });
 	}
 
-	if (AGENT_PROVIDER_CONFIG[provider].skip) {
+	if (PROVIDER_CONFIGS[provider].skip) {
 		logger.warn(`[${provider}] skipped (skip: true in providerRegistry)`);
 		return true;
 	}

@@ -1,7 +1,7 @@
 import type { Provider, Source } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { logger } from "../../lib/utils/logger.js";
-import { AGENT_PROVIDER_CONFIG } from "../providerRegistry.js";
+import { logger } from "@oneglanse/utils";
+import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 export async function checkAndExtractSources(
 	page: Page,
@@ -28,7 +28,7 @@ async function extractSourcesFromPanel(
 	await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
 	await page.waitForTimeout(1000);
 
-	const sources = await AGENT_PROVIDER_CONFIG[provider].extractSources(page);
+	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
 
 	logger.debug(`✅ Extracted ${sources.length} sources`);
 

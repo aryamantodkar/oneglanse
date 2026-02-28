@@ -4,7 +4,7 @@ import type { ChildProcess } from "node:child_process";
 import { rm } from "node:fs/promises";
 import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
-import { logger } from "../utils/logger.js";
+import { logger } from "@oneglanse/utils";
 import { fetchProxies, getNextProxy, recordProxyResult } from "./proxy/pool.js";
 import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
 import { getFreePort, killChromiumProcess, spawnChromiumCDP, waitForCDPEndpoint } from "./cdp.js";

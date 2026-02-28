@@ -1,8 +1,7 @@
 import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { EDITOR_SELECTORS, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
+import { EDITOR_SELECTORS, logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
-import { logger } from "../../utils/logger.js";
 
 export async function findActiveEditor(
 	page: Page,

@@ -1,7 +1,6 @@
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Page } from "playwright";
-import { RETRYABLE_ERRORS } from "@oneglanse/utils";
-import { logger } from "../utils/logger.js";
+import { logger, RETRYABLE_ERRORS } from "@oneglanse/utils";
 
 export async function navigateWithRetry(
 	page: Page,
