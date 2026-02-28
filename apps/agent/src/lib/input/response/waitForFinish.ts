@@ -5,6 +5,19 @@ import { logger } from "@oneglanse/utils";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
 
+async function sleep(ms: number): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	try {
+		await new Promise<void>((resolve) => {
+			timer = setTimeout(resolve, ms);
+		});
+	} finally {
+		if (timer !== null) {
+			clearTimeout(timer);
+		}
+	}
+}
+
 // Shared polling helper - DRY principle
 async function pollUntilCondition(
 	checkFn: () => Promise<boolean>,
@@ -15,7 +28,7 @@ async function pollUntilCondition(
 	const start = Date.now();
 	while (Date.now() - start < maxWait) {
 		if (await checkFn()) return;
-		await new Promise((resolve) => setTimeout(resolve, pollInterval));
+		await sleep(pollInterval);
 	}
 	throw timeoutError;
 }

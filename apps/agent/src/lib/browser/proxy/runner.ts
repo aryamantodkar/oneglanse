@@ -65,10 +65,11 @@ async function runSingleProxyAttempt(
 	return await Promise.race([
 		(async () => {
 			const agent = await agentFactory();
+			// Set cleanup first so timeout/failure paths can always attempt teardown.
+			refs.cleanup = agent.cleanup ?? null;
 			refs.browser = agent.browser;
 			refs.context = agent.context;
 			refs.proxy = agent.proxy ?? null;
-			refs.cleanup = agent.cleanup ?? null;
 
 			return await runAgents(currentPayload, agent.page, provider);
 		})(),

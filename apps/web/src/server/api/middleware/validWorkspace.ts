@@ -19,6 +19,15 @@ export const validWorkspace = t.middleware(async ({ ctx, input, next }) => {
 
 	const { workspaceId } = parsed.data;
 
+	const workspace = await ctx.db.query.workspaces.findFirst({
+		where: (w, { and, eq, isNull }) =>
+			and(eq(w.id, workspaceId), isNull(w.deletedAt)),
+	});
+
+	if (!workspace) {
+		throw new ValidationError("Workspace not found or deleted.");
+	}
+
 	const membership = await ctx.db.query.workspaceMembers.findFirst({
 		where: (wm, { eq, and, isNull }) =>
 			and(
