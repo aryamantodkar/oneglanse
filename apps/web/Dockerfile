@@ -21,6 +21,7 @@ FROM deps AS builder
 ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 ENV BETTER_AUTH_SECRET=docker-build-secret
+ENV INTERNAL_CRON_SECRET=docker-build-secret
 
 RUN pnpm turbo build --filter=@oneglanse/web...
 
@@ -43,8 +44,8 @@ RUN pnpm install --prod --frozen-lockfile --filter @oneglanse/db...
 
 WORKDIR /app
 
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /workspace
-USER appuser
+RUN chown -R node:node /app /workspace
+USER node
 
 EXPOSE 3000
 

@@ -54,7 +54,7 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 COPY --from=builder /app/out ./
 COPY --from=builder /ms-playwright /ms-playwright
 
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /ms-playwright
-USER appuser
+RUN chown -R node:node /app /ms-playwright
+USER node
 
 CMD ["pnpm", "start:worker"]
