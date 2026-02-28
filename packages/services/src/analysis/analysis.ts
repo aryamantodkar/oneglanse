@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getWorkspaceById } from "../workspace/index.js";
 import { runAnalysis } from "./runAnalysis.js";
 
-export async function analysePromptResponse(args: {
+async function analysePromptResponse(args: {
 	workspaceId: string;
 	response: string;
 	prompt: string;
@@ -45,16 +45,15 @@ export async function analysePromptResponse(args: {
 
 export async function analysePromptsForWorkspace(args: {
 	workspaceId: string;
-	userId: string;
 	batchSize?: number;
-	analyzeAll?: boolean; // New flag to process all batches
+	analyzeAll?: boolean;
 }): Promise<{
 	analysedCount: number;
 	failedCount: number;
 	errors: Array<{ responseId: string; modelProvider: string; error: string }>;
 	remainingCount: number;
 }> {
-	const { workspaceId, userId, batchSize = 50, analyzeAll = false } = args;
+	const { workspaceId, batchSize = 50, analyzeAll = false } = args;
 
 	let totalAnalyzed = 0;
 	let totalFailed = 0;
@@ -198,7 +197,6 @@ export async function analysePromptsForWorkspace(args: {
  */
 export async function fetchAnalysedPrompts(args: {
 	workspaceId: string;
-	userId: string;
 }): Promise<AnalysisRecord[]> {
 	const { workspaceId } = args;
 

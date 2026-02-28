@@ -16,29 +16,13 @@ export const analysisRouter = createTRPCRouter({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const {
-				workspaceId,
-				user: { id: userId },
-			} = ctx;
-
-			const { analyzeAll } = input;
-
 			return analysePromptsForWorkspace({
-				workspaceId,
-				userId,
-				analyzeAll: analyzeAll ?? true,
-			} as Parameters<typeof analysePromptsForWorkspace>[0]);
+				workspaceId: ctx.workspaceId,
+				analyzeAll: input.analyzeAll ?? true,
+			});
 		}),
 
 	fetchAnalysis: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		const {
-			user: { id: userId },
-			workspaceId,
-		} = ctx;
-
-		return fetchAnalysedPrompts({
-			workspaceId: workspaceId,
-			userId: userId,
-		});
+		return fetchAnalysedPrompts({ workspaceId: ctx.workspaceId });
 	}),
 });
