@@ -21,6 +21,19 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function toSlug(input: string): string {
+	return input
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.replace(/-{2,}/g, "-");
+}
+
+function toDomainFromSlug(slug: string): string {
+	return slug ? `www.${slug}.com` : "";
+}
+
 export default function NewWorkspace(): React.JSX.Element {
 	const [formData, setFormData] = useState({
 		organizationName: "",
@@ -28,6 +41,8 @@ export default function NewWorkspace(): React.JSX.Element {
 		workspaceSlug: "",
 		domain: "",
 	});
+	const [slugTouched, setSlugTouched] = useState(false);
+	const [domainTouched, setDomainTouched] = useState(false);
 
 	const [selectedLocation, setSelectedLocation] = useState<WorkspaceLocation>({ country: "", countryName: "" });
 
@@ -120,6 +135,18 @@ export default function NewWorkspace(): React.JSX.Element {
 		setSelectedLocation(loc);
 	};
 
+	const handleWorkspaceNameChange = (workspaceName: string) => {
+		const nextSlug = toSlug(workspaceName);
+		const nextDomain = toDomainFromSlug(nextSlug);
+
+		setFormData((prev) => ({
+			...prev,
+			workspaceName,
+			workspaceSlug: slugTouched ? prev.workspaceSlug : nextSlug,
+			domain: domainTouched ? prev.domain : nextDomain,
+		}));
+	};
+
 	return (
 		<div className="ui-page-enter min-h-screen bg-background flex items-center justify-center p-4">
 			{formReady ? (
@@ -155,12 +182,7 @@ export default function NewWorkspace(): React.JSX.Element {
 									id="workspace-name"
 									placeholder="e.g. Pipedrive"
 									value={formData.workspaceName}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											workspaceName: e.target.value,
-										}))
-									}
+									onChange={(e) => handleWorkspaceNameChange(e.target.value)}
 								/>
 								<p className="text-xs text-gray-500">
 									This is used as your tracked brand name in AI visibility
@@ -174,12 +196,13 @@ export default function NewWorkspace(): React.JSX.Element {
 									id="workspace-slug"
 									placeholder="brand-workspace-slug"
 									value={formData.workspaceSlug}
-									onChange={(e) =>
+									onChange={(e) => {
+										setSlugTouched(true);
 										setFormData((prev) => ({
 											...prev,
 											workspaceSlug: e.target.value,
-										}))
-									}
+										}));
+									}}
 								/>
 							</div>
 
@@ -187,14 +210,15 @@ export default function NewWorkspace(): React.JSX.Element {
 								<Label htmlFor="workspace-domain">Brand Domain</Label>
 								<Input
 									id="workspace-domain"
-									placeholder="e.g. pipedrive.com"
+									placeholder="e.g. www.pipedrive.com"
 									value={formData.domain}
-									onChange={(e) =>
+									onChange={(e) => {
+										setDomainTouched(true);
 										setFormData((prev) => ({
 											...prev,
 											domain: e.target.value,
-										}))
-									}
+										}));
+									}}
 								/>
 								<p className="text-xs text-gray-500">
 									Use your primary brand domain. We use this for source matching

@@ -262,6 +262,26 @@ export async function fetchAnalysedPrompts(args: {
 	return records;
 }
 
+export async function getLastPromptRunTime(args: {
+	workspaceId: string;
+}): Promise<string | null> {
+	const { workspaceId } = args;
+	const result = await clickhouse.query({
+		query: `
+            SELECT toUnixTimestamp(MAX(prompt_run_at)) as last_run_ts
+            FROM analytics.prompt_responses
+            WHERE workspace_id = {workspaceId:String}
+        `,
+		query_params: { workspaceId },
+		format: "JSONEachRow",
+	});
+	const data = (await result.json()) as Array<{ last_run_ts: number }>;
+	if (data.length > 0 && data[0]?.last_run_ts && data[0].last_run_ts > 0) {
+		return new Date(data[0].last_run_ts * 1000).toISOString();
+	}
+	return null;
+}
+
 /**
  * Clears derived analysis data for a workspace while preserving raw prompt responses.
  * - Deletes rows from analytics.prompt_analysis
