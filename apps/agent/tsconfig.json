@@ -15,7 +15,7 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true
 	},
-	"include": ["src/**/*.ts", "../../packages/errors/src/lib/classifyError.ts", "../../packages/utils/src/agent/backoff.ts"],
+	"include": ["src/**/*.ts"],
 	"references": [
 		{ "path": "../../packages/types" },
 		{ "path": "../../packages/errors" },

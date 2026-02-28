@@ -2,7 +2,7 @@ import { env } from "./env.js";
 import { waitForRedis } from "@oneglanse/services";
 import { Worker } from "bullmq";
 import { handleJob } from "./worker/jobHandler.js";
-import { logger } from "./lib/utils/logger.js";
+import { logger } from "@oneglanse/utils";
 
 // Exported so index.ts can call worker.close() during graceful shutdown.
 // Null until startWorker() completes Redis readiness check and construction.

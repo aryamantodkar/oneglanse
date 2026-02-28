@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { logger } from "../../utils/logger.js";
+import { logger } from "@oneglanse/utils";
 import { findActiveEditor } from "./findEditor.js";
 
 export async function warmUpEditor(page: Page): Promise<void> {

@@ -7,3 +7,5 @@ export * from "./url/index.js";
 export * from "./agent/index.js";
 export * from "./web/index.js";
 export * from "./analysis/index.js";
+export * from "./async/index.js";
+export * from "./logger.js";

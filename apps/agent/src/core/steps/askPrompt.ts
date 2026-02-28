@@ -4,7 +4,7 @@ import type { Page } from "playwright";
 import { env } from "../../env.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
-import { logger } from "../../lib/utils/logger.js";
+import { logger } from "@oneglanse/utils";
 import {
 	type SubmitContext,
 	tryDispatchClick,

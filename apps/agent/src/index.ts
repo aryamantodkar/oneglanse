@@ -1,7 +1,7 @@
 import "./worker.js";
 import { redis } from "@oneglanse/services";
 import { worker } from "./worker.js";
-import { logger } from "./lib/utils/logger.js";
+import { logger } from "@oneglanse/utils";
 
 const shutdown = async (signal: string) => {
 	logger.log(`[agent] Received ${signal}. Starting graceful shutdown...`);

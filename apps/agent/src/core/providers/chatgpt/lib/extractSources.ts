@@ -1,11 +1,11 @@
 import type { Source } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
-import { SELECTORS } from "../../../config/selectors.js";
+import { SELECTORS } from "@oneglanse/utils";
 import {
 	buildSources,
 	clickButtonViaDispatch,
 	type RawSource,
-} from "../../../lib/extraction/sourceUtils.js";
+} from "../../../../lib/extraction/sourceUtils.js";
 
 export async function extractSourcesFromOpenai(
 	page: Page,

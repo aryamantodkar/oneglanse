@@ -1,7 +1,7 @@
 import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { SELECTORS } from "../../../config/selectors.js";
-import { buildSources, type RawSource } from "../../../lib/extraction/sourceUtils.js";
+import { SELECTORS } from "@oneglanse/utils";
+import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 
 export async function extractSourcesFromPerplexity(
 	page: Page,

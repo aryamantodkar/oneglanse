@@ -1,5 +1,5 @@
 import type { FailureType, Provider } from "@oneglanse/types";
-import { logger } from "../../utils/logger.js";
+import { logger } from "@oneglanse/utils";
 import {
 	EXPLORATION_RATE,
 	MAX_EVENTS,

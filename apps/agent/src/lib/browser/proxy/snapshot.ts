@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { ExternalServiceError, toErrorMessage, ValidationError } from "@oneglanse/errors";
 import { env } from "../../../env.js";
-import { logger } from "../../utils/logger.js";
+import { logger } from "@oneglanse/utils";
 import { normalizeProxy } from "./scoring.js";
 
 // ── Constants ────────────────────────────────────────────────────────────

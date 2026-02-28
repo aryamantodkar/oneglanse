@@ -2,8 +2,8 @@ import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
 import { toErrorMessage } from "@oneglanse/errors";
 import { env } from "../../env.js";
-import { logger } from "../../lib/utils/logger.js";
-import { withTimeout } from "../../lib/utils/withTimeout.js";
+import { logger, withTimeout } from "@oneglanse/utils";
+import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
 
@@ -22,18 +22,11 @@ async function checkSubmissionSuccess(
 	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
 	await page.waitForTimeout(800);
 
-	// Google Search submits by navigation; treat ?q= URL mutation as success.
-	if (provider === "google-ai-overview") {
-		const currentUrl = page.url();
-		if (currentUrl !== preSubmitUrl) {
-			try {
-				const parsed = new URL(currentUrl);
-				if (parsed.searchParams.get("q")?.trim()) return true;
-			} catch {
-				return true;
-			}
-		}
-	}
+	// Ask provider config for a custom success signal first.
+	// undefined = no opinion, fall through to generic checks below.
+	const config = PROVIDER_CONFIGS[provider];
+	const customResult = await config.checkSubmitSuccess?.(page, preSubmitUrl);
+	if (customResult !== undefined) return customResult;
 
 	// Check 1: Input cleared (most reliable signal)
 	const currentContent = await input

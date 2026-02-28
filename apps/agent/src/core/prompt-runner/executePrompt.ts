@@ -1,0 +1,54 @@
+import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
+import type { Provider, Source } from "@oneglanse/types";
+import type { Page } from "playwright";
+import { logger, validateResponse } from "@oneglanse/utils";
+import { askPrompt } from "../steps/askPrompt.js";
+import { checkAndExtractSources } from "../steps/extractSources.js";
+import { fetchPromptResponses } from "../steps/fetchPromptResponses.js";
+
+// Brief pause between pipeline steps to let the page settle before the next action.
+const STEP_WAIT_MS = 1500;
+
+/**
+ * Runs one full prompt cycle for a single prompt:
+ *   1. Type and submit the prompt
+ *   2. Wait for the response to finish generating
+ *   3. Extract and validate the response text
+ *   4. Extract citation sources
+ *
+ * Has no knowledge of retries or backoff — throws on failure so the
+ * caller's retry policy can decide whether to retry or escalate.
+ */
+export async function executePrompt(
+	page: Page,
+	prompt: string,
+	provider: Provider,
+): Promise<{ response: string; sources: Source[] }> {
+	await askPrompt(page, prompt, provider);
+	await page.waitForTimeout(STEP_WAIT_MS);
+
+	const response = await fetchPromptResponses(page, provider);
+	if (!response || response.trim().length === 0) {
+		throw new ExternalServiceError(
+			provider,
+			"Empty response extracted; blocking source extraction and retrying prompt",
+		);
+	}
+
+	const validation = validateResponse(response, provider);
+	if (!validation.valid) {
+		logger.warn(
+			`⚠️ [${provider}] Invalid response (${response.trim().length} chars): ${validation.reason} — retrying`,
+		);
+		throw new ValidationError(`[${provider}] Invalid response: ${validation.reason}`, {
+			provider,
+			reason: validation.reason,
+		});
+	}
+
+	await page.waitForTimeout(STEP_WAIT_MS);
+	const sources = await checkAndExtractSources(page, provider);
+	await page.waitForTimeout(STEP_WAIT_MS);
+
+	return { response, sources };
+}

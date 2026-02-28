@@ -3,9 +3,8 @@ import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
 import { env } from "../env.js";
 import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
-import { logger } from "../lib/utils/logger.js";
-import { withTimeout } from "../lib/utils/withTimeout.js";
-import { AGENT_PROVIDER_CONFIG } from "./providerRegistry.js";
+import { logger, withTimeout } from "@oneglanse/utils";
+import { PROVIDER_CONFIGS } from "./providers/index.js";
 
 const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
 const DEFAULT_NAV_TIMEOUT_MS = env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS;
@@ -20,7 +19,7 @@ export async function createAgent(
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
-	const config = AGENT_PROVIDER_CONFIG[provider];
+	const config = PROVIDER_CONFIGS[provider];
 
 	const { browser, context, proxy, cleanup } = await launchContext(provider);
 	const page = await context.newPage();

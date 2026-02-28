@@ -1,7 +1,6 @@
 import type { Provider } from "@oneglanse/types";
-import { env } from "../../env.js";
 
-const MIN_RESPONSE_CHARS = env.MIN_RESPONSE_CHARS;
+const MIN_RESPONSE_CHARS = Number(process.env["MIN_RESPONSE_CHARS"] ?? 600);
 
 /**
  * Known false/garbage response patterns across all providers.

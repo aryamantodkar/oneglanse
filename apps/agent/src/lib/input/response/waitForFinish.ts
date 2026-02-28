@@ -1,7 +1,7 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { logger } from "../../utils/logger.js";
+import { logger } from "@oneglanse/utils";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
 

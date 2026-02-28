@@ -1,9 +1,8 @@
 import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { toErrorMessage } from "@oneglanse/errors";
-import { SELECTORS } from "../../../config/selectors.js";
-import { buildSources, type RawSource } from "../../../lib/extraction/sourceUtils.js";
-import { logger } from "../../../lib/utils/logger.js";
+import { SELECTORS, logger } from "@oneglanse/utils";
+import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 
 export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 	try {
