@@ -25,9 +25,6 @@ import {
 } from "@oneglanse/utils";
 import {
 	AlertTriangle,
-	ArrowDown,
-	ArrowUp,
-	ArrowUpDown,
 	BarChart3,
 	Bot,
 	ChevronRight,
@@ -36,6 +33,7 @@ import {
 	Link2,
 	SearchX,
 } from "lucide-react";
+import { SortableHeader } from "../_components/sortable-header";
 import { useSearchParams } from "next/navigation";
 import { Fragment, useMemo, useState } from "react";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
@@ -67,40 +65,6 @@ function getUrlPath(url: string): string {
 
 function cleanCitedText(text: string): string {
 	return text.replace(/\s*(?:\.\.\.|…)?\s*read more\.?\s*$/i, "").trim();
-}
-
-function SortableHeader({
-	children,
-	column,
-	currentSort,
-	currentDirection,
-	onSort,
-}: {
-	children: React.ReactNode;
-	column: SortColumn;
-	currentSort: SortColumn;
-	currentDirection: SortDirection;
-	onSort: (column: SortColumn) => void;
-}) {
-	const isActive = currentSort === column;
-
-	return (
-		<button
-			onClick={() => onSort(column)}
-			className="flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100"
-		>
-			{children}
-			{isActive ? (
-				currentDirection === "asc" ? (
-					<ArrowUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-				) : (
-					<ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-				)
-			) : (
-				<ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
-			)}
-		</button>
-	);
 }
 
 function FaviconWithFallback({
