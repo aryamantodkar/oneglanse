@@ -6,8 +6,6 @@ import { geminiConfig } from "./gemini/index.js";
 import { perplexityConfig } from "./perplexity/index.js";
 import type { ProviderConfig } from "./types.js";
 
-export type { ProviderConfig } from "./types.js";
-
 /**
  * Single source of truth for all provider behavior.
  *

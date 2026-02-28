@@ -4,8 +4,6 @@ import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types"
 import { fetchProxies } from "../lib/browser/proxy/pool.js";
 import { type AgentFactory, runWithProxyPool } from "../lib/browser/proxy/runner.js";
 
-export type { AgentFactory };
-
 export async function agentHandler(
 	label: string,
 	agentFactory: AgentFactory,
