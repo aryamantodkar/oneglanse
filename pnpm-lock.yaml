@@ -67,6 +67,9 @@ importers:
 
   apps/docs:
     dependencies:
+      lucide-react:
+        specifier: ^0.544.0
+        version: 0.544.0(react@19.2.3)
       next:
         specifier: ^15.5.5
         version: 15.5.9(@opentelemetry/api@1.9.0)(@playwright/test@1.58.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
