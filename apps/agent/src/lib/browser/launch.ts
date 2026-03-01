@@ -86,8 +86,17 @@ export async function launchContext(
 		if (chromeProcess) await killChromiumProcess(chromeProcess);
 		try {
 			await rm(userDataDir, { recursive: true, force: true });
-		} catch (err) {
-			logger.error(`Failed to remove CDP profile dir ${userDataDir}:`, toErrorMessage(err));
+		} catch {
+			// Chrome may still hold file handles briefly after kill — retry once.
+			await new Promise((r) => setTimeout(r, 300));
+			try {
+				await rm(userDataDir, { recursive: true, force: true });
+			} catch (retryErr) {
+				logger.warn(
+					`Failed to remove CDP profile dir ${userDataDir} (stale sweep will clean up):`,
+					toErrorMessage(retryErr),
+				);
+			}
 		}
 	};
 

@@ -1,5 +1,5 @@
 import { toErrorMessage } from "@oneglanse/errors";
-import { logger } from "@oneglanse/utils";
+import { createProviderLogger } from "@oneglanse/utils";
 import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
 import { fetchProxies } from "../lib/browser/proxy/pool.js";
 import { type AgentFactory, runWithProxyPool } from "../lib/browser/proxy/runner.js";
@@ -13,13 +13,14 @@ export async function agentHandler(
 	payload: PromptPayload,
 	provider: Provider,
 ): Promise<AskPromptResult[]> {
+	const plog = createProviderLogger(provider);
 	try {
 		// No resetBadProxies: module-level proxyRecords in pool.ts persist across
 		// all providers and job runs, so scores accumulate naturally.
 		await fetchProxies();
-		logger.log(`${label} initialized proxy pool`);
+		plog.log(`${label} initialized proxy pool`);
 	} catch (err) {
-		logger.error(`${label} failed to initialize proxy pool:`, toErrorMessage(err));
+		plog.error(`${label} failed to initialize proxy pool:`, toErrorMessage(err));
 	}
 
 	// Wrap agentFactory with warm-pool awareness: if a healthy browser already
