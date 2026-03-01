@@ -28,7 +28,7 @@ export async function navigateWithRetry(
 			}
 
 			logger.warn(
-				`Navigation to ${url} failed (attempt ${attempt}/${maxRetries}): ${message}. Retrying in ${delayMs / 1000}s...`,
+				`navigation failed (attempt ${attempt}/${maxRetries}): ${message} — retrying in ${delayMs / 1000}s`,
 			);
 
 			await page.waitForTimeout(delayMs);

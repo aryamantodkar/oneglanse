@@ -38,7 +38,7 @@ export async function executePrompt(
 	const validation = validateResponse(response, provider);
 	if (!validation.valid) {
 		logger.warn(
-			`⚠️ [${provider}] Invalid response (${response.trim().length} chars): ${validation.reason} — retrying`,
+			`invalid response (${response.trim().length} chars): ${validation.reason} — retrying`,
 		);
 		throw new ValidationError(`[${provider}] Invalid response: ${validation.reason}`, {
 			provider,

@@ -38,7 +38,7 @@ export async function createAgent(
 		}
 
 		phase = "navigate";
-		logger.log(`📍 Navigating to ${config.url}`);
+		logger.log(`navigating to ${config.url}`);
 		await navigateWithRetry(page, config.url, {
 			waitUntil: "domcontentloaded",
 			timeout: 60000,
@@ -53,7 +53,7 @@ export async function createAgent(
 			);
 		}
 
-		logger.log("Loaded url:", page.url());
+		logger.log(`page ready: ${page.url()}`);
 
 		// Keep finite defaults to prevent indefinite hangs in locator/actions.
 		// Long-running response generation is handled separately via explicit waits.

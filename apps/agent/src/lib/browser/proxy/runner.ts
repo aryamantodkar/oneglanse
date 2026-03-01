@@ -43,7 +43,7 @@ async function closeContextAndBrowser(refs: Refs, label: string): Promise<void> 
 	await refs.context?.close().catch(() => {});
 	await refs.browser?.close().catch(() => {});
 	await refs.cleanup?.().catch(() => {});
-	logger.debug(`${label} browser instance closed successfully.`);
+	logger.debug("browser closed");
 }
 
 function updatePayloadAfterIpRefresh(
@@ -52,7 +52,7 @@ function updatePayloadAfterIpRefresh(
 	label: string,
 ): PromptPayload {
 	logger.log(
-		`${label} saved ${err.partialResults.length} successful prompts, ${err.remainingPrompts.length} remaining`,
+		`saved ${err.partialResults.length} prompts, ${err.remainingPrompts.length} remaining after IP refresh`,
 	);
 	return { ...currentPayload, prompts: err.remainingPrompts };
 }
@@ -228,7 +228,7 @@ export async function runWithProxyPool(
 
 	const totalAttempts = MAX_CYCLES * PROXIES_PER_CYCLE;
 	plog.error(
-		`🔴 EXHAUSTED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles.`,
+		`exhausted — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles`,
 	);
 	throw new ExternalServiceError(
 		provider,

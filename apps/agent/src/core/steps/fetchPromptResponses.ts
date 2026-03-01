@@ -13,11 +13,8 @@ const MAX_EXTRACTION_RETRY_DELAY = env.MAX_EXTRACTION_RETRY_DELAY_MS;
 export async function fetchPromptResponses(page: Page, provider: Provider): Promise<string> {
 	const config = PROVIDER_CONFIGS[provider];
 
-	logger.log("⏳ Waiting for response...");
 	await config.waitForResponse(page);
 	await page.waitForTimeout(1500);
-
-	logger.log("📄 Extracting response...");
 
 	// Retry extraction — keep retries short so we can rotate IPs faster on failure.
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
@@ -26,7 +23,7 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 		const response = await config.extractResponse(page);
 
 		if (response && response.length > 0) {
-			logger.success(`Got response (${response.length} chars)`);
+			logger.debug(`response extracted (${response.length} chars)`);
 			return response;
 		}
 
@@ -40,7 +37,7 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 							MAX_EXTRACTION_RETRY_DELAY,
 						);
 			logger.warn(
-				`Extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})...`,
+				`extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})`,
 			);
 			await page.waitForTimeout(retryDelay);
 		}

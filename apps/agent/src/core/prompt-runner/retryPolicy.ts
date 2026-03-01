@@ -71,7 +71,7 @@ export async function executePromptWithRetry(
 		if (attempt > 1) {
 			const backoffDelay = exponentialBackoff(attempt - 2, INITIAL_RETRY_DELAY, MAX_RETRY_DELAY);
 			logger.log(
-				`🔄 Retry attempt ${attempt}/${maxAttempts} for prompt ${promptIndex + 1} (waiting ${backoffDelay / 1000}s)`,
+				`retry ${attempt}/${maxAttempts} for prompt ${promptIndex + 1} (backoff ${backoffDelay / 1000}s)`,
 			);
 			await page.waitForTimeout(backoffDelay);
 			await config.beforeRetryHook?.(page);
@@ -81,7 +81,7 @@ export async function executePromptWithRetry(
 			const { response, sources } = await executePrompt(page, promptEntry.prompt, provider);
 
 			logger.success(
-				`✓ Prompt ${promptIndex + 1}/${totalPrompts} completed${attempt > 1 ? ` (succeeded on retry ${attempt})` : ""}`,
+				`prompt ${promptIndex + 1}/${totalPrompts} done${attempt > 1 ? ` (attempt ${attempt})` : ""}`,
 			);
 
 			const result: AskPromptResult = {
@@ -95,21 +95,19 @@ export async function executePromptWithRetry(
 
 			const proxyNowProven = !proxyProven;
 			if (proxyNowProven) {
-				logger.log(
-					"✅ Proxy proven good after canary prompt — full retries enabled for remaining prompts",
-				);
+				logger.log("proxy proven — full retries enabled for remaining prompts");
 			}
 
 			return { result, proxyNowProven };
 		} catch (err) {
 			lastError = err;
 			logger.error(
-				`❌ Attempt ${attempt}/${maxAttempts} failed for prompt ${promptIndex + 1}: [${provider}] ${toErrorMessage(err)}`,
+				`attempt ${attempt}/${maxAttempts} failed for prompt ${promptIndex + 1}: ${toErrorMessage(err)}`,
 			);
 
 			// Canary failed: rotate IP immediately, no retry.
 			if (!proxyProven) {
-				logger.warn("⚡ Canary prompt failed on unproven proxy — rotating IP immediately");
+				logger.warn("canary failed on unproven proxy — rotating IP immediately");
 				throw buildIPRotationError(
 					`${provider} canary prompt failed — rotating IP. Error: ${toErrorMessage(lastError)}`,
 					partialResults,
@@ -121,15 +119,14 @@ export async function executePromptWithRetry(
 
 			if (EXTRACTION_FAILURE_RE.test(toErrorMessage(err))) {
 				logger.warn(
-					`⚠️ Repeated extraction failure on current IP (prompt ${promptIndex + 1}, attempt ${attempt}/${maxAttempts})`,
+					`repeated extraction failure on current IP (prompt ${promptIndex + 1}, attempt ${attempt}/${maxAttempts})`,
 				);
 			}
 
 			if (attempt === maxAttempts) {
 				logger.error(
-					`🔴 Prompt ${promptIndex + 1} failed after ${maxAttempts} attempts. Final error: ${toErrorMessage(lastError)}`,
+					`prompt ${promptIndex + 1} exhausted ${maxAttempts} attempts — triggering IP refresh`,
 				);
-				logger.error("🔴 Triggering IP refresh for remaining prompts.");
 				throw buildIPRotationError(
 					`${provider} failed ${maxAttempts} consecutive attempts — refreshing IP. Last error: ${toErrorMessage(lastError)}`,
 					partialResults,
