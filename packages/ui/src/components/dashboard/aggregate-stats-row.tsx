@@ -1,4 +1,4 @@
-import { getFaviconUrls } from "@oneglanse/utils";
+import { cn, getFaviconUrls } from "@oneglanse/utils";
 import { Globe, Link2, Trophy, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -16,7 +16,7 @@ function StatCard({
 	icon: LucideIcon;
 	valueClassName?: string;
 	domain?: string;
-}){
+}) {
 	const isStringValue = typeof value === "string";
 	const showFavicon =
 		isStringValue && (label === "Top Source" || label === "Top Competitor");
@@ -25,7 +25,7 @@ function StatCard({
 		: [];
 
 	return (
-		<div className="ui-list-item group flex min-h-[120px] flex-col justify-between rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900">
+		<div className="ui-list-item group flex min-h-[120px] flex-col justify-between rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 dark:border-gray-800 dark:bg-black">
 			<div className="flex items-center gap-2">
 				<Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:scale-110" />
 				<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -67,6 +67,7 @@ export function AggregateStatsRow({
 	topCompetitor,
 	topCompetitorDomain,
 	noData = false,
+	className,
 }: {
 	presenceRate: number;
 	rank: number;
@@ -74,11 +75,17 @@ export function AggregateStatsRow({
 	topCompetitor: string;
 	topCompetitorDomain?: string;
 	noData?: boolean;
-}){
+	className?: string;
+}) {
 	const emptySubtitle = "No analysis data for selected filters";
 
 	return (
-		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+		<div
+			className={cn(
+				"grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4",
+				className,
+			)}
+		>
 			<StatCard
 				icon={Globe}
 				label="Presence Rate"

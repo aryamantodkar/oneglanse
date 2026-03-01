@@ -270,3 +270,11 @@ export const PREVIEW_HERO_METRICS = [
   { label: "Models Tracked", value: "5", detail: "provider-normalized outputs" },
   { label: "Citations Indexed", value: "91K", detail: "source-linked and deduplicated" },
 ] as const;
+
+export const PREVIEW_AGGREGATE_STATS = {
+  presenceRate: 84,
+  rank: 2,
+  topSource: "hubspot.com",
+  topCompetitor: "Salesforce",
+  topCompetitorDomain: "salesforce.com",
+} as const;
