@@ -1,3 +1,5 @@
+"use client";
+
 import { getFaviconUrls } from "@oneglanse/utils";
 import { FileQuestion } from "lucide-react";
 import { Card } from "../card.js";
