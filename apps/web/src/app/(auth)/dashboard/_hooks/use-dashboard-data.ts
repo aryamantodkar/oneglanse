@@ -115,6 +115,8 @@ export function useDashboardData(
 				name: string;
 				domain: string;
 				appearances: number;
+				visibilitySum: number;
+				visibilityCount: number;
 				sentimentSum: number;
 				rankSum: number;
 				rankCount: number;
@@ -220,6 +222,8 @@ export function useDashboardData(
 					name: c.name,
 					domain: c.domain ?? "",
 					appearances: 0,
+					visibilitySum: 0,
+					visibilityCount: 0,
 					sentimentSum: 0,
 					rankSum: 0,
 					rankCount: 0,
@@ -228,6 +232,11 @@ export function useDashboardData(
 					losesTo: new Map<string, number>(),
 				};
 				existing.appearances++;
+				const competitorVisibility = (c as { visibility?: number | null }).visibility;
+				if (typeof competitorVisibility === "number") {
+					existing.visibilitySum += competitorVisibility;
+					existing.visibilityCount++;
+				}
 				existing.sentimentSum += c.sentiment;
 				if (c.rankPosition !== null) {
 					existing.rankSum += c.rankPosition;
@@ -274,6 +283,10 @@ export function useDashboardData(
 				name: c.name,
 				domain: c.domain,
 				appearances: c.appearances,
+				visibility:
+					c.visibilityCount > 0
+						? Math.round(c.visibilitySum / c.visibilityCount)
+						: 0,
 				avgSentiment: Math.round(c.sentimentSum / c.appearances),
 				avgRank:
 					c.rankCount > 0 ? Math.round(c.rankSum / c.rankCount) : null,
@@ -291,6 +304,7 @@ export function useDashboardData(
 			name: brandName,
 			domain: brandDomain,
 			appearances: mentionedCount,
+			visibility: Math.round(visibilitySum / total),
 			avgSentiment: avgSentimentScore,
 			avgRank: avgRankPosition,
 			recCount: 0,

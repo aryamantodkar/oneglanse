@@ -328,6 +328,8 @@ export default function Prompts(){
 		return rows;
 	}, [promptsWithMetrics, sortBy, sortDirection]);
 
+	const hasExportableData = filteredRecords.length > 0;
+
 	const handleColumnSort = (column: SortColumn) => {
 		if (sortBy === column) {
 			// Toggle direction if same column
@@ -648,7 +650,7 @@ export default function Prompts(){
 					{/* Right: Save action */}
 					<div className="flex items-center gap-2">
 						<ExportMenu
-							disabled={sortedPromptsWithMetrics.length === 0}
+							disabled={!hasExportableData}
 							onExportJson={() => {
 								const analyzedRows = sortedPromptsWithMetrics.filter(
 									(row) => row.metrics !== null,

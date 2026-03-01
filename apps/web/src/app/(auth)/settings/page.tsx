@@ -329,6 +329,11 @@ export default function SettingsPage(){
 		downloadCsv(`workspace-all-${workspaceId}-${Date.now()}.csv`, rows);
 	};
 
+	const hasAnyExportData =
+		(userPromptsQuery.data?.length ?? 0) > 0 ||
+		(analysisQuery.data?.length ?? 0) > 0 ||
+		(sourcesQuery.data?.sourceStats?.combined?.length ?? 0) > 0;
+
 	if (!workspaceId) {
 		return (
 			<div className="flex h-[60vh] items-center justify-center">
@@ -372,7 +377,8 @@ export default function SettingsPage(){
 								disabled={
 									userPromptsQuery.isLoading ||
 									analysisQuery.isLoading ||
-									sourcesQuery.isLoading
+									sourcesQuery.isLoading ||
+									!hasAnyExportData
 								}
 							>
 								<Download className="h-4 w-4" />
@@ -385,7 +391,8 @@ export default function SettingsPage(){
 								disabled={
 									userPromptsQuery.isLoading ||
 									analysisQuery.isLoading ||
-									sourcesQuery.isLoading
+									sourcesQuery.isLoading ||
+									!hasAnyExportData
 								}
 							>
 								<Download className="h-4 w-4" />
@@ -557,9 +564,8 @@ export default function SettingsPage(){
 			{/* Danger Zone */}
 			<section>
 				<div className="mb-4 flex items-center gap-2">
-					<AlertTriangle className="h-5 w-5 text-red-500" />
 					<h2 className="text-lg font-semibold text-red-600 dark:text-red-500">
-						Danger Zone
+						Account
 					</h2>
 				</div>
 				<div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
