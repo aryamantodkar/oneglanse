@@ -23,6 +23,7 @@ export async function submitAgentJobGroup(args: {
 
 	const prompts = await fetchUserPromptsForWorkspace({ workspaceId, userId });
 	if (!prompts || prompts.length === 0) {
+		console.warn(`[agent] submitAgentJobGroup: no prompts found for workspace ${workspaceId} — skipping`);
 		return { status: "empty" };
 	}
 

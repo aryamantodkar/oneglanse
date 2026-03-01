@@ -25,6 +25,7 @@ import {
 import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
 import { CronExpressionParser } from "cron-parser";
 import { z } from "zod";
+import { createRateLimiter } from "../../middleware/rateLimit";
 import {
 	authorizedWorkspaceProcedure,
 	protectedProcedure,
@@ -55,6 +56,7 @@ export const workspaceRouter = createTRPCRouter({
 				region: z.string().nullable().optional(),
 			}),
 		)
+		.use(createRateLimiter("workspace.create", { limit: 3, windowSecs: 3600 }))
 		.mutation(async ({ input, ctx }) => {
 			const {
 				user: { id: userId },
@@ -205,6 +207,7 @@ export const workspaceRouter = createTRPCRouter({
 
 	joinByCode: protectedProcedure
 		.input(z.object({ code: z.string().min(1) }))
+		.use(createRateLimiter("workspace.joinByCode", { limit: 5, windowSecs: 900 }))
 		.mutation(async ({ input, ctx }) => {
 			return joinWorkspaceByCode({ code: input.code, userId: ctx.user.id });
 		}),

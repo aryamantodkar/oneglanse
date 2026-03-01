@@ -8,6 +8,7 @@ import {
 	storePromptsForWorkspace,
 } from "@oneglanse/services";
 import { z } from "zod";
+import { createRateLimiter } from "../../middleware/rateLimit";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 
 export const promptRouter = createTRPCRouter({
@@ -17,6 +18,7 @@ export const promptRouter = createTRPCRouter({
 				prompts: z.array(z.string().min(1).max(500)).min(1).max(100),
 			}),
 		)
+		.use(createRateLimiter("prompt.store", { limit: 20, windowSecs: 60 }))
 		.mutation(async ({ input, ctx }) => {
 			const { prompts } = input;
 
