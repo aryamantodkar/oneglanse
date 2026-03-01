@@ -4,6 +4,7 @@ import { ExportMenu } from "@/components/export-menu";
 import { api } from "@/trpc/react";
 import type { AnalysisRecord } from "@oneglanse/types";
 import {
+	AggregateStatsRow,
 	BrandComparisonChart,
 	BrandPerceptionCard,
 	CompetitiveLandscape,
@@ -25,7 +26,6 @@ import {
 	NoAnalysisState,
 	NoWorkspaceState,
 } from "./_components/states";
-import { AggregateStatsRow } from "./_components/stats-row";
 import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 
 // Hooks

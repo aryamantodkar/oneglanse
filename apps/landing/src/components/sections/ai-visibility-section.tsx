@@ -5,13 +5,13 @@ export function AiVisibilitySection(): React.JSX.Element {
   return (
     <section
       className="section-shell py-12 sm:py-14"
-      id="ai-visibility"
-      aria-labelledby="ai-visibility-title"
+      id="competitor-comparison"
+      aria-labelledby="competitor-comparison-title"
     >
       <SectionHeading
-        eyebrow="AI Perception"
-        title="See how models position your brand before your buyers do"
-        description="Perception, ranking, and recommendation signals rendered from the same product components used in the dashboard."
+        eyebrow="Competitor Comparison"
+        title="How HubSpot performs against direct alternatives in AI answers"
+        description="A complete horizontal comparison across presence, recommendation, sentiment, and rank strength."
       />
       <AiVisibilityPreview />
     </section>
