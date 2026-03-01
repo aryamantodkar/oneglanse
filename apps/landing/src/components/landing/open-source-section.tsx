@@ -1,5 +1,4 @@
-const GITHUB_URL = "https://github.com/aryamantodkar/oneglanse";
-const DOCS_URL = "https://oneglanse.com/docs";
+import { SITE_URLS } from "@/lib/landing-content";
 
 export function OpenSourceSection(): React.JSX.Element {
   return (
@@ -15,7 +14,7 @@ export function OpenSourceSection(): React.JSX.Element {
         </div>
         <div className="flex flex-wrap gap-3">
           <a
-            href={GITHUB_URL}
+            href={SITE_URLS.github}
             className="inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium"
             target="_blank"
             rel="noreferrer noopener"
@@ -23,7 +22,7 @@ export function OpenSourceSection(): React.JSX.Element {
             View on GitHub
           </a>
           <a
-            href={DOCS_URL}
+            href={SITE_URLS.docs}
             className="inline-flex items-center rounded-lg border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)]"
             target="_blank"
             rel="noreferrer noopener"

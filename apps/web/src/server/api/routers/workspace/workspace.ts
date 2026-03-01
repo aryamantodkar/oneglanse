@@ -8,6 +8,7 @@ import {
 	addMemberToWorkspaceByEmail,
 	checkIsFirstWorkspace,
 	createWorkspaceForTenant,
+	deleteUserAccount,
 	getAllWorkspacesForUser,
 	getLastPromptRunTime,
 	getWorkspaceById,
@@ -215,10 +216,10 @@ export const workspaceRouter = createTRPCRouter({
 	removeMember: authorizedWorkspaceProcedure
 		.input(z.object({ userId: z.string().min(1), role: z.string().min(1) }))
 		.mutation(async ({ input, ctx }) => {
-			const { workspaceId, user } = ctx;
-			const { userId, role } = input;
+			const { workspaceId, user, membership } = ctx;
+			const { userId } = input;
 
-			if (role !== "owner") {
+			if (membership.role !== "owner") {
 				throw new AuthError("Only workspace owners can remove members.");
 			}
 			if (userId === user.id) {
@@ -305,6 +306,10 @@ export const workspaceRouter = createTRPCRouter({
 		}
 
 		return { nextRun, lastPromptRun };
+	}),
+
+	deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+		await deleteUserAccount({ userId: ctx.user.id });
 	}),
 
 });

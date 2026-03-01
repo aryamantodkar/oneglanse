@@ -115,6 +115,11 @@ export function AppSidebar({
 			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
 			icon: Clock,
 		},
+		{
+			title: "People",
+			url: `/people?workspace=${activeWorkspace?.id ?? ""}`,
+			icon: Users,
+		},
 	];
 
 	const settingsItems = [
