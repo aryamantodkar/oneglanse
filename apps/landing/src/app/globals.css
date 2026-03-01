@@ -1,25 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.99 0.002 95);
-  --foreground: oklch(0.23 0.01 80);
-  --muted: oklch(0.95 0.005 90);
-  --muted-foreground: oklch(0.45 0.01 80);
-  --border: oklch(0.88 0.008 85);
-  --card: oklch(1 0 0);
-  --accent: oklch(0.32 0.03 75);
-  --accent-foreground: oklch(0.98 0.002 95);
+  /* Light mode — exact match to dashboard */
+  --background:        oklch(1 0 0);
+  --foreground:        oklch(0.147 0.004 49.25);
+  --muted:             oklch(0.97 0.001 106.424);
+  --muted-foreground:  oklch(0.553 0.013 58.071);
+  --border:            oklch(0.923 0.003 48.717);
+  --card:              oklch(1 0 0);
+  --accent:            oklch(0.216 0.006 56.043);
+  --accent-foreground: oklch(0.985 0.001 106.423);
 }
 
 :root[data-theme="dark"] {
-  --background: oklch(0.17 0.008 80);
-  --foreground: oklch(0.95 0.004 90);
-  --muted: oklch(0.23 0.008 80);
-  --muted-foreground: oklch(0.74 0.01 85);
-  --border: oklch(0.34 0.008 80);
-  --card: oklch(0.2 0.008 80);
-  --accent: oklch(0.86 0.01 85);
-  --accent-foreground: oklch(0.18 0.008 80);
+  /* Dark mode — exact match to dashboard */
+  --background:        oklch(0.147 0.004 49.25);
+  --foreground:        oklch(0.985 0.001 106.423);
+  --muted:             oklch(0.268 0.007 34.298);
+  --muted-foreground:  oklch(0.709 0.01 56.259);
+  --border:            oklch(1 0 0 / 10%);
+  --card:              oklch(0.216 0.006 56.043);
+  --accent:            oklch(0.923 0.003 48.717);
+  --accent-foreground: oklch(0.216 0.006 56.043);
 }
 
 * {
@@ -34,13 +36,7 @@ body {
 body {
   margin: 0;
   color: var(--foreground);
-  background: radial-gradient(circle at top, oklch(0.97 0.01 90), transparent 48%),
-    var(--background);
-}
-
-:root[data-theme="dark"] body {
-  background: radial-gradient(circle at top, oklch(0.25 0.01 85), transparent 52%),
-    var(--background);
+  background-color: var(--background);
 }
 
 .section-shell {
