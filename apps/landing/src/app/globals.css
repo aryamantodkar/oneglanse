@@ -11,17 +11,15 @@
   --accent-foreground: oklch(0.98 0.002 95);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.17 0.008 80);
-    --foreground: oklch(0.95 0.004 90);
-    --muted: oklch(0.23 0.008 80);
-    --muted-foreground: oklch(0.74 0.01 85);
-    --border: oklch(0.34 0.008 80);
-    --card: oklch(0.2 0.008 80);
-    --accent: oklch(0.86 0.01 85);
-    --accent-foreground: oklch(0.18 0.008 80);
-  }
+:root[data-theme="dark"] {
+  --background: oklch(0.17 0.008 80);
+  --foreground: oklch(0.95 0.004 90);
+  --muted: oklch(0.23 0.008 80);
+  --muted-foreground: oklch(0.74 0.01 85);
+  --border: oklch(0.34 0.008 80);
+  --card: oklch(0.2 0.008 80);
+  --accent: oklch(0.86 0.01 85);
+  --accent-foreground: oklch(0.18 0.008 80);
 }
 
 * {
@@ -40,11 +38,9 @@ body {
     var(--background);
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: radial-gradient(circle at top, oklch(0.25 0.01 85), transparent 52%),
-      var(--background);
-  }
+:root[data-theme="dark"] body {
+  background: radial-gradient(circle at top, oklch(0.25 0.01 85), transparent 52%),
+    var(--background);
 }
 
 .section-shell {

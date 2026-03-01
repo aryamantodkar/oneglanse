@@ -1,4 +1,4 @@
-const GITHUB_URL = "https://github.com";
+const GITHUB_URL = "https://github.com/aryamantodkar/oneglanse";
 const DOCS_URL = "https://oneglanse.com/docs";
 
 export function OpenSourceSection(): React.JSX.Element {
@@ -17,12 +17,16 @@ export function OpenSourceSection(): React.JSX.Element {
           <a
             href={GITHUB_URL}
             className="inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium"
+            target="_blank"
+            rel="noreferrer noopener"
           >
             View on GitHub
           </a>
           <a
             href={DOCS_URL}
             className="inline-flex items-center rounded-lg border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)]"
+            target="_blank"
+            rel="noreferrer noopener"
           >
             Self-host Instructions
           </a>

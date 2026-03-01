@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20-bookworm AS base
+FROM node:20-bookworm-slim AS base
 WORKDIR /app
 ARG PNPM_VERSION=10.16.0
 RUN npm install -g pnpm@${PNPM_VERSION}
@@ -26,23 +26,11 @@ FROM node:20-bookworm-slim AS runner
 ARG PNPM_VERSION=10.16.0
 
 # Playwright system deps
-RUN apt-get update && apt-get install -y \
-  libnss3 \
-  libatk1.0-0 \
-  libatk-bridge2.0-0 \
-  libcups2 \
-  libdrm2 \
-  libxkbcommon0 \
-  libxcomposite1 \
-  libxdamage1 \
-  libxfixes3 \
-  libxrandr2 \
-  libgbm1 \
-  libasound2 \
-  libpangocairo-1.0-0 \
-  libgtk-3-0 \
-  ca-certificates \
-  fonts-liberation \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+  libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+  libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 \
+  ca-certificates fonts-liberation \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

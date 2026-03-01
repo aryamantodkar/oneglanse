@@ -7,6 +7,7 @@ const config = {
   // root so the standalone output mirrors apps/docs/server.js correctly.
   outputFileTracingRoot: path.join(process.cwd(), "../../"),
   basePath: "/docs",
+  trailingSlash: true,
 };
 
 export default config;
