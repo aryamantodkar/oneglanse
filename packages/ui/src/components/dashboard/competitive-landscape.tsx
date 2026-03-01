@@ -1,4 +1,5 @@
 "use client";
+
 import { getFaviconUrls } from "@oneglanse/utils";
 import { Users } from "lucide-react";
 import { useMemo, type JSX } from "react";

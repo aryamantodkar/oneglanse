@@ -1,3 +1,5 @@
+"use client";
+
 import { cn, getFaviconUrls } from "@oneglanse/utils";
 import { Globe, Link2, Trophy, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
