@@ -66,24 +66,36 @@ function ts(): string {
 
 export const logger = {
 	log: (...args: unknown[]) => {
-		console.log(`${contextPrefix()}${ts()}`, ...formatArgs(args));
+		console.log(`${ts()} ${contextPrefix()}`, ...formatArgs(args));
 	},
 
 	warn: (...args: unknown[]) => {
-		console.warn(`${contextPrefix()}${ts()} ${YELLOW}⚠${R}`, ...formatArgs(args));
+		console.warn(
+			`${ts()} ${contextPrefix()} ${YELLOW}⚠${R}`,
+			...formatArgs(args),
+		);
 	},
 
 	error: (...args: unknown[]) => {
-		console.error(`${contextPrefix()}${ts()} ${RED}✕${R}`, ...formatArgs(args));
+		console.error(
+			`${ts()} ${contextPrefix()} ${RED}✕${R}`,
+			...formatArgs(args),
+		);
 	},
 
 	success: (...args: unknown[]) => {
-		console.log(`${contextPrefix()}${ts()} ${GREEN}✓${R}`, ...formatArgs(args));
+		console.log(
+			`${ts()} ${contextPrefix()} ${GREEN}✓${R}`,
+			...formatArgs(args),
+		);
 	},
 
 	debug: (...args: unknown[]) => {
 		if (!DEBUG_ENABLED) return;
-		console.log(`${DIM}${contextPrefix()}${ts()}${R}`, ...formatArgs(args));
+		console.log(
+			`${ts()} ${DIM}${contextPrefix()}${R}`,
+			...formatArgs(args),
+		);
 	},
 };
 

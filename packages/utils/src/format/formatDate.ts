@@ -1,5 +1,20 @@
+const CLICKHOUSE_DATETIME_RE =
+	/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+
+/**
+ * Parse timestamps returned by ClickHouse as UTC when they have no timezone info.
+ * ClickHouse DateTime commonly returns "YYYY-MM-DD HH:mm:ss" (UTC in our writes).
+ */
+export function parseDateString(dateStr: string): Date {
+	if (CLICKHOUSE_DATETIME_RE.test(dateStr)) {
+		const isoLike = dateStr.replace(" ", "T");
+		return new Date(`${isoLike}Z`);
+	}
+	return new Date(dateStr);
+}
+
 export const formatDate = (dateStr: string) => {
-	const d = new Date(dateStr);
+	const d = parseDateString(dateStr);
 
 	const day = String(d.getDate()).padStart(2, "0");
 	const month = String(d.getMonth() + 1).padStart(2, "0");
