@@ -15,8 +15,9 @@ RUN pnpm --filter @oneglanse/docs build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=3002
 COPY --from=builder /app/apps/docs/.next/standalone ./
 COPY --from=builder /app/apps/docs/.next/static ./apps/docs/.next/static
 COPY --from=builder /app/apps/docs/public ./apps/docs/public
-EXPOSE 3000
+EXPOSE 3002
 CMD ["node", "apps/docs/server.js"]
