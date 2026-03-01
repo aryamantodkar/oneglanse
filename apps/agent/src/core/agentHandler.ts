@@ -1,5 +1,6 @@
 import { toErrorMessage } from "@oneglanse/errors";
-import { logger, runWithProvider } from "@oneglanse/utils";
+import { logger } from "@oneglanse/utils";
+import { runWithProvider } from "../lib/providerContext.js";
 import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
 import { fetchProxies } from "../lib/browser/proxy/pool.js";
 import { type AgentFactory, runWithProxyPool } from "../lib/browser/proxy/runner.js";
