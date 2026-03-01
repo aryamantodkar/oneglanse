@@ -1,0 +1,242 @@
+name: Build
+
+on:
+  push:
+    branches: [feat/no-auth-providers]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  PREFIX: ghcr.io/${{ github.repository_owner }}
+  PNPM: '10.16.0'
+
+jobs:
+  # ── Typecheck ────────────────────────────────────────────────
+  validate:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  # ── Detect which apps changed ────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      web:      ${{ steps.f.outputs.web }}
+      landing:  ${{ steps.f.outputs.landing }}
+      docs:     ${{ steps.f.outputs.docs }}
+      agent:    ${{ steps.f.outputs.agent }}
+      postgres: ${{ steps.f.outputs.postgres }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: f
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            landing:
+              - 'apps/landing/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            docs:
+              - 'apps/docs/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            agent:
+              - 'apps/agent/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            postgres:
+              - 'packages/db/Dockerfile'
+              - 'packages/db/init-scripts/**'
+
+  # ── Build jobs ───────────────────────────────────────────────
+  build-web:
+    name: Web
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.PREFIX }}/oneglanse-web
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          build-args: PNPM_VERSION=${{ env.PNPM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-web:buildcache
+          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-web:buildcache,mode=max
+
+  build-landing:
+    name: Landing
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.landing == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.PREFIX }}/oneglanse-landing
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/landing/Dockerfile
+          build-args: PNPM_VERSION=${{ env.PNPM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-landing:buildcache
+          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-landing:buildcache,mode=max
+
+  build-docs:
+    name: Docs
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.PREFIX }}/oneglanse-docs
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/docs/Dockerfile
+          build-args: PNPM_VERSION=${{ env.PNPM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-docs:buildcache
+          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-docs:buildcache,mode=max
+
+  build-agent:
+    name: Agent
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.agent == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.PREFIX }}/oneglanse-agent
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/agent/Dockerfile
+          build-args: PNPM_VERSION=${{ env.PNPM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-agent:buildcache
+          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-agent:buildcache,mode=max
+
+  build-postgres:
+    name: Postgres
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.postgres == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.PREFIX }}/oneglanse-postgres
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./packages/db/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-postgres:buildcache
+          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-postgres:buildcache,mode=max
