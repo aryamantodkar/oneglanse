@@ -54,29 +54,27 @@ export async function launchContext(
 	let proxy = getNextProxy();
 
 	if (!proxy) {
-		logger.warn(`[${provider}] Proxy pool exhausted, refreshing...`);
+		logger.warn(`proxy pool exhausted, refreshing...`);
 		try {
 			await fetchProxies({ forceRefresh: true });
 			proxy = getNextProxy();
 		} catch (err) {
-			logger.error(`[${provider}] Failed to refresh proxy pool:`, toErrorMessage(err));
+			logger.error(`failed to refresh proxy pool:`, toErrorMessage(err));
 		}
 	}
 
 	if (proxy) {
 		const redactedProxy =
 			proxy?.replace(/\/\/[^:]+:[^@]+@/, "//***:***@") ?? "none";
-		logger.log(`Using proxy: ${redactedProxy}`);
+		logger.log(`using proxy: ${redactedProxy}`);
 	} else {
-		logger.warn("No proxies available, launching without proxy");
+		logger.warn("no proxies available, launching without proxy");
 	}
 
 	const port = await getFreePort();
 	const userDataDir = `/tmp/cdp-${provider}-${port}`;
 
-	logger.log(
-		`[${provider}] Starting CDP browser on port ${port}${proxy ? " (proxy)" : " (direct)"}`,
-	);
+	logger.log(`CDP browser on port ${port}${proxy ? " (proxy)" : " (direct)"}`);
 
 	let chromeProcess: ChildProcess | null = null;
 	let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | null = null;

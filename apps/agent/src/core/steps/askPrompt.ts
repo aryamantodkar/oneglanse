@@ -20,13 +20,7 @@ export async function askPrompt(
 	prompt: string,
 	provider: Provider,
 ): Promise<void> {
-	logger.debug(
-		`\n💬 Asking: "${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}"`,
-	);
-
 	const input = await waitForEditorReady(page, provider);
-
-	logger.debug("Typing Prompt");
 
 	await clearEditorInput(page, input, { waitAfterMs: 200 });
 
@@ -45,7 +39,6 @@ export async function askPrompt(
 
 	await page.waitForTimeout(500);
 
-	logger.debug("  📤 Submitting...");
 
 	// Store pre-submit state for success detection
 	const preSubmitContent = await input.evaluate((el: Element) => {

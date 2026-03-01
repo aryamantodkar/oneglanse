@@ -74,7 +74,7 @@ async function updateProgress(
 	const countArg = resultCount !== null ? String(resultCount) : "";
 	const result = await redis.eval(UPDATE_PROGRESS_LUA, 1, progressKey, provider, status, countArg);
 	if (result === null) {
-		logger.warn(`[${provider}] Progress key missing during update (expired?)`);
+		logger.warn(`progress key missing during update (expired?)`);
 	}
 }
 

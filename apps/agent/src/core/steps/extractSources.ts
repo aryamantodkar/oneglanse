@@ -12,7 +12,7 @@ export async function checkAndExtractSources(
 	try {
 		sources = await extractSourcesFromPanel(page, provider);
 	} catch (err) {
-		logger.warn("Failed to extract sources, continuing:", err);
+		logger.warn("source extraction failed, continuing:", err);
 		sources = [];
 	}
 
@@ -23,14 +23,12 @@ async function extractSourcesFromPanel(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
-	logger.debug("🔍 Opening sources panel (latest response only)...");
-
 	await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
 	await page.waitForTimeout(1000);
 
 	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
 
-	logger.debug(`✅ Extracted ${sources.length} sources`);
+	logger.debug(`extracted ${sources.length} sources`);
 
 	await page.waitForTimeout(1000);
 

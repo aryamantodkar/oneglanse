@@ -16,8 +16,6 @@ export async function runPrompts(
 	page: Page,
 	provider: Provider,
 ): Promise<AskPromptResult[]> {
-	logger.debug("🤖 Running prompts...\n");
-
 	const { user_id: userId, workspace_id: workspaceId, prompts: promptsArray } = payload;
 
 	await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
@@ -33,10 +31,8 @@ export async function runPrompts(
 			continue;
 		}
 
-		logger.debug(`\n${"=".repeat(70)}`);
-		logger.debug(`Prompt ${i + 1}/${promptsArray.length}`);
-		logger.debug(`${"=".repeat(70)}`);
-		logger.debug(`📝 ${promptEntry.prompt}\n`);
+		const preview = promptEntry.prompt.slice(0, 60) + (promptEntry.prompt.length > 60 ? "..." : "");
+		logger.log(`prompt ${i + 1}/${promptsArray.length} — "${preview}"`);
 
 		// Throws IPRefreshNeededError on terminal failure — propagates to job handler.
 		const { result, proxyNowProven } = await executePromptWithRetry(
@@ -61,6 +57,6 @@ export async function runPrompts(
 		}
 	}
 
-	logger.success(`✅ All prompts completed successfully (${results.length}/${promptsArray.length})`);
+	logger.success(`all ${results.length}/${promptsArray.length} prompts completed`);
 	return results;
 }

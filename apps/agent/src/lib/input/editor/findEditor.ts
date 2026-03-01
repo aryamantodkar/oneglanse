@@ -22,11 +22,11 @@ export async function findActiveEditor(
 				if (await el.isVisible()) {
 					await el.focus().catch(() => {});
 
-					logger.log(`  ✓ Found input: ${selector}`);
+					logger.debug(`found editor: ${selector}`);
 					return el;
 				}
 			} catch {
-				logger.log(`  ⚠️  Found but hidden: ${selector}`);
+				logger.debug(`found but hidden: ${selector}`);
 			}
 		}
 	}

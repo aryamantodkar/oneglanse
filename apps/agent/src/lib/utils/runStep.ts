@@ -11,7 +11,6 @@ export async function runStep(
 	page: Page,
 	fn: StepFn,
 ): Promise<void> {
-	logger.log(`\n▶️  ${name}`);
 	const start = Date.now();
 
 	try {
