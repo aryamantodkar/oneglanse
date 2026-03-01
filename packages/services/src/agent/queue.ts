@@ -17,7 +17,7 @@ const connection = {
 const queues = new Map<Provider, Queue>();
 
 export function getQueueName(provider: Provider): string {
-	return `oneglanse-agent:${provider}`;
+	return `oneglanse-agent-${provider}`;
 }
 
 export function getProviderQueue(provider: Provider): Queue {
