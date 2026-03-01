@@ -10,7 +10,7 @@ import type {
 	PromptPayload,
 	Provider,
 } from "@oneglanse/types";
-import { exponentialBackoff, logger } from "@oneglanse/utils";
+import { createProviderLogger, exponentialBackoff, logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { recordProxyResult } from "./pool.js";
 import { runAgents } from "../../../core/runAgents.js";
@@ -95,6 +95,7 @@ async function runProxyCycle(
 	accumulatedResults: AskPromptResult[],
 	currentPayload: PromptPayload,
 	cycle: number,
+	plog: ReturnType<typeof createProviderLogger>,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
 	for (let attempt = 0; attempt < PROXIES_PER_CYCLE; attempt++) {
 		const totalAttempt = cycle * PROXIES_PER_CYCLE + attempt + 1;
@@ -137,8 +138,8 @@ async function runProxyCycle(
 			return { done: true };
 		} catch (err) {
 			if (err instanceof IPRefreshNeededError) {
-				logger.warn(
-					`${label} needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`,
+				plog.warn(
+					`needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`,
 				);
 
 				accumulatedResults.push(...err.partialResults);
@@ -157,8 +158,8 @@ async function runProxyCycle(
 			}
 
 			const failureType = classifyError(err);
-			logger.error(
-				`${label} failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}, type=${failureType}):`,
+			plog.error(
+				`failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}, type=${failureType}):`,
 				toErrorMessage(err),
 			);
 
@@ -189,21 +190,22 @@ export async function runWithProxyPool(
 	provider: Provider,
 	fetchProxies: (opts: { resetBadProxies?: boolean; forceRefresh?: boolean }) => Promise<void>,
 ): Promise<AskPromptResult[]> {
+	const plog = createProviderLogger(provider);
 	const accumulatedResults: AskPromptResult[] = [];
 	let currentPayload = payload;
 
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
 		if (cycle > 0) {
 			const backoff = exponentialBackoff(cycle - 1, INITIAL_BACKOFF, MAX_CYCLE_BACKOFF);
-			logger.warn(
-				`${label} cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s, refreshing proxies...`,
+			plog.warn(
+				`cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s, refreshing proxies...`,
 			);
 			await new Promise((r) => setTimeout(r, backoff));
 
 			try {
 				await fetchProxies({ forceRefresh: true });
 			} catch (err) {
-				logger.error(`${label} failed to refresh proxies:`, toErrorMessage(err));
+				plog.error(`failed to refresh proxies:`, toErrorMessage(err));
 			}
 		}
 
@@ -214,6 +216,7 @@ export async function runWithProxyPool(
 			accumulatedResults,
 			currentPayload,
 			cycle,
+			plog,
 		);
 
 		if (outcome.done) {
@@ -224,8 +227,8 @@ export async function runWithProxyPool(
 	}
 
 	const totalAttempts = MAX_CYCLES * PROXIES_PER_CYCLE;
-	logger.error(
-		`🔴 ${label} EXHAUSTED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles for ${provider}.`,
+	plog.error(
+		`🔴 EXHAUSTED — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles.`,
 	);
 	throw new ExternalServiceError(
 		provider,

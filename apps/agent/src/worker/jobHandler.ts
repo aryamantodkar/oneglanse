@@ -12,7 +12,7 @@ import { type Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
-import { logger } from "@oneglanse/utils";
+import { createProviderLogger, logger } from "@oneglanse/utils";
 import { runAnalysisInBackground } from "./analysis.js";
 
 type ProviderJobData = {
@@ -82,13 +82,14 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	const data = job.data as ProviderJobData;
 
 	const { provider, jobGroupId, prompts, user_id, workspace_id } = data;
+	const plog = createProviderLogger(provider);
 
 	if (!providerConfig[provider]) {
 		throw new ValidationError(`Unknown provider: ${provider}`, { provider });
 	}
 
 	if (PROVIDER_CONFIGS[provider].skip) {
-		logger.warn(`[${provider}] skipped (skip: true in providerRegistry)`);
+		plog.warn(`skipped (skip: true in providerRegistry)`);
 		return true;
 	}
 
@@ -146,7 +147,7 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 			data: result,
 		};
 	} catch (err) {
-		logger.error(`${provider} failed:`, toErrorMessage(err));
+		plog.error(`failed:`, toErrorMessage(err));
 	}
 
 	// Store successful results immediately

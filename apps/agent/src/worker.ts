@@ -2,7 +2,7 @@ import { env } from "./env.js";
 import { waitForRedis, getQueueName } from "@oneglanse/services";
 import { Worker } from "bullmq";
 import { handleJob } from "./worker/jobHandler.js";
-import { logger } from "@oneglanse/utils";
+import { createProviderLogger, logger } from "@oneglanse/utils";
 import { PROVIDER_LIST } from "@oneglanse/types";
 
 // Exported so index.ts can call worker.close() during graceful shutdown.
@@ -24,6 +24,7 @@ async function startWorkers() {
 	};
 
 	workers = PROVIDER_LIST.map((provider) => {
+		const plog = createProviderLogger(provider);
 		const w = new Worker(getQueueName(provider), handleJob, {
 			connection,
 			// Sequential per-provider to avoid Playwright/proxy contention within a provider.
@@ -34,15 +35,15 @@ async function startWorkers() {
 		});
 
 		w.on("active", (job) => {
-			logger.log(`[${provider}] Job started`, job.id);
+			plog.log("Job started", job.id);
 		});
 
 		w.on("completed", (job) => {
-			logger.success(`[${provider}] Job completed`, job.id);
+			plog.success("Job completed", job.id);
 		});
 
 		w.on("failed", (job, err) => {
-			logger.error(`[${provider}] Job failed`, job?.id, err);
+			plog.error("Job failed", job?.id, err);
 		});
 
 		return w;

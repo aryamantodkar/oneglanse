@@ -1,7 +1,7 @@
 import { analysePromptsForWorkspace } from "@oneglanse/services";
 import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { logger } from "@oneglanse/utils";
+import { createProviderLogger } from "@oneglanse/utils";
 
 export function runAnalysisInBackground(args: {
 	workspaceId: string;
@@ -10,21 +10,18 @@ export function runAnalysisInBackground(args: {
 	jobGroupId: string;
 }): void {
 	const { workspaceId, userId, provider, jobGroupId } = args;
+	const plog = createProviderLogger(provider);
 	void (async () => {
 		try {
-			logger.log(
-				`${provider} done for job group ${jobGroupId}, starting analysis in background...`,
-			);
+			plog.log(`done for job group ${jobGroupId}, starting analysis in background...`);
 			await analysePromptsForWorkspace({
 				workspaceId,
 				analyzeAll: true,
 			});
-			logger.success(
-				`Background analysis completed after ${provider} for job group ${jobGroupId}`,
-			);
+			plog.success(`Background analysis completed for job group ${jobGroupId}`);
 		} catch (err) {
-			logger.error(
-				`Background analysis failed after ${provider} for job group ${jobGroupId}:`,
+			plog.error(
+				`Background analysis failed for job group ${jobGroupId}:`,
 				toErrorMessage(err),
 			);
 		}
