@@ -7,6 +7,8 @@ on:
       - "apps/**"
       - "packages/**"
       - "apps/web/Dockerfile"
+      - "apps/landing/Dockerfile"
+      - "apps/docs/Dockerfile"
       - "apps/agent/Dockerfile"
       - "packages/db/Dockerfile"
       - "packages/db/**"
@@ -44,6 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       web: ${{ steps.filter.outputs.web }}
+      landing: ${{ steps.filter.outputs.landing }}
+      docs: ${{ steps.filter.outputs.docs }}
       agent: ${{ steps.filter.outputs.agent }}
       postgres: ${{ steps.filter.outputs.postgres }}
     steps:
@@ -62,6 +66,28 @@ jobs:
               - 'packages/utils/**'
               - 'apps/web/Dockerfile'
               - 'apps/web/Dockerfile.dockerignore'
+              - '.dockerignore'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig.json'
+              - '.github/workflows/docker-build.yml'
+            landing:
+              - 'apps/landing/**'
+              - 'apps/landing/Dockerfile'
+              - 'apps/landing/Dockerfile.dockerignore'
+              - '.dockerignore'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig.json'
+              - '.github/workflows/docker-build.yml'
+            docs:
+              - 'apps/docs/**'
+              - 'apps/docs/Dockerfile'
+              - 'apps/docs/Dockerfile.dockerignore'
               - '.dockerignore'
               - 'package.json'
               - 'pnpm-lock.yaml'
@@ -128,6 +154,84 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-web:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-web:buildcache,mode=max
+
+  build-landing:
+    name: Build Landing
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.landing == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/oneglanse-landing
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/landing/Dockerfile
+          build-args: |
+            PNPM_VERSION=${{ env.PNPM_VERSION }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-landing:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-landing:buildcache,mode=max
+
+  build-docs:
+    name: Build Docs
+    needs: [validate, changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/oneglanse-docs
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/docs/Dockerfile
+          build-args: |
+            PNPM_VERSION=${{ env.PNPM_VERSION }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-docs:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/oneglanse-docs:buildcache,mode=max
 
   build-agent:
     name: Build Agent

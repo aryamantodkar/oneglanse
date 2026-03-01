@@ -131,7 +131,7 @@ services:
     container_name: oneglanse-web
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3000"
     env_file: .env
     environment:
       HOSTNAME: 0.0.0.0
@@ -157,6 +157,54 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+
+  # ----------------------------
+  # Landing App
+  # ----------------------------
+  landing:
+    image: ghcr.io/aryamantodkar/oneglanse-landing:latest
+    pull_policy: always
+    container_name: oneglanse-landing
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    networks:
+      - frontend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # ----------------------------
+  # Docs App
+  # ----------------------------
+  docs:
+    image: ghcr.io/aryamantodkar/oneglanse-docs:latest
+    pull_policy: always
+    container_name: oneglanse-docs
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3002"
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3002"
+    networks:
+      - frontend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ----------------------------
   # Database Migrations (ONE-SHOT)
