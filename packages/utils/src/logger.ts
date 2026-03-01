@@ -1,17 +1,17 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-
 const DEBUG_ENABLED =
 	process.env["DEBUG_ENABLED"] === "true" ||
 	process.env["DEBUG_ENABLED"] === "1";
 
-// ── Async context ─────────────────────────────────────────────────────────────
-// Stores the active provider name so every logger call inside a provider's
-// execution chain is automatically prefixed — no parameter threading needed.
+// ── Provider context hook ─────────────────────────────────────────────────────
+// Logger is browser-safe: it never imports node:async_hooks.
+// The agent runtime installs a getter via setProviderContextGetter() at startup;
+// web app code leaves it unset and contextPrefix() returns an empty string.
 
-const providerStorage = new AsyncLocalStorage<string>();
+let _getContext: (() => string | undefined) | null = null;
 
-export function runWithProvider<T>(provider: string, fn: () => Promise<T>): Promise<T> {
-	return providerStorage.run(provider, fn);
+/** Call once at agent startup to wire AsyncLocalStorage into the logger. */
+export function setProviderContextGetter(fn: () => string | undefined): void {
+	_getContext = fn;
 }
 
 // ── ANSI helpers ──────────────────────────────────────────────────────────────
@@ -32,23 +32,23 @@ const PROVIDER_COLORS: Record<string, string> = {
 };
 
 const PROVIDER_LABELS: Record<string, string> = {
-	openai: "OPENAI ",
-	anthropic: "CLAUDE ",
-	perplexity: "PERPLEXITY   ",
-	google: "GEMINI ",
-	"google-ai-overview": "AI_OVERVIEW ",
+	openai: "OPENAI     ",
+	anthropic: "CLAUDE     ",
+	perplexity: "PERPLEXITY ",
+	google: "GEMINI     ",
+	"google-ai-overview": "AI OVERVIEW",
 };
 
 function coloredPrefix(provider: string): string {
 	const color = PROVIDER_COLORS[provider] ?? "\x1b[37m";
 	const label =
 		PROVIDER_LABELS[provider] ??
-		provider.toUpperCase().slice(0, 7).padEnd(7);
+		provider.toUpperCase().slice(0, 11).padEnd(11);
 	return `${BOLD}${color}[${label}]${R}`;
 }
 
 function contextPrefix(): string {
-	const provider = providerStorage.getStore();
+	const provider = _getContext?.();
 	return provider ? `${coloredPrefix(provider)} ` : "";
 }
 
@@ -89,7 +89,7 @@ export const logger = {
 
 // ── Provider-colored logger ───────────────────────────────────────────────────
 // Kept for explicit use-cases (e.g. BullMQ event handlers that run outside the
-// runWithProvider async context).
+// provider async context).
 
 export type ProviderLogger = typeof logger;
 
