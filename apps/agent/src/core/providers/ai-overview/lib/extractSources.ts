@@ -4,6 +4,10 @@ import { toErrorMessage } from "@oneglanse/errors";
 import { SELECTORS, logger } from "@oneglanse/utils";
 import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
 
+function normalizeAIOverviewTitle(title: string): string {
+	return title.replace(/\s*\.?\s*opens in new tab\.?\s*$/i, "").trim();
+}
+
 export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 	try {
 		const { rawSources, containerFound } = await page.evaluate((sels) => {
@@ -137,8 +141,13 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 			logger.warn("AI Overview container not found — no sources extracted");
 		}
 
+		const normalizedSources = (rawSources as RawSource[]).map((source) => ({
+			...source,
+			title: normalizeAIOverviewTitle(source.title ?? "") || source.rawHref,
+		}));
+
 		// Deduplicate by URL only (original behaviour: same URL = same source regardless of title)
-		const sources = buildSources(rawSources as RawSource[], (url) => url);
+		const sources = buildSources(normalizedSources, (url) => url);
 
 		logger.debug(`Extracted ${sources.length} sources from AI Overview`);
 		return sources;

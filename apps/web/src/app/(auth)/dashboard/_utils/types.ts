@@ -4,6 +4,7 @@ export interface CompetitorData {
 	name: string;
 	domain: string;
 	appearances: number;
+	visibility?: number;
 	avgSentiment: number;
 	avgRank: number | null;
 	recCount: number;

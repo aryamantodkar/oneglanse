@@ -355,6 +355,7 @@ export default function SourcesPage(){
 	}
 
 	const hasData = displayedSources.length > 0;
+	const hasExportableData = hasData;
 
 	return (
 		<div className="ui-page-enter min-h-screen p-4 sm:p-6 lg:p-8">
@@ -371,7 +372,7 @@ export default function SourcesPage(){
 
 					<div className="flex items-center gap-2">
 						<ExportMenu
-							disabled={!hasData}
+							disabled={!hasExportableData}
 							onExportJson={() => {
 								const citationRows = domainGroups.flatMap((group) =>
 									group.urls.flatMap((source) =>

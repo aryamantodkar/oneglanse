@@ -24,7 +24,6 @@ import {
 } from "./_components/states";
 import { AggregateStatsRow } from "./_components/stats-row";
 import { TopSources } from "./_components/top-sources";
-import { LatestAnalyzedPrompts } from "./_components/latest-analyzed-prompts";
 import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 
 // Hooks
@@ -85,6 +84,7 @@ export default function Dashboard(){
 		);
 	}, [analysedPromptData]);
 	const hasFilteredAnalysis = metrics.analyzedRecords.length > 0;
+	const hasExportableData = hasFilteredAnalysis;
 
 	// Conditional renders
 	if (!workspaceId) return <NoWorkspaceState />;
@@ -131,7 +131,7 @@ export default function Dashboard(){
 							setTimeFilter={setTimeFilter}
 						/>
 						<ExportMenu
-							disabled={!hasFilteredAnalysis}
+							disabled={!hasExportableData}
 							onExportJson={() =>
 								exportAnalysisJson({
 									workspaceId,
@@ -175,7 +175,6 @@ export default function Dashboard(){
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 						<CompetitiveLandscape
 							competitors={metrics.competitorData}
-							modelFilter={modelFilter}
 						/>
 						<TopSources
 							sources={metrics.sourcesIntelligence}
@@ -189,7 +188,7 @@ export default function Dashboard(){
 						/>
 					</div>
 
-					<div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
+					<div className="space-y-4">
 						<BrandComparisonChart
 							competitors={metrics.competitorData}
 							brandName={metrics.brandName}
@@ -200,7 +199,6 @@ export default function Dashboard(){
 							brandSentimentScore={metrics.avgSentiment.score}
 							brandAvgRank={metrics.avgRank.position}
 						/>
-						<LatestAnalyzedPrompts records={metrics.analyzedRecords} />
 					</div>
 				</div>
 			</div>
