@@ -12,15 +12,15 @@ function CenterState({
 	description: string;
 }) {
 	return (
-		<div className="flex min-h-screen items-center justify-center px-4">
-			<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-7 text-center shadow-sm dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">
-				<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-					<Icon className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+		<div className="flex min-h-[60vh] items-center justify-center px-4">
+			<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
+				<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+					<Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 				</div>
 				<h2 className="mt-5 text-lg font-semibold text-gray-900 dark:text-gray-100">
 					{title}
 				</h2>
-				<p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+				<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
 					{description}
 				</p>
 			</div>

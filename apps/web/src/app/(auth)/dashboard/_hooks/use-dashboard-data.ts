@@ -11,6 +11,7 @@ export function useDashboardData(
 	analysedPromptData: AnalysisRecord[],
 	modelFilter: string,
 	timeFilter: "all" | "7d" | "14d" | "30d",
+	workspaceBrand?: { name?: string | null; domain?: string | null },
 ): DashboardMetrics {
 	// ─── 1. Filter step ──────────────────────────────────────────────────────
 
@@ -31,9 +32,11 @@ export function useDashboardData(
 	// ─── 3. Single-pass aggregation (replaces 9 separate memos) ──────────────
 
 	const aggregatedMetrics = useMemo(() => {
+		const fallbackBrandName = workspaceBrand?.name?.trim() || "Your Brand";
+		const fallbackBrandDomain = workspaceBrand?.domain?.trim() || "";
 		const emptyReturn = {
-			brandName: "Your Brand",
-			brandDomain: "",
+			brandName: fallbackBrandName,
+			brandDomain: fallbackBrandDomain,
 			avgRank: { position: null as number | null, total: null as number | null },
 			avgSentiment: { score: 0, label: "neutral" as const },
 			impactMetrics: {
@@ -69,8 +72,8 @@ export function useDashboardData(
 		const total = analyzedRecords.length;
 
 		// brandName / brandDomain
-		let brandName = "Your Brand";
-		let brandDomain = "";
+		let brandName = fallbackBrandName;
+		let brandDomain = fallbackBrandDomain;
 
 		// avgRank accumulators
 		let rankSum = 0;
@@ -125,7 +128,7 @@ export function useDashboardData(
 			const analysis = record.brand_analysis;
 
 			// brandName / brandDomain (first occurrence)
-			if (brandName === "Your Brand" && analysis.metadata?.brandName) {
+			if (brandName === fallbackBrandName && analysis.metadata?.brandName) {
 				brandName = analysis.metadata.brandName;
 			}
 			if (!brandDomain && analysis.metadata?.brandDomain) {
@@ -340,7 +343,7 @@ export function useDashboardData(
 			},
 			competitorData: [brandEntry, ...competitorList],
 		};
-	}, [analyzedRecords]);
+	}, [analyzedRecords, workspaceBrand?.name, workspaceBrand?.domain]);
 
 	// ─── 4. Sources intelligence (separate input: filteredRecords) ─────────────
 

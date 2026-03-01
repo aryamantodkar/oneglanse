@@ -1,6 +1,7 @@
 "use client";
 
 import { ExportMenu } from "@/components/export-menu";
+import { api } from "@/trpc/react";
 import type { AnalysisRecord } from "@oneglanse/types";
 import { AlertTriangle, Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -39,6 +40,10 @@ export default function Dashboard(){
 		isLoading: isAnalysedPromptsLoading,
 		error: analysedPromptError,
 	} = useFetchAnalysedPrompts(workspaceId);
+	const { data: workspace } = api.workspace.getById.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
 	const { isLoading: isPromptSourcesLoading, error: promptSourcesError } =
 		usePromptSources(workspaceId);
 	const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
@@ -70,7 +75,10 @@ export default function Dashboard(){
 	void setSelectedRecord;
 
 	// Computed data
-	const metrics = useDashboardData(analysedPromptData ?? [], modelFilter, timeFilter);
+	const metrics = useDashboardData(analysedPromptData ?? [], modelFilter, timeFilter, {
+		name: workspace?.name,
+		domain: workspace?.domain,
+	});
 	const hasAnyAnalysisInWorkspace = useMemo(() => {
 		return analysedPromptData?.some((r) =>
 			Boolean(r?.is_analysed && r?.brand_analysis),
@@ -82,15 +90,15 @@ export default function Dashboard(){
 	if (!workspaceId) return <NoWorkspaceState />;
 	if (analysedPromptError || promptSourcesError) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="flex flex-col items-center px-6 text-center">
-					<div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
-						<AlertTriangle className="h-6 w-6 text-amber-500" />
+			<div className="flex min-h-[60vh] items-center justify-center px-4">
+				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
+						<AlertTriangle className="h-5 w-5 text-amber-500" />
 					</div>
 					<h2 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
 						We couldn&apos;t load your dashboard
 					</h2>
-					<p className="mt-2 max-w-sm text-gray-500 text-sm dark:text-gray-400">
+					<p className="mt-2 text-gray-500 text-sm dark:text-gray-400">
 						Please try again in a moment. If the issue persists, check your
 						workspace connection.
 					</p>
