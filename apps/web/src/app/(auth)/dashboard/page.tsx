@@ -3,6 +3,12 @@
 import { ExportMenu } from "@/components/export-menu";
 import { api } from "@/trpc/react";
 import type { AnalysisRecord } from "@oneglanse/types";
+import {
+	BrandComparisonChart,
+	BrandPerceptionCard,
+	CompetitiveLandscape,
+	TopSources,
+} from "@oneglanse/ui";
 import { AlertTriangle, Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -11,9 +17,6 @@ import {
 	usePromptSources,
 } from "../prompts/_lib/queries/prompt.queries";
 
-import { BrandComparisonChart } from "./_components/brand-comparison-chart";
-import { BrandPerceptionCard } from "./_components/brand-perception";
-import { CompetitiveLandscape } from "./_components/competitive-landscape";
 // Components
 import { DashboardFilters } from "./_components/filters";
 import {
@@ -23,7 +26,6 @@ import {
 	NoWorkspaceState,
 } from "./_components/states";
 import { AggregateStatsRow } from "./_components/stats-row";
-import { TopSources } from "./_components/top-sources";
 import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 
 // Hooks

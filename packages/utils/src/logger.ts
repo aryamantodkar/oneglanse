@@ -31,13 +31,30 @@ const PROVIDER_COLORS: Record<string, string> = {
 	"google-ai-overview": "\x1b[34m",
 };
 
-const PROVIDER_LABELS: Record<string, string> = {
-	openai: "OPENAI     ",
-	anthropic: "CLAUDE     ",
-	perplexity: "PERPLEXITY ",
-	google: "GEMINI     ",
+const RAW_PROVIDER_LABELS: Record<string, string> = {
+	openai: "OPENAI",
+	anthropic: "CLAUDE",
+	perplexity: "PERPLEXITY",
+	google: "GEMINI",
 	"google-ai-overview": "AI OVERVIEW",
 };
+
+function centerLabel(label: string, width: number): string {
+	const totalPadding = width - label.length;
+	if (totalPadding <= 0) return label;
+
+	const left = Math.floor(totalPadding / 2);
+	const right = totalPadding - left;
+
+	return " ".repeat(left) + label + " ".repeat(right);
+}
+
+export const PROVIDER_LABELS: Record<string, string> = Object.fromEntries(
+	Object.entries(RAW_PROVIDER_LABELS).map(([key, label]) => [
+		key,
+		centerLabel(label, 12),
+	]),
+);
 
 function coloredPrefix(provider: string): string {
 	const color = PROVIDER_COLORS[provider] ?? "\x1b[37m";
@@ -104,21 +121,37 @@ export const logger = {
 // provider async context).
 
 export type ProviderLogger = typeof logger;
-
 export function createProviderLogger(provider: string): ProviderLogger {
-	const prefix = `${coloredPrefix(provider)} `;
+	const prefix = coloredPrefix(provider);
+
 	return {
 		log: (...args) =>
-			console.log(`${prefix}${ts()}`, ...formatArgs(args)),
+			console.log(`${ts()} ${prefix}`, ...formatArgs(args)),
+
 		warn: (...args) =>
-			console.warn(`${prefix}${ts()} ${YELLOW}⚠${R}`, ...formatArgs(args)),
+			console.warn(
+				`${ts()} ${prefix} ${YELLOW}⚠${R}`,
+				...formatArgs(args),
+			),
+
 		error: (...args) =>
-			console.error(`${prefix}${ts()} ${RED}✕${R}`, ...formatArgs(args)),
+			console.error(
+				`${ts()} ${prefix} ${RED}✕${R}`,
+				...formatArgs(args),
+			),
+
 		success: (...args) =>
-			console.log(`${prefix}${ts()} ${GREEN}✓${R}`, ...formatArgs(args)),
+			console.log(
+				`${ts()} ${prefix} ${GREEN}✓${R}`,
+				...formatArgs(args),
+			),
+
 		debug: (...args) => {
 			if (!DEBUG_ENABLED) return;
-			console.log(`${DIM}${prefix}${ts()}${R}`, ...formatArgs(args));
+			console.log(
+				`${ts()} ${DIM}${prefix}${R}`,
+				...formatArgs(args),
+			);
 		},
 	};
 }

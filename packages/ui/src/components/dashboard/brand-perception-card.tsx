@@ -1,7 +1,14 @@
-import { Card } from "@oneglanse/ui";
 import { Info } from "lucide-react";
-import { pricingLabels } from "../_utils/constants";
-import { DashboardEmptyState } from "./empty-state";
+import { Card } from "../card.js";
+import { DashboardEmptyState } from "./empty-state.js";
+
+const pricingLabels: Record<string, string> = {
+	premium: "Premium",
+	mid_range: "Mid-range",
+	budget: "Budget",
+	free: "Free",
+	not_mentioned: "Not mentioned",
+};
 
 export function BrandPerceptionCard({
 	bestKnownFor,
@@ -13,13 +20,12 @@ export function BrandPerceptionCard({
 	pricingPerception: string;
 	coreClaims: string[];
 	differentiators: string[];
-}){
+}) {
 	const hasData =
 		bestKnownFor || coreClaims.length > 0 || differentiators.length > 0;
 
 	return (
 		<Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-			{/* Header */}
 			<div>
 				<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 					AI Perception
@@ -37,7 +43,6 @@ export function BrandPerceptionCard({
 				/>
 			) : (
 				<div className="flex flex-1 flex-col gap-4">
-					{/* Pricing Signal */}
 					{pricingPerception !== "not_mentioned" && (
 						<div className="ui-list-item rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -49,7 +54,6 @@ export function BrandPerceptionCard({
 						</div>
 					)}
 
-					{/* Best Known For */}
 					{bestKnownFor && (
 						<div className="ui-list-item rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-gray-900">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -61,7 +65,6 @@ export function BrandPerceptionCard({
 						</div>
 					)}
 
-					{/* Core Claims */}
 					{coreClaims.length > 0 && (
 						<div>
 							<p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -74,16 +77,13 @@ export function BrandPerceptionCard({
 										className="ui-list-item flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-gray-900"
 									>
 										<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
-										<span>
-											{claim.charAt(0).toUpperCase() + claim.slice(1)}
-										</span>
+										<span>{claim.charAt(0).toUpperCase() + claim.slice(1)}</span>
 									</li>
 								))}
 							</ul>
 						</div>
 					)}
 
-					{/* Differentiators */}
 					{differentiators.length > 0 && (
 						<div>
 							<p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">

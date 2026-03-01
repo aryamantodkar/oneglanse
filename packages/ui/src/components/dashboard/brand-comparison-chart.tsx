@@ -1,7 +1,8 @@
-import { Card } from "@oneglanse/ui";
+"use client";
+import { Card } from "../card.js";
 import { LineChart } from "lucide-react";
 import { useRef, useState } from "react";
-import type { CompetitorData } from "../_utils/types";
+import type { DashboardCompetitorData } from "./types.js";
 
 type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
 
@@ -69,7 +70,7 @@ export function BrandComparisonChart({
 	brandSentimentScore,
 	brandAvgRank,
 }: {
-	competitors: CompetitorData[];
+	competitors: DashboardCompetitorData[];
 	brandName: string;
 	brandDomain: string;
 	totalResponses: number;
@@ -194,12 +195,21 @@ export function BrandComparisonChart({
 			return { leftPx: x, topPx: y };
 		}
 
-		const svgRect = svgRef.current.getBoundingClientRect();
 		const containerRect = containerRef.current.getBoundingClientRect();
+		const ctm = svgRef.current.getScreenCTM();
+
+		if (!ctm) {
+			return { leftPx: x, topPx: y };
+		}
+
+		const point = svgRef.current.createSVGPoint();
+		point.x = x;
+		point.y = y;
+		const screenPoint = point.matrixTransform(ctm);
 
 		return {
-			leftPx: (x / width) * svgRect.width + (svgRect.left - containerRect.left),
-			topPx: (y / height) * svgRect.height + (svgRect.top - containerRect.top),
+			leftPx: screenPoint.x - containerRect.left,
+			topPx: screenPoint.y - containerRect.top,
 		};
 	};
 
