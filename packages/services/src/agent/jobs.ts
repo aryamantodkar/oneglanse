@@ -3,7 +3,7 @@ import type { Provider } from "@oneglanse/types";
 import { ALL_PROVIDERS_JSON } from "@oneglanse/utils";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
 import { getWorkspaceById } from "../workspace/index.js";
-import { agentQueue } from "./queue.js";
+import { getProviderQueue } from "./queue.js";
 import { redis } from "./redis.js";
 
 export type SubmitAgentJobResult =
@@ -57,7 +57,7 @@ export async function submitAgentJobGroup(args: {
 
 	await Promise.all(
 		enabledProviders.map((provider) =>
-			agentQueue.add("run-agent", {
+			getProviderQueue(provider).add("run-agent", {
 				jobGroupId,
 				provider,
 				prompts,
