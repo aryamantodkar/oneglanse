@@ -1,8 +1,8 @@
 const FOOTER_LINKS = [
   { label: "Docs", href: "https://oneglanse.com/docs" },
-  { label: "GitHub", href: "https://github.com" },
+  { label: "GitHub", href: "https://github.com/aryamantodkar/oneglanse" },
   { label: "App", href: "https://app.oneglanse.com" },
-  { label: "License", href: "https://github.com" },
+  { label: "License", href: "https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE" },
 ] as const;
 
 export function SiteFooter(): React.JSX.Element {
@@ -14,7 +14,7 @@ export function SiteFooter(): React.JSX.Element {
           <ul className="flex flex-wrap items-center gap-4">
             {FOOTER_LINKS.map((link) => (
               <li key={link.label}>
-                <a href={link.href} className="hover:underline">
+                <a href={link.href} className="hover:underline" target="_blank" rel="noreferrer noopener">
                   {link.label}
                 </a>
               </li>
