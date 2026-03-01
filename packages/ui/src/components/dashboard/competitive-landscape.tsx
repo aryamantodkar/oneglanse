@@ -1,17 +1,19 @@
-import { Card, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@oneglanse/ui";
+"use client";
 import { getFaviconUrls } from "@oneglanse/utils";
 import { Users } from "lucide-react";
 import { useMemo, type JSX } from "react";
-import type { CompetitorData } from "../_utils/types";
-import { DashboardEmptyState } from "./empty-state";
+import { Card } from "../card.js";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
+import { DashboardEmptyState } from "./empty-state.js";
+import type { DashboardCompetitorData } from "./types.js";
 
-function getVisibility(row: CompetitorData): number {
+function getVisibility(row: DashboardCompetitorData): number {
 	return row.visibility ?? 0;
 }
 
 function compareRows(
-	a: CompetitorData,
-	b: CompetitorData,
+	a: DashboardCompetitorData,
+	b: DashboardCompetitorData,
 ): number {
 	const visibilityDiff = getVisibility(b) - getVisibility(a);
 	if (visibilityDiff !== 0) return visibilityDiff;
@@ -27,10 +29,10 @@ function sentimentTone(score: number): string {
 }
 
 function displayCompetitors(
-	competitors: CompetitorData[],
-): CompetitorData[] {
+	competitors: DashboardCompetitorData[],
+): DashboardCompetitorData[] {
 	const sorted = [...competitors].sort(compareRows);
-	const top = sorted.slice(0, 8);
+	const top = sorted.slice(0, 5);
 	const hasBrand = top.some((row) => row.isBrand);
 
 	if (hasBrand) return top;
@@ -46,13 +48,13 @@ function displayCompetitors(
 export function CompetitiveLandscape({
 	competitors,
 }: {
-	competitors: CompetitorData[];
+	competitors: DashboardCompetitorData[];
 }): JSX.Element {
 	const rows = useMemo(() => displayCompetitors(competitors), [competitors]);
 
 	return (
 		<Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-			<div className="mb-4">
+			<div className="mb-5">
 				<h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
 					Competitors
 				</h1>
@@ -72,16 +74,16 @@ export function CompetitiveLandscape({
 					<Table>
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
-								<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Competitor
 								</TableHead>
-								<TableHead className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Visibility
 								</TableHead>
-								<TableHead className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Mentions
 								</TableHead>
-								<TableHead className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Sentiment
 								</TableHead>
 							</TableRow>
@@ -97,8 +99,8 @@ export function CompetitiveLandscape({
 										key={row.name}
 										className="border-b border-gray-100 last:border-0 dark:border-gray-800"
 									>
-										<TableCell className="px-4 py-3">
-											<div className="flex items-center gap-2">
+										<TableCell className="px-5 py-4">
+											<div className="flex items-center gap-2.5">
 												{favicon ? (
 													<img
 														src={favicon}
@@ -119,13 +121,13 @@ export function CompetitiveLandscape({
 												) : null}
 											</div>
 										</TableCell>
-										<TableCell className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+										<TableCell className="px-5 py-4 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
 											{visibility}%
 										</TableCell>
-										<TableCell className="px-4 py-3 text-right text-sm text-gray-700 dark:text-gray-200">
+										<TableCell className="px-5 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
 											{row.appearances}
 										</TableCell>
-										<TableCell className={`px-4 py-3 text-right text-sm font-semibold ${tone}`}>
+										<TableCell className={`px-5 py-4 text-right text-sm font-semibold ${tone}`}>
 											{row.avgSentiment}
 										</TableCell>
 									</TableRow>

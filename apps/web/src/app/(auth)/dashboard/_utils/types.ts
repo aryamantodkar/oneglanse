@@ -1,25 +1,7 @@
 import type { AnalysisRecord } from "@oneglanse/types";
+import type { DashboardCompetitorData as CompetitorData, DashboardSourceData as SourceData } from "@oneglanse/ui";
 
-export interface CompetitorData {
-	name: string;
-	domain: string;
-	appearances: number;
-	visibility?: number;
-	avgSentiment: number;
-	avgRank: number | null;
-	recCount: number;
-	winsOver: string[];
-	losesTo: string[];
-	isBrand?: boolean;
-}
-
-export interface SourceData {
-	domain: string;
-	favicon: string | null;
-	citationCount: number;
-	uniqueRecords: Set<string>;
-	models: Set<string>;
-}
+export type { CompetitorData, SourceData };
 
 export interface DashboardMetrics {
 	brandName: string;

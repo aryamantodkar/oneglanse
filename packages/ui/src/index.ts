@@ -58,5 +58,6 @@ export * from "./components/textarea.js";
 export * from "./components/tooltip.js";
 
 export * from "./components/cell.js";
+export * from "./components/dashboard/index.js";
 
 export * from "./hooks/use-mobile.js";

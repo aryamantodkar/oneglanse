@@ -98,6 +98,7 @@ export interface BrandAnalysisResult {
 	competitors: {
 		name: string;
 		domain: string;
+		visibility: number;
 		sentiment: number;
 		rankPosition: number | null;
 		isRecommended: boolean;

@@ -232,11 +232,8 @@ export function useDashboardData(
 					losesTo: new Map<string, number>(),
 				};
 				existing.appearances++;
-				const competitorVisibility = (c as { visibility?: number | null }).visibility;
-				if (typeof competitorVisibility === "number") {
-					existing.visibilitySum += competitorVisibility;
-					existing.visibilityCount++;
-				}
+				existing.visibilitySum += c.visibility;
+				existing.visibilityCount++;
 				existing.sentimentSum += c.sentiment;
 				if (c.rankPosition !== null) {
 					existing.rankSum += c.rankPosition;

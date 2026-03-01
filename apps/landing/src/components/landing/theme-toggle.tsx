@@ -8,7 +8,7 @@ type ThemeMode = "light" | "dark";
 const STORAGE_KEY = "oneglanse-landing-theme";
 
 function applyTheme(theme: ThemeMode): void {
-  document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
 function getInitialTheme(): ThemeMode {
@@ -47,4 +47,3 @@ export function ThemeToggle(): React.JSX.Element {
     </button>
   );
 }
-

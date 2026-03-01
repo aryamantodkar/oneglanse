@@ -296,6 +296,9 @@ Only extract brands/products that are DIRECTLY compared to or listed alongside $
 ### Competitor rankPosition
 Apply the SAME absolute ranking rules to competitors. Each competitor's rankPosition is their absolute position in the full response reading order, NOT their local position within a sub-category.
 
+### Competitor Visibility
+For each competitor, compute their visibility score using the SAME five-dimension formula as Step 5, but applied to the competitor's own presence in the response (not ${brandName}'s). Use 0 if the competitor is absent.
+
 ### DEDUPLICATION (MANDATORY)
 You MUST consolidate sub-products under a SINGLE parent brand entry:
 
@@ -455,6 +458,7 @@ Respond with ONLY valid JSON. No markdown code fences. No preamble. No trailing 
         {
             "name": "<canonical parent brand name — DEDUPLICATED>",
             "domain": "<root domain or null>",
+            "visibility": <0-100, five-dimension formula applied to this competitor's presence>,
             "sentiment": <0-100>,
             "rankPosition": <ABSOLUTE rank or null>,
             "isRecommended": <boolean>,
