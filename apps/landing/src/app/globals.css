@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --background: oklch(0.99 0.002 95);
+  --foreground: oklch(0.23 0.01 80);
+  --muted: oklch(0.95 0.005 90);
+  --muted-foreground: oklch(0.45 0.01 80);
+  --border: oklch(0.88 0.008 85);
+  --card: oklch(1 0 0);
+  --accent: oklch(0.32 0.03 75);
+  --accent-foreground: oklch(0.98 0.002 95);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.008 80);
+    --foreground: oklch(0.95 0.004 90);
+    --muted: oklch(0.23 0.008 80);
+    --muted-foreground: oklch(0.74 0.01 85);
+    --border: oklch(0.34 0.008 80);
+    --card: oklch(0.2 0.008 80);
+    --accent: oklch(0.86 0.01 85);
+    --accent-foreground: oklch(0.18 0.008 80);
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--foreground);
+  background: radial-gradient(circle at top, oklch(0.97 0.01 90), transparent 48%),
+    var(--background);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: radial-gradient(circle at top, oklch(0.25 0.01 85), transparent 52%),
+      var(--background);
+  }
+}
+
+.section-shell {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+}
+
+.section-title {
+  @apply text-2xl font-semibold tracking-tight sm:text-3xl;
+}
+
+.surface-card {
+  @apply rounded-xl border p-5;
+  background-color: var(--card);
+}

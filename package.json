@@ -4,8 +4,12 @@
 	"scripts": {
 		"build": "turbo build",
 		"deploy:web": "pnpm deploy --filter @oneglanse/web --prod /app/out",
+		"deploy:landing": "pnpm deploy --filter @oneglanse/landing --prod /app/out",
+		"deploy:docs": "pnpm deploy --filter @oneglanse/docs --prod /app/out",
 		"dev": "turbo dev",
 		"dev:web": "turbo dev --filter=@oneglanse/web",
+		"dev:landing": "turbo dev --filter=@oneglanse/landing",
+		"dev:docs": "turbo dev --filter=@oneglanse/docs",
 		"dev:agent": "turbo dev --filter=@oneglanse/agent",
 		"lint": "turbo lint",
 		"typecheck": "turbo typecheck",

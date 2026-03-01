@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --background: oklch(0.99 0.002 95);
+  --foreground: oklch(0.23 0.01 80);
+  --muted: oklch(0.95 0.005 90);
+  --muted-foreground: oklch(0.45 0.01 80);
+  --border: oklch(0.88 0.008 85);
+  --card: oklch(1 0 0);
+  --sidebar: oklch(0.975 0.004 90);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.008 80);
+    --foreground: oklch(0.95 0.004 90);
+    --muted: oklch(0.23 0.008 80);
+    --muted-foreground: oklch(0.74 0.01 85);
+    --border: oklch(0.34 0.008 80);
+    --card: oklch(0.2 0.008 80);
+    --sidebar: oklch(0.2 0.008 80);
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
+.docs-shell {
+  @apply mx-auto grid min-h-screen w-full max-w-[1440px] grid-cols-1 lg:grid-cols-[280px_1fr];
+}
+
+.docs-sidebar {
+  background-color: var(--sidebar);
+}
+
+.docs-main {
+  @apply px-5 py-8 sm:px-8;
+}
+
+.docs-card {
+  @apply rounded-xl border;
+  background-color: var(--card);
+}
+
+.docs-prose {
+  @apply max-w-4xl;
+}
+
+.docs-prose h1 {
+  @apply text-3xl font-semibold tracking-tight;
+}
+
+.docs-prose h2 {
+  @apply mt-10 text-2xl font-semibold tracking-tight;
+}
+
+.docs-prose h3 {
+  @apply mt-8 text-xl font-semibold tracking-tight;
+}
+
+.docs-prose p,
+.docs-prose li {
+  @apply mt-4 text-[15px] leading-7 text-[var(--foreground)];
+}
+
+.docs-prose ul {
+  @apply mt-4 list-disc space-y-2 pl-6;
+}
+
+.docs-prose a {
+  @apply underline decoration-[var(--muted-foreground)] underline-offset-4;
+}
+
+.docs-prose code {
+  @apply rounded px-1.5 py-0.5 text-sm;
+  background-color: var(--muted);
+}
+
+.docs-prose pre {
+  @apply mt-5 overflow-x-auto rounded-lg border p-4 text-sm;
+  background-color: var(--muted);
+}
+
+.docs-prose pre code {
+  @apply bg-transparent p-0;
+}

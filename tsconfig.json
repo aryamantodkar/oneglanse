@@ -19,6 +19,8 @@
 		{ "path": "packages/db" },
 		{ "path": "packages/services" },
 		{ "path": "packages/ui" },
-		{ "path": "apps/agent" }
+		{ "path": "apps/agent" },
+		{ "path": "apps/landing" },
+		{ "path": "apps/docs" }
 	]
 }
