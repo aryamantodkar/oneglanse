@@ -189,6 +189,19 @@ export function BrandComparisonChart({
 	const xFor = (index: number) =>
 		left + (index * plotWidth) / Math.max(1, METRIC_CONFIG.length - 1);
 	const yFor = (score: number) => top + ((100 - score) / 100) * plotHeight;
+	const getTooltipPosition = (x: number, y: number) => {
+		if (!svgRef.current || !containerRef.current) {
+			return { leftPx: x, topPx: y };
+		}
+
+		const svgRect = svgRef.current.getBoundingClientRect();
+		const containerRect = containerRef.current.getBoundingClientRect();
+
+		return {
+			leftPx: (x / width) * svgRect.width + (svgRect.left - containerRect.left),
+			topPx: (y / height) * svgRect.height + (svgRect.top - containerRect.top),
+		};
+	};
 
 	const leader = [...series].sort((a, b) => b.composite - a.composite)[0];
 
@@ -274,20 +287,18 @@ export function BrandComparisonChart({
 												className="cursor-pointer"
 												opacity={isFaded ? 0.2 : 1}
 												onMouseEnter={() => {
-													if (svgRef.current && containerRef.current) {
-														const svgRect = svgRef.current.getBoundingClientRect();
-														const containerRect = containerRef.current.getBoundingClientRect();
-														const leftPx = (p.x / width) * svgRect.width + (svgRect.left - containerRect.left);
-														const topPx = (p.y / height) * svgRect.height;
-														setHoveredPoint({
-															name: s.name,
-															metric: METRIC_CONFIG[pointIdx]!.label,
-															value: s.values[METRIC_CONFIG[pointIdx]!.key],
-															leftPx,
-															topPx,
-															color,
-														});
-													}
+													const { leftPx, topPx } = getTooltipPosition(
+														p.x,
+														p.y,
+													);
+													setHoveredPoint({
+														name: s.name,
+														metric: METRIC_CONFIG[pointIdx]!.label,
+														value: s.values[METRIC_CONFIG[pointIdx]!.key],
+														leftPx,
+														topPx,
+														color,
+													});
 												}}
 											/>
 										))}
@@ -311,7 +322,7 @@ export function BrandComparisonChart({
 
 					{hoveredPoint && !hoveredBrand && (
 						<div
-							className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${hoveredPoint.topPx < 56 ? "translate-y-2" : "-translate-y-[110%]"}`}
+							className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900"
 							style={{
 								left: `${hoveredPoint.leftPx}px`,
 								top: `${hoveredPoint.topPx}px`,
@@ -349,17 +360,12 @@ export function BrandComparisonChart({
 								const value = brandData.values[metric.key];
 								const x = xFor(metricIdx);
 								const y = yFor(value);
-								const leftPx = svgRef.current && containerRef.current
-									? (x / width) * svgRef.current.getBoundingClientRect().width + (svgRef.current.getBoundingClientRect().left - containerRef.current.getBoundingClientRect().left)
-									: x;
-								const topPx = svgRef.current
-									? (y / height) * svgRef.current.getBoundingClientRect().height
-									: y;
+								const { leftPx, topPx } = getTooltipPosition(x, y);
 
 								return (
 									<div
 										key={`${hoveredBrand}-${metric.key}`}
-										className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${topPx < 56 ? "translate-y-2" : "-translate-y-[110%]"}`}
+										className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900"
 										style={{
 											left: `${leftPx}px`,
 											top: `${topPx}px`,
