@@ -9,6 +9,16 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+export const SITE_URLS = {
+  github: "https://github.com/aryamantodkar/oneglanse",
+  githubLicense: "https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE",
+  signup: "https://oneglanse.com/signup",
+  login: "https://oneglanse.com/login",
+  docs: "https://oneglanse.com/docs",
+  app: "https://app.oneglanse.com",
+  homepage: "https://oneglanse.com",
+} as const;
+
 export type FeatureItem = {
   title: string;
   description: string;

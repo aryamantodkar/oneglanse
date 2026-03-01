@@ -1,6 +1,6 @@
 import { Card } from "@oneglanse/ui";
 import { LineChart } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CompetitorData } from "../_utils/types";
 
 type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
@@ -78,12 +78,15 @@ export function BrandComparisonChart({
 	brandSentimentScore: number;
 	brandAvgRank: number | null;
 }){
+	const svgRef = useRef<SVGSVGElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+
 	const [hoveredPoint, setHoveredPoint] = useState<{
 		name: string;
 		metric: string;
 		value: number;
-		leftPct: number;
-		topPct: number;
+		leftPx: number;
+		topPx: number;
 		color: string;
 	} | null>(null);
 	const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
@@ -207,9 +210,10 @@ export function BrandComparisonChart({
 			</div>
 
 			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
-				<div className="relative" onMouseLeave={() => setHoveredPoint(null)}>
+				<div ref={containerRef} className="relative" onMouseLeave={() => setHoveredPoint(null)}>
 					<div className="overflow-x-auto">
 						<svg
+							ref={svgRef}
 							viewBox={`0 0 ${width} ${height}`}
 							className="h-[280px] w-full min-w-[680px]"
 						>
@@ -269,16 +273,22 @@ export function BrandComparisonChart({
 												strokeWidth={isHovered ? 2 : 1.5}
 												className="cursor-pointer"
 												opacity={isFaded ? 0.2 : 1}
-												onMouseEnter={() =>
-													setHoveredPoint({
-														name: s.name,
-														metric: METRIC_CONFIG[pointIdx]!.label,
-														value: s.values[METRIC_CONFIG[pointIdx]!.key],
-														leftPct: (p.x / width) * 100,
-														topPct: (p.y / height) * 100,
-														color,
-													})
-												}
+												onMouseEnter={() => {
+													if (svgRef.current && containerRef.current) {
+														const svgRect = svgRef.current.getBoundingClientRect();
+														const containerRect = containerRef.current.getBoundingClientRect();
+														const leftPx = (p.x / width) * svgRect.width + (svgRect.left - containerRect.left);
+														const topPx = (p.y / height) * svgRect.height;
+														setHoveredPoint({
+															name: s.name,
+															metric: METRIC_CONFIG[pointIdx]!.label,
+															value: s.values[METRIC_CONFIG[pointIdx]!.key],
+															leftPx,
+															topPx,
+															color,
+														});
+													}
+												}}
 											/>
 										))}
 									</g>
@@ -301,10 +311,10 @@ export function BrandComparisonChart({
 
 					{hoveredPoint && !hoveredBrand && (
 						<div
-							className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${hoveredPoint.topPct < 20 ? "translate-y-2" : "-translate-y-[110%]"}`}
+							className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${hoveredPoint.topPx < 56 ? "translate-y-2" : "-translate-y-[110%]"}`}
 							style={{
-								left: `${Math.max(10, Math.min(90, hoveredPoint.leftPct))}%`,
-								top: `${hoveredPoint.topPct}%`,
+								left: `${hoveredPoint.leftPx}px`,
+								top: `${hoveredPoint.topPx}px`,
 							}}
 						>
 							<div className="flex items-center gap-1.5">
@@ -339,16 +349,20 @@ export function BrandComparisonChart({
 								const value = brandData.values[metric.key];
 								const x = xFor(metricIdx);
 								const y = yFor(value);
-								const leftPct = (x / width) * 100;
-								const topPct = (y / height) * 100;
+								const leftPx = svgRef.current && containerRef.current
+									? (x / width) * svgRef.current.getBoundingClientRect().width + (svgRef.current.getBoundingClientRect().left - containerRef.current.getBoundingClientRect().left)
+									: x;
+								const topPx = svgRef.current
+									? (y / height) * svgRef.current.getBoundingClientRect().height
+									: y;
 
 								return (
 									<div
 										key={`${hoveredBrand}-${metric.key}`}
-										className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${topPct < 20 ? "translate-y-2" : "-translate-y-[110%]"}`}
+										className={`pointer-events-none absolute z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-md dark:border-gray-700 dark:bg-gray-900 ${topPx < 56 ? "translate-y-2" : "-translate-y-[110%]"}`}
 										style={{
-											left: `${Math.max(10, Math.min(90, leftPct))}%`,
-											top: `${topPct}%`,
+											left: `${leftPx}px`,
+											top: `${topPx}px`,
 										}}
 									>
 										<div className="flex items-center gap-1.5">

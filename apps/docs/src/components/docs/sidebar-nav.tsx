@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DOC_SECTIONS, type DocSection } from "@/lib/docs-index";
+import { ThemeToggle } from "./theme-toggle";
 
 type SidebarNavProps = {
   activeSlug: string;
@@ -38,6 +39,9 @@ export function SidebarNav({ activeSlug }: SidebarNavProps): React.JSX.Element {
       <nav aria-label="Documentation sections">
         <ul className="space-y-1">{DOC_SECTIONS.map((section) => renderNavItem(section, activeSlug))}</ul>
       </nav>
+      <div className="mt-6 border-t pt-4">
+        <ThemeToggle />
+      </div>
     </aside>
   );
 }

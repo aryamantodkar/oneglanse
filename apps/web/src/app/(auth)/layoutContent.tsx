@@ -7,6 +7,7 @@ import type { Workspace } from "@oneglanse/db";
 import { SidebarTrigger } from "@oneglanse/ui";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { WorkspaceProvider } from "./workspace-context";
 
 export default function LayoutContent({
 	children,
@@ -77,27 +78,29 @@ export default function LayoutContent({
 	}
 
 	return (
-		<div className="ui-page-enter flex h-screen w-full">
-			<AppSidebar
-				workspace={resolvedWorkspace}
-				userName={userName}
-				userEmail={userEmail}
-			/>
-			<main className="flex-1 flex flex-col min-h-0">
-				<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
-					<div className="flex items-center gap-3">
-						<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
-						<h1 className="text-sm font-semibold text-gray-900">
-							{capitalizedTitle}
-						</h1>
+		<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
+			<div className="ui-page-enter flex h-screen w-full">
+				<AppSidebar
+					workspace={resolvedWorkspace}
+					userName={userName}
+					userEmail={userEmail}
+				/>
+				<main className="flex-1 flex flex-col min-h-0">
+					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
+						<div className="flex items-center gap-3">
+							<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
+							<h1 className="text-sm font-semibold text-gray-900">
+								{capitalizedTitle}
+							</h1>
+						</div>
 					</div>
-				</div>
 
-				{/* Page content */}
-				<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">
-					{children}
-				</div>
-			</main>
-		</div>
+					{/* Page content */}
+					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">
+						{children}
+					</div>
+				</main>
+			</div>
+		</WorkspaceProvider>
 	);
 }

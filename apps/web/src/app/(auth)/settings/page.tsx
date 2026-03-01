@@ -13,74 +13,45 @@ import {
 } from "@oneglanse/types";
 import {
 	Button,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
 	Input,
 	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-	Skeleton,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
 	toast,
 } from "@oneglanse/ui";
 import { PROVIDER_DISPLAY, getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
 import {
-	Building2,
+	AlertTriangle,
 	CheckCircle2,
 	Download,
 	Loader2,
 	Pencil,
-	Plus,
 	Settings,
-	Trash2,
-	Users,
 	X,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { authClient } from "@/lib/auth/auth-client";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-interface WorkspaceMember {
-	memberId: string;
-	userId: string;
-	role: string;
-	joinedAt: Date;
-	userName: string;
-	userEmail: string;
-	userImage: string | null;
-}
+import { useLayoutUserEmail } from "../workspace-context";
 
 export default function SettingsPage(){
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
-	const utils = api.useUtils();
+	const router = useRouter();
 
-	// Workspace members state
-	const [wsInviteEmail, setWsInviteEmail] = useState("");
-	const [wsInviteRole, setWsInviteRole] = useState("member");
-	const [wsAdding, setWsAdding] = useState(false);
+	// User email from layout context (server-fetched, no waterfall)
+	const userEmail = useLayoutUserEmail();
 
-	// Workspace members via tRPC
-	const wsMembersQuery = api.workspace.listMembers.useQuery(
-		{ workspaceId },
-		{ enabled: !!workspaceId },
-	);
-	const workspaceQuery = api.workspace.getById.useQuery(
-		{ workspaceId },
-		{ enabled: !!workspaceId },
-	);
-	const wsMembers = (wsMembersQuery.data ?? []) as WorkspaceMember[];
-	const joinInfoQuery = api.workspace.getJoinInfo.useQuery(
-		{ workspaceId },
-		{ enabled: !!workspaceId },
-	);
-	const joinInfo = joinInfoQuery.data;
-	const joinInfoLoading = joinInfoQuery.isLoading;
+	// Delete account state
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+	const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("");
+	const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+	const deleteAccountMutation = api.workspace.deleteAccount.useMutation();
+
 	const userPromptsQuery = api.prompt.fetchUserPrompts.useQuery(
 		{ workspaceId },
 		{ enabled: !!workspaceId },
@@ -94,27 +65,11 @@ export default function SettingsPage(){
 		{ enabled: !!workspaceId },
 	);
 
-	const addWsMemberMutation = api.workspace.addMember.useMutation();
-	const removeWsMemberMutation = api.workspace.removeMember.useMutation();
-	const updateWorkspaceMutation = api.workspace.updateDetails.useMutation();
-	const updateOrgMutation = api.workspace.updateOrganizationName.useMutation();
-
-	const [workspaceName, setWorkspaceName] = useState("");
-	const [workspaceDomain, setWorkspaceDomain] = useState("");
-	const [organizationName, setOrganizationName] = useState("");
-	const [savingWorkspace, setSavingWorkspace] = useState(false);
-	const [savingOrg, setSavingOrg] = useState(false);
-	const [isEditingWorkspace, setIsEditingWorkspace] = useState(false);
-	const [isEditingOrg, setIsEditingOrg] = useState(false);
-
 	// Provider settings state
 	const [enabledProviders, setEnabledProviders] = useState<Provider[]>([]);
 	const [tempProviders, setTempProviders] = useState<Provider[]>([]);
 	const [isEditingProviders, setIsEditingProviders] = useState(false);
 	const [savingProviders, setSavingProviders] = useState(false);
-
-	const workspace = workspaceQuery.data;
-	const organization = joinInfo?.organization;
 
 	// Fetch enabled providers
 	const { data: providersData } = api.workspace.getEnabledProviders.useQuery(
@@ -140,35 +95,6 @@ export default function SettingsPage(){
 			setTempProviders(providersData.enabledProviders);
 		}
 	}, [providersData]);
-
-	useEffect(() => {
-		setWorkspaceName(workspace?.name ?? "");
-		setWorkspaceDomain(workspace?.domain ?? "");
-	}, [workspace?.name, workspace?.domain]);
-
-	useEffect(() => {
-		setOrganizationName(organization?.name ?? "");
-	}, [organization?.name]);
-
-	const normalizedWorkspaceName = workspaceName.trim();
-	const normalizedWorkspaceDomain = workspaceDomain.trim();
-	const normalizedOrganizationName = organizationName.trim();
-	const workspaceDetailsChanged =
-		normalizedWorkspaceName !== (workspace?.name ?? "").trim() ||
-		normalizedWorkspaceDomain !== (workspace?.domain ?? "").trim();
-	const organizationNameChanged =
-		normalizedOrganizationName !== (organization?.name ?? "").trim();
-
-	const handleCopy = async (value: string, label: string) => {
-		if (!value) return;
-		try {
-			await navigator.clipboard.writeText(value);
-			toast.success(`${label} copied to clipboard.`);
-		} catch (err) {
-			console.error(err);
-			toast.error("Failed to copy to clipboard.");
-		}
-	};
 
 	// Toggle provider handler (for edit mode)
 	const handleProviderToggle = (provider: Provider) => {
@@ -210,136 +136,23 @@ export default function SettingsPage(){
 		setIsEditingProviders(false);
 	};
 
-	// Workspace add member handler
-	const handleWsAddMember = async () => {
-		if (!wsInviteEmail.trim()) {
-			toast.error("Please enter an email address.");
+	// Delete account handler
+	const handleDeleteAccount = async () => {
+		if (deleteConfirmEmail.trim().toLowerCase() !== userEmail.toLowerCase()) {
+			toast.error("Email does not match. Please type your email to confirm.");
 			return;
 		}
-
-		setWsAdding(true);
+		setIsDeletingAccount(true);
 		try {
-			const result = await addWsMemberMutation.mutateAsync({
-				workspaceId,
-				email: wsInviteEmail.trim(),
-				role: wsInviteRole as "owner" | "member",
-			});
-
-			if (result?.status === "not-found") {
-				toast.error(
-					"User not found. Share your workspace code so they can join after signing up.",
-				);
-				setWsInviteEmail("");
-				return;
-			}
-
-			if (result?.status === "already-member") {
-				toast.success("This user is already a workspace member.");
-				setWsInviteEmail("");
-				return;
-			}
-
-			toast.success("Member added to workspace!");
-			setWsInviteEmail("");
-			await wsMembersQuery.refetch();
+			await deleteAccountMutation.mutateAsync();
+			await authClient.signOut();
+			toast.success("Your account has been deleted.");
+			router.push("/login");
 		} catch (err) {
 			console.error(err);
-			toast.error("Failed to add member to workspace.");
+			toast.error(err instanceof Error ? err.message : "Failed to delete account.");
 		} finally {
-			setWsAdding(false);
-		}
-	};
-
-	// Workspace remove member handler
-	const handleWsRemoveMember = async (userId: string, role: string) => {
-		try {
-			const result = await removeWsMemberMutation.mutateAsync({
-				workspaceId,
-				userId,
-				role,
-			});
-
-			toast.success("Member removed from workspace.");
-			await wsMembersQuery.refetch();
-		} catch (err) {
-			console.error(err);
-			toast.error(err instanceof Error ? err.message : "Failed to remove member.");
-		}
-	};
-
-	const handleSaveWorkspaceDetails = async () => {
-		if (!workspaceName.trim() || !workspaceDomain.trim()) {
-			toast.error("Please enter both brand name and brand domain.");
-			return;
-		}
-		if (!workspaceDetailsChanged) return;
-
-		const nextName = workspaceName.trim();
-		const nextDomain = workspaceDomain.trim();
-		const brandChanged =
-			(workspace?.name ?? "").trim() !== nextName ||
-			(workspace?.domain ?? "").trim() !== nextDomain;
-
-		if (brandChanged) {
-			const confirmed = window.confirm(
-				"Changing brand details will erase all analyzed data for this workspace and require re-analysis. Prompt responses will remain intact. Continue?",
-			);
-			if (!confirmed) return;
-		}
-
-		setSavingWorkspace(true);
-		try {
-			const result = await updateWorkspaceMutation.mutateAsync({
-				workspaceId,
-				name: nextName,
-				domain: nextDomain,
-			});
-
-			if (result?.analysisReset) {
-				toast.success(
-					"Brand details updated. Previous analysis was cleared and will be regenerated on next analysis run.",
-				);
-			} else {
-				toast.success("Workspace details updated.");
-			}
-			await workspaceQuery.refetch();
-			await joinInfoQuery.refetch();
-			await utils.workspace.listAllForUser.invalidate();
-			await utils.workspace.getById.invalidate({ workspaceId });
-			await utils.workspace.getJoinInfo.invalidate({ workspaceId });
-			setIsEditingWorkspace(false);
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Failed to update workspace details.");
-		} finally {
-			setSavingWorkspace(false);
-		}
-	};
-
-	const handleSaveOrganizationName = async () => {
-		if (!organizationName.trim()) {
-			toast.error("Please enter an organization name.");
-			return;
-		}
-		if (!organizationNameChanged) return;
-
-		setSavingOrg(true);
-		try {
-			const result = await updateOrgMutation.mutateAsync({
-				workspaceId,
-				organizationName: organizationName.trim(),
-			});
-
-			toast.success("Organization name updated.");
-			await joinInfoQuery.refetch();
-			await utils.workspace.listAllForUser.invalidate();
-			await utils.workspace.getJoinInfo.invalidate({ workspaceId });
-			setIsEditingOrg(false);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Only workspace owners can update organization name.",
-			);
-		} finally {
-			setSavingOrg(false);
+			setIsDeletingAccount(false);
 		}
 	};
 
@@ -367,8 +180,8 @@ export default function SettingsPage(){
 
 		downloadJson(`workspace-all-${workspaceId}-${Date.now()}.json`, {
 			generatedAt: new Date().toISOString(),
-			workspace: workspace ?? null,
-			organization: organization ?? null,
+			workspace: null,
+			organization: null,
 			report: {
 				title: "Workspace AI Visibility Export",
 				version: "2.0",
@@ -516,31 +329,10 @@ export default function SettingsPage(){
 		downloadCsv(`workspace-all-${workspaceId}-${Date.now()}.csv`, rows);
 	};
 
-	const getRoleBadgeClass = (role: string) => {
-		switch (role) {
-			case "owner":
-				return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
-			case "admin":
-				return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-			default:
-				return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
-		}
-	};
-
 	if (!workspaceId) {
 		return (
 			<div className="flex h-[60vh] items-center justify-center">
 				<p className="text-sm text-gray-500">No workspace selected.</p>
-			</div>
-		);
-	}
-
-	if (wsMembersQuery.isError) {
-		return (
-			<div className="flex h-[60vh] items-center justify-center">
-				<p className="text-sm text-gray-500">
-					Unable to load workspace members.
-				</p>
 			</div>
 		);
 	}
@@ -762,356 +554,95 @@ export default function SettingsPage(){
 				</div>
 			</section>
 
+			{/* Danger Zone */}
 			<section>
 				<div className="mb-4 flex items-center gap-2">
-					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                         Workspace & Organization
+					<AlertTriangle className="h-5 w-5 text-red-500" />
+					<h2 className="text-lg font-semibold text-red-600 dark:text-red-500">
+						Danger Zone
 					</h2>
 				</div>
-
-				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-					<div className="flex h-full flex-col rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-						<div className="mb-3 flex items-center justify-between gap-2">
-							<div className="flex items-center gap-2">
-								<Users className="h-4 w-4 text-gray-500" />
-								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-									Brand Workspace
-								</p>
-							</div>
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-8 w-8 p-0"
-								onClick={() => {
-									if (isEditingWorkspace) {
-										setWorkspaceName(workspace?.name ?? "");
-										setWorkspaceDomain(workspace?.domain ?? "");
-										setIsEditingWorkspace(false);
-										return;
-									}
-									setIsEditingWorkspace(true);
-								}}
-								aria-label={
-									isEditingWorkspace
-										? "Cancel editing workspace"
-										: "Edit workspace"
-								}
-							>
-								{isEditingWorkspace ? (
-									<X className="h-4 w-4" />
-								) : (
-									<Pencil className="h-4 w-4" />
-								)}
-							</Button>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="settings-workspace-name">Brand Name</Label>
-							<Input
-								id="settings-workspace-name"
-								value={workspaceName}
-								onChange={(e) => setWorkspaceName(e.target.value)}
-								placeholder="e.g. Pipedrive"
-								disabled={!isEditingWorkspace}
-							/>
-						</div>
-						<div className="mt-3 space-y-2">
-							<Label htmlFor="settings-workspace-domain">Brand Domain</Label>
-							<Input
-								id="settings-workspace-domain"
-								value={workspaceDomain}
-								onChange={(e) => setWorkspaceDomain(e.target.value)}
-								placeholder="e.g. pipedrive.com"
-								disabled={!isEditingWorkspace}
-							/>
-							<p className="text-xs text-gray-500">
-								Used to track your brand visibility and citations in AI
-								responses.
+				<div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
+					<div className="flex flex-wrap items-center justify-between gap-4">
+						<div>
+							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+								Delete Account
 							</p>
-							{isEditingWorkspace && (
-								<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/60 dark:bg-amber-950/20">
-									<p className="text-xs text-amber-800 dark:text-amber-300">
-										Warning: Changing brand details clears all analyzed data in
-										this workspace. Raw prompt responses are not deleted.
-									</p>
-								</div>
-							)}
-						</div>
-
-						<div className="mt-auto flex items-center justify-end gap-2 pt-4">
-							{isEditingWorkspace && (
-								<>
-									<Button
-										variant="outline"
-										className="w-28"
-										onClick={() => {
-											setWorkspaceName(workspace?.name ?? "");
-											setWorkspaceDomain(workspace?.domain ?? "");
-											setIsEditingWorkspace(false);
-										}}
-										disabled={savingWorkspace}
-									>
-										Cancel
-									</Button>
-									<Button
-										onClick={handleSaveWorkspaceDetails}
-										disabled={
-											savingWorkspace ||
-											!workspaceName.trim() ||
-											!workspaceDomain.trim() ||
-											!workspaceDetailsChanged
-										}
-										className="w-28"
-									>
-										{savingWorkspace ? (
-											<Loader2 className="h-4 w-4 animate-spin" />
-										) : (
-											"Save"
-										)}
-									</Button>
-								</>
-							)}
-						</div>
-					</div>
-
-					<div className="flex h-full flex-col rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-						<div className="mb-3 flex items-center justify-between gap-2">
-							<div className="flex items-center gap-2">
-								<Building2 className="h-4 w-4 text-gray-500" />
-								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-									Organization
-								</p>
-							</div>
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-8 w-8 p-0"
-								onClick={() => {
-									if (isEditingOrg) {
-										setOrganizationName(organization?.name ?? "");
-										setIsEditingOrg(false);
-										return;
-									}
-									setIsEditingOrg(true);
-								}}
-								aria-label={
-									isEditingOrg
-										? "Cancel editing organization"
-										: "Edit organization"
-								}
-							>
-								{isEditingOrg ? (
-									<X className="h-4 w-4" />
-								) : (
-									<Pencil className="h-4 w-4" />
-								)}
-							</Button>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="settings-org-name">Organization Name</Label>
-							<Input
-								id="settings-org-name"
-								value={organizationName}
-								onChange={(e) => setOrganizationName(e.target.value)}
-								placeholder="Enter organization name"
-								disabled={!isEditingOrg}
-							/>
-							<p className="text-xs text-gray-500">
-								Only workspace owners can rename the organization.
+							<p className="mt-1 text-xs text-gray-500">
+								Permanently delete your account, all your workspaces, and all associated data. This cannot be undone.
 							</p>
 						</div>
-
-						<div className="mt-auto flex items-center justify-end gap-2 pt-4">
-							{isEditingOrg && (
-								<>
-									<Button
-										variant="outline"
-										className="w-28"
-										onClick={() => {
-											setOrganizationName(organization?.name ?? "");
-											setIsEditingOrg(false);
-										}}
-										disabled={savingOrg}
-									>
-										Cancel
-									</Button>
-									<Button
-										onClick={handleSaveOrganizationName}
-										disabled={
-											savingOrg ||
-											!organizationName.trim() ||
-											!organizationNameChanged
-										}
-										className="w-28"
-									>
-										{savingOrg ? (
-											<Loader2 className="h-4 w-4 animate-spin" />
-										) : (
-											"Save"
-										)}
-									</Button>
-								</>
-							)}
-						</div>
+						<Button
+							variant="outline"
+							className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-500 dark:hover:bg-red-950/30"
+							onClick={() => {
+								setDeleteConfirmEmail("");
+								setShowDeleteDialog(true);
+							}}
+						>
+							Delete Account
+						</Button>
 					</div>
-
-                    {/* Join codes */}
-                    <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-800 p-4 space-y-3">
-                        <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                Invite with a code
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                Share the workspace code to let teammates join instantly.
-                            </p>
-                            {joinInfo?.organization?.name && (
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Organization:{" "}
-                                    <span className="font-medium text-gray-700 dark:text-gray-300">
-                                        {joinInfo.organization.name}
-                                    </span>
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {joinInfoLoading ? (
-                                <>
-                                    <Skeleton className="h-9 w-[260px]" />
-                                    <Skeleton className="h-9 w-16" />
-                                </>
-                            ) : (
-                                <>
-                                    <Input
-                                        readOnly
-                                        value={joinInfo?.workspaceCode ?? ""}
-                                        placeholder="Workspace code"
-                                        className="max-w-md"
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")
-                                        }
-                                        disabled={!joinInfo?.workspaceCode}
-                                    >
-                                        Copy
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Add member form */}
-                    <div className="mb-4 flex items-center gap-2">
-                        <Input
-                            placeholder="Email address (we'll invite if needed)"
-                            value={wsInviteEmail}
-                            onChange={(e) => setWsInviteEmail(e.target.value)}
-                            className="max-w-xs"
-                            onKeyDown={(e) => e.key === "Enter" && handleWsAddMember()}
-                        />
-                        <Select value={wsInviteRole} onValueChange={setWsInviteRole}>
-                            <SelectTrigger className="w-32">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="member">Member</SelectItem>
-                                <SelectItem value="owner">Owner</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button
-                            onClick={handleWsAddMember}
-                            disabled={wsAdding || !wsInviteEmail.trim()}
-                            size="sm"
-                            className="gap-2"
-                        >
-                            {wsAdding ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <>
-                                    <Plus className="h-4 w-4" />
-                                    Add
-                                </>
-                            )}
-                        </Button>
-                    </div>
-
-                    {/* Workspace members table */}
-                    {wsMembersQuery.isLoading ? (
-                        <div className="space-y-3 py-6">
-                            {Array.from({ length: 4 }).map((_, idx) => (
-                                <div
-                                    key={`ws-member-skeleton-${idx}`}
-                                    className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
-                                >
-                                    <div className="space-y-2">
-                                        <Skeleton className="h-4 w-32" />
-                                        <Skeleton className="h-3 w-40" />
-                                    </div>
-                                    <Skeleton className="h-6 w-16 rounded-full" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-gray-50/70 dark:bg-gray-900/40">
-                                        <TableHead className="px-4 py-3">Name</TableHead>
-                                        <TableHead className="px-4 py-3">Email</TableHead>
-                                        <TableHead className="px-4 py-3">Role</TableHead>
-                                        <TableHead className="px-4 py-3 w-20" />
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {wsMembers.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={4}
-                                                className="py-8 text-center text-sm text-gray-500"
-                                            >
-                                                No workspace members yet.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        wsMembers.map((member) => (
-                                            <TableRow key={member.memberId}>
-                                                <TableCell className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                    {member.userName}
-                                                </TableCell>
-                                                <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                                                    {member.userEmail}
-                                                </TableCell>
-                                                <TableCell className="px-4 py-3">
-                                                    <span
-                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(member.role)}`}
-                                                    >
-                                                        {member.role}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="px-4 py-3">
-                                                    {member.role !== "owner" && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                handleWsRemoveMember(member.userId, member.role)
-                                                            }
-                                                            className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
 				</div>
 			</section>
+
+			{/* Delete Account Confirmation Dialog */}
+			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle className="text-red-600 dark:text-red-500">
+							Delete Account
+						</DialogTitle>
+						<DialogDescription>
+							This action is permanent and cannot be undone. All your workspaces, prompts, and data will be permanently deleted.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-2">
+						<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/60 dark:bg-amber-950/20">
+							<p className="text-xs text-amber-800 dark:text-amber-300">
+								If you are the sole owner of any organization, that organization and all its workspaces will be permanently deleted along with your account.
+							</p>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="delete-confirm-email">
+								Type your email <span className="font-mono text-xs text-gray-500">({userEmail})</span> to confirm
+							</Label>
+							<Input
+								id="delete-confirm-email"
+								type="email"
+								placeholder={userEmail}
+								value={deleteConfirmEmail}
+								onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleDeleteAccount()}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setShowDeleteDialog(false)}
+							disabled={isDeletingAccount}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="outline"
+							className="border-red-300 bg-red-600 text-white hover:bg-red-700 dark:border-red-800"
+							onClick={handleDeleteAccount}
+							disabled={
+								isDeletingAccount ||
+								deleteConfirmEmail.trim().toLowerCase() !== userEmail.toLowerCase()
+							}
+						>
+							{isDeletingAccount ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								"Permanently Delete Account"
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

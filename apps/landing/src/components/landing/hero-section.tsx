@@ -1,8 +1,5 @@
+import { SITE_URLS } from "@/lib/landing-content";
 import { ArrowRight, BookOpen, Github } from "lucide-react";
-
-const APP_URL = "https://app.oneglanse.com";
-const DOCS_URL = "https://oneglanse.com/docs";
-const GITHUB_URL = "https://github.com/aryamantodkar/oneglanse";
 
 export function HeroSection(): React.JSX.Element {
   return (
@@ -20,7 +17,7 @@ export function HeroSection(): React.JSX.Element {
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <a
-            href={APP_URL}
+            href={SITE_URLS.app}
             className="inline-flex items-center gap-2 rounded-lg border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-foreground)]"
             target="_blank"
             rel="noreferrer noopener"
@@ -29,7 +26,7 @@ export function HeroSection(): React.JSX.Element {
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </a>
           <a
-            href={DOCS_URL}
+            href={SITE_URLS.docs}
             className="inline-flex items-center gap-2 rounded-lg border bg-transparent px-4 py-2 text-sm font-medium"
             target="_blank"
             rel="noreferrer noopener"
@@ -38,7 +35,7 @@ export function HeroSection(): React.JSX.Element {
             View Docs
           </a>
           <a
-            href={GITHUB_URL}
+            href={SITE_URLS.github}
             className="inline-flex items-center gap-2 rounded-lg border bg-transparent px-4 py-2 text-sm font-medium"
             target="_blank"
             rel="noreferrer noopener"
