@@ -2,7 +2,7 @@ import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
 import { auth } from "@lib/auth/auth";
-import { AuthError, ValidationError } from "@oneglanse/errors";
+import { AuthError, ValidationError, toErrorMessage } from "@oneglanse/errors";
 import {
 	addWorkspaceToExistingOrg,
 	addMemberToWorkspaceByEmail,
@@ -43,6 +43,37 @@ function parseCronExpressionOrThrow(cronExpression: string) {
 			error: err instanceof Error ? err.message : String(err),
 		});
 	}
+}
+
+async function submitImmediateRunWithRetry(args: {
+	workspaceId: string;
+	userId: string;
+	maxAttempts?: number;
+}): Promise<
+	| { status: "queued"; jobId: string }
+	| { status: "empty" }
+	| { status: "failed"; error: string }
+> {
+	const { workspaceId, userId, maxAttempts = 3 } = args;
+	let lastError: unknown = null;
+
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		try {
+			const result = await submitAgentJobGroup({ workspaceId, userId });
+			if (result.status === "empty") return { status: "empty" };
+			return { status: "queued", jobId: result.jobGroupId };
+		} catch (err) {
+			lastError = err;
+			if (attempt < maxAttempts) {
+				await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+			}
+		}
+	}
+
+	return {
+		status: "failed",
+		error: toErrorMessage(lastError),
+	};
 }
 
 export const workspaceRouter = createTRPCRouter({
@@ -272,15 +303,21 @@ export const workspaceRouter = createTRPCRouter({
 
 			const result = await updateWorkspaceSchedule({ workspaceId, userId, schedule });
 
+			let immediateRun:
+				| { status: "not-requested" }
+				| { status: "queued"; jobId: string }
+				| { status: "empty" }
+				| { status: "failed"; error: string } = { status: "not-requested" };
+
 			if (schedule) {
-				try {
-					await submitAgentJobGroup({ workspaceId, userId });
-				} catch (err) {
-					console.error("Failed to trigger immediate run:", err);
-				}
+				immediateRun = await submitImmediateRunWithRetry({
+					workspaceId,
+					userId,
+					maxAttempts: 3,
+				});
 			}
 
-			return result;
+			return { ...result, immediateRun };
 		}),
 
 	getCronTiming: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
