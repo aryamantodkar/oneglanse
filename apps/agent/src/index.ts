@@ -1,7 +1,8 @@
 import "./worker.js";
 import { redis } from "@oneglanse/services";
-import { worker } from "./worker.js";
+import { workers } from "./worker.js";
 import { logger } from "@oneglanse/utils";
+import { closeAllWarm } from "./lib/browser/warmPool.js";
 
 const shutdown = async (signal: string) => {
 	logger.log(`[agent] Received ${signal}. Starting graceful shutdown...`);
@@ -15,18 +16,23 @@ const shutdown = async (signal: string) => {
 	}, 15 * 60 * 1000);
 
 	try {
-		// Step 1: Stop accepting new jobs and wait for the current job to finish.
+		// Step 1: Close warm browser pool to free CDP/Chrome processes.
+		logger.log("[agent] Closing warm browser pool...");
+		await closeAllWarm();
+		logger.log("[agent] Warm browser pool closed.");
+
+		// Step 2: Stop accepting new jobs and wait for current jobs to finish.
 		// BullMQ re-queues any job that was picked up but not acknowledged, so
 		// nothing is lost — the next worker restart will retry it.
-		if (worker) {
-			logger.log("[agent] Closing BullMQ worker (draining current job)...");
-			await worker.close();
-			logger.log("[agent] Worker closed.");
+		if (workers.length > 0) {
+			logger.log("[agent] Closing BullMQ workers (draining current jobs)...");
+			await Promise.all(workers.map((w) => w.close()));
+			logger.log("[agent] Workers closed.");
 		}
 
-		// Step 2: Close the Redis connection cleanly.
-		// Must happen AFTER worker.close() because the worker writes job progress
-		// to Redis as the current job completes.
+		// Step 3: Close the Redis connection cleanly.
+		// Must happen AFTER workers.close() because workers write job progress
+		// to Redis as current jobs complete.
 		logger.log("[agent] Closing Redis connection...");
 		await redis.quit();
 		logger.log("[agent] Redis connection closed.");

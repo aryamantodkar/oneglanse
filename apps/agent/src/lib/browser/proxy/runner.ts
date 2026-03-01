@@ -14,6 +14,7 @@ import { exponentialBackoff, logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { recordProxyResult } from "./pool.js";
 import { runAgents } from "../../../core/runAgents.js";
+import { storeWarmBrowser } from "../warmPool.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const PROXIES_PER_CYCLE = 10;
@@ -33,6 +34,7 @@ export type AgentFactory = () => Promise<{
 type Refs = {
 	browser: Browser | null;
 	context: BrowserContext | null;
+	page: Page | null;
 	proxy: string | null;
 	cleanup?: (() => Promise<void>) | null;
 };
@@ -69,6 +71,7 @@ async function runSingleProxyAttempt(
 			refs.cleanup = agent.cleanup ?? null;
 			refs.browser = agent.browser;
 			refs.context = agent.context;
+			refs.page = agent.page;
 			refs.proxy = agent.proxy ?? null;
 
 			return await runAgents(currentPayload, agent.page, provider);
@@ -97,7 +100,7 @@ async function runProxyCycle(
 		const totalAttempt = cycle * PROXIES_PER_CYCLE + attempt + 1;
 		const totalMax = MAX_CYCLES * PROXIES_PER_CYCLE;
 
-		const refs: Refs = { browser: null, context: null, proxy: null, cleanup: null };
+		const refs: Refs = { browser: null, context: null, page: null, proxy: null, cleanup: null };
 
 		try {
 			const result = await runSingleProxyAttempt(
@@ -112,6 +115,25 @@ async function runProxyCycle(
 			if (refs.proxy) {
 				recordProxyResult(refs.proxy, true, undefined, provider);
 			}
+
+			// Store the healthy browser in the warm pool so the next job for this
+			// provider can reuse it without a full CDP spawn. Null refs so the
+			// finally block's closeContextAndBrowser becomes a no-op.
+			if (refs.browser && refs.context && refs.page) {
+				await storeWarmBrowser(provider, {
+					browser: refs.browser,
+					context: refs.context,
+					page: refs.page,
+					proxy: refs.proxy,
+					cleanup: refs.cleanup ?? null,
+					storedAt: Date.now(),
+				}).catch(() => {}); // storage failure → finally closes normally
+				refs.browser = null;
+				refs.context = null;
+				refs.page = null;
+				refs.cleanup = null;
+			}
+
 			return { done: true };
 		} catch (err) {
 			if (err instanceof IPRefreshNeededError) {
