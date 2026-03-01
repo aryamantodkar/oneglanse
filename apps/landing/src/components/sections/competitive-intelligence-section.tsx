@@ -3,11 +3,15 @@ import { CompetitiveIntelligencePreview } from "@/components/previews/competitiv
 
 export function CompetitiveIntelligenceSection(): React.JSX.Element {
   return (
-    <section className="section-shell py-14 sm:py-16" id="competitive-intelligence" aria-labelledby="competitive-intelligence-title">
+    <section
+      className="section-shell py-12 sm:py-14"
+      id="competitive-intelligence"
+      aria-labelledby="competitive-intelligence-title"
+    >
       <SectionHeading
-        eyebrow="Competitive Intelligence"
-        title="Track your competitive position across answer ecosystems"
-        description="Compare visibility and sentiment against direct peers and inspect relative strength using dashboard-consistent components."
+        eyebrow="Competitive Context"
+        title="Benchmark visibility against category leaders"
+        description="Understand mention share, sentiment position, and competitive pressure across the same prompt runs."
       />
       <CompetitiveIntelligencePreview />
     </section>

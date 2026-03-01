@@ -238,7 +238,7 @@ export function BrandComparisonChart({
 						<svg
 							ref={svgRef}
 							viewBox={`0 0 ${width} ${height}`}
-							className="h-[280px] w-full min-w-[680px]"
+							className="h-[280px] w-full min-w-[560px] sm:min-w-[680px]"
 						>
 							{[0, 25, 50, 75, 100].map((tick) => {
 								const y = yFor(tick);

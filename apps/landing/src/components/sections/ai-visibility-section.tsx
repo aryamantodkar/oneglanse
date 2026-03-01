@@ -3,11 +3,15 @@ import { AiVisibilityPreview } from "@/components/previews/ai-visibility-preview
 
 export function AiVisibilitySection(): React.JSX.Element {
   return (
-    <section className="section-shell py-14 sm:py-16" id="ai-visibility" aria-labelledby="ai-visibility-title">
+    <section
+      className="section-shell py-12 sm:py-14"
+      id="ai-visibility"
+      aria-labelledby="ai-visibility-title"
+    >
       <SectionHeading
-        eyebrow="AI Visibility Tracking"
-        title="Measure ranking, recommendation, and sentiment in one view"
-        description="The preview below uses static data but the exact same chart and AI perception cards used in the dashboard experience."
+        eyebrow="AI Perception"
+        title="See how models position your brand before your buyers do"
+        description="Perception, ranking, and recommendation signals rendered from the same product components used in the dashboard."
       />
       <AiVisibilityPreview />
     </section>

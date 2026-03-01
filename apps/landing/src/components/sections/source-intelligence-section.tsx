@@ -3,11 +3,15 @@ import { SourceIntelligencePreview } from "@/components/previews/source-intellig
 
 export function SourceIntelligenceSection(): React.JSX.Element {
   return (
-    <section className="section-shell py-14 sm:py-16" id="source-intelligence" aria-labelledby="source-intelligence-title">
+    <section
+      className="section-shell py-12 sm:py-14"
+      id="source-intelligence"
+      aria-labelledby="source-intelligence-title"
+    >
       <SectionHeading
-        eyebrow="Source Intelligence"
-        title="See where model responses are grounded"
-        description="Inspect dominant source domains, provider overlap, and citation concentration through a compact sources dashboard preview."
+        eyebrow="Sources & Citations"
+        title="Inspect the domains shaping AI answers"
+        description="Audit source concentration, provider overlap, and citation excerpts in a dense, dashboard-style preview."
       />
       <SourceIntelligencePreview />
     </section>
