@@ -6,6 +6,7 @@ import {
 	fetchAnalysedPrompts,
 } from "@oneglanse/services";
 import { z } from "zod";
+import { createRateLimiter } from "../../middleware/rateLimit";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 
 export const analysisRouter = createTRPCRouter({
@@ -15,6 +16,7 @@ export const analysisRouter = createTRPCRouter({
 				analyzeAll: z.boolean().optional().default(true),
 			}),
 		)
+		.use(createRateLimiter("analysis.analyzeMetrics", { limit: 10, windowSecs: 60 }))
 		.mutation(async ({ ctx, input }) => {
 			return analysePromptsForWorkspace({
 				workspaceId: ctx.workspaceId,

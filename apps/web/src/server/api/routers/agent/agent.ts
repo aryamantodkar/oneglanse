@@ -1,10 +1,13 @@
 import { redis, submitAgentJobGroup } from "@oneglanse/services";
 import { z } from "zod";
+import { createRateLimiter } from "../../middleware/rateLimit";
 import { authorizedWorkspaceProcedure } from "../../procedures";
 import { createTRPCRouter } from "../../trpc";
 
 export const agentRouter = createTRPCRouter({
-	run: authorizedWorkspaceProcedure.mutation(async ({ ctx }) => {
+	run: authorizedWorkspaceProcedure
+		.use(createRateLimiter("agent.run", { limit: 3, windowSecs: 60 }))
+		.mutation(async ({ ctx }) => {
 		const {
 			user: { id: userId },
 			workspaceId,

@@ -586,10 +586,16 @@ export async function updateWorkspaceSchedule(args: {
 		.set({ schedule })
 		.where(eq(schema.workspaces.id, workspaceId));
 
-	if (schedule) {
-		await scheduleCronForPrompts({ workspaceId, userId, cronExpression: schedule });
-	} else {
-		await unscheduleCronForPrompts({ workspaceId });
+	// pg_cron setup is best-effort — a failure here must not prevent the
+	// caller from running an immediate job or returning a success response.
+	try {
+		if (schedule) {
+			await scheduleCronForPrompts({ workspaceId, userId, cronExpression: schedule });
+		} else {
+			await unscheduleCronForPrompts({ workspaceId });
+		}
+	} catch (err) {
+		console.warn("[workspace] pg_cron schedule update failed (non-fatal):", err);
 	}
 
 	return { schedule };
