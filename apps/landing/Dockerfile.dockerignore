@@ -8,3 +8,10 @@
 
 !apps/landing
 !apps/landing/**
+
+!packages/types
+!packages/types/**
+!packages/ui
+!packages/ui/**
+!packages/utils
+!packages/utils/**
