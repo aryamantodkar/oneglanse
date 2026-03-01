@@ -8,10 +8,13 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
 COPY apps/landing ./apps/landing
+COPY packages/types ./packages/types
+COPY packages/ui ./packages/ui
+COPY packages/utils ./packages/utils
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
-RUN pnpm --filter @oneglanse/landing build
+RUN pnpm turbo build --filter=@oneglanse/landing...
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
