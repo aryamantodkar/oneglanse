@@ -102,6 +102,7 @@ export default function SchedulePage(){
 
 	const [selected, setSelected] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
+	const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 
 	const scheduleQuery = api.workspace.getSchedule.useQuery(
 		{ workspaceId },
@@ -121,10 +122,11 @@ export default function SchedulePage(){
 
 	// Sync selected state with fetched schedule
 	useEffect(() => {
-		if (scheduleQuery.data) {
+		if (scheduleQuery.data && !hasInitializedSelection) {
 			setSelected(scheduleQuery.data.schedule);
+			setHasInitializedSelection(true);
 		}
-	}, [scheduleQuery.data]);
+	}, [scheduleQuery.data, hasInitializedSelection]);
 
 	const currentSchedule = scheduleQuery.data?.schedule ?? null;
 	const hasChanges = selected !== currentSchedule;
@@ -132,16 +134,29 @@ export default function SchedulePage(){
 	const handleSave = async () => {
 		setSaving(true);
 		try {
-			await setScheduleMutation.mutateAsync({
+			const result = await setScheduleMutation.mutateAsync({
 				workspaceId,
 				schedule: selected,
 			});
+			setSelected(result.schedule);
 			await Promise.all([scheduleQuery.refetch(), cronTimingQuery.refetch()]);
-			toast.success(
-				selected
-					? "Schedule saved! Your prompts will run shortly."
-					: "Schedule disabled",
-			);
+			if (!selected) {
+				toast.success("Schedule disabled");
+			} else {
+				if (result.immediateRun?.status === "queued") {
+					toast.success("Schedule saved and immediate run started.");
+				} else if (result.immediateRun?.status === "empty") {
+					toast.warning(
+						"Schedule saved, but no prompts are configured for this workspace.",
+					);
+				} else if (result.immediateRun?.status === "failed") {
+					toast.warning(
+						"Schedule saved, but immediate run failed. It will run on the next cron cycle.",
+					);
+				} else {
+					toast.success("Schedule saved.");
+				}
+			}
 		} catch (err) {
 			console.error(err);
 			toast.error("Failed to update schedule.");
@@ -158,6 +173,7 @@ export default function SchedulePage(){
 				schedule: null,
 			});
 			setSelected(null);
+			setHasInitializedSelection(true);
 			await Promise.all([scheduleQuery.refetch(), cronTimingQuery.refetch()]);
 			toast.success("Schedule disabled.");
 		} catch (err) {
