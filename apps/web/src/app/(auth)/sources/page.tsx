@@ -282,15 +282,15 @@ export default function SourcesPage(){
 
 	if (!workspaceId) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="flex flex-col items-center px-6 text-center">
-					<div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+			<div className="flex min-h-[60vh] items-center justify-center px-4">
+				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
 						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 					</div>
 					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
 						Select a workspace
 					</h2>
-					<p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
 						Choose a workspace from the sidebar to view source intelligence.
 					</p>
 				</div>
@@ -319,30 +319,37 @@ export default function SourcesPage(){
 
 	if (error) {
 		return (
-			<div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-				<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
-					<AlertTriangle className="h-5 w-5 text-amber-500" />
+			<div className="flex min-h-[60vh] items-center justify-center px-4">
+				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
+						<AlertTriangle className="h-5 w-5 text-amber-500" />
+					</div>
+					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+						Unable to load sources
+					</h2>
+					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+						We ran into an issue loading your source data. Please try again in a
+						moment.
+					</p>
 				</div>
-				<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-					Unable to load sources
-				</h2>
-				<p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-					We ran into an issue loading your source data. Please try again in a
-					moment.
-				</p>
 			</div>
 		);
 	}
 
 	if (!sourceStats) {
 		return (
-			<div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
-				<p className="text-lg text-gray-500 dark:text-gray-400">
-					No prompt responses yet.
-				</p>
-				<p className="mt-2 text-sm text-gray-400">
-					If you&apos;ve just run prompts, please check back in a few minutes.
-				</p>
+			<div className="flex min-h-[60vh] items-center justify-center px-4">
+				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+					</div>
+					<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+						No prompt responses yet
+					</p>
+					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+						Run prompts first, then source intelligence will appear here.
+					</p>
+				</div>
 			</div>
 		);
 	}
@@ -594,8 +601,8 @@ export default function SourcesPage(){
 				</div>
 
 				{!hasData ? (
-					<div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-6 py-20 text-center dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">
-						<div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+					<div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-900">
+						<div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
 							<SearchX className="h-5 w-5 text-gray-400" />
 						</div>
 						<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
