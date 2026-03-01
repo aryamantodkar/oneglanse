@@ -23,6 +23,7 @@ import {
 } from "./_components/states";
 import { AggregateStatsRow } from "./_components/stats-row";
 import { TopSources } from "./_components/top-sources";
+import { LatestAnalyzedPrompts } from "./_components/latest-analyzed-prompts";
 import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 
 // Hooks
@@ -180,7 +181,7 @@ export default function Dashboard(){
 						/>
 					</div>
 
-					<div className="space-y-4">
+					<div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
 						<BrandComparisonChart
 							competitors={metrics.competitorData}
 							brandName={metrics.brandName}
@@ -191,6 +192,7 @@ export default function Dashboard(){
 							brandSentimentScore={metrics.avgSentiment.score}
 							brandAvgRank={metrics.avgRank.position}
 						/>
+						<LatestAnalyzedPrompts records={metrics.analyzedRecords} />
 					</div>
 				</div>
 			</div>
