@@ -33,6 +33,10 @@ async function startWorkers() {
 			maxStalledCount: 5, // Allow more stalls for browser automation with proxy retries
 		});
 
+		w.on("active", (job) => {
+			logger.log(`[${provider}] Job started`, job.id);
+		});
+
 		w.on("completed", (job) => {
 			logger.success(`[${provider}] Job completed`, job.id);
 		});
@@ -43,6 +47,10 @@ async function startWorkers() {
 
 		return w;
 	});
+
+	logger.log(
+		`[agent] ${workers.length} workers started → queues: ${PROVIDER_LIST.map(getQueueName).join(", ")}`,
+	);
 }
 
 startWorkers().catch((err) => {
