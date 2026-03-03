@@ -10,8 +10,8 @@ export function AiVisibilitySection(): React.JSX.Element {
     >
       <SectionHeading
         eyebrow="Competitor Comparison"
-        title="How HubSpot performs against direct alternatives in AI answers"
-        description="A complete horizontal comparison across presence, recommendation, sentiment, and rank strength."
+        title="See how your brand performs across AI answers"
+        description="Track where you lead, where you lag, and what to improve next."
       />
       <AiVisibilityPreview />
     </section>
