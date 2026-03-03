@@ -41,3 +41,12 @@ coverage/
 
 # Misc
 *.pem
+
+# Claude Code
+.claude/
+
+# Improvement reports
+improvements/
+
+# Codebase memory
+CODEBASE_MEMORY.md
