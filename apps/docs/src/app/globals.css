@@ -2,12 +2,41 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111111;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #ffffff;
+  --surface-subtle: #fafafa;
+  --brand: #111827;
+  --brand-strong: #030712;
+  --radius: 0.75rem;
+  --shadow-soft: 0 10px 28px rgba(17, 24, 39, 0.06);
+  --shadow-medium: 0 16px 44px rgba(17, 24, 39, 0.1);
+
+  --nextra-primary-hue: 222;
+  --nextra-primary-saturation: 18%;
+  --nextra-primary-lightness: 30%;
+  --nextra-bg: 255 255 255;
+  --nextra-content-width: 88rem;
+  --nextra-navbar-height: 4rem;
 }
 
 .dark {
   --background: #111111;
-  --foreground: #f5f5f5;
+  --foreground: #f7f7f8;
+  --muted: #a1a1aa;
+  --border: #27272a;
+  --surface: #141416;
+  --surface-subtle: #18181b;
+  --brand: #fafafa;
+  --brand-strong: #ffffff;
+  --shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.28);
+  --shadow-medium: 0 24px 48px rgba(0, 0, 0, 0.4);
+
+  --nextra-primary-hue: 222;
+  --nextra-primary-saturation: 20%;
+  --nextra-primary-lightness: 70%;
+  --nextra-bg: 17 17 17;
 }
 
 html,
@@ -15,13 +44,221 @@ body {
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   background-color: var(--background);
   color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  text-rendering: geometricPrecision;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
 }
 
 .docs-logo {
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.02em;
+  color: var(--brand-strong);
+}
+
+.docs-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.docs-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease,
+    box-shadow 180ms ease, color 180ms ease;
+}
+
+.docs-nav-btn:hover {
+  transform: translateY(-1px);
+}
+
+.docs-nav-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.docs-nav-btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.docs-nav-btn-primary:hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.docs-nav-btn-secondary {
+  background: transparent;
+  color: var(--foreground);
+}
+
+.docs-nav-btn-secondary:hover {
+  border-color: color-mix(in srgb, var(--foreground) 20%, var(--border));
+  background: var(--surface-subtle);
+}
+
+.docs-nav-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
+}
+
+.docs-page-enter {
+  animation: docs-enter 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes docs-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nextra-navbar .nextra-navbar-blur {
+  border-bottom-color: var(--border);
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  backdrop-filter: saturate(165%) blur(14px);
+}
+
+.nextra-sidebar,
+.nextra-toc {
+  transition: opacity 180ms ease;
+}
+
+.nextra-sidebar {
+  border-inline-end: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+}
+
+.nextra-toc {
+  border-inline-start: 1px solid var(--border);
+}
+
+.nextra-sidebar a,
+.nextra-toc a,
+.nextra-breadcrumb a {
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.nextra-sidebar a:hover,
+.nextra-toc a:hover,
+.nextra-breadcrumb a:hover {
+  color: var(--brand-strong);
+}
+
+.nextra-body-typesetting-article {
+  color: var(--foreground);
+}
+
+.nextra-body-typesetting-article h1,
+.nextra-body-typesetting-article h2,
+.nextra-body-typesetting-article h3 {
+  letter-spacing: -0.02em;
+  color: var(--brand-strong);
+}
+
+.nextra-body-typesetting-article p,
+.nextra-body-typesetting-article li {
+  color: color-mix(in srgb, var(--foreground) 92%, transparent);
+}
+
+.nextra-body-typesetting-article a {
+  color: var(--brand);
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1.5px;
+  transition: color 160ms ease;
+}
+
+.nextra-body-typesetting-article a:hover {
+  color: var(--brand-strong);
+}
+
+.nextra-body-typesetting-article pre {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.nextra-body-typesetting-article pre:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+  border-color: color-mix(in srgb, var(--foreground) 16%, var(--border));
+}
+
+.nextra-body-typesetting-article :not(pre) > code {
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  border-radius: 0.45rem;
+  padding: 0.15rem 0.35rem;
+}
+
+.nextra-body-typesetting-article blockquote {
+  border-inline-start-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+  background: var(--surface-subtle);
+  border-radius: 0.65rem;
+  padding: 0.8rem 1rem;
+}
+
+.nextra-body-typesetting-article table {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.nextra-body-typesetting-article thead th {
+  background: var(--surface-subtle);
+}
+
+.nextra-body-typesetting-article tr {
+  transition: background-color 160ms ease;
+}
+
+.nextra-body-typesetting-article tbody tr:hover {
+  background: color-mix(in srgb, var(--surface-subtle) 86%, transparent);
+}
+
+@media (max-width: 900px) {
+  .docs-nav-actions {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .docs-page-enter,
+  .docs-nav-btn,
+  .nextra-body-typesetting-article pre,
+  .nextra-body-typesetting-article a,
+  .nextra-sidebar a,
+  .nextra-toc a,
+  .nextra-breadcrumb a {
+    animation: none !important;
+    transition: none !important;
+  }
 }
