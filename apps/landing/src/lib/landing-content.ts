@@ -28,37 +28,37 @@ export type FeatureItem = {
 export const FEATURE_ITEMS: FeatureItem[] = [
   {
     title: "AI Visibility Tracking",
-    description: "Track where and how often your brand appears in model answers.",
+    description: "See where your brand appears and where it disappears.",
     icon: Eye,
   },
   {
     title: "GEO Monitoring",
-    description: "Measure recommendation quality, ranking position, and perception over time.",
+    description: "Track recommendation strength, rank, and sentiment by model.",
     icon: Radar,
   },
   {
     title: "Multi-Provider Prompt Testing",
-    description: "Run the same prompts across ChatGPT, Claude, Perplexity, and Gemini.",
+    description: "Run one prompt set across OpenAI, Claude, Gemini, and Perplexity.",
     icon: SearchCheck,
   },
   {
     title: "Self-hostable Architecture",
-    description: "Deploy the full stack in your own infrastructure with Docker.",
+    description: "Deploy web, worker, queue, and analytics in your own infra.",
     icon: Boxes,
   },
   {
     title: "Proxy-aware Scraping",
-    description: "Use provider-isolated workers with proxy scoring, cooldowns, and retries.",
+    description: "Use isolated workers with proxy scoring, retries, and cooldown control.",
     icon: Globe,
   },
   {
     title: "ClickHouse Analytics",
-    description: "Store prompt responses and analysis at scale for fast reporting.",
+    description: "Store high-volume responses and analytics with low-latency queries.",
     icon: Database,
   },
   {
     title: "Open-source Transparency",
-    description: "Audit the entire decision pipeline from prompt run to analytics output.",
+    description: "Audit every step from prompt execution to final metric.",
     icon: Activity,
   },
 ];

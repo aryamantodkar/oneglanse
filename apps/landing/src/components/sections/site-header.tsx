@@ -17,6 +17,16 @@ export function SiteHeader(): React.JSX.Element {
 
         <div className="flex items-center gap-2">
           <a
+            href={SITE_URLS.app}
+            className="hidden items-center gap-2 rounded-lg border border-transparent bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground sm:inline-flex"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <Rocket className="h-4 w-4" aria-hidden="true" />
+            Try Now
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
+          <a
             href={SITE_URLS.github}
             className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium dark:border-gray-800"
             target="_blank"
@@ -24,16 +34,6 @@ export function SiteHeader(): React.JSX.Element {
           >
             <Github className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">GitHub</span>
-          </a>
-          <a
-            href={SITE_URLS.app}
-            className="hidden items-center gap-2 rounded-lg border border-transparent bg-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:inline-flex"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <Rocket className="h-4 w-4" aria-hidden="true" />
-            Try Now
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </a>
           <a
             href={SITE_URLS.docs}

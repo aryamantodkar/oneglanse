@@ -9,9 +9,9 @@ export function ModelSupportSection(): React.JSX.Element {
       aria-labelledby="model-support-title"
     >
       <SectionHeading
-        eyebrow="Multi-Provider Support"
-        title="Run the same analysis across all major model providers"
-        description="OpenAI, Claude, Gemini, Perplexity, and AI Overview with one consistent filter and reporting surface."
+        eyebrow="Provider Matrix"
+        title="Compare providers on equal footing."
+        description="Same prompts. Same scoring logic. Provider-specific outcomes."
       />
       <ModelSupportPreview />
     </section>
