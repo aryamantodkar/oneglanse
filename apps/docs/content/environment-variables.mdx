@@ -1,0 +1,36 @@
+---
+title: Environment Variables
+description: Reference the key environment variables for secure and stable production operation.
+---
+
+# Environment Variables
+
+## Core Runtime
+
+- `NODE_ENV`
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_DOCS_URL`
+
+## Storage
+
+- `DATABASE_URL`
+- `CLICKHOUSE_URL`
+- `REDIS_URL`
+
+## Auth and Security
+
+- Session secret keys
+- Encryption keys
+- OAuth provider secrets (if enabled)
+
+## Agent and Providers
+
+- Provider credentials/session values
+- Proxy pool settings
+- Queue concurrency controls
+
+## Best Practices
+
+- Keep secrets out of source control
+- Use environment injection from your platform
+- Rotate credentials on a schedule

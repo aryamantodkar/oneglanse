@@ -1,0 +1,39 @@
+---
+title: VPS Deployment
+description: Deploy OneGlanse to a VPS with repeatable steps and safe defaults.
+---
+
+# VPS Deployment
+
+## Baseline Host
+
+- Ubuntu 22.04+
+- 4+ vCPU
+- 8GB+ RAM
+- SSD-backed storage
+
+## Deployment Steps
+
+```bash
+sudo apt update && sudo apt upgrade -y
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+```
+
+Re-login, then deploy:
+
+```bash
+git clone https://github.com/aryamantodkar/oneglanse.git
+cd oneglanse
+cp .env.example .env
+# edit .env securely
+
+docker compose pull
+docker compose up -d
+```
+
+## Hardening
+
+- Put web behind reverse proxy TLS
+- Restrict database ports to private network
+- Enable log shipping and backups

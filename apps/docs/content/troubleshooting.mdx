@@ -1,0 +1,39 @@
+---
+title: Troubleshooting
+description: Diagnose common deployment and collection issues quickly.
+---
+
+# Troubleshooting
+
+## Web Starts, But No Analytics
+
+Check:
+
+- Agent process is running
+- Redis connectivity
+- ClickHouse write permissions
+
+## Prompt Jobs Stuck
+
+Check:
+
+- Worker concurrency limits
+- Provider/session validity
+- Proxy pool health
+
+## Missing Citations
+
+Check:
+
+- Extraction fallback configuration
+- Provider response format changes
+- Parsing errors in worker logs
+
+## Build Issues in Monorepo
+
+```bash
+pnpm install --no-frozen-lockfile
+pnpm --filter @oneglanse/docs build
+```
+
+If TypeScript fails, ensure workspace packages are built and lockfile is current.

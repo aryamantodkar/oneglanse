@@ -1,0 +1,24 @@
+---
+title: Providers
+description: Configure model providers and understand collection constraints for each integration.
+---
+
+# Providers
+
+OneGlanse supports multi-provider prompt execution:
+
+- OpenAI / ChatGPT
+- Anthropic / Claude
+- Google / Gemini
+- Perplexity
+- Google AI Overview
+
+## Important Collection Constraint
+
+Claude cannot be collected from logged-out web sessions. Use authenticated session handling when running Claude jobs.
+
+## Provider Operations
+
+- Validate each provider independently during setup
+- Track provider-specific latency and failure rates
+- Keep credentials scoped to least privilege

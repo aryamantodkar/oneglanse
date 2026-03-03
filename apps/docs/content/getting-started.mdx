@@ -1,0 +1,48 @@
+---
+title: Getting Started
+description: Run OneGlanse locally in minutes with Docker Compose and baseline environment variables.
+---
+
+# Getting Started
+
+## Prerequisites
+
+- Docker and Docker Compose
+- Node.js 20+
+- pnpm 10+
+
+## Clone and Configure
+
+```bash
+git clone https://github.com/aryamantodkar/oneglanse.git
+cd oneglanse
+cp .env.example .env
+```
+
+Set minimum required values in `.env`:
+
+- `DATABASE_URL`
+- `CLICKHOUSE_URL`
+- `REDIS_URL`
+- Authentication and encryption secrets
+
+## Start the Stack
+
+```bash
+docker compose up -d
+pnpm install
+pnpm build
+```
+
+## Run Applications
+
+```bash
+pnpm dev:web
+pnpm dev:agent
+pnpm dev:docs
+```
+
+Open:
+
+- Web dashboard: `http://localhost:3000`
+- Docs: `http://localhost:3002/docs`
