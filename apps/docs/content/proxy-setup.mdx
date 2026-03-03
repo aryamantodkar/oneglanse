@@ -1,21 +1,49 @@
 ---
 title: Proxy Setup
-description: Configure resilient outbound proxy routing for stable provider collection.
+description: Configure outbound proxy sourcing for the agent worker with code-verified settings.
 ---
 
 # Proxy Setup
 
-Use proxy pools to improve collection stability and avoid provider throttling.
+Proxy settings apply to `agent-worker`.
 
-## Recommended Strategy
+From `apps/agent/src/env.ts`:
 
-- Maintain a provider-specific proxy pool
-- Apply cooldown/backoff for failing exits
-- Prefer health-scored proxy selection
-- Keep request rate aligned with provider limits
+- `PROXY_SOURCE_MODE` (default `auto`)
+- `PROXY_API_URL` (optional)
+- `PROXY_MANUAL_FILE` (optional)
+- `PROXY_CACHE_TTL_MS` (default `10000`)
 
-## Operational Controls
+## Mode 1: API-backed Proxy Source
 
-- Alert on failure-rate spikes per provider
-- Track median response time by proxy region
-- Quarantine unstable exits automatically
+Use when your proxy vendor exposes an HTTP API endpoint.
+
+```env
+PROXY_SOURCE_MODE=api
+PROXY_API_URL=https://proxy-provider.example.com/list
+```
+
+## Mode 2: Manual File Source
+
+Use when you manage your own proxy list file.
+
+```env
+PROXY_SOURCE_MODE=manual
+PROXY_MANUAL_FILE=/storage/proxies.txt
+```
+
+`/storage` is persisted via the `agent_storage` Docker volume.
+
+## Mode 3: Auto
+
+```env
+PROXY_SOURCE_MODE=auto
+```
+
+Auto mode uses whichever source variables are present.
+
+## Operational Guidance
+
+- Keep proxy credentials out of source control.
+- Track provider-specific failure rates.
+- Increase `AGENT_WORKER_CONCURRENCY` only after proxy pool stability is verified.

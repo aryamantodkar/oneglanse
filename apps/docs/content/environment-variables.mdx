@@ -1,36 +1,83 @@
 ---
 title: Environment Variables
-description: Reference the key environment variables for secure and stable production operation.
+description: Verified environment variable reference from web, agent, services, db, and docker-compose runtime.
 ---
 
 # Environment Variables
 
-## Core Runtime
+This reference is extracted from the current codebase validation schemas and compose runtime.
 
-- `NODE_ENV`
-- `NEXT_PUBLIC_APP_URL`
-- `NEXT_PUBLIC_DOCS_URL`
+## Container Image Namespace (Compose)
 
-## Storage
+- `GHCR_USERNAME`
+
+`docker-compose.yml` uses inline image URLs like `ghcr.io/${GHCR_USERNAME}/oneglanse-web:latest`.
+
+## Required Runtime Variables
 
 - `DATABASE_URL`
 - `CLICKHOUSE_URL`
-- `REDIS_URL`
+- `CLICKHOUSE_DB`
+- `CLICKHOUSE_USER`
+- `CLICKHOUSE_PASSWORD`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_PASSWORD`
+- `BETTER_AUTH_URL`
+- `NEXT_PUBLIC_API_URL`
+- `APP_URL`
+- `API_BASE_URL`
+- `BETTER_AUTH_SECRET`
+- `INTERNAL_CRON_SECRET`
 
-## Auth and Security
+## Agent Runtime Controls
 
-- Session secret keys
-- Encryption keys
-- OAuth provider secrets (if enabled)
+- `AGENT_WORKER_CONCURRENCY` (default `1`)
+- `PROXY_SOURCE_MODE` (default `auto`)
+- `PROXY_API_URL` (required when source mode uses API pool)
+- `PROXY_MANUAL_FILE` (path for manual proxy list)
+- `DEBUG_ENABLED`
+- `MIN_RESPONSE_CHARS`
+- Timeout and retry controls:
+  - `STEP_EXECUTION_TIMEOUT_MS`
+  - `PAGE_DEFAULT_TIMEOUT_MS`
+  - `PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS`
+  - `PROVIDER_HOOK_TIMEOUT_MS`
+  - `MAX_EXTRACTION_RETRIES`
+  - `EXTRACTION_RETRY_DELAY_MS`
+  - `MAX_EXTRACTION_RETRY_DELAY_MS`
+  - `AI_OVERVIEW_WAIT_TIMEOUT_MS`
+  - `SUBMIT_METHOD_TIMEOUT_MS`
+  - `MAX_PROMPT_RETRIES_PER_IP`
+  - `PROMPT_RETRY_DELAY_MS`
+  - `MAX_PROMPT_RETRY_DELAY_MS`
+  - `SUBMISSION_PHASE_TIMEOUT_MS`
+  - `PROXY_CACHE_TTL_MS`
 
-## Agent and Providers
+## Provider Variables
 
-- Provider credentials/session values
-- Proxy pool settings
-- Queue concurrency controls
+- `OPENAI_API_KEY` (used by shared services)
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
 
-## Best Practices
+## Production Example
 
-- Keep secrets out of source control
-- Use environment injection from your platform
-- Rotate credentials on a schedule
+```env
+DATABASE_URL=postgresql://user:password@db:5432/mydb
+CLICKHOUSE_URL=http://clickhouse:8123
+CLICKHOUSE_DB=analytics
+CLICKHOUSE_USER=default
+CLICKHOUSE_PASSWORD=replace-me
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=replace-me
+
+APP_URL=http://web:3000
+API_BASE_URL=http://web:3000
+BETTER_AUTH_URL=https://app.domain.com
+NEXT_PUBLIC_API_URL=https://app.domain.com
+
+BETTER_AUTH_SECRET=replace-me
+INTERNAL_CRON_SECRET=replace-me
+```

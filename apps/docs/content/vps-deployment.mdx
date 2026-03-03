@@ -1,39 +1,252 @@
 ---
 title: VPS Deployment
-description: Deploy OneGlanse to a VPS with repeatable steps and safe defaults.
+description: Deterministic production deployment on a VPS with DNS, Nginx, SSL, Docker, and exact service port mapping.
 ---
 
 # VPS Deployment
 
-## Baseline Host
+This guide is based on the current repository runtime:
 
-- Ubuntu 22.04+
-- 4+ vCPU
-- 8GB+ RAM
-- SSD-backed storage
+- `landing` container: `127.0.0.1:3000 -> 3000`
+- `web` container: `127.0.0.1:3001 -> 3000`
+- `docs` container: `127.0.0.1:3002 -> 3002`
+- Internal-only services: `agent-worker`, `redis`, `db` (Postgres), `clickhouse`, `migrate`
 
-## Deployment Steps
+Only Nginx should be internet-facing.
+
+## 1. Recommended VPS
+
+Minimum:
+
+- 4 vCPU
+- 8 GB RAM
+- 80 GB SSD
+- Ubuntu 22.04 LTS or 24.04 LTS
+
+Production recommendation:
+
+- 8 vCPU
+- 16 GB RAM
+- 160+ GB SSD
+
+## 2. DNS Setup
+
+Create these DNS records to your VPS public IP:
+
+- `A @ -> <VPS_IPV4>`
+- `A app -> <VPS_IPV4>`
+- Optional docs host: `A docs -> <VPS_IPV4>`
+
+Cloudflare:
+
+- Start with `DNS only` (grey cloud) until SSL is issued.
+- TTL: `Auto` or `300` seconds during setup.
+
+Routing used in this guide:
+
+- `https://domain.com` -> `landing` (`127.0.0.1:3000`)
+- `https://app.domain.com` -> `web` (`127.0.0.1:3001`)
+- Optional `https://docs.domain.com` -> `docs` (`127.0.0.1:3002`)
+
+## 3. Server Bootstrap + Hardening
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-curl -fsSL https://get.docker.com | sh
+sudo apt install -y ca-certificates curl gnupg lsb-release ufw nginx certbot python3-certbot-nginx fail2ban
+curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER
 ```
 
-Re-login, then deploy:
+Re-login, then configure firewall:
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+sudo ufw status
+```
+
+Notes:
+
+- Do not expose DB/Redis/ClickHouse publicly.
+- In compose, public apps are already bound to loopback (`127.0.0.1`), which is correct.
+
+## 4. Clone and Configure
 
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse.git
 cd oneglanse
 cp .env.example .env
-# edit .env securely
+```
 
+Edit `.env` with production values.
+
+Required for this stack:
+
+- `GHCR_USERNAME`
+- `DATABASE_URL`
+- `CLICKHOUSE_URL`, `CLICKHOUSE_DB`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
+- `BETTER_AUTH_URL`, `NEXT_PUBLIC_API_URL`, `APP_URL`, `API_BASE_URL`
+- `BETTER_AUTH_SECRET`, `INTERNAL_CRON_SECRET`
+
+### Image Namespace Variable (inline image URLs)
+
+`docker-compose.yml` keeps full image URLs inline and reads only the username/namespace from env.
+
+Example:
+
+```env
+GHCR_USERNAME=your-github-username
+```
+
+## 5. Docker Deploy
+
+If using prebuilt images:
+
+```bash
+docker compose pull
+```
+
+If building locally on the VPS:
+
+```bash
+docker compose build
+```
+
+Run:
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+Check logs:
+
+```bash
+docker compose logs -f --tail=200 web landing docs agent-worker
+```
+
+## 6. Nginx Reverse Proxy
+
+Create `/etc/nginx/sites-available/oneglanse.conf`:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  '' close;
+}
+
+server {
+  listen 80;
+  server_name domain.com;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+  }
+}
+
+server {
+  listen 80;
+  server_name app.domain.com;
+
+  location / {
+    proxy_pass http://127.0.0.1:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+  }
+}
+
+server {
+  listen 80;
+  server_name docs.domain.com;
+
+  location / {
+    proxy_pass http://127.0.0.1:3002;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+  }
+}
+```
+
+Enable and validate:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/oneglanse.conf /etc/nginx/sites-enabled/oneglanse.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## 7. SSL with Certbot
+
+```bash
+sudo certbot --nginx -d domain.com -d app.domain.com -d docs.domain.com
+```
+
+If you are not serving docs on a subdomain, remove `-d docs.domain.com`.
+
+Certbot will update Nginx blocks and configure HTTP -> HTTPS redirects.
+
+Test renewal:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+## 8. Production Validation Checklist
+
+```bash
+docker compose ps
+curl -I https://domain.com
+curl -I https://app.domain.com
+curl -I https://docs.domain.com
+```
+
+Verify:
+
+- `migrate` exits successfully
+- `web`, `landing`, `docs`, `agent-worker` stay `Up`
+- `redis`, `db`, `clickhouse` are healthy
+- Auth URL envs point to your external app domain
+
+## 9. Operations
+
+Update deployment:
+
+```bash
+git pull
 docker compose pull
 docker compose up -d
 ```
 
-## Hardening
+Backups:
 
-- Put web behind reverse proxy TLS
-- Restrict database ports to private network
-- Enable log shipping and backups
+- Back up Postgres volume: `db_data`
+- Back up ClickHouse volume: `clickhouse_data`
+- Back up Redis volume: `redis_data` (queue durability)
+
+Security:
+
+- Rotate all secrets in `.env` regularly
+- Keep SSH key-only auth
+- Keep `ufw` limited to 22/80/443
