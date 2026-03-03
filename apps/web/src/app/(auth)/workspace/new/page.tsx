@@ -148,7 +148,7 @@ export default function NewWorkspace(){
 	};
 
 	return (
-		<div className="ui-page-enter min-h-screen bg-background flex items-center justify-center p-4">
+		<div className="web-centered-page">
 			{formReady ? (
 				<div className="ui-stagger w-full max-w-md">
 					<Card>
@@ -268,7 +268,7 @@ export default function NewWorkspace(){
 					</Card>
 				</div>
 			) : (
-				<div className="flex flex-col items-center justify-center h-screen gap-4">
+				<div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
 					<Skeleton className="h-8 w-48" />
 					<Skeleton className="h-4 w-64" />
 					<div className="w-full max-w-md space-y-3">

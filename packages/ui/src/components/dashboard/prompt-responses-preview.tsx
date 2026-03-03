@@ -29,8 +29,8 @@ export type PromptResponsePreviewRow = {
 
 function getProviderName(row: PromptResponsePreviewRow): string {
   if (row.modelName) return row.modelName;
-  if (row.modelProvider === "openai") return "ChatGPT";
-  if (row.modelProvider === "google") return "Gemini";
+  if (row.modelProvider === "chatgpt") return "ChatGPT";
+  if (row.modelProvider === "gemini") return "Gemini";
   if (row.modelProvider === "perplexity") return "Perplexity";
 
   return modelSelectors.find((provider) => provider.value === row.modelProvider)?.label ?? row.modelProvider;

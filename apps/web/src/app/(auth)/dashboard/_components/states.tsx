@@ -30,8 +30,8 @@ function CenterState({
 
 export function DashboardSkeleton(){
 	return (
-		<div className="min-h-screen dark:bg-black">
-			<div className="mx-auto w-full max-w-[95vw] px-4 py-4 sm:px-6 lg:px-8 xl:max-w-[1600px]">
+		<div className="web-page-wide dark:bg-black">
+			<div className="web-page-wide-inner py-4">
 				<div className="space-y-6">
 					<div className="flex items-center gap-3">
 						<Skeleton className="h-9 w-44 rounded-lg" />

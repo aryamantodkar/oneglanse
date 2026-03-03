@@ -12,7 +12,7 @@ export interface ProviderConfig {
 	url: string;
 	/** Milliseconds to wait after the page loads before the first prompt. */
 	warmupDelayMs: number;
-	/** Short identifier used in logs (e.g. "OpenAI"). */
+	/** Short identifier used in logs (e.g. "ChatGPT"). */
 	label: string;
 	/** Human-readable product name shown in the UI (e.g. "ChatGPT"). */
 	displayName: string;

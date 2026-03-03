@@ -1,12 +1,12 @@
 import type { Source } from "@oneglanse/types";
-import type { Page } from "playwright";
 import { SELECTORS } from "@oneglanse/utils";
-import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
+import type { Page } from "playwright";
+import { type RawSource, buildSources } from "../../_shared/sourceUtils.js";
 
 export async function extractSourcesFromPerplexity(
 	page: Page,
 ): Promise<Source[]> {
-	const rawSources = await page.evaluate((sels) => {
+	const rawSources = (await page.evaluate((sels) => {
 		const results: Array<{
 			rawHref: string;
 			title: string;
@@ -62,10 +62,7 @@ export async function extractSourcesFromPerplexity(
 				Array.from(a.querySelectorAll("div"))
 					.map((d) => d.textContent?.trim() || "")
 					.filter(
-						(t) =>
-							t.length > 40 &&
-							!t.includes(domainForFilter) &&
-							t !== title,
+						(t) => t.length > 40 && !t.includes(domainForFilter) && t !== title,
 					)
 					.at(-1) || "";
 
@@ -75,7 +72,7 @@ export async function extractSourcesFromPerplexity(
 		}
 
 		return results;
-	}, SELECTORS.perplexity) as RawSource[];
+	}, SELECTORS.perplexity)) as RawSource[];
 
 	await page.keyboard.press("Escape").catch(() => {});
 	await page.waitForTimeout(300);

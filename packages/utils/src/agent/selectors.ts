@@ -1,5 +1,5 @@
 export const SELECTORS = {
-	openai: {
+	chatgpt: {
 		flyout: {
 			threadFlyout: 'div[class*="threadFlyOut"]',
 			aside: "aside",
@@ -20,13 +20,13 @@ export const SELECTORS = {
 		snippet: ".snippet",
 		icon: "img.icon-image, img",
 	},
-	googleAiOverview: {
+	aiOverview: {
 		headings: 'h1, h2, h3, [role="heading"]',
 		containers: '[role="region"], main > div, [data-sokoban-container]',
 		anchor: "a[href]",
 		paragraph: 'li, p, div[role="paragraph"]',
 	},
-	googleAiOverviewResponse: {
+	aiOverviewResponse: {
 		placeholder: '[data-container-id="model-response-placeholder"]',
 		placeholderWrapper: 'div:has(> [data-container-id="main-col"])',
 		mainCol: '[data-container-id="main-col"]',
@@ -39,7 +39,7 @@ export const SELECTORS = {
 			"iframe",
 			"sup",
 		],
-		googleChip: 'a[href*="google.com/search"]',
+		aiOverviewChip: 'a[href*="google.com/search"]',
 		sourceContainers: [
 			'[data-container-id="rhs-col"]',
 			'[data-xid="aim-aside-initial-corroboration-container"]',

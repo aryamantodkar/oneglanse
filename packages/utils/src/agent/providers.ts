@@ -8,12 +8,12 @@ interface ProviderDisplayConfig {
 }
 
 export const PROVIDER_DISPLAY = {
-	openai: {
+	chatgpt: {
 		displayName: "ChatGPT",
 		domain: "openai.com",
 		description: "ChatGPT - Powered by GPT-4",
 	},
-	anthropic: {
+	claude: {
 		displayName: "Claude",
 		domain: "claude.ai",
 		description: "Claude - Advanced reasoning and analysis",
@@ -23,15 +23,15 @@ export const PROVIDER_DISPLAY = {
 		domain: "perplexity.ai",
 		description: "Real-time web search and citations",
 	},
-	google: {
+	gemini: {
 		displayName: "Gemini",
 		domain: "gemini.google.com",
-		description: "Gemini - Google's latest AI model",
+		description: "Gemini - Latest AI model",
 	},
-	"google-ai-overview": {
+	"ai-overview": {
 		displayName: "AI Overview",
 		domain: "google.com",
-		description: "AI-powered search summaries from Google",
+		description: "AI-powered search summaries",
 	},
 } satisfies Record<Provider, ProviderDisplayConfig>;
 
@@ -39,7 +39,7 @@ export const ALL_PROVIDERS_JSON = JSON.stringify([...PROVIDER_LIST]);
 
 /**
  * Get the user-friendly display name for a provider
- * @param provider - The provider key (openai, anthropic, perplexity, google)
+ * @param provider - The provider key (chatgpt, claude, perplexity, gemini, ai-overview)
  * @returns Display name (ChatGPT, Claude, Perplexity, Gemini)
  */
 export function getProviderDisplayName(provider: string): string {

@@ -34,11 +34,11 @@ export interface AskPromptResult {
 }
 
 export const PROVIDER_LIST = [
-	"openai",
-	"anthropic",
+	"chatgpt",
+	"claude",
 	"perplexity",
-	"google",
-	"google-ai-overview",
+	"gemini",
+	"ai-overview",
 ] as const;
 
 export type Provider = (typeof PROVIDER_LIST)[number];

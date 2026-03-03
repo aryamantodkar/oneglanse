@@ -38,7 +38,7 @@ export async function waitForAssistantToFinish(
 	provider: Provider,
 ): Promise<void> {
 	logger.debug("⏳ Waiting for assistant to finish…");
-	// Chat providers (OpenAI, Anthropic, Perplexity, Google/Gemini)
+	// Chat models (ChatGPT, Claude, Perplexity, Gemini)
 	let lastText = "";
 	let lastChange = Date.now();
 	let seenOutput = false;

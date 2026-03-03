@@ -8,11 +8,11 @@ import type { ProviderConfig } from "../types.js";
 export const geminiConfig: ProviderConfig = {
 	url: "https://gemini.google.com/",
 	warmupDelayMs: 5000,
-	label: "Google",
+	label: "Gemini",
 	displayName: "Gemini",
 	requiresWarmup: true,
-	waitForResponse: (page) => waitForAssistantToFinish(page, "google"),
-	extractResponse: (page) => extractAssistantMarkdown(page, "google"),
+	waitForResponse: (page) => waitForAssistantToFinish(page, "gemini"),
+	extractResponse: (page) => extractAssistantMarkdown(page, "gemini"),
 	extractSources: async (page) => {
 		const btn = await findSourcesButton(page);
 		if (!btn) return [];

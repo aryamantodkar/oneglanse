@@ -1,7 +1,7 @@
 import type { Locator } from "playwright";
 
 /**
- * Extract content from visible Anthropic `.standard-markdown` blocks.
+ * Extract content from visible Claude `.standard-markdown` blocks.
  *
  * Visibility is determined by walking up the DOM and checking parent computed
  * styles — blocks inside collapsed/hidden containers are excluded.
@@ -10,7 +10,7 @@ import type { Locator } from "playwright";
  * @param mode   - "text" returns innerText (for getText),
  *                 "html" returns innerHTML (for toMarkdown / Turndown)
  */
-export async function extractAnthropicBlocks(
+export async function extractClaudeBlocks(
 	el: Locator,
 	mode: "text" | "html",
 ): Promise<string> {

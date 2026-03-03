@@ -1,28 +1,28 @@
 import { EnvError } from "@oneglanse/errors";
-import OpenAI from "openai";
+import ChatGptClient from "openai";
 import { env } from "../env.js";
 
-let client: OpenAI | null = null;
+let client: ChatGptClient | null = null;
 
-function init(): OpenAI {
+function init(): ChatGptClient {
 	if (client) return client;
 
 	const apiKey = env.OPENAI_API_KEY;
 	if (!apiKey) {
 		throw new EnvError(
 			"OPENAI_API_KEY",
-			"Missing OpenAI API key. Please set OPENAI_API_KEY in your environment.",
+			"Missing ChatGPT API key. Please set OPENAI_API_KEY in your environment.",
 		);
 	}
 
-	client = new OpenAI({ apiKey });
+	client = new ChatGptClient({ apiKey });
 	return client;
 }
 
 /**
- * Proxy defers OpenAI creation until first actual usage
+ * Proxy defers client creation until first actual usage
  */
-export const openai = new Proxy({} as OpenAI, {
+export const chatgpt = new Proxy({} as ChatGptClient, {
 	get(_target, prop) {
 		const instance = init();
 		// @ts-expect-error – dynamic proxy passthrough

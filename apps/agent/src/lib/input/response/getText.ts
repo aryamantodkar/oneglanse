@@ -1,7 +1,7 @@
 import type { Provider } from "@oneglanse/types";
 import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { extractAnthropicBlocks } from "../markdown/anthropicBlocks.js";
+import { extractClaudeBlocks } from "../markdown/claudeBlocks.js";
 
 export async function getText(
 	page: Page,
@@ -21,8 +21,8 @@ export async function getText(
 
 				let text = "";
 
-				if (provider === "anthropic" && fetchingResponses) {
-					text = await extractAnthropicBlocks(el, "text");
+				if (provider === "claude" && fetchingResponses) {
+					text = await extractClaudeBlocks(el, "text");
 				} else {
 					text = await el.evaluate((el) => {
 						if (!(el instanceof HTMLElement)) return "";

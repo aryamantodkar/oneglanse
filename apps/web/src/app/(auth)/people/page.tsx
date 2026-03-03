@@ -257,7 +257,7 @@ export default function PeoplePage() {
 	}
 
 	return (
-		<div className="ui-page-enter ui-stagger mx-auto max-w-4xl space-y-8 py-6">
+		<div className="web-page-panel max-w-4xl">
 			{/* Page Header */}
 			<div className="mb-6 flex items-center gap-2">
 				<Users className="h-6 w-6 shrink-0 text-gray-500" />
@@ -552,8 +552,8 @@ export default function PeoplePage() {
 						))}
 					</div>
 				) : (
-					<div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-						<Table>
+					<div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+						<Table className="min-w-[680px]">
 							<TableHeader>
 								<TableRow className="bg-gray-50/70 dark:bg-gray-900/40">
 									<TableHead className="px-4 py-3">Name</TableHead>

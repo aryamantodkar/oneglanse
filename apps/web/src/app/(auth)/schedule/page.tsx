@@ -193,7 +193,7 @@ export default function SchedulePage(){
 	}
 
 	return (
-		<div className="ui-page-enter ui-stagger mx-auto max-w-2xl space-y-8 py-6">
+		<div className="web-page-panel max-w-2xl">
 			{/* Header */}
 			<div>
 				<div className="flex items-center gap-2 mb-1">

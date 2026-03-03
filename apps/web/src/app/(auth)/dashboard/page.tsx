@@ -119,8 +119,8 @@ export default function Dashboard(){
 	if (!hasAnyAnalysisInWorkspace) return <NoAnalysisState />;
 
 	return (
-		<div className="ui-page-enter min-h-screen dark:bg-black">
-			<div className="mx-auto w-full max-w-[95vw] px-4 pt-4 pb-12 sm:px-6 lg:px-8 xl:max-w-[1600px]">
+		<div className="web-page-wide dark:bg-black">
+			<div className="web-page-wide-inner pt-4 pb-12">
 				<div className="ui-stagger space-y-6">
 					{/* Filters */}
 					<div className="flex items-center justify-between gap-3">

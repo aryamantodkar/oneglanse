@@ -159,3 +159,21 @@
 		--sidebar-ring: oklch(0.439 0 0);
 	}
 }
+
+@layer components {
+	.web-page-wide {
+		@apply ui-page-enter min-h-svh;
+	}
+
+	.web-page-wide-inner {
+		@apply mx-auto w-full max-w-[95vw] px-4 sm:px-6 lg:px-8 xl:max-w-[1600px];
+	}
+
+	.web-page-panel {
+		@apply ui-page-enter ui-stagger mx-auto w-full space-y-8 py-6;
+	}
+
+	.web-centered-page {
+		@apply ui-page-enter flex min-h-svh items-center justify-center bg-background p-4;
+	}
+}

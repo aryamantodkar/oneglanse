@@ -1,8 +1,8 @@
-import type { Source } from "@oneglanse/types";
-import type { Page } from "playwright";
 import { toErrorMessage } from "@oneglanse/errors";
+import type { Source } from "@oneglanse/types";
 import { SELECTORS, logger } from "@oneglanse/utils";
-import { buildSources, type RawSource } from "../../../../lib/extraction/sourceUtils.js";
+import type { Page } from "playwright";
+import { type RawSource, buildSources } from "../../_shared/sourceUtils.js";
 
 function normalizeAIOverviewTitle(title: string): string {
 	return title.replace(/\s*\.?\s*opens in new tab\.?\s*$/i, "").trim();
@@ -66,7 +66,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 						if (!(link instanceof HTMLAnchorElement)) continue;
 						const url = link.href;
 
-						// Skip Google internal links
+						// Skip internal search links
 						if (
 							url.includes("google.com/search") ||
 							url.includes("google.com/")
@@ -135,7 +135,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 			} catch {
 				return { rawSources: results, containerFound: false };
 			}
-		}, SELECTORS.googleAiOverview);
+		}, SELECTORS.aiOverview);
 
 		if (!containerFound) {
 			logger.warn("AI Overview container not found — no sources extracted");
@@ -152,7 +152,9 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 		logger.debug(`Extracted ${sources.length} sources from AI Overview`);
 		return sources;
 	} catch (err) {
-		logger.error(`Failed to extract AI Overview sources: ${toErrorMessage(err)}`);
+		logger.error(
+			`Failed to extract AI Overview sources: ${toErrorMessage(err)}`,
+		);
 		return [];
 	}
 }

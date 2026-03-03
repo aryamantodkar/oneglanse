@@ -4,13 +4,13 @@ import type { Provider } from "@oneglanse/types";
 // Keyed by provider so callers only test selectors relevant to the current session,
 // avoiding false positives and unnecessary timeout ticks on unrelated selectors.
 export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
-	openai: [
+	chatgpt: [
 		"#prompt-textarea",
 		'div#prompt-textarea[contenteditable="true"]',
 		'[data-testid="composer"] #prompt-textarea',
 		'textarea[name="prompt-textarea"]',
 	],
-	anthropic: [
+	claude: [
 		'[data-testid="chat-input"][contenteditable="true"]',
 		'.ProseMirror[contenteditable="true"]',
 		'[data-testid="chat-input-grid-container"] [contenteditable="true"]',
@@ -22,11 +22,11 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 		'div.relative #ask-input[contenteditable="true"]',
 		'div[contenteditable="true"][spellcheck="true"]',
 	],
-	google: [
+	gemini: [
 		'[contenteditable="true"]',
 		'div.ql-editor[contenteditable="true"]',
 	],
-	"google-ai-overview": [
+	"ai-overview": [
 		'textarea[name="q"]',
 		'textarea[name="q"][role="combobox"]',
 		'input[name="q"]',
@@ -68,7 +68,7 @@ export const EDITOR_SELECTORS = [
 	'div.ql-editor[contenteditable="true"]',
 
 	// ======================
-	// Google Search (AI Overview)
+	// Search (AI Overview)
 	// ======================
 	'textarea[name="q"]',
 	'input[name="q"]',
@@ -131,7 +131,7 @@ export const MODEL_RESPONSE_SELECTORS = [
 	'[data-testid="answer"]',
 	".answer",
 
-	// Google/Gemini (for regular Gemini chat responses)
+	// Gemini and AI Overview response blocks
 	'[data-message-author-role="model"]',
 	".model-response-text",
 	"message-content",
