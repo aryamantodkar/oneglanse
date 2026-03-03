@@ -100,11 +100,11 @@ export const METHOD_POINTS = [
 ] as const;
 
 export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
-  { text: "Open source repository and audit trail", icon: GitBranch },
-  { text: "Dockerized web, worker, queue, and analytics stack", icon: Boxes },
-  { text: "Data ownership for prompts, responses, and sources", icon: Database },
-  { text: "No provider lock-in", icon: KeyRound },
-  { text: "Reproducible pipeline from run to metric", icon: ShieldCheck },
+  { text: "Fully open-source codebase with auditable commits and change history.", icon: GitBranch },
+  { text: "Self-hostable Docker stack for web, worker, queue, and analytics.", icon: Boxes },
+  { text: "Full data ownership for prompts, responses, citations, and analytics.", icon: Database },
+  { text: "Transparent provider integrations with no vendor lock-in.", icon: KeyRound },
+  { text: "Traceable pipeline from prompt execution to final scored metrics.", icon: ShieldCheck },
 ];
 
 export const FOOTER_LINKS = [
