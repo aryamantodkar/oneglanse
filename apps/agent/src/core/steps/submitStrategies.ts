@@ -1,11 +1,12 @@
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
-import { toErrorMessage } from "@oneglanse/errors";
+import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import { env } from "../../env.js";
 import { logger, withTimeout } from "@oneglanse/utils";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
+const EMPTY_INPUT_SUBMIT_ERROR = "Input has no content before submit";
 
 export type SubmitContext = {
 	page: Page;
@@ -21,6 +22,39 @@ type SubmitAttempt = {
 	successMessage: string;
 	run: () => Promise<boolean>;
 };
+
+function hasWords(content: string): boolean {
+	return content
+		.trim()
+		.split(/\s+/)
+		.filter(Boolean).length > 0;
+}
+
+async function readInputContent(input: Locator): Promise<string> {
+	return input.evaluate((el) => {
+		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+			return el.value.trim();
+		}
+		return (el.textContent || "").trim();
+	});
+}
+
+async function ensureInputHasWords(
+	ctx: SubmitContext,
+	attemptLabel: string,
+): Promise<boolean> {
+	const liveContent = await readInputContent(ctx.input).catch(
+		() => ctx.preSubmitContent,
+	);
+	const content = liveContent.length > 0 ? liveContent : ctx.preSubmitContent;
+
+	if (hasWords(content)) return true;
+
+	throw new ExternalServiceError(
+		ctx.provider,
+		`${EMPTY_INPUT_SUBMIT_ERROR} (${attemptLabel})`,
+	);
+}
 
 async function checkSubmissionSuccess(
 	ctx: SubmitContext,
@@ -72,8 +106,13 @@ async function attemptSubmit(
 			return true;
 		}
 	} catch (err) {
+		const message = toErrorMessage(err);
+		// Missing input content should fail fast and let retry policy handle recovery.
+		if (message.includes(EMPTY_INPUT_SUBMIT_ERROR)) {
+			throw err;
+		}
 		logger.debug(
-			`  ℹ️ ${attempt.errorLabel} failed: ${toErrorMessage(err)}`,
+			`  ℹ️ ${attempt.errorLabel} failed: ${message}`,
 		);
 	}
 
@@ -85,12 +124,14 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 	return attemptSubmit({
 		errorLabel: "Enter submit",
 		successMessage: "Submitted via Enter key",
-		run: async () =>
-			await withTimeout("Enter submit", async () => {
+		run: async () => {
+			await ensureInputHasWords(ctx, "Enter submit");
+			return await withTimeout("Enter submit", async () => {
 				await input.focus();
 				await page.keyboard.press("Enter");
 				return await checkSubmissionSuccess(ctx);
-			}, SUBMIT_METHOD_TIMEOUT_MS),
+			}, SUBMIT_METHOD_TIMEOUT_MS);
+		},
 	});
 }
 
@@ -100,11 +141,13 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 	return attemptSubmit({
 		errorLabel: "Force click",
 		successMessage: "Submitted via force click",
-		run: async () =>
-			await withTimeout("Force-click submit", async () => {
+		run: async () => {
+			await ensureInputHasWords(ctx, "Force click");
+			return await withTimeout("Force-click submit", async () => {
 				await sendButton.click({ force: true, timeout: SUBMIT_METHOD_TIMEOUT_MS });
 				return await checkSubmissionSuccess(ctx);
-			}, SUBMIT_METHOD_TIMEOUT_MS),
+			}, SUBMIT_METHOD_TIMEOUT_MS);
+		},
 	});
 }
 
@@ -115,6 +158,7 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 		errorLabel: "Dispatch click",
 		successMessage: "Submitted via dispatched click",
 		run: async () => {
+			await ensureInputHasWords(ctx, "Dispatch click");
 			const handle = await withTimeout(
 				"Dispatch-click submit",
 				async () => await sendButton.elementHandle(),
