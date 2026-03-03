@@ -1,5 +1,5 @@
 import { FEATURE_ITEMS } from "@/lib/landing-content";
-import { SectionHeading } from "@/components/common/section-heading";
+import { SectionHeading } from "@oneglanse/ui";
 
 export function FeatureGrid(): React.JSX.Element {
   return (

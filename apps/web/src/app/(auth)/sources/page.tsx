@@ -4,21 +4,22 @@ import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import type { GroupedSource, SourceGroupResult } from "@oneglanse/types";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  ProviderModelSelect,
+  SectionHeading,
   Skeleton,
   SourcesIntelligencePanel,
-  cleanCitedText,
-  getUrlPath,
   type SourcePanelCitationDomain,
   type SourcePanelDomainRow,
   type SourcePanelMetrics,
 } from "@oneglanse/ui";
-import { getDomain, getModelFavicon, modelSelectors } from "@oneglanse/utils";
-import { AlertTriangle, Bot, SearchX } from "lucide-react";
+import {
+  cleanCitedText,
+  getDomain,
+  getUniqueModelProviders,
+  getUrlPath,
+  joinCitedTexts,
+} from "@oneglanse/utils";
+import { AlertTriangle, SearchX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
@@ -125,11 +126,7 @@ export default function SourcesPage(): React.JSX.Element {
           title: source.title,
           totalCitations: source.totalSources ?? 0,
           providers: [
-            ...new Set(
-              source.excerpts
-                .map((e) => e.model_provider)
-                .filter((value): value is string => Boolean(value)),
-            ),
+            ...getUniqueModelProviders(source.excerpts),
           ],
           excerpts: source.excerpts.map((excerpt) => ({
             modelProvider: excerpt.model_provider ?? undefined,
@@ -215,17 +212,15 @@ export default function SourcesPage(): React.JSX.Element {
   return (
     <div className="ui-page-enter min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="ui-stagger mx-auto w-full max-w-[95vw] space-y-6 xl:max-w-[1600px]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-              Sources Intelligence
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              High-signal view of where model answers are sourced from.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
+        <SectionHeading
+          as="h1"
+          title="Sources Intelligence"
+          description="High-signal view of where model answers are sourced from."
+          className="mb-0 flex-wrap items-center"
+          titleClassName="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+          descriptionClassName="mt-1 text-sm font-normal"
+          trailing={(
+            <div className="flex items-center gap-2">
             <ExportMenu
               disabled={!hasExportableData}
               onExportJson={() => {
@@ -311,44 +306,21 @@ export default function SourcesPage(): React.JSX.Element {
                     title: source.title,
                     total_citations: source.totalSources ?? 0,
                     domain: getDomain(source.url) || "",
-                    models: [
-                      ...new Set(
-                        (source.excerpts ?? []).map((e) => e.model_provider).filter(Boolean),
-                      ),
-                    ].join(", "),
-                    cited_texts: (source.excerpts ?? [])
-                      .map((e) => (e.cited_text ? cleanCitedText(e.cited_text) : ""))
-                      .filter(Boolean)
-                      .join(" | "),
+                    models: getUniqueModelProviders(source.excerpts ?? []).join(", "),
+                    cited_texts: joinCitedTexts(source.excerpts ?? [], { clean: true }),
                   })),
                 ];
                 downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
               }}
             />
-            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-              <SelectTrigger className="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-                <SelectValue placeholder="Select Provider" />
-              </SelectTrigger>
-              <SelectContent>
-                {modelSelectors.map(({ value, label }) => {
-                  const icon = value === "All Models" ? "" : getModelFavicon(value);
-                  return (
-                    <SelectItem key={value} value={value}>
-                      <div className="flex items-center gap-2">
-                        {value === "All Models" ? (
-                          <Bot className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <img src={icon} alt={value} className="h-4 w-4 rounded-sm" />
-                        )}
-                        <span>{label}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+            <ProviderModelSelect
+              value={selectedProvider}
+              onValueChange={setSelectedProvider}
+              triggerClassName="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
+            />
+            </div>
+          )}
+        />
 
         <SourcesIntelligencePanel
           metrics={metrics}

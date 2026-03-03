@@ -1,4 +1,5 @@
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { joinCitedTexts, joinSourceUrls } from "@oneglanse/utils";
 import type { DashboardMetrics } from "./types";
 
 export function exportAnalysisJson(args: {
@@ -132,14 +133,8 @@ export function exportAnalysisCsv(args: {
 			position: record.brand_analysis?.position?.rankPosition ?? "",
 			recommendation: record.brand_analysis?.recommendation?.type ?? "",
 			citations: record.sources?.length ?? 0,
-			source_urls: (record.sources ?? [])
-				.map((source) => source.url)
-				.filter(Boolean)
-				.join(" | "),
-			cited_texts: (record.sources ?? [])
-				.map((source) => source.cited_text)
-				.filter(Boolean)
-				.join(" | "),
+			source_urls: joinSourceUrls(record.sources ?? []),
+			cited_texts: joinCitedTexts(record.sources ?? []),
 		})),
 	];
 

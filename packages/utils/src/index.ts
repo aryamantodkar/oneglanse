@@ -10,3 +10,4 @@ export * from "./analysis/index.js";
 export * from "./async/index.js";
 export * from "./logger.js";
 export * from "./workspace/index.js";
+export * from "./sources/index.js";

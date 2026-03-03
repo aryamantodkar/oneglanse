@@ -7,6 +7,10 @@
 		"noEmit": false,
 		"isolatedModules": true,
 		"composite": true,
+		"baseUrl": "../../",
+		"paths": {
+			"@oneglanse/utils": ["packages/utils/src/index.ts", "packages/utils/dist/index.d.ts"]
+		},
 
 		/* Output */
 		"jsx": "react-jsx",

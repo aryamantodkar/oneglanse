@@ -22,6 +22,10 @@ export * from "./components/input.js";
 // Label
 export * from "./components/label.js";
 
+// Provider/time filter controls
+export * from "./components/provider-model-select.js";
+export * from "./components/time-range-select.js";
+
 // Popover
 export * from "./components/popover.js";
 
@@ -33,6 +37,9 @@ export * from "./components/select.js";
 
 // Separator
 export * from "./components/separator.js";
+
+// Section heading
+export * from "./components/section-heading.js";
 
 // Sheet
 export * from "./components/sheet.js";
@@ -61,3 +68,4 @@ export * from "./components/cell.js";
 export * from "./components/dashboard/index.js";
 
 export * from "./hooks/use-mobile.js";
+export * from "./hooks/use-sort-state.js";

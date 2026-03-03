@@ -8,4 +8,4 @@ export * from "./top-sources.js";
 export * from "./sources-intelligence-panel.js";
 export * from "./prompt-responses-preview.js";
 export * from "./sources-hover-links.js";
-export * from "./sortable-header-button.js";
+export * from "./sortable-header.js";

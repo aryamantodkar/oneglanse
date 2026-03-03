@@ -12,13 +12,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+	ProviderModelSelect,
 	Separator,
 	Skeleton,
+	SortableHeader,
 	Table,
 	TableBody,
 	TableCell,
@@ -26,8 +23,10 @@ import {
 	TableHeader,
 	TableRow,
 	Textarea,
+	TimeRangeSelect,
 	SourcesHoverLinks,
 	toast,
+	useSortState,
 } from "@oneglanse/ui";
 import { PositionMetricCell, SentimentMetricCell } from "@oneglanse/ui";
 import {
@@ -35,6 +34,8 @@ import {
 	formatDate,
 	formatMarkdown,
 	getModelFavicon,
+	joinCitedTexts,
+	joinSourceUrls,
 	modelSelectors,
 } from "@oneglanse/utils";
 import {
@@ -45,7 +46,6 @@ import {
 	Plus,
 	Trash2,
 } from "lucide-react";
-import { SortableHeader } from "../_components/sortable-header";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
@@ -70,8 +70,11 @@ export default function Prompts(){
 	const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">(
 		"all",
 	);
-	const [sortBy, setSortBy] = useState<SortColumn>("prompt");
-	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+	const { sortColumn: sortBy, sortDirection, toggleSort: handleColumnSort } =
+		useSortState<SortColumn>("prompt", "asc", {
+			nextDirectionForNewColumn: (column) =>
+				column === "prompt" ? "asc" : "desc",
+		});
 	const [currentPrompt, setCurrentPrompt] = useState("");
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -327,17 +330,6 @@ export default function Prompts(){
 
 	const hasExportableData = filteredRecords.length > 0;
 
-	const handleColumnSort = (column: SortColumn) => {
-		if (sortBy === column) {
-			// Toggle direction if same column
-			setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-		} else {
-			// New column, default to ascending for text, descending for numbers
-			setSortBy(column);
-			setSortDirection(column === "prompt" ? "asc" : "desc");
-		}
-	};
-
 	const openPromptRecords = useMemo(() => {
 		if (!openPrompt) return [];
 		// Filter responses for this prompt using current filters
@@ -582,47 +574,19 @@ export default function Prompts(){
 					{/* Middle: Filters */}
 					<div className="flex items-center gap-3">
 						{/* Model filter */}
-						<Select value={modelFilter} onValueChange={setModelFilter}>
-							<SelectTrigger className="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
-								<SelectValue placeholder="Select Model" />
-							</SelectTrigger>
-							<SelectContent className="z-[9999]">
-								{modelSelectors.map(({ value, label }) => (
-									<SelectItem key={value} value={value}>
-										<div className="flex items-center gap-2">
-											{value === "All Models" ? (
-												<Bot className="h-4 w-4 text-muted-foreground" />
-											) : (
-												<img
-													src={getModelFavicon(value)}
-													alt={value}
-													className="h-4 w-4 rounded-sm"
-												/>
-											)}
-											<span>{label}</span>
-										</div>
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<ProviderModelSelect
+							value={modelFilter}
+							onValueChange={setModelFilter}
+							triggerClassName="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+							contentClassName="z-[9999]"
+						/>
 
 						{/* Time filter */}
-						<Select
+						<TimeRangeSelect
 							value={timeFilter}
-							onValueChange={(value) =>
-								setTimeFilter(value as "all" | "7d" | "14d" | "30d")
-							}
-						>
-							<SelectTrigger className="h-9 w-40 text-sm">
-								<SelectValue placeholder="Time range" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">All time</SelectItem>
-								<SelectItem value="7d">Last 7 days</SelectItem>
-								<SelectItem value="14d">Last 14 days</SelectItem>
-								<SelectItem value="30d">Last 30 days</SelectItem>
-							</SelectContent>
-						</Select>
+							onValueChange={setTimeFilter}
+							triggerClassName="h-9 w-40 text-sm"
+						/>
 
 						{/* Clear filters button */}
 						{(modelFilter !== "All Models" || timeFilter !== "all") && (
@@ -748,28 +712,23 @@ export default function Prompts(){
 											sortedPromptsWithMetrics.length - analyzedPromptCount,
 									},
 									...sortedPromptsWithMetrics.map(
-										({ prompt, metrics, modelProvider, reason }) => ({
-											section: "prompt_details",
-											prompt: prompt.prompt,
-											model: modelProvider,
-											geo_score: metrics?.geoScore ?? "",
-											sentiment: metrics?.sentiment ?? "",
-											visibility: metrics?.visibility ?? "",
-											position: metrics?.position ?? "",
-											status: reason ?? "ok",
-											source_urls: filteredRecords
+										({ prompt, metrics, modelProvider, reason }) => {
+											const promptSources = filteredRecords
 												.filter((r) => r.prompt_id === prompt.id)
-												.flatMap((r) => r.sources ?? [])
-												.map((source) => source.url)
-												.filter(Boolean)
-												.join(" | "),
-											cited_texts: filteredRecords
-												.filter((r) => r.prompt_id === prompt.id)
-												.flatMap((r) => r.sources ?? [])
-												.map((source) => source.cited_text)
-												.filter(Boolean)
-												.join(" | "),
-										}),
+												.flatMap((r) => r.sources ?? []);
+											return {
+												section: "prompt_details",
+												prompt: prompt.prompt,
+												model: modelProvider,
+												geo_score: metrics?.geoScore ?? "",
+												sentiment: metrics?.sentiment ?? "",
+												visibility: metrics?.visibility ?? "",
+												position: metrics?.position ?? "",
+												status: reason ?? "ok",
+												source_urls: joinSourceUrls(promptSources),
+												cited_texts: joinCitedTexts(promptSources),
+											};
+										},
 									),
 								];
 								downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
@@ -968,47 +927,19 @@ export default function Prompts(){
 								{/* Filter bar */}
 								<div className="flex items-center gap-3 pb-6">
 									{/* Model filter */}
-									<Select value={modelFilter} onValueChange={setModelFilter}>
-										<SelectTrigger className="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950">
-											<SelectValue placeholder="Select Model" />
-										</SelectTrigger>
-										<SelectContent className="z-[9999]">
-											{modelSelectors.map(({ value, label }) => (
-												<SelectItem key={value} value={value}>
-													<div className="flex items-center gap-2">
-														{value === "All Models" ? (
-															<Bot className="h-4 w-4 text-muted-foreground" />
-														) : (
-															<img
-																src={getModelFavicon(value)}
-																alt={value}
-																className="h-4 w-4 rounded-sm"
-															/>
-														)}
-														<span>{label}</span>
-													</div>
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
+									<ProviderModelSelect
+										value={modelFilter}
+										onValueChange={setModelFilter}
+										triggerClassName="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+										contentClassName="z-[9999]"
+									/>
 
 									{/* Time filter */}
-									<Select
+									<TimeRangeSelect
 										value={timeFilter}
-										onValueChange={(value) =>
-											setTimeFilter(value as "all" | "7d" | "14d" | "30d")
-										}
-									>
-										<SelectTrigger className="h-9 w-40 text-sm">
-											<SelectValue placeholder="Time range" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="all">All time</SelectItem>
-											<SelectItem value="7d">Last 7 days</SelectItem>
-											<SelectItem value="14d">Last 14 days</SelectItem>
-											<SelectItem value="30d">Last 30 days</SelectItem>
-										</SelectContent>
-									</Select>
+										onValueChange={setTimeFilter}
+										triggerClassName="h-9 w-40 text-sm"
+									/>
 								</div>
 
 								<DialogDescription className="sr-only">
