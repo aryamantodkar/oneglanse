@@ -5,6 +5,7 @@ import { BarChart3, ChevronRight, ExternalLink, Globe2, Link2, SearchX } from "l
 import { Fragment, useMemo, useState } from "react";
 import { Card } from "../card.js";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
+import { SortableHeaderButton } from "./sortable-header-button.js";
 
 type SourcesTab = "domains" | "citations";
 type SortColumn = "share" | "citations" | "urls";
@@ -125,33 +126,6 @@ function MetricCard({
         <p className="text-xs text-muted-foreground">{subtitle}</p>
       </div>
     </div>
-  );
-}
-
-function SortHeader({
-  label,
-  column,
-  activeColumn,
-  direction,
-  onSort,
-}: {
-  label: string;
-  column: SortColumn;
-  activeColumn: SortColumn;
-  direction: SortDirection;
-  onSort: (column: SortColumn) => void;
-}): React.JSX.Element {
-  const isActive = activeColumn === column;
-  const arrow = isActive ? (direction === "asc" ? "↑" : "↓") : "";
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 hover:text-foreground"
-      onClick={() => onSort(column)}
-    >
-      {label}
-      <span className="text-[10px]">{arrow}</span>
-    </button>
   );
 }
 
@@ -278,12 +252,11 @@ export function SourcesIntelligencePanel({
                 </TableHead>
                 <TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {enableDomainSorting ? (
-                    <SortHeader
+                    <SortableHeaderButton
                       label="Share of Citations"
-                      column="share"
-                      activeColumn={sortColumn}
+                      isActive={sortColumn === "share"}
                       direction={sortDirection}
-                      onSort={handleSort}
+                      onClick={() => handleSort("share")}
                     />
                   ) : (
                     "Share of Citations"
@@ -291,12 +264,11 @@ export function SourcesIntelligencePanel({
                 </TableHead>
                 <TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {enableDomainSorting ? (
-                    <SortHeader
+                    <SortableHeaderButton
                       label="Total Citations"
-                      column="citations"
-                      activeColumn={sortColumn}
+                      isActive={sortColumn === "citations"}
                       direction={sortDirection}
-                      onSort={handleSort}
+                      onClick={() => handleSort("citations")}
                     />
                   ) : (
                     "Total Citations"
@@ -304,12 +276,11 @@ export function SourcesIntelligencePanel({
                 </TableHead>
                 <TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {enableDomainSorting ? (
-                    <SortHeader
+                    <SortableHeaderButton
                       label="Unique URLs"
-                      column="urls"
-                      activeColumn={sortColumn}
+                      isActive={sortColumn === "urls"}
                       direction={sortDirection}
-                      onSort={handleSort}
+                      onClick={() => handleSort("urls")}
                     />
                   ) : (
                     "Unique URLs"
