@@ -1,0 +1,30 @@
+---
+title: Self Hosting
+description: Deploy OneGlanse in your own infrastructure with isolated services and full data ownership.
+---
+
+# Self Hosting
+
+OneGlanse is designed to run in your infrastructure boundary.
+
+## Core Services
+
+- `web`: dashboard and API routes
+- `agent`: provider workers for prompt execution
+- `redis`: queue backbone
+- `clickhouse`: analytics storage
+- `postgres`: transactional workspace/auth data
+
+## Deployment Model
+
+1. Deploy data stores first (`postgres`, `redis`, `clickhouse`)
+2. Deploy `web` and validate API health
+3. Deploy `agent` and verify queue consumption
+4. Configure provider credentials and run smoke prompts
+
+## Security Baseline
+
+- Rotate secrets with environment-injected values
+- Restrict worker egress through controlled proxies
+- Run all internal traffic over private networking
+- Enable backups for Postgres and ClickHouse

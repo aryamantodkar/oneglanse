@@ -1,0 +1,27 @@
+---
+title: Architecture
+description: Understand the system design for prompt collection, processing, and AI visibility analytics.
+---
+
+# Architecture
+
+## Pipeline Overview
+
+1. Prompts are created in workspace context
+2. Queue jobs are scheduled per model provider
+3. Agent workers execute prompts through provider interfaces
+4. Responses and citations are extracted and normalized
+5. Analytics are computed and materialized for dashboard queries
+
+## Design Principles
+
+- Provider isolation in workers
+- Deterministic prompt run metadata
+- Source-linked analysis records
+- Separate operational and analytical storage
+
+## Data Separation
+
+- Postgres: workspace, user, and scheduling state
+- ClickHouse: response/citation analytics and metrics
+- Redis: queue orchestration and transient job state

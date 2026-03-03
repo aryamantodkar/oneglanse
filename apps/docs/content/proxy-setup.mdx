@@ -1,0 +1,21 @@
+---
+title: Proxy Setup
+description: Configure resilient outbound proxy routing for stable provider collection.
+---
+
+# Proxy Setup
+
+Use proxy pools to improve collection stability and avoid provider throttling.
+
+## Recommended Strategy
+
+- Maintain a provider-specific proxy pool
+- Apply cooldown/backoff for failing exits
+- Prefer health-scored proxy selection
+- Keep request rate aligned with provider limits
+
+## Operational Controls
+
+- Alert on failure-rate spikes per provider
+- Track median response time by proxy region
+- Quarantine unstable exits automatically
