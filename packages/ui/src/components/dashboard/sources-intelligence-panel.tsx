@@ -207,13 +207,13 @@ export function SourcesIntelligencePanel({
           icon={Globe2}
           label="Domains"
           value={String(metrics.totalDomains)}
-          subtitle="Unique domains across selected model scope"
+          subtitle="Unique publishers tracked"
         />
         <MetricCard
           icon={Link2}
           label="URLs"
           value={String(metrics.totalUrls)}
-          subtitle="Unique source URLs captured from responses"
+          subtitle="Unique source pages captured"
         />
         <MetricCard
           icon={BarChart3}
@@ -225,7 +225,7 @@ export function SourcesIntelligencePanel({
           icon={BarChart3}
           label="Top Domain Share"
           value={`${metrics.topDomainShare}%`}
-          subtitle={`${metrics.topDomain} concentration in total citations`}
+          subtitle={`${metrics.topDomain} share of citations`}
           badgeFavicon={getFaviconUrls(metrics.topDomain, "")[0] ?? null}
         />
       </div>

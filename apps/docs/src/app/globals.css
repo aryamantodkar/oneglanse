@@ -18,7 +18,7 @@
   --nextra-primary-lightness: 30%;
   --nextra-bg: 255 255 255;
   --nextra-content-width: 88rem;
-  --nextra-navbar-height: 4rem;
+  --nextra-navbar-height: 64px;
 }
 
 .dark {

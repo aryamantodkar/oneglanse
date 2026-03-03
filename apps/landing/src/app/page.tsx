@@ -6,6 +6,7 @@ import { OpenSourceSection } from "@/components/sections/open-source-section";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { SiteHeader } from "@/components/sections/site-header";
 import { SourceIntelligenceSection } from "@/components/sections/source-intelligence-section";
+import { VisibilityScoreboardSection } from "@/components/sections/visibility-scoreboard-section";
 
 export default function LandingPage(): React.JSX.Element {
   return (
@@ -14,6 +15,7 @@ export default function LandingPage(): React.JSX.Element {
       <HeroSection />
       <AiVisibilitySection />
       <SourceIntelligenceSection />
+      <VisibilityScoreboardSection />
       <FeatureGrid />
       <OpenSourceSection />
       <DataCollectionSection />
