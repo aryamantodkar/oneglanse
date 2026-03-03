@@ -1,4 +1,5 @@
 import { AiVisibilitySection } from "@/components/sections/ai-visibility-section";
+import { AiPerceptionSection } from "@/components/sections/ai-perception-section";
 import { FeatureGrid } from "@/components/landing/feature-grid";
 import { DataCollectionSection } from "@/components/sections/data-collection-section";
 import { HeroSection } from "@/components/sections/hero-section";
@@ -19,6 +20,7 @@ export default function LandingPage(): React.JSX.Element {
       <PromptResponsesSection />
       <AiVisibilitySection />
       <SourceIntelligenceSection />
+      <AiPerceptionSection />
       <SupportedProvidersSection />
       <FeatureGrid />
       <OpenSourceSection />
