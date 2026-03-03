@@ -21,7 +21,7 @@ const METRIC_CONFIG: { key: MetricKey; label: string }[] = [
 	{ key: "rankStrength", label: "Rank Strength" },
 ];
 
-const SERIES_COLORS = ["#22c55e", "#f59e0b", "#f43f5e", "#84cc16", "#eab308"];
+const SERIES_COLORS = ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"];
 
 function clampScore(value: number): number {
 	if (Number.isNaN(value)) return 0;
