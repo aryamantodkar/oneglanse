@@ -1,29 +1,39 @@
 "use client";
 
-import {
-  Card,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@oneglanse/ui";
+import { Card, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@oneglanse/ui";
 import { getModelFavicon, modelSelectors } from "@oneglanse/utils";
 import { Bot } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+const PROVIDER_METRICS = [
+  { provider: "openai", runs: 8420, p95LatencyMs: 2210, passRate: 97.9 },
+  { provider: "anthropic", runs: 6944, p95LatencyMs: 2480, passRate: 97.1 },
+  { provider: "google", runs: 6012, p95LatencyMs: 2340, passRate: 96.8 },
+  { provider: "perplexity", runs: 4278, p95LatencyMs: 2860, passRate: 95.6 },
+  { provider: "google-ai-overview", runs: 1972, p95LatencyMs: 1910, passRate: 94.3 },
+] as const;
+
+function numberWithCommas(value: number): string {
+  return new Intl.NumberFormat("en-US").format(value);
+}
 
 export function ModelSupportPreview(): React.JSX.Element {
   const [modelFilter, setModelFilter] = useState<string>("All Models");
 
+  const visibleRows = useMemo(() => {
+    if (modelFilter === "All Models") return PROVIDER_METRICS;
+    return PROVIDER_METRICS.filter((row) => row.provider === modelFilter);
+  }, [modelFilter]);
+
   return (
     <Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-            Multi-provider AI support
+            Provider performance matrix
           </h3>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Provider-aware filtering with consistent model icons and naming.
+          <p className="mt-1 text-xs text-muted-foreground">
+            Coverage, latency, and reliability by provider.
           </p>
         </div>
         <div className="w-full sm:w-52">
@@ -38,11 +48,7 @@ export function ModelSupportPreview(): React.JSX.Element {
                     {value === "All Models" ? (
                       <Bot className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <img
-                        src={getModelFavicon(value)}
-                        alt={value}
-                        className="h-4 w-4 rounded-sm"
-                      />
+                      <img src={getModelFavicon(value)} alt={value} className="h-4 w-4 rounded-sm" />
                     )}
                     <span>{label}</span>
                   </div>
@@ -53,38 +59,35 @@ export function ModelSupportPreview(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {modelSelectors
-          .filter((entry) => entry.value !== "All Models")
-          .map((entry) => {
-            const isSelected =
-              modelFilter === "All Models" || modelFilter === entry.value;
-
-            return (
-              <div
-                key={entry.value}
-                className={`ui-list-item rounded-xl border px-3.5 py-3 transition-all ${
-                  isSelected
-                    ? "border-gray-300 bg-white dark:border-gray-700 dark:bg-black"
-                    : "border-gray-200/70 bg-gray-50/70 opacity-80 dark:border-gray-800 dark:bg-neutral-950"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    src={getModelFavicon(entry.value)}
-                    alt={entry.label}
-                    className="h-4 w-4 rounded-sm"
-                  />
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {entry.label}
-                  </p>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Provider: {entry.value}
-                </p>
-              </div>
-            );
-          })}
+      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+        <div className="min-w-[600px]">
+          <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] border-b border-gray-200 bg-gray-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
+            <span>Provider</span>
+            <span className="text-right">Prompt Runs</span>
+            <span className="text-right">P95 Latency</span>
+            <span className="text-right">Pass Rate</span>
+          </div>
+          {visibleRows.map((row) => (
+            <div
+              key={row.provider}
+              className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] items-center border-b border-gray-100 px-4 py-3 text-sm last:border-0 dark:border-gray-800"
+            >
+              <span className="inline-flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
+                <img src={getModelFavicon(row.provider)} alt={row.provider} className="h-4 w-4 rounded-sm" />
+                {row.provider}
+              </span>
+              <span className="text-right text-gray-700 dark:text-gray-300">
+                {numberWithCommas(row.runs)}
+              </span>
+              <span className="text-right text-gray-700 dark:text-gray-300">
+                {row.p95LatencyMs}ms
+              </span>
+              <span className="text-right font-medium text-gray-900 dark:text-gray-100">
+                {row.passRate.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </Card>
   );

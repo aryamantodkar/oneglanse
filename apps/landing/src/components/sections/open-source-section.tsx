@@ -3,11 +3,11 @@ import { SITE_URLS } from "@/lib/landing-content";
 import { Github, Lock, Server } from "lucide-react";
 
 const OPEN_SOURCE_POINTS = [
-  "100% open source codebase",
-  "Docker deployment for web, worker, queues, and analytics",
-  "Own your prompts, responses, and source intelligence data",
-  "No vendor lock-in across model providers",
-  "Transparent pipeline from prompt run to visibility metrics",
+  "Open source repository and audit trail",
+  "Dockerized web, worker, queue, and analytics stack",
+  "Data ownership for prompts, responses, and sources",
+  "No provider lock-in",
+  "Reproducible pipeline from run to metric",
 ] as const;
 
 export function OpenSourceSection(): React.JSX.Element {
@@ -21,10 +21,10 @@ export function OpenSourceSection(): React.JSX.Element {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div>
             <h2 id="open-source-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Built for teams that need control, not black boxes
+              Open by design. Deploy on your terms.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Self-host the full stack, inspect every signal, and operate AI visibility with infrastructure-grade transparency.
+              Self-host the full stack and keep full control over data, runtime, and observability.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a

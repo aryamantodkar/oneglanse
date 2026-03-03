@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 type SectionHeadingProps = {
   eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
   trailing?: ReactNode;
 };
 
@@ -22,9 +22,11 @@ export function SectionHeading({
           </p>
         ) : null}
         <h2 className="section-title">{title}</h2>
-        <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-          {description}
-        </p>
+        {description ? (
+          <p className="max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
+            {description}
+          </p>
+        ) : null}
       </div>
       {trailing}
     </div>

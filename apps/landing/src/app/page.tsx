@@ -1,4 +1,5 @@
 import { AiVisibilitySection } from "@/components/sections/ai-visibility-section";
+import { FeatureGrid } from "@/components/landing/feature-grid";
 import { CompetitiveIntelligenceSection } from "@/components/sections/competitive-intelligence-section";
 import { DataCollectionSection } from "@/components/sections/data-collection-section";
 import { HeroSection } from "@/components/sections/hero-section";
@@ -14,13 +15,14 @@ export default function LandingPage(): React.JSX.Element {
     <main>
       <SiteHeader />
       <HeroSection />
-      <DataCollectionSection />
+      <FeatureGrid />
       <AiVisibilitySection />
       <SourceIntelligenceSection />
       <CompetitiveIntelligenceSection />
       <ModelSupportSection />
       <OpenSourceSection />
       <HowItWorksSection />
+      <DataCollectionSection />
       <SiteFooter />
     </main>
   );

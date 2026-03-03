@@ -10,8 +10,8 @@ export function SourceIntelligenceSection(): React.JSX.Element {
     >
       <SectionHeading
         eyebrow="Sources & Citations"
-        title="Inspect the domains shaping AI answers"
-        description="Audit source concentration, provider overlap, and citation excerpts in a dense, dashboard-style preview."
+        title="Know which domains move model answers."
+        description="Track source share, traffic weight, and citation quality."
       />
       <SourceIntelligencePreview />
     </section>

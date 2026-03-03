@@ -9,9 +9,8 @@ export function CompetitiveIntelligenceSection(): React.JSX.Element {
       aria-labelledby="competitive-intelligence-title"
     >
       <SectionHeading
-        eyebrow="Competitive Context"
-        title="Benchmark visibility against category leaders"
-        description="Understand mention share, sentiment position, and competitive pressure across the same prompt runs."
+        eyebrow="Competitor Benchmark"
+        title="Benchmark the market in one table."
       />
       <CompetitiveIntelligencePreview />
     </section>

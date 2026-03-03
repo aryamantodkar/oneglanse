@@ -3,19 +3,19 @@ import { SectionHeading } from "@/components/common/section-heading";
 const STEPS = [
   {
     title: "Deploy",
-    description: "Launch the stack with Docker Compose in your environment.",
+    description: "Run the stack with Docker Compose.",
   },
   {
-    title: "Configure Providers",
-    description: "Enable model providers and workspace-level controls.",
+    title: "Connect Providers",
+    description: "Set API credentials and workspace controls.",
   },
   {
-    title: "Run Prompts",
-    description: "Execute repeatable prompt sets across each provider.",
+    title: "Run Prompt Sets",
+    description: "Execute recurring prompts across providers.",
   },
   {
-    title: "Analyze Visibility",
-    description: "Track perception, ranking, and source-backed citations.",
+    title: "Review Insights",
+    description: "Inspect visibility, sentiment, and source evidence.",
   },
 ] as const;
 
@@ -28,8 +28,7 @@ export function HowItWorksSection(): React.JSX.Element {
     >
       <SectionHeading
         eyebrow="How It Works"
-        title="Operational workflow from deployment to insight"
-        description="Four steps to run continuous AI visibility monitoring in production."
+        title="From deploy to decision in four steps."
       />
       <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {STEPS.map((step, index) => (
