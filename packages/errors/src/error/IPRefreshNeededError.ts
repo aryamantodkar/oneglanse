@@ -1,4 +1,4 @@
-import { type AskPromptResult, UserPrompt } from "@oneglanse/types";
+import type { AskPromptResult } from "@oneglanse/types";
 
 /**
  * Custom error thrown when a prompt fails all retries and needs an IP refresh

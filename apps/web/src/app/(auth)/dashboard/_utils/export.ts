@@ -1,5 +1,5 @@
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import { joinCitedTexts, joinSourceUrls } from "@oneglanse/utils";
+import { buildAnalysisCsvRow } from "@/lib/export/analysisCsvRow";
 import type { DashboardMetrics } from "./types";
 
 export function exportAnalysisJson(args: {
@@ -122,20 +122,9 @@ export function exportAnalysisCsv(args: {
 			metric: "Top Pick Rate",
 			value: `${metrics.impactMetrics.topPickRate}%`,
 		},
-		...metrics.analyzedRecords.map((record) => ({
-			section: "prompt_details",
-			prompt: record.prompt,
-			model: record.model_provider,
-			prompt_run_at: record.prompt_run_at,
-			geo_score: record.brand_analysis?.geoScore?.overall ?? "",
-			sentiment: record.brand_analysis?.sentiment?.score ?? "",
-			visibility: record.brand_analysis?.presence?.visibility ?? "",
-			position: record.brand_analysis?.position?.rankPosition ?? "",
-			recommendation: record.brand_analysis?.recommendation?.type ?? "",
-			citations: record.sources?.length ?? 0,
-			source_urls: joinSourceUrls(record.sources ?? []),
-			cited_texts: joinCitedTexts(record.sources ?? []),
-		})),
+		...metrics.analyzedRecords.map((record) =>
+			buildAnalysisCsvRow(record, "prompt_details"),
+		),
 	];
 
 	downloadCsv(`dashboard-${workspaceId}-${Date.now()}.csv`, rows);

@@ -5,7 +5,6 @@ import { env } from "../../env.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
-import { logger } from "@oneglanse/utils";
 import {
 	type SubmitContext,
 	tryDispatchClick,

@@ -16,6 +16,12 @@ export type SubmitContext = {
 	preSubmitUrl: string;
 };
 
+type SubmitAttempt = {
+	errorLabel: string;
+	successMessage: string;
+	run: () => Promise<boolean>;
+};
+
 async function checkSubmissionSuccess(
 	ctx: SubmitContext,
 ): Promise<boolean> {
@@ -55,53 +61,68 @@ async function checkSubmissionSuccess(
 	return false;
 }
 
-export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
-	const { page, input } = ctx;
+async function attemptSubmit(
+	attempt: SubmitAttempt,
+): Promise<boolean> {
 	try {
-		const success = await withTimeout("Enter submit", async () => {
-			await input.focus();
-			await page.keyboard.press("Enter");
-			return await checkSubmissionSuccess(ctx);
-		}, SUBMIT_METHOD_TIMEOUT_MS);
+		const success = await attempt.run();
+
 		if (success) {
-			logger.debug("  ✅ Submitted via Enter key");
+			logger.debug(`  ✅ ${attempt.successMessage}`);
 			return true;
 		}
 	} catch (err) {
-		logger.debug(`  ℹ️ Enter submit failed: ${toErrorMessage(err)}`);
+		logger.debug(
+			`  ℹ️ ${attempt.errorLabel} failed: ${toErrorMessage(err)}`,
+		);
 	}
+
 	return false;
+}
+
+export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
+	const { page, input } = ctx;
+	return attemptSubmit({
+		errorLabel: "Enter submit",
+		successMessage: "Submitted via Enter key",
+		run: async () =>
+			await withTimeout("Enter submit", async () => {
+				await input.focus();
+				await page.keyboard.press("Enter");
+				return await checkSubmissionSuccess(ctx);
+			}, SUBMIT_METHOD_TIMEOUT_MS),
+	});
 }
 
 export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
-	try {
-		const success = await withTimeout("Force-click submit", async () => {
-			await sendButton.click({ force: true, timeout: SUBMIT_METHOD_TIMEOUT_MS });
-			return await checkSubmissionSuccess(ctx);
-		}, SUBMIT_METHOD_TIMEOUT_MS);
-		if (success) {
-			logger.debug("  ✅ Submitted via force click");
-			return true;
-		}
-	} catch (err) {
-		logger.debug(`  ℹ️ Force click failed: ${toErrorMessage(err)}`);
-	}
-	return false;
+	return attemptSubmit({
+		errorLabel: "Force click",
+		successMessage: "Submitted via force click",
+		run: async () =>
+			await withTimeout("Force-click submit", async () => {
+				await sendButton.click({ force: true, timeout: SUBMIT_METHOD_TIMEOUT_MS });
+				return await checkSubmissionSuccess(ctx);
+			}, SUBMIT_METHOD_TIMEOUT_MS),
+	});
 }
 
 export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 	const { page, sendButton } = ctx;
 	if (!sendButton) return false;
-	try {
-		const handle = await withTimeout(
-			"Dispatch-click submit",
-			async () => await sendButton.elementHandle(),
-			SUBMIT_METHOD_TIMEOUT_MS,
-		);
-		if (handle) {
-			const success = await withTimeout("Dispatch-click submit", async () => {
+	return attemptSubmit({
+		errorLabel: "Dispatch click",
+		successMessage: "Submitted via dispatched click",
+		run: async () => {
+			const handle = await withTimeout(
+				"Dispatch-click submit",
+				async () => await sendButton.elementHandle(),
+				SUBMIT_METHOD_TIMEOUT_MS,
+			);
+			if (!handle) return false;
+
+			return await withTimeout("Dispatch-click submit", async () => {
 				await page.evaluate((el) => {
 					if (el instanceof HTMLElement) {
 						el.dispatchEvent(
@@ -116,13 +137,6 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 				}, handle);
 				return await checkSubmissionSuccess(ctx);
 			}, SUBMIT_METHOD_TIMEOUT_MS);
-			if (success) {
-				logger.debug("  ✅ Submitted via dispatched click");
-				return true;
-			}
-		}
-	} catch (err) {
-		logger.debug(`  ℹ️ Dispatch click failed: ${toErrorMessage(err)}`);
-	}
-	return false;
+		},
+	});
 }
