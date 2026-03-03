@@ -1,0 +1,1 @@
+export { locationRouter } from "./location";

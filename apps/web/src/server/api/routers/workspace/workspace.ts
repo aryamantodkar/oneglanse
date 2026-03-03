@@ -2,10 +2,10 @@ import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
 import { auth } from "@lib/auth/auth";
-import { AuthError, ValidationError, toErrorMessage } from "@oneglanse/errors";
+import { AuthError, ValidationError } from "@oneglanse/errors";
 import {
-	addWorkspaceToExistingOrg,
 	addMemberToWorkspaceByEmail,
+	addWorkspaceToExistingOrg,
 	checkIsFirstWorkspace,
 	createWorkspaceForTenant,
 	deleteUserAccount,
@@ -18,63 +18,21 @@ import {
 	joinWorkspaceByCode,
 	removeMemberFromWorkspace,
 	setWorkspaceEnabledProviders,
-	submitAgentJobGroup,
 	updateOrganizationName,
 	updateWorkspaceDetails,
 	updateWorkspaceSchedule,
 } from "@oneglanse/services";
 import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
-import { CronExpressionParser } from "cron-parser";
 import { z } from "zod";
 import { createRateLimiter } from "../../middleware/rateLimit";
 import {
 	authorizedWorkspaceProcedure,
 	protectedProcedure,
 } from "../../procedures";
-
-function parseCronExpressionOrThrow(cronExpression: string) {
-	try {
-		return CronExpressionParser.parse(cronExpression, {
-			currentDate: new Date(),
-		});
-	} catch (err) {
-		throw new ValidationError("Invalid cron expression", {
-			cronExpression,
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
-}
-
-async function submitImmediateRunWithRetry(args: {
-	workspaceId: string;
-	userId: string;
-	maxAttempts?: number;
-}): Promise<
-	| { status: "queued"; jobId: string }
-	| { status: "empty" }
-	| { status: "failed"; error: string }
-> {
-	const { workspaceId, userId, maxAttempts = 3 } = args;
-	let lastError: unknown = null;
-
-	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-		try {
-			const result = await submitAgentJobGroup({ workspaceId, userId });
-			if (result.status === "empty") return { status: "empty" };
-			return { status: "queued", jobId: result.jobGroupId };
-		} catch (err) {
-			lastError = err;
-			if (attempt < maxAttempts) {
-				await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
-			}
-		}
-	}
-
-	return {
-		status: "failed",
-		error: toErrorMessage(lastError),
-	};
-}
+import {
+	parseCronExpressionOrThrow,
+	submitImmediateRunWithRetry,
+} from "./_helpers/scheduling";
 
 export const workspaceRouter = createTRPCRouter({
 	create: protectedProcedure
@@ -134,7 +92,10 @@ export const workspaceRouter = createTRPCRouter({
 	listByOrg: protectedProcedure
 		.input(z.object({ tenantId: z.string().min(1) }))
 		.query(async ({ input, ctx }) => {
-			return getWorkspacesForUser({ tenantId: input.tenantId, userId: ctx.user.id });
+			return getWorkspacesForUser({
+				tenantId: input.tenantId,
+				userId: ctx.user.id,
+			});
 		}),
 
 	listAllForUser: protectedProcedure.query(async ({ ctx }) => {
@@ -239,7 +200,9 @@ export const workspaceRouter = createTRPCRouter({
 
 	joinByCode: protectedProcedure
 		.input(z.object({ code: z.string().min(1) }))
-		.use(createRateLimiter("workspace.joinByCode", { limit: 5, windowSecs: 900 }))
+		.use(
+			createRateLimiter("workspace.joinByCode", { limit: 5, windowSecs: 900 }),
+		)
 		.mutation(async ({ input, ctx }) => {
 			return joinWorkspaceByCode({ code: input.code, userId: ctx.user.id });
 		}),
@@ -277,9 +240,7 @@ export const workspaceRouter = createTRPCRouter({
 		.input(
 			z.object({
 				providers: z
-					.array(
-						z.enum([...PROVIDER_LIST] as [Provider, ...Provider[]]),
-					)
+					.array(z.enum([...PROVIDER_LIST] as [Provider, ...Provider[]]))
 					.min(1, "At least one provider must be enabled"),
 			}),
 		)
@@ -301,7 +262,11 @@ export const workspaceRouter = createTRPCRouter({
 				parseCronExpressionOrThrow(schedule);
 			}
 
-			const result = await updateWorkspaceSchedule({ workspaceId, userId, schedule });
+			const result = await updateWorkspaceSchedule({
+				workspaceId,
+				userId,
+				schedule,
+			});
 
 			let immediateRun:
 				| { status: "not-requested" }
@@ -348,5 +313,4 @@ export const workspaceRouter = createTRPCRouter({
 	deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
 		await deleteUserAccount({ userId: ctx.user.id });
 	}),
-
 });

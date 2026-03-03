@@ -322,13 +322,15 @@ export default function SourcesPage(): React.JSX.Element {
           )}
         />
 
-        <SourcesIntelligencePanel
-          metrics={metrics}
-          domainRows={domainRows}
-          citationDomains={citationDomains}
-          enableDomainSorting
-          containerVariant="plain"
-        />
+        <div className="pt-3 sm:pt-4">
+          <SourcesIntelligencePanel
+            metrics={metrics}
+            domainRows={domainRows}
+            citationDomains={citationDomains}
+            enableDomainSorting
+            containerVariant="plain"
+          />
+        </div>
       </div>
     </div>
   );

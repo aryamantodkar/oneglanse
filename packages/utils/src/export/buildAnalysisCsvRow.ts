@@ -1,5 +1,5 @@
 import type { AnalysisRecord } from "@oneglanse/types";
-import { joinCitedTexts, joinSourceUrls } from "@oneglanse/utils";
+import { joinCitedTexts, joinSourceUrls } from "../sources/index.js";
 
 export function buildAnalysisCsvRow(
 	record: AnalysisRecord,
