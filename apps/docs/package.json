@@ -7,7 +7,7 @@
     "build": "next build",
     "dev": "next dev --turbo -p 3002",
     "start": "next start -p 3002",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit --incremental false",
     "lint": "biome check ."
   },
   "dependencies": {
