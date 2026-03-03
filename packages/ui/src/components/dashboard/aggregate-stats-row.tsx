@@ -35,7 +35,7 @@ function StatCard({
 				</span>
 			</div>
 
-			<div className="mt-3 flex h-[40px] items-center gap-2">
+			<div className="mt-3 flex min-h-[40px] items-center gap-2 py-0.5">
 				{showFavicon && faviconUrls[0] && (
 					<img
 						src={faviconUrls[0]}
@@ -47,7 +47,7 @@ function StatCard({
 					/>
 				)}
 				<span
-					className={`truncate text-2xl font-semibold leading-none tracking-tight ${valueClassName}`}
+					className={`truncate text-2xl font-semibold leading-tight tracking-tight ${valueClassName}`}
 				>
 					{value}
 				</span>
