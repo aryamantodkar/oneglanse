@@ -10,7 +10,8 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
-		}
+		},
+		"./styles/shared.css": "./src/styles/shared.css"
 	},
 	"scripts": {
 		"build": "tsc",

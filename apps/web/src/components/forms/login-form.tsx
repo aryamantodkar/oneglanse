@@ -1,13 +1,10 @@
 "use client";
+import { AuthFormChrome } from "@/components/forms/auth-form-chrome";
+import { PasswordField } from "@/components/forms/password-field";
 import { authClient } from "@/lib/auth/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Button,
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
 	Form,
 	FormControl,
 	FormField,
@@ -18,12 +15,9 @@ import {
 	toast,
 	useForm,
 } from "@oneglanse/ui";
-import { cn } from "@oneglanse/utils";
 import { Loader2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -34,7 +28,7 @@ const formSchema = z.object({
 export function LoginForm({
 	className,
 	...props
-}: React.ComponentProps<"div">){
+}: React.ComponentProps<"div">) {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -71,101 +65,46 @@ export function LoginForm({
 	}
 
 	return (
-		<div
-			className={cn("ui-page-enter flex flex-col gap-6", className)}
+		<AuthFormChrome
+			title="Welcome back"
+			description="Login with your Google account"
+			googleLabel="Login with Google"
+			switchText="Don't have an account?"
+			switchLabel="Sign up"
+			switchHref="/signup"
+			onGoogleClick={signInWithGoogle}
+			className={className}
 			{...props}
 		>
-			<Card className="ui-list-item">
-				<CardHeader className="text-center">
-					<CardTitle className="text-xl">Welcome back</CardTitle>
-					<CardDescription>Login with your Google account</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-							<div className="ui-stagger grid gap-6">
-								<div className="flex flex-col gap-4">
-									<Button
-										variant="outline"
-										className="w-full"
-										type="button"
-										onClick={signInWithGoogle}
-									>
-										<FcGoogle className="h-4 w-4" />
-										Login with Google
-									</Button>
-								</div>
-								<div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-									<span className="bg-card text-muted-foreground relative z-10 px-2">
-										Or continue with
-									</span>
-								</div>
-								<div className="grid gap-6">
-									<div className="grid gap-3">
-										<FormField
-											control={form.control}
-											name="email"
-											render={({ field }) => (
-												<FormItem>
-													<FormLabel>Email</FormLabel>
-													<FormControl>
-														<Input placeholder="john@gmail.com" {...field} />
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</div>
-									<div className="grid gap-3">
-										<div className="flex flex-col gap-2">
-											<FormField
-												control={form.control}
-												name="password"
-												render={({ field }) => (
-													<FormItem>
-														<FormLabel>Password</FormLabel>
-														<FormControl>
-															<Input
-																placeholder="*******"
-																{...field}
-																type="password"
-															/>
-														</FormControl>
-														<FormMessage />
-													</FormItem>
-												)}
-											/>
-											<a
-												href="#"
-												className="ml-auto text-sm underline-offset-4 hover:underline"
-											>
-												Forgot your password?
-											</a>
-										</div>
-									</div>
-									<Button type="submit" className="w-full" disabled={isLoading}>
-										{isLoading ? (
-											<Loader2 className="size-4 animate-spin" />
-										) : (
-											"Login"
-										)}
-									</Button>
-								</div>
-								<div className="text-center text-sm">
-									Don&apos;t have an account?{" "}
-									<Link href="/signup" className="underline underline-offset-4">
-										Sign up
-									</Link>
-								</div>
-							</div>
-						</form>
-					</Form>
-				</CardContent>
-			</Card>
-			<div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-				By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-				and <a href="#">Privacy Policy</a>.
-			</div>
-		</div>
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+					<div className="grid gap-6">
+						<div className="grid gap-3">
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email</FormLabel>
+										<FormControl>
+											<Input placeholder="john@gmail.com" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
+						<PasswordField control={form.control} name="password" />
+						<Button type="submit" className="w-full" disabled={isLoading}>
+							{isLoading ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : (
+								"Login"
+							)}
+						</Button>
+					</div>
+				</form>
+			</Form>
+		</AuthFormChrome>
 	);
 }

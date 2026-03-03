@@ -61,6 +61,7 @@ export function SourcesMiniPreview(): React.JSX.Element {
       domainRows={domainRows}
       citationDomains={citationDomains}
       enableDomainSorting={false}
+      containerVariant="card"
     />
   );
 }

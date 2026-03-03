@@ -1,19 +1,9 @@
 "use client";
 
+import { WorkspaceDialogShell } from "@/components/dialogs/workspace-dialog-shell";
 import { authClient } from "@/lib/auth/auth-client";
 import { api } from "@/trpc/react";
-import {
-	Button,
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	Input,
-	Label,
-	toast,
-} from "@oneglanse/ui";
+import { Button, Input, Label, toast } from "@oneglanse/ui";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,7 +21,7 @@ type WorkspaceSelection = {
 export function JoinWorkspaceDialog({
 	open,
 	onOpenChange,
-}: JoinWorkspaceDialogProps){
+}: JoinWorkspaceDialogProps) {
 	const [code, setCode] = useState("");
 	const [selection, setSelection] = useState<WorkspaceSelection | null>(null);
 	const router = useRouter();
@@ -89,73 +79,62 @@ export function JoinWorkspaceDialog({
 	};
 
 	return (
-		<Dialog
+		<WorkspaceDialogShell
 			open={open}
-			onOpenChange={(isOpen) => {
-				if (!isOpen) resetForm();
-				onOpenChange(isOpen);
-			}}
-		>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Join Workspace</DialogTitle>
-					<DialogDescription>
-						Enter a workspace code shared by your team.
-					</DialogDescription>
-				</DialogHeader>
-				<div className="space-y-4 py-2">
-					<div className="space-y-2">
-						<Label htmlFor="join-code">Workspace Code</Label>
-						<Input
-							id="join-code"
-							placeholder="acme/marketing"
-							value={code}
-							onChange={(e) => setCode(e.target.value)}
-							onKeyDown={(e) => e.key === "Enter" && handleJoin(code)}
-						/>
-					</div>
-
-					{selection && (
-						<div className="space-y-2 rounded-md border border-dashed border-gray-200 p-3">
-							<p className="text-sm text-gray-600">
-								Select a workspace in{" "}
-								<strong>{selection.organization.name}</strong>
-							</p>
-							<div className="flex flex-wrap gap-2">
-								{selection.workspaces.map((ws) => (
-									<Button
-										key={ws.id}
-										variant="outline"
-										size="sm"
-										onClick={() => handleSelectWorkspace(ws.slug)}
-									>
-										{ws.name}
-									</Button>
-								))}
-							</div>
-						</div>
+			onOpenChange={onOpenChange}
+			onCloseReset={resetForm}
+			title="Join Workspace"
+			description="Enter a workspace code shared by your team."
+			footerActions={
+				<Button
+					onClick={() => handleJoin(code)}
+					disabled={joinMutation.isPending || !code.trim()}
+					className="gap-2"
+				>
+					{joinMutation.isPending ? (
+						<Loader2 className="h-4 w-4 animate-spin" />
+					) : (
+						<>
+							Join
+							<ArrowRight className="h-4 w-4" />
+						</>
 					)}
+				</Button>
+			}
+		>
+			<div className="space-y-4 py-2">
+				<div className="space-y-2">
+					<Label htmlFor="join-code">Workspace Code</Label>
+					<Input
+						id="join-code"
+						placeholder="acme/marketing"
+						value={code}
+						onChange={(e) => setCode(e.target.value)}
+						onKeyDown={(e) => e.key === "Enter" && handleJoin(code)}
+					/>
 				</div>
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
-						Cancel
-					</Button>
-					<Button
-						onClick={() => handleJoin(code)}
-						disabled={joinMutation.isPending || !code.trim()}
-						className="gap-2"
-					>
-						{joinMutation.isPending ? (
-							<Loader2 className="h-4 w-4 animate-spin" />
-						) : (
-							<>
-								Join
-								<ArrowRight className="h-4 w-4" />
-							</>
-						)}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+
+				{selection && (
+					<div className="space-y-2 rounded-md border border-gray-200 border-dashed p-3">
+						<p className="text-gray-600 text-sm">
+							Select a workspace in{" "}
+							<strong>{selection.organization.name}</strong>
+						</p>
+						<div className="flex flex-wrap gap-2">
+							{selection.workspaces.map((ws) => (
+								<Button
+									key={ws.id}
+									variant="outline"
+									size="sm"
+									onClick={() => handleSelectWorkspace(ws.slug)}
+								>
+									{ws.name}
+								</Button>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
+		</WorkspaceDialogShell>
 	);
 }

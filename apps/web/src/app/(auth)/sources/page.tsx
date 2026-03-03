@@ -327,6 +327,7 @@ export default function SourcesPage(): React.JSX.Element {
           domainRows={domainRows}
           citationDomains={citationDomains}
           enableDomainSorting
+          containerVariant="plain"
         />
       </div>
     </div>
