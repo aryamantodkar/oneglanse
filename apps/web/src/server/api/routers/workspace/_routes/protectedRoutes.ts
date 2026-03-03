@@ -27,9 +27,9 @@ export const protectedWorkspaceRoutes = {
 				user: { id: userId },
 				headers,
 			} = ctx;
-			const { organizationName, name, slug, domain, country, region } = input;
+			const { organizationName, name, slug, domain } = input;
 
-			if (!name || !domain || !slug || !country) {
+			if (!name || !domain || !slug) {
 				throw new ValidationError("Please fill all the mandatory fields.");
 			}
 
@@ -52,8 +52,6 @@ export const protectedWorkspaceRoutes = {
 				slug,
 				domain,
 				tenantId: org.id,
-				country,
-				region,
 				userId,
 			});
 
@@ -76,10 +74,10 @@ export const protectedWorkspaceRoutes = {
 	createInOrg: protectedProcedure
 		.input(createInOrgInputSchema)
 		.mutation(async ({ input, ctx }) => {
-			const { name, slug, domain, country, region, tenantId } = input;
+			const { name, slug, domain, tenantId } = input;
 			const userId = ctx.user.id;
 
-			if (!name || !domain || !slug || !country) {
+			if (!name || !domain || !slug) {
 				throw new ValidationError("Please fill all the mandatory fields.");
 			}
 
@@ -88,8 +86,6 @@ export const protectedWorkspaceRoutes = {
 				name,
 				slug,
 				domain,
-				country,
-				region,
 				userId,
 				tenantId,
 			});

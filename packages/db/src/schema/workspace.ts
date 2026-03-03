@@ -21,8 +21,6 @@ export const workspaces = pgTable("workspaces", {
 	slug: varchar("slug", { length: 256 }).notNull(),
 	domain: varchar("domain", { length: 256 }).notNull(),
 	tenantId: varchar("tenant_id", { length: 256 }).notNull(),
-	country: varchar("country", { length: 64 }).notNull(),
-	region: varchar("region", { length: 128 }),
 	schedule: varchar("schedule", { length: 64 }),
 	enabledProviders: text("enabled_providers")
 		.default(DEFAULT_PROVIDERS_JSON)

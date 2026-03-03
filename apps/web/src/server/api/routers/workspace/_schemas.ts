@@ -6,8 +6,6 @@ export const createWorkspaceInputSchema = z.object({
 	name: z.string().min(2).max(50),
 	slug: z.string().min(2).max(50),
 	domain: z.string().min(2).max(50),
-	country: z.string().min(2),
-	region: z.string().nullable().optional(),
 });
 
 export const listByOrgInputSchema = z.object({ tenantId: z.string().min(1) });
@@ -16,8 +14,6 @@ export const createInOrgInputSchema = z.object({
 	name: z.string().min(2).max(50),
 	slug: z.string().min(2).max(50),
 	domain: z.string().min(2).max(256),
-	country: z.string().min(2),
-	region: z.string().nullable().optional(),
 	tenantId: z.string().min(1),
 });
 

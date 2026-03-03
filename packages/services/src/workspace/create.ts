@@ -7,7 +7,7 @@ import { ALL_PROVIDERS_JSON, newId } from "@oneglanse/utils";
 export async function createWorkspaceForTenant(
 	args: CreateWorkspaceForTenantArgs,
 ): Promise<Workspace> {
-	const { name, slug, domain, tenantId, country, region, userId } = args;
+	const { name, slug, domain, tenantId, userId } = args;
 
 	const workspace: Workspace = {
 		id: newId("workspace"),
@@ -15,8 +15,6 @@ export async function createWorkspaceForTenant(
 		slug,
 		domain,
 		tenantId,
-		country,
-		region: region || null,
 		schedule: null,
 		enabledProviders: ALL_PROVIDERS_JSON,
 		createdAt: new Date(),
@@ -38,12 +36,10 @@ export async function addWorkspaceToExistingOrg(args: {
 	name: string;
 	slug: string;
 	domain: string;
-	country: string;
-	region?: string | null;
 	userId: string;
 	tenantId: string;
 }): Promise<{ workspace: Workspace }> {
-	const { name, slug, domain, country, region, userId, tenantId } = args;
+	const { name, slug, domain, userId, tenantId } = args;
 
 	const membership = await db.query.member.findFirst({
 		where: (m, { eq, and }) =>
@@ -59,8 +55,6 @@ export async function addWorkspaceToExistingOrg(args: {
 		slug,
 		domain,
 		tenantId,
-		country,
-		region,
 		userId,
 	});
 
