@@ -1,6 +1,6 @@
 import { Card } from "@oneglanse/ui";
 import { SITE_URLS } from "@/lib/landing-content";
-import { Github, Lock, Server } from "lucide-react";
+import { Boxes, Github, Server, ShieldCheck } from "lucide-react";
 
 const OPEN_SOURCE_POINTS = [
   "Open source repository and audit trail",
@@ -18,7 +18,7 @@ export function OpenSourceSection(): React.JSX.Element {
       aria-labelledby="open-source-title"
     >
       <Card className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-black">
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid items-start gap-7 lg:grid-cols-[1.1fr_1fr]">
           <div>
             <h2 id="open-source-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Open by design. Deploy on your terms.
@@ -47,15 +47,16 @@ export function OpenSourceSection(): React.JSX.Element {
               </a>
             </div>
           </div>
-          <ul className="grid gap-2">
-            {OPEN_SOURCE_POINTS.map((point) => (
+          <ul className="grid gap-2.5">
+            {OPEN_SOURCE_POINTS.map((point, index) => (
               <li
                 key={point}
-                className="ui-list-item rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-black dark:text-gray-100"
+                className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-black dark:text-gray-100"
               >
-                <span className="inline-flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  {point}
+                <span className="inline-flex items-start gap-2.5">
+                  {index === 0 ? <ShieldCheck className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
+                  {index > 0 ? <Boxes className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
+                  <span className="leading-6">{point}</span>
                 </span>
               </li>
             ))}
