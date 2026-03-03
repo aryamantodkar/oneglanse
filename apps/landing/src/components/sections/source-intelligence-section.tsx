@@ -1,4 +1,4 @@
-import { SectionHeading } from "@/components/common/section-heading";
+import { SectionHeading } from "@oneglanse/ui";
 import { SourceIntelligencePreview } from "@/components/previews/source-intelligence-preview";
 
 export function SourceIntelligenceSection(): React.JSX.Element {

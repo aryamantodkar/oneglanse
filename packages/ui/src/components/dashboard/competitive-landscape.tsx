@@ -2,12 +2,13 @@
 
 import { getFaviconUrls } from "@oneglanse/utils";
 import { Users } from "lucide-react";
-import { useMemo, useState, type JSX } from "react";
+import { useMemo, type JSX } from "react";
 import { Card } from "../card.js";
 import { SentimentMetricCell } from "../cell.js";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
+import { useSortState, type SortDirection } from "../../hooks/use-sort-state.js";
 import { DashboardEmptyState } from "./empty-state.js";
-import { SortableHeaderButton, type SortDirection } from "./sortable-header-button.js";
+import { SortableHeader } from "./sortable-header.js";
 import type { DashboardCompetitorData } from "./types.js";
 
 function getVisibility(row: DashboardCompetitorData): number {
@@ -80,22 +81,15 @@ export function CompetitiveLandscape({
 }: {
 	competitors: DashboardCompetitorData[];
 }): JSX.Element {
-	const [sortColumn, setSortColumn] = useState<SortColumn>("visibility");
-	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+	const { sortColumn, sortDirection, toggleSort } = useSortState<SortColumn>(
+		"visibility",
+		"desc",
+	);
 
 	const rows = useMemo(
 		() => displayCompetitors(competitors, sortColumn, sortDirection),
 		[competitors, sortColumn, sortDirection],
 	);
-
-	const onSort = (column: SortColumn) => {
-		if (sortColumn === column) {
-			setSortDirection(sortDirection === "desc" ? "asc" : "desc");
-			return;
-		}
-		setSortColumn(column);
-		setSortDirection("desc");
-	};
 
 	return (
 		<Card className="flex h-full min-h-[460px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
@@ -123,31 +117,37 @@ export function CompetitiveLandscape({
 									Competitor
 								</TableHead>
 								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									<SortableHeaderButton
-										label="Visibility"
-										isActive={sortColumn === "visibility"}
-										direction={sortDirection}
-										onClick={() => onSort("visibility")}
+									<SortableHeader
+										column="visibility"
+										currentSort={sortColumn}
+										currentDirection={sortDirection}
+										onSort={toggleSort}
 										className="ml-auto"
-									/>
+									>
+										Visibility
+									</SortableHeader>
 								</TableHead>
 								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									<SortableHeaderButton
-										label="Mentions"
-										isActive={sortColumn === "mentions"}
-										direction={sortDirection}
-										onClick={() => onSort("mentions")}
+									<SortableHeader
+										column="mentions"
+										currentSort={sortColumn}
+										currentDirection={sortDirection}
+										onSort={toggleSort}
 										className="ml-auto"
-									/>
+									>
+										Mentions
+									</SortableHeader>
 								</TableHead>
 								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									<SortableHeaderButton
-										label="Sentiment"
-										isActive={sortColumn === "sentiment"}
-										direction={sortDirection}
-										onClick={() => onSort("sentiment")}
+									<SortableHeader
+										column="sentiment"
+										currentSort={sortColumn}
+										currentDirection={sortDirection}
+										onSort={toggleSort}
 										className="ml-auto"
-									/>
+									>
+										Sentiment
+									</SortableHeader>
 								</TableHead>
 							</TableRow>
 						</TableHeader>

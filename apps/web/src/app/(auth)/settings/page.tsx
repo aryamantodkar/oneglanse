@@ -23,7 +23,14 @@ import {
 	Label,
 	toast,
 } from "@oneglanse/ui";
-import { PROVIDER_DISPLAY, getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
+import {
+	PROVIDER_DISPLAY,
+	getModelFavicon,
+	getProviderDisplayName,
+	getUniqueModelProviders,
+	joinCitedTexts,
+	joinSourceUrls,
+} from "@oneglanse/utils";
 import {
 	AlertTriangle,
 	CheckCircle2,
@@ -266,14 +273,8 @@ export default function SettingsPage(){
 				position: record.brand_analysis?.position?.rankPosition ?? "",
 				recommendation: record.brand_analysis?.recommendation?.type ?? "",
 				citations: record.sources?.length ?? 0,
-				source_urls: (record.sources ?? [])
-					.map((source: Source) => source.url)
-					.filter(Boolean)
-					.join(" | "),
-				cited_texts: (record.sources ?? [])
-					.map((source: Source) => source.cited_text)
-					.filter(Boolean)
-					.join(" | "),
+				source_urls: joinSourceUrls(record.sources ?? []),
+				cited_texts: joinCitedTexts(record.sources ?? []),
 			})),
 			...domainStats.map((domain: DomainStats) => ({
 				section: "source_domain_performance",
@@ -286,17 +287,8 @@ export default function SettingsPage(){
 				url: source.url,
 				title: source.title,
 				total_citations: source.totalSources ?? 0,
-				models: [
-					...new Set(
-						(source.excerpts ?? [])
-							.map((e: SourceExcerpt) => e.model_provider)
-							.filter(Boolean),
-					),
-				].join(", "),
-				cited_texts: (source.excerpts ?? [])
-					.map((e: SourceExcerpt) => e.cited_text)
-					.filter(Boolean)
-					.join(" | "),
+				models: getUniqueModelProviders(source.excerpts ?? []).join(", "),
+				cited_texts: joinCitedTexts(source.excerpts ?? []),
 			})),
 			...combinedSources.flatMap((source: GroupedSource) =>
 				(source.excerpts ?? []).map((excerpt: SourceExcerpt) => ({

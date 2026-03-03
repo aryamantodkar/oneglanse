@@ -1,14 +1,10 @@
 "use client";
 
-import { getFaviconUrls } from "@oneglanse/utils";
+import { formatCitationLabel, getFaviconUrls } from "@oneglanse/utils";
 import { FileQuestion } from "lucide-react";
 import { Card } from "../card.js";
 import { DashboardEmptyState } from "./empty-state.js";
 import type { DashboardSourceData } from "./types.js";
-
-function formatCitationLabel(count: number): string {
-	return `${count} citation${count === 1 ? "" : "s"}`;
-}
 
 export function TopSources({
 	sources,

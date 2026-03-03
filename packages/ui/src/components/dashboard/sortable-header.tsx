@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 export function SortableHeader<C extends string>({
@@ -6,23 +8,25 @@ export function SortableHeader<C extends string>({
 	currentSort,
 	currentDirection,
 	onSort,
+	className = "",
 }: {
 	children: React.ReactNode;
 	column: C;
 	currentSort: C | null;
 	currentDirection: "asc" | "desc";
 	onSort: (column: C) => void;
-}) {
+	className?: string;
+}): React.JSX.Element {
 	const isActive = currentSort === column;
 
 	return (
 		<button
 			type="button"
-			onClick={(e) => {
-				e.stopPropagation();
+			onClick={(event) => {
+				event.stopPropagation();
 				onSort(column);
 			}}
-			className="flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100"
+			className={`inline-flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100 ${className}`}
 		>
 			{children}
 			{isActive ? (

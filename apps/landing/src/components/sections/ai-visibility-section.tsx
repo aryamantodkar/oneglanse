@@ -1,4 +1,4 @@
-import { SectionHeading } from "@/components/common/section-heading";
+import { SectionHeading } from "@oneglanse/ui";
 import { AiVisibilityPreview } from "@/components/previews/ai-visibility-preview";
 
 export function AiVisibilitySection(): React.JSX.Element {

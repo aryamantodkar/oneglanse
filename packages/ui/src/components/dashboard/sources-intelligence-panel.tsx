@@ -1,15 +1,22 @@
 "use client";
 
-import { cn, getFaviconUrls, getModelFavicon } from "@oneglanse/utils";
+import {
+  cleanCitedText,
+  cn,
+  formatCitationLabel,
+  getFaviconUrls,
+  getModelFavicon,
+  getUrlPath,
+} from "@oneglanse/utils";
 import { BarChart3, ChevronRight, ExternalLink, Globe2, Link2, SearchX } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
+import { useSortState } from "../../hooks/use-sort-state.js";
 import { Card } from "../card.js";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
-import { SortableHeaderButton } from "./sortable-header-button.js";
+import { SortableHeader } from "./sortable-header.js";
 
 type SourcesTab = "domains" | "citations";
 type SortColumn = "share" | "citations" | "urls";
-type SortDirection = "asc" | "desc";
 
 export type SourcePanelMetrics = {
   totalDomains: number;
@@ -48,24 +55,6 @@ export type SourcePanelCitationDomain = {
   providers: string[];
   urls: SourcePanelCitationUrl[];
 };
-
-function formatCitationLabel(count: number): string {
-  return `${count} citation${count === 1 ? "" : "s"}`;
-}
-
-export function getUrlPath(url: string): string {
-  try {
-    const parsed = new URL(url);
-    const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-    return path && path !== "/" ? path : "/";
-  } catch {
-    return "/";
-  }
-}
-
-export function cleanCitedText(text: string): string {
-  return text.replace(/\s*(?:\.\.\.|…)?\s*read more\.?\s*$/i, "").trim();
-}
 
 function FaviconWithFallback({
   url,
@@ -147,8 +136,7 @@ export function SourcesIntelligencePanel({
   const [activeTab, setActiveTab] = useState<SourcesTab>("domains");
   const [openDomain, setOpenDomain] = useState<string | null>(null);
   const [openUrl, setOpenUrl] = useState<string | null>(null);
-  const [sortColumn, setSortColumn] = useState<SortColumn>("citations");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const { sortColumn, sortDirection, toggleSort } = useSortState<SortColumn>("citations", "desc");
 
   const hasData = domainRows.length > 0 || citationDomains.length > 0;
 
@@ -164,15 +152,6 @@ export function SourcesIntelligencePanel({
     });
     return rows;
   }, [domainRows, enableDomainSorting, sortColumn, sortDirection]);
-
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-      return;
-    }
-    setSortColumn(column);
-    setSortDirection("desc");
-  };
 
   return (
     <Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
@@ -252,36 +231,42 @@ export function SourcesIntelligencePanel({
                 </TableHead>
                 <TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {enableDomainSorting ? (
-                    <SortableHeaderButton
-                      label="Share of Citations"
-                      isActive={sortColumn === "share"}
-                      direction={sortDirection}
-                      onClick={() => handleSort("share")}
-                    />
+                    <SortableHeader
+                      column="share"
+                      currentSort={sortColumn}
+                      currentDirection={sortDirection}
+                      onSort={toggleSort}
+                    >
+                      Share of Citations
+                    </SortableHeader>
                   ) : (
                     "Share of Citations"
                   )}
                 </TableHead>
                 <TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {enableDomainSorting ? (
-                    <SortableHeaderButton
-                      label="Total Citations"
-                      isActive={sortColumn === "citations"}
-                      direction={sortDirection}
-                      onClick={() => handleSort("citations")}
-                    />
+                    <SortableHeader
+                      column="citations"
+                      currentSort={sortColumn}
+                      currentDirection={sortDirection}
+                      onSort={toggleSort}
+                    >
+                      Total Citations
+                    </SortableHeader>
                   ) : (
                     "Total Citations"
                   )}
                 </TableHead>
                 <TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {enableDomainSorting ? (
-                    <SortableHeaderButton
-                      label="Unique URLs"
-                      isActive={sortColumn === "urls"}
-                      direction={sortDirection}
-                      onClick={() => handleSort("urls")}
-                    />
+                    <SortableHeader
+                      column="urls"
+                      currentSort={sortColumn}
+                      currentDirection={sortDirection}
+                      onSort={toggleSort}
+                    >
+                      Unique URLs
+                    </SortableHeader>
                   ) : (
                     "Unique URLs"
                   )}
