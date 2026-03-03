@@ -1,13 +1,14 @@
 import { Card } from "@oneglanse/ui";
 import { SITE_URLS } from "@/lib/landing-content";
-import { Boxes, Github, Server, ShieldCheck } from "lucide-react";
+import { Boxes, Database, Github, GitBranch, KeyRound, Server, ShieldCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const OPEN_SOURCE_POINTS = [
-  "Open source repository and audit trail",
-  "Dockerized web, worker, queue, and analytics stack",
-  "Data ownership for prompts, responses, and sources",
-  "No provider lock-in",
-  "Reproducible pipeline from run to metric",
+const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
+  { text: "Open source repository and audit trail", icon: GitBranch },
+  { text: "Dockerized web, worker, queue, and analytics stack", icon: Boxes },
+  { text: "Data ownership for prompts, responses, and sources", icon: Database },
+  { text: "No provider lock-in", icon: KeyRound },
+  { text: "Reproducible pipeline from run to metric", icon: ShieldCheck },
 ] as const;
 
 export function OpenSourceSection(): React.JSX.Element {
@@ -48,15 +49,14 @@ export function OpenSourceSection(): React.JSX.Element {
             </div>
           </div>
           <ul className="grid gap-2.5">
-            {OPEN_SOURCE_POINTS.map((point, index) => (
+            {OPEN_SOURCE_POINTS.map(({ text, icon: Icon }) => (
               <li
-                key={point}
+                key={text}
                 className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-black dark:text-gray-100"
               >
                 <span className="inline-flex items-start gap-2.5">
-                  {index === 0 ? <ShieldCheck className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
-                  {index > 0 ? <Boxes className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
-                  <span className="leading-6">{point}</span>
+                  <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <span className="leading-6">{text}</span>
                 </span>
               </li>
             ))}

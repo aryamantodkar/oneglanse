@@ -38,21 +38,18 @@ export function DataCollectionSection(): React.JSX.Element {
           ))}
         </ul>
 
-        <div className="mt-5 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            Independent reference
-          </p>
+        <p className="mt-5 text-sm leading-6 text-muted-foreground">
+          You can read more here on how UI responses differ from API responses:{" "}
           <a
             href="https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/"
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground dark:border-gray-800"
+            className="inline-flex items-center gap-1 text-foreground underline underline-offset-4"
           >
             LLM scraped AI answers vs API results
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
-        </div>
+        </p>
       </Card>
     </section>
   );

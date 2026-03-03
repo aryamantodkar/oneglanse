@@ -9,9 +9,9 @@ export function AiVisibilitySection(): React.JSX.Element {
       aria-labelledby="competitor-comparison-title"
     >
       <SectionHeading
-        eyebrow="Visibility Scoreboard"
-        title="See who wins the answer."
-        description="Presence, recommendation, sentiment, and rank in one benchmark."
+        eyebrow="Competitor Comparison"
+        title="How HubSpot performs against direct alternatives in AI answers"
+        description="A complete horizontal comparison across presence, recommendation, sentiment, and rank strength."
       />
       <AiVisibilityPreview />
     </section>
