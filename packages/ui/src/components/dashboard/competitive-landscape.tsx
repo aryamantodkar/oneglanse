@@ -4,6 +4,7 @@ import { getFaviconUrls } from "@oneglanse/utils";
 import { Users } from "lucide-react";
 import { useMemo, type JSX } from "react";
 import { Card } from "../card.js";
+import { SentimentMetricCell } from "../cell.js";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
 import { DashboardEmptyState } from "./empty-state.js";
 import type { DashboardCompetitorData } from "./types.js";
@@ -23,25 +24,20 @@ function compareRows(
 	return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
-function sentimentTone(score: number): string {
-	if (score >= 70) return "text-emerald-600 dark:text-emerald-300";
-	if (score >= 40) return "text-amber-600 dark:text-amber-300";
-	return "text-rose-600 dark:text-rose-300";
-}
-
 function displayCompetitors(
 	competitors: DashboardCompetitorData[],
 ): DashboardCompetitorData[] {
+	const MAX_VISIBLE_ROWS = 8;
 	const sorted = [...competitors].sort(compareRows);
-	const top = sorted.slice(0, 5);
-	const hasBrand = top.some((row) => row.isBrand);
+	const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
+	const hasBrand = visible.some((row) => row.isBrand);
 
-	if (hasBrand) return top;
+	if (hasBrand) return visible;
 
 	const brand = sorted.find((row) => row.isBrand);
-	if (!brand || top.length === 0) return top;
+	if (!brand || visible.length === 0) return visible;
 
-	const next = [...top];
+	const next = [...visible];
 	next[next.length - 1] = brand;
 	return next;
 }
@@ -92,7 +88,6 @@ export function CompetitiveLandscape({
 						<TableBody>
 							{rows.map((row) => {
 								const favicon = getFaviconUrls(row.domain ?? "")[0];
-								const tone = sentimentTone(row.avgSentiment);
 								const visibility = getVisibility(row);
 
 								return (
@@ -128,8 +123,10 @@ export function CompetitiveLandscape({
 										<TableCell className="px-4 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
 											{row.appearances}
 										</TableCell>
-										<TableCell className={`px-4 py-4 text-right text-sm font-semibold ${tone}`}>
-											{row.avgSentiment}
+										<TableCell className="px-4 py-4 text-right">
+											<span className="inline-flex justify-end">
+												<SentimentMetricCell sentiment={row.avgSentiment} />
+											</span>
 										</TableCell>
 									</TableRow>
 								);
