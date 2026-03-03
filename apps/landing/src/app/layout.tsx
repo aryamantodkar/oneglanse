@@ -18,7 +18,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "OneGlanse preview",
+        alt: "OneGlanse open-source AI visibility tracking",
       },
     ],
   },
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     title: "OneGlanse | Open-source GEO & AI Visibility Platform",
     description:
       "Track brand visibility across LLM providers with self-hostable agents, ClickHouse analytics, and reproducible prompt testing.",
-    images: ["/twitter-image"],
+    images: ["/opengraph-image"],
   },
 };
 
