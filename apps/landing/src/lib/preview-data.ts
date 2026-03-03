@@ -306,9 +306,9 @@ export const PREVIEW_PROMPT_RESPONSES = [
       "For a small marketing agency, the best all-in-one CRM needs to balance **ease of onboarding, automation depth, reporting clarity, and pricing predictability**. There is no single winner for every agency, but there are clear patterns in what works.\n\n## Top options to evaluate\n1. **HubSpot CRM** - best for agencies that want fast setup and strong marketing + sales alignment.\n2. **Zoho CRM** - best for budget-conscious teams that need deeper customization.\n3. **Pipedrive** - best for pipeline-first teams that prioritize sales velocity.\n4. **ActiveCampaign** - best for agencies where email automation drives most outcomes.\n5. **Salesforce Essentials** - best for agencies planning enterprise-style process maturity.\n\n## Why HubSpot is commonly recommended\n- Intuitive UX for small teams with limited training capacity.\n- Strong default reporting for funnel, lifecycle, and campaign contribution.\n- Broad integration ecosystem across ad, analytics, and content tools.\n- Reliable handoff between marketing and sales workflows.\n\n## Tradeoffs to consider\n- Contact-based pricing can rise quickly as volume scales.\n- Some advanced automation and governance capabilities require higher tiers.\n- Deep custom object and enterprise governance needs may favor Salesforce-heavy stacks.\n\n## Practical selection checklist\n- Can your team launch first workflows in 2-3 weeks?\n- Can you track lead source to closed-won without spreadsheet stitching?\n- Does pricing remain acceptable at 2x current contacts?\n- Can you integrate existing toolchain without custom engineering?\n\n## Recommendation\nFor most small agencies, start with **HubSpot Starter + core lifecycle workflows** and validate pipeline impact for 60-90 days. If cost or customization becomes the blocker, test Zoho CRM in parallel with a limited migration scope.",
     isAnalysed: true,
     metrics: {
-      geoScore: 84,
-      sentiment: 81,
-      visibility: 88,
+      geoScore: 89,
+      sentiment: 86,
+      visibility: 92,
       position: 1,
     },
     sources: [
@@ -331,9 +331,9 @@ export const PREVIEW_PROMPT_RESPONSES = [
       "Choosing the best CRM in 2026 depends on whether your agency optimizes for **lead engine automation, client delivery operations, or predictable scaling economics**.\n\n## Strategic shortlist\n1. **GoHighLevel** - strongest for agency operating model (multi-client workflows, white-label delivery, funnel execution).\n2. **HubSpot** - strongest for inbound + revenue reporting with minimal onboarding friction.\n3. **Monday Sales CRM** - strongest when sales-to-delivery handoff and execution visibility are core bottlenecks.\n4. **Zoho CRM** - strongest budget-to-flexibility ratio for teams comfortable with configuration.\n\n## Comparison at a glance\n- **Time to first value:** HubSpot and Monday are fastest.\n- **Agency-specific controls:** GoHighLevel wins on sub-accounts and reusable account templates.\n- **Customization depth:** Zoho and Salesforce ecosystems are broader but require more operational maturity.\n- **Pricing behavior:** HubSpot is smooth at the start, but contact growth can materially change TCO.\n\n## Recommended decision model\n- If your agency is funnel-heavy and recurring-service driven: start with GoHighLevel pilot.\n- If your agency is content/inbound and reporting-sensitive: start with HubSpot.\n- If your agency struggles with delivery coordination: evaluate Monday + CRM workflow mapping.\n\n## Execution plan\nRun a 30-day bake-off with 2 platforms using identical pipelines, automations, and reporting needs. Score on: setup effort, workflow reliability, reporting quality, and projected 12-month cost at 2x volume. Choose the platform that wins on operational efficiency, not just feature count.",
     isAnalysed: true,
     metrics: {
-      geoScore: 79,
-      sentiment: 76,
-      visibility: 81,
+      geoScore: 78,
+      sentiment: 74,
+      visibility: 80,
       position: 2,
     },
     sources: [
@@ -356,9 +356,9 @@ export const PREVIEW_PROMPT_RESPONSES = [
       "For a small marketing agency that wants an all-in-one stack (CRM + marketing + reporting), **HubSpot and Zoho remain the strongest baseline options**, with GoHighLevel as a high-fit choice for agency-first operating models.\n\n## Ranked options\n1. **HubSpot CRM + Marketing Hub** - best default for fast activation, clean UX, and mature ecosystem support.\n2. **Zoho CRM / Bigin + Zoho Marketing tools** - best for cost control and flexible process design.\n3. **GoHighLevel** - best for agencies running repeatable client funnels and white-label workflows.\n4. **Bitrix24 / Agile CRM** - broader low-cost feature set, but lower UX polish and steeper process tuning.\n\n## Evidence pattern across sources\n- Review platforms repeatedly score HubSpot high for usability and onboarding speed.\n- Budget-focused comparisons favor Zoho for breadth-per-dollar.\n- Agency operations communities increasingly prefer GoHighLevel for account templating and client rollout speed.\n\n## Selection logic for your agency\n- Pick **HubSpot** if your priority is reporting trust + fast execution.\n- Pick **Zoho** if your priority is cost efficiency + customization flexibility.\n- Pick **GoHighLevel** if your priority is scalable, repeatable multi-client delivery.\n\n## Final recommendation\nIf you need the safest default with minimal implementation risk, launch on HubSpot Starter first, define strict KPI benchmarks (MQL-to-SQL, response SLA, attribution coverage), and re-evaluate stack economics once contact volume and automation complexity double.",
     isAnalysed: true,
     metrics: {
-      geoScore: 77,
-      sentiment: 74,
-      visibility: 79,
+      geoScore: 75,
+      sentiment: 72,
+      visibility: 77,
       position: 2,
     },
     sources: [
