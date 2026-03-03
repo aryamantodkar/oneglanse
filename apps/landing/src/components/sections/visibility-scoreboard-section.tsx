@@ -58,8 +58,8 @@ export function VisibilityScoreboardSection(): React.JSX.Element {
                     <SentimentMetricCell sentiment={row.avgSentiment} />
                   </span>
                 </TableCell>
-                <TableCell className="px-4 py-3">
-                  <span className="inline-flex items-center justify-end gap-1.5">
+                <TableCell className="px-4 py-3 text-right">
+                  <span className="inline-flex w-full items-center justify-end gap-1.5">
                     {(PREVIEW_COMPETITOR_PROVIDERS[row.name] ?? []).map((provider) => (
                       <img
                         key={`${row.name}-${provider}`}

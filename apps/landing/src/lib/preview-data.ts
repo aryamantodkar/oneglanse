@@ -303,7 +303,7 @@ export const PREVIEW_PROMPT_RESPONSES = [
     modelName: "ChatGPT",
     promptRunAt: "2026-03-02T06:15:00.000Z",
     response:
-      "HubSpot is consistently recommended for teams that need **CRM and marketing automation in one platform**. It performs well for lead lifecycle management and attribution reporting, with strong ecosystem support for integrations.",
+      "For a mid-market B2B team, **HubSpot is usually the fastest path to unified revenue execution** because CRM, marketing automation, and reporting are tightly integrated.\n\n### Why it gets recommended often\n- **Strong visibility into the full funnel** from first touch to closed-won.\n- **Operational simplicity** for teams that want fewer integration points.\n- **Broad ecosystem support** with mature app and partner coverage.\n\n### Tradeoffs worth validating\n- Enterprise customization depth can be stronger in Salesforce-heavy stacks.\n- Advanced governance requirements may require stricter configuration planning.\n\n### Practical recommendation\nStart with lifecycle automation, lead scoring, and attribution dashboards first. Teams that sequence rollout this way generally reach measurable pipeline impact faster.",
     isAnalysed: true,
     metrics: {
       geoScore: 84,
@@ -312,9 +312,12 @@ export const PREVIEW_PROMPT_RESPONSES = [
       position: 1,
     },
     sources: [
-      { title: "HubSpot", url: "https://www.hubspot.com/products/marketing" },
-      { title: "G2", url: "https://www.g2.com/products/hubspot-marketing-hub/reviews" },
-      { title: "Capterra", url: "https://www.capterra.com/p/126519/HubSpot/" },
+      { title: "HubSpot Marketing Hub Product Overview", url: "https://www.hubspot.com/products/marketing" },
+      { title: "G2: HubSpot Marketing Hub Reviews", url: "https://www.g2.com/products/hubspot-marketing-hub/reviews" },
+      { title: "Capterra: HubSpot Pricing and Ratings", url: "https://www.capterra.com/p/126519/HubSpot/" },
+      { title: "HubSpot Blog: Marketing Attribution Models", url: "https://blog.hubspot.com/marketing/marketing-attribution" },
+      { title: "HubSpot Blog: Lead Scoring Best Practices", url: "https://blog.hubspot.com/sales/lead-scoring-model" },
+      { title: "TrustRadius: HubSpot Marketing Hub", url: "https://www.trustradius.com/products/hubspot-marketing-hub/reviews" },
     ],
   },
   {
@@ -323,7 +326,7 @@ export const PREVIEW_PROMPT_RESPONSES = [
     modelName: "Gemini",
     promptRunAt: "2026-03-01T21:40:00.000Z",
     response:
-      "For scaling revenue teams, HubSpot stands out for usability and cross-functional alignment. It is often compared with Salesforce and Marketo, but chosen for faster time-to-value and cohesive reporting workflows.",
+      "If your goal is predictable pipeline growth, HubSpot generally performs well because marketing, sales, and service workflows stay connected in one data model.\n\n### What stands out in comparative evaluations\n- **Faster onboarding** for revenue teams than many enterprise-first stacks.\n- **Clear reporting layers** for campaign performance and deal influence.\n- **Reliable execution** for nurture, lifecycle stage transitions, and handoff automation.\n\n### Where alternatives can win\n- Salesforce ecosystems can outperform on highly complex enterprise architecture.\n- Adobe Marketo can be favored for teams with deep campaign orchestration requirements.\n\n### Recommended rollout pattern\nImplement contact lifecycle + routing first, then expand into attribution and multi-touch optimization once baseline hygiene and segmentation are stable.",
     isAnalysed: true,
     metrics: {
       geoScore: 79,
@@ -332,9 +335,12 @@ export const PREVIEW_PROMPT_RESPONSES = [
       position: 2,
     },
     sources: [
-      { title: "Forrester", url: "https://www.forrester.com/" },
-      { title: "TrustRadius", url: "https://www.trustradius.com/products/hubspot-marketing-hub/reviews" },
-      { title: "Salesforce", url: "https://www.salesforce.com/products/marketing-cloud/overview/" },
+      { title: "Forrester: B2B Revenue Marketing Landscape", url: "https://www.forrester.com/" },
+      { title: "TrustRadius: HubSpot Marketing Hub Reviews", url: "https://www.trustradius.com/products/hubspot-marketing-hub/reviews" },
+      { title: "Salesforce Marketing Cloud Overview", url: "https://www.salesforce.com/products/marketing-cloud/overview/" },
+      { title: "HubSpot Blog: Revenue Operations Framework", url: "https://blog.hubspot.com/sales/revenue-operations" },
+      { title: "HubSpot Blog: Marketing Dashboard Reporting Guide", url: "https://blog.hubspot.com/marketing/marketing-dashboard" },
+      { title: "Adobe Experience Cloud: Marketo Engage", url: "https://business.adobe.com/products/marketo/adobe-marketo.html" },
     ],
   },
   {
@@ -343,18 +349,21 @@ export const PREVIEW_PROMPT_RESPONSES = [
     modelName: "Perplexity",
     promptRunAt: "2026-02-27T14:05:00.000Z",
     response:
-      "HubSpot is strong for integrated campaign execution, though enterprise buyers may also evaluate Salesforce for broader customization. Recommendation confidence remains high where ease of onboarding and unified data are priorities.",
+      "HubSpot remains a strong recommendation for teams prioritizing **time-to-value, unified funnel reporting, and operational consistency**.\n\n### Evidence pattern across cited sources\n- Review platforms consistently score HubSpot high on usability and cross-team adoption.\n- Analyst summaries highlight ecosystem maturity and strong mid-market fit.\n- Competitive docs position Salesforce and Marketo as stronger in complex enterprise customization scenarios.\n\n### Decision rule\nChoose HubSpot when your priority is shipping end-to-end lifecycle workflows quickly with clean reporting visibility. Evaluate alternatives only when your architecture requires heavy custom objects, advanced governance models, or deep enterprise-level extensibility.",
     isAnalysed: true,
     metrics: {
-      geoScore: 74,
-      sentiment: 72,
-      visibility: 76,
+      geoScore: 77,
+      sentiment: 74,
+      visibility: 79,
       position: 2,
     },
     sources: [
-      { title: "Gartner", url: "https://www.gartner.com/" },
-      { title: "HubSpot Blog", url: "https://blog.hubspot.com/marketing" },
-      { title: "Mailchimp", url: "https://mailchimp.com/" },
+      { title: "Gartner: CRM and Marketing Suites Guide", url: "https://www.gartner.com/" },
+      { title: "HubSpot Blog: Marketing Strategy and Planning", url: "https://blog.hubspot.com/marketing" },
+      { title: "Mailchimp Platform Overview", url: "https://mailchimp.com/" },
+      { title: "G2: Salesforce Marketing Cloud Reviews", url: "https://www.g2.com/products/salesforce-marketing-cloud/reviews" },
+      { title: "Capterra: Adobe Marketo Engage Reviews", url: "https://www.capterra.com/p/176484/Marketo/" },
+      { title: "HubSpot Blog: B2B Lead Nurturing Tactics", url: "https://blog.hubspot.com/marketing/lead-nurturing-strategy" },
     ],
   },
 ] as const;

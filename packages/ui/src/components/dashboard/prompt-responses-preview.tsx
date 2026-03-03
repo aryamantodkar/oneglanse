@@ -141,8 +141,8 @@ export function PromptResponsesPreview({
               ) : null}
 
               <div
-                className={`prose prose-sm dark:prose-invert max-w-none transition-all duration-200 ${
-                  isExpanded ? "overflow-visible" : "line-clamp-3 overflow-hidden"
+                className={`prose dark:prose-invert max-w-none transition-all duration-200 ${
+                  isExpanded ? "prose-base overflow-visible" : "prose-sm line-clamp-3 overflow-hidden"
                 }`}
                 dangerouslySetInnerHTML={{ __html: formatMarkdown(row.response) }}
               />
