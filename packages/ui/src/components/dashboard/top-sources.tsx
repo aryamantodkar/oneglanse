@@ -18,7 +18,7 @@ export function TopSources({
 	totalCitations?: number;
 }) {
 	return (
-		<Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+		<Card className="flex h-full min-h-[460px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
 			<div>
 				<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 					Top Sources
@@ -35,7 +35,7 @@ export function TopSources({
 					description="No source intelligence is available for the selected filters."
 				/>
 			) : (
-				<div className="flex flex-1 flex-col justify-around">
+				<div className="flex flex-col gap-3">
 					{sources.slice(0, 5).map((source, idx) => {
 						const faviconUrl =
 							source.favicon || getFaviconUrls(source.domain, "")[0];
@@ -48,7 +48,7 @@ export function TopSources({
 						return (
 							<div
 								key={source.domain}
-								className="ui-list-item group flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900"
+								className="ui-list-item group flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300 dark:border-gray-800 dark:bg-black"
 							>
 								<div className="flex min-w-0 flex-1 items-center gap-3">
 									<div className="flex min-w-0 flex-1 items-center gap-3">
