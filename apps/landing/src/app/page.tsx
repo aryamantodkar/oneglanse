@@ -13,9 +13,9 @@ export default function LandingPage(): React.JSX.Element {
     <main>
       <SiteHeader />
       <HeroSection />
+      <VisibilityScoreboardSection />
       <AiVisibilitySection />
       <SourceIntelligenceSection />
-      <VisibilityScoreboardSection />
       <FeatureGrid />
       <OpenSourceSection />
       <DataCollectionSection />
