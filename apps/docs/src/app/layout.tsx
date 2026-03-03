@@ -63,7 +63,7 @@ export default async function RootLayout({
       <body>
         <Layout
           pageMap={pageMap}
-          docsRepositoryBase="https://github.com/aryamantodkar/oneglanse/tree/main/apps/docs/content"
+          docsRepositoryBase="https://github.com/aryamantodkar/oneglanse/tree/main/apps/docs"
           navbar={
             <Navbar logo={<span className="docs-logo">OneGlanse Docs</span>}>
               <div className="docs-nav-actions">

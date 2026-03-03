@@ -12,9 +12,9 @@ export default function LandingPage(): React.JSX.Element {
     <main>
       <SiteHeader />
       <HeroSection />
-      <FeatureGrid />
       <AiVisibilitySection />
       <SourceIntelligenceSection />
+      <FeatureGrid />
       <OpenSourceSection />
       <DataCollectionSection />
       <SiteFooter />
