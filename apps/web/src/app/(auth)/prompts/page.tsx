@@ -451,8 +451,8 @@ export default function Prompts(){
 
 	if (isUserPromptsLoading || isAnalysedPromptsLoading) {
 		return (
-			<div className="flex h-screen flex-col">
-				<div className="flex items-center justify-between px-6 py-4">
+			<div className="flex min-h-svh flex-col">
+				<div className="flex items-center justify-between px-4 py-4 sm:px-6">
 					<Skeleton className="h-8 w-24 rounded-lg" />
 					<Skeleton className="h-9 w-28 rounded-xl" />
 				</div>
@@ -463,12 +463,12 @@ export default function Prompts(){
 	}
 
 	return (
-		<div className="ui-page-enter ui-stagger flex h-screen flex-col">
-			<div className="px-6 py-6">
+		<div className="ui-page-enter ui-stagger flex min-h-svh flex-col">
+			<div className="px-4 py-4 sm:px-6 sm:py-6">
 				{/* Single Row: Actions + Filters */}
-				<div className="flex items-center justify-between gap-4">
+				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 					{/* Left: Prompt actions */}
-					<div className="flex items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2">
 						{selectedRows.size === 0 ? (
 							<Dialog
 								open={dialogOpen}
@@ -572,7 +572,7 @@ export default function Prompts(){
 					</div>
 
 					{/* Middle: Filters */}
-					<div className="flex items-center gap-3">
+					<div className="flex w-full flex-wrap items-center gap-2 sm:gap-3 lg:w-auto">
 						{/* Model filter */}
 						<ProviderModelSelect
 							value={modelFilter}
@@ -609,7 +609,7 @@ export default function Prompts(){
 					</div>
 
 					{/* Right: Save action */}
-					<div className="flex items-center gap-2">
+					<div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
 						<ExportMenu
 							disabled={!hasExportableData}
 							onExportJson={() => {
@@ -747,9 +747,12 @@ export default function Prompts(){
 			</div>
 
 			{promptData.length > 0 ? (
-				<div className="flex-1 overflow-y-auto px-6 pb-10">
-					<div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
-						<Table className="min-w-full">
+				<div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6">
+					<p className="mb-3 text-xs text-muted-foreground">
+						Tip: Click a prompt row to view its responses.
+					</p>
+					<div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+						<Table className="min-w-[920px] w-full">
 							<TableHeader>
 								<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
 									<TableHead className="w-12 pl-4">
@@ -913,7 +916,7 @@ export default function Prompts(){
 							open={!!openPrompt}
 							onOpenChange={() => setOpenPrompt(null)}
 						>
-							<DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[80vw] sm:!w-[80vw] flex h-[90vh] flex-col rounded-2xl px-8 pb-8 sm:px-10 sm:pt-12 sm:pb-10 ">
+							<DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[80vw] sm:!w-[80vw] flex h-[90vh] flex-col rounded-2xl px-4 pb-6 sm:px-10 sm:pt-12 sm:pb-10 ">
 								<DialogHeader className="pb-6">
 									<DialogTitle className="font-semibold text-xl">
 										{openPrompt?.prompt}
@@ -925,7 +928,7 @@ export default function Prompts(){
 								</DialogHeader>
 
 								{/* Filter bar */}
-								<div className="flex items-center gap-3 pb-6">
+								<div className="flex flex-wrap items-center gap-3 pb-6">
 									{/* Model filter */}
 									<ProviderModelSelect
 										value={modelFilter}
@@ -957,7 +960,7 @@ export default function Prompts(){
 														key={record.id}
 														onClick={() => toggleResponse(index)}
 														data-expanded={isExpanded}
-														className={`group cursor-pointer rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm transition-all duration-200 ease-out hover:shadow-md dark:border-gray-800 dark:bg-gray-950 dark:shadow-black/20 ${isExpanded ? "shadow-lg ring-1 ring-gray-200 dark:ring-gray-700" : ""}
+														className={`group cursor-pointer rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-sm transition-all duration-200 ease-out hover:shadow-md sm:px-6 dark:border-gray-800 dark:bg-gray-950 dark:shadow-black/20 ${isExpanded ? "shadow-lg ring-1 ring-gray-200 dark:ring-gray-700" : ""}
                           `}
 													>
 														<div className="mb-4 flex items-start justify-between">

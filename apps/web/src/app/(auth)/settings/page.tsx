@@ -325,7 +325,7 @@ export default function SettingsPage() {
 	}
 
 	return (
-		<div className="ui-page-enter ui-stagger mx-auto max-w-4xl space-y-8 py-6">
+		<div className="web-page-panel max-w-4xl">
 			{/* Page Header */}
 			<div className="mb-6 flex items-center gap-2">
 				<Settings className="h-6 w-6 shrink-0 text-gray-500" />
@@ -351,7 +351,7 @@ export default function SettingsPage() {
 								file.
 							</p>
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button
 								variant="outline"
 								className="gap-2"
@@ -546,7 +546,7 @@ export default function SettingsPage() {
 			{/* Danger Zone */}
 			<section>
 				<div className="mb-4 flex items-center gap-2">
-					<h2 className="text-lg font-semibold text-red-600 dark:text-red-500">
+					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
 						Account
 					</h2>
 				</div>

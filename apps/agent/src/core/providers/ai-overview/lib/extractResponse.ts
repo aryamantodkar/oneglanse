@@ -33,7 +33,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
       // Step 1b: Unwrap inline Google entity chip links (e.g. <a href="google.com/search?q=HubSpot">HubSpot</a>)
       // These are not source citations — they're inline links within prose text that turndown
       // would otherwise convert to [text](google-search-url) markdown noise.
-      for (const a of clone.querySelectorAll(sels.googleChip)) {
+      for (const a of clone.querySelectorAll(sels.aiOverviewChip)) {
         const span = document.createElement("span");
         span.textContent = a.textContent;
         a.parentNode?.replaceChild(span, a);
@@ -96,12 +96,12 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         return { success: false, error: "AI Overview HTML was empty after extraction" };
 
       return { success: true, html };
-    }, SELECTORS.googleAiOverviewResponse);
+    }, SELECTORS.aiOverviewResponse);
 
     if (!result || !result.success) {
       const message = result?.error || "unknown extraction failure";
       logger.warn(`AI Overview extraction failed: ${message}`);
-      throw new ExternalServiceError("google-ai-overview", message);
+      throw new ExternalServiceError("ai-overview", message);
     }
 
     const html = result.html || "";
@@ -111,6 +111,6 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
     const msg = toErrorMessage(error);
     logger.error(`AI Overview extraction error: ${msg}`);
     if (error instanceof BaseError) throw error;
-    throw new ExternalServiceError("google-ai-overview", msg, 500, undefined, error);
+    throw new ExternalServiceError("ai-overview", msg, 500, undefined, error);
   }
 }

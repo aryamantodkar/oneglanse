@@ -6,7 +6,7 @@ export function AiPerceptionSection(): React.JSX.Element {
   return (
     <section className="section-shell py-12 sm:py-14" id="ai-perception" aria-labelledby="ai-perception-title">
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
-        <div className="flex min-h-[500px] flex-col justify-center">
+        <div className="flex min-h-0 flex-col justify-center lg:min-h-[500px]">
           <div>
             <h2 id="ai-perception-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
               AI Perception

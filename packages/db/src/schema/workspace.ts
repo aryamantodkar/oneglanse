@@ -13,7 +13,7 @@ import { user } from "./auth.js";
 
 // Keep in sync with PROVIDER_LIST in @oneglanse/types
 const DEFAULT_PROVIDERS_JSON =
-	'["openai","anthropic","perplexity","google","google-ai-overview"]';
+	'["chatgpt","claude","perplexity","gemini","ai-overview"]';
 
 export const workspaces = pgTable("workspaces", {
 	id: varchar("id", { length: 256 }).primaryKey(),

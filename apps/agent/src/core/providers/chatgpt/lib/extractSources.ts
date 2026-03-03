@@ -1,17 +1,17 @@
 import type { Source } from "@oneglanse/types";
-import type { Locator, Page } from "playwright";
 import { SELECTORS } from "@oneglanse/utils";
+import type { Locator, Page } from "playwright";
 import {
+	type RawSource,
 	buildSources,
 	clickButtonViaDispatch,
-	type RawSource,
-} from "../../../../lib/extraction/sourceUtils.js";
+} from "../../_shared/sourceUtils.js";
 
-export async function extractSourcesFromOpenai(
+export async function extractSourcesFromChatgpt(
 	page: Page,
 	sourcesButton: Locator,
 ): Promise<Source[]> {
-	const rawSources = await page.evaluate((sels) => {
+	const rawSources = (await page.evaluate((sels) => {
 		const results: Array<{
 			rawHref: string;
 			title: string;
@@ -69,15 +69,14 @@ export async function extractSourcesFromOpenai(
 
 				const title = blocks[1]?.textContent?.trim() || "";
 				const citedText = blocks[2]?.textContent?.trim() || "";
-				const imgSrc =
-					a.querySelector(sels.img)?.getAttribute("src") ?? null;
+				const imgSrc = a.querySelector(sels.img)?.getAttribute("src") ?? null;
 
 				results.push({ rawHref: href, title, citedText, imgSrc });
 			}
 		}
 
 		return results;
-	}, SELECTORS.openai) as RawSource[];
+	}, SELECTORS.chatgpt)) as RawSource[];
 
 	if (!(await clickButtonViaDispatch(page, sourcesButton))) return [];
 	await page.waitForTimeout(300);

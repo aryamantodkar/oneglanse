@@ -157,7 +157,7 @@ export default function SourcesPage(): React.JSX.Element {
 
   if (isLoading && !promptSources) {
     return (
-      <div className="min-h-screen p-6">
+      <div className="web-page-wide p-4 sm:p-6">
         <div className="space-y-4">
           <Skeleton className="h-10 w-56" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -210,8 +210,8 @@ export default function SourcesPage(): React.JSX.Element {
   const hasExportableData = displayedSources.length > 0;
 
   return (
-    <div className="ui-page-enter min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="ui-stagger mx-auto w-full max-w-[95vw] space-y-6 xl:max-w-[1600px]">
+    <div className="web-page-wide">
+      <div className="web-page-wide-inner ui-stagger space-y-6 py-4 sm:py-6 lg:py-8">
         <SectionHeading
           as="h1"
           title="Sources Intelligence"
@@ -220,7 +220,7 @@ export default function SourcesPage(): React.JSX.Element {
           titleClassName="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
           descriptionClassName="mt-1 text-sm font-normal"
           trailing={(
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <ExportMenu
               disabled={!hasExportableData}
               onExportJson={() => {
@@ -316,7 +316,7 @@ export default function SourcesPage(): React.JSX.Element {
             <ProviderModelSelect
               value={selectedProvider}
               onValueChange={setSelectedProvider}
-              triggerClassName="h-10 w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
+              triggerClassName="h-10 w-[180px] sm:w-[220px] rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
             />
             </div>
           )}

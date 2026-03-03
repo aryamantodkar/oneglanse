@@ -6,10 +6,10 @@ export const claudeConfig: ProviderConfig = {
 	url: "https://claude.ai/new",
 	warmupDelayMs: 5000,
 	skip: true,
-	label: "Anthropic",
+	label: "Claude",
 	displayName: "Claude",
 	requiresWarmup: true,
-	waitForResponse: (page) => waitForAssistantToFinish(page, "anthropic"),
-	extractResponse: (page) => extractAssistantMarkdown(page, "anthropic"),
+	waitForResponse: (page) => waitForAssistantToFinish(page, "claude"),
+	extractResponse: (page) => extractAssistantMarkdown(page, "claude"),
 	extractSources: async (_page) => [],
 };

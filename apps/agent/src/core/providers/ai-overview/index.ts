@@ -9,15 +9,15 @@ import { logger, SELECTORS } from "@oneglanse/utils";
 import { env } from "../../../env.js";
 import type { ProviderConfig } from "../types.js";
 
-// AI Overview is a Google Search result block, not a chat interface.
+// AI Overview is a search result block, not a chat interface.
 // It has no streaming indicator — we wait for its container to appear instead.
 const BASE_URL = "https://www.google.com/?hl=en&pws=0";
-const RESPONSE_CONTAINER_SELECTORS = `${SELECTORS.googleAiOverviewResponse.placeholder}, ${SELECTORS.googleAiOverviewResponse.mainCol}`;
+const RESPONSE_CONTAINER_SELECTORS = `${SELECTORS.aiOverviewResponse.placeholder}, ${SELECTORS.aiOverviewResponse.mainCol}`;
 
 export const aiOverviewConfig: ProviderConfig = {
 	url: BASE_URL,
 	warmupDelayMs: 0,
-	label: "Google AI Overview",
+	label: "AI Overview",
 	displayName: "AI Overview",
 	requiresWarmup: false,
 	waitForResponse: async (page) => {
@@ -30,7 +30,7 @@ export const aiOverviewConfig: ProviderConfig = {
 			.waitFor({ state: "visible", timeout: env.AI_OVERVIEW_WAIT_TIMEOUT_MS })
 			.catch(() => {
 				throw new ExternalServiceError(
-					"google-ai-overview",
+					"ai-overview",
 					"AI Overview container not visible — triggering retry",
 				);
 			});
@@ -40,28 +40,28 @@ export const aiOverviewConfig: ProviderConfig = {
 		return turndown.turndown(html);
 	},
 	beforeRetryHook: async (page) => {
-		const input = await findActiveEditor(page, "google-ai-overview").catch(() => null);
+		const input = await findActiveEditor(page, "ai-overview").catch(() => null);
 		const cleared = input
 			? await clearEditorInput(page, input, { dismissWithEscape: true })
 			: false;
 		if (cleared) {
-			logger.debug("[google-ai-overview] Cleared search input before retry");
+			logger.debug("[ai-overview] Cleared search input before retry");
 			return;
 		}
 
-		logger.debug("[google-ai-overview] Could not clear input; navigating to base URL before retry");
+		logger.debug("[ai-overview] Could not clear input; navigating to base URL before retry");
 		await navigateWithRetry(page, BASE_URL, {
 			waitUntil: "domcontentloaded",
 			timeout: 30000,
 		});
 	},
 	betweenPromptsHook: async (page) => {
-		const input = await findActiveEditor(page, "google-ai-overview").catch(() => null);
+		const input = await findActiveEditor(page, "ai-overview").catch(() => null);
 		const cleared = input
 			? await clearEditorInput(page, input, { dismissWithEscape: true })
 			: false;
 		if (cleared) {
-			logger.debug("[google-ai-overview] Cleared search input between prompts");
+			logger.debug("[ai-overview] Cleared search input between prompts");
 			await page.waitForTimeout(400);
 			return;
 		}
@@ -74,7 +74,7 @@ export const aiOverviewConfig: ProviderConfig = {
 		await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
 	},
 	checkSubmitSuccess: async (page, preSubmitUrl) => {
-		// Google Search submits by navigation — a ?q= URL mutation is definitive success.
+		// Search submits by navigation — a ?q= URL mutation is definitive success.
 		const currentUrl = page.url();
 		if (currentUrl !== preSubmitUrl) {
 			try {
@@ -87,7 +87,7 @@ export const aiOverviewConfig: ProviderConfig = {
 		return undefined; // fall through to generic checks
 	},
 	postNavigationHook: async (page) => {
-		// Dismiss the Google consent dialog if it appears.
+		// Dismiss the consent dialog if it appears.
 		await page
 			.locator('button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]')
 			.first()

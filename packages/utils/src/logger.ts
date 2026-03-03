@@ -24,19 +24,19 @@ const GREEN = "\x1b[32m";
 const BOLD = "\x1b[1m";
 
 const PROVIDER_COLORS: Record<string, string> = {
-	openai: "\x1b[32m",
-	anthropic: "\x1b[35m",
+	chatgpt: "\x1b[32m",
+	claude: "\x1b[35m",
 	perplexity: "\x1b[36m",
-	google: "\x1b[33m",
-	"google-ai-overview": "\x1b[34m",
+	gemini: "\x1b[33m",
+	"ai-overview": "\x1b[34m",
 };
 
 const RAW_PROVIDER_LABELS: Record<string, string> = {
-	openai: "OPENAI",
-	anthropic: "CLAUDE",
+	chatgpt: "CHATGPT",
+	claude: "CLAUDE",
 	perplexity: "PERPLEXITY",
-	google: "GEMINI",
-	"google-ai-overview": "AI OVERVIEW",
+	gemini: "GEMINI",
+	"ai-overview": "AI OVERVIEW",
 };
 
 function centerLabel(label: string, width: number): string {

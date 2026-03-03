@@ -199,7 +199,7 @@ export default function FirstWorkspaceOnboardingPage(){
 						</p>
 					</CardHeader>
 
-					<CardContent className="space-y-6 bg-white p-6 dark:bg-gray-950">
+					<CardContent className="space-y-6 bg-white p-4 sm:p-6 dark:bg-gray-950">
 						{!started ? (
 							<>
 								<div className="space-y-2">
@@ -237,19 +237,20 @@ export default function FirstWorkspaceOnboardingPage(){
 									</div>
 								</div>
 
-								<div className="flex items-center justify-end gap-3 pt-2">
+								<div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
 									<Button
 										variant="outline"
 										onClick={() =>
 											router.replace(`/dashboard?workspace=${workspaceId}`)
 										}
+										className="w-full sm:w-auto"
 									>
 										Skip for now
 									</Button>
 									<Button
 										onClick={handleStart}
 										disabled={storePrompts.isPending || runAgent.isPending}
-										className="min-w-[220px]"
+										className="w-full sm:w-auto sm:min-w-[220px]"
 									>
 										{storePrompts.isPending || runAgent.isPending ? (
 											<Loader2 className="h-4 w-4 animate-spin" />

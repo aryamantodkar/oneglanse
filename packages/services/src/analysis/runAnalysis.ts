@@ -1,6 +1,6 @@
 import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
 import type { AnalysisInputSingle, BrandAnalysisResult } from "@oneglanse/types";
-import { openai } from "../llm/index.js";
+import { chatgpt } from "../llm/index.js";
 import { analysisPrompt } from "./analysisPrompt.js";
 
 export async function runAnalysis(
@@ -17,7 +17,7 @@ export async function runAnalysis(
 
 	let response;
 	try {
-		response = await openai.responses.create({
+		response = await chatgpt.responses.create({
 			model: "gpt-4.1",
 			temperature: 0,
 			input: [
@@ -36,7 +36,7 @@ export async function runAnalysis(
 		});
 	} catch (err) {
 		throw new ExternalServiceError(
-			"OpenAI",
+			"ChatGPT",
 			"Failed to analyze response.",
 			502,
 			{ responseLength: input.response.length },

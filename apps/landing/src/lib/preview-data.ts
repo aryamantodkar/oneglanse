@@ -105,7 +105,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 184,
     share: 19.3,
     brandMentions: 128,
-    providers: ["openai", "anthropic", "perplexity", "google"],
+    providers: ["chatgpt", "claude", "perplexity", "gemini"],
   },
   {
     domain: "capterra.com",
@@ -113,7 +113,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 161,
     share: 16.9,
     brandMentions: 111,
-    providers: ["openai", "anthropic", "google"],
+    providers: ["chatgpt", "claude", "gemini"],
   },
   {
     domain: "trustradius.com",
@@ -121,7 +121,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 136,
     share: 14.3,
     brandMentions: 96,
-    providers: ["openai", "perplexity", "google-ai-overview"],
+    providers: ["chatgpt", "perplexity", "ai-overview"],
   },
   {
     domain: "forrester.com",
@@ -129,7 +129,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 118,
     share: 12.4,
     brandMentions: 83,
-    providers: ["openai", "google", "perplexity"],
+    providers: ["chatgpt", "gemini", "perplexity"],
   },
   {
     domain: "gartner.com",
@@ -137,7 +137,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 101,
     share: 10.6,
     brandMentions: 72,
-    providers: ["anthropic", "google", "google-ai-overview"],
+    providers: ["claude", "gemini", "ai-overview"],
   },
   {
     domain: "salesforce.com",
@@ -145,7 +145,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 96,
     share: 10.1,
     brandMentions: 68,
-    providers: ["openai", "anthropic", "google"],
+    providers: ["chatgpt", "claude", "gemini"],
   },
   {
     domain: "hubspot.com",
@@ -153,7 +153,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 84,
     share: 8.8,
     brandMentions: 63,
-    providers: ["openai", "anthropic"],
+    providers: ["chatgpt", "claude"],
   },
   {
     domain: "mailchimp.com",
@@ -161,7 +161,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 72,
     share: 7.6,
     brandMentions: 58,
-    providers: ["openai", "perplexity"],
+    providers: ["chatgpt", "perplexity"],
   },
 ] as const;
 
@@ -169,14 +169,14 @@ export const PREVIEW_CITATION_ROWS = [
   {
     domain: "g2.com",
     title: "HubSpot Marketing Hub Review Grid",
-    provider: "openai",
+    provider: "chatgpt",
     citations: 19,
     excerpt: "Strong CRM depth, automation breadth, and quick time-to-value for revenue teams.",
   },
   {
     domain: "capterra.com",
     title: "Best Marketing Automation Software",
-    provider: "anthropic",
+    provider: "claude",
     citations: 16,
     excerpt: "Frequently recommended for unified sales and marketing workflows at mid-market scale.",
   },
@@ -190,21 +190,21 @@ export const PREVIEW_CITATION_ROWS = [
   {
     domain: "forrester.com",
     title: "B2B Revenue Platforms Wave",
-    provider: "google",
+    provider: "gemini",
     citations: 12,
     excerpt: "Noted for ecosystem strength and measurable pipeline influence across channels.",
   },
   {
     domain: "gartner.com",
     title: "CRM and Marketing Suites Market Guide",
-    provider: "google-ai-overview",
+    provider: "ai-overview",
     citations: 11,
     excerpt: "Balanced on extensibility, operational governance, and total cost considerations.",
   },
   {
     domain: "salesforce.com",
     title: "Marketing Cloud Competitive Overview",
-    provider: "openai",
+    provider: "chatgpt",
     citations: 9,
     excerpt: "Compared on enterprise depth and integration strategy in complex buying cycles.",
   },
@@ -227,18 +227,18 @@ export const PREVIEW_AGGREGATE_STATS = {
 } as const;
 
 export const PREVIEW_COMPETITOR_PROVIDERS: Record<string, string[]> = {
-  HubSpot: ["openai", "anthropic", "perplexity", "google"],
-  Salesforce: ["openai", "anthropic", "google"],
-  "Adobe Marketo": ["openai", "perplexity", "google-ai-overview"],
-  Mailchimp: ["openai", "anthropic", "perplexity"],
-  ActiveCampaign: ["openai", "google", "perplexity"],
-  Pardot: ["anthropic", "google", "google-ai-overview"],
+  HubSpot: ["chatgpt", "claude", "perplexity", "gemini"],
+  Salesforce: ["chatgpt", "claude", "gemini"],
+  "Adobe Marketo": ["chatgpt", "perplexity", "ai-overview"],
+  Mailchimp: ["chatgpt", "claude", "perplexity"],
+  ActiveCampaign: ["chatgpt", "gemini", "perplexity"],
+  Pardot: ["claude", "gemini", "ai-overview"],
 } as const;
 
 export const PREVIEW_PROMPT_RESPONSES = [
   {
     id: "resp-1",
-    modelProvider: "openai",
+    modelProvider: "chatgpt",
     modelName: "ChatGPT",
     promptRunAt: "2026-03-02T06:15:00.000Z",
     response:
@@ -263,7 +263,7 @@ export const PREVIEW_PROMPT_RESPONSES = [
   },
   {
     id: "resp-2",
-    modelProvider: "google",
+    modelProvider: "gemini",
     modelName: "Gemini",
     promptRunAt: "2026-03-01T21:40:00.000Z",
     response:

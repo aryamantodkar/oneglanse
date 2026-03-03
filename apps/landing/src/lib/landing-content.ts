@@ -41,7 +41,7 @@ export const FEATURE_ITEMS: FeatureItem[] = [
   },
   {
     title: "Multi-Provider Prompt Testing",
-    description: "Run one prompt set across OpenAI, Claude, Gemini, and Perplexity.",
+    description: "Run one prompt set across ChatGPT, Claude, Gemini, Perplexity, and AI Overview.",
     icon: SearchCheck,
   },
   {

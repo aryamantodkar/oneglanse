@@ -17,9 +17,9 @@ import type { ProviderConfig } from "./types.js";
  * No other files need to change.
  */
 export const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
-	google: geminiConfig,
-	openai: chatgptConfig,
+	gemini: geminiConfig,
+	chatgpt: chatgptConfig,
 	perplexity: perplexityConfig,
-	anthropic: claudeConfig,
-	"google-ai-overview": aiOverviewConfig,
+	claude: claudeConfig,
+	"ai-overview": aiOverviewConfig,
 };

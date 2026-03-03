@@ -95,7 +95,7 @@ CREATE TABLE "workspaces" (
     "country" varchar(64) NOT NULL,
     "region" varchar(128),
     "schedule" varchar(64),
-    "enabled_providers" text DEFAULT '["openai","anthropic","perplexity","google",]' NOT NULL,
+    "enabled_providers" text DEFAULT '["chatgpt","claude","perplexity","gemini","ai-overview"]' NOT NULL,
     "created_at" timestamp NOT NULL,
     "deleted_at" timestamp
 );

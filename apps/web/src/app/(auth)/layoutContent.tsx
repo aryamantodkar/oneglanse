@@ -45,7 +45,7 @@ export default function LayoutContent({
 
 	if (!resolvedWorkspace) {
 		return (
-			<div className="ui-page-enter flex h-screen w-full">
+			<div className="ui-page-enter flex min-h-svh w-full">
 				<main className="flex-1 flex flex-col min-h-0">
 					{/* Header */}
 					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
@@ -57,7 +57,7 @@ export default function LayoutContent({
 					</div>
 
 					{/* Page content */}
-					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">
+					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-4 sm:px-6">
 						{children}
 					</div>
 				</main>
@@ -67,7 +67,7 @@ export default function LayoutContent({
 
 	if (isOnboardingFlow) {
 		return (
-			<div className="ui-page-enter flex h-screen w-full">
+			<div className="ui-page-enter flex min-h-svh w-full">
 				<main className="flex flex-1 flex-col min-h-0">
 					<div className="ui-page-enter flex-1 min-h-0 overflow-auto">
 						{children}
@@ -79,7 +79,7 @@ export default function LayoutContent({
 
 	return (
 		<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
-			<div className="ui-page-enter flex h-screen w-full">
+			<div className="ui-page-enter flex min-h-svh w-full">
 				<AppSidebar
 					workspace={resolvedWorkspace}
 					userName={userName}
@@ -96,7 +96,7 @@ export default function LayoutContent({
 					</div>
 
 					{/* Page content */}
-					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-6">
+					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-4 sm:px-6">
 						{children}
 					</div>
 				</main>

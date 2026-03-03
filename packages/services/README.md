@@ -18,7 +18,7 @@ This package is the domain boundary between app routers/components and raw data/
 - `src/prompt/*`: prompt storage, response storage, source/response fetch.
 - `src/analysis/*`: analysis run, prompt analysis records, fetch APIs.
 - `src/agent/*`: queue naming, queue access, Redis client, job-group submission.
-- `src/llm/*`: OpenAI client initialization.
+- `src/llm/*`: ChatGPT client initialization.
 
 ## Public Exports
 

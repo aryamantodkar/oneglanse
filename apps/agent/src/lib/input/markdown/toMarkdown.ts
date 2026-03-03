@@ -1,7 +1,7 @@
 import type { Provider } from "@oneglanse/types";
 import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { extractAnthropicBlocks } from "./anthropicBlocks.js";
+import { extractClaudeBlocks } from "./claudeBlocks.js";
 import { turndown } from "./converter.js";
 
 export async function extractAssistantMarkdown(
@@ -20,8 +20,8 @@ export async function extractAssistantMarkdown(
 				if (!(await el.isVisible())) continue;
 
 				const html =
-					provider === "anthropic"
-						? await extractAnthropicBlocks(el, "html")
+					provider === "claude"
+						? await extractClaudeBlocks(el, "html")
 						: await el.evaluate((root) => {
 								if (!(root instanceof HTMLElement)) return "";
 								return root.innerHTML?.trim() || "";

@@ -1,17 +1,17 @@
 import type { Source } from "@oneglanse/types";
-import type { Locator, Page } from "playwright";
 import { SELECTORS } from "@oneglanse/utils";
+import type { Locator, Page } from "playwright";
 import {
+	type RawSource,
 	buildSources,
 	clickButtonViaDispatch,
-	type RawSource,
-} from "../../../../lib/extraction/sourceUtils.js";
+} from "../../_shared/sourceUtils.js";
 
 export async function extractSourcesFromGemini(
 	page: Page,
 	sourcesButton: Locator,
 ): Promise<Source[]> {
-	const rawSources = await page.evaluate((sels) => {
+	const rawSources = (await page.evaluate((sels) => {
 		const results: Array<{
 			rawHref: string;
 			title: string;
@@ -47,14 +47,13 @@ export async function extractSourcesFromGemini(
 				card.querySelector(sels.snippet)?.textContent?.trim() || "";
 
 			// Prefer the actual favicon img already in the card
-			const imgSrc =
-				card.querySelector(sels.icon)?.getAttribute("src") ?? null;
+			const imgSrc = card.querySelector(sels.icon)?.getAttribute("src") ?? null;
 
 			results.push({ rawHref: href, title, citedText, imgSrc });
 		}
 
 		return results;
-	}, SELECTORS.gemini) as RawSource[];
+	}, SELECTORS.gemini)) as RawSource[];
 
 	if (!(await clickButtonViaDispatch(page, sourcesButton))) return [];
 	await page.waitForTimeout(300);
