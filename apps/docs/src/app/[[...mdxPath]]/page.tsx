@@ -1,6 +1,8 @@
 import { generateStaticParamsFor, importPage } from "nextra/pages";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Fragment } from "react";
+import { useMDXComponents as getMDXComponents } from "../../../mdx-components";
 
 type PageProps = {
   params: Promise<{ mdxPath?: string[] }>;
@@ -40,6 +42,12 @@ export default async function CatchAllPage({ params }: PageProps): Promise<React
     notFound();
   }
 
-  const { default: MDXContent } = result;
-  return <MDXContent params={{ mdxPath }} />;
+  const { default: MDXContent, toc, metadata, sourceCode } = result;
+  const Wrapper = getMDXComponents({}).wrapper ?? Fragment;
+
+  return (
+    <Wrapper toc={toc} metadata={metadata} sourceCode={sourceCode}>
+      <MDXContent params={{ mdxPath }} />
+    </Wrapper>
+  );
 }
