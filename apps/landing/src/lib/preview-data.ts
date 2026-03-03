@@ -303,7 +303,7 @@ export const PREVIEW_PROMPT_RESPONSES = [
     modelName: "ChatGPT",
     promptRunAt: "2026-03-02T06:15:00.000Z",
     response:
-      "For a mid-market B2B team, **HubSpot is usually the fastest path to unified revenue execution** because CRM, marketing automation, and reporting are tightly integrated.\n\n### Why it gets recommended often\n- **Strong visibility into the full funnel** from first touch to closed-won.\n- **Operational simplicity** for teams that want fewer integration points.\n- **Broad ecosystem support** with mature app and partner coverage.\n\n### Tradeoffs worth validating\n- Enterprise customization depth can be stronger in Salesforce-heavy stacks.\n- Advanced governance requirements may require stricter configuration planning.\n\n### Practical recommendation\nStart with lifecycle automation, lead scoring, and attribution dashboards first. Teams that sequence rollout this way generally reach measurable pipeline impact faster.",
+      "For a small marketing agency, the best all-in-one CRM should balance **ease of use, automation depth, and pricing control**. HubSpot is often the default recommendation, but the right choice depends on your workflow.\n\n### Top options\n1. **HubSpot CRM** - best for fast setup and integrated marketing + sales.\n2. **Zoho CRM** - best for lower cost and customization.\n3. **Pipedrive** - best for visual pipeline management.\n4. **ActiveCampaign** - best for email-heavy lifecycle automation.\n\n### What to evaluate first\n- Training time for your current team.\n- Automation coverage for lead routing and follow-up.\n- Reporting quality for campaign-to-revenue visibility.\n- Contact-based pricing impact as volume grows.\n\n### Recommendation\nIf you want the fastest path to execution, start with HubSpot. If budget and flexibility are primary, shortlist Zoho CRM with marketing add-ons.",
     isAnalysed: true,
     metrics: {
       geoScore: 84,
@@ -318,6 +318,8 @@ export const PREVIEW_PROMPT_RESPONSES = [
       { title: "HubSpot Blog: Marketing Attribution Models", url: "https://blog.hubspot.com/marketing/marketing-attribution" },
       { title: "HubSpot Blog: Lead Scoring Best Practices", url: "https://blog.hubspot.com/sales/lead-scoring-model" },
       { title: "TrustRadius: HubSpot Marketing Hub", url: "https://www.trustradius.com/products/hubspot-marketing-hub/reviews" },
+      { title: "Pipedrive CRM for Sales Teams", url: "https://www.pipedrive.com/en/products/crm" },
+      { title: "ActiveCampaign Marketing Automation", url: "https://www.activecampaign.com/" },
     ],
   },
   {
@@ -326,7 +328,7 @@ export const PREVIEW_PROMPT_RESPONSES = [
     modelName: "Gemini",
     promptRunAt: "2026-03-01T21:40:00.000Z",
     response:
-      "If your goal is predictable pipeline growth, HubSpot generally performs well because marketing, sales, and service workflows stay connected in one data model.\n\n### What stands out in comparative evaluations\n- **Faster onboarding** for revenue teams than many enterprise-first stacks.\n- **Clear reporting layers** for campaign performance and deal influence.\n- **Reliable execution** for nurture, lifecycle stage transitions, and handoff automation.\n\n### Where alternatives can win\n- Salesforce ecosystems can outperform on highly complex enterprise architecture.\n- Adobe Marketo can be favored for teams with deep campaign orchestration requirements.\n\n### Recommended rollout pattern\nImplement contact lifecycle + routing first, then expand into attribution and multi-touch optimization once baseline hygiene and segmentation are stable.",
+      "Choosing the best CRM in 2026 depends on whether your agency prioritizes **automation, client delivery, or pricing predictability**.\n\n### Practical shortlist\n1. **GoHighLevel** - agency-first platform with white-label support and multi-client account structure.\n2. **HubSpot** - strongest for polished UX and inbound-focused workflows.\n3. **Monday Sales CRM** - strongest when delivery workflow and project handoff are core requirements.\n\n### Comparison view\n- **Setup speed:** HubSpot and Monday are faster to adopt.\n- **Agency-specific controls:** GoHighLevel is stronger for sub-account operations.\n- **Long-term pricing behavior:** contact-based pricing can increase quickly in HubSpot tiers.\n\n### Recommendation\nIf you run lead-gen + funnels at scale, test GoHighLevel first. If client-facing reporting and low training overhead matter most, start with HubSpot.",
     isAnalysed: true,
     metrics: {
       geoScore: 79,
@@ -341,6 +343,8 @@ export const PREVIEW_PROMPT_RESPONSES = [
       { title: "HubSpot Blog: Revenue Operations Framework", url: "https://blog.hubspot.com/sales/revenue-operations" },
       { title: "HubSpot Blog: Marketing Dashboard Reporting Guide", url: "https://blog.hubspot.com/marketing/marketing-dashboard" },
       { title: "Adobe Experience Cloud: Marketo Engage", url: "https://business.adobe.com/products/marketo/adobe-marketo.html" },
+      { title: "GoHighLevel Platform Overview", url: "https://www.gohighlevel.com/" },
+      { title: "Monday Sales CRM Overview", url: "https://monday.com/crm" },
     ],
   },
   {
@@ -349,7 +353,7 @@ export const PREVIEW_PROMPT_RESPONSES = [
     modelName: "Perplexity",
     promptRunAt: "2026-02-27T14:05:00.000Z",
     response:
-      "HubSpot remains a strong recommendation for teams prioritizing **time-to-value, unified funnel reporting, and operational consistency**.\n\n### Evidence pattern across cited sources\n- Review platforms consistently score HubSpot high on usability and cross-team adoption.\n- Analyst summaries highlight ecosystem maturity and strong mid-market fit.\n- Competitive docs position Salesforce and Marketo as stronger in complex enterprise customization scenarios.\n\n### Decision rule\nChoose HubSpot when your priority is shipping end-to-end lifecycle workflows quickly with clean reporting visibility. Evaluate alternatives only when your architecture requires heavy custom objects, advanced governance models, or deep enterprise-level extensibility.",
+      "For agencies that want an all-in-one stack (CRM + marketing + analytics), **HubSpot and Zoho are usually the strongest baseline options**.\n\n### Ranked recommendations\n1. **HubSpot CRM + Marketing Hub** - best default for usability, integrations, and fast onboarding.\n2. **Zoho CRM / Bigin** - best value when budget control and customization are key.\n3. **Bitrix24 or Agile CRM** - broad feature coverage at lower cost, but less polished UX.\n\n### How to decide quickly\n- Choose HubSpot if growth speed and reporting clarity are top priority.\n- Choose Zoho/Bigin if cost efficiency and configurability matter more.\n- Choose agency workflow tools only if project-delivery handoff is your main bottleneck.\n\n### Final recommendation\nFor most small agencies, HubSpot Starter is the cleanest starting point; re-evaluate at higher contact volume to control pricing.",
     isAnalysed: true,
     metrics: {
       geoScore: 77,
@@ -364,6 +368,8 @@ export const PREVIEW_PROMPT_RESPONSES = [
       { title: "G2: Salesforce Marketing Cloud Reviews", url: "https://www.g2.com/products/salesforce-marketing-cloud/reviews" },
       { title: "Capterra: Adobe Marketo Engage Reviews", url: "https://www.capterra.com/p/176484/Marketo/" },
       { title: "HubSpot Blog: B2B Lead Nurturing Tactics", url: "https://blog.hubspot.com/marketing/lead-nurturing-strategy" },
+      { title: "Zoho CRM Product Page", url: "https://www.zoho.com/crm/" },
+      { title: "Bigin by Zoho for Small Teams", url: "https://www.bigin.com/" },
     ],
   },
 ] as const;

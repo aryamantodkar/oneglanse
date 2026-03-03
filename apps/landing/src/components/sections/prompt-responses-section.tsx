@@ -5,8 +5,8 @@ export function PromptResponsesSection(): React.JSX.Element {
   return (
     <section className="section-shell py-12 sm:py-14" id="prompt-responses" aria-labelledby="prompt-responses-title">
       <PromptResponsesPreview
-        title="Prompt Responses"
-        description="Collapsed responses with top-line analysis metrics and source evidence across all LLM providers."
+        title="LLM UI Responses, Exactly as Shown"
+        description="Inspect provider-rendered UI answers with linked sources and analysis metrics, exactly as users see them."
         rows={PREVIEW_PROMPT_RESPONSES.map((row) => ({
           id: row.id,
           modelProvider: row.modelProvider,
