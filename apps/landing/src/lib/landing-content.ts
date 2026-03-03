@@ -3,9 +3,12 @@ import {
   Boxes,
   Database,
   Eye,
+  GitBranch,
   Globe,
+  KeyRound,
   Radar,
   SearchCheck,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -84,4 +87,29 @@ export const ARCHITECTURE_NODES = [
     title: "Docker Deployment",
     description: "Compose-based separation for web, agent, data stores, and runtime environment.",
   },
+] as const;
+
+export const STORAGE_KEY = "oneglanse-landing-theme" as const;
+
+export const METHOD_POINTS = [
+  "OneGlanse captures model web UI outputs through logged-out sessions for real user-view results.",
+  "Scraping runs through residential proxies to reduce geo bias and improve coverage stability.",
+  "Claude is excluded from UI scraping and is integrated through the official Claude API only.",
+  "UI answers and API answers can differ in ranking, wording, and citation behavior for the same prompt.",
+  "Most GEO vendors do not disclose collection methods, refresh cadence, or model provenance details.",
+] as const;
+
+export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
+  { text: "Open source repository and audit trail", icon: GitBranch },
+  { text: "Dockerized web, worker, queue, and analytics stack", icon: Boxes },
+  { text: "Data ownership for prompts, responses, and sources", icon: Database },
+  { text: "No provider lock-in", icon: KeyRound },
+  { text: "Reproducible pipeline from run to metric", icon: ShieldCheck },
+];
+
+export const FOOTER_LINKS = [
+  { label: "Docs", href: SITE_URLS.docs },
+  { label: "GitHub", href: SITE_URLS.github },
+  { label: "App", href: SITE_URLS.app },
+  { label: "License", href: SITE_URLS.githubLicense },
 ] as const;

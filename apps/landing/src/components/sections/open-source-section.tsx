@@ -1,15 +1,6 @@
 import { Card } from "@oneglanse/ui";
-import { SITE_URLS } from "@/lib/landing-content";
-import { Boxes, Database, Github, GitBranch, KeyRound, Server, ShieldCheck } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
-  { text: "Open source repository and audit trail", icon: GitBranch },
-  { text: "Dockerized web, worker, queue, and analytics stack", icon: Boxes },
-  { text: "Data ownership for prompts, responses, and sources", icon: Database },
-  { text: "No provider lock-in", icon: KeyRound },
-  { text: "Reproducible pipeline from run to metric", icon: ShieldCheck },
-] as const;
+import { OPEN_SOURCE_POINTS, SITE_URLS } from "@/lib/landing-content";
+import { Github, Server } from "lucide-react";
 
 export function OpenSourceSection(): React.JSX.Element {
   return (

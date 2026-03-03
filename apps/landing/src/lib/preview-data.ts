@@ -1,7 +1,4 @@
-import type {
-  DashboardCompetitorData,
-  DashboardSourceData,
-} from "@oneglanse/ui";
+import type { DashboardCompetitorData } from "@oneglanse/ui";
 
 export const PREVIEW_BRAND = {
   name: "HubSpot",
@@ -78,50 +75,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
   },
 ];
 
-export const PREVIEW_SOURCES: DashboardSourceData[] = [
-  {
-    domain: "g2.com",
-    favicon: null,
-    citationCount: 184,
-    uniqueRecords: new Set(["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"]),
-    models: new Set(["openai", "anthropic", "google", "perplexity"]),
-  },
-  {
-    domain: "capterra.com",
-    favicon: null,
-    citationCount: 161,
-    uniqueRecords: new Set(["r2", "r4", "r5", "r10", "r11", "r12"]),
-    models: new Set(["openai", "anthropic", "google"]),
-  },
-  {
-    domain: "trustradius.com",
-    favicon: null,
-    citationCount: 136,
-    uniqueRecords: new Set(["r3", "r5", "r8", "r13", "r14", "r15"]),
-    models: new Set(["openai", "perplexity", "google-ai-overview"]),
-  },
-  {
-    domain: "forrester.com",
-    favicon: null,
-    citationCount: 118,
-    uniqueRecords: new Set(["r1", "r6", "r7", "r16", "r17"]),
-    models: new Set(["openai", "anthropic", "perplexity"]),
-  },
-  {
-    domain: "gartner.com",
-    favicon: null,
-    citationCount: 101,
-    uniqueRecords: new Set(["r9", "r10", "r18", "r19", "r20"]),
-    models: new Set(["anthropic", "google", "google-ai-overview"]),
-  },
-  {
-    domain: "salesforce.com",
-    favicon: null,
-    citationCount: 96,
-    uniqueRecords: new Set(["r21", "r22", "r23", "r24"]),
-    models: new Set(["openai", "anthropic", "google"]),
-  },
-];
 
 export const PREVIEW_TOTAL_RESPONSES = 428;
 export const PREVIEW_TOTAL_CITATIONS = 952;
@@ -144,22 +97,6 @@ export const PREVIEW_PERCEPTION = {
   ],
 } as const;
 
-export const PREVIEW_ALT_PERCEPTION = {
-  bestKnownFor: "ease of adoption with operational depth",
-  pricingPerception: "mid_range",
-  coreClaims: [
-    "fast launch for campaign teams",
-    "multi-channel orchestration",
-    "clear lifecycle automation",
-    "solid fit for mid-market ops",
-  ],
-  differentiators: [
-    "journey builders",
-    "contact personalization",
-    "native reporting",
-    "audience segmentation",
-  ],
-} as const;
 
 export const PREVIEW_SOURCE_GROUPS = [
   {
@@ -273,11 +210,13 @@ export const PREVIEW_CITATION_ROWS = [
   },
 ] as const;
 
-export const PREVIEW_HERO_METRICS = [
-  { label: "Prompt Runs", value: "18.7K", detail: "last 30 days" },
-  { label: "Models Tracked", value: "6", detail: "normalized outputs" },
-  { label: "Citations Indexed", value: "142K", detail: "deduplicated sources" },
-] as const;
+// Derived from PREVIEW_COMPETITORS[0]: presenceRate=86, recommendationRate=68, sentimentScore=83, avgRank=1.4
+export const PREVIEW_BRAND_METRICS = {
+  presenceRate: 86,
+  recommendationRate: 68,
+  sentimentScore: 83,
+  avgRank: 1.4,
+} as const;
 
 export const PREVIEW_AGGREGATE_STATS = {
   presenceRate: 86,

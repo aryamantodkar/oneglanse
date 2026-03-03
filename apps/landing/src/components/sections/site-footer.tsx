@@ -1,11 +1,4 @@
-import { SITE_URLS } from "@/lib/landing-content";
-
-const FOOTER_LINKS = [
-  { label: "Docs", href: SITE_URLS.docs },
-  { label: "GitHub", href: SITE_URLS.github },
-  { label: "App", href: SITE_URLS.app },
-  { label: "License", href: SITE_URLS.githubLicense },
-] as const;
+import { FOOTER_LINKS } from "@/lib/landing-content";
 
 export function SiteFooter(): React.JSX.Element {
   return (
