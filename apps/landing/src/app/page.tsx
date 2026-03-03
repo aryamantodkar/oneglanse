@@ -1,6 +1,6 @@
 import { AiVisibilitySection } from "@/components/sections/ai-visibility-section";
 import { AiPerceptionSection } from "@/components/sections/ai-perception-section";
-import { FeatureGrid } from "@/components/landing/feature-grid";
+import { FeatureGrid } from "@/components/sections/feature-grid";
 import { DataCollectionSection } from "@/components/sections/data-collection-section";
 import { HeroSection } from "@/components/sections/hero-section";
 import { OpenSourceSection } from "@/components/sections/open-source-section";

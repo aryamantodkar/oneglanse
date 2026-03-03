@@ -1,11 +1,10 @@
 "use client";
 
+import { STORAGE_KEY } from "@/lib/landing-content";
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type ThemeMode = "light" | "dark";
-
-const STORAGE_KEY = "oneglanse-landing-theme";
 
 function applyTheme(theme: ThemeMode): void {
   document.documentElement.classList.toggle("dark", theme === "dark");

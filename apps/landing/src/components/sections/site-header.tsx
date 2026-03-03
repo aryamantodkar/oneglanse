@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/components/landing/theme-toggle";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { SITE_URLS } from "@/lib/landing-content";
 import { ArrowRight, Github, Rocket, Server } from "lucide-react";
 

@@ -6,6 +6,8 @@ import { Footer, Layout, Navbar } from "nextra-theme-docs";
 import { getPageMap } from "nextra/page-map";
 
 const siteUrl = "https://oneglanse.com/docs";
+const GITHUB_URL = "https://github.com/aryamantodkar/oneglanse";
+const APP_URL = "https://app.oneglanse.com";
 
 function ArrowUpRightIcon(): React.JSX.Element {
   return (
@@ -67,11 +69,11 @@ export default async function RootLayout({
           navbar={
             <Navbar logo={<span className="docs-logo">OneGlanse Docs</span>}>
               <div className="docs-nav-actions">
-                <a className="docs-nav-btn docs-nav-btn-secondary" href="https://github.com/aryamantodkar/oneglanse" target="_blank" rel="noreferrer">
+                <a className="docs-nav-btn docs-nav-btn-secondary" href={GITHUB_URL} target="_blank" rel="noreferrer">
                   <GitHubIcon />
                   <span>GitHub</span>
                 </a>
-                <a className="docs-nav-btn docs-nav-btn-primary" href="https://app.oneglanse.com" target="_blank" rel="noreferrer">
+                <a className="docs-nav-btn docs-nav-btn-primary" href={APP_URL} target="_blank" rel="noreferrer">
                   <span>Try App</span>
                   <ArrowUpRightIcon />
                 </a>

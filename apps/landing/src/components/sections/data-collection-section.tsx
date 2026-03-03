@@ -1,13 +1,6 @@
 import { Card } from "@oneglanse/ui";
+import { METHOD_POINTS } from "@/lib/landing-content";
 import { Bot, ExternalLink, Eye, Fingerprint, ShieldCheck, Wifi } from "lucide-react";
-
-const METHOD_POINTS = [
-  "OneGlanse captures model web UI outputs through logged-out sessions for real user-view results.",
-  "Scraping runs through residential proxies to reduce geo bias and improve coverage stability.",
-  "Claude is excluded from UI scraping and is integrated through the official Claude API only.",
-  "UI answers and API answers can differ in ranking, wording, and citation behavior for the same prompt.",
-  "Most GEO vendors do not disclose collection methods, refresh cadence, or model provenance details.",
-] as const;
 
 export function DataCollectionSection(): React.JSX.Element {
   return (

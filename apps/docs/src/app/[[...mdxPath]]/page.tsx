@@ -20,7 +20,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const pagePath = mdxPath?.join("/") ?? "";
   const canonical = pagePath ? `/${pagePath}` : "/";
-  const absoluteUrl = `https://oneglanse.com/docs${canonical}`;
+  const SITE_URL = "https://oneglanse.com/docs";
+  const absoluteUrl = `${SITE_URL}${canonical}`;
 
   return {
     ...result.metadata,
