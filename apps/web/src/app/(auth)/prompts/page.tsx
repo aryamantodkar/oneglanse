@@ -3,7 +3,6 @@
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
-import type { Source } from "@oneglanse/types";
 import {
 	Button,
 	Checkbox,
@@ -27,6 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 	Textarea,
+	SourcesHoverLinks,
 	toast,
 } from "@oneglanse/ui";
 import { PositionMetricCell, SentimentMetricCell } from "@oneglanse/ui";
@@ -34,10 +34,7 @@ import {
 	filterAnalysisRecords,
 	formatDate,
 	formatMarkdown,
-	getDomain,
-	getFaviconUrls,
 	getModelFavicon,
-	getUniqueLinks,
 	modelSelectors,
 } from "@oneglanse/utils";
 import {
@@ -1160,10 +1157,7 @@ export default function Prompts(){
 															{isExpanded ? "Show less" : "View full response"}
 														</button>
 
-														<SourcesCard
-															key={record.id}
-															sources={record.sources}
-														/>
+														<SourcesHoverLinks items={record.sources} />
 													</div>
 												);
 											},
@@ -1207,82 +1201,6 @@ export default function Prompts(){
 						to analyze model responses and brand metrics.
 					</p>
 				</div>
-			)}
-		</div>
-	);
-}
-
-function SourcesCard({
-	sources,
-}: {
-	sources: Source[];
-}) {
-	const MAX_VISIBLE = 5;
-	const [showAllLinks, setShowAllLinks] = useState(false);
-
-	const linksToShow = useMemo(() => {
-		return getUniqueLinks(sources);
-	}, [sources]);
-
-	const visibleLinks = showAllLinks
-		? linksToShow
-		: linksToShow.slice(0, MAX_VISIBLE);
-
-	const remainingCount = linksToShow.length - MAX_VISIBLE;
-
-	if (linksToShow.length === 0) return null;
-
-	return (
-		<div
-			className="group mt-3 flex flex-wrap gap-2"
-			onClick={(e) => e.stopPropagation()}
-		>
-			{visibleLinks.map((item, i) => {
-				const faviconUrls = getFaviconUrls(item.url, "");
-				const domain = getDomain(item.url);
-
-				return (
-					<a
-						key={`${item.url}-${i}`}
-						href={item.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						onClick={(e) => e.stopPropagation()}
-						title={item.title}
-						className="relative inline-flex h-[36px] items-start gap-2 overflow-hidden rounded-md border border-gray-200/60 bg-gray-50/50 px-2.5 py-2 text-[11px] text-gray-600 transition-all duration-200 ease-out group-hover:h-[52px] dark:border-gray-800/60 dark:bg-gray-900/50 dark:text-gray-400 "
-					>
-						{/* Icon column */}
-						{faviconUrls[0] && (
-							<img
-								src={faviconUrls[0]}
-								alt=""
-								className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded-sm opacity-75 transition-opacity group-hover:opacity-100 "
-							/>
-						)}
-
-						<div className="flex flex-col gap-0.5 overflow-hidden">
-							<span className="line-clamp-2 leading-snug">{item.title}</span>
-
-							{domain && (
-								<span className="translate-y-1 truncate text-[10px] text-gray-400 opacity-0 transition-all delay-75 duration-200 ease-out group-hover:translate-y-0 group-hover:opacity-100 ">
-									{domain}
-								</span>
-							)}
-						</div>
-					</a>
-				);
-			})}
-
-			{!showAllLinks && remainingCount > 0 && (
-				<button
-					onClick={(e) => {
-						e.stopPropagation();
-						setShowAllLinks(true);
-					}}
-					className="inline-flex items-center rounded-md border border-gray-300/70 border-dashed px-2.5 py-1.5 text-[11px] text-gray-500 transition hover:border-gray-400 hover:text-gray-700 dark:border-gray-700/70 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200 "
-				>
-					+{remainingCount} more
-				</button>
 			)}
 		</div>
 	);

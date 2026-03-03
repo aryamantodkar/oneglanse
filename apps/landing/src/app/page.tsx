@@ -7,6 +7,7 @@ import { PromptResponsesSection } from "@/components/sections/prompt-responses-s
 import { SiteFooter } from "@/components/sections/site-footer";
 import { SiteHeader } from "@/components/sections/site-header";
 import { SourceIntelligenceSection } from "@/components/sections/source-intelligence-section";
+import { SupportedProvidersSection } from "@/components/sections/supported-providers-section";
 import { VisibilityScoreboardSection } from "@/components/sections/visibility-scoreboard-section";
 
 export default function LandingPage(): React.JSX.Element {
@@ -18,6 +19,7 @@ export default function LandingPage(): React.JSX.Element {
       <PromptResponsesSection />
       <AiVisibilitySection />
       <SourceIntelligenceSection />
+      <SupportedProvidersSection />
       <FeatureGrid />
       <OpenSourceSection />
       <DataCollectionSection />

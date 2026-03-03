@@ -7,3 +7,4 @@ export * from "./competitive-landscape.js";
 export * from "./top-sources.js";
 export * from "./sources-intelligence-panel.js";
 export * from "./prompt-responses-preview.js";
+export * from "./sources-hover-links.js";

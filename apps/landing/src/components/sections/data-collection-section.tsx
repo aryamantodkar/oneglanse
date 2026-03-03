@@ -26,12 +26,12 @@ export function DataCollectionSection(): React.JSX.Element {
               key={point}
               className="rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:text-gray-100"
             >
-              <span className="inline-flex items-start gap-2.5">
-                {index === 0 ? <Eye className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 1 ? <Wifi className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 2 ? <Bot className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 3 ? <Fingerprint className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 4 ? <ShieldCheck className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" /> : null}
+              <span className="inline-flex items-center gap-2.5">
+                {index === 0 ? <Eye className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+                {index === 1 ? <Wifi className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+                {index === 2 ? <Bot className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+                {index === 3 ? <Fingerprint className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+                {index === 4 ? <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
                 <span className="leading-6">{point}</span>
               </span>
             </li>
