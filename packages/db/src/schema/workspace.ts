@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-	boolean,
 	index,
 	pgTable,
 	text,

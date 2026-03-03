@@ -1,7 +1,8 @@
-import { redis, submitAgentJobGroup } from "@oneglanse/services";
+import { redis } from "@oneglanse/services";
 import { z } from "zod";
 import { createRateLimiter } from "../../middleware/rateLimit";
 import { authorizedWorkspaceProcedure } from "../../procedures";
+import { submitAgentRun } from "../_shared/submitAgentRun";
 import { createTRPCRouter } from "../../trpc";
 
 export const agentRouter = createTRPCRouter({
@@ -13,13 +14,7 @@ export const agentRouter = createTRPCRouter({
 			workspaceId,
 		} = ctx;
 
-		const result = await submitAgentJobGroup({ workspaceId, userId });
-
-		if (result.status === "empty") {
-			return { jobId: null as string | null, status: "empty" as const };
-		}
-
-		return { jobId: result.jobGroupId, status: "queued" as const };
+		return submitAgentRun({ workspaceId, userId });
 	}),
 
 	status: authorizedWorkspaceProcedure

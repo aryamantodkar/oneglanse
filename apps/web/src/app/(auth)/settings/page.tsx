@@ -1,6 +1,7 @@
 "use client";
 
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { buildAnalysisCsvRow } from "@/lib/export/analysisCsvRow";
 import { api } from "@/trpc/react";
 import {
 	PROVIDER_LIST,
@@ -29,10 +30,8 @@ import {
 	getProviderDisplayName,
 	getUniqueModelProviders,
 	joinCitedTexts,
-	joinSourceUrls,
 } from "@oneglanse/utils";
 import {
-	AlertTriangle,
 	CheckCircle2,
 	Download,
 	Loader2,
@@ -262,19 +261,8 @@ export default function SettingsPage(){
 				created_at: prompt.created_at,
 			})),
 			...analysisData.map((record: AnalysisRecord) => ({
-				section: "analysis_metrics",
 				prompt_id: record.prompt_id,
-				prompt: record.prompt,
-				model: record.model_provider,
-				prompt_run_at: record.prompt_run_at,
-				geo_score: record.brand_analysis?.geoScore?.overall ?? "",
-				sentiment: record.brand_analysis?.sentiment?.score ?? "",
-				visibility: record.brand_analysis?.presence?.visibility ?? "",
-				position: record.brand_analysis?.position?.rankPosition ?? "",
-				recommendation: record.brand_analysis?.recommendation?.type ?? "",
-				citations: record.sources?.length ?? 0,
-				source_urls: joinSourceUrls(record.sources ?? []),
-				cited_texts: joinCitedTexts(record.sources ?? []),
+				...buildAnalysisCsvRow(record, "analysis_metrics"),
 			})),
 			...domainStats.map((domain: DomainStats) => ({
 				section: "source_domain_performance",

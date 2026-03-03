@@ -1,7 +1,6 @@
 import { clickhouse, pool } from "@oneglanse/db";
 import { DatabaseError, toErrorMessage } from "@oneglanse/errors";
 import type {
-	DomainStats,
 	FetchPromptResponsesForWorkspaceArgs,
 	FetchPromptSourcesForWorkspaceArgs,
 	FetchPromptSourcesForWorkspaceResult,

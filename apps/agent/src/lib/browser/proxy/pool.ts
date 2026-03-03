@@ -9,7 +9,6 @@ import {
 	normalizeProxy,
 } from "./scoring.js";
 import { fetchProxySnapshot } from "./snapshot.js";
-import { NotFoundError } from "@oneglanse/errors";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 

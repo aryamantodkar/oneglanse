@@ -39,23 +39,16 @@ export const promptRouter = createTRPCRouter({
 		}),
 
 	fetchPromptSources: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		const {
-			user: { id: userId },
-			workspaceId,
-		} = ctx;
+		const { workspaceId } = ctx;
 
 		return fetchPromptSourcesForWorkspace({ workspaceId });
 	}),
 
 	fetchUserPrompts: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		const {
-			user: { id: userId },
-			workspaceId,
-		} = ctx;
+		const { workspaceId } = ctx;
 
 		return fetchUserPromptsForWorkspace({
-			workspaceId: workspaceId,
-			userId: userId,
+			workspaceId,
 		});
 	}),
 });

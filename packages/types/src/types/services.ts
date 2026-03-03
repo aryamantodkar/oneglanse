@@ -107,5 +107,4 @@ export interface FetchPromptSourcesForWorkspaceResult {
 
 export interface FetchUserPromptsForWorkspaceArgs {
 	workspaceId: string;
-	userId: string;
 }

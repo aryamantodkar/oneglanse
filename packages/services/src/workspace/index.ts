@@ -15,7 +15,7 @@ import type {
 	WorkspaceJoinInfo,
 	WorkspaceMemberWithUser,
 } from "@oneglanse/types";
-import { ALL_PROVIDERS_JSON, formatWorkspaceJoinCode, newId, parseWorkspaceJoinCode } from "@oneglanse/utils";
+import { ALL_PROVIDERS_JSON, newId, parseWorkspaceJoinCode } from "@oneglanse/utils";
 import { and, eq, isNull, count } from "drizzle-orm";
 import { resetWorkspaceAnalysis } from "../analysis/analysis.js";
 import { scheduleCronForPrompts, unscheduleCronForPrompts } from "../prompt/index.js";
