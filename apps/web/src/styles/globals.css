@@ -162,7 +162,8 @@
 
 @layer components {
 	.web-page-wide {
-		@apply ui-page-enter min-h-svh;
+		@apply min-h-svh;
+		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 	}
 
 	.web-page-wide-inner {
@@ -170,10 +171,24 @@
 	}
 
 	.web-page-panel {
-		@apply ui-page-enter ui-stagger mx-auto w-full space-y-8 py-6;
+		@apply mx-auto w-full space-y-8 py-6;
+		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 	}
 
+	.web-page-panel > * {
+		opacity: 0;
+		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+	}
+
+	.web-page-panel > *:nth-child(1) { animation-delay: 30ms; }
+	.web-page-panel > *:nth-child(2) { animation-delay: 80ms; }
+	.web-page-panel > *:nth-child(3) { animation-delay: 130ms; }
+	.web-page-panel > *:nth-child(4) { animation-delay: 180ms; }
+	.web-page-panel > *:nth-child(5) { animation-delay: 230ms; }
+	.web-page-panel > *:nth-child(6) { animation-delay: 280ms; }
+
 	.web-centered-page {
-		@apply ui-page-enter flex min-h-svh items-center justify-center bg-background p-4;
+		@apply flex min-h-svh items-center justify-center bg-background p-4;
+		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 	}
 }
