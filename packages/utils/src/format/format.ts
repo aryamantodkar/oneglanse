@@ -1,3 +1,5 @@
+import { removeUrlParams } from "../url/removeUrlParams.js";
+
 export function formatDateToClickHouse(dt: Date): string {
 	// ClickHouse DateTime expects format: YYYY-MM-DD HH:MM:SS (no milliseconds, no timezone)
 	const year = dt.getUTCFullYear();
@@ -10,14 +12,4 @@ export function formatDateToClickHouse(dt: Date): string {
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-export const getCleanUrl = (url: string) => {
-	try {
-		const u = new URL(url);
-		u.searchParams.delete("utm_source"); // remove utm_source
-		u.searchParams.delete("utm_medium"); // optional: remove other tracking params
-		u.searchParams.delete("utm_campaign");
-		return u.toString();
-	} catch {
-		return url; // return as-is if invalid
-	}
-};
+export const getCleanUrl = removeUrlParams;

@@ -123,6 +123,7 @@ export function SourcesIntelligencePanel({
   domainRows,
   citationDomains,
   enableDomainSorting = false,
+  containerVariant = "card",
   emptyTitle = "No source data for this filter",
   emptySubtitle = "Try another model filter to inspect source patterns.",
 }: {
@@ -130,6 +131,7 @@ export function SourcesIntelligencePanel({
   domainRows: SourcePanelDomainRow[];
   citationDomains: SourcePanelCitationDomain[];
   enableDomainSorting?: boolean;
+  containerVariant?: "card" | "plain";
   emptyTitle?: string;
   emptySubtitle?: string;
 }): React.JSX.Element {
@@ -153,8 +155,8 @@ export function SourcesIntelligencePanel({
     return rows;
   }, [domainRows, enableDomainSorting, sortColumn, sortDirection]);
 
-  return (
-    <Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
+  const panelBody = (
+    <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={Globe2}
@@ -471,6 +473,16 @@ export function SourcesIntelligencePanel({
           </Table>
         </div>
       )}
+    </>
+  );
+
+  if (containerVariant === "plain") {
+    return panelBody;
+  }
+
+  return (
+    <Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
+      {panelBody}
     </Card>
   );
 }
