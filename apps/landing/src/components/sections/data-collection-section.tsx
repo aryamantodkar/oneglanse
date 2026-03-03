@@ -11,8 +11,8 @@ const METHOD_POINTS = [
 
 export function DataCollectionSection(): React.JSX.Element {
   return (
-    <section className="section-shell py-12 sm:py-14" id="data-methodology" aria-labelledby="data-methodology-title">
-      <Card className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-black">
+    <section className="section-shell py-10 sm:py-12" id="data-methodology" aria-labelledby="data-methodology-title">
+      <Card className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-black">
         <h2 id="data-methodology-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Data collection methodology
         </h2>
@@ -20,7 +20,7 @@ export function DataCollectionSection(): React.JSX.Element {
           We disclose exactly how AI visibility data is collected and why UI-first monitoring matters.
         </p>
 
-        <ul className="mt-5 grid gap-2.5">
+        <ul className="mt-4 grid gap-2">
           {METHOD_POINTS.map((point, index) => (
             <li
               key={point}
@@ -38,7 +38,7 @@ export function DataCollectionSection(): React.JSX.Element {
           ))}
         </ul>
 
-        <p className="mt-5 text-sm leading-6 text-muted-foreground">
+        <p className="mt-4 text-sm leading-6 text-muted-foreground">
           You can read more here on how UI responses differ from API responses:{" "}
           <a
             href="https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/"

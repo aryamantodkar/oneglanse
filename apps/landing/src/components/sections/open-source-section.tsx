@@ -19,15 +19,15 @@ export function OpenSourceSection(): React.JSX.Element {
       aria-labelledby="open-source-title"
     >
       <Card className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-black">
-        <div className="grid items-start gap-7 lg:grid-cols-[1.1fr_1fr]">
-          <div>
+        <div className="grid items-stretch gap-7 lg:grid-cols-[1.1fr_1fr]">
+          <div className="flex flex-col">
             <h2 id="open-source-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Open by design. Deploy on your terms.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
               Self-host the full stack and keep full control over data, runtime, and observability.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-auto flex flex-wrap gap-3 pt-6">
               <a
                 href={SITE_URLS.github}
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium dark:border-gray-800"

@@ -9,6 +9,14 @@ export function VisibilityScoreboardSection(): React.JSX.Element {
       id="visibility-scoreboard"
       aria-labelledby="visibility-scoreboard-title"
     >
+      <div className="mb-6 sm:mb-8">
+        <h2 id="visibility-scoreboard-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Visibility Scoreboard
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
+          See how your brand stacks up on visibility, mentions, and sentiment.
+        </p>
+      </div>
       <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
         <Table>
           <TableHeader>
