@@ -2,11 +2,12 @@
 
 import { getFaviconUrls } from "@oneglanse/utils";
 import { Users } from "lucide-react";
-import { useMemo, type JSX } from "react";
+import { useMemo, useState, type JSX } from "react";
 import { Card } from "../card.js";
 import { SentimentMetricCell } from "../cell.js";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
 import { DashboardEmptyState } from "./empty-state.js";
+import { SortableHeaderButton, type SortDirection } from "./sortable-header-button.js";
 import type { DashboardCompetitorData } from "./types.js";
 
 function getVisibility(row: DashboardCompetitorData): number {
@@ -24,11 +25,43 @@ function compareRows(
 	return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
+type SortColumn = "visibility" | "mentions" | "sentiment";
+
+function compareByColumn(
+	a: DashboardCompetitorData,
+	b: DashboardCompetitorData,
+	column: SortColumn,
+	direction: SortDirection,
+): number {
+	const factor = direction === "asc" ? 1 : -1;
+	let diff = 0;
+
+	if (column === "visibility") {
+		diff = getVisibility(a) - getVisibility(b);
+	}
+
+	if (column === "mentions") {
+		diff = a.appearances - b.appearances;
+	}
+
+	if (column === "sentiment") {
+		diff = a.avgSentiment - b.avgSentiment;
+	}
+
+	if (diff !== 0) return diff * factor;
+
+	return compareRows(a, b);
+}
+
 function displayCompetitors(
 	competitors: DashboardCompetitorData[],
+	sortColumn: SortColumn,
+	sortDirection: SortDirection,
 ): DashboardCompetitorData[] {
 	const MAX_VISIBLE_ROWS = 8;
-	const sorted = [...competitors].sort(compareRows);
+	const sorted = [...competitors].sort((a, b) =>
+		compareByColumn(a, b, sortColumn, sortDirection),
+	);
 	const visible = sorted.slice(0, MAX_VISIBLE_ROWS);
 	const hasBrand = visible.some((row) => row.isBrand);
 
@@ -47,7 +80,22 @@ export function CompetitiveLandscape({
 }: {
 	competitors: DashboardCompetitorData[];
 }): JSX.Element {
-	const rows = useMemo(() => displayCompetitors(competitors), [competitors]);
+	const [sortColumn, setSortColumn] = useState<SortColumn>("visibility");
+	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+	const rows = useMemo(
+		() => displayCompetitors(competitors, sortColumn, sortDirection),
+		[competitors, sortColumn, sortDirection],
+	);
+
+	const onSort = (column: SortColumn) => {
+		if (sortColumn === column) {
+			setSortDirection(sortDirection === "desc" ? "asc" : "desc");
+			return;
+		}
+		setSortColumn(column);
+		setSortDirection("desc");
+	};
 
 	return (
 		<Card className="flex h-full min-h-[460px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
@@ -75,13 +123,31 @@ export function CompetitiveLandscape({
 									Competitor
 								</TableHead>
 								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									Visibility
+									<SortableHeaderButton
+										label="Visibility"
+										isActive={sortColumn === "visibility"}
+										direction={sortDirection}
+										onClick={() => onSort("visibility")}
+										className="ml-auto"
+									/>
 								</TableHead>
 								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									Mentions
+									<SortableHeaderButton
+										label="Mentions"
+										isActive={sortColumn === "mentions"}
+										direction={sortDirection}
+										onClick={() => onSort("mentions")}
+										className="ml-auto"
+									/>
 								</TableHead>
 								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									Sentiment
+									<SortableHeaderButton
+										label="Sentiment"
+										isActive={sortColumn === "sentiment"}
+										direction={sortDirection}
+										onClick={() => onSort("sentiment")}
+										className="ml-auto"
+									/>
 								</TableHead>
 							</TableRow>
 						</TableHeader>
