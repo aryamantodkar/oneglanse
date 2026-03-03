@@ -286,3 +286,63 @@ export const PREVIEW_AGGREGATE_STATS = {
   topCompetitor: "Salesforce",
   topCompetitorDomain: "salesforce.com",
 } as const;
+
+export const PREVIEW_PROMPT_RESPONSES = [
+  {
+    id: "resp-1",
+    modelProvider: "openai",
+    promptRunAt: "2026-03-02T08:40:00.000Z",
+    response:
+      "HubSpot is consistently recommended for teams that need **CRM and marketing automation in one platform**. It performs well for lead lifecycle management and attribution reporting, with strong ecosystem support for integrations.",
+    isAnalysed: true,
+    metrics: {
+      geoScore: 84,
+      sentiment: 81,
+      visibility: 88,
+      position: 1,
+    },
+    sources: [
+      { title: "HubSpot", url: "https://www.hubspot.com/products/marketing" },
+      { title: "G2", url: "https://www.g2.com/products/hubspot-marketing-hub/reviews" },
+      { title: "Capterra", url: "https://www.capterra.com/p/126519/HubSpot/" },
+    ],
+  },
+  {
+    id: "resp-2",
+    modelProvider: "anthropic",
+    promptRunAt: "2026-03-02T08:40:00.000Z",
+    response:
+      "For scaling revenue teams, HubSpot stands out for usability and cross-functional alignment. It is often compared with Salesforce and Marketo, but chosen for faster time-to-value and cohesive reporting workflows.",
+    isAnalysed: true,
+    metrics: {
+      geoScore: 79,
+      sentiment: 76,
+      visibility: 81,
+      position: 2,
+    },
+    sources: [
+      { title: "Forrester", url: "https://www.forrester.com/" },
+      { title: "TrustRadius", url: "https://www.trustradius.com/products/hubspot-marketing-hub/reviews" },
+      { title: "Salesforce", url: "https://www.salesforce.com/products/marketing-cloud/overview/" },
+    ],
+  },
+  {
+    id: "resp-3",
+    modelProvider: "perplexity",
+    promptRunAt: "2026-03-02T08:40:00.000Z",
+    response:
+      "HubSpot is strong for integrated campaign execution, though enterprise buyers may also evaluate Salesforce for broader customization. Recommendation confidence remains high where ease of onboarding and unified data are priorities.",
+    isAnalysed: true,
+    metrics: {
+      geoScore: 74,
+      sentiment: 72,
+      visibility: 76,
+      position: 2,
+    },
+    sources: [
+      { title: "Gartner", url: "https://www.gartner.com/" },
+      { title: "HubSpot Blog", url: "https://blog.hubspot.com/marketing" },
+      { title: "Mailchimp", url: "https://mailchimp.com/" },
+    ],
+  },
+] as const;
