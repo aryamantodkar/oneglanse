@@ -3,7 +3,7 @@ services:
   # Agent Worker
   # ----------------------------
   agent-worker:
-    image: ghcr.io/aryamantodkar/oneglanse-agent:latest
+    image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-agent:latest
     pull_policy: always
     container_name: oneglanse-agent-worker
     restart: unless-stopped
@@ -67,7 +67,7 @@ services:
   # PostgreSQL (OFFICIAL IMAGE)
   # ----------------------------
   db:
-    image: ghcr.io/aryamantodkar/oneglanse-postgres:latest
+    image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-postgres:latest
     container_name: postgres_db
     restart: always
     env_file: .env
@@ -126,7 +126,7 @@ services:
   # Web App (Next.js / UI)
   # ----------------------------
   web:
-    image: ghcr.io/aryamantodkar/oneglanse-web:latest
+    image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-web:latest
     pull_policy: always
     container_name: oneglanse-web
     restart: unless-stopped
@@ -162,7 +162,7 @@ services:
   # Landing App
   # ----------------------------
   landing:
-    image: ghcr.io/aryamantodkar/oneglanse-landing:latest
+    image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-landing:latest
     pull_policy: always
     container_name: oneglanse-landing
     restart: unless-stopped
@@ -186,7 +186,7 @@ services:
   # Docs App
   # ----------------------------
   docs:
-    image: ghcr.io/aryamantodkar/oneglanse-docs:latest
+    image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-docs:latest
     pull_policy: always
     container_name: oneglanse-docs
     restart: unless-stopped
@@ -210,7 +210,7 @@ services:
   # Database Migrations (ONE-SHOT)
   # ----------------------------
   migrate:
-    image: ghcr.io/aryamantodkar/oneglanse-web:latest
+    image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-web:latest
     pull_policy: always
     container_name: oneglanse-migrate
     env_file: .env

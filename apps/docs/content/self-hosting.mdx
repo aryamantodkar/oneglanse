@@ -1,30 +1,38 @@
 ---
 title: Self Hosting
-description: Deploy OneGlanse in your own infrastructure with isolated services and full data ownership.
+description: Run the full stack in your own infrastructure with isolated networking and deterministic service dependencies.
 ---
 
 # Self Hosting
 
-OneGlanse is designed to run in your infrastructure boundary.
+OneGlanse is built for private infrastructure and full data ownership.
 
-## Core Services
+## Service Topology
 
-- `web`: dashboard and API routes
-- `agent`: provider workers for prompt execution
-- `redis`: queue backbone
-- `clickhouse`: analytics storage
-- `postgres`: transactional workspace/auth data
+- `landing` (Next.js): public marketing site on `127.0.0.1:3000`
+- `web` (Next.js): app + API on `127.0.0.1:3001`
+- `docs` (Next.js): documentation on `127.0.0.1:3002`
+- `agent-worker`: async provider execution worker
+- `redis`: queue and coordination backend
+- `db` (Postgres): auth/workspace/transactional data
+- `clickhouse`: analytics and reporting data
+- `migrate`: one-shot schema migration job
 
-## Deployment Model
+## Startup Dependencies
 
-1. Deploy data stores first (`postgres`, `redis`, `clickhouse`)
-2. Deploy `web` and validate API health
-3. Deploy `agent` and verify queue consumption
-4. Configure provider credentials and run smoke prompts
+- `agent-worker` depends on healthy `redis`
+- `web` depends on healthy `db`, `redis`, `clickhouse`, plus successful `migrate`
+- `migrate` depends on healthy `db`
+
+## Networking Model
+
+- Public ingress: Nginx only (`80/443`)
+- App containers are loopback-bound (`127.0.0.1`) and not internet-exposed
+- Data services are internal-only Docker networks
 
 ## Security Baseline
 
-- Rotate secrets with environment-injected values
-- Restrict worker egress through controlled proxies
-- Run all internal traffic over private networking
-- Enable backups for Postgres and ClickHouse
+- Use strong unique values for `BETTER_AUTH_SECRET`, `INTERNAL_CRON_SECRET`, and `REDIS_PASSWORD`.
+- Restrict SSH and enforce key-based authentication.
+- Keep egress controls for agent proxy traffic where required.
+- Back up `db_data`, `clickhouse_data`, and `redis_data` volumes.
