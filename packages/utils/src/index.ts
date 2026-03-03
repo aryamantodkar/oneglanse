@@ -8,6 +8,7 @@ export * from "./agent/index.js";
 export * from "./web/index.js";
 export * from "./analysis/index.js";
 export * from "./async/index.js";
+export * from "./export/index.js";
 export * from "./logger.js";
 export * from "./workspace/index.js";
 export * from "./sources/index.js";

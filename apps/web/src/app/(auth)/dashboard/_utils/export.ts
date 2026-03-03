@@ -1,5 +1,5 @@
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import { buildAnalysisCsvRow } from "@/lib/export/analysisCsvRow";
+import { buildAnalysisCsvRow } from "@oneglanse/utils";
 import type { DashboardMetrics } from "./types";
 
 export function exportAnalysisJson(args: {

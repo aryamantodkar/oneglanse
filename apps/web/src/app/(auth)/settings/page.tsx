@@ -1,13 +1,13 @@
 "use client";
 
+import { authClient } from "@/lib/auth/auth-client";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import { buildAnalysisCsvRow } from "@/lib/export/analysisCsvRow";
 import { api } from "@/trpc/react";
 import {
-	PROVIDER_LIST,
 	type AnalysisRecord,
 	type DomainStats,
 	type GroupedSource,
+	PROVIDER_LIST,
 	type Provider,
 	type Source,
 	type SourceExcerpt,
@@ -26,6 +26,7 @@ import {
 } from "@oneglanse/ui";
 import {
 	PROVIDER_DISPLAY,
+	buildAnalysisCsvRow,
 	getModelFavicon,
 	getProviderDisplayName,
 	getUniqueModelProviders,
@@ -39,12 +40,11 @@ import {
 	Settings,
 	X,
 } from "lucide-react";
-import { authClient } from "@/lib/auth/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useLayoutUserEmail } from "../workspace-context";
 
-export default function SettingsPage(){
+export default function SettingsPage() {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 	const router = useRouter();
@@ -156,7 +156,9 @@ export default function SettingsPage(){
 			router.push("/login");
 		} catch (err) {
 			console.error(err);
-			toast.error(err instanceof Error ? err.message : "Failed to delete account.");
+			toast.error(
+				err instanceof Error ? err.message : "Failed to delete account.",
+			);
 		} finally {
 			setIsDeletingAccount(false);
 		}
@@ -326,19 +328,19 @@ export default function SettingsPage(){
 		<div className="ui-page-enter ui-stagger mx-auto max-w-4xl space-y-8 py-6">
 			{/* Page Header */}
 			<div className="mb-6 flex items-center gap-2">
-                <Settings className="h-6 w-6 shrink-0 text-gray-500" />
+				<Settings className="h-6 w-6 shrink-0 text-gray-500" />
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
 					Settings
 				</h1>
 			</div>
 
-            <section>
-                <div className="mb-4 flex items-center gap-2">
+			<section>
+				<div className="mb-4 flex items-center gap-2">
 					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Export Data
+						Export Data
 					</h2>
 				</div>
-                <div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+				<div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div>
 							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -381,7 +383,7 @@ export default function SettingsPage(){
 						</div>
 					</div>
 				</div>
-            </section>
+			</section>
 
 			{/* Provider Settings */}
 			<section>
@@ -555,7 +557,8 @@ export default function SettingsPage(){
 								Delete Account
 							</p>
 							<p className="mt-1 text-xs text-gray-500">
-								Permanently delete your account, all your workspaces, and all associated data. This cannot be undone.
+								Permanently delete your account, all your workspaces, and all
+								associated data. This cannot be undone.
 							</p>
 						</div>
 						<Button
@@ -580,18 +583,25 @@ export default function SettingsPage(){
 							Delete Account
 						</DialogTitle>
 						<DialogDescription>
-							This action is permanent and cannot be undone. All your workspaces, prompts, and data will be permanently deleted.
+							This action is permanent and cannot be undone. All your
+							workspaces, prompts, and data will be permanently deleted.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-2">
 						<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/60 dark:bg-amber-950/20">
 							<p className="text-xs text-amber-800 dark:text-amber-300">
-								If you are the sole owner of any organization, that organization and all its workspaces will be permanently deleted along with your account.
+								If you are the sole owner of any organization, that organization
+								and all its workspaces will be permanently deleted along with
+								your account.
 							</p>
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="delete-confirm-email">
-								Type your email <span className="font-mono text-xs text-gray-500">({userEmail})</span> to confirm
+								Type your email{" "}
+								<span className="font-mono text-xs text-gray-500">
+									({userEmail})
+								</span>{" "}
+								to confirm
 							</Label>
 							<Input
 								id="delete-confirm-email"
@@ -617,7 +627,8 @@ export default function SettingsPage(){
 							onClick={handleDeleteAccount}
 							disabled={
 								isDeletingAccount ||
-								deleteConfirmEmail.trim().toLowerCase() !== userEmail.toLowerCase()
+								deleteConfirmEmail.trim().toLowerCase() !==
+									userEmail.toLowerCase()
 							}
 						>
 							{isDeletingAccount ? (
