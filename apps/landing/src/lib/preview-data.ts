@@ -287,11 +287,21 @@ export const PREVIEW_AGGREGATE_STATS = {
   topCompetitorDomain: "salesforce.com",
 } as const;
 
+export const PREVIEW_COMPETITOR_PROVIDERS: Record<string, string[]> = {
+  HubSpot: ["openai", "anthropic", "perplexity", "google"],
+  Salesforce: ["openai", "anthropic", "google"],
+  "Adobe Marketo": ["openai", "perplexity", "google-ai-overview"],
+  Mailchimp: ["openai", "anthropic", "perplexity"],
+  ActiveCampaign: ["openai", "google", "perplexity"],
+  Pardot: ["anthropic", "google", "google-ai-overview"],
+} as const;
+
 export const PREVIEW_PROMPT_RESPONSES = [
   {
     id: "resp-1",
     modelProvider: "openai",
-    promptRunAt: "2026-03-02T08:40:00.000Z",
+    modelName: "ChatGPT",
+    promptRunAt: "2026-03-02T06:15:00.000Z",
     response:
       "HubSpot is consistently recommended for teams that need **CRM and marketing automation in one platform**. It performs well for lead lifecycle management and attribution reporting, with strong ecosystem support for integrations.",
     isAnalysed: true,
@@ -309,8 +319,9 @@ export const PREVIEW_PROMPT_RESPONSES = [
   },
   {
     id: "resp-2",
-    modelProvider: "anthropic",
-    promptRunAt: "2026-03-02T08:40:00.000Z",
+    modelProvider: "google",
+    modelName: "Gemini",
+    promptRunAt: "2026-03-01T21:40:00.000Z",
     response:
       "For scaling revenue teams, HubSpot stands out for usability and cross-functional alignment. It is often compared with Salesforce and Marketo, but chosen for faster time-to-value and cohesive reporting workflows.",
     isAnalysed: true,
@@ -329,7 +340,8 @@ export const PREVIEW_PROMPT_RESPONSES = [
   {
     id: "resp-3",
     modelProvider: "perplexity",
-    promptRunAt: "2026-03-02T08:40:00.000Z",
+    modelName: "Perplexity",
+    promptRunAt: "2026-02-27T14:05:00.000Z",
     response:
       "HubSpot is strong for integrated campaign execution, though enterprise buyers may also evaluate Salesforce for broader customization. Recommendation confidence remains high where ease of onboarding and unified data are priorities.",
     isAnalysed: true,

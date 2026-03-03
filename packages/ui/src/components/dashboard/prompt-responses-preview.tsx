@@ -1,9 +1,10 @@
 "use client";
 
-import { formatDate, formatMarkdown, getFaviconUrls, getModelFavicon } from "@oneglanse/utils";
+import { formatDate, formatMarkdown, getModelFavicon, modelSelectors } from "@oneglanse/utils";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { PositionMetricCell, SentimentMetricCell } from "../cell.js";
+import { SourcesHoverLinks } from "./sources-hover-links.js";
 
 export type PromptResponsePreviewSource = {
   title: string;
@@ -13,6 +14,7 @@ export type PromptResponsePreviewSource = {
 export type PromptResponsePreviewRow = {
   id: string;
   modelProvider: string;
+  modelName?: string;
   promptRunAt: string;
   response: string;
   isAnalysed: boolean;
@@ -25,6 +27,15 @@ export type PromptResponsePreviewRow = {
   sources: PromptResponsePreviewSource[];
 };
 
+function getProviderName(row: PromptResponsePreviewRow): string {
+  if (row.modelName) return row.modelName;
+  if (row.modelProvider === "openai") return "ChatGPT";
+  if (row.modelProvider === "google") return "Gemini";
+  if (row.modelProvider === "perplexity") return "Perplexity";
+
+  return modelSelectors.find((provider) => provider.value === row.modelProvider)?.label ?? row.modelProvider;
+}
+
 export function PromptResponsesPreview({
   title,
   description,
@@ -35,6 +46,7 @@ export function PromptResponsesPreview({
   rows: PromptResponsePreviewRow[];
 }): React.JSX.Element {
   const [expandedResponses, setExpandedResponses] = useState<Set<number>>(new Set());
+
   const toggleResponse = (index: number) => {
     setExpandedResponses((prev) => {
       const next = new Set(prev);
@@ -44,10 +56,12 @@ export function PromptResponsesPreview({
   };
 
   return (
-    <section aria-label="Prompt responses preview" className="space-y-3">
+    <section aria-label="Prompt responses preview" className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <h2 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl dark:text-gray-100">{title}</h2>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
+          {description}
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -57,25 +71,16 @@ export function PromptResponsesPreview({
             <div
               key={row.id}
               onClick={() => toggleResponse(index)}
-              className={`group cursor-pointer rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm transition-all duration-200 ease-out hover:shadow-md dark:border-gray-800 dark:bg-gray-950 dark:shadow-black/20 ${
+              className={`group cursor-pointer rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm transition-all duration-200 ease-out hover:shadow-md dark:border-gray-800 dark:bg-black dark:shadow-black/30 ${
                 isExpanded ? "shadow-lg ring-1 ring-gray-200 dark:ring-gray-700" : ""
               }`}
             >
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={getModelFavicon(row.modelProvider)}
-                    alt={row.modelProvider}
-                    className="h-6 w-6 rounded-md"
-                  />
-
+                  <img src={getModelFavicon(row.modelProvider)} alt={row.modelProvider} className="h-6 w-6 rounded-md" />
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {row.modelProvider}
-                    </span>
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                      {formatDate(row.promptRunAt)}
-                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{getProviderName(row)}</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">{formatDate(row.promptRunAt)}</span>
                   </div>
                 </div>
 
@@ -97,11 +102,7 @@ export function PromptResponsesPreview({
                         className="text-xs font-semibold"
                         style={{
                           color:
-                            row.metrics.geoScore >= 60
-                              ? "#22c55e"
-                              : row.metrics.geoScore >= 30
-                                ? "#f59e0b"
-                                : "#ef4444",
+                            row.metrics.geoScore >= 60 ? "#22c55e" : row.metrics.geoScore >= 30 ? "#f59e0b" : "#ef4444",
                         }}
                       >
                         {row.metrics.geoScore}
@@ -141,7 +142,7 @@ export function PromptResponsesPreview({
 
               <div
                 className={`prose prose-sm dark:prose-invert max-w-none transition-all duration-200 ${
-                  isExpanded ? "" : "line-clamp-3 overflow-hidden"
+                  isExpanded ? "overflow-visible" : "line-clamp-3 overflow-hidden"
                 }`}
                 dangerouslySetInnerHTML={{ __html: formatMarkdown(row.response) }}
               />
@@ -157,26 +158,7 @@ export function PromptResponsesPreview({
                 {isExpanded ? "Show less" : "View full response"}
               </button>
 
-              {row.sources.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-                  {row.sources.map((source) => (
-                    <a
-                      key={`${row.id}-${source.url}`}
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2.5 py-1 text-[11px] text-muted-foreground dark:border-gray-700"
-                    >
-                      <img
-                        src={getFaviconUrls(source.url)[0] ?? ""}
-                        alt=""
-                        className="h-3.5 w-3.5 rounded-sm"
-                      />
-                      <span className="truncate max-w-[180px]">{source.title}</span>
-                    </a>
-                  ))}
-                </div>
-              ) : null}
+              <SourcesHoverLinks items={row.sources} />
             </div>
           );
         })}

@@ -6,10 +6,11 @@ export function PromptResponsesSection(): React.JSX.Element {
     <section className="section-shell py-12 sm:py-14" id="prompt-responses" aria-labelledby="prompt-responses-title">
       <PromptResponsesPreview
         title="Prompt Responses"
-        description="Collapsed provider responses with top-line analysis metrics and source evidence."
+        description="Collapsed responses with top-line analysis metrics and source evidence across all LLM providers."
         rows={PREVIEW_PROMPT_RESPONSES.map((row) => ({
           id: row.id,
           modelProvider: row.modelProvider,
+          modelName: row.modelName,
           promptRunAt: row.promptRunAt,
           response: row.response,
           isAnalysed: row.isAnalysed,

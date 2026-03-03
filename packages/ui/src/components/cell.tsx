@@ -32,14 +32,17 @@ export const SentimentMetricCell = ({
 	let dotClass = "";
 
 	if (num >= 70) {
-		bgClass = "bg-emerald-50 text-emerald-700";
-		dotClass = "bg-emerald-500";
+		bgClass =
+			"bg-emerald-50 text-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-300";
+		dotClass = "bg-emerald-500 dark:bg-emerald-400";
 	} else if (num >= 40) {
-		bgClass = "bg-amber-50 text-amber-700";
-		dotClass = "bg-amber-500";
+		bgClass =
+			"bg-amber-50 text-amber-700 dark:bg-amber-950/55 dark:text-amber-300";
+		dotClass = "bg-amber-500 dark:bg-amber-400";
 	} else {
-		bgClass = "bg-rose-50 text-rose-700";
-		dotClass = "bg-rose-500";
+		bgClass =
+			"bg-rose-50 text-rose-700 dark:bg-rose-950/55 dark:text-rose-300";
+		dotClass = "bg-rose-500 dark:bg-rose-400";
 	}
 
 	return (

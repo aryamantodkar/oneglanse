@@ -54,8 +54,8 @@ export function OpenSourceSection(): React.JSX.Element {
                 key={text}
                 className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-black dark:text-gray-100"
               >
-                <span className="inline-flex items-start gap-2.5">
-                  <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <span className="inline-flex items-center gap-2.5">
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                   <span className="leading-6">{text}</span>
                 </span>
               </li>
