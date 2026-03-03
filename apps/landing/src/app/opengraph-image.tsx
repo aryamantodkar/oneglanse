@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
+export const revalidate = 86400;
 export const size = {
   width: 1200,
   height: 630,
@@ -17,9 +18,9 @@ export default function OpenGraphImage(): ImageResponse {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: "56px",
+          padding: "52px",
           background:
-            "radial-gradient(circle at 20% 20%, #f5f5f5 0%, #ffffff 35%, #f7f7f7 100%)",
+            "linear-gradient(160deg, #ffffff 0%, #f7f7f7 55%, #f2f2f2 100%)",
           color: "#111111",
           fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
         }}
@@ -49,28 +50,28 @@ export default function OpenGraphImage(): ImageResponse {
               color: "#404040",
             }}
           >
-            Open Source
+            Open-source
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxWidth: "940px" }}>
-          <div style={{ fontSize: 66, fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.03em" }}>
-            Track AI visibility with source-level proof.
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "980px" }}>
+          <div style={{ fontSize: 62, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.03em" }}>
+            Open-source AI visibility tracking.
           </div>
-          <div style={{ fontSize: 30, color: "#525252", lineHeight: 1.2 }}>
-            Open-source GEO analytics for prompts, models, sentiment, and citations.
+          <div style={{ fontSize: 28, color: "#525252", lineHeight: 1.2 }}>
+            Measure visibility, mentions, sentiment, and citations across model answers.
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px" }}>
-          {["Visibility", "Mentions", "Sentiment", "Citations"].map((item) => (
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {["Open Source", "Self-hostable", "Source-backed Insights", "AI Visibility"].map((item) => (
             <div
               key={item}
               style={{
                 border: "1px solid #d4d4d4",
                 borderRadius: 12,
-                padding: "10px 14px",
-                fontSize: 20,
+                padding: "9px 12px",
+                fontSize: 18,
                 color: "#404040",
               }}
             >
