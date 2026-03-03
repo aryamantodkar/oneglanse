@@ -54,7 +54,7 @@ export function CompetitiveLandscape({
 	const rows = useMemo(() => displayCompetitors(competitors), [competitors]);
 
 	return (
-		<Card className="flex h-full min-h-[500px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+		<Card className="flex h-full min-h-[460px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
 			<div className="mb-5">
 				<h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
 					Competitors
@@ -71,20 +71,20 @@ export function CompetitiveLandscape({
 					description="No analysis data is available for the selected filters."
 				/>
 			) : (
-				<div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-					<Table>
+				<div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+					<Table className="w-full table-fixed">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
-								<TableHead className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Competitor
 								</TableHead>
-								<TableHead className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Visibility
 								</TableHead>
-								<TableHead className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Mentions
 								</TableHead>
-								<TableHead className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-24 px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Sentiment
 								</TableHead>
 							</TableRow>
@@ -100,7 +100,7 @@ export function CompetitiveLandscape({
 										key={row.name}
 										className="border-b border-gray-100 last:border-0 dark:border-gray-800"
 									>
-										<TableCell className="px-5 py-4">
+										<TableCell className="px-4 py-4">
 											<div className="flex items-center gap-2.5">
 												{favicon ? (
 													<img
@@ -112,23 +112,23 @@ export function CompetitiveLandscape({
 														}}
 													/>
 												) : null}
-												<span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+												<span className="whitespace-normal break-words text-sm font-medium text-gray-900 dark:text-gray-100">
 													{row.name}
 												</span>
 												{row.isBrand ? (
-													<span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+													<span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:bg-neutral-800 dark:text-gray-200">
 														You
 													</span>
 												) : null}
 											</div>
 										</TableCell>
-										<TableCell className="px-5 py-4 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+										<TableCell className="px-4 py-4 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
 											{visibility}%
 										</TableCell>
-										<TableCell className="px-5 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
+										<TableCell className="px-4 py-4 text-right text-sm text-gray-700 dark:text-gray-200">
 											{row.appearances}
 										</TableCell>
-										<TableCell className={`px-5 py-4 text-right text-sm font-semibold ${tone}`}>
+										<TableCell className={`px-4 py-4 text-right text-sm font-semibold ${tone}`}>
 											{row.avgSentiment}
 										</TableCell>
 									</TableRow>
