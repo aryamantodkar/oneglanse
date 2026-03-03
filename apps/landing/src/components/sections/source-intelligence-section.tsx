@@ -11,7 +11,7 @@ export function SourceIntelligenceSection(): React.JSX.Element {
       <SectionHeading
         eyebrow="Sources & Citations"
         title="Know which domains move model answers."
-        description="Track source share, traffic weight, and citation quality."
+        description="Track source share and citation quality."
       />
       <SourceIntelligencePreview />
     </section>

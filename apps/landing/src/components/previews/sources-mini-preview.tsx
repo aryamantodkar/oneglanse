@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, SentimentMetricCell } from "@oneglanse/ui";
+import { Card } from "@oneglanse/ui";
 import { getFaviconUrls, getModelFavicon } from "@oneglanse/utils";
 import { BarChart3, FileText, Link2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -84,11 +84,10 @@ export function SourcesMiniPreview(): React.JSX.Element {
       {activeTab === "sources" ? (
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
           <div className="min-w-[760px]">
-            <div className="grid grid-cols-[1.4fr_0.5fr_0.5fr_0.5fr_0.5fr_0.55fr_0.7fr] border-b border-gray-200 bg-gray-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
+            <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.6fr_0.65fr_0.8fr] border-b border-gray-200 bg-gray-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
               <span>Domain</span>
               <span className="text-right">Citations</span>
               <span className="text-right">Share</span>
-              <span className="text-right">Traffic</span>
               <span className="text-right">URLs</span>
               <span className="text-right">Mentions</span>
               <span className="text-right">Models</span>
@@ -97,7 +96,7 @@ export function SourcesMiniPreview(): React.JSX.Element {
               {PREVIEW_SOURCE_GROUPS.map((group) => (
                 <div
                   key={group.domain}
-                  className="grid grid-cols-[1.4fr_0.5fr_0.5fr_0.5fr_0.5fr_0.55fr_0.7fr] items-center border-b border-gray-100 px-3 py-2.5 text-xs last:border-0 dark:border-gray-800"
+                  className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.6fr_0.65fr_0.8fr] items-center border-b border-gray-100 px-3 py-2.5 text-xs last:border-0 dark:border-gray-800"
                 >
                   <span className="inline-flex items-center gap-2 truncate font-medium text-gray-900 dark:text-gray-100">
                     <img
@@ -112,9 +111,6 @@ export function SourcesMiniPreview(): React.JSX.Element {
                   </span>
                   <span className="text-right text-gray-700 dark:text-gray-300">
                     {group.share.toFixed(1)}%
-                  </span>
-                  <span className="text-right text-gray-700 dark:text-gray-300">
-                    {group.trafficShare.toFixed(1)}%
                   </span>
                   <span className="text-right text-gray-700 dark:text-gray-300">
                     {group.urls}
@@ -140,17 +136,16 @@ export function SourcesMiniPreview(): React.JSX.Element {
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
           <div className="min-w-[760px]">
-            <div className="grid grid-cols-[1.5fr_0.8fr_0.55fr_0.55fr_0.6fr] border-b border-gray-200 bg-gray-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
+            <div className="grid grid-cols-[1.7fr_1fr_0.7fr_0.6fr] border-b border-gray-200 bg-gray-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
               <span>Citation</span>
               <span>Domain</span>
               <span className="text-right">Provider</span>
               <span className="text-right">Count</span>
-              <span className="text-right">Sentiment</span>
             </div>
             {PREVIEW_CITATION_ROWS.map((row) => (
               <div
                 key={`${row.domain}-${row.title}`}
-                className="grid grid-cols-[1.5fr_0.8fr_0.55fr_0.55fr_0.6fr] items-start border-b border-gray-100 px-3 py-3 text-xs last:border-0 dark:border-gray-800"
+                className="grid grid-cols-[1.7fr_1fr_0.7fr_0.6fr] items-start border-b border-gray-100 px-3 py-3 text-xs last:border-0 dark:border-gray-800"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -175,17 +170,11 @@ export function SourcesMiniPreview(): React.JSX.Element {
                 <span className="text-right font-medium text-gray-900 dark:text-gray-100">
                   {row.citations}x
                 </span>
-                <span className="flex justify-end">
-                  <SentimentMetricCell sentiment={row.sentiment} />
-                </span>
               </div>
             ))}
           </div>
         </div>
       )}
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        Traffic share reflects weighted referral volume from sampled citation domains.
-      </p>
     </Card>
   );
 }

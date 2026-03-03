@@ -5,7 +5,7 @@ export function FeatureGrid(): React.JSX.Element {
   return (
     <section className="section-shell py-14 sm:py-16" id="features" aria-labelledby="features-title">
       <SectionHeading
-        eyebrow="Capabilities"
+        eyebrow="Features"
         title="Built for teams that run GEO like infrastructure"
         description="High-signal workflows. Minimal noise."
       />
@@ -15,7 +15,7 @@ export function FeatureGrid(): React.JSX.Element {
           return (
             <article
               key={feature.title}
-              className="ui-list-item rounded-2xl bg-transparent p-1"
+              className="rounded-2xl bg-transparent p-1"
             >
               <Icon className="mb-3 h-5 w-5 text-muted-foreground" aria-hidden="true" />
               <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
