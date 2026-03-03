@@ -1,9 +1,7 @@
 "use client";
 
 import { WorkspaceDialogShell } from "@/components/dialogs/workspace-dialog-shell";
-import { LocationSelector } from "@/components/location/locationSelector";
 import { api } from "@/trpc/react";
-import type { WorkspaceLocation } from "@oneglanse/types";
 import { Button, Input, Label, toast } from "@oneglanse/ui";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,10 +23,6 @@ export function CreateWorkspaceDialog({
 		slug: "",
 		domain: "",
 	});
-	const [selectedLocation, setSelectedLocation] = useState<WorkspaceLocation>({
-		country: "",
-		countryName: "",
-	});
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
 	const utils = api.useUtils();
@@ -37,7 +31,6 @@ export function CreateWorkspaceDialog({
 
 	const resetForm = () => {
 		setFormData({ name: "", slug: "", domain: "" });
-		setSelectedLocation({ country: "", countryName: "" });
 	};
 
 	const handleNameChange = (value: string) => {
@@ -58,19 +51,12 @@ export function CreateWorkspaceDialog({
 			return;
 		}
 
-		if (!selectedLocation.country) {
-			toast.error("Please select a location.");
-			return;
-		}
-
 		setLoading(true);
 		try {
 			const response = await createInOrgMutation.mutateAsync({
 				name: formData.name.trim(),
 				slug: formData.slug.trim(),
 				domain: formData.domain.trim(),
-				country: selectedLocation.country,
-				region: selectedLocation.regionName || null,
 				tenantId,
 			});
 
@@ -146,10 +132,6 @@ export function CreateWorkspaceDialog({
 					<p className="text-gray-500 text-xs">
 						Used for source matching and brand visibility tracking.
 					</p>
-				</div>
-				<div className="space-y-2">
-					<Label>Location</Label>
-					<LocationSelector onSelect={(loc) => setSelectedLocation(loc)} />
 				</div>
 			</div>
 		</WorkspaceDialogShell>

@@ -6,8 +6,6 @@ export interface CreateWorkspaceForTenantArgs {
 	slug: string;
 	domain: string;
 	tenantId: string;
-	country: string;
-	region?: string | null;
 	userId: string;
 }
 
