@@ -44,7 +44,7 @@ function withDynamicSessionId(username: string, sessionId: string): string {
 		return username.replace(SESSION_KEY_VALUE_RE, `$1${sessionId}`);
 	}
 
-	return `${username}-session-${sessionId}`;
+	return `${username}-sessid-${sessionId}`;
 }
 
 function buildProxyAuth(provider: Provider): ProxyAuth | null {
@@ -53,12 +53,27 @@ function buildProxyAuth(provider: Provider): ProxyAuth | null {
 	if (!baseUsername || !basePassword) return null;
 
 	const sessionId = generateProxySessionId(provider);
-	
+
 	return {
 		username: withDynamicSessionId(baseUsername, sessionId),
 		password: basePassword,
 		sessionId,
 	};
+}
+
+function buildLaunchProxyServer(proxy: string | null, proxyAuth: ProxyAuth | null): string | null {
+	if (!proxy) return null;
+	if (!proxyAuth) return proxy;
+
+	try {
+		const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(proxy);
+		const parsed = new URL(hasScheme ? proxy : `http://${proxy}`);
+		const username = encodeURIComponent(proxyAuth.username);
+		const password = encodeURIComponent(proxyAuth.password);
+		return `${parsed.protocol}//${username}:${password}@${parsed.host}`;
+	} catch {
+		return proxy;
+	}
 }
 
 async function cleanupStaleCdpDirs(): Promise<void> {
@@ -127,6 +142,7 @@ export async function launchContext(
 
 	const port = await getFreePort();
 	const userDataDir = `/tmp/cdp-${provider}-${port}`;
+	const launchProxyServer = buildLaunchProxyServer(proxy, proxyAuth);
 
 	logger.log(`CDP browser on port ${port}${proxy ? " (proxy)" : " (direct)"}`);
 
@@ -153,25 +169,16 @@ export async function launchContext(
 	};
 
 	try {
-		chromeProcess = spawnChromiumCDP(port, userDataDir);
+		chromeProcess = spawnChromiumCDP(
+			port,
+			userDataDir,
+			launchProxyServer ?? undefined,
+		);
 		const wsEndpoint = await waitForCDPEndpoint(port);
 		browser = await chromium.connectOverCDP(wsEndpoint);
 
-		const proxyConfig = proxy
-			? {
-					server: proxy,
-					...(proxyAuth
-						? {
-								username: proxyAuth.username,
-								password: proxyAuth.password,
-							}
-						: {}),
-				}
-			: undefined;
-
 		const context = await browser.newContext({
 			viewport: { width: 1920, height: 1080 },
-			...(proxyConfig ? { proxy: proxyConfig } : {}),
 			...STEALTH_CONTEXT_OPTIONS,
 		});
 

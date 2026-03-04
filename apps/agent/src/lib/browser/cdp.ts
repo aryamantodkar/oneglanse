@@ -29,7 +29,11 @@ export function getFreePort(): Promise<number> {
  * Spawn Chromium as a standalone process via --remote-debugging-port.
  * Chrome never sees Playwright's automation env vars or process hierarchy.
  */
-export function spawnChromiumCDP(port: number, userDataDir: string): ChildProcess {
+export function spawnChromiumCDP(
+	port: number,
+	userDataDir: string,
+	proxyServer?: string,
+): ChildProcess {
 	const args = [
 		`--remote-debugging-port=${port}`,
 		"--headless=new",
@@ -38,6 +42,7 @@ export function spawnChromiumCDP(port: number, userDataDir: string): ChildProces
 		"--disable-blink-features=AutomationControlled",
 		...STEALTH_CHROME_ARGS,
 		`--user-data-dir=${userDataDir}`,
+		...(proxyServer ? [`--proxy-server=${proxyServer}`] : []),
 	];
 
 	return spawn(chromium.executablePath(), args, {
