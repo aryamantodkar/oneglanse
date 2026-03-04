@@ -1,6 +1,6 @@
 # @oneglanse/agent
 
-SeleniumBase-launched Chromium + Playwright CDP + BullMQ worker responsible for executing provider prompt jobs and persisting results.
+Playwright-launched Chromium + BullMQ worker responsible for executing provider prompt jobs and persisting results.
 
 ## Responsibilities
 
@@ -76,21 +76,15 @@ Defined in `src/env.ts` (Zod validated):
 pnpm install
 ```
 
-2. Install Python runtime dependency used by the browser launcher:
-
-```bash
-pip install seleniumbase
-```
-
-3. Ensure env files exist:
+2. Ensure env files exist:
 
 ```bash
 cp apps/agent/.env.example apps/agent/.env
 ```
 
-4. Start Redis and required dependencies.
+3. Start Redis and required dependencies.
 
-5. Run worker:
+4. Run worker:
 
 ```bash
 pnpm --filter @oneglanse/agent dev
