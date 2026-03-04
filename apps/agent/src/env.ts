@@ -47,11 +47,57 @@ const AgentEnvSchema = z
 		PROMPT_RETRY_DELAY_MS: asNumber(1_000).default(1_000),
 		MAX_PROMPT_RETRY_DELAY_MS: asNumber(5_000).default(5_000),
 		SUBMISSION_PHASE_TIMEOUT_MS: asNumber(30_000).default(30_000),
-		PROXY: z.string().trim().optional(),
+		PROXY_HOST: z.string().trim().optional(),
+		PROXY_PORT: z.string().trim().optional(),
+		PROXY_USERNAME: z.string().trim().optional(),
+		PROXY_PASSWORD: z.string().trim().optional(),
 		AGENT_WORKER_CONCURRENCY: asNumber(1).default(1),
 		REDIS_HOST: z.string().trim().default("redis"),
 		REDIS_PORT: asNumber(6379).default(6379),
 		REDIS_PASSWORD: z.string().min(1),
+	})
+	.superRefine((values, ctx) => {
+		const hasProxyHost = Boolean(values.PROXY_HOST);
+		const hasProxyPort = Boolean(values.PROXY_PORT);
+		const hasProxyUser = Boolean(values.PROXY_USERNAME);
+		const hasProxyPass = Boolean(values.PROXY_PASSWORD);
+
+		if (hasProxyHost !== hasProxyPort) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["PROXY_HOST"],
+				message: "PROXY_HOST and PROXY_PORT must be set together.",
+			});
+		}
+
+		if (hasProxyPort) {
+			const parsedPort = Number(values.PROXY_PORT);
+			const validPort =
+				Number.isInteger(parsedPort) && parsedPort >= 1 && parsedPort <= 65535;
+			if (!validPort) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["PROXY_PORT"],
+					message: "PROXY_PORT must be an integer between 1 and 65535.",
+				});
+			}
+		}
+
+		if (hasProxyUser !== hasProxyPass) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["PROXY_USERNAME"],
+				message: "PROXY_USERNAME and PROXY_PASSWORD must be set together.",
+			});
+		}
+
+		if ((hasProxyUser || hasProxyPass) && !(hasProxyHost && hasProxyPort)) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["PROXY_HOST"],
+				message: "PROXY_HOST and PROXY_PORT are required when proxy credentials are set.",
+			});
+		}
 	});
 
 export const env = AgentEnvSchema.parse(process.env);

@@ -9,7 +9,7 @@ export function runAnalysisInBackground(args: {
 	provider: Provider;
 	jobGroupId: string;
 }): void {
-	const { workspaceId, userId, provider, jobGroupId } = args;
+	const { workspaceId, provider, jobGroupId } = args;
 	const plog = createProviderLogger(provider);
 	void (async () => {
 		try {

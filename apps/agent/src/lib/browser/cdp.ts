@@ -3,6 +3,8 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { ExternalServiceError } from "@oneglanse/errors";
 import { STEALTH_CHROME_ARGS } from "./stealth.js";
 
+const SELENIUMBASE_READY_MARKER = "SELENIUMBASE_CDP_READY";
+
 export function getFreePort(): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const server = createServer();
@@ -47,8 +49,9 @@ except Exception as exc:
 signature = inspect.signature(Driver)
 params = set(signature.parameters.keys())
 kwargs = {}
+has_auth_proxy = bool(args.proxy and "@" in args.proxy)
 
-if "uc" in params:
+if "uc" in params and not has_auth_proxy:
     kwargs["uc"] = True
 if "headless2" in params:
     kwargs["headless2"] = True
@@ -72,6 +75,9 @@ chrome_args = [
 chrome_args.extend(${JSON.stringify(STEALTH_CHROME_ARGS)} )
 
 if args.proxy and "proxy" not in params:
+    if has_auth_proxy:
+        _log("SELENIUMBASE_PROXY_ERROR: authenticated proxy requires Driver proxy parameter support.")
+        raise SystemExit(88)
     chrome_args.append(f"--proxy-server={args.proxy}")
 
 arg_field = None
@@ -108,7 +114,8 @@ def _shutdown(*_args):
 signal.signal(signal.SIGTERM, _shutdown)
 signal.signal(signal.SIGINT, _shutdown)
 
-print("SELENIUMBASE_CDP_READY", flush=True)
+_log("${SELENIUMBASE_READY_MARKER}")
+print("${SELENIUMBASE_READY_MARKER}", flush=True)
 while running:
     time.sleep(0.5)
 
@@ -179,9 +186,10 @@ export async function waitForCDPEndpoint(
 		getProcessLogs?: () => string;
 	},
 ): Promise<string> {
-	const timeoutMs = options?.timeoutMs ?? 20_000;
+	const timeoutMs = options?.timeoutMs ?? 45_000;
 	const url = `http://localhost:${port}/json/version`;
 	const deadline = Date.now() + timeoutMs;
+	let sawReadyMarker = false;
 
 	while (Date.now() < deadline) {
 		const processExited =
@@ -194,9 +202,17 @@ export async function waitForCDPEndpoint(
 				options.process.exitCode !== null
 					? `code ${options.process.exitCode}`
 					: `signal ${options.process.signalCode}`;
+			const hint =
+				options.process.exitCode === 86
+					? " (seleniumbase import failed; install seleniumbase in runtime)"
+					: options.process.exitCode === 87
+						? " (seleniumbase Driver args mismatch; check installed seleniumbase version)"
+						: options.process.exitCode === 88
+							? " (seleniumbase does not support authenticated proxy arguments in this runtime)"
+						: "";
 			throw new ExternalServiceError(
 				"browser",
-				`SeleniumBase process exited before CDP was ready (${exitState})${details}`,
+				`SeleniumBase process exited before CDP was ready (${exitState})${hint}${details}`,
 				503,
 				{
 					port,
@@ -205,6 +221,15 @@ export async function waitForCDPEndpoint(
 					signalCode: options.process.signalCode,
 				},
 			);
+		}
+
+		const logText = options?.getProcessLogs?.() ?? "";
+		if (logText.includes(SELENIUMBASE_READY_MARKER)) {
+			sawReadyMarker = true;
+		}
+		if (!sawReadyMarker) {
+			await new Promise((resolve) => setTimeout(resolve, 200));
+			continue;
 		}
 
 		try {

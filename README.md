@@ -125,9 +125,12 @@ Primary variables used across services (see `.env.example`):
   - `INTERNAL_CRON_SECRET`
   - `OPENAI_API_KEY`
   - `DEBUG_ENABLED`
-  - `PROXY`
+  - `PROXY_HOST`
+  - `PROXY_PORT`
+  - `PROXY_USERNAME`
+  - `PROXY_PASSWORD`
 
-Agent proxy notes: `PROXY` accepts `host:port`, `host:port:username:password`, `http(s)://host:port`, `socks5://host:port`, and inline-auth URLs such as `http://username:password@host:port`.
+Agent proxy notes: set `PROXY_HOST` + `PROXY_PORT`; add `PROXY_USERNAME` + `PROXY_PASSWORD` for authenticated providers.
 
 ## Runtime Data Flow
 
