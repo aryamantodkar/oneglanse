@@ -9,18 +9,12 @@ Proxy settings apply to `apps/agent`.
 
 Set:
 
-- `PROXY`
+- `PROXY_HOST`
+- `PROXY_PORT`
+- `PROXY_USERNAME` (optional)
+- `PROXY_PASSWORD` (optional; must be set with `PROXY_USERNAME`)
 
-Supported proxy formats:
-
-- `host:port`
-- `host:port:username:password`
-- `http://host:port`
-- `https://host:port`
-- `socks5://host:port`
-- `http://username:password@host:port`
-
-Credentials should be supplied directly in `PROXY` when required.
+Credentials are passed with `PROXY_USERNAME`/`PROXY_PASSWORD`.
 
 ## Operational Guidance
 

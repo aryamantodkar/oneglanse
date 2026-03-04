@@ -57,8 +57,10 @@ Defined in `src/env.ts` (Zod validated):
   - `EXTRACTION_RETRY_DELAY_MS`
   - `MAX_EXTRACTION_RETRY_DELAY_MS`
 - Proxy system:
-  - `PROXY`
-  - `PROXY` supports `host:port`, `host:port:username:password`, `http://host:port`, `https://host:port`, `socks5://host:port`, and inline auth (`http://username:password@host:port`).
+  - `PROXY_HOST`
+  - `PROXY_PORT`
+  - `PROXY_USERNAME` (optional; requires `PROXY_PASSWORD`)
+  - `PROXY_PASSWORD` (optional; requires `PROXY_USERNAME`)
 - Provider tuning:
   - `MIN_RESPONSE_CHARS`
   - `PROVIDER_HOOK_TIMEOUT_MS`
