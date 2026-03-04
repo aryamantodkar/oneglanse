@@ -1,46 +1,40 @@
 ---
 title: Proxy Setup
-description: Configure outbound proxy sourcing for the agent worker with code-verified settings.
+description: Configure direct proxy settings and session rotation for the agent worker.
 ---
 
 # Proxy Setup
 
-Proxy settings apply to `agent-worker`.
+Proxy settings apply to `apps/agent`.
 
-From `apps/agent/src/env.ts`:
+Set:
 
-- `PROXY_SOURCE_MODE` (default `auto`)
-- `PROXY_API_URL` (optional)
-- `PROXY_MANUAL_FILE` (optional)
-- `PROXY_CACHE_TTL_MS` (default `10000`)
+- `PROXY`
+- `PROXY_USERNAME` (optional)
+- `PROXY_PASSWORD` (optional, must be set with `PROXY_USERNAME`)
 
-## Mode 1: API-backed Proxy Source
+Supported proxy formats:
 
-Use when your proxy vendor exposes an HTTP API endpoint.
+- `host:port`
+- `http://host:port`
+- `https://host:port`
+- `socks5://host:port`
 
-```env
-PROXY_SOURCE_MODE=api
-PROXY_API_URL=https://proxy-provider.example.com/list
-```
+Credentials must be provided via `PROXY_USERNAME`/`PROXY_PASSWORD` (not inline in `PROXY`).
 
-## Mode 2: Manual File Source
+## Session ID Rotation
 
-Use when you manage your own proxy list file.
+If your provider uses sticky proxy sessions in username, the worker auto-injects a unique session id before each browser launch.
 
-```env
-PROXY_SOURCE_MODE=manual
-PROXY_MANUAL_FILE=/storage/proxies.txt
-```
+Recognized session patterns include:
 
-`/storage` is persisted via the `agent_storage` Docker volume.
+- `sessid-*`
+- `session-*`
+- `session_id=*`
+- `{{SESSID}}`
+- `$SESSID`
 
-## Mode 3: Auto
-
-```env
-PROXY_SOURCE_MODE=auto
-```
-
-Auto mode uses whichever source variables are present.
+On throw/retry, the next launch gets a fresh session id automatically.
 
 ## Operational Guidance
 

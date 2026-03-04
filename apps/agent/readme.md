@@ -57,10 +57,11 @@ Defined in `src/env.ts` (Zod validated):
   - `EXTRACTION_RETRY_DELAY_MS`
   - `MAX_EXTRACTION_RETRY_DELAY_MS`
 - Proxy system:
-  - `PROXY_SOURCE_MODE`
-  - `PROXY_API_URL`
-  - `PROXY_MANUAL_FILE`
-  - `PROXY_CACHE_TTL_MS`
+  - `PROXY`
+  - `PROXY_USERNAME`
+  - `PROXY_PASSWORD`
+  - `PROXY` supports `host:port`, `http://host:port`, `https://host:port`, `socks5://host:port`.
+  - Session-aware usernames are auto-rotated per launch (supports `sessid-*`, `session-*`, `session_id=*`, `{{SESSID}}`, `$SESSID`).
 - Provider tuning:
   - `MIN_RESPONSE_CHARS`
   - `PROVIDER_HOOK_TIMEOUT_MS`

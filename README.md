@@ -125,10 +125,11 @@ Primary variables used across services (see `.env.example`):
   - `INTERNAL_CRON_SECRET`
   - `OPENAI_API_KEY`
   - `DEBUG_ENABLED`
-  - `PROXY_SOURCE_MODE`
-  - `PROXY_API_URL`
-  - `PROXY_MANUAL_FILE`
-  - `VPS_AUTH_PROFILE_PATH`
+  - `PROXY`
+  - `PROXY_USERNAME`
+  - `PROXY_PASSWORD`
+
+Agent proxy notes: `PROXY` accepts `host:port` plus `http(s)://`/`socks5://` URLs; if `PROXY_USERNAME` contains a session token (`sessid`, `session`, `session_id`, `{{SESSID}}`, `$SESSID`), workers rotate it automatically per launch.
 
 ## Runtime Data Flow
 

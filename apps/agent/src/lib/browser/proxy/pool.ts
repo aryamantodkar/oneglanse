@@ -1,14 +1,14 @@
 import type { FailureType, Provider } from "@oneglanse/types";
+import { ValidationError } from "@oneglanse/errors";
 import { logger } from "@oneglanse/utils";
+import { env } from "../../../env.js";
 import {
-	EXPLORATION_RATE,
 	MAX_EVENTS,
 	type ProxyRecord,
 	getCooldownMs,
 	getProxyScore,
 	normalizeProxy,
 } from "./scoring.js";
-import { fetchProxySnapshot } from "./snapshot.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -27,13 +27,32 @@ let proxyRecords: Map<string, ProxyRecord> = new Map();
 export async function fetchProxies(
 	options: FetchProxyOptions = {},
 ): Promise<void> {
-	const snapshot = await fetchProxySnapshot(Boolean(options.forceRefresh));
-	proxies = [...snapshot];
+	const rawProxy = env.PROXY?.trim();
+	if (!rawProxy) {
+		throw new ValidationError(
+			"PROXY is not set. Configure PROXY (and optional PROXY_USERNAME/PROXY_PASSWORD).",
+		);
+	}
+
+	const normalized = normalizeProxy(rawProxy);
+	if (!normalized) {
+		throw new ValidationError(
+			"PROXY is invalid. Expected host:port or http(s)/socks5://host:port",
+		);
+	}
+
+	if (normalized.includes("@")) {
+		throw new ValidationError(
+			"PROXY must not include credentials. Use PROXY_USERNAME and PROXY_PASSWORD instead.",
+		);
+	}
+
+	proxies = [normalized];
 
 	if (options.resetBadProxies) {
 		proxyRecords.clear();
 	} else if (proxyRecords.size > 0) {
-		// Retain only records for proxies that still exist in the new snapshot
+		// Retain only records for proxies that still exist in the current config
 		const proxySet = new Set(proxies.map(normalizeProxy));
 		for (const [key] of proxyRecords) {
 			if (!proxySet.has(key)) proxyRecords.delete(key);
@@ -42,52 +61,20 @@ export async function fetchProxies(
 }
 
 export function getNextProxy(): string | null {
-	const now = Date.now();
+	if (proxies.length === 0) return null;
 
-	type Candidate = { proxy: string; score: number };
-	const candidates: Candidate[] = [];
+	const normalized = normalizeProxy(proxies[0] ?? "");
+	if (!normalized) return null;
 
-	for (const raw of proxies) {
-		const normalized = normalizeProxy(raw);
-		const record = proxyRecords.get(normalized);
-
-		// Skip proxies in cooldown
-		if (record && record.cooldownUntil > now) continue;
-
-		const score = record ? getProxyScore(record) : 0.5;
-		candidates.push({ proxy: normalized, score });
+	const record = proxyRecords.get(normalized);
+	if (record && record.cooldownUntil > Date.now()) {
+		const remainingSeconds = Math.ceil((record.cooldownUntil - Date.now()) / 1000);
+		logger.debug(
+			`Proxy ${normalized} is in cooldown (${remainingSeconds}s remaining) — reusing in direct mode`,
+		);
 	}
 
-	if (candidates.length === 0) return null;
-
-	// Sort by score descending
-	candidates.sort((a, b) => b.score - a.score);
-
-	const topScore = candidates[0]?.score ?? 0;
-	
-	const topScoredProxies = candidates.filter((c) => c.score === topScore);
-
-	// If multiple proxies have the same top score, pick randomly among them
-	let pick: Candidate;
-	if (topScoredProxies.length > 1) {
-		// Random selection from equal-scored proxies
-		const randomIdx = Math.floor(Math.random() * topScoredProxies.length);
-		pick = topScoredProxies[randomIdx]!;
-		logger.debug(
-			`Randomly selected proxy from ${topScoredProxies.length} with score ${topScore.toFixed(2)}`,
-		);
-	} else if (candidates.length > 1 && Math.random() < EXPLORATION_RATE) {
-		// 20% chance to explore a lower-scored proxy (rediscover recovered proxies)
-		const idx = 1 + Math.floor(Math.random() * (candidates.length - 1));
-		pick = candidates[idx]!;
-		logger.debug(
-			`Exploring proxy with score ${pick.score.toFixed(2)} (exploration rate)`,
-		);
-	} else {
-		pick = candidates[0]!;
-	}
-
-	return `http://${pick.proxy}`;
+	return normalized;
 }
 
 export function recordProxyResult(
@@ -135,14 +122,7 @@ export function recordProxyResult(
 }
 
 function getAvailableCount(): number {
-	const now = Date.now();
-	let available = 0;
-	for (const raw of proxies) {
-		const normalized = normalizeProxy(raw);
-		const record = proxyRecords.get(normalized);
-		if (!record || record.cooldownUntil <= now) available++;
-	}
-	return available;
+	return proxies.length > 0 ? 1 : 0;
 }
 
 function clearProxyPool(): void {
