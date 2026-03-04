@@ -7,8 +7,9 @@ import type { ChildProcess } from "node:child_process";
 import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
 import { logger } from "@oneglanse/utils";
-import { fetchProxies, getNextProxy, recordProxyResult } from "./proxy/pool.js";
+import { env } from "../../env.js";
 import { getFreePort, killChromiumProcess, spawnSeleniumBaseCDP, waitForCDPEndpoint } from "./cdp.js";
+import { normalizeProxy } from "./proxy/normalize.js";
 import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
 
 function redactProxy(proxy: string): string {
@@ -23,16 +24,12 @@ export async function launchContext(
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
-	let proxy = getNextProxy();
-
-	if (!proxy) {
-		logger.warn(`proxy pool exhausted, refreshing...`);
-		try {
-			await fetchProxies({ forceRefresh: true });
-			proxy = getNextProxy();
-		} catch (err) {
-			logger.error(`failed to refresh proxy pool:`, toErrorMessage(err));
-		}
+	const rawProxy = env.PROXY?.trim() ?? "";
+	const proxy = rawProxy ? normalizeProxy(rawProxy) : null;
+	if (rawProxy && !proxy) {
+		logger.error(
+			`PROXY is invalid. Expected host:port, host:port:username:password, or http(s)/socks5://... format.`,
+		);
 	}
 
 	if (proxy) {
@@ -98,16 +95,6 @@ export async function launchContext(
 		await context.addInitScript(STEALTH_INIT_SCRIPT);
 		return { browser, context, proxy, cleanup };
 	} catch (err) {
-		if (proxy) {
-			const isTimeout =
-				toErrorMessage(err).toLowerCase().includes("timeout");
-			recordProxyResult(
-				proxy,
-				false,
-				isTimeout ? "timeout" : "connection_error",
-				provider,
-			);
-		}
 		await cleanup();
 		throw new ExternalServiceError(
 			"browser",
