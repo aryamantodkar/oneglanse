@@ -36,9 +36,30 @@ parser.add_argument("--port", type=int, required=True)
 parser.add_argument("--user-data-dir", required=True)
 parser.add_argument("--proxy", default="")
 args = parser.parse_args()
+os.environ["USE_CHROMEDRIVER_PATCH"] = "1"
 
 def _log(message: str) -> None:
     print(message, file=sys.stderr, flush=True)
+
+try:
+    chromium_version = os.popen("chromium --version").read().strip()
+    if chromium_version:
+        _log("SELENIUMBASE_CHROMIUM_VERSION: " + chromium_version)
+except Exception:
+    pass
+
+chromedriver_version = os.getenv("SELENIUMBASE_CHROMEDRIVER_VERSION", "").strip()
+if not chromedriver_version:
+    try:
+        output = os.popen("chromedriver --version").read().strip()
+        if output:
+            parts = output.split()
+            if len(parts) >= 2:
+                chromedriver_version = parts[1]
+    except Exception:
+        pass
+if chromedriver_version:
+    _log("SELENIUMBASE_CHROMEDRIVER_VERSION: " + chromedriver_version)
 
 try:
     from seleniumbase import Driver
@@ -53,7 +74,7 @@ has_auth_proxy = bool(args.proxy and "@" in args.proxy)
 
 if "uc" in params and not has_auth_proxy:
     kwargs["uc"] = True
-if not has_auth_proxy and "headless2" in params:
+if "headless2" in params:
     kwargs["headless2"] = True
 elif "headless" in params:
     kwargs["headless"] = True
@@ -61,6 +82,11 @@ if "headed" in params:
     kwargs["headed"] = False
 if args.proxy and "proxy" in params:
     kwargs["proxy"] = args.proxy
+if chromedriver_version:
+    if "chromedriver_version" in params:
+        kwargs["chromedriver_version"] = chromedriver_version
+    elif "driver_version" in params:
+        kwargs["driver_version"] = chromedriver_version
 browser_binary = os.getenv("SELENIUMBASE_BROWSER_BINARY", "").strip()
 if browser_binary and "binary_location" in params:
     kwargs["binary_location"] = browser_binary
@@ -77,7 +103,7 @@ chrome_args.extend(${JSON.stringify(STEALTH_CHROME_ARGS)} )
 if args.proxy and "proxy" not in params:
     if has_auth_proxy:
         _log("SELENIUMBASE_PROXY_ERROR: authenticated proxy requires Driver proxy parameter support.")
-        raise SystemExit(88)
+        raise SystemExit(90)
     chrome_args.append(f"--proxy-server={args.proxy}")
 
 arg_field = None
@@ -104,7 +130,7 @@ except TypeError:
         raise
 except Exception as exc:
     _log("SELENIUMBASE_DRIVER_ERROR: " + repr(exc))
-    raise
+    raise SystemExit(88)
 
 running = True
 def _shutdown(*_args):
@@ -202,14 +228,16 @@ export async function waitForCDPEndpoint(
 				options.process.exitCode !== null
 					? `code ${options.process.exitCode}`
 					: `signal ${options.process.signalCode}`;
-			const hint =
-				options.process.exitCode === 86
-					? " (seleniumbase import failed; install seleniumbase in runtime)"
+				const hint =
+					options.process.exitCode === 86
+						? " (seleniumbase import failed; install seleniumbase in runtime)"
 					: options.process.exitCode === 87
-						? " (seleniumbase Driver args mismatch; check installed seleniumbase version)"
+							? " (seleniumbase Driver args mismatch; check installed seleniumbase version)"
 						: options.process.exitCode === 88
-							? " (seleniumbase does not support authenticated proxy arguments in this runtime)"
-						: "";
+								? " (seleniumbase Driver failed to start Chrome session; check Chrome/ChromeDriver compatibility)"
+							: options.process.exitCode === 90
+								? " (seleniumbase does not support authenticated proxy arguments in this runtime)"
+							: "";
 			throw new ExternalServiceError(
 				"browser",
 				`SeleniumBase process exited before CDP was ready (${exitState})${hint}${details}`,
