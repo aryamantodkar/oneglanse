@@ -4,6 +4,7 @@ import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
 import { env } from "../env.js";
 import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
+import { withNavigationThrottle } from "../lib/browser/trafficShaping.js";
 import { logger, withTimeout } from "@oneglanse/utils";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
@@ -38,10 +39,12 @@ export async function createAgent(
 		}
 
 		phase = "navigate";
-		logger.log(`navigating to ${config.url}`);
-		await navigateWithRetry(page, config.url, {
-			waitUntil: "domcontentloaded",
-			timeout: 60000,
+		await withNavigationThrottle(provider, async () => {
+			logger.log(`navigating to ${config.url}`);
+			await navigateWithRetry(page, config.url, {
+				waitUntil: "domcontentloaded",
+				timeout: 60000,
+			});
 		});
 
 		if (config.postNavigationHook) {

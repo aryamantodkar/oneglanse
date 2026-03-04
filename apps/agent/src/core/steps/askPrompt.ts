@@ -5,6 +5,7 @@ import { env } from "../../env.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
+import { withSubmitThrottle } from "../../lib/browser/trafficShaping.js";
 import {
 	type SubmitContext,
 	tryDispatchClick,
@@ -31,8 +32,8 @@ export async function askPrompt(
 		} else {
 			await page.keyboard.type(char);
 		}
-		// Random delay between keystrokes (10-30ms) to appear more human
-		const typingDelay = 10 + Math.floor(Math.random() * 20);
+		// Random delay between keystrokes (25-65ms) to appear less bot-like.
+		const typingDelay = 25 + Math.floor(Math.random() * 40);
 		await page.waitForTimeout(typingDelay);
 	}
 
@@ -69,26 +70,28 @@ export async function askPrompt(
 		preSubmitUrl,
 	};
 
-	const success = await Promise.race([
-		(async () => {
-			let submitted = await tryEnterSubmit(ctx);
-			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
-			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
-			return submitted;
-		})(),
-		new Promise<boolean>((_, reject) =>
-			setTimeout(
-				() =>
-					reject(
-						new ExternalServiceError(
-							provider,
-							`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
+	const success = await withSubmitThrottle(provider, async () =>
+		Promise.race([
+			(async () => {
+				let submitted = await tryEnterSubmit(ctx);
+				if (!submitted && sendButton) submitted = await tryForceClick(ctx);
+				if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
+				return submitted;
+			})(),
+			new Promise<boolean>((_, reject) =>
+				setTimeout(
+					() =>
+						reject(
+							new ExternalServiceError(
+								provider,
+								`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
+							),
 						),
-					),
-				SUBMISSION_PHASE_TIMEOUT_MS,
+					SUBMISSION_PHASE_TIMEOUT_MS,
+				),
 			),
-		),
-	]);
+		]),
+	);
 
 	if (!success) {
 		throw new ExternalServiceError(provider, "All submission methods failed");
