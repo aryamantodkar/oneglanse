@@ -16,7 +16,7 @@ const shutdown = async (signal: string) => {
 	}, 15 * 60 * 1000);
 
 	try {
-		// Step 1: Close warm browser pool to free CDP/Chrome processes.
+		// Step 1: Close warm browser pool to free Chromium processes.
 		logger.log("[agent] Closing warm browser pool...");
 		await closeAllWarm();
 		logger.log("[agent] Warm browser pool closed.");
