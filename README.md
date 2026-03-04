@@ -127,7 +127,7 @@ Primary variables used across services (see `.env.example`):
   - `DEBUG_ENABLED`
   - `PROXY`
 
-Agent proxy notes: `PROXY` accepts `host:port`, `http(s)://host:port`, `socks5://host:port`, and inline-auth URLs such as `http://username:password@host:port`.
+Agent proxy notes: `PROXY` accepts `host:port`, `host:port:username:password`, `http(s)://host:port`, `socks5://host:port`, and inline-auth URLs such as `http://username:password@host:port`.
 
 ## Runtime Data Flow
 

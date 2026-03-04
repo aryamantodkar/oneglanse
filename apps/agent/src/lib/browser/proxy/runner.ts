@@ -6,18 +6,16 @@ import {
 } from "@oneglanse/errors";
 import type {
 	AskPromptResult,
-	FailureType,
 	PromptPayload,
 	Provider,
 } from "@oneglanse/types";
 import { createProviderLogger, exponentialBackoff, logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
-import { recordProxyResult } from "./pool.js";
 import { runAgents } from "../../../core/runAgents.js";
 import { storeWarmBrowser } from "../warmPool.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
-const PROXIES_PER_CYCLE = 10;
+const ATTEMPTS_PER_CYCLE = 10;
 const MAX_CYCLES = 10;
 const INITIAL_BACKOFF = 5_000;
 const MAX_CYCLE_BACKOFF = 60_000;
@@ -39,7 +37,7 @@ type Refs = {
 	cleanup?: (() => Promise<void>) | null;
 };
 
-async function closeContextAndBrowser(refs: Refs, label: string): Promise<void> {
+async function closeContextAndBrowser(refs: Refs): Promise<void> {
 	await refs.context?.close().catch(() => {});
 	await refs.browser?.close().catch(() => {});
 	await refs.cleanup?.().catch(() => {});
@@ -49,7 +47,6 @@ async function closeContextAndBrowser(refs: Refs, label: string): Promise<void> 
 function updatePayloadAfterIpRefresh(
 	currentPayload: PromptPayload,
 	err: IPRefreshNeededError,
-	label: string,
 ): PromptPayload {
 	logger.log(
 		`saved ${err.partialResults.length} prompts, ${err.remainingPrompts.length} remaining after IP refresh`,
@@ -57,7 +54,7 @@ function updatePayloadAfterIpRefresh(
 	return { ...currentPayload, prompts: err.remainingPrompts };
 }
 
-async function runSingleProxyAttempt(
+async function runSingleAttempt(
 	agentFactory: AgentFactory,
 	currentPayload: PromptPayload,
 	provider: Provider,
@@ -88,7 +85,7 @@ async function runSingleProxyAttempt(
 	]);
 }
 
-async function runProxyCycle(
+async function runRetryCycle(
 	label: string,
 	provider: Provider,
 	agentFactory: AgentFactory,
@@ -97,14 +94,14 @@ async function runProxyCycle(
 	cycle: number,
 	plog: ReturnType<typeof createProviderLogger>,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
-	for (let attempt = 0; attempt < PROXIES_PER_CYCLE; attempt++) {
-		const totalAttempt = cycle * PROXIES_PER_CYCLE + attempt + 1;
-		const totalMax = MAX_CYCLES * PROXIES_PER_CYCLE;
+	for (let attempt = 0; attempt < ATTEMPTS_PER_CYCLE; attempt++) {
+		const totalAttempt = cycle * ATTEMPTS_PER_CYCLE + attempt + 1;
+		const totalMax = MAX_CYCLES * ATTEMPTS_PER_CYCLE;
 
 		const refs: Refs = { browser: null, context: null, page: null, proxy: null, cleanup: null };
 
 		try {
-			const result = await runSingleProxyAttempt(
+			const result = await runSingleAttempt(
 				agentFactory,
 				currentPayload,
 				provider,
@@ -113,9 +110,6 @@ async function runProxyCycle(
 			);
 
 			accumulatedResults.push(...result);
-			if (refs.proxy) {
-				recordProxyResult(refs.proxy, true, undefined, provider);
-			}
 
 			// Store the healthy browser in the warm pool so the next job for this
 			// provider can reuse it without a full browser launch. Null refs so the
@@ -143,15 +137,9 @@ async function runProxyCycle(
 				);
 
 				accumulatedResults.push(...err.partialResults);
-				currentPayload = updatePayloadAfterIpRefresh(currentPayload, err, label);
+				currentPayload = updatePayloadAfterIpRefresh(currentPayload, err);
 
-				if (refs.proxy) {
-					const failureType =
-						(err.failureType as FailureType) ?? classifyError(err);
-					recordProxyResult(refs.proxy, false, failureType, provider);
-				}
-
-				if (attempt < PROXIES_PER_CYCLE - 1) {
+				if (attempt < ATTEMPTS_PER_CYCLE - 1) {
 					await new Promise((r) => setTimeout(r, RETRY_DELAY));
 				}
 				continue;
@@ -163,15 +151,11 @@ async function runProxyCycle(
 				toErrorMessage(err),
 			);
 
-			if (refs.proxy) {
-				recordProxyResult(refs.proxy, false, failureType, provider);
-			}
-
-			if (attempt < PROXIES_PER_CYCLE - 1) {
+			if (attempt < ATTEMPTS_PER_CYCLE - 1) {
 				await new Promise((r) => setTimeout(r, RETRY_DELAY));
 			}
 		} finally {
-			await closeContextAndBrowser(refs, label);
+			await closeContextAndBrowser(refs);
 		}
 	}
 
@@ -179,16 +163,15 @@ async function runProxyCycle(
 }
 
 /**
- * Runs prompt payload through multiple proxy cycles with exponential backoff between cycles.
- * Each cycle attempts PROXIES_PER_CYCLE proxies before giving up and refreshing the pool.
+ * Runs prompt payload through retry cycles with exponential backoff between cycles.
+ * Each cycle attempts ATTEMPTS_PER_CYCLE browser launches before giving up.
  * Returns accumulated results on success; throws ExternalServiceError when all cycles fail.
  */
-export async function runWithProxyPool(
+export async function runWithRetryCycles(
 	label: string,
 	agentFactory: AgentFactory,
 	payload: PromptPayload,
 	provider: Provider,
-	fetchProxies: (opts: { resetBadProxies?: boolean; forceRefresh?: boolean }) => Promise<void>,
 ): Promise<AskPromptResult[]> {
 	const plog = createProviderLogger(provider);
 	const accumulatedResults: AskPromptResult[] = [];
@@ -198,18 +181,12 @@ export async function runWithProxyPool(
 		if (cycle > 0) {
 			const backoff = exponentialBackoff(cycle - 1, INITIAL_BACKOFF, MAX_CYCLE_BACKOFF);
 			plog.warn(
-				`cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s, refreshing proxies...`,
+				`cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s before retry...`,
 			);
 			await new Promise((r) => setTimeout(r, backoff));
-
-			try {
-				await fetchProxies({ forceRefresh: true });
-			} catch (err) {
-				plog.error(`failed to refresh proxies:`, toErrorMessage(err));
-			}
 		}
 
-		const outcome = await runProxyCycle(
+		const outcome = await runRetryCycle(
 			label,
 			provider,
 			agentFactory,
@@ -226,13 +203,13 @@ export async function runWithProxyPool(
 		currentPayload = outcome.updatedPayload;
 	}
 
-	const totalAttempts = MAX_CYCLES * PROXIES_PER_CYCLE;
+	const totalAttempts = MAX_CYCLES * ATTEMPTS_PER_CYCLE;
 	plog.error(
 		`exhausted — failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles`,
 	);
 	throw new ExternalServiceError(
 		provider,
-		`failed all ${totalAttempts} proxy attempts across ${MAX_CYCLES} cycles — no valid proxy found`,
+		`failed all ${totalAttempts} attempts across ${MAX_CYCLES} cycles`,
 		503,
 		{ totalAttempts, cycles: MAX_CYCLES },
 	);

@@ -14,6 +14,7 @@ Set:
 Supported proxy formats:
 
 - `host:port`
+- `host:port:username:password`
 - `http://host:port`
 - `https://host:port`
 - `socks5://host:port`
@@ -25,4 +26,4 @@ Credentials should be supplied directly in `PROXY` when required.
 
 - Keep proxy credentials out of source control.
 - Track provider-specific failure rates.
-- Increase `AGENT_WORKER_CONCURRENCY` only after proxy pool stability is verified.
+- Increase `AGENT_WORKER_CONCURRENCY` only after proxy stability is verified.
