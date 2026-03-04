@@ -27,7 +27,29 @@ export const EXPLORATION_RATE = 0.2; // 20% chance to try a non-best proxy
 
 export function normalizeProxy(proxy: string): string {
 	const trimmed = proxy.trim();
-	return trimmed.replace(/^https?:\/\//, "").trim();
+	if (!trimmed) return "";
+
+	const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed);
+	const candidate = hasScheme ? trimmed : `http://${trimmed}`;
+
+	try {
+		const parsed = new URL(candidate);
+		const protocol = parsed.protocol.toLowerCase();
+		if (!["http:", "https:", "socks5:"].includes(protocol)) return "";
+		if (!parsed.hostname || !parsed.port) return "";
+
+		const auth =
+			parsed.username || parsed.password
+				? `${parsed.username}${parsed.password ? `:${parsed.password}` : ""}@`
+				: "";
+		const host =
+			parsed.hostname.includes(":") && !parsed.hostname.startsWith("[")
+				? `[${parsed.hostname}]`
+				: parsed.hostname;
+		return `${protocol}//${auth}${host}:${parsed.port}`;
+	} catch {
+		return "";
+	}
 }
 
 export function getProxyScore(record: ProxyRecord): number {

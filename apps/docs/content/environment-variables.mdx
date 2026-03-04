@@ -33,9 +33,6 @@ This reference is extracted from the current codebase validation schemas and com
 ## Agent Runtime Controls
 
 - `AGENT_WORKER_CONCURRENCY` (default `1`)
-- `PROXY_SOURCE_MODE` (default `auto`)
-- `PROXY_API_URL` (required when source mode uses API pool)
-- `PROXY_MANUAL_FILE` (path for manual proxy list)
 - `DEBUG_ENABLED`
 - `MIN_RESPONSE_CHARS`
 - Timeout and retry controls:
@@ -52,7 +49,10 @@ This reference is extracted from the current codebase validation schemas and com
   - `PROMPT_RETRY_DELAY_MS`
   - `MAX_PROMPT_RETRY_DELAY_MS`
   - `SUBMISSION_PHASE_TIMEOUT_MS`
-  - `PROXY_CACHE_TTL_MS`
+- Proxy:
+  - `PROXY`
+  - `PROXY_USERNAME`
+  - `PROXY_PASSWORD`
 
 ## Provider Variables
 
