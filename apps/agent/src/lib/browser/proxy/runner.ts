@@ -118,7 +118,7 @@ async function runProxyCycle(
 			}
 
 			// Store the healthy browser in the warm pool so the next job for this
-			// provider can reuse it without a full CDP spawn. Null refs so the
+			// provider can reuse it without a full browser launch. Null refs so the
 			// finally block's closeContextAndBrowser becomes a no-op.
 			if (refs.browser && refs.context && refs.page) {
 				await storeWarmBrowser(provider, {

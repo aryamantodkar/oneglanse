@@ -26,7 +26,7 @@ export async function agentHandler(
 
 	// Wrap agentFactory with warm-pool awareness: if a healthy browser already
 	// exists for this provider, navigate it to a clean slate and reuse it,
-	// saving the CDP spawn + warmup cost (~3-5s). Falls back to a cold factory
+	// saving browser launch + warmup cost (~3-5s). Falls back to a cold factory
 	// on any failure — existing proxy retry logic handles the rest.
 	const warmFactory: AgentFactory = async () => {
 		const warm = await getWarmBrowser(provider).catch(() => null);

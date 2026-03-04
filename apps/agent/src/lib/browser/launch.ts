@@ -1,24 +1,20 @@
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import type { ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readdir, rm, stat } from "node:fs/promises";
 import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
 import { logger } from "@oneglanse/utils";
 import { fetchProxies, getNextProxy, recordProxyResult } from "./proxy/pool.js";
 import { env } from "../../env.js";
-import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
-import { getFreePort, killChromiumProcess, spawnChromiumCDP, waitForCDPEndpoint } from "./cdp.js";
-
-const CDP_DIR_PREFIX = "cdp-";
-const CDP_DIR_CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
-const CDP_DIR_STALE_AGE_MS = 30 * 60 * 1000;
+import {
+	STEALTH_CHROME_ARGS,
+	STEALTH_CONTEXT_OPTIONS,
+	STEALTH_INIT_SCRIPT,
+} from "./stealth.js";
 const SESSION_PLACEHOLDER_RE =
 	/\{\{\s*(?:sessid|sessionid|session_id)\s*\}\}|\$\{?\s*(?:sessid|sessionid|session_id)\s*\}?/gi;
 const SESSION_KEY_VALUE_RE =
 	/((?:sessid|sessionid|session_id|session)[-_:=])([A-Za-z0-9._~%]+)/i;
-let lastCdpCleanupAt = 0;
 
 type ProxyAuth = {
 	username: string;
@@ -61,48 +57,6 @@ function buildProxyAuth(provider: Provider): ProxyAuth | null {
 	};
 }
 
-function buildLaunchProxyServer(proxy: string | null, proxyAuth: ProxyAuth | null): string | null {
-	if (!proxy) return null;
-	if (!proxyAuth) return proxy;
-
-	try {
-		const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(proxy);
-		const parsed = new URL(hasScheme ? proxy : `http://${proxy}`);
-		const username = encodeURIComponent(proxyAuth.username);
-		const password = encodeURIComponent(proxyAuth.password);
-		return `${parsed.protocol}//${username}:${password}@${parsed.host}`;
-	} catch {
-		return proxy;
-	}
-}
-
-async function cleanupStaleCdpDirs(): Promise<void> {
-	const now = Date.now();
-	if (now - lastCdpCleanupAt < CDP_DIR_CLEANUP_INTERVAL_MS) return;
-	lastCdpCleanupAt = now;
-
-	try {
-		const entries = await readdir("/tmp", { withFileTypes: true });
-		for (const entry of entries) {
-			if (!entry.isDirectory() || !entry.name.startsWith(CDP_DIR_PREFIX)) continue;
-			const dirPath = `/tmp/${entry.name}`;
-			try {
-				const info = await stat(dirPath);
-				const ageMs = now - info.mtimeMs;
-				if (ageMs < CDP_DIR_STALE_AGE_MS) continue;
-				await rm(dirPath, { recursive: true, force: true });
-				logger.warn(
-					`Removed stale CDP profile dir ${dirPath} (age ${(ageMs / 60000).toFixed(0)}m)`,
-				);
-			} catch (err) {
-				logger.error(`Failed cleaning stale CDP dir ${dirPath}:`, toErrorMessage(err));
-			}
-		}
-	} catch (err) {
-		logger.error("Failed scanning /tmp for stale CDP profile dirs:", toErrorMessage(err));
-	}
-}
-
 export async function launchContext(
 	provider: Provider,
 ): Promise<{
@@ -111,8 +65,6 @@ export async function launchContext(
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
-	await cleanupStaleCdpDirs();
-
 	let proxy = getNextProxy();
 
 	if (!proxy) {
@@ -140,42 +92,37 @@ export async function launchContext(
 		);
 	}
 
-	const port = await getFreePort();
-	const userDataDir = `/tmp/cdp-${provider}-${port}`;
-	const launchProxyServer = buildLaunchProxyServer(proxy, proxyAuth);
+	const launchProxyConfig = proxy
+		? {
+				server: proxy,
+				...(proxyAuth
+					? {
+							username: proxyAuth.username,
+							password: proxyAuth.password,
+						}
+					: {}),
+			}
+		: undefined;
 
-	logger.log(`CDP browser on port ${port}${proxy ? " (proxy)" : " (direct)"}`);
+	logger.log(`launching chromium${proxy ? " (proxy)" : " (direct)"}`);
 
-	let chromeProcess: ChildProcess | null = null;
-	let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | null = null;
+	let browser: Browser | null = null;
 
 	const cleanup = async () => {
 		await browser?.close().catch(() => null);
-		if (chromeProcess) await killChromiumProcess(chromeProcess);
-		try {
-			await rm(userDataDir, { recursive: true, force: true });
-		} catch {
-			// Chrome may still hold file handles briefly after kill — retry once.
-			await new Promise((r) => setTimeout(r, 300));
-			try {
-				await rm(userDataDir, { recursive: true, force: true });
-			} catch (retryErr) {
-				logger.warn(
-					`Failed to remove CDP profile dir ${userDataDir} (stale sweep will clean up):`,
-					toErrorMessage(retryErr),
-				);
-			}
-		}
 	};
 
 	try {
-		chromeProcess = spawnChromiumCDP(
-			port,
-			userDataDir,
-			launchProxyServer ?? undefined,
-		);
-		const wsEndpoint = await waitForCDPEndpoint(port);
-		browser = await chromium.connectOverCDP(wsEndpoint);
+		browser = await chromium.launch({
+			headless: true,
+			args: [
+				"--no-sandbox",
+				"--disable-setuid-sandbox",
+				"--disable-blink-features=AutomationControlled",
+				...STEALTH_CHROME_ARGS,
+			],
+			...(launchProxyConfig ? { proxy: launchProxyConfig } : {}),
+		});
 
 		const context = await browser.newContext({
 			viewport: { width: 1920, height: 1080 },
