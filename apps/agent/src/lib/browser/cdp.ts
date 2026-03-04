@@ -53,7 +53,7 @@ has_auth_proxy = bool(args.proxy and "@" in args.proxy)
 
 if "uc" in params and not has_auth_proxy:
     kwargs["uc"] = True
-if "headless2" in params:
+if not has_auth_proxy and "headless2" in params:
     kwargs["headless2"] = True
 elif "headless" in params:
     kwargs["headless"] = True
