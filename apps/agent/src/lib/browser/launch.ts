@@ -20,6 +20,30 @@ type ProxyConfig = {
 	seleniumBaseProxy: string;
 };
 
+const MAX_CONCURRENT_BROWSER_LAUNCHES = 2;
+let activeLaunches = 0;
+const launchQueue: Array<() => void> = [];
+
+async function acquireLaunchSlot(): Promise<void> {
+	if (activeLaunches < MAX_CONCURRENT_BROWSER_LAUNCHES) {
+		activeLaunches++;
+		return;
+	}
+
+	await new Promise<void>((resolve) => {
+		launchQueue.push(() => {
+			activeLaunches++;
+			resolve();
+		});
+	});
+}
+
+function releaseLaunchSlot(): void {
+	if (activeLaunches > 0) activeLaunches--;
+	const next = launchQueue.shift();
+	if (next) next();
+}
+
 function buildProxyConfig(): ProxyConfig | null {
 	const host = env.PROXY_HOST?.trim();
 	const port = env.PROXY_PORT?.trim();
@@ -70,6 +94,7 @@ export async function launchContext(
 	let browser: Browser | null = null;
 	let chromiumProcess: ChildProcess | null = null;
 	let userDataDir: string | null = null;
+	let launchSlotHeld = false;
 
 	const cleanup = async () => {
 		await browser?.close().catch(() => null);
@@ -82,6 +107,8 @@ export async function launchContext(
 	};
 
 	try {
+		await acquireLaunchSlot();
+		launchSlotHeld = true;
 		userDataDir = await mkdtemp(path.join(tmpdir(), `onescope-agent-${provider}-`));
 
 		const cdpPort = await getFreePort();
@@ -98,7 +125,10 @@ export async function launchContext(
 			if (processLogs.length > 12) processLogs.shift();
 		};
 		chromiumProcess.stdout?.on("data", appendProcessLog);
-		chromiumProcess.stderr?.on("data", appendProcessLog);
+		chromiumProcess.stderr?.on("data", (chunk: Buffer) => {
+			appendProcessLog(chunk);
+			process.stderr.write(chunk);
+		});
 
 		const cdpEndpoint = await waitForCDPEndpoint(cdpPort, {
 			timeoutMs: 45_000,
@@ -131,5 +161,9 @@ export async function launchContext(
 			{ provider },
 			err,
 		);
+	} finally {
+		if (launchSlotHeld) {
+			releaseLaunchSlot();
+		}
 	}
 }
