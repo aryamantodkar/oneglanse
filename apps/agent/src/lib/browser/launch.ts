@@ -44,7 +44,7 @@ function withDynamicSessionId(username: string, sessionId: string): string {
 		return username.replace(SESSION_KEY_VALUE_RE, `$1${sessionId}`);
 	}
 
-	return `${username}-sessid-${sessionId}`;
+	return `${username}-session-${sessionId}`;
 }
 
 function buildProxyAuth(provider: Provider): ProxyAuth | null {
@@ -53,6 +53,7 @@ function buildProxyAuth(provider: Provider): ProxyAuth | null {
 	if (!baseUsername || !basePassword) return null;
 
 	const sessionId = generateProxySessionId(provider);
+	
 	return {
 		username: withDynamicSessionId(baseUsername, sessionId),
 		password: basePassword,
