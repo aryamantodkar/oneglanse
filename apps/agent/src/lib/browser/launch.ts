@@ -107,22 +107,18 @@ export async function launchContext(
 		});
 		browser = await chromium.connectOverCDP(cdpEndpoint);
 
-		let context: BrowserContext;
-		try {
-			context = await browser.newContext({
+		// With SeleniumBase-authenticated proxies, reuse the default CDP context.
+		// Creating a new context can bypass SeleniumBase's proxy-auth handling.
+		const existingContext = browser.contexts()[0];
+		const context =
+			existingContext ??
+			(await browser.newContext({
 				viewport: { width: 1920, height: 1080 },
 				...STEALTH_CONTEXT_OPTIONS,
-			});
-		} catch {
-			const existingContext = browser.contexts()[0];
-			if (!existingContext) {
-				throw new ExternalServiceError("browser", "No browser context available after CDP attach");
-			}
-			context = existingContext;
-			await context
-				.setExtraHTTPHeaders(STEALTH_CONTEXT_OPTIONS.extraHTTPHeaders)
-				.catch(() => null);
-		}
+			}));
+		await context
+			.setExtraHTTPHeaders(STEALTH_CONTEXT_OPTIONS.extraHTTPHeaders)
+			.catch(() => null);
 
 		await context.addInitScript(STEALTH_INIT_SCRIPT);
 		return { browser, context, proxy: logProxy, cleanup };
