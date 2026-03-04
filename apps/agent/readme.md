@@ -1,6 +1,6 @@
 # @oneglanse/agent
 
-Playwright + BullMQ worker responsible for executing provider prompt jobs and persisting results.
+SeleniumBase-launched Chromium + Playwright CDP + BullMQ worker responsible for executing provider prompt jobs and persisting results.
 
 ## Responsibilities
 
@@ -58,10 +58,7 @@ Defined in `src/env.ts` (Zod validated):
   - `MAX_EXTRACTION_RETRY_DELAY_MS`
 - Proxy system:
   - `PROXY`
-  - `PROXY_USERNAME`
-  - `PROXY_PASSWORD`
-  - `PROXY` supports `host:port`, `http://host:port`, `https://host:port`, `socks5://host:port`.
-  - Session-aware usernames are auto-rotated per launch (supports `sessid-*`, `session-*`, `session_id=*`, `{{SESSID}}`, `$SESSID`).
+  - `PROXY` supports `host:port`, `http://host:port`, `https://host:port`, `socks5://host:port`, and inline auth (`http://username:password@host:port`).
 - Provider tuning:
   - `MIN_RESPONSE_CHARS`
   - `PROVIDER_HOOK_TIMEOUT_MS`
@@ -77,15 +74,21 @@ Defined in `src/env.ts` (Zod validated):
 pnpm install
 ```
 
-2. Ensure env files exist:
+2. Install Python runtime dependency used by the browser launcher:
+
+```bash
+pip install seleniumbase
+```
+
+3. Ensure env files exist:
 
 ```bash
 cp apps/agent/.env.example apps/agent/.env
 ```
 
-3. Start Redis and required dependencies.
+4. Start Redis and required dependencies.
 
-4. Run worker:
+5. Run worker:
 
 ```bash
 pnpm --filter @oneglanse/agent dev

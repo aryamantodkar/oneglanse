@@ -126,10 +126,8 @@ Primary variables used across services (see `.env.example`):
   - `OPENAI_API_KEY`
   - `DEBUG_ENABLED`
   - `PROXY`
-  - `PROXY_USERNAME`
-  - `PROXY_PASSWORD`
 
-Agent proxy notes: `PROXY` accepts `host:port` plus `http(s)://`/`socks5://` URLs; if `PROXY_USERNAME` contains a session token (`sessid`, `session`, `session_id`, `{{SESSID}}`, `$SESSID`), workers rotate it automatically per launch.
+Agent proxy notes: `PROXY` accepts `host:port`, `http(s)://host:port`, `socks5://host:port`, and inline-auth URLs such as `http://username:password@host:port`.
 
 ## Runtime Data Flow
 

@@ -19,30 +19,37 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 RUN pnpm turbo build --filter=@oneglanse/agent...
 RUN pnpm deploy --filter @oneglanse/agent --prod /app/out
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN cd /app/out && npx playwright install chromium
 
 FROM node:20-bookworm-slim AS runner
 ARG PNPM_VERSION=10.16.0
 
-# Playwright system deps
+# Browser + SeleniumBase runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
   libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
   libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 \
   ca-certificates fonts-liberation \
+  python3 python3-venv python3-pip \
+  chromium chromium-driver \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+RUN python3 -m venv /opt/seleniumbase \
+  && /opt/seleniumbase/bin/pip install --no-cache-dir --upgrade pip \
+  && /opt/seleniumbase/bin/pip install --no-cache-dir seleniumbase
+ENV PATH="/opt/seleniumbase/bin:${PATH}"
+ENV SELENIUMBASE_BROWSER_BINARY=/usr/bin/chromium
+RUN python3 -c "import seleniumbase" \
+  && chromium --version \
+  && chromedriver --version
 
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 COPY --from=builder /app/out ./
-COPY --from=builder /ms-playwright /ms-playwright
 
-RUN chown -R node:node /app /ms-playwright
+RUN chown -R node:node /app /opt/seleniumbase
 USER node
 
 CMD ["pnpm", "start:worker"]

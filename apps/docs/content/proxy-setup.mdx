@@ -1,6 +1,6 @@
 ---
 title: Proxy Setup
-description: Configure direct proxy settings and session rotation for the agent worker.
+description: Configure direct proxy settings for the agent worker.
 ---
 
 # Proxy Setup
@@ -10,8 +10,6 @@ Proxy settings apply to `apps/agent`.
 Set:
 
 - `PROXY`
-- `PROXY_USERNAME` (optional)
-- `PROXY_PASSWORD` (optional, must be set with `PROXY_USERNAME`)
 
 Supported proxy formats:
 
@@ -19,22 +17,9 @@ Supported proxy formats:
 - `http://host:port`
 - `https://host:port`
 - `socks5://host:port`
+- `http://username:password@host:port`
 
-Credentials must be provided via `PROXY_USERNAME`/`PROXY_PASSWORD` (not inline in `PROXY`).
-
-## Session ID Rotation
-
-If your provider uses sticky proxy sessions in username, the worker auto-injects a unique session id before each browser launch.
-
-Recognized session patterns include:
-
-- `sessid-*`
-- `session-*`
-- `session_id=*`
-- `{{SESSID}}`
-- `$SESSID`
-
-On throw/retry, the next launch gets a fresh session id automatically.
+Credentials should be supplied directly in `PROXY` when required.
 
 ## Operational Guidance
 
