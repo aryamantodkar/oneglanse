@@ -124,8 +124,3 @@ export function recordProxyResult(
 function getAvailableCount(): number {
 	return proxies.length > 0 ? 1 : 0;
 }
-
-function clearProxyPool(): void {
-	proxies = [];
-	proxyRecords = new Map();
-}
