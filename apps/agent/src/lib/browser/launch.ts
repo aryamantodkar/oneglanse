@@ -1,15 +1,18 @@
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import type { ChildProcess } from "node:child_process";
+import { existsSync } from "node:fs";
 import type { Browser, BrowserContext } from "playwright";
-import { chromium } from "playwright";
+import { chromium } from "playwright-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { logger } from "@oneglanse/utils";
 import { env } from "../../env.js";
-import { getFreePort, killChromiumProcess, spawnSeleniumBaseCDP, waitForCDPEndpoint } from "./cdp.js";
-import { STEALTH_CONTEXT_OPTIONS, STEALTH_INIT_SCRIPT } from "./stealth.js";
+import {
+	STEALTH_CHROME_ARGS,
+	STEALTH_CONTEXT_OPTIONS,
+	STEALTH_INIT_SCRIPT,
+} from "./stealth.js";
+
+chromium.use(StealthPlugin());
 
 function redactProxy(proxy: string): string {
 	return proxy.replace(/\/\/([^:@/]+)(?::[^@/]+)?@/, "//***:***@");
@@ -17,10 +20,10 @@ function redactProxy(proxy: string): string {
 
 type ProxyConfig = {
 	logProxy: string;
-	seleniumBaseProxy: string;
+	playwrightProxy: NonNullable<Parameters<typeof chromium.launch>[0]>["proxy"];
 };
 
-const MAX_CONCURRENT_BROWSER_LAUNCHES = 2;
+const MAX_CONCURRENT_BROWSER_LAUNCHES = 1;
 let activeLaunches = 0;
 const launchQueue: Array<() => void> = [];
 
@@ -53,11 +56,12 @@ function buildProxyConfig(): ProxyConfig | null {
 	const password = env.PROXY_PASSWORD?.trim();
 	const hostPart =
 		host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+	const server = `http://${hostPart}:${port}`;
 
 	if (!username || !password) {
 		return {
-			logProxy: `http://${hostPart}:${port}`,
-			seleniumBaseProxy: `${hostPart}:${port}`,
+			logProxy: server,
+			playwrightProxy: { server },
 		};
 	}
 
@@ -65,7 +69,11 @@ function buildProxyConfig(): ProxyConfig | null {
 	const encodedPassword = encodeURIComponent(password);
 	return {
 		logProxy: `http://${encodedUsername}:${encodedPassword}@${hostPart}:${port}`,
-		seleniumBaseProxy: `${username}:${password}@${hostPart}:${port}`,
+		playwrightProxy: {
+			server,
+			username,
+			password,
+		},
 	};
 }
 
@@ -79,7 +87,6 @@ export async function launchContext(
 }> {
 	const proxyConfig = buildProxyConfig();
 	const logProxy = proxyConfig?.logProxy ?? null;
-	const launchProxy = proxyConfig?.seleniumBaseProxy ?? null;
 
 	if (logProxy) {
 		logger.log(`using proxy: ${redactProxy(logProxy)}`);
@@ -88,67 +95,39 @@ export async function launchContext(
 	}
 
 	logger.log(
-		`launching seleniumbase chromium via CDP${launchProxy ? " (proxy)" : " (direct)"}`,
+		`launching chromium${proxyConfig ? " (proxy)" : " (direct)"}`,
 	);
 
 	let browser: Browser | null = null;
-	let chromiumProcess: ChildProcess | null = null;
-	let userDataDir: string | null = null;
 	let launchSlotHeld = false;
 
 	const cleanup = async () => {
 		await browser?.close().catch(() => null);
-		if (chromiumProcess) {
-			await killChromiumProcess(chromiumProcess).catch(() => null);
-		}
-		if (userDataDir) {
-			await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
-		}
 	};
 
 	try {
 		await acquireLaunchSlot();
 		launchSlotHeld = true;
-		userDataDir = await mkdtemp(path.join(tmpdir(), `onescope-agent-${provider}-`));
-
-		const cdpPort = await getFreePort();
-		chromiumProcess = spawnSeleniumBaseCDP(
-			cdpPort,
-			userDataDir,
-			launchProxy ?? undefined,
-		);
-		const processLogs: string[] = [];
-		const appendProcessLog = (chunk: Buffer) => {
-			const text = chunk.toString("utf8").trim();
-			if (!text) return;
-			processLogs.push(text);
-			if (processLogs.length > 12) processLogs.shift();
+		const launchOptions: Parameters<typeof chromium.launch>[0] = {
+			headless: true,
+			args: [
+				"--no-sandbox",
+				"--disable-setuid-sandbox",
+				"--disable-blink-features=AutomationControlled",
+				...STEALTH_CHROME_ARGS,
+			],
+			...(proxyConfig ? { proxy: proxyConfig.playwrightProxy } : {}),
 		};
-		chromiumProcess.stdout?.on("data", appendProcessLog);
-		chromiumProcess.stderr?.on("data", (chunk: Buffer) => {
-			appendProcessLog(chunk);
-			process.stderr.write(chunk);
-		});
+		if (existsSync("/usr/bin/chromium")) {
+			launchOptions.executablePath = "/usr/bin/chromium";
+		}
 
-		const cdpEndpoint = await waitForCDPEndpoint(cdpPort, {
-			timeoutMs: 45_000,
-			process: chromiumProcess,
-			getProcessLogs: () => processLogs.join(" | "),
-		});
-		browser = await chromium.connectOverCDP(cdpEndpoint);
+		browser = await chromium.launch(launchOptions);
 
-		// With SeleniumBase-authenticated proxies, reuse the default CDP context.
-		// Creating a new context can bypass SeleniumBase's proxy-auth handling.
-		const existingContext = browser.contexts()[0];
-		const context =
-			existingContext ??
-			(await browser.newContext({
-				viewport: { width: 1920, height: 1080 },
-				...STEALTH_CONTEXT_OPTIONS,
-			}));
-		await context
-			.setExtraHTTPHeaders(STEALTH_CONTEXT_OPTIONS.extraHTTPHeaders)
-			.catch(() => null);
+		const context = await browser.newContext({
+			viewport: { width: 1920, height: 1080 },
+			...STEALTH_CONTEXT_OPTIONS,
+		});
 
 		await context.addInitScript(STEALTH_INIT_SCRIPT);
 		return { browser, context, proxy: logProxy, cleanup };
