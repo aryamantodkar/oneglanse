@@ -22,6 +22,10 @@ type FetchProxyOptions = {
 let proxies: string[] = [];
 let proxyRecords: Map<string, ProxyRecord> = new Map();
 
+function redactProxy(proxy: string): string {
+	return proxy.replace(/\/\/([^:@/]+)(?::[^@/]+)?@/, "//***:***@");
+}
+
 // ── Public API ────────────────────────────────────────────────────────────
 
 export async function fetchProxies(
@@ -30,7 +34,7 @@ export async function fetchProxies(
 	const rawProxy = env.PROXY?.trim();
 	if (!rawProxy) {
 		throw new ValidationError(
-			"PROXY is not set. Configure PROXY (and optional PROXY_USERNAME/PROXY_PASSWORD).",
+			"PROXY is not set. Configure PROXY as host:port or scheme://host:port.",
 		);
 	}
 
@@ -38,12 +42,6 @@ export async function fetchProxies(
 	if (!normalized) {
 		throw new ValidationError(
 			"PROXY is invalid. Expected host:port or http(s)/socks5://host:port",
-		);
-	}
-
-	if (normalized.includes("@")) {
-		throw new ValidationError(
-			"PROXY must not include credentials. Use PROXY_USERNAME and PROXY_PASSWORD instead.",
 		);
 	}
 
@@ -70,7 +68,7 @@ export function getNextProxy(): string | null {
 	if (record && record.cooldownUntil > Date.now()) {
 		const remainingSeconds = Math.ceil((record.cooldownUntil - Date.now()) / 1000);
 		logger.debug(
-			`Proxy ${normalized} is in cooldown (${remainingSeconds}s remaining) — reusing in direct mode`,
+			`Proxy ${redactProxy(normalized)} is in cooldown (${remainingSeconds}s remaining) — reusing in direct mode`,
 		);
 	}
 
@@ -104,7 +102,7 @@ export function recordProxyResult(
 		record.consecutiveFailures = 0;
 		record.cooldownUntil = 0;
 		logger.debug(
-			`Proxy ${normalized} succeeded (score=${getProxyScore(record).toFixed(2)})`,
+			`Proxy ${redactProxy(normalized)} succeeded (score=${getProxyScore(record).toFixed(2)})`,
 		);
 	} else {
 		record.consecutiveFailures++;
@@ -114,7 +112,7 @@ export function recordProxyResult(
 		const score = getProxyScore(record);
 		const available = getAvailableCount();
 		logger.warn(
-			`Proxy ${normalized} failed (${failureType ?? "unknown"}), ` +
+			`Proxy ${redactProxy(normalized)} failed (${failureType ?? "unknown"}), ` +
 				`score=${score.toFixed(2)}, cooldown=${(cooldownMs / 1000).toFixed(0)}s, ` +
 				`${available} proxies available`,
 		);
