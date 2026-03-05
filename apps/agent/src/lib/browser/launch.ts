@@ -67,13 +67,12 @@ function buildProxyConfig(): ProxyConfig | null {
 
 	const encodedUsername = encodeURIComponent(username);
 	const encodedPassword = encodeURIComponent(password);
+	const inlineAuthServer = `http://${encodedUsername}:${encodedPassword}@${hostPart}:${port}`;
 	return {
-		logProxy: `http://${encodedUsername}:${encodedPassword}@${hostPart}:${port}`,
-		playwrightProxy: {
-			server,
-			username,
-			password,
-		},
+		logProxy: inlineAuthServer,
+		// Keep auth embedded in the proxy URL so Chromium starts with fully
+		// authenticated proxy routing, matching the previously stable flow.
+		playwrightProxy: { server: inlineAuthServer },
 	};
 }
 
