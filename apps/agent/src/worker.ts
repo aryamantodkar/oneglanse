@@ -9,13 +9,20 @@ import { PROVIDER_LIST } from "@oneglanse/types";
 // Empty until startWorkers() completes Redis readiness check and construction.
 export let workers: Worker[] = [];
 
+let executionChain: Promise<void> = Promise.resolve();
+
+function runSingleFlight<T>(task: () => Promise<T>): Promise<T> {
+	const scheduled = executionChain.then(task, task);
+	executionChain = scheduled.then(
+		() => undefined,
+		() => undefined,
+	);
+	return scheduled;
+}
+
 async function startWorkers() {
 	await waitForRedis();
-	const configuredConcurrency = env.AGENT_WORKER_CONCURRENCY;
-	const workerConcurrency =
-		Number.isFinite(configuredConcurrency) && configuredConcurrency > 0
-			? configuredConcurrency
-			: 1;
+	const workerConcurrency = 1;
 
 	const connection = {
 		host: env.REDIS_HOST,
@@ -25,14 +32,18 @@ async function startWorkers() {
 
 	workers = PROVIDER_LIST.map((provider) => {
 		const plog = createProviderLogger(provider);
-		const w = new Worker(getQueueName(provider), handleJob, {
-			connection,
-			// Sequential per-provider to avoid Playwright/proxy contention within a provider.
-			concurrency: workerConcurrency,
-			lockDuration: 15 * 60 * 1000, // 15 minutes - browser automation can take time with retries
-			stalledInterval: 60 * 1000, // Check stalled jobs every 60s
-			maxStalledCount: 5, // Allow more stalls for browser automation with proxy retries
-		});
+		const w = new Worker(
+			getQueueName(provider),
+			async (job) => runSingleFlight(() => handleJob(job)),
+			{
+				connection,
+				// Keep per-provider workers/queues, but execute one job globally at a time.
+				concurrency: workerConcurrency,
+				lockDuration: 15 * 60 * 1000, // 15 minutes - browser automation can take time with retries
+				stalledInterval: 60 * 1000, // Check stalled jobs every 60s
+				maxStalledCount: 5, // Allow more stalls for browser automation with proxy retries
+			},
+		);
 
 		w.on("active", (job) => {
 			plog.log("Job started", job.id);
@@ -50,7 +61,7 @@ async function startWorkers() {
 	});
 
 	logger.log(
-		`[agent] ${workers.length} workers started → queues: ${PROVIDER_LIST.map(getQueueName).join(", ")}`,
+		`[agent] ${workers.length} workers started → queues: ${PROVIDER_LIST.map(getQueueName).join(", ")} (global single-worker mode)`,
 	);
 }
 
