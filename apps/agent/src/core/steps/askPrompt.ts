@@ -133,4 +133,6 @@ export async function askPrompt(
 	await page
 		.waitForLoadState("networkidle", { timeout: 15000 })
 		.catch(() => {});
+
+	logger.log(`post-submit URL: ${page.url()}`);
 }

@@ -25,8 +25,6 @@ export const SELECTORS = {
 		containers: '[role="region"], main > div, [data-sokoban-container]',
 		anchor: "a[href]",
 		paragraph: 'li, p, div[role="paragraph"]',
-	},
-	aiOverviewResponse: {
 		placeholder: '[data-container-id="model-response-placeholder"]',
 		placeholderWrapper: 'div:has(> [data-container-id="main-col"])',
 		mainCol: '[data-container-id="main-col"]',
