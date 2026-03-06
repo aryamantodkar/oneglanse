@@ -17,11 +17,41 @@ import {
 const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
 const SUBMISSION_RETRIES = 3;
 
+function randomBetween(min: number, max: number): number {
+	return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+async function humanPause(
+	page: Page,
+	minMs: number,
+	maxMs: number,
+): Promise<void> {
+	await page.waitForTimeout(randomBetween(minMs, maxMs));
+}
+
 export async function askPrompt(
 	page: Page,
 	prompt: string,
 	provider: Provider,
 ): Promise<void> {
+	if (provider === "ai-overview") {
+		const baseUrl = "https://www.google.com/?hl=en-US&gl=us&pws=0";
+		const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en-US&gl=us&pws=0`;
+
+		await page.goto(baseUrl, {
+			waitUntil: "domcontentloaded",
+			timeout: 20_000,
+		});
+		await humanPause(page, 1000, 2000);
+		await page.goto(searchUrl, {
+			waitUntil: "domcontentloaded",
+			timeout: 20_000,
+		});
+		await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+		logger.log(`post-submit URL: ${page.url()}`);
+		return;
+	}
+
 	const input = await waitForEditorReady(page, provider);
 
 	await clearEditorInput(page, input, { waitAfterMs: 200 });

@@ -57,24 +57,6 @@ export const aiOverviewConfig: ProviderConfig = {
 		});
 		await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
 	},
-	checkSubmitSuccess: async (page, preSubmitUrl) => {
-		// Search submits by navigation to Google's search results route.
-		// Only /search?q=... counts as a definitive success signal.
-		const currentUrl = page.url();
-		if (currentUrl !== preSubmitUrl) {
-			try {
-				const parsed = new URL(currentUrl);
-				if (
-					parsed.pathname === "/search" &&
-					parsed.searchParams.get("q")?.trim()
-				)
-					return true;
-			} catch {
-				return true; // URL changed but unparseable — treat as success
-			}
-		}
-		return undefined; // fall through to generic checks
-	},
 	postNavigationHook: async (page) => {
 		// Dismiss the consent dialog if it appears.
 		await page
