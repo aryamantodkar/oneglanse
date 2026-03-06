@@ -13,7 +13,9 @@ export async function runAgents(
 	const config = PROVIDER_CONFIGS[provider];
 	if (config.requiresWarmup) {
 		await page.waitForTimeout(3000);
-		await runStep(`Warming up ${provider}`, page, () => warmUpEditor(page));
+		await runStep(`Warming up ${provider}`, page, () =>
+			warmUpEditor(page, provider),
+		);
 	}
 
 	return runPrompts(prompts, page, provider);
