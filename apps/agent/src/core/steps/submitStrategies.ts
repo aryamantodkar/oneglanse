@@ -23,6 +23,36 @@ type SubmitAttempt = {
 	run: () => Promise<boolean>;
 };
 
+function randomBetween(min: number, max: number): number {
+	return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+async function humanPause(page: Page, minMs: number, maxMs: number): Promise<void> {
+	await page.waitForTimeout(randomBetween(minMs, maxMs));
+}
+
+async function humanizeFocus(
+	page: Page,
+	input: Locator,
+): Promise<void> {
+	const box = await input.boundingBox().catch(() => null);
+	if (box) {
+		const x = box.x + box.width * (0.35 + Math.random() * 0.3);
+		const y = box.y + box.height * (0.35 + Math.random() * 0.3);
+		await page.mouse.move(x, y, { steps: randomBetween(8, 20) });
+		await humanPause(page, 40, 120);
+		await page.mouse.click(x, y, {
+			delay: randomBetween(40, 120),
+		});
+	} else {
+		await input.click({ force: true, timeout: 3000 }).catch(() => null);
+	}
+
+	await humanPause(page, 80, 180);
+	await input.focus().catch(() => null);
+	await humanPause(page, 50, 140);
+}
+
 function hasWords(content: string): boolean {
 	return content
 		.trim()
@@ -127,8 +157,18 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 		run: async () => {
 			await ensureInputHasWords(ctx, "Enter submit");
 			return await withTimeout("Enter submit", async () => {
-				await input.focus();
-				await page.keyboard.press("Enter");
+				await humanizeFocus(page, input);
+
+				if (ctx.provider === "ai-overview") {
+					await page.keyboard.press("Tab", {
+						delay: randomBetween(40, 110),
+					});
+					await humanPause(page, 120, 260);
+				}
+
+				await page.keyboard.press("Enter", {
+					delay: randomBetween(40, 120),
+				});
 				return await checkSubmissionSuccess(ctx);
 			}, SUBMIT_METHOD_TIMEOUT_MS);
 		},
@@ -144,7 +184,14 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 		run: async () => {
 			await ensureInputHasWords(ctx, "Force click");
 			return await withTimeout("Force-click submit", async () => {
-				await sendButton.click({ force: true, timeout: SUBMIT_METHOD_TIMEOUT_MS });
+				await humanPause(ctx.page, 80, 180);
+				await sendButton.hover().catch(() => null);
+				await humanPause(ctx.page, 50, 150);
+				await sendButton.click({
+					force: true,
+					timeout: SUBMIT_METHOD_TIMEOUT_MS,
+					delay: randomBetween(35, 120),
+				});
 				return await checkSubmissionSuccess(ctx);
 			}, SUBMIT_METHOD_TIMEOUT_MS);
 		},
