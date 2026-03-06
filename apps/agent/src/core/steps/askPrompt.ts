@@ -5,6 +5,8 @@ import { env } from "../../env.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
+import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
+import { logger } from "@oneglanse/utils";
 import {
 	type SubmitContext,
 	tryDispatchClick,
@@ -13,6 +15,7 @@ import {
 } from "./submitStrategies.js";
 
 const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
+const SUBMISSION_RETRIES = 3;
 
 export async function askPrompt(
 	page: Page,
@@ -69,26 +72,54 @@ export async function askPrompt(
 		preSubmitUrl,
 	};
 
-	const success = await Promise.race([
-		(async () => {
-			let submitted = await tryEnterSubmit(ctx);
-			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
-			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
-			return submitted;
-		})(),
-		new Promise<boolean>((_, reject) =>
-			setTimeout(
-				() =>
-					reject(
-						new ExternalServiceError(
-							provider,
-							`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
+	let success = false;
+
+	for (let attempt = 1; attempt <= SUBMISSION_RETRIES; attempt++) {
+		if (attempt > 1) {
+			const retryDelay = 250 + attempt * 250;
+			logger.warn(
+				`submission retry ${attempt}/${SUBMISSION_RETRIES} for ${provider} after ${retryDelay}ms`,
+			);
+			await page.waitForTimeout(retryDelay);
+		}
+
+		sendButton = await findEnabledSendButton(page).catch(() => sendButton);
+		ctx.sendButton = sendButton;
+
+		success = await Promise.race([
+			(async () => {
+				let submitted = await tryEnterSubmit(ctx);
+				if (!submitted && sendButton) submitted = await tryForceClick(ctx);
+				if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
+				return submitted;
+			})(),
+			new Promise<boolean>((_, reject) =>
+				setTimeout(
+					() =>
+						reject(
+							new ExternalServiceError(
+								provider,
+								`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
+							),
 						),
-					),
-				SUBMISSION_PHASE_TIMEOUT_MS,
+					SUBMISSION_PHASE_TIMEOUT_MS,
+				),
 			),
-		),
-	]);
+		]).catch((err) => {
+			if (attempt === SUBMISSION_RETRIES) {
+				throw err;
+			}
+			logger.warn(
+				`submission attempt ${attempt}/${SUBMISSION_RETRIES} failed for ${provider}: ${
+					err instanceof Error ? err.message : String(err)
+				}`,
+			);
+			return false;
+		});
+
+		if (success) break;
+		await detectBotPage(page, provider);
+	}
 
 	if (!success) {
 		throw new ExternalServiceError(provider, "All submission methods failed");
