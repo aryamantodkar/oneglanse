@@ -57,10 +57,17 @@ Defined in `src/env.ts` (Zod validated):
   - `EXTRACTION_RETRY_DELAY_MS`
   - `MAX_EXTRACTION_RETRY_DELAY_MS`
 - Proxy system:
+  - `PROXY_URL` or split proxy fields below
+  - `PROXY_SCHEME` (optional with split fields; defaults to `http`)
   - `PROXY_HOST`
   - `PROXY_PORT`
   - `PROXY_USERNAME` (optional; requires `PROXY_PASSWORD`)
   - `PROXY_PASSWORD` (optional; requires `PROXY_USERNAME`)
+  - Supported schemes: `http`, `https`, `socks4`, `socks5`
+- Browser fingerprint alignment:
+  - `BROWSER_LOCALE`
+  - `BROWSER_TIMEZONE`
+  - `BROWSER_ACCEPT_LANGUAGE`
 - Provider tuning:
   - `MIN_RESPONSE_CHARS`
   - `PROVIDER_HOOK_TIMEOUT_MS`
@@ -80,6 +87,20 @@ pnpm install
 
 ```bash
 cp apps/agent/.env.example apps/agent/.env
+```
+
+Proxy examples:
+
+```env
+# Single URL form
+PROXY_URL=http://user:pass@proxy.example.com:8080
+
+# Or split fields
+PROXY_SCHEME=socks5
+PROXY_HOST=proxy.example.com
+PROXY_PORT=1080
+PROXY_USERNAME=user
+PROXY_PASSWORD=pass
 ```
 
 3. Start Redis and required dependencies.

@@ -1,19 +1,21 @@
-import { BaseError, ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
+import {
+	BaseError,
+	ExternalServiceError,
+	toErrorMessage,
+} from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
+import { logger, withTimeout } from "@oneglanse/utils";
 import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
 import { env } from "../env.js";
 import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
-import { logger, withTimeout } from "@oneglanse/utils";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
 const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
 const DEFAULT_NAV_TIMEOUT_MS = env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS;
 const HOOK_TIMEOUT_MS = env.PROVIDER_HOOK_TIMEOUT_MS;
 
-export async function createAgent(
-	provider: Provider,
-): Promise<{
+export async function createAgent(provider: Provider): Promise<{
 	browser: Browser;
 	context: BrowserContext;
 	page: Page;
@@ -22,17 +24,39 @@ export async function createAgent(
 }> {
 	const config = PROVIDER_CONFIGS[provider];
 
-	const { browser, context, proxy, cleanup } = await launchContext(provider);
+	const { browser, context, profile, proxy, cleanup } =
+		await launchContext(provider);
 	let phase = "new_page";
 
 	try {
 		const page = await context.newPage();
+		await page.setViewportSize(profile.viewport);
+
+		if (env.BROWSER_TIMEZONE || env.BROWSER_LOCALE) {
+			const client = await page.context().newCDPSession(page);
+			try {
+				if (env.BROWSER_TIMEZONE) {
+					await client.send("Emulation.setTimezoneOverride", {
+						timezoneId: env.BROWSER_TIMEZONE,
+					});
+				}
+
+				if (env.BROWSER_LOCALE) {
+					await client.send("Emulation.setLocaleOverride", {
+						locale: env.BROWSER_LOCALE,
+					});
+				}
+			} finally {
+				await client.detach().catch(() => null);
+			}
+		}
 
 		if (config.preNavigationHook) {
+			const preNavigationHook = config.preNavigationHook;
 			phase = "pre_navigation_hook";
 			await withTimeout(
 				`[${provider}] preNavigationHook`,
-				async () => config.preNavigationHook!(page),
+				async () => preNavigationHook(page),
 				HOOK_TIMEOUT_MS,
 			);
 		}
@@ -45,10 +69,11 @@ export async function createAgent(
 		});
 
 		if (config.postNavigationHook) {
+			const postNavigationHook = config.postNavigationHook;
 			phase = "post_navigation_hook";
 			await withTimeout(
 				`[${provider}] postNavigationHook`,
-				async () => config.postNavigationHook!(page),
+				async () => postNavigationHook(page),
 				HOOK_TIMEOUT_MS,
 			);
 		}
