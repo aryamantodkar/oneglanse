@@ -1,147 +1,221 @@
+import type { ChildProcess } from "node:child_process";
+import { mkdir, rm } from "node:fs/promises";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { existsSync } from "node:fs";
-import type { Browser, BrowserContext } from "playwright";
-import { chromium } from "playwright-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { logger } from "@oneglanse/utils";
+import type { Browser, BrowserContext } from "playwright";
+import { chromium } from "playwright";
 import { env } from "../../env.js";
 import {
-	STEALTH_CHROME_ARGS,
-	STEALTH_CONTEXT_OPTIONS,
-	STEALTH_INIT_SCRIPT,
+	detectDisplay,
+	ensureDisplay,
+	getFreePort,
+	spawnChromiumCDP,
+	waitForCDPEndpoint,
+} from "./cdp.js";
+import {
+	type ProxyForwarderHandle,
+	type ProxyScheme,
+	type UpstreamProxyConfig,
+	createProxyForwarder,
+} from "./proxy/forwarder.js";
+import {
+	type SessionProfile,
+	buildContextOptions,
+	buildStealthInitScript,
+	generateSessionProfile,
 } from "./stealth.js";
 
-chromium.use(StealthPlugin());
-
-function redactProxy(proxy: string): string {
-	return proxy.replace(/\/\/([^:@/]+)(?::[^@/]+)?@/, "//***:***@");
-}
-
-type ProxyConfig = {
-	logProxy: string;
-	playwrightProxy: NonNullable<Parameters<typeof chromium.launch>[0]>["proxy"];
+const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
+	http: 80,
+	https: 443,
+	socks4: 1080,
+	socks5: 1080,
 };
 
-const MAX_CONCURRENT_BROWSER_LAUNCHES = 1;
-let activeLaunches = 0;
-const launchQueue: Array<() => void> = [];
+function stripTrailingSlash(value: string): string {
+	return value.endsWith("/") ? value.slice(0, -1) : value;
+}
 
-async function acquireLaunchSlot(): Promise<void> {
-	if (activeLaunches < MAX_CONCURRENT_BROWSER_LAUNCHES) {
-		activeLaunches++;
-		return;
+function normalizeProxyScheme(protocol: string): ProxyScheme {
+	const normalized = protocol.trim().toLowerCase().replace(/:$/, "");
+
+	switch (normalized) {
+		case "http":
+		case "https":
+		case "socks4":
+		case "socks5":
+			return normalized;
+		case "socks":
+			return "socks5";
+		default:
+			throw new Error(`unsupported proxy protocol: ${protocol}`);
+	}
+}
+
+function normalizeProxyHost(hostname: string): string {
+	return hostname.replace(/^\[(.*)\]$/, "$1");
+}
+
+function parseProxyConfig(
+	serverUrl: string,
+	username?: string,
+	password?: string,
+): UpstreamProxyConfig {
+	const parsed = new URL(serverUrl);
+	const scheme = normalizeProxyScheme(parsed.protocol);
+	const port = Number(parsed.port || DEFAULT_PROXY_PORT[scheme]);
+	if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+		throw new Error(`invalid proxy port: ${parsed.port}`);
 	}
 
-	await new Promise<void>((resolve) => {
-		launchQueue.push(() => {
-			activeLaunches++;
-			resolve();
-		});
-	});
+	return {
+		scheme,
+		host: normalizeProxyHost(parsed.hostname),
+		port,
+		username,
+		password,
+		serverUrl: `${scheme}://${parsed.host}`,
+		logProxy: `${scheme}://${parsed.host}`,
+	};
 }
 
-function releaseLaunchSlot(): void {
-	if (activeLaunches > 0) activeLaunches--;
-	const next = launchQueue.shift();
-	if (next) next();
-}
+function buildProxyConfig(): UpstreamProxyConfig | null {
+	if (env.PROXY_URL) {
+		const parsed = new URL(env.PROXY_URL);
+		const username = parsed.username
+			? decodeURIComponent(parsed.username)
+			: undefined;
+		const password = parsed.password
+			? decodeURIComponent(parsed.password)
+			: undefined;
+		parsed.username = "";
+		parsed.password = "";
+		return parseProxyConfig(
+			stripTrailingSlash(parsed.toString()),
+			username,
+			password,
+		);
+	}
 
-function buildProxyConfig(): ProxyConfig | null {
 	const host = env.PROXY_HOST?.trim();
 	const port = env.PROXY_PORT?.trim();
 	if (!host || !port) return null;
 
-	const username = env.PROXY_USERNAME?.trim();
-	const password = env.PROXY_PASSWORD?.trim();
+	const scheme = normalizeProxyScheme(env.PROXY_SCHEME?.trim() || "http");
 	const hostPart =
 		host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
-	const server = `http://${hostPart}:${port}`;
 
-	if (!username || !password) {
-		return {
-			logProxy: server,
-			playwrightProxy: { server },
-		};
-	}
-
-	const encodedUsername = encodeURIComponent(username);
-	const encodedPassword = encodeURIComponent(password);
-	const inlineAuthServer = `http://${encodedUsername}:${encodedPassword}@${hostPart}:${port}`;
-	return {
-		logProxy: inlineAuthServer,
-		// Keep auth embedded in the proxy URL so Chromium starts with fully
-		// authenticated proxy routing, matching the previously stable flow.
-		playwrightProxy: { server: inlineAuthServer },
-	};
+	return parseProxyConfig(
+		`${scheme}://${hostPart}:${port}`,
+		env.PROXY_USERNAME?.trim() || undefined,
+		env.PROXY_PASSWORD?.trim() || undefined,
+	);
 }
 
-export async function launchContext(
-	provider: Provider,
-): Promise<{
+export async function launchContext(provider: Provider): Promise<{
 	browser: Browser;
 	context: BrowserContext;
+	profile: SessionProfile;
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
-	const proxyConfig = buildProxyConfig();
-	const logProxy = proxyConfig?.logProxy ?? null;
+	const profile = generateSessionProfile();
+	const upstreamProxy = buildProxyConfig();
+	const port = await getFreePort();
+	const userDataDir = `/tmp/cdp-${provider}-${Date.now()}-${port}`;
+	const windowSize = {
+		width: profile.viewport.width + profile.outerDelta.width,
+		height: profile.viewport.height + profile.outerDelta.height,
+	};
+	const displayHandle = await ensureDisplay(windowSize);
+	const display = displayHandle?.display ?? detectDisplay();
 
-	if (logProxy) {
-		logger.log(`using proxy: ${redactProxy(logProxy)}`);
+	let chromProcess: ChildProcess | null = null;
+	let browser: Browser | null = null;
+	let forwarder: ProxyForwarderHandle | null = null;
+	let chromiumStderr = "";
+
+	if (upstreamProxy) {
+		forwarder = await createProxyForwarder(upstreamProxy);
+		logger.log(
+			`launching chromium (proxy: ${upstreamProxy.logProxy})${display ? " [headful/Xvfb]" : " [headless]"}`,
+		);
 	} else {
 		logger.warn("no proxies available, launching without proxy");
+		logger.log(
+			`launching chromium (direct)${display ? " [headful/Xvfb]" : " [headless]"}`,
+		);
 	}
-
-	logger.log(
-		`launching chromium${proxyConfig ? " (proxy)" : " (direct)"}`,
-	);
-
-	let browser: Browser | null = null;
-	let launchSlotHeld = false;
 
 	const cleanup = async () => {
 		await browser?.close().catch(() => null);
+
+		if (chromProcess) {
+			try {
+				chromProcess.kill("SIGTERM");
+				await new Promise((resolve) => setTimeout(resolve, 300));
+				if (chromProcess.exitCode === null) {
+					chromProcess.kill("SIGKILL");
+				}
+			} catch {
+				// Chromium may have already exited.
+			}
+		}
+
+		await forwarder?.close().catch(() => null);
+		await displayHandle?.cleanup().catch(() => null);
+		await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
 	};
 
 	try {
-		await acquireLaunchSlot();
-		launchSlotHeld = true;
-		const launchOptions: Parameters<typeof chromium.launch>[0] = {
-			headless: true,
-			args: [
-				"--no-sandbox",
-				"--disable-setuid-sandbox",
-				"--disable-blink-features=AutomationControlled",
-				...STEALTH_CHROME_ARGS,
-			],
-			...(proxyConfig ? { proxy: proxyConfig.playwrightProxy } : {}),
-		};
-		if (existsSync("/usr/bin/chromium")) {
-			launchOptions.executablePath = "/usr/bin/chromium";
-		}
+		await mkdir(userDataDir, { recursive: true });
 
-		browser = await chromium.launch(launchOptions);
-
-		const context = await browser.newContext({
-			viewport: { width: 1920, height: 1080 },
-			...STEALTH_CONTEXT_OPTIONS,
+		chromProcess = spawnChromiumCDP(port, userDataDir, {
+			proxyServer: forwarder?.serverUrl,
+			windowSize,
+			display: displayHandle?.display,
 		});
 
-		await context.addInitScript(STEALTH_INIT_SCRIPT);
-		return { browser, context, proxy: logProxy, cleanup };
+		chromProcess.stderr?.on("data", (chunk: Buffer | string) => {
+			chromiumStderr = `${chromiumStderr}${chunk.toString()}`.slice(-8_192);
+		});
+
+		const wsEndpoint = await Promise.race([
+			waitForCDPEndpoint(port),
+			new Promise<never>((_, reject) => {
+				chromProcess?.once("error", reject);
+				chromProcess?.once("exit", (code, signal) => {
+					reject(
+						new Error(
+							`Chromium exited before CDP was ready (code=${code ?? "null"}, signal=${signal ?? "null"})`,
+						),
+					);
+				});
+			}),
+		]);
+		browser = await chromium.connectOverCDP(wsEndpoint);
+
+		const context = await browser.newContext(buildContextOptions(profile));
+		await context.addInitScript(buildStealthInitScript(profile));
+
+		return {
+			browser,
+			context,
+			profile,
+			proxy: upstreamProxy?.logProxy ?? null,
+			cleanup,
+		};
 	} catch (err) {
 		await cleanup();
 		throw new ExternalServiceError(
 			"browser",
-			toErrorMessage(err),
+			chromiumStderr.trim()
+				? `${toErrorMessage(err)} | chromium stderr: ${chromiumStderr.trim()}`
+				: toErrorMessage(err),
 			502,
 			{ provider },
 			err,
 		);
-	} finally {
-		if (launchSlotHeld) {
-			releaseLaunchSlot();
-		}
 	}
 }

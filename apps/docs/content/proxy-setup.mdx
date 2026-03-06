@@ -1,20 +1,51 @@
 ---
 title: Proxy Setup
-description: Configure direct proxy settings for the agent worker.
+description: Configure HTTP, HTTPS, SOCKS4, or SOCKS5 proxies for the agent worker.
 ---
 
 # Proxy Setup
 
 Proxy settings apply to `apps/agent`.
 
-Set:
+Use one of these formats.
 
-- `PROXY_HOST`
-- `PROXY_PORT`
-- `PROXY_USERNAME` (optional)
-- `PROXY_PASSWORD` (optional; must be set with `PROXY_USERNAME`)
+## `PROXY_URL`
 
-Credentials are passed with `PROXY_USERNAME`/`PROXY_PASSWORD`.
+```env
+PROXY_URL=http://user:pass@proxy.example.com:8080
+```
+
+Supported schemes:
+
+- `http`
+- `https`
+- `socks4`
+- `socks5`
+
+Host and port are required.
+
+## Split fields
+
+```env
+PROXY_SCHEME=http
+PROXY_HOST=proxy.example.com
+PROXY_PORT=8080
+PROXY_USERNAME=user
+PROXY_PASSWORD=pass
+```
+
+Notes:
+
+- `PROXY_SCHEME` is optional and defaults to `http`.
+- `PROXY_USERNAME` and `PROXY_PASSWORD` must be set together.
+- `PROXY_HOST` and `PROXY_PORT` must be set together.
+- Do not set `PROXY_URL` together with the split `PROXY_*` fields.
+
+## Runtime behavior
+
+- The agent creates a local forwarder and points Chromium at it.
+- Upstream proxy authentication is handled by the app, not by Chromium directly.
+- Logs redact credentials and only keep scheme, host, and port.
 
 ## Operational Guidance
 

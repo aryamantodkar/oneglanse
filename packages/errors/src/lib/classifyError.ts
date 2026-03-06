@@ -10,7 +10,12 @@ export function classifyError(err: unknown): FailureType {
 		return "connection_error";
 	if (/bot.?detect|cloudflare|captcha|turnstile|challenge/i.test(msg))
 		return "bot_detection";
-	if (/rate.?limit|too many|usage.?limit/i.test(msg)) return "rate_limited";
+	if (
+		/rate.?limit|too many|usage.?limit|status\s*429|403.*forbidden|access.?denied/i.test(
+			msg,
+		)
+	)
+		return "rate_limited";
 	if (
 		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed/i.test(
 			msg,

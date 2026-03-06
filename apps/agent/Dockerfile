@@ -23,13 +23,18 @@ RUN pnpm deploy --filter @oneglanse/agent --prod /app/out
 FROM node:20-bookworm-slim AS runner
 ARG PNPM_VERSION=10.16.0
 
-# Browser runtime deps
+# Browser runtime deps + Xvfb for headful mode (eliminates headless fingerprint signals)
+# System fonts are critical — VPS by default has almost no fonts, which creates
+# a distinctive font-enumeration fingerprint that bot-detection systems recognise.
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
   libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
   libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 \
-  ca-certificates fonts-liberation \
+  ca-certificates \
   chromium \
+  xvfb \
+  fonts-liberation fonts-dejavu fonts-freefont-ttf \
+  fonts-noto fonts-noto-cjk-extra \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -41,7 +46,19 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 
 COPY --from=builder /app/out ./
 
+# Startup script: launch Xvfb virtual display then start the worker.
+# Chrome runs in headful mode against the virtual display, eliminating all
+# headless-specific browser fingerprint signals (outerHeight=0, LLVMpipe WebGL, etc.)
+RUN printf '#!/bin/sh\n\
+Xvfb :99 -screen 0 3840x2160x24 -ac -nolisten tcp &\n\
+XVFB_PID=$!\n\
+export DISPLAY=:99\n\
+# Give Xvfb a moment to initialise before Chrome tries to connect\n\
+sleep 1\n\
+# exec replaces this shell — signals (SIGTERM) go directly to the worker\n\
+exec pnpm start:worker\n' > /start-worker.sh && chmod +x /start-worker.sh
+
 RUN chown -R node:node /app
 USER node
 
-CMD ["pnpm", "start:worker"]
+CMD ["/start-worker.sh"]

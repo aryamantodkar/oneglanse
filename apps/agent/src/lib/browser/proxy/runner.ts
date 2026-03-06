@@ -1,7 +1,7 @@
 import {
-	classifyError,
 	ExternalServiceError,
 	IPRefreshNeededError,
+	classifyError,
 	toErrorMessage,
 } from "@oneglanse/errors";
 import type {
@@ -9,17 +9,22 @@ import type {
 	PromptPayload,
 	Provider,
 } from "@oneglanse/types";
-import { createProviderLogger, exponentialBackoff, logger } from "@oneglanse/utils";
+import {
+	createProviderLogger,
+	exponentialBackoff,
+	logger,
+} from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
 import { storeWarmBrowser } from "../warmPool.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const ATTEMPTS_PER_CYCLE = 10;
-const MAX_CYCLES = 10;
+const MAX_CYCLES = 3;
 const INITIAL_BACKOFF = 5_000;
 const MAX_CYCLE_BACKOFF = 60_000;
-const RETRY_DELAY = 2000;
+const RETRY_DELAY = 5_000;
+const BOT_DETECTION_COOLDOWN = 30_000;
 
 export type AgentFactory = () => Promise<{
 	browser: Browser;
@@ -36,6 +41,25 @@ type Refs = {
 	proxy: string | null;
 	cleanup?: (() => Promise<void>) | null;
 };
+
+function jitter(baseMs: number, factor = 0.3): number {
+	const delta = Math.round(baseMs * factor);
+	const min = Math.max(0, baseMs - delta);
+	const max = baseMs + delta;
+	return Math.round(min + Math.random() * (max - min));
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getFailureType(err: unknown): ReturnType<typeof classifyError> {
+	if (err instanceof IPRefreshNeededError && err.failureType) {
+		return err.failureType as ReturnType<typeof classifyError>;
+	}
+
+	return classifyError(err);
+}
 
 async function closeContextAndBrowser(refs: Refs): Promise<void> {
 	await refs.context?.close().catch(() => {});
@@ -77,7 +101,10 @@ async function runSingleAttempt(
 			setTimeout(
 				() =>
 					reject(
-						new ExternalServiceError(label, `timed out after ${PROVIDER_TIMEOUT / 1000}s`),
+						new ExternalServiceError(
+							label,
+							`timed out after ${PROVIDER_TIMEOUT / 1000}s`,
+						),
 					),
 				PROVIDER_TIMEOUT,
 			),
@@ -94,16 +121,24 @@ async function runRetryCycle(
 	cycle: number,
 	plog: ReturnType<typeof createProviderLogger>,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
+	let nextPayload = currentPayload;
+
 	for (let attempt = 0; attempt < ATTEMPTS_PER_CYCLE; attempt++) {
 		const totalAttempt = cycle * ATTEMPTS_PER_CYCLE + attempt + 1;
 		const totalMax = MAX_CYCLES * ATTEMPTS_PER_CYCLE;
 
-		const refs: Refs = { browser: null, context: null, page: null, proxy: null, cleanup: null };
+		const refs: Refs = {
+			browser: null,
+			context: null,
+			page: null,
+			proxy: null,
+			cleanup: null,
+		};
 
 		try {
 			const result = await runSingleAttempt(
 				agentFactory,
-				currentPayload,
+				nextPayload,
 				provider,
 				label,
 				refs,
@@ -132,34 +167,65 @@ async function runRetryCycle(
 			return { done: true };
 		} catch (err) {
 			if (err instanceof IPRefreshNeededError) {
+				const failureType = getFailureType(err);
 				plog.warn(
-					`needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1}`,
+					`needs IP refresh after failed attempts on prompt ${err.failedPromptIndex + 1} (type=${failureType})`,
 				);
 
 				accumulatedResults.push(...err.partialResults);
-				currentPayload = updatePayloadAfterIpRefresh(currentPayload, err);
+				nextPayload = updatePayloadAfterIpRefresh(nextPayload, err);
+
+				if (failureType === "bot_detection") {
+					plog.warn(
+						`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
+					);
+					await sleep(BOT_DETECTION_COOLDOWN);
+					break;
+				}
+
+				if (failureType === "rate_limited") {
+					plog.warn(
+						`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
+					);
+					break;
+				}
 
 				if (attempt < ATTEMPTS_PER_CYCLE - 1) {
-					await new Promise((r) => setTimeout(r, RETRY_DELAY));
+					await sleep(jitter(RETRY_DELAY));
 				}
 				continue;
 			}
 
-			const failureType = classifyError(err);
+			const failureType = getFailureType(err);
 			plog.error(
 				`failed (attempt ${totalAttempt}/${totalMax}, cycle ${cycle + 1}/${MAX_CYCLES}, type=${failureType}):`,
 				toErrorMessage(err),
 			);
 
+			if (failureType === "bot_detection") {
+				plog.warn(
+					`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
+				);
+				await sleep(BOT_DETECTION_COOLDOWN);
+				break;
+			}
+
+			if (failureType === "rate_limited") {
+				plog.warn(
+					`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
+				);
+				break;
+			}
+
 			if (attempt < ATTEMPTS_PER_CYCLE - 1) {
-				await new Promise((r) => setTimeout(r, RETRY_DELAY));
+				await sleep(jitter(RETRY_DELAY));
 			}
 		} finally {
 			await closeContextAndBrowser(refs);
 		}
 	}
 
-	return { done: false, updatedPayload: currentPayload };
+	return { done: false, updatedPayload: nextPayload };
 }
 
 /**
@@ -179,11 +245,13 @@ export async function runWithRetryCycles(
 
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
 		if (cycle > 0) {
-			const backoff = exponentialBackoff(cycle - 1, INITIAL_BACKOFF, MAX_CYCLE_BACKOFF);
+			const backoff = jitter(
+				exponentialBackoff(cycle - 1, INITIAL_BACKOFF, MAX_CYCLE_BACKOFF),
+			);
 			plog.warn(
 				`cycle ${cycle + 1}/${MAX_CYCLES}: backing off ${backoff / 1000}s before retry...`,
 			);
-			await new Promise((r) => setTimeout(r, backoff));
+			await sleep(backoff);
 		}
 
 		const outcome = await runRetryCycle(
