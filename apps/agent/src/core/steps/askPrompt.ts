@@ -7,6 +7,7 @@ import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js"
 import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
 import { logger } from "@oneglanse/utils";
+import { PROVIDER_CONFIGS } from "../providers/index.js";
 import {
 	type SubmitContext,
 	tryDispatchClick,
@@ -66,6 +67,10 @@ export async function askPrompt(
 	if (!preSubmitContent || preSubmitContent.length === 0) {
 		throw new ExternalServiceError(provider, "Typing failed: editor did not receive prompt");
 	}
+
+	// Let the provider dismiss autocomplete or do any pre-submit setup.
+	const config = PROVIDER_CONFIGS[provider];
+	await config.beforeSubmitHook?.(page);
 
 	// Find send button AFTER typing (appears dynamically)
 	// Wait a bit longer if needed for button to appear

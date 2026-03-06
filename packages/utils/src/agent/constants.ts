@@ -107,6 +107,13 @@ export const SUBMIT_BTN_SELECTORS = [
 
 	'button[aria-label="Search"]',
 
+	// Google Search (uses input[type="submit"], not a button element)
+	'input[name="btnK"]',
+	'input[type="submit"][value="Google Search"]',
+	'input[aria-label="Google Search"]',
+	'input[name="btnI"]',
+	'input[type="submit"][value="I\'m Feeling Lucky"]',
+
 	// Fallback
 	'button[type="submit"]',
 ];

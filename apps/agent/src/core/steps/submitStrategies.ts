@@ -95,7 +95,7 @@ async function checkSubmissionSuccess(
 	// Ask provider config for a custom success signal first.
 	// undefined = no opinion, fall through to generic checks below.
 	const config = PROVIDER_CONFIGS[provider];
-	const customResult = await config.checkSubmitSuccess?.(page, preSubmitUrl);
+	const customResult = await config.checkSubmitSuccess?.(page);
 	if (customResult !== undefined) return customResult;
 
 	// Check 1: Input cleared (most reliable signal)
