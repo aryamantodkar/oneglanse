@@ -23,6 +23,12 @@ export const aiOverviewConfig: ProviderConfig = {
 		const html = await extractAIOverviewResponse(page);
 		return turndown.turndown(html);
 	},
+	beforeSubmitHook: async (page) => {
+		// Google's autocomplete captures the first Enter (selects suggestion instead of
+		// submitting). Press Escape to dismiss the dropdown so Enter goes to form submission.
+		await page.keyboard.press("Escape");
+		await page.waitForTimeout(150);
+	},
 	beforeRetryHook: async (page) => {
 		const input = await findActiveEditor(page, "ai-overview").catch(() => null);
 		const cleared = input
@@ -57,19 +63,22 @@ export const aiOverviewConfig: ProviderConfig = {
 		});
 		await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
 	},
-	checkSubmitSuccess: async (page, preSubmitUrl) => {
-		const currentUrl = page.url();
-		if (currentUrl !== preSubmitUrl) {
+	checkSubmitSuccess: async (page) => {
+		// Poll up to 3s for the URL to land on /search?q=... — navigation takes
+		// variable time and 800ms (the generic wait) is often not enough for Google.
+		// Any other outcome (autocomplete nav, sorry page, no change) is a failure
+		// so the caller falls through to the next submission method.
+		const deadline = Date.now() + 3000;
+		while (Date.now() < deadline) {
 			try {
-				const parsed = new URL(currentUrl);
-				if (
-					parsed.pathname === "/search" &&
-					parsed.searchParams.get("q")?.trim()
-				)
+				const parsed = new URL(page.url());
+				if (parsed.pathname === "/search" && parsed.searchParams.get("q")?.trim()) {
 					return true;
+				}
 			} catch {
-				return true;
+				// unparseable URL — not a search result page
 			}
+			await page.waitForTimeout(200);
 		}
 		return false;
 	},

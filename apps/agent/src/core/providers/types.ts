@@ -26,13 +26,15 @@ export interface ProviderConfig {
 	extractResponse: (page: Page) => Promise<string>;
 	/** Called before each retry attempt — e.g. navigate back to a clean state. */
 	beforeRetryHook?: (page: Page) => Promise<void>;
+	/** Called immediately before the submit attempt — e.g. dismiss autocomplete dropdowns. */
+	beforeSubmitHook?: (page: Page) => Promise<void>;
 	/** Called between consecutive prompts — e.g. reset the page to its initial state. */
 	betweenPromptsHook?: (page: Page) => Promise<void>;
 	/**
 	 * Provider-specific check for whether a prompt was submitted successfully.
 	 * Return true/false to short-circuit; return undefined to fall through to generic checks.
 	 */
-	checkSubmitSuccess?: (page: Page, preSubmitUrl: string) => Promise<boolean | undefined>;
+	checkSubmitSuccess?: (page: Page) => Promise<boolean | undefined>;
 	/** Runs before the browser navigates to the provider URL. */
 	preNavigationHook?: (page: Page) => Promise<void>;
 	/** Runs after the browser lands on the provider URL. */

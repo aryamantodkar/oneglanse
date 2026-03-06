@@ -926,6 +926,7 @@ export function buildContextOptions(
 		extraHTTPHeaders: {
 			"Accept-Language": DEFAULT_ACCEPT_LANGUAGE,
 		},
+		ignoreHTTPSErrors: true,
 	};
 
 	if (DEFAULT_TIMEZONE) {
@@ -939,6 +940,7 @@ export function buildChromeArgs(options?: {
 	extensionDir?: string;
 }): string[] {
 	const args = [
+		"--ignore-certificate-errors",
 		"--disable-dev-shm-usage",
 		`--lang=${DEFAULT_LOCALE}`,
 		"--mute-audio",
