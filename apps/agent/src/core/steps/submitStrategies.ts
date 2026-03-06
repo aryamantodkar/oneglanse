@@ -159,12 +159,7 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 			return await withTimeout("Enter submit", async () => {
 				await humanizeFocus(page, input);
 
-				if (ctx.provider === "ai-overview") {
-					await page.keyboard.press("Tab", {
-						delay: randomBetween(40, 110),
-					});
-					await humanPause(page, 120, 260);
-				}
+				await humanPause(page, 120, 260);
 
 				await page.keyboard.press("Enter", {
 					delay: randomBetween(40, 120),
