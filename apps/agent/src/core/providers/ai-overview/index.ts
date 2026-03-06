@@ -1,18 +1,14 @@
-import { ExternalServiceError } from "@oneglanse/errors";
 import { extractAIOverviewSources } from "./lib/extractSources.js";
 import { extractAIOverviewResponse } from "./lib/extractResponse.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 import { clearEditorInput } from "../../../lib/input/editor/clearInput.js";
 import { findActiveEditor } from "../../../lib/input/editor/findEditor.js";
-import { logger, SELECTORS } from "@oneglanse/utils";
+import { logger } from "@oneglanse/utils";
 import { env } from "../../../env.js";
 import type { ProviderConfig } from "../types.js";
 
-// AI Overview is a search result block, not a chat interface.
-// It has no streaming indicator — we wait for its container to appear instead.
 const BASE_URL = "https://www.google.com/?hl=en&pws=0";
-const RESPONSE_CONTAINER_SELECTORS = `${SELECTORS.aiOverviewResponse.placeholder}, ${SELECTORS.aiOverviewResponse.mainCol}`;
 
 export const aiOverviewConfig: ProviderConfig = {
 	url: BASE_URL,
@@ -21,19 +17,7 @@ export const aiOverviewConfig: ProviderConfig = {
 	displayName: "AI Overview",
 	requiresWarmup: false,
 	waitForResponse: async (page) => {
-		// Wait for the AI Overview container to appear.
-		// If it doesn't show up within the timeout, throw so the retry loop
-		// can rotate the proxy — same failure path as every other provider.
-		await page
-			.locator(RESPONSE_CONTAINER_SELECTORS)
-			.first()
-			.waitFor({ state: "visible", timeout: env.AI_OVERVIEW_WAIT_TIMEOUT_MS })
-			.catch(() => {
-				throw new ExternalServiceError(
-					"ai-overview",
-					"AI Overview container not visible — triggering retry",
-				);
-			});
+		await page.waitForTimeout(env.AI_OVERVIEW_WAIT_TIMEOUT_MS);
 	},
 	extractResponse: async (page) => {
 		const html = await extractAIOverviewResponse(page);
