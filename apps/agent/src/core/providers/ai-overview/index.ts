@@ -57,10 +57,26 @@ export const aiOverviewConfig: ProviderConfig = {
 		});
 		await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
 	},
+	checkSubmitSuccess: async (page, preSubmitUrl) => {
+		const currentUrl = page.url();
+		if (currentUrl !== preSubmitUrl) {
+			try {
+				const parsed = new URL(currentUrl);
+				if (
+					parsed.pathname === "/search" &&
+					parsed.searchParams.get("q")?.trim()
+				)
+					return true;
+			} catch {
+				return true;
+			}
+		}
+		return false;
+	},
 	postNavigationHook: async (page) => {
 		// Dismiss the consent dialog if it appears.
 		await page
-			.locator('button:has-text("Accept all"), button#L2AGLb, [jsname="b3VHJd"]')
+			.locator('button:has-text("Accept all")')
 			.first()
 			.click({ timeout: 3000 })
 			.catch(() => null);
