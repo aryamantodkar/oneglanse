@@ -96,7 +96,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
         return { success: false, error: "AI Overview HTML was empty after extraction" };
 
       return { success: true, html };
-    }, SELECTORS.aiOverviewResponse);
+    }, SELECTORS.aiOverview);
 
     if (!result || !result.success) {
       const message = result?.error || "unknown extraction failure";
