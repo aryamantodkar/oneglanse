@@ -32,20 +32,12 @@ export async function createAgent(provider: Provider): Promise<{
 		const page = await context.newPage();
 		await page.setViewportSize(profile.viewport);
 
-		if (env.BROWSER_TIMEZONE || env.BROWSER_LOCALE) {
+		if (env.BROWSER_TIMEZONE) {
 			const client = await page.context().newCDPSession(page);
 			try {
-				if (env.BROWSER_TIMEZONE) {
-					await client.send("Emulation.setTimezoneOverride", {
-						timezoneId: env.BROWSER_TIMEZONE,
-					});
-				}
-
-				if (env.BROWSER_LOCALE) {
-					await client.send("Emulation.setLocaleOverride", {
-						locale: env.BROWSER_LOCALE,
-					});
-				}
+				await client.send("Emulation.setTimezoneOverride", {
+					timezoneId: env.BROWSER_TIMEZONE,
+				});
 			} finally {
 				await client.detach().catch(() => null);
 			}
