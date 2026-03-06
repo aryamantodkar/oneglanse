@@ -35,13 +35,8 @@ export async function askPrompt(
 	provider: Provider,
 ): Promise<void> {
 	if (provider === "ai-overview") {
-		const baseUrl = "https://www.google.com/?hl=en-US&gl=us&pws=0";
 		const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en-US&gl=us&pws=0`;
 
-		await page.goto(baseUrl, {
-			waitUntil: "domcontentloaded",
-			timeout: 20_000,
-		});
 		await humanPause(page, 1000, 2000);
 		await page.goto(searchUrl, {
 			waitUntil: "domcontentloaded",
