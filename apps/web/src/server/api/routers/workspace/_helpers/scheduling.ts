@@ -35,6 +35,10 @@ export async function submitImmediateRunWithRetry(args: {
 			return { status: "queued", jobId: result.jobGroupId };
 		} catch (err) {
 			lastError = err;
+			console.error(
+				`[workspace] immediate run submission failed (attempt ${attempt}/${maxAttempts}, workspace=${workspaceId}, user=${userId}):`,
+				toErrorMessage(err),
+			);
 			if (attempt < maxAttempts) {
 				await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
 			}
