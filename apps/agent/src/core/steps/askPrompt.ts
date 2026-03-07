@@ -146,9 +146,8 @@ export async function askPrompt(
 	await page
 		.waitForLoadState("domcontentloaded", { timeout: 20000 })
 		.catch(() => {});
-	await page.waitForTimeout(2000);
 	await page
-		.waitForLoadState("networkidle", { timeout: 15000 })
+		.waitForLoadState("networkidle", { timeout: 10000 })
 		.catch(() => {});
 
 	logger.log(`post-submit URL: ${page.url()}`);

@@ -1,4 +1,3 @@
-import { writeFile } from "node:fs/promises";
 import type { Page } from "playwright";
 import { BaseError, ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import { SELECTORS, logger } from "@oneglanse/utils";
@@ -102,10 +101,6 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
     if (!result || !result.success) {
       const message = result?.error || "unknown extraction failure";
       logger.warn(`AI Overview extraction failed: ${message}`);
-      const html = await page.content().catch(() => "");
-      const path = `/tmp/ai-overview-debug-${Date.now()}.html`;
-      await writeFile(path, html).catch(() => null);
-      logger.warn(`AI Overview debug HTML saved to ${path}`);
       throw new ExternalServiceError("ai-overview", message);
     }
 

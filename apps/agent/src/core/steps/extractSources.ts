@@ -24,13 +24,10 @@ async function extractSourcesFromPanel(
 	provider: Provider,
 ): Promise<Source[]> {
 	await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
-	await page.waitForTimeout(1000);
 
 	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
 
 	logger.debug(`extracted ${sources.length} sources`);
-
-	await page.waitForTimeout(1000);
 
 	return sources;
 }

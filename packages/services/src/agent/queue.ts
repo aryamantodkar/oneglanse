@@ -16,6 +16,8 @@ const connection = {
 
 const queues = new Map<Provider, Queue>();
 
+export const CHAIN_QUEUE_NAME = "oneglanse-agent-chain";
+
 export function getQueueName(provider: Provider): string {
 	return `oneglanse-agent-${provider}`;
 }
@@ -30,4 +32,16 @@ export function getProviderQueue(provider: Provider): Queue {
 		queues.set(provider, q);
 	}
 	return q;
+}
+
+let chainQueue: Queue | null = null;
+
+export function getChainQueue(): Queue {
+	if (!chainQueue) {
+		chainQueue = new Queue(CHAIN_QUEUE_NAME, {
+			connection,
+			defaultJobOptions: DEFAULT_JOB_OPTIONS,
+		});
+	}
+	return chainQueue;
 }

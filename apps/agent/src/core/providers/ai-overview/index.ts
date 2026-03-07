@@ -17,7 +17,15 @@ export const aiOverviewConfig: ProviderConfig = {
 	displayName: "AI Overview",
 	requiresWarmup: false,
 	waitForResponse: async (page) => {
-		await page.waitForTimeout(env.AI_OVERVIEW_WAIT_TIMEOUT_MS);
+		// Poll for the AI Overview container — resolves as soon as it appears rather
+		// than sleeping a flat 10s. Falls through on timeout so extraction can report
+		// the missing element cleanly.
+		await page
+			.waitForSelector(
+				'[data-container-id="model-response-placeholder"], [data-container-id="main-col"]',
+				{ timeout: env.AI_OVERVIEW_WAIT_TIMEOUT_MS },
+			)
+			.catch(() => {});
 	},
 	extractResponse: async (page) => {
 		const html = await extractAIOverviewResponse(page);

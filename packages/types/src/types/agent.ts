@@ -1,4 +1,5 @@
 import type { Source } from "./sources.js";
+import type { UserPrompt } from "./prompts.js";
 
 // Agent-specific types shared between web and agent apps
 export interface AgentCitation {
@@ -42,6 +43,17 @@ export const PROVIDER_LIST = [
 ] as const;
 
 export type Provider = (typeof PROVIDER_LIST)[number];
+
+// Execution order for chained single-browser runs
+export const CHAIN_ORDER: Provider[] = ["chatgpt", "perplexity", "gemini", "ai-overview"];
+
+export type ChainJobData = {
+	jobGroupId: string;
+	prompts: UserPrompt[];
+	user_id: string;
+	workspace_id: string;
+	enabledProviders: Provider[];
+};
 
 export type AgentResult = {
 	status: "fulfilled" | "rejected";

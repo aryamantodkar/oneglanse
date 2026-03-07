@@ -90,7 +90,7 @@ async function checkSubmissionSuccess(
 	ctx: SubmitContext,
 ): Promise<boolean> {
 	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
-	await page.waitForTimeout(800);
+	await page.waitForTimeout(300);
 
 	// Ask provider config for a custom success signal first.
 	// undefined = no opinion, fall through to generic checks below.
