@@ -1,9 +1,17 @@
-import { runWithProvider } from "../lib/providerContext.js";
-import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
-import { type AgentFactory, runWithRetryCycles } from "../lib/browser/proxy/runner.js";
-import { getWarmBrowser } from "../lib/browser/warmPool.js";
-import { PROVIDER_CONFIGS } from "./providers/index.js";
+import type {
+	AskPromptResult,
+	PromptPayload,
+	Provider,
+} from "@oneglanse/types";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
+import { usesDynamicProxyStrategy } from "../lib/browser/proxy/provider.js";
+import {
+	type AgentFactory,
+	runWithRetryCycles,
+} from "../lib/browser/proxy/runner.js";
+import { getWarmBrowser } from "../lib/browser/warmPool.js";
+import { runWithProvider } from "../lib/providerContext.js";
+import { PROVIDER_CONFIGS } from "./providers/index.js";
 
 export async function agentHandler(
 	label: string,
@@ -12,6 +20,10 @@ export async function agentHandler(
 	provider: Provider,
 ): Promise<AskPromptResult[]> {
 	return runWithProvider(provider, async () => {
+		if (usesDynamicProxyStrategy()) {
+			return runWithRetryCycles(label, agentFactory, payload, provider);
+		}
+
 		// Wrap agentFactory with warm-pool awareness: if a healthy browser already
 		// exists for this provider, navigate it to a clean slate and reuse it,
 		// saving browser launch + warmup cost (~3-5s). Falls back to a cold factory

@@ -55,6 +55,29 @@ const AgentEnvSchema = z
 		PROXY_PORT: z.string().trim().optional(),
 		PROXY_USERNAME: z.string().trim().optional(),
 		PROXY_PASSWORD: z.string().trim().optional(),
+		PROXY_PROVIDER: z
+			.preprocess(
+				(value) =>
+					typeof value === "string" ? value.trim().toLowerCase() : undefined,
+				z
+					.enum([
+						"generic",
+						"brightdata",
+						"decodo",
+						"iproyal",
+						"lunaproxy",
+						"netnut",
+						"oxylabs",
+						"proxyempire",
+						"scrapeops",
+						"smartproxy",
+						"soax",
+						"thordata",
+						"webshare",
+					])
+					.optional(),
+			)
+			.optional(),
 		BROWSER_LOCALE: z.string().trim().optional(),
 		BROWSER_TIMEZONE: z.string().trim().optional(),
 		BROWSER_ACCEPT_LANGUAGE: z.string().trim().optional(),
@@ -165,6 +188,18 @@ const AgentEnvSchema = z
 				code: z.ZodIssueCode.custom,
 				path: ["PROXY_SCHEME"],
 				message: "PROXY_SCHEME requires PROXY_HOST and PROXY_PORT.",
+			});
+		}
+
+		if (
+			values.PROXY_PROVIDER &&
+			!(hasProxyUrl || (hasProxyHost && hasProxyPort))
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["PROXY_PROVIDER"],
+				message:
+					"PROXY_PROVIDER requires either PROXY_URL or PROXY_HOST/PROXY_PORT.",
 			});
 		}
 	});

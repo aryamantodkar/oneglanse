@@ -58,6 +58,7 @@ Defined in `src/env.ts` (Zod validated):
   - `MAX_EXTRACTION_RETRY_DELAY_MS`
 - Proxy system:
   - `PROXY_URL` or split proxy fields below
+  - `PROXY_PROVIDER` (`generic`, `decodo`, `smartproxy`, `brightdata`, `oxylabs`, `thordata`, `lunaproxy`, `netnut`, `soax`, `scrapeops`, `proxyempire`, `iproyal`, `webshare`)
   - `PROXY_SCHEME` (optional with split fields; defaults to `http`)
   - `PROXY_HOST`
   - `PROXY_PORT`
@@ -94,6 +95,7 @@ Proxy examples:
 ```env
 # Single URL form
 PROXY_URL=http://user:pass@proxy.example.com:8080
+PROXY_PROVIDER=generic
 
 # Or split fields
 PROXY_SCHEME=socks5
@@ -102,6 +104,61 @@ PROXY_PORT=1080
 PROXY_USERNAME=user
 PROXY_PASSWORD=pass
 ```
+
+Provider-aware rotation examples:
+
+```env
+# Decodo / Smartproxy:
+# If you point at a sticky port block, the agent advances the port per browser
+# launch. If you point at gate.decodo.com, it rotates session/sessionduration.
+PROXY_PROVIDER=decodo
+PROXY_SCHEME=http
+PROXY_HOST=us.decodo.com
+PROXY_PORT=10001
+PROXY_USERNAME=user-abc
+PROXY_PASSWORD=pass-abc
+
+# Thordata / LunaProxy:
+# sessid is replaced every launch, existing sesstime is preserved.
+PROXY_PROVIDER=thordata
+PROXY_URL=http://td-customer-abc-country-US-sessid-old-sesstime-30:pass@treyklah.na.thordata.net:9999
+
+# Bright Data:
+PROXY_PROVIDER=brightdata
+PROXY_URL=http://brd-customer-zone-resi-session-old:pass@brd.superproxy.io:33335
+
+# Oxylabs:
+# Sticky port ranges are rotated by port. If your username already contains
+# -sessid-, the agent replaces that token too.
+PROXY_PROVIDER=oxylabs
+PROXY_URL=http://customer-user:pass@pr.oxylabs.io:10001
+
+# NetNut:
+PROXY_PROVIDER=netnut
+PROXY_URL=http://user-zone-resi:pass@gw.netnut.net:5959
+
+# SOAX:
+PROXY_PROVIDER=soax
+PROXY_URL=http://package-12345-country-us-sessionid-old-sessionlength-600:pass@proxy.soax.com:5000
+
+# ScrapeOps:
+PROXY_PROVIDER=scrapeops
+PROXY_URL=http://scrapeops:API_KEY@residential-proxy.scrapeops.io:8181
+
+# ProxyEmpire:
+PROXY_PROVIDER=proxyempire
+PROXY_URL=http://user-country-us:pass@res.proxyempire.io:9000
+
+# IPRoyal / Webshare:
+# These are passed through unchanged because stickiness is typically controlled
+# in the provider dashboard or generated proxy list rather than username tokens.
+PROXY_PROVIDER=iproyal
+PROXY_URL=http://user:pass@geo.iproyal.com:12321
+```
+
+When `PROXY_PROVIDER` is anything other than `generic`, the agent intentionally
+skips warm-browser reuse and persistent browser profiles so each fresh launch
+can negotiate a fresh upstream proxy session cleanly.
 
 3. Start Redis and required dependencies.
 

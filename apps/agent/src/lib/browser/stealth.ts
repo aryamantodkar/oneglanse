@@ -2228,6 +2228,10 @@ export function buildStealthInitScript(
 		} catch {}
 
 		if (!navigator.getBattery) {
+			const batteryCharging = sessionPrng() < 0.8;
+			const batteryLevel = batteryCharging
+				? 0.75 + sessionPrng() * 0.25
+				: 0.3 + sessionPrng() * 0.6;
 			defineValue(navigator, "getBattery", function getBattery() {
 				return Promise.resolve(
 					createEventTargetLike(
@@ -2235,10 +2239,10 @@ export function buildStealthInitScript(
 							? BatteryManager.prototype
 							: EventTarget.prototype,
 						{
-							charging: { value: true, configurable: true },
-							chargingTime: { value: 0, configurable: true },
-							dischargingTime: { value: Infinity, configurable: true },
-							level: { value: 1, configurable: true },
+							charging: { value: batteryCharging, configurable: true },
+							chargingTime: { value: batteryCharging ? 0 : Infinity, configurable: true },
+							dischargingTime: { value: batteryCharging ? Infinity : Math.round(3600 + sessionPrng() * 7200), configurable: true },
+							level: { value: Math.round(batteryLevel * 100) / 100, configurable: true },
 							onchargingchange: {
 								value: null,
 								configurable: true,
@@ -2689,25 +2693,17 @@ export function buildContextOptions(
 }
 
 export function buildChromeArgs(locale = DEFAULT_LOCALE): string[] {
-	const args = [
-		"--ignore-certificate-errors",
-		"--disable-dev-shm-usage",
+	return [
 		`--lang=${locale}`,
 		"--mute-audio",
 		"--no-first-run",
 		"--no-default-browser-check",
-		"--disable-background-networking",
-		"--disable-sync",
-		"--disable-translate",
-		"--disable-client-side-phishing-detection",
-		"--disable-component-update",
-		"--metrics-recording-only",
-		"--safebrowsing-disable-auto-update",
-		"--disable-ipc-flooding-protection",
 		"--font-render-hinting=medium",
 		"--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
 		"--enforce-webrtc-ip-permission-check",
+		// DNS leak prevention: force all DNS through the proxy CONNECT tunnel
+		'--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1',
+		"--enable-features=DnsOverHttps",
+		"--dns-over-https-mode=automatic",
 	];
-
-	return args;
 }

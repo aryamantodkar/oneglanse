@@ -17,6 +17,7 @@ import {
 import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
 import { storeWarmBrowser } from "../warmPool.js";
+import { usesDynamicProxyStrategy } from "./provider.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const ATTEMPTS_PER_CYCLE = 10;
@@ -149,7 +150,12 @@ async function runRetryCycle(
 			// Store the healthy browser in the warm pool so the next job for this
 			// provider can reuse it without a full browser launch. Null refs so the
 			// finally block's closeContextAndBrowser becomes a no-op.
-			if (refs.browser && refs.context && refs.page) {
+			if (
+				!usesDynamicProxyStrategy() &&
+				refs.browser &&
+				refs.context &&
+				refs.page
+			) {
 				await storeWarmBrowser(provider, {
 					browser: refs.browser,
 					context: refs.context,
