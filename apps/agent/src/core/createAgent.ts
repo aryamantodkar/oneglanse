@@ -45,34 +45,39 @@ export async function createAgent(provider: Provider): Promise<{
 			}
 		}
 
-		if (config.preNavigationHook) {
-			const preNavigationHook = config.preNavigationHook;
-			phase = "pre_navigation_hook";
-			await withTimeout(
-				`[${provider}] preNavigationHook`,
-				async () => preNavigationHook(page),
-				HOOK_TIMEOUT_MS,
-			);
+		if (!config.skipInitialNavigation) {
+			if (config.preNavigationHook) {
+				const preNavigationHook = config.preNavigationHook;
+				phase = "pre_navigation_hook";
+				await withTimeout(
+					`[${provider}] preNavigationHook`,
+					async () => preNavigationHook(page),
+					HOOK_TIMEOUT_MS,
+				);
+			}
+
+			phase = "navigate";
+			logger.log(`navigating to ${config.url}`);
+			await navigateWithRetry(page, config.url, {
+				waitUntil: "domcontentloaded",
+				timeout: 60000,
+			});
+
+			if (config.postNavigationHook) {
+				const postNavigationHook = config.postNavigationHook;
+				phase = "post_navigation_hook";
+				await withTimeout(
+					`[${provider}] postNavigationHook`,
+					async () => postNavigationHook(page),
+					HOOK_TIMEOUT_MS,
+				);
+			}
+
+			logger.log(`page ready: ${page.url()}`);
+
+			phase = "warmup_delay";
+			await page.waitForTimeout(config.warmupDelayMs);
 		}
-
-		phase = "navigate";
-		logger.log(`navigating to ${config.url}`);
-		await navigateWithRetry(page, config.url, {
-			waitUntil: "domcontentloaded",
-			timeout: 60000,
-		});
-
-		if (config.postNavigationHook) {
-			const postNavigationHook = config.postNavigationHook;
-			phase = "post_navigation_hook";
-			await withTimeout(
-				`[${provider}] postNavigationHook`,
-				async () => postNavigationHook(page),
-				HOOK_TIMEOUT_MS,
-			);
-		}
-
-		logger.log(`page ready: ${page.url()}`);
 
 		// Keep finite defaults to prevent indefinite hangs in locator/actions.
 		// Long-running response generation is handled separately via explicit waits.
@@ -82,9 +87,6 @@ export async function createAgent(provider: Provider): Promise<{
 		page.on("console", (_msg: ConsoleMessage) => {
 			// console.log(`[${provider.toUpperCase()} PAGE]`, _msg.text())
 		});
-
-		phase = "warmup_delay";
-		await page.waitForTimeout(config.warmupDelayMs);
 
 		return { browser, context, page, proxy, cleanup };
 	} catch (err) {

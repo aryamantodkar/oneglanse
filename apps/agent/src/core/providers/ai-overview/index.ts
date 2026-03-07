@@ -6,25 +6,30 @@ import { logger } from "@oneglanse/utils";
 import { env } from "../../../env.js";
 import type { ProviderConfig } from "../types.js";
 
-const BASE_URL = "https://www.google.com/?hl=en&pws=0";
-
 function buildSearchUrl(prompt: string): string {
 	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&pws=0`;
 }
 
 export const aiOverviewConfig: ProviderConfig = {
-	url: BASE_URL,
+	url: "https://www.google.com/?hl=en&pws=0",
 	warmupDelayMs: 0,
 	label: "AI Overview",
 	displayName: "AI Overview",
 	requiresWarmup: false,
+	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
 		const url = buildSearchUrl(prompt);
-		logger.log(`[ai-overview] navigating to search URL: ${url}`);
+		logger.log(`[ai-overview] navigating to ${url}`);
 		await navigateWithRetry(page, url, {
 			waitUntil: "domcontentloaded",
 			timeout: 60000,
 		});
+		// Dismiss consent dialog if it appears on the search result page
+		await page
+			.locator('button:has-text("Accept all")')
+			.first()
+			.click({ timeout: 3000 })
+			.catch(() => null);
 		logger.log(`[ai-overview] search page ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {
@@ -39,18 +44,10 @@ export const aiOverviewConfig: ProviderConfig = {
 		const html = await extractAIOverviewResponse(page);
 		return turndown.turndown(html);
 	},
-	betweenPromptsHook: async (page) => {
-		// Each prompt navigates to its own search URL, so nothing to reset.
-		// Small pause to avoid hammering Google between requests.
-		await page.waitForTimeout(1000);
-	},
-	postNavigationHook: async (page) => {
-		// Dismiss the consent dialog if it appears.
-		await page
-			.locator('button:has-text("Accept all")')
-			.first()
-			.click({ timeout: 3000 })
-			.catch(() => null);
+	betweenPromptsHook: async (_page) => {
+		// Each prompt navigates to its own URL via navigateToPrompt — nothing to reset.
+		// Small pause between requests to avoid hammering Google.
+		await _page.waitForTimeout(1000);
 	},
 	extractSources: (page) => extractAIOverviewSources(page),
 };

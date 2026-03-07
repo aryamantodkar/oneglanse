@@ -18,6 +18,12 @@ export interface ProviderConfig {
 	displayName: string;
 	/** Set true to skip this provider in all job runs. */
 	skip?: boolean;
+	/**
+	 * When true, createAgent skips the initial navigation to config.url.
+	 * Use this for providers that navigate per-prompt via navigateToPrompt,
+	 * making the base URL navigation redundant.
+	 */
+	skipInitialNavigation?: boolean;
 	/** Whether to run the editor warm-up sequence before the first prompt. */
 	requiresWarmup: boolean;
 	/** Waits until the AI response is fully generated and ready to read. */
