@@ -11,8 +11,6 @@ import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
-const DEFAULT_VIEWPORT = { width: 1280, height: 800 };
-
 const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
 const DEFAULT_NAV_TIMEOUT_MS = env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS;
 const HOOK_TIMEOUT_MS = env.PROVIDER_HOOK_TIMEOUT_MS;
@@ -26,24 +24,11 @@ export async function createAgent(provider: Provider): Promise<{
 }> {
 	const config = PROVIDER_CONFIGS[provider];
 
-	const { browser, context, profile, proxy, cleanup } =
-		await launchContext(provider);
+	const { browser, context, proxy, cleanup } = await launchContext(provider);
 	let phase = "new_page";
 
 	try {
 		const page = await context.newPage();
-		await page.setViewportSize(profile.viewport);
-
-		if (env.BROWSER_TIMEZONE) {
-			const client = await page.context().newCDPSession(page);
-			try {
-				await client.send("Emulation.setTimezoneOverride", {
-					timezoneId: env.BROWSER_TIMEZONE,
-				});
-			} finally {
-				await client.detach().catch(() => null);
-			}
-		}
 
 		if (!config.skipInitialNavigation) {
 			if (config.preNavigationHook) {
@@ -125,19 +110,6 @@ export async function setupProviderPage(
 	const page = await context.newPage();
 
 	try {
-		await page.setViewportSize(DEFAULT_VIEWPORT);
-
-		if (env.BROWSER_TIMEZONE) {
-			const client = await page.context().newCDPSession(page);
-			try {
-				await client.send("Emulation.setTimezoneOverride", {
-					timezoneId: env.BROWSER_TIMEZONE,
-				});
-			} finally {
-				await client.detach().catch(() => null);
-			}
-		}
-
 		if (config.preNavigationHook) {
 			const preNavigationHook = config.preNavigationHook;
 			phase = "pre_navigation_hook";
@@ -173,7 +145,12 @@ export async function setupProviderPage(
 		phase = "warmup_delay";
 		await page.waitForTimeout(config.warmupDelayMs);
 
-		return { page, cleanup: async () => { await page.close().catch(() => {}); } };
+		return {
+			page,
+			cleanup: async () => {
+				await page.close().catch(() => {});
+			},
+		};
 	} catch (err) {
 		await page.close().catch(() => {});
 		if (err instanceof BaseError) {

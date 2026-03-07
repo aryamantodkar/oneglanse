@@ -7,6 +7,7 @@ import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
 import { env } from "../../env.js";
 import {
+	attachWorkerStealthTargets,
 	detectDisplay,
 	ensureDisplay,
 	getFreePort,
@@ -19,10 +20,13 @@ import {
 	type UpstreamProxyConfig,
 	createProxyForwarder,
 } from "./proxy/forwarder.js";
+import { resolveBrowserSessionSettings } from "./sessionSettings.js";
 import {
+	type BrowserSessionSettings,
 	type SessionProfile,
 	buildContextOptions,
 	buildStealthInitScript,
+	buildWorkerStealthBootstrap,
 	generateSessionProfile,
 } from "./stealth.js";
 
@@ -117,6 +121,7 @@ export async function launchContext(provider: Provider): Promise<{
 	browser: Browser;
 	context: BrowserContext;
 	profile: SessionProfile;
+	settings: BrowserSessionSettings;
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
@@ -134,6 +139,7 @@ export async function launchContext(provider: Provider): Promise<{
 	let chromProcess: ChildProcess | null = null;
 	let browser: Browser | null = null;
 	let forwarder: ProxyForwarderHandle | null = null;
+	let workerStealthCleanup: (() => Promise<void>) | null = null;
 	let chromiumStderr = "";
 
 	if (upstreamProxy) {
@@ -149,6 +155,7 @@ export async function launchContext(provider: Provider): Promise<{
 	}
 
 	const cleanup = async () => {
+		await workerStealthCleanup?.().catch(() => null);
 		await browser?.close().catch(() => null);
 
 		if (chromProcess) {
@@ -170,10 +177,12 @@ export async function launchContext(provider: Provider): Promise<{
 
 	try {
 		await mkdir(userDataDir, { recursive: true });
+		const settings = await resolveBrowserSessionSettings(forwarder?.serverUrl);
 
 		chromProcess = spawnChromiumCDP(port, userDataDir, {
 			proxyServer: forwarder?.serverUrl,
 			windowSize,
+			locale: settings.locale,
 			display: displayHandle?.display,
 		});
 
@@ -196,18 +205,28 @@ export async function launchContext(provider: Provider): Promise<{
 		]);
 		browser = await chromium.connectOverCDP(wsEndpoint);
 		const browserVersion = browser.version();
+		workerStealthCleanup = await attachWorkerStealthTargets(
+			wsEndpoint,
+			buildWorkerStealthBootstrap(profile, browserVersion, settings),
+		).catch((error) => {
+			logger.warn(
+				`worker stealth auto-attach unavailable, continuing with page-level stealth only: ${toErrorMessage(error)}`,
+			);
+			return async () => {};
+		});
 
 		const context = await browser.newContext(
-			buildContextOptions(profile, browserVersion),
+			buildContextOptions(profile, browserVersion, settings),
 		);
 		await context.addInitScript(
-			buildStealthInitScript(profile, browserVersion),
+			buildStealthInitScript(profile, browserVersion, settings),
 		);
 
 		return {
 			browser,
 			context,
 			profile,
+			settings,
 			proxy: upstreamProxy?.logProxy ?? null,
 			cleanup,
 		};
