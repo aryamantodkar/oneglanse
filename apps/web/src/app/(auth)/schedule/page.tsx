@@ -151,9 +151,7 @@ export default function SchedulePage(){
 					);
 				} else if (result.immediateRun?.status === "failed") {
 					toast.warning(
-						result.immediateRun.error
-							? `Schedule saved, but immediate run failed: ${result.immediateRun.error}`
-							: "Schedule saved, but immediate run failed. It will run on the next cron cycle.",
+						"Schedule saved, but immediate run failed. It will run on the next cron cycle.",
 					);
 				} else {
 					toast.success("Schedule saved.");
