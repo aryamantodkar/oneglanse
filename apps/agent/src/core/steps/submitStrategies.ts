@@ -1,8 +1,8 @@
-import type { Provider } from "@oneglanse/types";
-import type { Locator, Page } from "playwright";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import { env } from "../../env.js";
+import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
+import type { Locator, Page } from "playwright";
+import { env } from "../../env.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
@@ -27,14 +27,15 @@ function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-async function humanPause(page: Page, minMs: number, maxMs: number): Promise<void> {
+async function humanPause(
+	page: Page,
+	minMs: number,
+	maxMs: number,
+): Promise<void> {
 	await page.waitForTimeout(randomBetween(minMs, maxMs));
 }
 
-async function humanizeFocus(
-	page: Page,
-	input: Locator,
-): Promise<void> {
+async function humanizeFocus(page: Page, input: Locator): Promise<void> {
 	const box = await input.boundingBox().catch(() => null);
 	if (box) {
 		const x = box.x + box.width * (0.35 + Math.random() * 0.3);
@@ -54,10 +55,7 @@ async function humanizeFocus(
 }
 
 function hasWords(content: string): boolean {
-	return content
-		.trim()
-		.split(/\s+/)
-		.filter(Boolean).length > 0;
+	return content.trim().split(/\s+/).filter(Boolean).length > 0;
 }
 
 async function readInputContent(input: Locator): Promise<string> {
@@ -86,9 +84,7 @@ async function ensureInputHasWords(
 	);
 }
 
-async function checkSubmissionSuccess(
-	ctx: SubmitContext,
-): Promise<boolean> {
+async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
 	await page.waitForTimeout(300);
 
@@ -125,9 +121,7 @@ async function checkSubmissionSuccess(
 	return false;
 }
 
-async function attemptSubmit(
-	attempt: SubmitAttempt,
-): Promise<boolean> {
+async function attemptSubmit(attempt: SubmitAttempt): Promise<boolean> {
 	try {
 		const success = await attempt.run();
 
@@ -141,9 +135,7 @@ async function attemptSubmit(
 		if (message.includes(EMPTY_INPUT_SUBMIT_ERROR)) {
 			throw err;
 		}
-		logger.debug(
-			`  ℹ️ ${attempt.errorLabel} failed: ${message}`,
-		);
+		logger.debug(`  ℹ️ ${attempt.errorLabel} failed: ${message}`);
 	}
 
 	return false;
@@ -156,16 +148,46 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 		successMessage: "Submitted via Enter key",
 		run: async () => {
 			await ensureInputHasWords(ctx, "Enter submit");
-			return await withTimeout("Enter submit", async () => {
-				await humanizeFocus(page, input);
+			return await withTimeout(
+				"Enter submit",
+				async () => {
+					await humanizeFocus(page, input);
 
-				await humanPause(page, 120, 260);
+					await humanPause(page, 120, 260);
 
-				await page.keyboard.press("Enter", {
-					delay: randomBetween(40, 120),
-				});
-				return await checkSubmissionSuccess(ctx);
-			}, SUBMIT_METHOD_TIMEOUT_MS);
+					await page.keyboard.press("Enter", {
+						delay: randomBetween(40, 120),
+					});
+					return await checkSubmissionSuccess(ctx);
+				},
+				SUBMIT_METHOD_TIMEOUT_MS,
+			);
+		},
+	});
+}
+
+export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
+	const { sendButton } = ctx;
+	if (!sendButton) return false;
+	return attemptSubmit({
+		errorLabel: "Native click",
+		successMessage: "Submitted via native click",
+		run: async () => {
+			await ensureInputHasWords(ctx, "Native click");
+			return await withTimeout(
+				"Native-click submit",
+				async () => {
+					await humanPause(ctx.page, 80, 180);
+					await sendButton.hover().catch(() => null);
+					await humanPause(ctx.page, 50, 150);
+					await sendButton.click({
+						timeout: SUBMIT_METHOD_TIMEOUT_MS,
+						delay: randomBetween(35, 120),
+					});
+					return await checkSubmissionSuccess(ctx);
+				},
+				SUBMIT_METHOD_TIMEOUT_MS,
+			);
 		},
 	});
 }
@@ -178,17 +200,21 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 		successMessage: "Submitted via force click",
 		run: async () => {
 			await ensureInputHasWords(ctx, "Force click");
-			return await withTimeout("Force-click submit", async () => {
-				await humanPause(ctx.page, 80, 180);
-				await sendButton.hover().catch(() => null);
-				await humanPause(ctx.page, 50, 150);
-				await sendButton.click({
-					force: true,
-					timeout: SUBMIT_METHOD_TIMEOUT_MS,
-					delay: randomBetween(35, 120),
-				});
-				return await checkSubmissionSuccess(ctx);
-			}, SUBMIT_METHOD_TIMEOUT_MS);
+			return await withTimeout(
+				"Force-click submit",
+				async () => {
+					await humanPause(ctx.page, 80, 180);
+					await sendButton.hover().catch(() => null);
+					await humanPause(ctx.page, 50, 150);
+					await sendButton.click({
+						force: true,
+						timeout: SUBMIT_METHOD_TIMEOUT_MS,
+						delay: randomBetween(35, 120),
+					});
+					return await checkSubmissionSuccess(ctx);
+				},
+				SUBMIT_METHOD_TIMEOUT_MS,
+			);
 		},
 	});
 }
@@ -208,21 +234,25 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 			);
 			if (!handle) return false;
 
-			return await withTimeout("Dispatch-click submit", async () => {
-				await page.evaluate((el) => {
-					if (el instanceof HTMLElement) {
-						el.dispatchEvent(
-							new MouseEvent("click", {
-								bubbles: true,
-								cancelable: true,
-								composed: true,
-								view: window,
-							}),
-						);
-					}
-				}, handle);
-				return await checkSubmissionSuccess(ctx);
-			}, SUBMIT_METHOD_TIMEOUT_MS);
+			return await withTimeout(
+				"Dispatch-click submit",
+				async () => {
+					await page.evaluate((el) => {
+						if (el instanceof HTMLElement) {
+							el.dispatchEvent(
+								new MouseEvent("click", {
+									bubbles: true,
+									cancelable: true,
+									composed: true,
+									view: window,
+								}),
+							);
+						}
+					}, handle);
+					return await checkSubmissionSuccess(ctx);
+				},
+				SUBMIT_METHOD_TIMEOUT_MS,
+			);
 		},
 	});
 }

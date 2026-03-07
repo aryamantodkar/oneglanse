@@ -1,18 +1,19 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
+import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
-import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
-import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
+import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
+import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
-import { logger } from "@oneglanse/utils";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 import {
 	type SubmitContext,
 	tryDispatchClick,
 	tryEnterSubmit,
 	tryForceClick,
+	tryNativeClick,
 } from "./submitStrategies.js";
 
 const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
@@ -54,7 +55,6 @@ export async function askPrompt(
 
 	await page.waitForTimeout(500);
 
-
 	// Store pre-submit state for success detection
 	const preSubmitContent = await input.evaluate((el: Element) => {
 		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement)
@@ -65,7 +65,10 @@ export async function askPrompt(
 
 	// Verify we have content before attempting submission
 	if (!preSubmitContent || preSubmitContent.length === 0) {
-		throw new ExternalServiceError(provider, "Typing failed: editor did not receive prompt");
+		throw new ExternalServiceError(
+			provider,
+			"Typing failed: editor did not receive prompt",
+		);
 	}
 
 	// Let the provider dismiss autocomplete or do any pre-submit setup.
@@ -106,6 +109,7 @@ export async function askPrompt(
 		success = await Promise.race([
 			(async () => {
 				let submitted = await tryEnterSubmit(ctx);
+				if (!submitted && sendButton) submitted = await tryNativeClick(ctx);
 				if (!submitted && sendButton) submitted = await tryForceClick(ctx);
 				if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
 				return submitted;

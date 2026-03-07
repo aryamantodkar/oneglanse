@@ -1,6 +1,13 @@
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
+import { RETRYABLE_ERRORS, logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { logger, RETRYABLE_ERRORS } from "@oneglanse/utils";
+
+function jitter(baseMs: number, factor = 0.3): number {
+	const delta = Math.round(baseMs * factor);
+	const min = Math.max(0, baseMs - delta);
+	const max = baseMs + delta;
+	return Math.round(min + Math.random() * (max - min));
+}
 
 export async function navigateWithRetry(
 	page: Page,
@@ -28,10 +35,10 @@ export async function navigateWithRetry(
 			}
 
 			logger.warn(
-				`navigation failed (attempt ${attempt}/${maxRetries}): ${message} — retrying in ${delayMs / 1000}s`,
+				`navigation failed (attempt ${attempt}/${maxRetries}): ${message} — retrying in ${Math.round(jitter(delayMs) / 100) / 10}s`,
 			);
 
-			await page.waitForTimeout(delayMs);
+			await page.waitForTimeout(jitter(delayMs));
 		}
 	}
 }

@@ -1,19 +1,29 @@
 import { toErrorMessage } from "@oneglanse/errors";
-import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
+import type {
+	AskPromptResult,
+	PromptPayload,
+	Provider,
+} from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import { createAgent } from "./createAgent.js";
 import { runAgents } from "./runAgents.js";
 
 export type ChainHooks = {
 	onProviderStart?: (provider: Provider) => Promise<void>;
-	onProviderDone?: (provider: Provider, results: AskPromptResult[]) => Promise<void>;
+	onProviderDone?: (
+		provider: Provider,
+		results: AskPromptResult[],
+	) => Promise<void>;
 };
 
+function randomBetween(min: number, max: number): number {
+	return min + Math.floor(Math.random() * (max - min + 1));
+}
+
 /**
- * Runs all providers in parallel — each gets its own browser and proxy IP
- * (sticky-sessioned to the provider name so IPs stay stable per-provider).
- * Per-provider failures are isolated; the rest continue unaffected.
- * All browsers are closed in finally blocks regardless of outcome.
+ * Runs providers sequentially with a small randomized cooldown between them.
+ * This avoids cross-provider request bursts from the same VPS and reduces
+ * correlation risk when the deployment is backed by one proxy source.
  */
 export async function runProviderChain(
 	providers: Provider[],
@@ -22,39 +32,35 @@ export async function runProviderChain(
 ): Promise<Record<Provider, AskPromptResult[]>> {
 	if (providers.length === 0) return {} as Record<Provider, AskPromptResult[]>;
 
-	const settled = await Promise.allSettled(
-		providers.map(async (provider) => {
-			let agentRefs: Awaited<ReturnType<typeof createAgent>> | null = null;
-			let providerResults: AskPromptResult[] = [];
-
-			await hooks?.onProviderStart?.(provider);
-
-			try {
-				agentRefs = await createAgent(provider);
-				providerResults = await runAgents(payload, agentRefs.page, provider);
-			} catch (err) {
-				logger.error(`[chain:${provider}] failed: ${toErrorMessage(err)}`);
-			} finally {
-				if (agentRefs) {
-					await agentRefs.page.close().catch(() => {});
-					await agentRefs.context.close().catch(() => {});
-					await agentRefs.browser.close().catch(() => {});
-					await agentRefs.cleanup().catch(() => {});
-				}
-			}
-
-			await hooks?.onProviderDone?.(provider, providerResults);
-			return { provider, results: providerResults };
-		}),
-	);
-
 	const results: Partial<Record<Provider, AskPromptResult[]>> = {};
-	for (const outcome of settled) {
-		if (outcome.status === "fulfilled") {
-			results[outcome.value.provider] = outcome.value.results;
-		} else {
-			// onProviderDone threw — extract provider from rejection if possible
-			logger.error(`[chain] provider hook error: ${toErrorMessage(outcome.reason)}`);
+
+	for (const [index, provider] of providers.entries()) {
+		let agentRefs: Awaited<ReturnType<typeof createAgent>> | null = null;
+		let providerResults: AskPromptResult[] = [];
+
+		await hooks?.onProviderStart?.(provider);
+
+		try {
+			agentRefs = await createAgent(provider);
+			providerResults = await runAgents(payload, agentRefs.page, provider);
+		} catch (err) {
+			logger.error(`[chain:${provider}] failed: ${toErrorMessage(err)}`);
+		} finally {
+			if (agentRefs) {
+				await agentRefs.page.close().catch(() => {});
+				await agentRefs.context.close().catch(() => {});
+				await agentRefs.browser.close().catch(() => {});
+				await agentRefs.cleanup().catch(() => {});
+			}
+		}
+
+		await hooks?.onProviderDone?.(provider, providerResults);
+		results[provider] = providerResults;
+
+		if (index < providers.length - 1) {
+			await new Promise((resolve) =>
+				setTimeout(resolve, randomBetween(2_500, 6_500)),
+			);
 		}
 	}
 
