@@ -1,4 +1,5 @@
 import type { ChildProcess } from "node:child_process";
+import { randomInt } from "node:crypto";
 import { mkdir, rm } from "node:fs/promises";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
@@ -44,10 +45,17 @@ const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	socks4: 1080,
 	socks5: 1080,
 };
+const THORDATA_PROXY_API_TIMEOUT_MS = 10_000;
+const leasedThorDataProxyUrls = new Set<string>();
 
 export type LaunchContextOptions = {
 	sessionKey?: string;
 	profileScope?: string;
+};
+
+type ProxyAllocation = {
+	proxy: UpstreamProxyConfig | null;
+	release: () => void;
 };
 
 function normalizeProxyScheme(protocol: string): ProxyScheme {
@@ -68,6 +76,16 @@ function normalizeProxyScheme(protocol: string): ProxyScheme {
 
 function normalizeProxyHost(hostname: string): string {
 	return hostname.replace(/^\[(.*)\]$/, "$1");
+}
+
+function formatProxyServerUrl(
+	scheme: ProxyScheme,
+	host: string,
+	port: number,
+): string {
+	const hostPart =
+		host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+	return `${scheme}://${hostPart}:${port}`;
 }
 
 function parseProxyConfig(
@@ -93,22 +111,109 @@ function parseProxyConfig(
 	};
 }
 
-function buildProxyConfig(): UpstreamProxyConfig | null {
-	const host = env.PROXY_HOST?.trim();
-	const port = env.PROXY_PORT?.trim();
-	if (!host || !port) return null;
+function parseThorDataProxyLine(
+	value: string,
+): { host: string; port: number } | null {
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+
+	const separator = trimmed.lastIndexOf(":");
+	if (separator <= 0 || separator === trimmed.length - 1) {
+		return null;
+	}
+
+	const host = normalizeProxyHost(trimmed.slice(0, separator));
+	const port = Number(trimmed.slice(separator + 1));
+	if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) {
+		return null;
+	}
+
+	return { host, port };
+}
+
+async function acquireThorDataProxy(): Promise<ProxyAllocation> {
+	const apiUrl = env.THORDATA_PROXY_API_URL?.trim();
+	if (!apiUrl) {
+		throw new Error(
+			"THORDATA_PROXY_API_URL is required when using ThorData API proxy discovery.",
+		);
+	}
+
+	const response = await fetch(apiUrl, {
+		headers: { Accept: "text/plain" },
+		signal: AbortSignal.timeout(THORDATA_PROXY_API_TIMEOUT_MS),
+	});
+	if (!response.ok) {
+		throw new Error(
+			`ThorData proxy API failed (${response.status}): ${(await response.text()).slice(0, 200)}`,
+		);
+	}
+
+	const proxyLines = (await response.text())
+		.split(/\r?\n/)
+		.map((line) => parseThorDataProxyLine(line))
+		.filter((proxy): proxy is { host: string; port: number } => proxy !== null);
+
+	if (proxyLines.length === 0) {
+		throw new Error("ThorData proxy API returned no usable proxies.");
+	}
 
 	const scheme = normalizeProxyScheme(env.PROXY_SCHEME?.trim() || "http");
-	const hostPart =
-		host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+	const candidates = proxyLines
+		.map((proxy) => {
+			const serverUrl = formatProxyServerUrl(scheme, proxy.host, proxy.port);
+			return {
+				proxy: parseProxyConfig(serverUrl),
+				serverUrl,
+			};
+		})
+		.filter(({ serverUrl }) => !leasedThorDataProxyUrls.has(serverUrl));
 
-	return applyProxyProviderStrategy(
-		parseProxyConfig(
-			`${scheme}://${hostPart}:${port}`,
-			env.PROXY_USERNAME?.trim() || undefined,
-			env.PROXY_PASSWORD?.trim() || undefined,
+	if (candidates.length === 0) {
+		throw new Error(
+			"ThorData proxy API returned only proxies that are already leased by other workers.",
+		);
+	}
+
+	const selected = candidates[randomInt(candidates.length)];
+	if (!selected) {
+		throw new Error("Could not select a ThorData proxy from the API response.");
+	}
+
+	leasedThorDataProxyUrls.add(selected.serverUrl);
+	return {
+		proxy: selected.proxy,
+		release: () => {
+			leasedThorDataProxyUrls.delete(selected.serverUrl);
+		},
+	};
+}
+
+async function buildProxyAllocation(): Promise<ProxyAllocation> {
+	if (env.PROXY_PROVIDER === "thordata" && env.THORDATA_PROXY_API_URL?.trim()) {
+		return acquireThorDataProxy();
+	}
+
+	const host = env.PROXY_HOST?.trim();
+	const port = env.PROXY_PORT?.trim();
+	if (!host || !port) {
+		return {
+			proxy: null,
+			release: () => {},
+		};
+	}
+
+	const scheme = normalizeProxyScheme(env.PROXY_SCHEME?.trim() || "http");
+	return {
+		proxy: applyProxyProviderStrategy(
+			parseProxyConfig(
+				formatProxyServerUrl(scheme, host, Number(port)),
+				env.PROXY_USERNAME?.trim() || undefined,
+				env.PROXY_PASSWORD?.trim() || undefined,
+			),
 		),
-	);
+		release: () => {},
+	};
 }
 
 export async function launchContext(
@@ -123,41 +228,25 @@ export async function launchContext(
 	cleanup: () => Promise<void>;
 }> {
 	const profile = generateSessionProfile();
-	const upstreamProxy = buildProxyConfig();
-	const profileIdentity =
-		options?.sessionKey ??
-		(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
-	const persistProfile = profileIdentity !== null;
 	const port = await getFreePort();
-	const { dir: userDataDir, isNew: isNewProfile } = await resolveProfileDir(
-		provider,
-		profileIdentity,
-		options?.profileScope,
-	);
 	const windowSize = {
 		width: profile.viewport.width + profile.outerDelta.width,
 		height: profile.viewport.height + profile.outerDelta.height,
 	};
-	const displayHandle = await ensureDisplay(windowSize);
-	const display = displayHandle?.display ?? detectDisplay();
 
+	let upstreamProxy: UpstreamProxyConfig | null = null;
+	let releaseProxyLease = () => {};
+	let profileIdentity: string | null = options?.sessionKey ?? null;
+	let persistProfile = profileIdentity !== null;
+	let userDataDir = "";
+	let isNewProfile = false;
+	let displayHandle: Awaited<ReturnType<typeof ensureDisplay>> | null = null;
+	let display: string | undefined;
 	let chromProcess: ChildProcess | null = null;
 	let browser: Browser | null = null;
 	let forwarder: ProxyForwarderHandle | null = null;
 	let workerStealthCleanup: (() => Promise<void>) | null = null;
 	let chromiumStderr = "";
-
-	if (upstreamProxy) {
-		forwarder = await createProxyForwarder(upstreamProxy);
-		logger.log(
-			`launching chromium (proxy: ${upstreamProxy.logProxy})${display ? " [headful/Xvfb]" : " [headless]"}`,
-		);
-	} else {
-		logger.warn("no proxies available, launching without proxy");
-		logger.log(
-			`launching chromium (direct)${display ? " [headful/Xvfb]" : " [headless]"}`,
-		);
-	}
 
 	const cleanup = async () => {
 		await workerStealthCleanup?.().catch(() => null);
@@ -176,13 +265,41 @@ export async function launchContext(
 		}
 
 		await forwarder?.close().catch(() => null);
+		releaseProxyLease();
 		await displayHandle?.cleanup().catch(() => null);
-		if (!persistProfile) {
+		if (!persistProfile && userDataDir) {
 			await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
 		}
 	};
 
 	try {
+		const proxyAllocation = await buildProxyAllocation();
+		upstreamProxy = proxyAllocation.proxy;
+		releaseProxyLease = proxyAllocation.release;
+		profileIdentity =
+			options?.sessionKey ??
+			(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
+		persistProfile = profileIdentity !== null;
+		const profileDir = await resolveProfileDir(
+			provider,
+			profileIdentity,
+			options?.profileScope,
+		);
+		userDataDir = profileDir.dir;
+		isNewProfile = profileDir.isNew;
+		displayHandle = await ensureDisplay(windowSize);
+		display = displayHandle?.display ?? detectDisplay() ?? undefined;
+		if (upstreamProxy) {
+			forwarder = await createProxyForwarder(upstreamProxy);
+			logger.log(
+				`launching chromium (proxy: ${upstreamProxy.logProxy})${display ? " [headful/Xvfb]" : " [headless]"}`,
+			);
+		} else {
+			logger.warn("no proxies available, launching without proxy");
+			logger.log(
+				`launching chromium (direct)${display ? " [headful/Xvfb]" : " [headless]"}`,
+			);
+		}
 		await mkdir(userDataDir, { recursive: true });
 		await clearChromeProfileLocks(userDataDir);
 		// Use the upstream proxy identity (stable across launches) as the cache key,
