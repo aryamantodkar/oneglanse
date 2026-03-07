@@ -19,9 +19,10 @@ export type ProxyProviderKind =
 	| "thordata"
 	| "webshare";
 
-const STICKY_PORT_BLOCK_SIZE = 10_000;
+const STICKY_PORT_BLOCK_SPAN = 9_999;
 const DECODO_DEFAULT_SESSION_MINUTES = "30";
-const THORDATA_DEFAULT_SESSION_MINUTES = "30";
+const THORDATA_DEFAULT_SESSION_MINUTES = "10";
+const IPROYAL_DEFAULT_LIFETIME = "10m";
 const SOAX_DEFAULT_SESSION_SECONDS = "360";
 const PROXY_PORT_COUNTERS = new Map<string, number>();
 
@@ -76,6 +77,10 @@ function stripDotKeyValue(value: string, key: string): string {
 	return value.replace(new RegExp(`\\.${key}=[^.]+`, "gi"), "");
 }
 
+function stripUnderscoreToken(value: string, tokenName: string): string {
+	return value.replace(new RegExp(`_${tokenName}-[^_]+`, "gi"), "");
+}
+
 function setDotKeyValue(
 	value: string,
 	key: string,
@@ -85,11 +90,28 @@ function setDotKeyValue(
 	return base ? `${base}.${key}=${tokenValue}` : `${key}=${tokenValue}`;
 }
 
+function setUnderscoreToken(
+	value: string,
+	tokenName: string,
+	tokenValue: string,
+): string {
+	const base = stripUnderscoreToken(value, tokenName).replace(/_+$/g, "");
+	return base
+		? `${base}_${tokenName}-${tokenValue}`
+		: `${tokenName}-${tokenValue}`;
+}
+
+function readUnderscoreToken(
+	value: string,
+	tokenName: string,
+): string | undefined {
+	return value.match(new RegExp(`_${tokenName}-([^_]+)`, "i"))?.[1];
+}
+
 function rotatePortInBlock(host: string, port: number): number {
-	const blockStart =
-		Math.floor((port - 1) / STICKY_PORT_BLOCK_SIZE) * STICKY_PORT_BLOCK_SIZE +
-		1;
-	const blockEnd = blockStart + STICKY_PORT_BLOCK_SIZE - 1;
+	const blockBase = Math.floor(port / 10_000) * 10_000;
+	const blockStart = blockBase + 1;
+	const blockEnd = blockStart + STICKY_PORT_BLOCK_SPAN - 1;
 	const counterKey = `${host}:${blockStart}:${blockEnd}`;
 	const current = PROXY_PORT_COUNTERS.get(counterKey) ?? port;
 	const next =
@@ -291,9 +313,21 @@ function applyProxyEmpireStrategy(
 }
 
 function applyIpRoyalStrategy(proxy: UpstreamProxyConfig): UpstreamProxyConfig {
-	// IPRoyal sticky sessions are typically pre-generated as static ip:port:user:pass
-	// entries in the dashboard, so we deliberately keep credentials untouched.
-	return proxy;
+	if (!proxy.password) {
+		return proxy;
+	}
+
+	const password = proxy.password;
+	const lifetime =
+		readUnderscoreToken(password, "lifetime") ?? IPROYAL_DEFAULT_LIFETIME;
+
+	return withProxy(proxy, {
+		password: setUnderscoreToken(
+			setUnderscoreToken(password, "session", randomAlphaNumeric(8)),
+			"lifetime",
+			lifetime,
+		),
+	});
 }
 
 function applyWebshareStrategy(

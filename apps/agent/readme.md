@@ -109,51 +109,62 @@ Provider-aware rotation examples:
 
 ```env
 # Decodo / Smartproxy:
-# If you point at a sticky port block, the agent advances the port per browser
-# launch. If you point at gate.decodo.com, it rotates session/sessionduration.
+# Use either a sticky port endpoint or a gate.decodo.com session username.
 PROXY_PROVIDER=decodo
 PROXY_SCHEME=http
 PROXY_HOST=us.decodo.com
 PROXY_PORT=10001
 PROXY_USERNAME=user-abc
 PROXY_PASSWORD=pass-abc
-
-# Thordata / LunaProxy:
-# sessid is replaced every launch, existing sesstime is preserved.
-PROXY_PROVIDER=thordata
-PROXY_URL=http://td-customer-abc-country-US-sessid-old-sesstime-30:pass@treyklah.na.thordata.net:9999
+# PROXY_URL=http://user-abc-session-old-sessionduration-30:pass-abc@gate.decodo.com:7000
 
 # Bright Data:
 PROXY_PROVIDER=brightdata
-PROXY_URL=http://brd-customer-zone-resi-session-old:pass@brd.superproxy.io:33335
+PROXY_URL=http://brd-customer-CUSTOMER-zone-ZONE-session-old:pass@brd.superproxy.io:33335
 
 # Oxylabs:
-# Sticky port ranges are rotated by port. If your username already contains
-# -sessid-, the agent replaces that token too.
+# Sticky port example. If your username already contains -sessid-, that token
+# is replaced on each launch too.
 PROXY_PROVIDER=oxylabs
-PROXY_URL=http://customer-user:pass@pr.oxylabs.io:10001
+PROXY_URL=http://customer-USERNAME:pass@us-pr.oxylabs.io:10001
+
+# Thordata:
+# sessid is replaced every launch, existing sesstime is preserved.
+PROXY_PROVIDER=thordata
+PROXY_URL=http://td-customer-USERNAME-country-US-sessid-old-sesstime-10:pass@treyklah.na.thordata.net:9999
+
+# LunaProxy:
+PROXY_PROVIDER=lunaproxy
+PROXY_URL=http://user-USERNAME-region-us-sessid-old-sesstime-10:pass@rw.lunaproxy.com:12233
 
 # NetNut:
+# Start from the dashboard-generated base username. The agent appends/replaces sid.
 PROXY_PROVIDER=netnut
-PROXY_URL=http://user-zone-resi:pass@gw.netnut.net:5959
+PROXY_URL=http://USERNAME-res-us:pass@gw.netnut.net:5959
 
 # SOAX:
 PROXY_PROVIDER=soax
-PROXY_URL=http://package-12345-country-us-sessionid-old-sessionlength-600:pass@proxy.soax.com:5000
+PROXY_URL=http://package-12345-country-us-sessionid-old-sessionlength-300:pass@proxy.soax.com:5000
 
 # ScrapeOps:
 PROXY_PROVIDER=scrapeops
-PROXY_URL=http://scrapeops:API_KEY@residential-proxy.scrapeops.io:8181
+PROXY_URL=http://scrapeops.sticky_session=7:API_KEY@residential-proxy.scrapeops.io:8181
 
 # ProxyEmpire:
+# Start from the dashboard-generated base username. The agent appends/replaces
+# an 8-digit sid.
 PROXY_PROVIDER=proxyempire
-PROXY_URL=http://user-country-us:pass@res.proxyempire.io:9000
+PROXY_URL=http://your-dashboard-username:pass@res.proxyempire.io:9000
 
-# IPRoyal / Webshare:
-# These are passed through unchanged because stickiness is typically controlled
-# in the provider dashboard or generated proxy list rather than username tokens.
+# IPRoyal:
+# Sticky session tokens live in the password.
 PROXY_PROVIDER=iproyal
-PROXY_URL=http://user:pass@geo.iproyal.com:12321
+PROXY_URL=http://username:pass_country-US_session-old_lifetime-10m@geo.iproyal.com:12321
+
+# Webshare:
+# Passed through unchanged. Stickiness is selected on the provider side.
+PROXY_PROVIDER=webshare
+PROXY_URL=http://username:pass@p.webshare.io:80
 ```
 
 When `PROXY_PROVIDER` is anything other than `generic`, the agent intentionally

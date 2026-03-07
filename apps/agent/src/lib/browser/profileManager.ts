@@ -5,9 +5,11 @@ import { join } from "node:path";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 
-const PROFILES_ROOT = "/storage/profiles";
+const PERSISTENT_PROFILES_ROOT = "/storage/profiles";
+const FALLBACK_PROFILES_ROOT = "/tmp/oneglanse-profiles";
 const PROFILE_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 const METADATA_FILE = ".profile-meta.json";
+let cachedProfilesRoot: string | null = null;
 
 type ProfileMetadata = {
 	createdAt: number;
@@ -27,9 +29,38 @@ function hashProxyIdentity(proxyUrl: string): string {
 	}
 }
 
-function getProfileDir(provider: Provider, proxyUrl: string): string {
+async function resolveProfilesRoot(): Promise<string> {
+	if (cachedProfilesRoot) {
+		return cachedProfilesRoot;
+	}
+
+	try {
+		await writeFile(
+			join(PERSISTENT_PROFILES_ROOT, ".write-test"),
+			String(Date.now()),
+		);
+		await rm(join(PERSISTENT_PROFILES_ROOT, ".write-test"), {
+			force: true,
+		}).catch(() => null);
+		cachedProfilesRoot = PERSISTENT_PROFILES_ROOT;
+		return cachedProfilesRoot;
+	} catch (error) {
+		mkdirSync(FALLBACK_PROFILES_ROOT, { recursive: true });
+		cachedProfilesRoot = FALLBACK_PROFILES_ROOT;
+		logger.warn(
+			`profiles root ${PERSISTENT_PROFILES_ROOT} is not writable, falling back to ${FALLBACK_PROFILES_ROOT}: ${error instanceof Error ? error.message : String(error)}`,
+		);
+		return cachedProfilesRoot;
+	}
+}
+
+async function getProfileDir(
+	provider: Provider,
+	proxyUrl: string,
+): Promise<string> {
 	const ipHash = hashProxyIdentity(proxyUrl);
-	return join(PROFILES_ROOT, provider, ipHash);
+	const profilesRoot = await resolveProfilesRoot();
+	return join(profilesRoot, provider, ipHash);
 }
 
 async function readMetadata(
@@ -63,7 +94,7 @@ export async function resolveProfileDir(
 		return { dir, isNew: true };
 	}
 
-	const profileDir = getProfileDir(provider, proxyUrl);
+	const profileDir = await getProfileDir(provider, proxyUrl);
 
 	const meta = await readMetadata(profileDir);
 	const now = Date.now();
@@ -106,7 +137,7 @@ export async function markProfileWarmed(
 	provider: Provider,
 	proxyUrl: string,
 ): Promise<void> {
-	const profileDir = getProfileDir(provider, proxyUrl);
+	const profileDir = await getProfileDir(provider, proxyUrl);
 	const meta = await readMetadata(profileDir);
 	if (meta) {
 		meta.warmedUp = true;
@@ -118,19 +149,20 @@ export async function isProfileWarmed(
 	provider: Provider,
 	proxyUrl: string,
 ): Promise<boolean> {
-	const profileDir = getProfileDir(provider, proxyUrl);
+	const profileDir = await getProfileDir(provider, proxyUrl);
 	const meta = await readMetadata(profileDir);
 	return meta?.warmedUp ?? false;
 }
 
 export async function cleanExpiredProfiles(): Promise<void> {
-	if (!existsSync(PROFILES_ROOT)) return;
+	const profilesRoot = await resolveProfilesRoot();
+	if (!existsSync(profilesRoot)) return;
 
 	const now = Date.now();
 	let cleaned = 0;
 
-	for (const providerDir of readdirSync(PROFILES_ROOT)) {
-		const providerPath = join(PROFILES_ROOT, providerDir);
+	for (const providerDir of readdirSync(profilesRoot)) {
+		const providerPath = join(profilesRoot, providerDir);
 		if (!statSync(providerPath).isDirectory()) continue;
 
 		for (const profileHash of readdirSync(providerPath)) {
