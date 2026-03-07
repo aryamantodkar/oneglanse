@@ -207,6 +207,13 @@ async function runRetryCycle(
 					break;
 				}
 
+				if (failureType === "connection_error") {
+					plog.warn(
+						`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
+					);
+					break;
+				}
+
 				if (attempt < ATTEMPTS_PER_CYCLE - 1) {
 					await sleep(jitter(RETRY_DELAY));
 				}
@@ -230,6 +237,13 @@ async function runRetryCycle(
 			if (failureType === "rate_limited") {
 				plog.warn(
 					`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
+				);
+				break;
+			}
+
+			if (failureType === "connection_error") {
+				plog.warn(
+					`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 				);
 				break;
 			}

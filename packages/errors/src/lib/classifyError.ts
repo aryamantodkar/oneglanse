@@ -6,7 +6,11 @@ export type { FailureType };
 export function classifyError(err: unknown): FailureType {
 	const msg = toErrorMessage(err).toLowerCase();
 
-	if (/err_proxy|err_connection|err_ssl|err_timed_out/i.test(msg))
+	if (
+		/err_proxy|err_connection|err_tunnel|err_ssl|err_timed_out|proxy connect failed|tunnel connection/i.test(
+			msg,
+		)
+	)
 		return "connection_error";
 	if (/bot.?detect|cloudflare|captcha|turnstile|challenge/i.test(msg))
 		return "bot_detection";
