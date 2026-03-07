@@ -3,6 +3,12 @@ import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
+import {
+	humanType,
+	moveMouseToElement,
+	preInteractionIdle,
+	smallScroll,
+} from "../../lib/browser/humanBehavior.js";
 import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
@@ -38,22 +44,16 @@ export async function askPrompt(
 ): Promise<void> {
 	const input = await waitForEditorReady(page, provider);
 
+	// Pre-interaction: idle briefly, scroll, then move mouse to input
+	await preInteractionIdle(page);
+	await smallScroll(page);
+	await moveMouseToElement(page, input);
+
 	await clearEditorInput(page, input, { waitAfterMs: 200 });
 
-	for (const char of prompt) {
-		if (char === "\n") {
-			await page.keyboard.down("Shift");
-			await page.keyboard.press("Enter");
-			await page.keyboard.up("Shift");
-		} else {
-			await page.keyboard.type(char);
-		}
-		// Random delay between keystrokes (25-65ms) to appear less bot-like.
-		const typingDelay = 25 + Math.floor(Math.random() * 40);
-		await page.waitForTimeout(typingDelay);
-	}
+	await humanType(page, prompt);
 
-	await page.waitForTimeout(500);
+	await page.waitForTimeout(randomBetween(300, 700));
 
 	// Store pre-submit state for success detection
 	const preSubmitContent = await input.evaluate((el: Element) => {

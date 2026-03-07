@@ -101,7 +101,7 @@ const AUTO_ATTACH_FILTER: AutoAttachFilterEntry[] = [
 	{ type: "service_worker", exclude: false },
 	{ exclude: true },
 ];
-const WORKER_CONTEXT_TIMEOUT_MS = 2_500;
+const WORKER_CONTEXT_TIMEOUT_MS = 500;
 
 function findChromiumBinary(): string {
 	for (const envKey of CHROMIUM_ENV_KEYS) {
@@ -281,6 +281,15 @@ export function spawnChromiumCDP(
 	}
 
 	if (!isHeadful) {
+		if (
+			process.platform === "linux" &&
+			process.env.ALLOW_HEADLESS !== "true"
+		) {
+			throw new Error(
+				"Headless mode is not allowed in production — Xvfb must provide a DISPLAY. " +
+					"Set ALLOW_HEADLESS=true to override (local dev only).",
+			);
+		}
 		args.push("--headless=new");
 	}
 

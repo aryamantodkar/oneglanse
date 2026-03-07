@@ -26,25 +26,32 @@ ARG PNPM_VERSION=10.16.0
 # Browser runtime deps + Xvfb for headful mode (eliminates headless fingerprint signals)
 # System fonts are critical — VPS by default has almost no fonts, which creates
 # a distinctive font-enumeration fingerprint that bot-detection systems recognise.
+# We install real Google Chrome (not Chromium) because Chrome has a different
+# TLS/JA3 fingerprint that matches anti-bot allowlists. Chromium's BoringSSL
+# build uses different cipher suites and gets flagged.
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
   libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
   libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 \
   ca-certificates \
   fontconfig \
-  chromium \
+  wget gnupg \
   xvfb \
   fonts-liberation fonts-dejavu fonts-freefont-ttf \
   fonts-noto fonts-noto-cjk-extra fonts-noto-color-emoji \
   fonts-roboto \
   fonts-crosextra-carlito fonts-crosextra-caladea \
+  && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+  && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable \
   && fc-cache -f \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENV NODE_ENV=production
+ENV CHROME_PATH=/usr/bin/google-chrome-stable
 
-RUN chromium --version
+RUN google-chrome-stable --version
 
 RUN npm install -g pnpm@${PNPM_VERSION}
 

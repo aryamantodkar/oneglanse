@@ -15,11 +15,21 @@ import {
 	waitForCDPEndpoint,
 } from "./cdp.js";
 import {
+	isProfileWarmed,
+	markProfileWarmed,
+	resolveProfileDir,
+} from "./profileManager.js";
+import { warmUpProfile } from "./profileWarmup.js";
+import {
 	type ProxyForwarderHandle,
 	type ProxyScheme,
 	type UpstreamProxyConfig,
 	createProxyForwarder,
 } from "./proxy/forwarder.js";
+import {
+	applyProxyProviderStrategy,
+	usesDynamicProxyStrategy,
+} from "./proxy/provider.js";
 import { resolveBrowserSessionSettings } from "./sessionSettings.js";
 import {
 	type BrowserSessionSettings,
@@ -84,7 +94,9 @@ function parseProxyConfig(
 	};
 }
 
-function buildProxyConfig(): UpstreamProxyConfig | null {
+function buildProxyConfig(
+	targetProvider: Provider,
+): UpstreamProxyConfig | null {
 	if (env.PROXY_URL) {
 		const parsed = new URL(env.PROXY_URL);
 		const username = parsed.username
@@ -95,10 +107,13 @@ function buildProxyConfig(): UpstreamProxyConfig | null {
 			: undefined;
 		parsed.username = "";
 		parsed.password = "";
-		return parseProxyConfig(
-			stripTrailingSlash(parsed.toString()),
-			username,
-			password,
+		return applyProxyProviderStrategy(
+			parseProxyConfig(
+				stripTrailingSlash(parsed.toString()),
+				username,
+				password,
+			),
+			targetProvider,
 		);
 	}
 
@@ -110,10 +125,13 @@ function buildProxyConfig(): UpstreamProxyConfig | null {
 	const hostPart =
 		host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
 
-	return parseProxyConfig(
-		`${scheme}://${hostPart}:${port}`,
-		env.PROXY_USERNAME?.trim() || undefined,
-		env.PROXY_PASSWORD?.trim() || undefined,
+	return applyProxyProviderStrategy(
+		parseProxyConfig(
+			`${scheme}://${hostPart}:${port}`,
+			env.PROXY_USERNAME?.trim() || undefined,
+			env.PROXY_PASSWORD?.trim() || undefined,
+		),
+		targetProvider,
 	);
 }
 
@@ -126,9 +144,13 @@ export async function launchContext(provider: Provider): Promise<{
 	cleanup: () => Promise<void>;
 }> {
 	const profile = generateSessionProfile();
-	const upstreamProxy = buildProxyConfig();
+	const upstreamProxy = buildProxyConfig(provider);
+	const persistProfile = Boolean(upstreamProxy) && !usesDynamicProxyStrategy();
 	const port = await getFreePort();
-	const userDataDir = `/tmp/cdp-${provider}-${Date.now()}-${port}`;
+	const { dir: userDataDir, isNew: isNewProfile } = await resolveProfileDir(
+		provider,
+		persistProfile ? (upstreamProxy?.logProxy ?? null) : null,
+	);
 	const windowSize = {
 		width: profile.viewport.width + profile.outerDelta.width,
 		height: profile.viewport.height + profile.outerDelta.height,
@@ -172,7 +194,9 @@ export async function launchContext(provider: Provider): Promise<{
 
 		await forwarder?.close().catch(() => null);
 		await displayHandle?.cleanup().catch(() => null);
-		await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
+		if (!persistProfile) {
+			await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
+		}
 	};
 
 	try {
@@ -221,6 +245,25 @@ export async function launchContext(provider: Provider): Promise<{
 		await context.addInitScript(
 			buildStealthInitScript(profile, browserVersion, settings),
 		);
+
+		// Warm up new profiles to build realistic cookie/cache state
+		if (
+			isNewProfile &&
+			persistProfile &&
+			upstreamProxy &&
+			!(await isProfileWarmed(provider, upstreamProxy.logProxy))
+		) {
+			try {
+				const warmupPage = await context.newPage();
+				await warmUpProfile(warmupPage);
+				await warmupPage.close();
+				await markProfileWarmed(provider, upstreamProxy.logProxy);
+			} catch (err) {
+				logger.warn(
+					`profile warmup failed (non-critical): ${toErrorMessage(err)}`,
+				);
+			}
+		}
 
 		return {
 			browser,

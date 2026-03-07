@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
       - apps/agent/.env
-    shm_size: "1gb"
+    shm_size: "2gb"
     volumes:
       - agent_storage:/storage
     depends_on:
