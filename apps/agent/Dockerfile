@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   xvfb \
   fonts-liberation fonts-dejavu fonts-freefont-ttf \
   fonts-noto fonts-noto-cjk-extra fonts-noto-color-emoji \
-  fonts-roboto fonts-ubuntu \
+  fonts-roboto \
   fonts-crosextra-carlito fonts-crosextra-caladea \
   && fc-cache -f \
   && rm -rf /var/lib/apt/lists/*
