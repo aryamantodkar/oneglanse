@@ -12,6 +12,7 @@ import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
+import { getProviderSessionScope } from "../lib/browser/providerScope.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
 type ProviderStatus = "pending" | "running" | "completed" | "failed";
@@ -78,7 +79,7 @@ function buildProviderSessionKey(args: {
 	workspaceId: string;
 }): string {
 	const { provider, userId, workspaceId } = args;
-	return `session:v2:${workspaceId}:${userId}:${provider}`;
+	return `session:v3:${workspaceId}:${userId}:${getProviderSessionScope(provider)}`;
 }
 
 async function ensureProgressSeed(
@@ -158,13 +159,14 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		userId: user_id,
 		workspaceId: workspace_id,
 	});
+	const profileScope = getProviderSessionScope(provider);
 
 	let wrapped: AgentResult = { status: "rejected", data: [] };
 
 	try {
 		const result = await agentHandler(
 			label,
-			() => createAgent(provider, { sessionKey }),
+			() => createAgent(provider, { sessionKey, profileScope }),
 			payload,
 			provider,
 			{ sessionKey },

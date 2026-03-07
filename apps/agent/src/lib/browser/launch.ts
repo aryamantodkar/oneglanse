@@ -47,6 +47,7 @@ const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 
 export type LaunchContextOptions = {
 	sessionKey?: string;
+	profileScope?: string;
 };
 
 function normalizeProxyScheme(protocol: string): ProxyScheme {
@@ -131,6 +132,7 @@ export async function launchContext(
 	const { dir: userDataDir, isNew: isNewProfile } = await resolveProfileDir(
 		provider,
 		profileIdentity,
+		options?.profileScope,
 	);
 	const windowSize = {
 		width: profile.viewport.width + profile.outerDelta.width,
@@ -233,13 +235,17 @@ export async function launchContext(
 			isNewProfile &&
 			persistProfile &&
 			profileIdentity &&
-			!(await isProfileWarmed(provider, profileIdentity))
+			!(await isProfileWarmed(provider, profileIdentity, options?.profileScope))
 		) {
 			try {
 				const warmupPage = await context.newPage();
 				await warmUpProfile(warmupPage);
 				await warmupPage.close();
-				await markProfileWarmed(provider, profileIdentity);
+				await markProfileWarmed(
+					provider,
+					profileIdentity,
+					options?.profileScope,
+				);
 			} catch (err) {
 				logger.warn(
 					`profile warmup failed (non-critical): ${toErrorMessage(err)}`,

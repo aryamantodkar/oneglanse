@@ -26,6 +26,7 @@ async function randomMouseMove(page: Page): Promise<void> {
 
 export async function warmUpProfile(page: Page): Promise<void> {
 	logger.log("warming up browser profile...");
+	let successCount = 0;
 
 	for (const url of WARMUP_SITES) {
 		try {
@@ -38,6 +39,7 @@ export async function warmUpProfile(page: Page): Promise<void> {
 			await randomScroll(page);
 			await randomMouseMove(page);
 			await page.waitForTimeout(randomBetween(500, 1500));
+			successCount += 1;
 		} catch {
 			// Non-critical — skip failed warmup sites
 		}
@@ -48,12 +50,21 @@ export async function warmUpProfile(page: Page): Promise<void> {
 		const acceptButton = page.locator(
 			'button:has-text("Accept all"), button:has-text("Accept"), button:has-text("I agree")',
 		);
-		if (await acceptButton.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+		if (
+			await acceptButton
+				.first()
+				.isVisible({ timeout: 2000 })
+				.catch(() => false)
+		) {
 			await acceptButton.first().click({ timeout: 3000 });
 			await page.waitForTimeout(randomBetween(500, 1000));
 		}
 	} catch {
 		// No consent dialog — fine
+	}
+
+	if (successCount === 0) {
+		throw new Error("all profile warmup sites failed to load");
 	}
 
 	logger.log("profile warmup complete");

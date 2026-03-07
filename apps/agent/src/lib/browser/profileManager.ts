@@ -74,12 +74,12 @@ async function resolveProfilesRoot(): Promise<string> {
 }
 
 async function getProfileDir(
-	provider: Provider,
+	profileScope: string,
 	profileIdentity: string,
 ): Promise<string> {
 	const identityHash = hashProfileIdentity(profileIdentity);
 	const profilesRoot = await resolveProfilesRoot();
-	return join(profilesRoot, provider, identityHash);
+	return join(profilesRoot, profileScope, identityHash);
 }
 
 async function readMetadata(
@@ -115,6 +115,7 @@ export async function clearChromeProfileLocks(
 export async function resolveProfileDir(
 	provider: Provider,
 	profileIdentity: string | null,
+	profileScope?: string,
 ): Promise<{ dir: string; isNew: boolean }> {
 	if (!profileIdentity) {
 		// No session identity — use a temp dir.
@@ -123,7 +124,10 @@ export async function resolveProfileDir(
 		return { dir, isNew: true };
 	}
 
-	const profileDir = await getProfileDir(provider, profileIdentity);
+	const profileDir = await getProfileDir(
+		profileScope ?? provider,
+		profileIdentity,
+	);
 
 	const meta = await readMetadata(profileDir);
 	const now = Date.now();
@@ -166,8 +170,12 @@ export async function resolveProfileDir(
 export async function markProfileWarmed(
 	provider: Provider,
 	profileIdentity: string,
+	profileScope?: string,
 ): Promise<void> {
-	const profileDir = await getProfileDir(provider, profileIdentity);
+	const profileDir = await getProfileDir(
+		profileScope ?? provider,
+		profileIdentity,
+	);
 	const meta = await readMetadata(profileDir);
 	if (meta) {
 		meta.warmedUp = true;
@@ -178,8 +186,12 @@ export async function markProfileWarmed(
 export async function isProfileWarmed(
 	provider: Provider,
 	profileIdentity: string,
+	profileScope?: string,
 ): Promise<boolean> {
-	const profileDir = await getProfileDir(provider, profileIdentity);
+	const profileDir = await getProfileDir(
+		profileScope ?? provider,
+		profileIdentity,
+	);
 	const meta = await readMetadata(profileDir);
 	return meta?.warmedUp ?? false;
 }
