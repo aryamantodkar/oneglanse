@@ -39,6 +39,13 @@ export interface ProviderConfig {
 	preNavigationHook?: (page: Page) => Promise<void>;
 	/** Runs after the browser lands on the provider URL. */
 	postNavigationHook?: (page: Page) => Promise<void>;
+	/**
+	 * When set, replaces the normal type-and-submit flow entirely.
+	 * The hook receives the prompt text and is responsible for navigating
+	 * the page to the state where `waitForResponse` can be called.
+	 * Used by providers that accept the query via URL (e.g. AI Overview).
+	 */
+	navigateToPrompt?: (page: Page, prompt: string) => Promise<void>;
 	/** Extracts citation sources from the page after the response is read. */
 	extractSources: (page: Page) => Promise<Source[]>;
 }

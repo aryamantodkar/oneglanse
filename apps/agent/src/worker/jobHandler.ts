@@ -200,31 +200,52 @@ export async function handleChainJob(job: Job<ChainJobData>): Promise<boolean> {
 
 	const progressKey = `job:${jobGroupId}:result`;
 
-	// Filter CHAIN_ORDER to only enabled, non-skipped providers
-	const providers = CHAIN_ORDER.filter(
+	// All runnable providers in chain order (enabled + not skip-flagged)
+	const allProviders = CHAIN_ORDER.filter(
 		(p) => enabledProviders.includes(p) && !PROVIDER_CONFIGS[p]?.skip,
 	);
 
-	// Mark all chain providers as running upfront (seed already set by jobs.ts)
-	for (const provider of providers) {
+	// On BullMQ retry, some providers may have already completed — skip them.
+	// Read existing Redis state to find which ones.
+	let existingProviderState: Record<string, string> = {};
+	const existingRaw = await redis.get(progressKey);
+	if (existingRaw) {
+		try {
+			existingProviderState =
+				(JSON.parse(existingRaw) as { providers?: Record<string, string> }).providers ?? {};
+		} catch {}
+	}
+
+	const providersTodo = allProviders.filter(
+		(p) => existingProviderState[p] !== "completed",
+	);
+
+	const attemptLabel = `attempt ${(job.attemptsMade ?? 0) + 1}/${job.opts?.attempts ?? 3}`;
+	logger.log(
+		`[chain:${jobGroupId}] ${attemptLabel} — running: [${providersTodo.join(", ")}], skipping already-completed: [${allProviders.filter((p) => !providersTodo.includes(p)).join(", ")}]`,
+	);
+
+	// Mark todo providers as running
+	for (const provider of providersTodo) {
 		await updateProgress(progressKey, provider, "running", null);
 	}
 
-	// Providers that are enabled but skipped — mark failed immediately
-	const skippedEnabled = enabledProviders.filter(
-		(p) => !providers.includes(p),
-	);
+	// Providers that are enabled but skip-flagged — mark failed immediately
+	const skippedEnabled = enabledProviders.filter((p) => !allProviders.includes(p));
 	for (const provider of skippedEnabled) {
 		await updateProgress(progressKey, provider, "failed", 0);
 	}
 
 	const processedProviders = new Set<Provider>();
+	const completedProviders = new Set<Provider>();
 
 	async function onProviderDone(provider: Provider, results: AskPromptResult[]): Promise<void> {
 		processedProviders.add(provider);
 		const status: ProviderStatus = results.length > 0 ? "completed" : "failed";
 
 		if (results.length > 0) {
+			completedProviders.add(provider);
+
 			const emptyResult = Object.fromEntries(
 				PROVIDER_LIST.map((p) => [p, { status: "rejected" as const, data: [] }]),
 			) as unknown as Record<Provider, AgentResult>;
@@ -253,25 +274,37 @@ export async function handleChainJob(job: Job<ChainJobData>): Promise<boolean> {
 	}
 
 	try {
-		await runProviderChain(providers, payload, {
+		await runProviderChain(providersTodo, payload, {
 			onProviderStart: async (provider) => {
 				logger.log(`[chain] starting ${provider}`);
 			},
 			onProviderDone,
 		});
 	} catch (err) {
-		// Unrecoverable chain failure (e.g. browser process died).
-		// Mark any provider we didn't finish as failed so Redis doesn't stay "running".
+		// Unrecoverable chain failure (browser crash etc).
+		// Mark anything we didn't finish so Redis doesn't stay "running".
 		logger.error(`[chain:${jobGroupId}] unrecoverable crash: ${toErrorMessage(err)}`);
 		await Promise.all(
-			providers
+			providersTodo
 				.filter((p) => !processedProviders.has(p))
 				.map((p) => updateProgress(progressKey, p, "failed", 0).catch(() => {})),
 		);
 	}
 
+	// If any todo provider didn't complete, throw so BullMQ retries the chain
+	// with a fresh browser/IP. Already-completed providers are skipped on retry.
+	const failedProviders = providersTodo.filter((p) => !completedProviders.has(p));
+	if (failedProviders.length > 0) {
+		logger.warn(
+			`[chain:${jobGroupId}] ${attemptLabel} — failed: [${failedProviders.join(", ")}], triggering retry`,
+		);
+		throw new Error(
+			`Chain retry needed — failed providers: [${failedProviders.join(", ")}]`,
+		);
+	}
+
 	logger.log(
-		`[chain:${jobGroupId}] complete — processed: ${[...processedProviders].join(", ") || "none"}`,
+		`[chain:${jobGroupId}] all providers completed: [${[...completedProviders].join(", ")}]`,
 	);
 
 	return true;

@@ -8,6 +8,16 @@ const DEFAULT_JOB_OPTIONS = {
 	removeOnFail: false,
 } as const;
 
+const CHAIN_JOB_OPTIONS = {
+	attempts: 10,
+	removeOnComplete: true,
+	removeOnFail: false,
+	backoff: {
+		type: "exponential" as const,
+		delay: 30_000,
+	},
+} as const;
+
 const connection = {
 	host: env.REDIS_HOST,
 	port: env.REDIS_PORT,
@@ -40,7 +50,7 @@ export function getChainQueue(): Queue {
 	if (!chainQueue) {
 		chainQueue = new Queue(CHAIN_QUEUE_NAME, {
 			connection,
-			defaultJobOptions: DEFAULT_JOB_OPTIONS,
+			defaultJobOptions: CHAIN_JOB_OPTIONS,
 		});
 	}
 	return chainQueue;
