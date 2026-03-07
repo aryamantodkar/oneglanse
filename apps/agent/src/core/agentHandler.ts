@@ -6,6 +6,7 @@ import type {
 import { navigateWithRetry } from "../lib/browser/navigate.js";
 import {
 	type AgentFactory,
+	type AttemptExecutor,
 	runWithRetryCycles,
 } from "../lib/browser/proxy/runner.js";
 import { getWarmBrowser } from "../lib/browser/warmPool.js";
@@ -18,6 +19,7 @@ export async function agentHandler(
 	payload: PromptPayload,
 	provider: Provider,
 	options?: {
+		executor?: AttemptExecutor;
 		sessionKey?: string;
 	},
 ): Promise<AskPromptResult[]> {
@@ -57,6 +59,7 @@ export async function agentHandler(
 		};
 
 		return runWithRetryCycles(label, warmFactory, payload, provider, {
+			executor: options?.executor,
 			sessionKey: options?.sessionKey,
 		});
 	});

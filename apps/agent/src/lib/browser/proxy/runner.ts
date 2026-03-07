@@ -34,6 +34,19 @@ export type AgentFactory = () => Promise<{
 	cleanup?: () => Promise<void>;
 }>;
 
+export type BrowserAttempt = {
+	browser: Browser;
+	context: BrowserContext;
+	page: Page;
+	proxy?: string | null;
+	cleanup?: () => Promise<void>;
+};
+
+export type AttemptExecutor = (
+	attempt: BrowserAttempt,
+	payload: PromptPayload,
+) => Promise<AskPromptResult[]>;
+
 type Refs = {
 	browser: Browser | null;
 	context: BrowserContext | null;
@@ -81,9 +94,9 @@ function updatePayloadAfterIpRefresh(
 async function runSingleAttempt(
 	agentFactory: AgentFactory,
 	currentPayload: PromptPayload,
-	provider: Provider,
 	label: string,
 	refs: Refs,
+	executor: AttemptExecutor,
 ): Promise<AskPromptResult[]> {
 	return await Promise.race([
 		(async () => {
@@ -95,7 +108,7 @@ async function runSingleAttempt(
 			refs.page = agent.page;
 			refs.proxy = agent.proxy ?? null;
 
-			return await runAgents(currentPayload, agent.page, provider);
+			return await executor(agent, currentPayload);
 		})(),
 		new Promise<never>((_, reject) =>
 			setTimeout(
@@ -120,6 +133,7 @@ async function runRetryCycle(
 	currentPayload: PromptPayload,
 	cycle: number,
 	plog: ReturnType<typeof createProviderLogger>,
+	executor: AttemptExecutor,
 	sessionKey?: string,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
 	let nextPayload = currentPayload;
@@ -140,9 +154,9 @@ async function runRetryCycle(
 			const result = await runSingleAttempt(
 				agentFactory,
 				nextPayload,
-				provider,
 				label,
 				refs,
+				executor,
 			);
 
 			accumulatedResults.push(...result);
@@ -240,12 +254,17 @@ export async function runWithRetryCycles(
 	payload: PromptPayload,
 	provider: Provider,
 	options?: {
+		executor?: AttemptExecutor;
 		sessionKey?: string;
 	},
 ): Promise<AskPromptResult[]> {
 	const plog = createProviderLogger(provider);
 	const accumulatedResults: AskPromptResult[] = [];
 	let currentPayload = payload;
+	const executor =
+		options?.executor ??
+		((attempt, currentAttemptPayload) =>
+			runAgents(currentAttemptPayload, attempt.page, provider));
 
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
 		if (cycle > 0) {
@@ -266,6 +285,7 @@ export async function runWithRetryCycles(
 			currentPayload,
 			cycle,
 			plog,
+			executor,
 			options?.sessionKey,
 		);
 

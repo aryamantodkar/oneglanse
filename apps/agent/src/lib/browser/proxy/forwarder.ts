@@ -42,8 +42,10 @@ function buildBasicAuthHeader(proxy: UpstreamProxyConfig): string | null {
 
 function sanitizeHeaders(headers: IncomingHttpHeaders): OutgoingHttpHeaders {
 	const nextHeaders: OutgoingHttpHeaders = { ...headers };
-	nextHeaders["proxy-authorization"] = undefined;
-	nextHeaders["proxy-connection"] = undefined;
+	delete nextHeaders["proxy-authorization"];
+	delete nextHeaders["proxy-connection"];
+	delete nextHeaders["Proxy-Authorization"];
+	delete nextHeaders["Proxy-Connection"];
 	return nextHeaders;
 }
 
