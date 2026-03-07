@@ -2,6 +2,7 @@ import { ValidationError, toErrorMessage } from "@oneglanse/errors";
 import { redis, storePromptResponses } from "@oneglanse/services";
 import type {
 	AgentResult,
+	AskPromptResult,
 	ModelResult,
 	PromptPayload,
 	Provider,
@@ -12,6 +13,7 @@ import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
+import { runAgents } from "../core/runAgents.js";
 import { getProviderSessionScope } from "../lib/browser/providerScope.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
@@ -19,6 +21,7 @@ type ProviderStatus = "pending" | "running" | "completed" | "failed";
 type ProviderJobData = {
 	jobGroupId: string;
 	provider: Provider;
+	runProviders?: Provider[];
 	prompts: PromptPayload["prompts"];
 	user_id: string;
 	workspace_id: string;
@@ -59,15 +62,19 @@ redis.call('SET', KEYS[1], cjson.encode(data), 'EX', ${AGENT_PROGRESS_TTL_SECOND
 return cjson.encode(data)
 `;
 
-function buildProgressSeed(provider: Provider, promptCount: number): string {
+function buildProgressSeed(providers: Provider[], promptCount: number): string {
 	return JSON.stringify({
 		status: "pending" as const,
 		updateId: 0,
-		providers: { [provider]: "pending" } as Record<Provider, ProviderStatus>,
-		results: { [provider]: 0 } as Record<Provider, number>,
+		providers: Object.fromEntries(
+			providers.map((provider) => [provider, "pending"]),
+		) as Record<Provider, ProviderStatus>,
+		results: Object.fromEntries(
+			providers.map((provider) => [provider, 0]),
+		) as Record<Provider, number>,
 		stats: {
 			totalPrompts: promptCount,
-			expectedResponses: promptCount,
+			expectedResponses: promptCount * providers.length,
 			actualResponses: 0,
 		},
 	});
@@ -84,16 +91,37 @@ function buildProviderSessionKey(args: {
 
 async function ensureProgressSeed(
 	progressKey: string,
-	provider: Provider,
+	providers: Provider[],
 	promptCount: number,
 ): Promise<void> {
 	await redis.set(
 		progressKey,
-		buildProgressSeed(provider, promptCount),
+		buildProgressSeed(providers, promptCount),
 		"EX",
 		AGENT_PROGRESS_TTL_SECONDS,
 		"NX",
 	);
+}
+
+function normalizeRunProviders(
+	provider: Provider,
+	runProviders?: Provider[],
+): Provider[] {
+	const providers = (runProviders?.length ? runProviders : [provider]).filter(
+		(currentProvider, index, values): currentProvider is Provider =>
+			PROVIDER_LIST.includes(currentProvider) &&
+			values.indexOf(currentProvider) === index,
+	);
+	return providers.length > 0 ? providers : [provider];
+}
+
+function buildEmptyResults(): Record<Provider, AgentResult> {
+	return Object.fromEntries(
+		PROVIDER_LIST.map((currentProvider) => [
+			currentProvider,
+			{ status: "rejected" as const, data: [] },
+		]),
+	) as unknown as Record<Provider, AgentResult>;
 }
 
 async function updateProgress(
@@ -117,8 +145,10 @@ async function updateProgress(
 }
 
 export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
-	const { provider, jobGroupId, prompts, user_id, workspace_id } = job.data;
+	const { provider, jobGroupId, prompts, runProviders, user_id, workspace_id } =
+		job.data;
 	const plog = createProviderLogger(provider);
+	const ownedProviders = normalizeRunProviders(provider, runProviders);
 
 	if (!PROVIDER_LIST.includes(provider)) {
 		throw new ValidationError(`Unknown provider: ${provider}`, { provider });
@@ -132,15 +162,27 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	}
 
 	const progressKey = `job:${jobGroupId}:result`;
-	await ensureProgressSeed(progressKey, provider, prompts.length);
+	await ensureProgressSeed(progressKey, ownedProviders, prompts.length);
 
-	if (PROVIDER_CONFIGS[provider].skip) {
+	if (
+		ownedProviders.some(
+			(currentProvider) => PROVIDER_CONFIGS[currentProvider].skip,
+		)
+	) {
 		plog.warn("skipped (skip: true in providerRegistry)");
-		await updateProgress(progressKey, provider, "failed", 0);
+		await Promise.all(
+			ownedProviders.map((currentProvider) =>
+				updateProgress(progressKey, currentProvider, "failed", 0),
+			),
+		);
 		return true;
 	}
 
-	await updateProgress(progressKey, provider, "running", null);
+	await Promise.all(
+		ownedProviders.map((currentProvider) =>
+			updateProgress(progressKey, currentProvider, "running", null),
+		),
+	);
 
 	const executionTime = new Date().toISOString();
 	const payload: PromptPayload = {
@@ -161,36 +203,89 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	});
 	const profileScope = getProviderSessionScope(provider);
 
-	let wrapped: AgentResult = { status: "rejected", data: [] };
+	const providerResults = buildEmptyResults();
 
 	try {
-		const result = await agentHandler(
-			label,
-			() => createAgent(provider, { sessionKey, profileScope }),
-			payload,
-			provider,
-			{ sessionKey },
-		);
-		wrapped = {
-			status: result.length > 0 ? "fulfilled" : "rejected",
-			data: result,
-		};
+		if (ownedProviders.length === 1) {
+			const result = await agentHandler(
+				label,
+				() => createAgent(provider, { sessionKey, profileScope }),
+				payload,
+				provider,
+				{ sessionKey },
+			);
+			providerResults[provider] = {
+				status: result.length > 0 ? "fulfilled" : "rejected",
+				data: result,
+			};
+		} else {
+			const combinedResultsByProvider: Partial<
+				Record<Provider, AskPromptResult[]>
+			> = {};
+			const sharedResult = await agentHandler(
+				label,
+				() => createAgent(provider, { sessionKey, profileScope }),
+				payload,
+				provider,
+				{
+					sessionKey,
+					executor: async (attempt, currentPayload) => {
+						let lastError: unknown = null;
+						let flattened: AskPromptResult[] = [];
+						for (const currentProvider of ownedProviders) {
+							try {
+								const results = await runAgents(
+									currentPayload,
+									attempt.page,
+									currentProvider,
+								);
+								if (results.length > 0) {
+									combinedResultsByProvider[currentProvider] = results;
+									flattened = flattened.concat(results);
+								}
+							} catch (error) {
+								lastError = error;
+								plog.warn(
+									`${currentProvider} failed inside shared Google session: ${toErrorMessage(error)}`,
+								);
+							}
+						}
+
+						if (flattened.length === 0 && lastError) {
+							throw lastError;
+						}
+
+						return flattened;
+					},
+				},
+			);
+
+			for (const currentProvider of ownedProviders) {
+				const data = combinedResultsByProvider[currentProvider] ?? [];
+				providerResults[currentProvider] = {
+					status: data.length > 0 ? "fulfilled" : "rejected",
+					data,
+				};
+			}
+
+			if (sharedResult.length === 0) {
+				providerResults[provider] = {
+					status: "rejected",
+					data: [],
+				};
+			}
+		}
 	} catch (err) {
 		plog.error("failed:", toErrorMessage(err));
 	}
 
-	if (wrapped.status === "fulfilled" && wrapped.data.length > 0) {
-		const emptyResult = Object.fromEntries(
-			PROVIDER_LIST.map((currentProvider) => [
-				currentProvider,
-				{ status: "rejected" as const, data: [] },
-			]),
-		) as unknown as Record<Provider, AgentResult>;
+	const fulfilledProviders = ownedProviders.filter(
+		(currentProvider) =>
+			providerResults[currentProvider].status === "fulfilled",
+	);
 
-		const partialResults: ModelResult = {
-			...emptyResult,
-			[provider]: wrapped,
-		};
+	if (fulfilledProviders.length > 0) {
+		const partialResults: ModelResult = providerResults;
 
 		await storePromptResponses({
 			results: partialResults,
@@ -207,9 +302,18 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		});
 	}
 
-	const finalStatus: ProviderStatus =
-		wrapped.status === "fulfilled" ? "completed" : "failed";
-	await updateProgress(progressKey, provider, finalStatus, wrapped.data.length);
+	await Promise.all(
+		ownedProviders.map((currentProvider) =>
+			updateProgress(
+				progressKey,
+				currentProvider,
+				providerResults[currentProvider].status === "fulfilled"
+					? "completed"
+					: "failed",
+				providerResults[currentProvider].data.length,
+			),
+		),
+	);
 
 	return true;
 }

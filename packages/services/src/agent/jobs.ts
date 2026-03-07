@@ -13,6 +13,7 @@ const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
 type ProviderJobPayload = {
 	jobGroupId: string;
 	provider: Provider;
+	runProviders?: Provider[];
 	prompts: UserPrompt[];
 	user_id: string;
 	workspace_id: string;
@@ -45,6 +46,39 @@ async function enqueueProviderJob(payload: ProviderJobPayload): Promise<void> {
 	}
 }
 
+function buildProviderJobs(enabledProviders: Provider[]): Array<{
+	provider: Provider;
+	runProviders: Provider[];
+}> {
+	const plan: Array<{
+		provider: Provider;
+		runProviders: Provider[];
+	}> = [];
+	const hasGemini = enabledProviders.includes("gemini");
+	const hasAiOverview = enabledProviders.includes("ai-overview");
+
+	for (const provider of enabledProviders) {
+		if (provider === "ai-overview" && hasGemini) {
+			continue;
+		}
+
+		if (provider === "gemini" && hasAiOverview) {
+			plan.push({
+				provider,
+				runProviders: ["gemini", "ai-overview"],
+			});
+			continue;
+		}
+
+		plan.push({
+			provider,
+			runProviders: [provider],
+		});
+	}
+
+	return plan;
+}
+
 function parseEnabledProviders(
 	rawValue: string | null | undefined,
 ): Provider[] {
@@ -71,11 +105,13 @@ export async function enqueueProviderJobs(args: {
 	enabledProviders: Provider[];
 }): Promise<void> {
 	const { jobGroupId, prompts, userId, workspaceId, enabledProviders } = args;
+	const providerJobs = buildProviderJobs(enabledProviders);
 	await Promise.all(
-		enabledProviders.map((provider) =>
+		providerJobs.map(({ provider, runProviders }) =>
 			enqueueProviderJob({
 				jobGroupId,
 				provider,
+				runProviders,
 				prompts,
 				user_id: userId,
 				workspace_id: workspaceId,
