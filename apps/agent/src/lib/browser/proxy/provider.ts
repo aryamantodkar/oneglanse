@@ -316,9 +316,16 @@ function applyThorFamilyStrategy(
 ): UpstreamProxyConfig {
 	const username = proxy.username ?? "";
 	const normalizedHost = normalizeHostKey(proxy.host);
+	// Thordata scheme inference:
+	// - *.thordata.online     → HTTPS (portal endpoints)
+	// - pr.thordata.net       → HTTP  (standard rotating gateway)
+	// - *.na.thordata.net,    → HTTPS (regional node endpoints use TLS on
+	//   *.eu.thordata.net etc    non-standard ports like 9999)
+	// - anything else         → use PROXY_SCHEME from env
 	const inferredScheme =
 		/\.thordata\.online$/i.test(normalizedHost) ||
-		normalizedHost === "thordata.online"
+		normalizedHost === "thordata.online" ||
+		/\.(na|eu|as|sa|ap)\.thordata\.net$/i.test(normalizedHost)
 			? "https"
 			: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
 					normalizedHost === "pr.thordata.net" ||
