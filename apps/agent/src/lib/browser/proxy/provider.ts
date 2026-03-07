@@ -323,15 +323,9 @@ function applyThorFamilyStrategy(
 	//   *.eu.thordata.net etc    non-standard ports like 9999)
 	// - anything else         → use PROXY_SCHEME from env
 	const inferredScheme =
-		/\.thordata\.online$/i.test(normalizedHost) ||
-		normalizedHost === "thordata.online" ||
-		/\.(na|eu|as|sa|ap)\.thordata\.net$/i.test(normalizedHost)
-			? "https"
-			: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
-					normalizedHost === "pr.thordata.net" ||
-					normalizedHost === "t.pr.thordata.net"
-				? "http"
-				: proxy.scheme;
+	/\.thordata\.(net|online)$/i.test(normalizedHost)
+		? "http"
+		: proxy.scheme;
 
 	if (!username) {
 		return inferredScheme === proxy.scheme

@@ -128,6 +128,10 @@ function connectTls(host: string, port: number): Promise<Socket> {
 			host,
 			port,
 			servername: host,
+			// Proxy providers (e.g. BrightData) may use custom CA certs.
+			// rejectUnauthorized applies only to the proxy TLS hop, not to the
+			// end-to-end TLS inside the CONNECT tunnel (which Chrome validates).
+			rejectUnauthorized: false,
 		});
 
 		const onError = (error: Error) => {
@@ -549,6 +553,8 @@ async function handleHttpProxyRequest(
 				...(proxyAuthHeader ? { "Proxy-Authorization": proxyAuthHeader } : {}),
 			},
 			agent: false,
+			// Proxy providers may use custom CA certs; only disable for proxy hop.
+			rejectUnauthorized: false,
 		},
 		(upstreamResponse) => {
 			response.writeHead(
