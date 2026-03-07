@@ -31,10 +31,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
   libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 \
   ca-certificates \
+  fontconfig \
   chromium \
   xvfb \
   fonts-liberation fonts-dejavu fonts-freefont-ttf \
-  fonts-noto fonts-noto-cjk-extra \
+  fonts-noto fonts-noto-cjk-extra fonts-noto-color-emoji \
+  fonts-roboto fonts-ubuntu \
+  fonts-crosextra-carlito fonts-crosextra-caladea \
+  && fc-cache -f \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
