@@ -6,6 +6,7 @@ import {
 	createServer,
 	request as httpRequest,
 } from "node:http";
+import { logger } from "@oneglanse/utils";
 import { request as httpsRequest } from "node:https";
 import { type Socket, isIP, connect as netConnect } from "node:net";
 import type { Duplex } from "node:stream";
@@ -628,6 +629,8 @@ export async function createProxyForwarder(
 				})
 				.catch((error) => {
 					const body = error instanceof Error ? error.message : "proxy error";
+					// Log the real tunnel failure so the cause is visible in agent logs.
+					logger.warn(`[forwarder] CONNECT tunnel failed: ${body}`);
 					// Use end() not destroy() — destroy() discards buffered writes so
 					// Chrome never sees the 502 and gets ERR_CONNECTION_CLOSED instead.
 					clientSocket.end(
