@@ -43,8 +43,8 @@ importers:
         specifier: ^17.2.3
         version: 17.3.1
       playwright:
-        specifier: ^1.57.0
-        version: 1.58.2
+        specifier: npm:rebrowser-playwright@1.52.0
+        version: rebrowser-playwright@1.52.0
       turndown:
         specifier: ^7.2.2
         version: 7.2.2
@@ -3961,16 +3961,6 @@ packages:
   pkg-types@2.3.0:
     resolution: {integrity: sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==}
 
-  playwright-core@1.58.2:
-    resolution: {integrity: sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  playwright@1.58.2:
-    resolution: {integrity: sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A==}
-    engines: {node: '>=18'}
-    hasBin: true
-
   points-on-curve@0.2.0:
     resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
 
@@ -4112,6 +4102,16 @@ packages:
 
   reading-time@1.5.0:
     resolution: {integrity: sha512-onYyVhBNr4CmAxFsKS7bz+uTLRakypIe4R+5A824vBSkQy/hB3fZepoVEf8OVAxzLvK+H/jm9TzpI3ETSm64Kg==}
+
+  rebrowser-playwright-core@1.52.0:
+    resolution: {integrity: sha512-gjrvLNh0RX6B/tg6pWaPNGf+9+z1Jl2EyAh5MXD5xMa2lputGRZ9V2MJ/uofcC5Np3vSOJ3SdVSRqwteC0FjfQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  rebrowser-playwright@1.52.0:
+    resolution: {integrity: sha512-UjpqfwmF9+XtOuCCxGQ2ZlLeuSaSv//4Z6ZQgYPsJovz3d7nWodCd2hSRQigAswAUnsPmVwnQUpSn+TLKaKV+A==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   recma-build-jsx@1.0.0:
     resolution: {integrity: sha512-8GtdyqaBcDfva+GUKDr3nev3VpKAhup1+RvkMvUxURHpW7QyIvk9F5wz7Vzo06CEMSilw6uArgRqhpiUcWp8ew==}
@@ -8391,14 +8391,6 @@ snapshots:
       exsolve: 1.0.8
       pathe: 2.0.3
 
-  playwright-core@1.58.2: {}
-
-  playwright@1.58.2:
-    dependencies:
-      playwright-core: 1.58.2
-    optionalDependencies:
-      fsevents: 2.3.2
-
   points-on-curve@0.2.0: {}
 
   points-on-path@0.2.1:
@@ -8526,6 +8518,14 @@ snapshots:
   readdirp@4.1.2: {}
 
   reading-time@1.5.0: {}
+
+  rebrowser-playwright-core@1.52.0: {}
+
+  rebrowser-playwright@1.52.0:
+    dependencies:
+      playwright-core: rebrowser-playwright-core@1.52.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   recma-build-jsx@1.0.0:
     dependencies:

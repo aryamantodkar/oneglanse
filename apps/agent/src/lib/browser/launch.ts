@@ -195,9 +195,14 @@ export async function launchContext(provider: Provider): Promise<{
 			}),
 		]);
 		browser = await chromium.connectOverCDP(wsEndpoint);
+		const browserVersion = browser.version();
 
-		const context = await browser.newContext(buildContextOptions(profile));
-		await context.addInitScript(buildStealthInitScript(profile));
+		const context = await browser.newContext(
+			buildContextOptions(profile, browserVersion),
+		);
+		await context.addInitScript(
+			buildStealthInitScript(profile, browserVersion),
+		);
 
 		return {
 			browser,

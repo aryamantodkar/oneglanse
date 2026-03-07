@@ -1,13 +1,46 @@
+import { ExternalServiceError } from "@oneglanse/errors";
 import { extractAIOverviewSources } from "./lib/extractSources.js";
 import { extractAIOverviewResponse } from "./lib/extractResponse.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 import { logger } from "@oneglanse/utils";
 import { env } from "../../../env.js";
+import type { Page } from "playwright";
 import type { ProviderConfig } from "../types.js";
 
 function buildSearchUrl(prompt: string): string {
 	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&pws=0`;
+}
+
+function assertNotSorryPage(page: Page): void {
+	if (page.url().includes("/sorry/")) {
+		throw new ExternalServiceError(
+			"ai-overview",
+			"Google bot detection triggered (sorry page) — proxy IP blocked",
+			429,
+		);
+	}
+}
+
+// Track pages that have already completed the Google cookie warm-up so that
+// subsequent prompts within the same browser session skip the extra navigation.
+const warmedPages = new WeakSet<Page>();
+
+async function ensureGoogleCookies(page: Page): Promise<void> {
+	if (warmedPages.has(page)) return;
+
+	logger.log("[ai-overview] warming up Google cookies");
+	await navigateWithRetry(page, "https://www.google.com/?hl=en&pws=0", {
+		waitUntil: "domcontentloaded",
+		timeout: 30000,
+	});
+	assertNotSorryPage(page);
+	await page
+		.locator('button:has-text("Accept all")')
+		.first()
+		.click({ timeout: 3000 })
+		.catch(() => null);
+	warmedPages.add(page);
 }
 
 export const aiOverviewConfig: ProviderConfig = {
@@ -18,13 +51,15 @@ export const aiOverviewConfig: ProviderConfig = {
 	requiresWarmup: false,
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
+		await ensureGoogleCookies(page);
 		const url = buildSearchUrl(prompt);
 		logger.log(`[ai-overview] navigating to ${url}`);
 		await navigateWithRetry(page, url, {
 			waitUntil: "domcontentloaded",
 			timeout: 60000,
 		});
-		// Dismiss consent dialog if it appears on the search result page
+		assertNotSorryPage(page);
+		// Dismiss consent dialog if it re-appears on the search result page
 		await page
 			.locator('button:has-text("Accept all")')
 			.first()

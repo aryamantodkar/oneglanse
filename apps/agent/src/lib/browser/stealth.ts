@@ -1,3 +1,4 @@
+import { release } from "node:os";
 import type { BrowserContextOptions } from "playwright";
 import { env } from "../../env.js";
 
@@ -25,6 +26,27 @@ export type SessionProfile = {
 type WeightedItem<T> = {
 	value: T;
 	weight: number;
+};
+
+type BrowserBrand = {
+	brand: string;
+	version: string;
+};
+
+type BrowserIdentity = {
+	fullVersion: string;
+	userAgent: string;
+	brands: BrowserBrand[];
+	fullVersionList: BrowserBrand[];
+	platform: string;
+	platformNavigator: string;
+	platformVersion: string;
+	architecture: string;
+	bitness: string;
+	model: string;
+	mobile: boolean;
+	wow64: boolean;
+	secChUa: string;
 };
 
 const VIEWPORTS: WeightedItem<Size>[] = [
@@ -97,6 +119,124 @@ const DEFAULT_LOCALE = env.BROWSER_LOCALE?.trim() || "en-US";
 const DEFAULT_ACCEPT_LANGUAGE =
 	env.BROWSER_ACCEPT_LANGUAGE?.trim() || `${DEFAULT_LOCALE},en;q=0.9`;
 const DEFAULT_TIMEZONE = env.BROWSER_TIMEZONE?.trim() || undefined;
+const DEFAULT_BROWSER_VERSION = "143.0.7499.4";
+const UA_GREASE_BRAND = { brand: "Not_A Brand", version: "24" } as const;
+
+function normalizePlatformVersion(): string {
+	const rawVersion = release().split("-")[0] ?? "";
+	const segments = rawVersion
+		.split(".")
+		.map((segment) => segment.trim())
+		.filter((segment) => /^\d+$/.test(segment))
+		.slice(0, 3);
+
+	while (segments.length < 3) {
+		segments.push("0");
+	}
+
+	return segments.join(".") || "6.5.0";
+}
+
+function normalizeBrowserVersion(browserVersion?: string): {
+	majorVersion: string;
+	fullVersion: string;
+} {
+	const match = browserVersion?.match(/(\d+)(?:\.(\d+)\.(\d+)\.(\d+))?/);
+	if (!match) {
+		return normalizeBrowserVersion(DEFAULT_BROWSER_VERSION);
+	}
+
+	const majorVersion =
+		match[1] ?? DEFAULT_BROWSER_VERSION.split(".")[0] ?? "143";
+	const fullVersion = match[2]
+		? `${majorVersion}.${match[2] ?? "0"}.${match[3] ?? "0"}.${match[4] ?? "0"}`
+		: `${majorVersion}.0.0.0`;
+
+	return { majorVersion, fullVersion };
+}
+
+function formatSecChUa(brands: BrowserBrand[]): string {
+	return brands
+		.map(({ brand, version }) => `"${brand}";v="${version}"`)
+		.join(", ");
+}
+
+function buildBrowserIdentity(browserVersion?: string): BrowserIdentity {
+	const { majorVersion, fullVersion } = normalizeBrowserVersion(browserVersion);
+	const brands = [
+		{ brand: "Google Chrome", version: majorVersion },
+		{ brand: "Chromium", version: majorVersion },
+		UA_GREASE_BRAND,
+	];
+	const fullVersionList = [
+		{ brand: "Google Chrome", version: fullVersion },
+		{ brand: "Chromium", version: fullVersion },
+		{
+			brand: UA_GREASE_BRAND.brand,
+			version: `${UA_GREASE_BRAND.version}.0.0.0`,
+		},
+	];
+
+	return {
+		fullVersion,
+		userAgent: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${fullVersion} Safari/537.36`,
+		brands,
+		fullVersionList,
+		platform: "Linux",
+		platformNavigator: "Linux x86_64",
+		platformVersion: normalizePlatformVersion(),
+		architecture: "x86",
+		bitness: "64",
+		model: "",
+		mobile: false,
+		wow64: false,
+		secChUa: formatSecChUa(brands),
+	};
+}
+
+function buildWebGlExtensions(profile: SessionProfile): string[] {
+	const baseExtensions = [
+		"ANGLE_instanced_arrays",
+		"EXT_blend_minmax",
+		"EXT_color_buffer_half_float",
+		"EXT_disjoint_timer_query",
+		"EXT_float_blend",
+		"EXT_frag_depth",
+		"EXT_shader_texture_lod",
+		"EXT_sRGB",
+		"EXT_texture_compression_bptc",
+		"EXT_texture_compression_rgtc",
+		"EXT_texture_filter_anisotropic",
+		"KHR_parallel_shader_compile",
+		"OES_element_index_uint",
+		"OES_fbo_render_mipmap",
+		"OES_standard_derivatives",
+		"OES_texture_float",
+		"OES_texture_float_linear",
+		"OES_texture_half_float",
+		"OES_texture_half_float_linear",
+		"OES_vertex_array_object",
+		"WEBGL_color_buffer_float",
+		"WEBGL_compressed_texture_s3tc",
+		"WEBGL_compressed_texture_s3tc_srgb",
+		"WEBGL_debug_renderer_info",
+		"WEBGL_debug_shaders",
+		"WEBGL_depth_texture",
+		"WEBGL_draw_buffers",
+		"WEBGL_lose_context",
+		"WEBGL_multi_draw",
+	];
+
+	if (profile.webgl.vendor.includes("NVIDIA")) {
+		return [...baseExtensions, "EXT_texture_compression_s3tc"];
+	}
+
+	if (profile.webgl.vendor.includes("AMD")) {
+		return [...baseExtensions, "EXT_color_buffer_float"];
+	}
+
+	return baseExtensions;
+}
 
 function buildLanguageList(locale: string, acceptLanguage: string): string[] {
 	const values = acceptLanguage
@@ -165,11 +305,21 @@ export function generateSessionProfile(): SessionProfile {
 	};
 }
 
-export function buildStealthInitScript(profile: SessionProfile): string {
+export function buildStealthInitScript(
+	profile: SessionProfile,
+	browserVersion?: string,
+): string {
+	const identity = buildBrowserIdentity(browserVersion);
+	const webglExtensions = buildWebGlExtensions(profile);
+
 	return `(function () {
 		const profile = ${JSON.stringify(profile)};
 		const locale = ${JSON.stringify(DEFAULT_LOCALE)};
 		const languages = Object.freeze(${JSON.stringify(DEFAULT_LANGUAGES)});
+		const identity = ${JSON.stringify(identity)};
+		const userAgent = identity.userAgent;
+		const configuredTimezone = ${JSON.stringify(DEFAULT_TIMEZONE ?? null)};
+		const webglExtensions = Object.freeze(${JSON.stringify(webglExtensions)});
 		const patchedFns = new WeakSet();
 		const audioNoiseBuffers = new WeakSet();
 		let lastPerformanceNow = 0;
@@ -229,8 +379,25 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 			return wrappedValue;
 		}
 
+		function createPermissionStatus(state) {
+			return Object.setPrototypeOf(
+				{ state, onchange: null },
+				PermissionStatus.prototype,
+			);
+		}
+
+		function createChromeEvent() {
+			return {
+				addListener: markNative(function addListener() {}),
+				removeListener: markNative(function removeListener() {}),
+				hasListeners: markNative(function hasListeners() {
+					return false;
+				}),
+			};
+		}
+
 		function buildCanvasSample(imageData) {
-			const limit = Math.min(imageData.data.length, 128);
+			const limit = Math.min(imageData.data.length, 400);
 			let sample = imageData.width + "x" + imageData.height + ":";
 			for (let index = 0; index < limit; index += 4) {
 				sample +=
@@ -262,7 +429,7 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 
 		function mutateCanvasImageData(imageData) {
 			const prng = prngForKey("canvas:" + buildCanvasSample(imageData));
-			const pixelLimit = Math.min(imageData.data.length, 32);
+			const pixelLimit = Math.min(imageData.data.length, 400);
 			for (let index = 0; index < pixelLimit; index += 4) {
 				imageData.data[index] = clampByte(
 					imageData.data[index] + (prng() > 0.5 ? 1 : -1),
@@ -332,6 +499,75 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 			return false;
 		});
 
+		defineGetter(Navigator.prototype, "userAgent", function userAgentGetter() {
+			return userAgent;
+		});
+
+		defineGetter(Navigator.prototype, "platform", function platform() {
+			return identity.platformNavigator;
+		});
+
+		defineGetter(
+			Navigator.prototype,
+			"maxTouchPoints",
+			function maxTouchPoints() {
+				return 0;
+			},
+		);
+
+		defineGetter(Navigator.prototype, "productSub", function productSub() {
+			return "20030107";
+		});
+
+		defineGetter(Navigator.prototype, "product", function product() {
+			return "Gecko";
+		});
+
+		const uaBrands = Object.freeze(
+			identity.brands.map((brand) => Object.freeze({ ...brand })),
+		);
+		const uaFullVersionList = Object.freeze(
+			identity.fullVersionList.map((brand) => Object.freeze({ ...brand })),
+		);
+		const uaDataValue = {
+			brands: uaBrands,
+			mobile: identity.mobile,
+			platform: identity.platform,
+			getHighEntropyValues: markNative(async function getHighEntropyValues(
+				hints,
+			) {
+				const values = {
+					architecture: identity.architecture,
+					bitness: identity.bitness,
+					brands: uaBrands,
+					fullVersionList: uaFullVersionList,
+					mobile: identity.mobile,
+					model: identity.model,
+					platform: identity.platform,
+					platformVersion: identity.platformVersion,
+					uaFullVersion: identity.fullVersion,
+					wow64: identity.wow64,
+				};
+				return Object.fromEntries(
+					(Array.isArray(hints) ? hints : []).map((hint) => [hint, values[hint]]),
+				);
+			}),
+			toJSON: markNative(function toJSON() {
+				return {
+					brands: uaBrands,
+					mobile: identity.mobile,
+					platform: identity.platform,
+				};
+			}),
+		};
+		Object.defineProperty(uaDataValue, Symbol.toStringTag, {
+			value: "NavigatorUAData",
+			configurable: true,
+		});
+		defineGetter(Navigator.prototype, "userAgentData", function userAgentData() {
+			return uaDataValue;
+		});
+
 		const chromeObject =
 			window.chrome && typeof window.chrome === "object" ? window.chrome : {};
 
@@ -396,6 +632,14 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 					addListener: markNative(function addListener() {}),
 					removeListener: markNative(function removeListener() {}),
 				},
+			};
+		}
+
+		if (!chromeObject.webstore) {
+			chromeObject.webstore = {
+				onInstallStageChanged: createChromeEvent(),
+				onDownloadProgress: createChromeEvent(),
+				install: markNative(function install() {}),
 			};
 		}
 
@@ -539,18 +783,32 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 			return "Google Inc.";
 		});
 
+		try {
+			if (typeof Notification !== "undefined") {
+				defineGetter(Notification, "permission", function permission() {
+					return "default";
+				});
+			}
+		} catch {}
+
 		if (navigator.permissions?.query) {
+			const promptPermissions = new Set([
+				"camera",
+				"microphone",
+				"geolocation",
+				"clipboard-read",
+				"clipboard-write",
+				"payment-handler",
+				"midi",
+				"usb",
+				"notifications",
+			]);
 			const originalPermissionsQuery = navigator.permissions.query.bind(
 				navigator.permissions,
 			);
 			navigator.permissions.query = markNative(function query(parameters) {
-				if (parameters?.name === "notifications") {
-					return Promise.resolve(
-						Object.setPrototypeOf(
-							{ state: "prompt", onchange: null },
-							PermissionStatus.prototype,
-						),
-					);
+				if (parameters?.name && promptPermissions.has(parameters.name)) {
+					return Promise.resolve(createPermissionStatus("prompt"));
 				}
 
 				return originalPermissionsQuery(parameters);
@@ -583,7 +841,14 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 		try {
 			const glVendor = profile.webgl.vendor;
 			const glRenderer = profile.webgl.renderer;
+			const debugRendererInfo = Object.freeze({
+				UNMASKED_VENDOR_WEBGL: 37445,
+				UNMASKED_RENDERER_WEBGL: 37446,
+			});
 			const originalGetParameter = WebGLRenderingContext.prototype.getParameter;
+			const originalGetSupportedExtensions =
+				WebGLRenderingContext.prototype.getSupportedExtensions;
+			const originalGetExtension = WebGLRenderingContext.prototype.getExtension;
 			WebGLRenderingContext.prototype.getParameter = markNative(
 				function getParameter(parameter) {
 					if (parameter === 37445) return glVendor;
@@ -591,14 +856,52 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 					return originalGetParameter.call(this, parameter);
 				},
 			);
+			WebGLRenderingContext.prototype.getSupportedExtensions = markNative(
+				function getSupportedExtensions() {
+					const originalExtensions =
+						originalGetSupportedExtensions?.call(this) ?? [];
+					return Array.from(
+						new Set([...originalExtensions, ...webglExtensions]),
+					);
+				},
+			);
+			WebGLRenderingContext.prototype.getExtension = markNative(
+				function getExtension(name) {
+					if (name === "WEBGL_debug_renderer_info") {
+						return debugRendererInfo;
+					}
+					return originalGetExtension.call(this, name);
+				},
+			);
 
 			if (typeof WebGL2RenderingContext !== "undefined") {
 				const originalGetParameter2 = WebGL2RenderingContext.prototype.getParameter;
+				const originalGetSupportedExtensions2 =
+					WebGL2RenderingContext.prototype.getSupportedExtensions;
+				const originalGetExtension2 =
+					WebGL2RenderingContext.prototype.getExtension;
 				WebGL2RenderingContext.prototype.getParameter = markNative(
 					function getParameter(parameter) {
 						if (parameter === 37445) return glVendor;
 						if (parameter === 37446) return glRenderer;
 						return originalGetParameter2.call(this, parameter);
+					},
+				);
+				WebGL2RenderingContext.prototype.getSupportedExtensions = markNative(
+					function getSupportedExtensions() {
+						const originalExtensions =
+							originalGetSupportedExtensions2?.call(this) ?? [];
+						return Array.from(
+							new Set([...originalExtensions, ...webglExtensions]),
+						);
+					},
+				);
+				WebGL2RenderingContext.prototype.getExtension = markNative(
+					function getExtension(name) {
+						if (name === "WEBGL_debug_renderer_info") {
+							return debugRendererInfo;
+						}
+						return originalGetExtension2.call(this, name);
 					},
 				);
 			}
@@ -723,6 +1026,36 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 		} catch {}
 
 		try {
+			const mediaDevicesValue =
+				navigator.mediaDevices && typeof navigator.mediaDevices === "object"
+					? navigator.mediaDevices
+					: {
+							addEventListener: markNative(function addEventListener() {}),
+							removeEventListener: markNative(function removeEventListener() {}),
+							dispatchEvent: markNative(function dispatchEvent() {
+								return true;
+							}),
+							getSupportedConstraints: markNative(
+								function getSupportedConstraints() {
+									return {};
+								},
+							),
+						};
+
+			mediaDevicesValue.enumerateDevices = markNative(
+				async function enumerateDevices() {
+					return [];
+				},
+			);
+
+			if (!navigator.mediaDevices) {
+				defineGetter(Navigator.prototype, "mediaDevices", function mediaDevices() {
+					return mediaDevicesValue;
+				});
+			}
+		} catch {}
+
+		try {
 			const originalPerformanceNow = Performance.prototype.now;
 			Performance.prototype.now = markNative(function now() {
 				const nextValue =
@@ -730,6 +1063,22 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 				lastPerformanceNow = Math.max(lastPerformanceNow + 0.000001, nextValue);
 				return lastPerformanceNow;
 			});
+		} catch {}
+
+		try {
+			if (configuredTimezone && Intl?.DateTimeFormat?.prototype?.resolvedOptions) {
+				const originalResolvedOptions =
+					Intl.DateTimeFormat.prototype.resolvedOptions;
+				Intl.DateTimeFormat.prototype.resolvedOptions = markNative(
+					function resolvedOptions() {
+						const options = originalResolvedOptions.call(this);
+						return {
+							...options,
+							timeZone: configuredTimezone,
+						};
+					},
+				);
+			}
 		} catch {}
 
 		try {
@@ -915,7 +1264,9 @@ export function buildStealthInitScript(profile: SessionProfile): string {
 
 export function buildContextOptions(
 	profile: SessionProfile,
+	browserVersion?: string,
 ): BrowserContextOptions {
+	const identity = buildBrowserIdentity(browserVersion);
 	const options: BrowserContextOptions = {
 		viewport: profile.viewport,
 		screen: {
@@ -923,8 +1274,15 @@ export function buildContextOptions(
 			height: profile.screen.height,
 		},
 		locale: DEFAULT_LOCALE,
+		userAgent: identity.userAgent,
 		extraHTTPHeaders: {
 			"Accept-Language": DEFAULT_ACCEPT_LANGUAGE,
+			"sec-ch-ua": identity.secChUa,
+			"sec-ch-ua-mobile": "?0",
+			"sec-ch-ua-platform": `"${identity.platform}"`,
+			Accept:
+				"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+			"Accept-Encoding": "gzip, deflate, br",
 		},
 		ignoreHTTPSErrors: true,
 	};
@@ -936,9 +1294,7 @@ export function buildContextOptions(
 	return options;
 }
 
-export function buildChromeArgs(options?: {
-	extensionDir?: string;
-}): string[] {
+export function buildChromeArgs(): string[] {
 	const args = [
 		"--ignore-certificate-errors",
 		"--disable-dev-shm-usage",
@@ -960,16 +1316,8 @@ export function buildChromeArgs(options?: {
 		"--font-render-hinting=medium",
 		"--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
 		"--enforce-webrtc-ip-permission-check",
+		"--disable-extensions",
 	];
-
-	if (options?.extensionDir) {
-		args.push(
-			`--disable-extensions-except=${options.extensionDir}`,
-			`--load-extension=${options.extensionDir}`,
-		);
-	} else {
-		args.push("--disable-extensions");
-	}
 
 	return args;
 }
