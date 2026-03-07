@@ -1,5 +1,6 @@
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
+import { logger } from "@oneglanse/utils";
 import { env } from "../../env.js";
 import {
 	type BrowserSessionSettings,
@@ -248,7 +249,12 @@ export async function resolveBrowserSessionSettings(
 
 		settingsCache.set(cacheKey, settings);
 		return settings;
-	} catch {
+	} catch (error) {
+		if (proxyServer) {
+			logger.warn(
+				`proxy geo lookup failed, using fallback browser settings: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 		settingsCache.set(cacheKey, baseSettings);
 		return baseSettings;
 	}

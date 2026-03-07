@@ -321,12 +321,24 @@ function applyThorFamilyStrategy(
 		normalizedHost === "thordata.online"
 			? "https"
 			: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
-				  normalizedHost === "pr.thordata.net" ||
-				  normalizedHost === "t.pr.thordata.net"
+					normalizedHost === "pr.thordata.net" ||
+					normalizedHost === "t.pr.thordata.net"
 				? "http"
 				: proxy.scheme;
+	const isManagedThorHost =
+		normalizedHost === "pr.thordata.net" ||
+		normalizedHost === "t.pr.thordata.net" ||
+		normalizedHost.endsWith(".thordata.online");
 
 	if (!username) {
+		return inferredScheme === proxy.scheme
+			? proxy
+			: withProxy(proxy, { scheme: inferredScheme });
+	}
+
+	// Preserve provider-issued credentials on custom ThorData hosts instead of
+	// inventing a new session id that the endpoint may not accept.
+	if (!isManagedThorHost && /-sessid-/i.test(username)) {
 		return inferredScheme === proxy.scheme
 			? proxy
 			: withProxy(proxy, { scheme: inferredScheme });
