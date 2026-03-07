@@ -9,6 +9,23 @@ Proxy settings apply to `apps/agent`.
 
 Use one of these formats.
 
+## ThorData API Link
+
+For `PROXY_PROVIDER=thordata`, prefer the ThorData API URL instead of static
+proxy host/user/pass fields.
+
+```env
+PROXY_PROVIDER=thordata
+PROXY_SCHEME=http
+THORDATA_PROXY_API_URL=https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER_ID&sesstype=1&number=5&country=US
+```
+
+Runtime behavior:
+
+- The agent fetches the proxy list from the API URL on each launch.
+- It picks one random returned proxy.
+- It does not lease the same returned proxy to two workers concurrently.
+
 ## `PROXY_URL`
 
 ```env

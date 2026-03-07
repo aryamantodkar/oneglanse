@@ -145,17 +145,12 @@ PROXY_USERNAME=customer-USERNAME
 PROXY_PASSWORD=pass
 
 # Thordata:
-# sessid is replaced every launch with a 12-character token, existing sesstime
-# is preserved.
-# If your dashboard gives you a dedicated host, keep that host as-is.
-# For residential/browser endpoints like *.pr.thordata.net, use HTTP.
-# For high-bandwidth endpoints like *.thordata.online, use HTTPS.
+# Add the API URL from your ThorData dashboard. The agent fetches the proxy
+# list per launch, picks one proxy at random, and avoids leasing the same
+# proxy to two workers concurrently.
 PROXY_PROVIDER=thordata
 PROXY_SCHEME=http
-PROXY_HOST=t.pr.thordata.net
-PROXY_PORT=9999
-PROXY_USERNAME=td-customer-USERNAME-country-US-sessid-old-sesstime-30
-PROXY_PASSWORD=pass
+THORDATA_PROXY_API_URL=https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER_ID&sesstype=1&number=5&country=US
 
 # LunaProxy:
 # sessid is replaced every launch with a 12-character token, existing sesstime

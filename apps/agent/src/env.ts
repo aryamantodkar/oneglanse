@@ -54,6 +54,7 @@ const AgentEnvSchema = z
 		PROXY_PORT: z.string().trim().optional(),
 		PROXY_USERNAME: z.string().trim().optional(),
 		PROXY_PASSWORD: z.string().trim().optional(),
+		THORDATA_PROXY_API_URL: z.string().trim().url().optional(),
 		PROXY_PROVIDER: z
 			.preprocess(
 				(value) =>
@@ -90,6 +91,22 @@ const AgentEnvSchema = z
 		const hasProxyPort = Boolean(values.PROXY_PORT);
 		const hasProxyUser = Boolean(values.PROXY_USERNAME);
 		const hasProxyPass = Boolean(values.PROXY_PASSWORD);
+		const usesThorDataApi =
+			values.PROXY_PROVIDER === "thordata" &&
+			Boolean(values.THORDATA_PROXY_API_URL);
+
+		if (values.THORDATA_PROXY_API_URL && values.PROXY_PROVIDER !== "thordata") {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["THORDATA_PROXY_API_URL"],
+				message:
+					"THORDATA_PROXY_API_URL can only be used when PROXY_PROVIDER=thordata.",
+			});
+		}
+
+		if (usesThorDataApi) {
+			return;
+		}
 
 		if (hasProxyHost !== hasProxyPort) {
 			ctx.addIssue({
