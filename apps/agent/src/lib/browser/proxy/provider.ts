@@ -177,6 +177,15 @@ function readUnderscoreToken(
 	return value.match(new RegExp(`_${tokenName}-([^_]+)`, "i"))?.[1];
 }
 
+function readCountryCode(username: string): string | undefined {
+	return username.match(/-country-([A-Za-z]{2})\b/i)?.[1]?.toUpperCase();
+}
+
+function randomThorSessionId(username: string): string {
+	const prefix = readCountryCode(username) ?? "all";
+	return `${prefix}${randomAlphaNumeric(15)}`;
+}
+
 function randomInt(min: number, max: number): number {
 	if (max <= min) return min;
 	const range = max - min + 1;
@@ -316,16 +325,18 @@ function applyThorFamilyStrategy(
 ): UpstreamProxyConfig {
 	const username = proxy.username ?? "";
 	const normalizedHost = normalizeHostKey(proxy.host);
-	// Thordata scheme inference:
-	// - *.thordata.online     → HTTPS (portal endpoints)
-	// - pr.thordata.net       → HTTP  (standard rotating gateway)
-	// - *.na.thordata.net,    → HTTPS (regional node endpoints use TLS on
-	//   *.eu.thordata.net etc    non-standard ports like 9999)
-	// - anything else         → use PROXY_SCHEME from env
+	const explicitScheme = env.PROXY_SCHEME?.trim();
 	const inferredScheme =
-	/\.thordata\.(net|online)$/i.test(normalizedHost)
-		? "http"
-		: proxy.scheme;
+		explicitScheme
+			? proxy.scheme
+			: /\.thordata\.online$/i.test(normalizedHost) ||
+					  normalizedHost === "thordata.online"
+				? "https"
+				: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
+						  normalizedHost === "pr.thordata.net" ||
+						  normalizedHost === "t.pr.thordata.net"
+					? "http"
+					: proxy.scheme;
 
 	if (!username) {
 		return inferredScheme === proxy.scheme
@@ -338,7 +349,7 @@ function applyThorFamilyStrategy(
 	return withProxy(proxy, {
 		scheme: inferredScheme,
 		username: setDashToken(
-			setDashToken(username, "sessid", randomAlphaNumeric(12)),
+			setDashToken(username, "sessid", randomThorSessionId(username)),
 			"sesstime",
 			sessionTime,
 		),
