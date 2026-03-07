@@ -81,7 +81,6 @@ const AgentEnvSchema = z
 		BROWSER_LOCALE: z.string().trim().optional(),
 		BROWSER_TIMEZONE: z.string().trim().optional(),
 		BROWSER_ACCEPT_LANGUAGE: z.string().trim().optional(),
-		AGENT_WORKER_CONCURRENCY: asNumber(1).default(1),
 		REDIS_HOST: z.string().trim().default("redis"),
 		REDIS_PORT: asNumber(6379).default(6379),
 		REDIS_PASSWORD: z.string().min(1),

@@ -17,7 +17,6 @@ import {
 import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
 import { storeWarmBrowser } from "../warmPool.js";
-import { usesDynamicProxyStrategy } from "./provider.js";
 
 const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
 const ATTEMPTS_PER_CYCLE = 10;
@@ -121,6 +120,7 @@ async function runRetryCycle(
 	currentPayload: PromptPayload,
 	cycle: number,
 	plog: ReturnType<typeof createProviderLogger>,
+	sessionKey?: string,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
 	let nextPayload = currentPayload;
 
@@ -150,13 +150,8 @@ async function runRetryCycle(
 			// Store the healthy browser in the warm pool so the next job for this
 			// provider can reuse it without a full browser launch. Null refs so the
 			// finally block's closeContextAndBrowser becomes a no-op.
-			if (
-				!usesDynamicProxyStrategy() &&
-				refs.browser &&
-				refs.context &&
-				refs.page
-			) {
-				await storeWarmBrowser(provider, {
+			if (sessionKey && refs.browser && refs.context && refs.page) {
+				await storeWarmBrowser(provider, sessionKey, {
 					browser: refs.browser,
 					context: refs.context,
 					page: refs.page,
@@ -244,6 +239,9 @@ export async function runWithRetryCycles(
 	agentFactory: AgentFactory,
 	payload: PromptPayload,
 	provider: Provider,
+	options?: {
+		sessionKey?: string;
+	},
 ): Promise<AskPromptResult[]> {
 	const plog = createProviderLogger(provider);
 	const accumulatedResults: AskPromptResult[] = [];
@@ -268,6 +266,7 @@ export async function runWithRetryCycles(
 			currentPayload,
 			cycle,
 			plog,
+			options?.sessionKey,
 		);
 
 		if (outcome.done) {
