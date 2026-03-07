@@ -2,6 +2,7 @@ import { extractAIOverviewSources } from "./lib/extractSources.js";
 import { extractAIOverviewResponse } from "./lib/extractResponse.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
+import { logger } from "@oneglanse/utils";
 import { env } from "../../../env.js";
 import type { ProviderConfig } from "../types.js";
 
@@ -18,10 +19,13 @@ export const aiOverviewConfig: ProviderConfig = {
 	displayName: "AI Overview",
 	requiresWarmup: false,
 	navigateToPrompt: async (page, prompt) => {
-		await navigateWithRetry(page, buildSearchUrl(prompt), {
+		const url = buildSearchUrl(prompt);
+		logger.log(`[ai-overview] navigating to search URL: ${url}`);
+		await navigateWithRetry(page, url, {
 			waitUntil: "domcontentloaded",
 			timeout: 60000,
 		});
+		logger.log(`[ai-overview] search page ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {
 		await page
