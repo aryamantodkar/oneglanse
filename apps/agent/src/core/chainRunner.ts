@@ -27,7 +27,7 @@ export async function runProviderChain(
 
 	if (providers.length === 0) return results as Record<Provider, AskPromptResult[]>;
 
-	const [firstProvider, ...restProviders] = providers;
+	const [firstProvider, ...restProviders] = providers as [Provider, ...Provider[]];
 
 	// createAgent launches the browser, context, and navigates the first page.
 	// On failure it cleans up internally and re-throws — no teardown needed here.
