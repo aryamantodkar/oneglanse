@@ -5,10 +5,11 @@ import { logger, validateResponse } from "@oneglanse/utils";
 import { askPrompt } from "../steps/askPrompt.js";
 import { checkAndExtractSources } from "../steps/extractSources.js";
 import { fetchPromptResponses } from "../steps/fetchPromptResponses.js";
+import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 /**
  * Runs one full prompt cycle for a single prompt:
- *   1. Type and submit the prompt
+ *   1. Type and submit the prompt (or navigate directly if navigateToPrompt is set)
  *   2. Wait for the response to finish generating
  *   3. Extract and validate the response text
  *   4. Extract citation sources
@@ -21,7 +22,12 @@ export async function executePrompt(
 	prompt: string,
 	provider: Provider,
 ): Promise<{ response: string; sources: Source[] }> {
-	await askPrompt(page, prompt, provider);
+	const config = PROVIDER_CONFIGS[provider];
+	if (config.navigateToPrompt) {
+		await config.navigateToPrompt(page, prompt);
+	} else {
+		await askPrompt(page, prompt, provider);
+	}
 
 	const response = await fetchPromptResponses(page, provider);
 	if (!response || response.trim().length === 0) {
