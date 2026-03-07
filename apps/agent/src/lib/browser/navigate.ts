@@ -16,31 +16,29 @@ export async function navigateWithRetry(
 	maxRetries = 3,
 	delayMs = 5000,
 ): Promise<void> {
-	// Set a natural referrer if none is set — direct navigations with empty
-	// Referer look suspicious when repeated at scale.
-	if (options?.referer === undefined) {
+	// Scope the Referer to just this navigation request (not all sub-resources).
+	// page.goto referer option is per-navigation; setExtraHTTPHeaders would
+	// leak the header to every subsequent request (images, scripts, etc.).
+	let referer = options?.referer;
+	if (referer === undefined) {
 		try {
 			const targetHost = new URL(url).hostname;
 			const currentUrl = page.url();
-			// If we're already on a page, use it as referrer.
-			// Otherwise, use Google as a natural referrer source.
 			if (currentUrl && currentUrl !== "about:blank") {
-				await page.setExtraHTTPHeaders({
-					Referer: currentUrl,
-				});
+				referer = currentUrl;
 			} else if (!targetHost.includes("google")) {
-				await page.setExtraHTTPHeaders({
-					Referer: "https://www.google.com/",
-				});
+				referer = "https://www.google.com/";
 			}
 		} catch {
 			// Non-critical — proceed without referrer
 		}
 	}
 
+	const gotoOptions = referer !== undefined ? { ...options, referer } : options;
+
 	for (let attempt = 1; attempt <= maxRetries; attempt++) {
 		try {
-			await page.goto(url, options);
+			await page.goto(url, gotoOptions);
 			return;
 		} catch (err) {
 			const message = toErrorMessage(err);

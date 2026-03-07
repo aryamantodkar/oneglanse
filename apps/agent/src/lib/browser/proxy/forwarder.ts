@@ -191,9 +191,14 @@ function readExact(socket: Socket, expectedBytes: number): Promise<Buffer> {
 	});
 }
 
-function readUntil(socket: Socket, delimiter: string): Promise<Buffer> {
+/**
+ * Read from socket until any of the given delimiters is found.
+ * Handles both CRLF (\r\n) and LF-only (\n) proxy responses — some proxy
+ * providers (e.g. Thordata) return HTTP responses with \n instead of \r\n.
+ */
+function readUntilAny(socket: Socket, ...delimiters: string[]): Promise<Buffer> {
 	return new Promise((resolve, reject) => {
-		const delimiterBuffer = Buffer.from(delimiter);
+		const delimiterBuffers = delimiters.map((d) => Buffer.from(d));
 		const chunks: Buffer[] = [];
 		let total = 0;
 
@@ -201,18 +206,21 @@ function readUntil(socket: Socket, delimiter: string): Promise<Buffer> {
 			chunks.push(chunk);
 			total += chunk.length;
 			const payload = Buffer.concat(chunks, total);
-			const index = payload.indexOf(delimiterBuffer);
 
-			if (index === -1) return;
+			for (const delimiterBuffer of delimiterBuffers) {
+				const index = payload.indexOf(delimiterBuffer);
+				if (index === -1) continue;
 
-			cleanup();
-			const end = index + delimiterBuffer.length;
-			const head = payload.subarray(0, end);
-			const tail = payload.subarray(end);
-			if (tail.length > 0) {
-				socket.unshift(tail);
+				cleanup();
+				const end = index + delimiterBuffer.length;
+				const head = payload.subarray(0, end);
+				const tail = payload.subarray(end);
+				if (tail.length > 0) {
+					socket.unshift(tail);
+				}
+				resolve(head);
+				return;
 			}
-			resolve(head);
 		};
 		const onError = (error: Error) => {
 			cleanup();
@@ -220,7 +228,7 @@ function readUntil(socket: Socket, delimiter: string): Promise<Buffer> {
 		};
 		const onClose = () => {
 			cleanup();
-			reject(new Error("socket closed before delimiter was received"));
+			reject(new Error("socket closed before response headers were received"));
 		};
 		const cleanup = () => {
 			socket.off("data", onData);
@@ -453,8 +461,10 @@ async function createTunnelSocket(
 	requestLines.push("", "");
 	socket.write(requestLines.join("\r\n"));
 
-	const responseHead = await readUntil(socket, "\r\n\r\n");
-	const statusLine = responseHead.toString("latin1").split("\r\n", 1)[0] ?? "";
+	// Accept both CRLF (\r\n\r\n) and LF-only (\n\n) header terminators.
+	// Some proxy providers (e.g. Thordata) use non-standard LF-only responses.
+	const responseHead = await readUntilAny(socket, "\r\n\r\n", "\n\n");
+	const statusLine = responseHead.toString("latin1").split(/\r?\n/, 1)[0] ?? "";
 	if (!/^HTTP\/1\.[01] 200\b/i.test(statusLine)) {
 		socket.destroy();
 		throw new Error(`Proxy CONNECT failed: ${statusLine || "no response"}`);

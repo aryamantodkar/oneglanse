@@ -75,8 +75,10 @@ function getFailureType(err: unknown): ReturnType<typeof classifyError> {
 }
 
 async function closeContextAndBrowser(refs: Refs): Promise<void> {
+	// Close context first, then let cleanup() handle browser + process + forwarder.
+	// Don't call refs.browser.close() here — cleanup() already does it and
+	// double-closing triggers silent errors.
 	await refs.context?.close().catch(() => {});
-	await refs.browser?.close().catch(() => {});
 	await refs.cleanup?.().catch(() => {});
 	logger.debug("browser closed");
 }

@@ -357,11 +357,6 @@ function formatSecChUa(brands: BrowserBrand[]): string {
 		.join(", ");
 }
 
-function formatSecChUaFullVersionList(brands: BrowserBrand[]): string {
-	return brands
-		.map(({ brand, version }) => `"${brand}";v="${version}"`)
-		.join(", ");
-}
 
 function buildGreaseBrand(noiseSeed = 0): BrowserBrand {
 	const brand =
@@ -425,7 +420,7 @@ function buildBrowserIdentity(
 		userAgent: userAgentByPlatform[HOST_PLATFORM],
 		brands,
 		fullVersionList,
-		fullVersionListHeader: formatSecChUaFullVersionList(fullVersionList),
+		fullVersionListHeader: formatSecChUa(fullVersionList),
 		platform: platformIdentity.platform,
 		platformNavigator: platformIdentity.platformNavigator,
 		platformVersion: normalizePlatformVersion(HOST_PLATFORM),
@@ -2678,7 +2673,6 @@ export function buildContextOptions(
 				"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
 			"Accept-Encoding": "gzip, deflate, br",
 		},
-		ignoreHTTPSErrors: true,
 	};
 
 	if (sessionSettings.timezoneId) {
@@ -2701,9 +2695,5 @@ export function buildChromeArgs(locale = DEFAULT_LOCALE): string[] {
 		"--font-render-hinting=medium",
 		"--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
 		"--enforce-webrtc-ip-permission-check",
-		// DNS leak prevention: force all DNS through the proxy CONNECT tunnel
-		'--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1',
-		"--enable-features=DnsOverHttps",
-		"--dns-over-https-mode=automatic",
 	];
 }

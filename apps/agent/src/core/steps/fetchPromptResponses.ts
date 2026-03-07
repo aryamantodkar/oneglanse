@@ -4,16 +4,40 @@ import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
 import { getText } from "../../lib/input/response/getText.js";
+import { randomMouseJitter } from "../../lib/browser/humanBehavior.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const MAX_EXTRACTION_RETRIES = env.MAX_EXTRACTION_RETRIES;
 const INITIAL_EXTRACTION_RETRY_DELAY = env.EXTRACTION_RETRY_DELAY_MS;
 const MAX_EXTRACTION_RETRY_DELAY = env.MAX_EXTRACTION_RETRY_DELAY_MS;
 
+function startJitterInterval(page: Page): () => void {
+	const minMs = 4_000;
+	const maxMs = 8_000;
+	let cancelled = false;
+
+	const scheduleNext = () => {
+		if (cancelled) return;
+		const delay = minMs + Math.floor(Math.random() * (maxMs - minMs));
+		setTimeout(() => {
+			if (cancelled) return;
+			randomMouseJitter(page).catch(() => {});
+			scheduleNext();
+		}, delay);
+	};
+
+	scheduleNext();
+	return () => {
+		cancelled = true;
+	};
+}
+
 export async function fetchPromptResponses(page: Page, provider: Provider): Promise<string> {
 	const config = PROVIDER_CONFIGS[provider];
 
+	const stopJitter = startJitterInterval(page);
 	await config.waitForResponse(page);
+	stopJitter();
 
 	// Retry extraction — keep retries short so we can rotate IPs faster on failure.
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {

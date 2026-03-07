@@ -15,10 +15,6 @@ const WARM_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 const pool = new Map<string, WarmEntry>();
 
-function buildPoolKey(sessionKey: string): string {
-	return sessionKey;
-}
-
 /**
  * Retrieve and remove a warm browser entry for the given provider.
  * Returns null if the entry is absent, expired, or the page is no longer alive.
@@ -27,7 +23,7 @@ export async function getWarmBrowser(
 	provider: Provider,
 	sessionKey: string,
 ): Promise<WarmEntry | null> {
-	const key = buildPoolKey(sessionKey);
+	const key = sessionKey;
 	const entry = pool.get(key);
 	if (!entry) return null;
 
@@ -67,7 +63,7 @@ export async function storeWarmBrowser(
 	sessionKey: string,
 	entry: WarmEntry,
 ): Promise<void> {
-	const key = buildPoolKey(sessionKey);
+	const key = sessionKey;
 	const existing = pool.get(key);
 	if (existing) {
 		await _close(existing);
@@ -83,7 +79,7 @@ export async function evictWarmBrowser(
 	provider: Provider,
 	sessionKey: string,
 ): Promise<void> {
-	const key = buildPoolKey(sessionKey);
+	const key = sessionKey;
 	const entry = pool.get(key);
 	if (!entry) return;
 	pool.delete(key);

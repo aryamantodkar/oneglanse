@@ -199,10 +199,13 @@ function fetchJson(
 
 export async function resolveBrowserSessionSettings(
 	proxyServer?: string,
+	cacheKey?: string,
 ): Promise<BrowserSessionSettings> {
 	const baseSettings = getDefaultBrowserSessionSettings();
-	const cacheKey = proxyServer ?? "direct";
-	const cached = settingsCache.get(cacheKey);
+	const key = cacheKey ?? proxyServer ?? "direct";
+	// Alias to satisfy remaining references in this function
+	const effectiveCacheKey = key;
+	const cached = settingsCache.get(effectiveCacheKey);
 	if (cached) {
 		return cached;
 	}
@@ -217,7 +220,7 @@ export async function resolveBrowserSessionSettings(
 		const payload = await fetchJson(GEO_LOOKUP_URL, proxyServer);
 		const geo = normalizeGeoLookupPayload(payload);
 		if (!geo) {
-			settingsCache.set(cacheKey, baseSettings);
+			settingsCache.set(effectiveCacheKey, baseSettings);
 			return baseSettings;
 		}
 
@@ -247,7 +250,7 @@ export async function resolveBrowserSessionSettings(
 					: undefined,
 		};
 
-		settingsCache.set(cacheKey, settings);
+		settingsCache.set(effectiveCacheKey, settings);
 		return settings;
 	} catch (error) {
 		if (proxyServer) {
@@ -255,7 +258,7 @@ export async function resolveBrowserSessionSettings(
 				`proxy geo lookup failed, using fallback browser settings: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
-		settingsCache.set(cacheKey, baseSettings);
+		settingsCache.set(effectiveCacheKey, baseSettings);
 		return baseSettings;
 	}
 }
