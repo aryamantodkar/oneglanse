@@ -627,20 +627,18 @@ export async function createProxyForwarder(
 					relaySockets(clientSocket, upstreamSocket);
 				})
 				.catch((error) => {
-					clientSocket.write(
-						`HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: ${
-							error instanceof Error ? Buffer.byteLength(error.message) : 11
-						}\r\n\r\n${error instanceof Error ? error.message : "proxy error"}`,
+					const body = error instanceof Error ? error.message : "proxy error";
+					// Use end() not destroy() — destroy() discards buffered writes so
+					// Chrome never sees the 502 and gets ERR_CONNECTION_CLOSED instead.
+					clientSocket.end(
+						`HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
 					);
-					clientSocket.destroy();
 				});
 		} catch (error) {
-			clientSocket.write(
-				`HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: ${
-					error instanceof Error ? Buffer.byteLength(error.message) : 11
-				}\r\n\r\n${error instanceof Error ? error.message : "proxy error"}`,
+			const body = error instanceof Error ? error.message : "proxy error";
+			clientSocket.end(
+				`HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
 			);
-			clientSocket.destroy();
 		}
 	});
 
