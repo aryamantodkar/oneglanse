@@ -23,11 +23,15 @@ export type SubmitAgentJobResult =
 	| { status: "queued"; jobGroupId: string }
 	| { status: "empty" };
 
+function buildProviderJobId(jobGroupId: string, provider: Provider): string {
+	return `${jobGroupId}__${provider}`;
+}
+
 async function enqueueProviderJob(payload: ProviderJobPayload): Promise<void> {
 	const queue = getProviderQueue(payload.provider);
 	try {
 		await queue.waitUntilReady();
-		const jobId = `${payload.jobGroupId}:${payload.provider}`;
+		const jobId = buildProviderJobId(payload.jobGroupId, payload.provider);
 		const existing = await queue.getJob(jobId);
 		if (existing) {
 			return;

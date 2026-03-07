@@ -137,14 +137,18 @@ export const authorizedWorkspaceRoutes = {
 				| { status: "not-requested" }
 				| { status: "queued"; jobId: string }
 				| { status: "empty" }
-				| { status: "failed"; error: string } = { status: "not-requested" };
+				| { status: "failed" } = { status: "not-requested" };
 
 			if (schedule) {
-				immediateRun = await submitImmediateRunWithRetry({
+				const immediateRunResult = await submitImmediateRunWithRetry({
 					workspaceId,
 					userId,
 					maxAttempts: 3,
 				});
+				immediateRun =
+					immediateRunResult.status === "failed"
+						? { status: "failed" }
+						: immediateRunResult;
 			}
 
 			return { ...result, immediateRun };
