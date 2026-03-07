@@ -3,7 +3,7 @@ import type { Provider } from "@oneglanse/types";
 import { ALL_PROVIDERS_JSON } from "@oneglanse/utils";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
 import { getWorkspaceById } from "../workspace/index.js";
-import { getProviderQueue } from "./queue.js";
+import { getChainQueue } from "./queue.js";
 import { redis } from "./redis.js";
 
 export type SubmitAgentJobResult =
@@ -12,8 +12,9 @@ export type SubmitAgentJobResult =
 
 /**
  * Fetches the workspace's prompts and enabled providers, then submits one
- * BullMQ job per provider. Sets the Redis progress key so the client can
- * poll for status. Returns "empty" if no prompts are configured.
+ * BullMQ chain job that runs all providers sequentially in a single browser.
+ * Sets the Redis progress key so the client can poll for status.
+ * Returns "empty" if no prompts are configured.
  */
 export async function submitAgentJobGroup(args: {
 	workspaceId: string;
@@ -56,17 +57,13 @@ export async function submitAgentJobGroup(args: {
 		60 * 60,
 	);
 
-	await Promise.all(
-		enabledProviders.map((provider) =>
-			getProviderQueue(provider).add("run-agent", {
-				jobGroupId,
-				provider,
-				prompts,
-				user_id: userId,
-				workspace_id: workspaceId,
-			}),
-		),
-	);
+	await getChainQueue().add("run-chain", {
+		jobGroupId,
+		prompts,
+		user_id: userId,
+		workspace_id: workspaceId,
+		enabledProviders,
+	});
 
 	return { status: "queued", jobGroupId };
 }

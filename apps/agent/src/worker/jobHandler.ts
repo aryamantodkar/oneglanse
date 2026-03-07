@@ -1,14 +1,18 @@
 import { toErrorMessage, ValidationError } from "@oneglanse/errors";
 import { redis, storePromptResponses } from "@oneglanse/services";
 import {
+	CHAIN_ORDER,
 	PROVIDER_LIST,
 	type AgentResult,
+	type AskPromptResult,
+	type ChainJobData,
 	type ModelResult,
 	type PromptPayload,
 	type Provider,
 	type UserPrompt,
 } from "@oneglanse/types";
 import { type Job } from "bullmq";
+import { runProviderChain } from "../core/chainRunner.js";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
@@ -21,7 +25,7 @@ type ProviderJobData = {
 	prompts: UserPrompt[];
 	user_id: string;
 	workspace_id: string;
-	created_at?: string; // Optional - worker generates fresh timestamp if not provided
+	created_at?: string;
 };
 
 type ProviderStatus = "pending" | "running" | "completed" | "failed";
@@ -113,8 +117,6 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	const progressKey = `job:${jobGroupId}:result`;
 
 	// SET NX: atomically initialise only if the key is absent.
-	// Whichever provider wins the race writes the seed object;
-	// all others skip and fall through to their own update below.
 	const seed = JSON.stringify({
 		status: "pending" as const,
 		updateId: 0,
@@ -128,12 +130,10 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	});
 	await redis.set(progressKey, seed, "EX", 60 * 60, "NX");
 
-	// Atomically mark this provider as running
 	await updateProgress(progressKey, provider, "running", null);
 
 	let wrapped: AgentResult = { status: "rejected", data: [] };
 
-	// ── All providers: Playwright browser path ───────────────────────────────
 	try {
 		const { label, factory } = providerConfig[provider];
 		const result = await agentHandler(
@@ -150,7 +150,6 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		plog.error(`failed:`, toErrorMessage(err));
 	}
 
-	// Store successful results immediately
 	if (wrapped.status === "fulfilled" && wrapped.data.length > 0) {
 		const emptyResult = Object.fromEntries(
 			PROVIDER_LIST.map((p) => [p, { status: "rejected" as const, data: [] }]),
@@ -168,7 +167,6 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 			promptRunAt: executionTime,
 		});
 
-		// Trigger analysis asynchronously; do not block provider completion.
 		runAnalysisInBackground({
 			workspaceId: workspace_id,
 			userId: user_id,
@@ -177,12 +175,104 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		});
 	}
 
-	// Atomically mark final state and merge result count.
-	// Reads the *current* Redis value — not a stale in-memory snapshot —
-	// so concurrent provider updates made during this job's execution are preserved.
 	const finalStatus: ProviderStatus =
 		wrapped.status === "fulfilled" ? "completed" : "failed";
 	await updateProgress(progressKey, provider, finalStatus, wrapped.data.length);
+
+	return true;
+}
+
+export async function handleChainJob(job: Job<ChainJobData>): Promise<boolean> {
+	const { jobGroupId, prompts, user_id, workspace_id, enabledProviders } = job.data;
+
+	if (!prompts || prompts.length === 0) {
+		throw new ValidationError("Chain job received no prompts", { jobGroupId });
+	}
+
+	const executionTime = new Date().toISOString();
+
+	const payload: PromptPayload = {
+		user_id,
+		workspace_id,
+		prompts: prompts.map(({ id, prompt }) => ({ id, prompt })),
+		created_at: executionTime,
+	};
+
+	const progressKey = `job:${jobGroupId}:result`;
+
+	// Filter CHAIN_ORDER to only enabled, non-skipped providers
+	const providers = CHAIN_ORDER.filter(
+		(p) => enabledProviders.includes(p) && !PROVIDER_CONFIGS[p]?.skip,
+	);
+
+	// Mark all chain providers as running upfront (seed already set by jobs.ts)
+	for (const provider of providers) {
+		await updateProgress(progressKey, provider, "running", null);
+	}
+
+	// Providers that are enabled but skipped — mark failed immediately
+	const skippedEnabled = enabledProviders.filter(
+		(p) => !providers.includes(p),
+	);
+	for (const provider of skippedEnabled) {
+		await updateProgress(progressKey, provider, "failed", 0);
+	}
+
+	const processedProviders = new Set<Provider>();
+
+	async function onProviderDone(provider: Provider, results: AskPromptResult[]): Promise<void> {
+		processedProviders.add(provider);
+		const status: ProviderStatus = results.length > 0 ? "completed" : "failed";
+
+		if (results.length > 0) {
+			const emptyResult = Object.fromEntries(
+				PROVIDER_LIST.map((p) => [p, { status: "rejected" as const, data: [] }]),
+			) as unknown as Record<Provider, AgentResult>;
+
+			const partialResults: ModelResult = {
+				...emptyResult,
+				[provider]: { status: "fulfilled", data: results },
+			};
+
+			await storePromptResponses({
+				results: partialResults,
+				userId: user_id,
+				workspaceId: workspace_id,
+				promptRunAt: executionTime,
+			});
+
+			runAnalysisInBackground({
+				workspaceId: workspace_id,
+				userId: user_id,
+				provider,
+				jobGroupId,
+			});
+		}
+
+		await updateProgress(progressKey, provider, status, results.length);
+	}
+
+	try {
+		await runProviderChain(providers, payload, {
+			onProviderStart: async (provider) => {
+				logger.log(`[chain] starting ${provider}`);
+			},
+			onProviderDone,
+		});
+	} catch (err) {
+		// Unrecoverable chain failure (e.g. browser process died).
+		// Mark any provider we didn't finish as failed so Redis doesn't stay "running".
+		logger.error(`[chain:${jobGroupId}] unrecoverable crash: ${toErrorMessage(err)}`);
+		await Promise.all(
+			providers
+				.filter((p) => !processedProviders.has(p))
+				.map((p) => updateProgress(progressKey, p, "failed", 0).catch(() => {})),
+		);
+	}
+
+	logger.log(
+		`[chain:${jobGroupId}] complete — processed: ${[...processedProviders].join(", ") || "none"}`,
+	);
 
 	return true;
 }

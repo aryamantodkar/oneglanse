@@ -6,9 +6,6 @@ import { askPrompt } from "../steps/askPrompt.js";
 import { checkAndExtractSources } from "../steps/extractSources.js";
 import { fetchPromptResponses } from "../steps/fetchPromptResponses.js";
 
-// Brief pause between pipeline steps to let the page settle before the next action.
-const STEP_WAIT_MS = 1500;
-
 /**
  * Runs one full prompt cycle for a single prompt:
  *   1. Type and submit the prompt
@@ -25,7 +22,6 @@ export async function executePrompt(
 	provider: Provider,
 ): Promise<{ response: string; sources: Source[] }> {
 	await askPrompt(page, prompt, provider);
-	await page.waitForTimeout(STEP_WAIT_MS);
 
 	const response = await fetchPromptResponses(page, provider);
 	if (!response || response.trim().length === 0) {
@@ -46,9 +42,7 @@ export async function executePrompt(
 		});
 	}
 
-	await page.waitForTimeout(STEP_WAIT_MS);
 	const sources = await checkAndExtractSources(page, provider);
-	await page.waitForTimeout(STEP_WAIT_MS);
 
 	return { response, sources };
 }

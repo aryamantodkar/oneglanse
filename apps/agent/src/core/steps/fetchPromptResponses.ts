@@ -14,7 +14,6 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 	const config = PROVIDER_CONFIGS[provider];
 
 	await config.waitForResponse(page);
-	await page.waitForTimeout(1500);
 
 	// Retry extraction — keep retries short so we can rotate IPs faster on failure.
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
