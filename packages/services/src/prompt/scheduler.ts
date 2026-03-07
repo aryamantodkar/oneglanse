@@ -29,12 +29,23 @@ export async function configureSchedulerSecrets(): Promise<void> {
 	try {
 		// current_user here is the app role; ALTER ROLE ... SET persists the GUC
 		// for every future session opened by that role, including pg_cron workers.
-		await pool.query("ALTER ROLE CURRENT_USER SET app.api_base_url = $1", [
-			apiBaseUrl,
-		]);
-		await pool.query("ALTER ROLE CURRENT_USER SET app.cron_secret = $1", [
-			cronSecret,
-		]);
+		const apiBaseUrlSql = await pool.query<{ sql: string }>(
+			"SELECT format('ALTER ROLE CURRENT_USER SET app.api_base_url = %L', $1) AS sql",
+			[apiBaseUrl],
+		);
+		const cronSecretSql = await pool.query<{ sql: string }>(
+			"SELECT format('ALTER ROLE CURRENT_USER SET app.cron_secret = %L', $1) AS sql",
+			[cronSecret],
+		);
+
+		const apiBaseUrlStatement = apiBaseUrlSql.rows[0]?.sql;
+		const cronSecretStatement = cronSecretSql.rows[0]?.sql;
+		if (!apiBaseUrlStatement || !cronSecretStatement) {
+			throw new Error("failed to build ALTER ROLE statements");
+		}
+
+		await pool.query(apiBaseUrlStatement);
+		await pool.query(cronSecretStatement);
 	} catch (err) {
 		console.warn(
 			"[scheduler] Could not persist GUCs via ALTER ROLE — cron secret may still be stored inline:",
