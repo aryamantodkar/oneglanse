@@ -32,12 +32,10 @@ export type CDPSpawnOptions = {
 		height: number;
 	};
 	display?: string;
-	proxyAuthExtDir?: string;
 };
 
 export type DisplayHandle = {
 	display: string;
-	ownsDisplay: boolean;
 	cleanup: () => Promise<void>;
 };
 
@@ -108,7 +106,6 @@ export async function ensureDisplay(windowSize?: {
 	if (existingDisplay) {
 		return {
 			display: existingDisplay,
-			ownsDisplay: false,
 			cleanup: async () => {},
 		};
 	}
@@ -151,7 +148,6 @@ export async function ensureDisplay(windowSize?: {
 
 			return {
 				display,
-				ownsDisplay: true,
 				cleanup: async () => {
 					try {
 						xvfb.kill("SIGTERM");
@@ -225,11 +221,7 @@ export function spawnChromiumCDP(
 	}
 
 	args.push(`--window-size=${windowSize.width},${windowSize.height}`);
-	args.push(
-		...buildChromeArgs({
-			extensionDir: options?.proxyAuthExtDir,
-		}),
-	);
+	args.push(...buildChromeArgs());
 
 	const childEnv: NodeJS.ProcessEnv = { ...process.env };
 	if (display) {
