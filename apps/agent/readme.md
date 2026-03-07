@@ -107,6 +107,7 @@ Provider-aware rotation examples:
 # Use either a sticky port endpoint or a gate.decodo.com session username.
 # For sticky-port endpoints, the agent picks one random documented sticky port
 # per provider run and reuses it for that browser session.
+# Recommended browser scheme from Decodo browser/tool docs: HTTP.
 PROXY_PROVIDER=decodo
 PROXY_SCHEME=http
 PROXY_HOST=us.decodo.com
@@ -123,6 +124,7 @@ PROXY_PASSWORD=pass-abc
 # Bright Data:
 # Bright Data session ids must stay alphanumeric; the agent rewrites only the
 # session token.
+# Recommended browser scheme from Bright Data integration docs: HTTP.
 PROXY_PROVIDER=brightdata
 PROXY_SCHEME=http
 PROXY_HOST=brd.superproxy.io
@@ -134,6 +136,7 @@ PROXY_PASSWORD=pass
 # Start from a documented sticky seed port such as 10001/20001/30001/40001.
 # The agent keeps one random sticky port for the lease. If your username
 # already contains -sessid-, that token is replaced on each launch too.
+# Recommended browser scheme from Oxylabs browser integration docs: HTTP.
 PROXY_PROVIDER=oxylabs
 PROXY_SCHEME=http
 PROXY_HOST=us-pr.oxylabs.io
@@ -145,6 +148,7 @@ PROXY_PASSWORD=pass
 # sessid is replaced every launch with a 12-character token, existing sesstime
 # is preserved.
 # If your dashboard gives you a dedicated host, keep that host as-is.
+# Recommended scheme from current Thordata residential docs examples: HTTPS.
 PROXY_PROVIDER=thordata
 PROXY_SCHEME=https
 PROXY_HOST=t.pr.thordata.net
@@ -156,6 +160,7 @@ PROXY_PASSWORD=pass
 # sessid is replaced every launch with a 12-character token, existing sesstime
 # is preserved.
 # If your dashboard gives you a dedicated host, keep that host as-is.
+# Recommended browser/tool scheme from LunaProxy guides: HTTP.
 PROXY_PROVIDER=lunaproxy
 PROXY_SCHEME=http
 PROXY_HOST=rw.lunaproxy.com
@@ -165,6 +170,7 @@ PROXY_PASSWORD=pass
 
 # NetNut:
 # Start from the dashboard-generated base username. The agent appends/replaces sid.
+# Recommended default from NetNut docs: HTTP.
 PROXY_PROVIDER=netnut
 PROXY_SCHEME=http
 PROXY_HOST=gw.netnut.net
@@ -173,6 +179,7 @@ PROXY_USERNAME=USERNAME-res-us
 PROXY_PASSWORD=pass
 
 # SOAX:
+# Recommended browser/web automation scheme from SOAX docs: HTTP.
 PROXY_PROVIDER=soax
 PROXY_SCHEME=http
 PROXY_HOST=proxy.soax.com
@@ -181,6 +188,7 @@ PROXY_USERNAME=package-12345-country-us-sessionid-old-sessionlength-300
 PROXY_PASSWORD=pass
 
 # ScrapeOps:
+# Recommended scheme from ScrapeOps proxy examples: HTTP.
 PROXY_PROVIDER=scrapeops
 PROXY_SCHEME=http
 PROXY_HOST=residential-proxy.scrapeops.io
@@ -191,6 +199,7 @@ PROXY_PASSWORD=API_KEY
 # ProxyEmpire:
 # Start from the dashboard-generated base username. The agent appends/replaces
 # an 8-digit sid.
+# Recommended browser/web automation scheme: HTTP.
 PROXY_PROVIDER=proxyempire
 PROXY_SCHEME=http
 PROXY_HOST=res.proxyempire.io
@@ -200,6 +209,7 @@ PROXY_PASSWORD=pass
 
 # IPRoyal:
 # Sticky session tokens live in the password.
+# Recommended browser/web automation scheme from IPRoyal examples: HTTP.
 PROXY_PROVIDER=iproyal
 PROXY_SCHEME=http
 PROXY_HOST=geo.iproyal.com
@@ -209,6 +219,7 @@ PROXY_PASSWORD=pass_country-US_session-old_lifetime-10m
 
 # Webshare:
 # Passed through unchanged. Stickiness is selected on the provider side.
+# Recommended browser/web automation scheme: HTTP.
 PROXY_PROVIDER=webshare
 PROXY_SCHEME=http
 PROXY_HOST=p.webshare.io

@@ -15,6 +15,7 @@ import {
 	waitForCDPEndpoint,
 } from "./cdp.js";
 import {
+	clearChromeProfileLocks,
 	isProfileWarmed,
 	markProfileWarmed,
 	resolveProfileDir,
@@ -181,6 +182,7 @@ export async function launchContext(
 
 	try {
 		await mkdir(userDataDir, { recursive: true });
+		await clearChromeProfileLocks(userDataDir);
 		const settings = await resolveBrowserSessionSettings(forwarder?.serverUrl);
 
 		chromProcess = spawnChromiumCDP(port, userDataDir, {
@@ -255,6 +257,13 @@ export async function launchContext(
 		};
 	} catch (err) {
 		await cleanup();
+		if (
+			/process_singleton_posix|profile appears to be in use/i.test(
+				chromiumStderr,
+			)
+		) {
+			await clearChromeProfileLocks(userDataDir).catch(() => null);
+		}
 		throw new ExternalServiceError(
 			"browser",
 			chromiumStderr.trim()

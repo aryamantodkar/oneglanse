@@ -9,6 +9,12 @@ const PERSISTENT_PROFILES_ROOT = "/storage/profiles";
 const FALLBACK_PROFILES_ROOT = "/tmp/oneglanse-profiles";
 const PROFILE_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 const METADATA_FILE = ".profile-meta.json";
+const CHROME_SINGLETON_FILES = [
+	"SingletonCookie",
+	"SingletonLock",
+	"SingletonSocket",
+	"DevToolsActivePort",
+];
 let cachedProfilesRoot: string | null = null;
 let profilesRootPromise: Promise<string> | null = null;
 
@@ -94,6 +100,16 @@ async function writeMetadata(
 ): Promise<void> {
 	const metaPath = join(profileDir, METADATA_FILE);
 	await writeFile(metaPath, JSON.stringify(meta, null, 2));
+}
+
+export async function clearChromeProfileLocks(
+	profileDir: string,
+): Promise<void> {
+	await Promise.all(
+		CHROME_SINGLETON_FILES.map((file) =>
+			rm(join(profileDir, file), { force: true }).catch(() => null),
+		),
+	);
 }
 
 export async function resolveProfileDir(
