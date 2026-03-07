@@ -148,9 +148,10 @@ PROXY_PASSWORD=pass
 # sessid is replaced every launch with a 12-character token, existing sesstime
 # is preserved.
 # If your dashboard gives you a dedicated host, keep that host as-is.
-# Recommended scheme from current Thordata residential docs examples: HTTPS.
+# For residential/browser endpoints like *.pr.thordata.net, use HTTP.
+# For high-bandwidth endpoints like *.thordata.online, use HTTPS.
 PROXY_PROVIDER=thordata
-PROXY_SCHEME=https
+PROXY_SCHEME=http
 PROXY_HOST=t.pr.thordata.net
 PROXY_PORT=9999
 PROXY_USERNAME=td-customer-USERNAME-country-US-sessid-old-sesstime-30

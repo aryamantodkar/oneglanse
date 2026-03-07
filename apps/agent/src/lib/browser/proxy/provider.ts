@@ -258,7 +258,10 @@ function setDecodoSessionHost(
 function withProxy(
 	proxy: UpstreamProxyConfig,
 	overrides: Partial<
-		Pick<UpstreamProxyConfig, "host" | "port" | "username" | "password">
+		Pick<
+			UpstreamProxyConfig,
+			"scheme" | "host" | "port" | "username" | "password"
+		>
 	>,
 ): UpstreamProxyConfig {
 	const nextProxy: UpstreamProxyConfig = {
@@ -312,13 +315,27 @@ function applyThorFamilyStrategy(
 	proxy: UpstreamProxyConfig,
 ): UpstreamProxyConfig {
 	const username = proxy.username ?? "";
+	const normalizedHost = normalizeHostKey(proxy.host);
+	const inferredScheme =
+		/\.thordata\.online$/i.test(normalizedHost) ||
+		normalizedHost === "thordata.online"
+			? "https"
+			: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
+				  normalizedHost === "pr.thordata.net" ||
+				  normalizedHost === "t.pr.thordata.net"
+				? "http"
+				: proxy.scheme;
+
 	if (!username) {
-		return proxy;
+		return inferredScheme === proxy.scheme
+			? proxy
+			: withProxy(proxy, { scheme: inferredScheme });
 	}
 	const sessionTime =
 		readDashToken(username, "sesstime") ?? THORDATA_DEFAULT_SESSION_MINUTES;
 
 	return withProxy(proxy, {
+		scheme: inferredScheme,
 		username: setDashToken(
 			setDashToken(username, "sessid", randomAlphaNumeric(12)),
 			"sesstime",
