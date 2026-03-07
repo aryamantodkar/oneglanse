@@ -49,7 +49,6 @@ const AgentEnvSchema = z
 		PROMPT_RETRY_DELAY_MS: asNumber(1_000).default(1_000),
 		MAX_PROMPT_RETRY_DELAY_MS: asNumber(5_000).default(5_000),
 		SUBMISSION_PHASE_TIMEOUT_MS: asNumber(30_000).default(30_000),
-		PROXY_URL: z.string().trim().optional(),
 		PROXY_SCHEME: z.enum(["http", "https", "socks4", "socks5"]).optional(),
 		PROXY_HOST: z.string().trim().optional(),
 		PROXY_PORT: z.string().trim().optional(),
@@ -86,61 +85,13 @@ const AgentEnvSchema = z
 		REDIS_PASSWORD: z.string().min(1),
 	})
 	.superRefine((values, ctx) => {
-		const hasProxyUrl = Boolean(values.PROXY_URL);
 		const hasProxyScheme = Boolean(values.PROXY_SCHEME);
 		const hasProxyHost = Boolean(values.PROXY_HOST);
 		const hasProxyPort = Boolean(values.PROXY_PORT);
 		const hasProxyUser = Boolean(values.PROXY_USERNAME);
 		const hasProxyPass = Boolean(values.PROXY_PASSWORD);
 
-		if (
-			hasProxyUrl &&
-			(hasProxyScheme ||
-				hasProxyHost ||
-				hasProxyPort ||
-				hasProxyUser ||
-				hasProxyPass)
-		) {
-			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
-				path: ["PROXY_URL"],
-				message:
-					"Use either PROXY_URL or PROXY_HOST/PROXY_PORT/PROXY_SCHEME credentials, not both.",
-			});
-		}
-
-		if (hasProxyUrl) {
-			try {
-				const proxyUrl = values.PROXY_URL;
-				if (!proxyUrl) {
-					throw new Error("missing PROXY_URL");
-				}
-
-				const parsed = new URL(proxyUrl);
-				const supportedProtocols = new Set([
-					"http:",
-					"https:",
-					"socks4:",
-					"socks5:",
-				]);
-				if (
-					!supportedProtocols.has(parsed.protocol) ||
-					!parsed.hostname ||
-					!parsed.port
-				) {
-					throw new Error("unsupported proxy URL");
-				}
-			} catch {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: ["PROXY_URL"],
-					message:
-						"PROXY_URL must be a valid http/https/socks4/socks5 URL with host and port.",
-				});
-			}
-		}
-
-		if (!hasProxyUrl && hasProxyHost !== hasProxyPort) {
+		if (hasProxyHost !== hasProxyPort) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["PROXY_HOST"],
@@ -148,7 +99,7 @@ const AgentEnvSchema = z
 			});
 		}
 
-		if (!hasProxyUrl && hasProxyPort) {
+		if (hasProxyPort) {
 			const parsedPort = Number(values.PROXY_PORT);
 			const validPort =
 				Number.isInteger(parsedPort) && parsedPort >= 1 && parsedPort <= 65535;
@@ -169,11 +120,7 @@ const AgentEnvSchema = z
 			});
 		}
 
-		if (
-			!hasProxyUrl &&
-			(hasProxyUser || hasProxyPass) &&
-			!(hasProxyHost && hasProxyPort)
-		) {
+		if ((hasProxyUser || hasProxyPass) && !(hasProxyHost && hasProxyPort)) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["PROXY_HOST"],
@@ -182,7 +129,7 @@ const AgentEnvSchema = z
 			});
 		}
 
-		if (!hasProxyUrl && hasProxyScheme && !(hasProxyHost && hasProxyPort)) {
+		if (hasProxyScheme && !(hasProxyHost && hasProxyPort)) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["PROXY_SCHEME"],
@@ -190,15 +137,11 @@ const AgentEnvSchema = z
 			});
 		}
 
-		if (
-			values.PROXY_PROVIDER &&
-			!(hasProxyUrl || (hasProxyHost && hasProxyPort))
-		) {
+		if (values.PROXY_PROVIDER && !(hasProxyHost && hasProxyPort)) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ["PROXY_PROVIDER"],
-				message:
-					"PROXY_PROVIDER requires either PROXY_URL or PROXY_HOST/PROXY_PORT.",
+				message: "PROXY_PROVIDER requires PROXY_HOST and PROXY_PORT.",
 			});
 		}
 	});

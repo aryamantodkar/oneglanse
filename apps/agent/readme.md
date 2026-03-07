@@ -56,7 +56,6 @@ Defined in `src/env.ts` (Zod validated):
   - `EXTRACTION_RETRY_DELAY_MS`
   - `MAX_EXTRACTION_RETRY_DELAY_MS`
 - Proxy system:
-  - `PROXY_URL` or split proxy fields below
   - `PROXY_PROVIDER` (`generic`, `decodo`, `smartproxy`, `brightdata`, `oxylabs`, `thordata`, `lunaproxy`, `netnut`, `soax`, `scrapeops`, `proxyempire`, `iproyal`, `webshare`)
   - `PROXY_SCHEME` (optional with split fields; defaults to `http`)
   - `PROXY_HOST`
@@ -92,11 +91,8 @@ cp apps/agent/.env.example apps/agent/.env
 Proxy examples:
 
 ```env
-# Single URL form
-PROXY_URL=http://user:pass@proxy.example.com:8080
+# Generic proxy
 PROXY_PROVIDER=generic
-
-# Or split fields
 PROXY_SCHEME=socks5
 PROXY_HOST=proxy.example.com
 PROXY_PORT=1080
@@ -117,66 +113,113 @@ PROXY_HOST=us.decodo.com
 PROXY_PORT=10001
 PROXY_USERNAME=user-abc
 PROXY_PASSWORD=pass-abc
-# PROXY_URL=http://user-abc-session-old-sessionduration-30:pass-abc@gate.decodo.com:7000
+# Alternative gate.decodo.com session form:
+# PROXY_SCHEME=http
+# PROXY_HOST=gate.decodo.com
+# PROXY_PORT=7000
+# PROXY_USERNAME=user-abc-session-old-sessionduration-30
+# PROXY_PASSWORD=pass-abc
 
 # Bright Data:
 # Bright Data session ids must stay alphanumeric; the agent rewrites only the
 # session token.
 PROXY_PROVIDER=brightdata
-PROXY_URL=http://brd-customer-CUSTOMER-zone-ZONE-session-old:pass@brd.superproxy.io:33335
+PROXY_SCHEME=http
+PROXY_HOST=brd.superproxy.io
+PROXY_PORT=33335
+PROXY_USERNAME=brd-customer-CUSTOMER-zone-ZONE-session-old
+PROXY_PASSWORD=pass
 
 # Oxylabs:
 # Start from a documented sticky seed port such as 10001/20001/30001/40001.
 # The agent keeps one random sticky port for the lease. If your username
 # already contains -sessid-, that token is replaced on each launch too.
 PROXY_PROVIDER=oxylabs
-PROXY_URL=http://customer-USERNAME:pass@us-pr.oxylabs.io:10001
+PROXY_SCHEME=http
+PROXY_HOST=us-pr.oxylabs.io
+PROXY_PORT=10001
+PROXY_USERNAME=customer-USERNAME
+PROXY_PASSWORD=pass
 
 # Thordata:
 # sessid is replaced every launch with a 12-character token, existing sesstime
 # is preserved.
+# If your dashboard gives you a dedicated host, keep that host as-is.
 PROXY_PROVIDER=thordata
-PROXY_URL=http://td-customer-USERNAME-country-US-sessid-old-sesstime-10:pass@treyklah.na.thordata.net:9999
+PROXY_SCHEME=https
+PROXY_HOST=t.pr.thordata.net
+PROXY_PORT=9999
+PROXY_USERNAME=td-customer-USERNAME-country-US-sessid-old-sesstime-30
+PROXY_PASSWORD=pass
 
 # LunaProxy:
 # sessid is replaced every launch with a 12-character token, existing sesstime
 # is preserved.
+# If your dashboard gives you a dedicated host, keep that host as-is.
 PROXY_PROVIDER=lunaproxy
-PROXY_URL=http://user-USERNAME-region-us-sessid-old-sesstime-10:pass@rw.lunaproxy.com:12233
+PROXY_SCHEME=http
+PROXY_HOST=rw.lunaproxy.com
+PROXY_PORT=12233
+PROXY_USERNAME=user-USERNAME-region-us-sessid-old-sesstime-10
+PROXY_PASSWORD=pass
 
 # NetNut:
 # Start from the dashboard-generated base username. The agent appends/replaces sid.
 PROXY_PROVIDER=netnut
-PROXY_URL=http://USERNAME-res-us:pass@gw.netnut.net:5959
+PROXY_SCHEME=http
+PROXY_HOST=gw.netnut.net
+PROXY_PORT=5959
+PROXY_USERNAME=USERNAME-res-us
+PROXY_PASSWORD=pass
 
 # SOAX:
 PROXY_PROVIDER=soax
-PROXY_URL=http://package-12345-country-us-sessionid-old-sessionlength-300:pass@proxy.soax.com:5000
+PROXY_SCHEME=http
+PROXY_HOST=proxy.soax.com
+PROXY_PORT=5000
+PROXY_USERNAME=package-12345-country-us-sessionid-old-sessionlength-300
+PROXY_PASSWORD=pass
 
 # ScrapeOps:
 PROXY_PROVIDER=scrapeops
-PROXY_URL=http://scrapeops.sticky_session=7:API_KEY@residential-proxy.scrapeops.io:8181
+PROXY_SCHEME=http
+PROXY_HOST=residential-proxy.scrapeops.io
+PROXY_PORT=8181
+PROXY_USERNAME=scrapeops.sticky_session=7
+PROXY_PASSWORD=API_KEY
 
 # ProxyEmpire:
 # Start from the dashboard-generated base username. The agent appends/replaces
 # an 8-digit sid.
 PROXY_PROVIDER=proxyempire
-PROXY_URL=http://your-dashboard-username:pass@res.proxyempire.io:9000
+PROXY_SCHEME=http
+PROXY_HOST=res.proxyempire.io
+PROXY_PORT=9000
+PROXY_USERNAME=your-dashboard-username
+PROXY_PASSWORD=pass
 
 # IPRoyal:
 # Sticky session tokens live in the password.
 PROXY_PROVIDER=iproyal
-PROXY_URL=http://username:pass_country-US_session-old_lifetime-10m@geo.iproyal.com:12321
+PROXY_SCHEME=http
+PROXY_HOST=geo.iproyal.com
+PROXY_PORT=12321
+PROXY_USERNAME=username
+PROXY_PASSWORD=pass_country-US_session-old_lifetime-10m
 
 # Webshare:
 # Passed through unchanged. Stickiness is selected on the provider side.
 PROXY_PROVIDER=webshare
-PROXY_URL=http://username:pass@p.webshare.io:80
+PROXY_SCHEME=http
+PROXY_HOST=p.webshare.io
+PROXY_PORT=80
+PROXY_USERNAME=username
+PROXY_PASSWORD=pass
 ```
 
-When `PROXY_PROVIDER` is anything other than `generic`, the agent intentionally
-skips warm-browser reuse and persistent browser profiles so each fresh launch
-can negotiate a fresh upstream proxy session cleanly.
+Provider-specific sticky-session handling rewrites only the documented session
+token for that provider. The base host, port, username, and password should
+come directly from your provider dashboard.
 
 3. Start Redis and required dependencies.
 
@@ -204,4 +247,4 @@ This app depends on:
 
 - Worker startup waits for Redis readiness before creating workers.
 - Graceful shutdown closes warm browser resources before Redis disconnect.
-- Worker concurrency defaults to `1` unless overridden via env.
+- Each provider worker runs with concurrency `1`.
