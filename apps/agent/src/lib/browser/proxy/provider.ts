@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import type { Provider } from "@oneglanse/types";
 import { env } from "../../../env.js";
 import type { UpstreamProxyConfig } from "./forwarder.js";
 
@@ -19,12 +18,82 @@ export type ProxyProviderKind =
 	| "thordata"
 	| "webshare";
 
-const STICKY_PORT_BLOCK_SPAN = 9_999;
 const DECODO_DEFAULT_SESSION_MINUTES = "30";
 const THORDATA_DEFAULT_SESSION_MINUTES = "10";
 const IPROYAL_DEFAULT_LIFETIME = "10m";
 const SOAX_DEFAULT_SESSION_SECONDS = "360";
-const PROXY_PORT_COUNTERS = new Map<string, number>();
+
+type PortRange = {
+	start: number;
+	end: number;
+};
+
+const DECODO_STICKY_RANGES = new Map<string, PortRange>([
+	["gate.decodo.com", { start: 10_001, end: 49_999 }],
+	["us.decodo.com", { start: 10_001, end: 29_999 }],
+	["eu.decodo.com", { start: 10_001, end: 29_999 }],
+	["in.decodo.com", { start: 10_001, end: 19_999 }],
+	["es.decodo.com", { start: 10_001, end: 19_999 }],
+	["ar.decodo.com", { start: 10_001, end: 19_999 }],
+	["ae.decodo.com", { start: 20_001, end: 29_999 }],
+	["tw.decodo.com", { start: 20_001, end: 29_999 }],
+	["pt.decodo.com", { start: 20_001, end: 29_999 }],
+	["se.decodo.com", { start: 20_001, end: 29_999 }],
+	["my.decodo.com", { start: 30_001, end: 39_999 }],
+	["jp.decodo.com", { start: 30_001, end: 39_999 }],
+	["gr.decodo.com", { start: 30_001, end: 39_999 }],
+	["az.decodo.com", { start: 30_001, end: 39_999 }],
+	["ph.decodo.com", { start: 40_001, end: 49_999 }],
+	["be.decodo.com", { start: 40_001, end: 49_999 }],
+	["ua.decodo.com", { start: 40_001, end: 49_999 }],
+	["pe.decodo.com", { start: 40_001, end: 49_999 }],
+]);
+const DECODO_ROTATING_PORTS = new Map<string, number[]>([
+	["gate.decodo.com", [7000, 10_000]],
+	["us.decodo.com", [10_000]],
+	["eu.decodo.com", [10_000]],
+	["in.decodo.com", [10_000]],
+	["es.decodo.com", [10_000]],
+	["ar.decodo.com", [10_000]],
+	["ae.decodo.com", [20_000]],
+	["tw.decodo.com", [20_000]],
+	["pt.decodo.com", [20_000]],
+	["se.decodo.com", [20_000]],
+	["my.decodo.com", [30_000]],
+	["jp.decodo.com", [30_000]],
+	["gr.decodo.com", [30_000]],
+	["az.decodo.com", [30_000]],
+	["ph.decodo.com", [40_000]],
+	["be.decodo.com", [40_000]],
+	["ua.decodo.com", [40_000]],
+	["pe.decodo.com", [40_000]],
+]);
+const OXYLABS_STICKY_RANGES = new Map<string, PortRange>([
+	["pr.oxylabs.io", { start: 10_000, end: 49_999 }],
+	["us-pr.oxylabs.io", { start: 10_001, end: 19_999 }],
+	["ca-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["gb-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["de-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["fr-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["es-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["it-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["se-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["gr-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["pt-pr.oxylabs.io", { start: 20_001, end: 29_999 }],
+	["nl-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["be-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["ru-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["ua-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["pl-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["il-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["tr-pr.oxylabs.io", { start: 30_001, end: 39_999 }],
+	["au-pr.oxylabs.io", { start: 40_001, end: 49_999 }],
+	["my-pr.oxylabs.io", { start: 40_001, end: 49_999 }],
+]);
+
+function normalizeHostKey(host: string): string {
+	return host.trim().toLowerCase().replace(/\.$/, "");
+}
 
 function wrapHostForUrl(host: string): string {
 	return host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
@@ -108,19 +177,66 @@ function readUnderscoreToken(
 	return value.match(new RegExp(`_${tokenName}-([^_]+)`, "i"))?.[1];
 }
 
-function rotatePortInBlock(host: string, port: number): number {
-	const blockBase = Math.floor(port / 10_000) * 10_000;
-	const blockStart = blockBase + 1;
-	const blockEnd = blockStart + STICKY_PORT_BLOCK_SPAN - 1;
-	const counterKey = `${host}:${blockStart}:${blockEnd}`;
-	const current = PROXY_PORT_COUNTERS.get(counterKey) ?? port;
-	const next =
-		current >= blockStart && current <= blockEnd ? current : blockStart;
-	PROXY_PORT_COUNTERS.set(
-		counterKey,
-		next + 1 > blockEnd ? blockStart : next + 1,
-	);
-	return next;
+function randomInt(min: number, max: number): number {
+	if (max <= min) return min;
+	const range = max - min + 1;
+	const maxExclusive = 0x1_0000_0000;
+	const limit = Math.floor(maxExclusive / range) * range;
+	let value = 0;
+
+	do {
+		value = randomBytes(4).readUInt32BE(0);
+	} while (value >= limit);
+
+	return min + (value % range);
+}
+
+function isPortInRange(port: number, range: PortRange): boolean {
+	return port >= range.start && port <= range.end;
+}
+
+function pickRandomPort(range: PortRange): number {
+	return randomInt(range.start, range.end);
+}
+
+function pickRandomPortInLegacyBand(port: number): number {
+	const bandBase = Math.floor(port / 10_000) * 10_000;
+	return pickRandomPort({
+		start: bandBase + 1,
+		end: bandBase + 9_999,
+	});
+}
+
+function resolveDecodoStickyRange(host: string): PortRange | undefined {
+	return DECODO_STICKY_RANGES.get(normalizeHostKey(host));
+}
+
+function shouldRandomizeDecodoPort(host: string, port: number): boolean {
+	const normalizedHost = normalizeHostKey(host);
+	const stickyRange = DECODO_STICKY_RANGES.get(normalizedHost);
+	if (!stickyRange) {
+		return port >= 10_001 && port <= 49_999;
+	}
+
+	const rotatingPorts = DECODO_ROTATING_PORTS.get(normalizedHost) ?? [];
+	return rotatingPorts.includes(port) || isPortInRange(port, stickyRange);
+}
+
+function resolveOxylabsStickyRange(host: string): PortRange | undefined {
+	return OXYLABS_STICKY_RANGES.get(normalizeHostKey(host));
+}
+
+function shouldRandomizeOxylabsPort(host: string, port: number): boolean {
+	const stickyRange = resolveOxylabsStickyRange(host);
+	if (!stickyRange) {
+		return port >= 10_001 && port <= 49_999;
+	}
+
+	if (normalizeHostKey(host) === "pr.oxylabs.io") {
+		return isPortInRange(port, stickyRange);
+	}
+
+	return port === 10_000 || isPortInRange(port, stickyRange);
 }
 
 function setDecodoSessionHost(
@@ -157,19 +273,19 @@ function withProxy(
 	};
 }
 
-function applyDecodoStrategy(
-	proxy: UpstreamProxyConfig,
-	targetProvider: Provider,
-): UpstreamProxyConfig {
-	const sessionId = `${targetProvider}-${randomAlphaNumeric(10)}`;
+function applyDecodoStrategy(proxy: UpstreamProxyConfig): UpstreamProxyConfig {
+	const sessionId = randomAlphaNumeric(12);
 	const username = proxy.username ?? "";
 	const sessionDuration =
 		readDashToken(username, "sessionduration") ??
 		DECODO_DEFAULT_SESSION_MINUTES;
 
-	if (proxy.port >= 10_001 && proxy.port <= 49_999) {
+	if (shouldRandomizeDecodoPort(proxy.host, proxy.port)) {
+		const stickyRange = resolveDecodoStickyRange(proxy.host);
 		return withProxy(proxy, {
-			port: rotatePortInBlock(proxy.host, proxy.port),
+			port: stickyRange
+				? pickRandomPort(stickyRange)
+				: pickRandomPortInLegacyBand(proxy.port),
 		});
 	}
 
@@ -194,7 +310,6 @@ function applyDecodoStrategy(
 
 function applyThorFamilyStrategy(
 	proxy: UpstreamProxyConfig,
-	targetProvider: Provider,
 ): UpstreamProxyConfig {
 	const username = proxy.username ?? "";
 	if (!username) {
@@ -205,11 +320,7 @@ function applyThorFamilyStrategy(
 
 	return withProxy(proxy, {
 		username: setDashToken(
-			setDashToken(
-				username,
-				"sessid",
-				`${targetProvider.slice(0, 3)}${randomAlphaNumeric(12)}`,
-			),
+			setDashToken(username, "sessid", randomAlphaNumeric(12)),
 			"sesstime",
 			sessionTime,
 		),
@@ -218,38 +329,29 @@ function applyThorFamilyStrategy(
 
 function applyBrightDataStrategy(
 	proxy: UpstreamProxyConfig,
-	targetProvider: Provider,
 ): UpstreamProxyConfig {
 	if (!proxy.username) {
 		return proxy;
 	}
 	return withProxy(proxy, {
-		username: setDashToken(
-			proxy.username ?? "",
-			"session",
-			`${targetProvider}-${randomAlphaNumeric(10)}`,
-		),
+		username: setDashToken(proxy.username, "session", randomAlphaNumeric(12)),
 	});
 }
 
-function applyOxylabsStrategy(
-	proxy: UpstreamProxyConfig,
-	targetProvider: Provider,
-): UpstreamProxyConfig {
+function applyOxylabsStrategy(proxy: UpstreamProxyConfig): UpstreamProxyConfig {
 	const username = proxy.username ?? "";
-	if (proxy.port >= 10_001 && proxy.port <= 49_999) {
+	if (shouldRandomizeOxylabsPort(proxy.host, proxy.port)) {
+		const stickyRange = resolveOxylabsStickyRange(proxy.host);
 		return withProxy(proxy, {
-			port: rotatePortInBlock(proxy.host, proxy.port),
+			port: stickyRange
+				? pickRandomPort(stickyRange)
+				: pickRandomPortInLegacyBand(proxy.port),
 		});
 	}
 
 	if (/-sessid-/i.test(username)) {
 		const sessionTime = readDashToken(username, "sesstime");
-		let nextUsername = setDashToken(
-			username,
-			"sessid",
-			`${targetProvider.slice(0, 3)}${randomAlphaNumeric(10)}`,
-		);
+		let nextUsername = setDashToken(username, "sessid", randomAlphaNumeric(12));
 		if (sessionTime) {
 			nextUsername = setDashToken(nextUsername, "sesstime", sessionTime);
 		}
@@ -347,24 +449,24 @@ export function resolveProxyProviderKind(): ProxyProviderKind {
 	}
 }
 
-export function usesDynamicProxyStrategy(): boolean {
-	return resolveProxyProviderKind() !== "generic";
-}
-
 export function applyProxyProviderStrategy(
 	proxy: UpstreamProxyConfig,
-	targetProvider: Provider,
 ): UpstreamProxyConfig {
-	switch (resolveProxyProviderKind()) {
+	const kind = resolveProxyProviderKind();
+	if (kind === "generic") {
+		return proxy;
+	}
+
+	switch (kind) {
 		case "decodo":
-			return applyDecodoStrategy(proxy, targetProvider);
+			return applyDecodoStrategy(proxy);
 		case "thordata":
 		case "lunaproxy":
-			return applyThorFamilyStrategy(proxy, targetProvider);
+			return applyThorFamilyStrategy(proxy);
 		case "brightdata":
-			return applyBrightDataStrategy(proxy, targetProvider);
+			return applyBrightDataStrategy(proxy);
 		case "oxylabs":
-			return applyOxylabsStrategy(proxy, targetProvider);
+			return applyOxylabsStrategy(proxy);
 		case "netnut":
 			return applyNetNutStrategy(proxy);
 		case "soax":

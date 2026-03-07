@@ -1,41 +1,30 @@
-import { toErrorMessage, ValidationError } from "@oneglanse/errors";
+import { ValidationError, toErrorMessage } from "@oneglanse/errors";
 import { redis, storePromptResponses } from "@oneglanse/services";
-import {
-	CHAIN_ORDER,
-	PROVIDER_LIST,
-	type AgentResult,
-	type AskPromptResult,
-	type ChainJobData,
-	type ModelResult,
-	type PromptPayload,
-	type Provider,
-	type UserPrompt,
+import type {
+	AgentResult,
+	ModelResult,
+	PromptPayload,
+	Provider,
 } from "@oneglanse/types";
-import { type Job } from "bullmq";
-import { runProviderChain } from "../core/chainRunner.js";
+import { PROVIDER_LIST } from "@oneglanse/types";
+import { createProviderLogger, logger } from "@oneglanse/utils";
+import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
-import { createProviderLogger, logger } from "@oneglanse/utils";
 import { runAnalysisInBackground } from "./analysis.js";
 
+type ProviderStatus = "pending" | "running" | "completed" | "failed";
 type ProviderJobData = {
 	jobGroupId: string;
 	provider: Provider;
-	prompts: UserPrompt[];
+	prompts: PromptPayload["prompts"];
 	user_id: string;
 	workspace_id: string;
 	created_at?: string;
 };
 
-type ProviderStatus = "pending" | "running" | "completed" | "failed";
-
-const providerConfig = Object.fromEntries(
-	PROVIDER_LIST.map((p) => [
-		p,
-		{ label: PROVIDER_CONFIGS[p].label, factory: () => createAgent(p) },
-	]),
-) as Record<Provider, { label: string; factory: () => ReturnType<typeof createAgent> }>;
+const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
 
 /**
  * Lua script for atomic read-modify-write on the progress key.
@@ -65,9 +54,46 @@ for _, v in pairs(data['providers']) do
   if v ~= 'completed' and v ~= 'failed' then allDone = false; break end
 end
 if allDone then data['status'] = 'completed' end
-redis.call('SET', KEYS[1], cjson.encode(data), 'EX', 3600)
+redis.call('SET', KEYS[1], cjson.encode(data), 'EX', ${AGENT_PROGRESS_TTL_SECONDS})
 return cjson.encode(data)
 `;
+
+function buildProgressSeed(provider: Provider, promptCount: number): string {
+	return JSON.stringify({
+		status: "pending" as const,
+		updateId: 0,
+		providers: { [provider]: "pending" } as Record<Provider, ProviderStatus>,
+		results: { [provider]: 0 } as Record<Provider, number>,
+		stats: {
+			totalPrompts: promptCount,
+			expectedResponses: promptCount,
+			actualResponses: 0,
+		},
+	});
+}
+
+function buildProviderSessionKey(args: {
+	provider: Provider;
+	userId: string;
+	workspaceId: string;
+}): string {
+	const { provider, userId, workspaceId } = args;
+	return `session:v2:${workspaceId}:${userId}:${provider}`;
+}
+
+async function ensureProgressSeed(
+	progressKey: string,
+	provider: Provider,
+	promptCount: number,
+): Promise<void> {
+	await redis.set(
+		progressKey,
+		buildProgressSeed(provider, promptCount),
+		"EX",
+		AGENT_PROGRESS_TTL_SECONDS,
+		"NX",
+	);
+}
 
 async function updateProgress(
 	progressKey: string,
@@ -76,35 +102,47 @@ async function updateProgress(
 	resultCount: number | null,
 ): Promise<void> {
 	const countArg = resultCount !== null ? String(resultCount) : "";
-	const result = await redis.eval(UPDATE_PROGRESS_LUA, 1, progressKey, provider, status, countArg);
+	const result = await redis.eval(
+		UPDATE_PROGRESS_LUA,
+		1,
+		progressKey,
+		provider,
+		status,
+		countArg,
+	);
 	if (result === null) {
-		logger.warn(`progress key missing during update (expired?)`);
+		logger.warn("progress key missing during update (expired?)");
 	}
 }
 
 export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
-	const data = job.data as ProviderJobData;
-
-	const { provider, jobGroupId, prompts, user_id, workspace_id } = data;
+	const { provider, jobGroupId, prompts, user_id, workspace_id } = job.data;
 	const plog = createProviderLogger(provider);
 
-	if (!providerConfig[provider]) {
+	if (!PROVIDER_LIST.includes(provider)) {
 		throw new ValidationError(`Unknown provider: ${provider}`, { provider });
 	}
 
+	if (!prompts || prompts.length === 0) {
+		throw new ValidationError("Agent job received no prompts", {
+			provider,
+			jobGroupId,
+		});
+	}
+
+	const progressKey = `job:${jobGroupId}:result`;
+	await ensureProgressSeed(progressKey, provider, prompts.length);
+
 	if (PROVIDER_CONFIGS[provider].skip) {
-		plog.warn(`skipped (skip: true in providerRegistry)`);
+		plog.warn("skipped (skip: true in providerRegistry)");
+		await updateProgress(progressKey, provider, "failed", 0);
 		return true;
 	}
 
-	if (!prompts || prompts.length === 0) {
-		throw new ValidationError("Agent job received no prompts", { provider, jobGroupId });
-	}
+	await updateProgress(progressKey, provider, "running", null);
 
-	// Generate fresh timestamp at execution time
 	const executionTime = new Date().toISOString();
-
-	const PromptPayload: PromptPayload = {
+	const payload: PromptPayload = {
 		user_id,
 		workspace_id,
 		prompts: prompts.map(({ id, prompt }) => ({
@@ -114,45 +152,37 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		created_at: executionTime,
 	};
 
-	const progressKey = `job:${jobGroupId}:result`;
-
-	// SET NX: atomically initialise only if the key is absent.
-	const seed = JSON.stringify({
-		status: "pending" as const,
-		updateId: 0,
-		providers: { [provider]: "pending" } as Record<Provider, ProviderStatus>,
-		results: { [provider]: 0 } as Record<Provider, number>,
-		stats: {
-			totalPrompts: prompts.length,
-			expectedResponses: prompts.length,
-			actualResponses: 0,
-		},
+	const label = PROVIDER_CONFIGS[provider].label;
+	const sessionKey = buildProviderSessionKey({
+		provider,
+		userId: user_id,
+		workspaceId: workspace_id,
 	});
-	await redis.set(progressKey, seed, "EX", 60 * 60, "NX");
-
-	await updateProgress(progressKey, provider, "running", null);
 
 	let wrapped: AgentResult = { status: "rejected", data: [] };
 
 	try {
-		const { label, factory } = providerConfig[provider];
 		const result = await agentHandler(
 			label,
-			factory,
-			PromptPayload,
+			() => createAgent(provider, { sessionKey }),
+			payload,
 			provider,
+			{ sessionKey },
 		);
 		wrapped = {
 			status: result.length > 0 ? "fulfilled" : "rejected",
 			data: result,
 		};
 	} catch (err) {
-		plog.error(`failed:`, toErrorMessage(err));
+		plog.error("failed:", toErrorMessage(err));
 	}
 
 	if (wrapped.status === "fulfilled" && wrapped.data.length > 0) {
 		const emptyResult = Object.fromEntries(
-			PROVIDER_LIST.map((p) => [p, { status: "rejected" as const, data: [] }]),
+			PROVIDER_LIST.map((currentProvider) => [
+				currentProvider,
+				{ status: "rejected" as const, data: [] },
+			]),
 		) as unknown as Record<Provider, AgentResult>;
 
 		const partialResults: ModelResult = {
@@ -178,134 +208,6 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	const finalStatus: ProviderStatus =
 		wrapped.status === "fulfilled" ? "completed" : "failed";
 	await updateProgress(progressKey, provider, finalStatus, wrapped.data.length);
-
-	return true;
-}
-
-export async function handleChainJob(job: Job<ChainJobData>): Promise<boolean> {
-	const { jobGroupId, prompts, user_id, workspace_id, enabledProviders } = job.data;
-
-	if (!prompts || prompts.length === 0) {
-		throw new ValidationError("Chain job received no prompts", { jobGroupId });
-	}
-
-	const executionTime = new Date().toISOString();
-
-	const payload: PromptPayload = {
-		user_id,
-		workspace_id,
-		prompts: prompts.map(({ id, prompt }) => ({ id, prompt })),
-		created_at: executionTime,
-	};
-
-	const progressKey = `job:${jobGroupId}:result`;
-
-	// All runnable providers in chain order (enabled + not skip-flagged)
-	const allProviders = CHAIN_ORDER.filter(
-		(p) => enabledProviders.includes(p) && !PROVIDER_CONFIGS[p]?.skip,
-	);
-
-	// On BullMQ retry, some providers may have already completed — skip them.
-	// Read existing Redis state to find which ones.
-	let existingProviderState: Record<string, string> = {};
-	const existingRaw = await redis.get(progressKey);
-	if (existingRaw) {
-		try {
-			existingProviderState =
-				(JSON.parse(existingRaw) as { providers?: Record<string, string> }).providers ?? {};
-		} catch {}
-	}
-
-	const providersTodo = allProviders.filter(
-		(p) => existingProviderState[p] !== "completed",
-	);
-
-	const attemptLabel = `attempt ${(job.attemptsMade ?? 0) + 1}/${job.opts?.attempts ?? 3}`;
-	logger.log(
-		`[chain:${jobGroupId}] ${attemptLabel} — running: [${providersTodo.join(", ")}], skipping already-completed: [${allProviders.filter((p) => !providersTodo.includes(p)).join(", ")}]`,
-	);
-
-	// Mark todo providers as running
-	for (const provider of providersTodo) {
-		await updateProgress(progressKey, provider, "running", null);
-	}
-
-	// Providers that are enabled but skip-flagged — mark failed immediately
-	const skippedEnabled = enabledProviders.filter((p) => !allProviders.includes(p));
-	for (const provider of skippedEnabled) {
-		await updateProgress(progressKey, provider, "failed", 0);
-	}
-
-	const processedProviders = new Set<Provider>();
-	const completedProviders = new Set<Provider>();
-
-	async function onProviderDone(provider: Provider, results: AskPromptResult[]): Promise<void> {
-		processedProviders.add(provider);
-		const status: ProviderStatus = results.length > 0 ? "completed" : "failed";
-
-		if (results.length > 0) {
-			completedProviders.add(provider);
-
-			const emptyResult = Object.fromEntries(
-				PROVIDER_LIST.map((p) => [p, { status: "rejected" as const, data: [] }]),
-			) as unknown as Record<Provider, AgentResult>;
-
-			const partialResults: ModelResult = {
-				...emptyResult,
-				[provider]: { status: "fulfilled", data: results },
-			};
-
-			await storePromptResponses({
-				results: partialResults,
-				userId: user_id,
-				workspaceId: workspace_id,
-				promptRunAt: executionTime,
-			});
-
-			runAnalysisInBackground({
-				workspaceId: workspace_id,
-				userId: user_id,
-				provider,
-				jobGroupId,
-			});
-		}
-
-		await updateProgress(progressKey, provider, status, results.length);
-	}
-
-	try {
-		await runProviderChain(providersTodo, payload, {
-			onProviderStart: async (provider) => {
-				logger.log(`[chain] starting ${provider}`);
-			},
-			onProviderDone,
-		});
-	} catch (err) {
-		// Unrecoverable chain failure (browser crash etc).
-		// Mark anything we didn't finish so Redis doesn't stay "running".
-		logger.error(`[chain:${jobGroupId}] unrecoverable crash: ${toErrorMessage(err)}`);
-		await Promise.all(
-			providersTodo
-				.filter((p) => !processedProviders.has(p))
-				.map((p) => updateProgress(progressKey, p, "failed", 0).catch(() => {})),
-		);
-	}
-
-	// If any todo provider didn't complete, throw so BullMQ retries the chain
-	// with a fresh browser/IP. Already-completed providers are skipped on retry.
-	const failedProviders = providersTodo.filter((p) => !completedProviders.has(p));
-	if (failedProviders.length > 0) {
-		logger.warn(
-			`[chain:${jobGroupId}] ${attemptLabel} — failed: [${failedProviders.join(", ")}], triggering retry`,
-		);
-		throw new Error(
-			`Chain retry needed — failed providers: [${failedProviders.join(", ")}]`,
-		);
-	}
-
-	logger.log(
-		`[chain:${jobGroupId}] all providers completed: [${[...completedProviders].join(", ")}]`,
-	);
 
 	return true;
 }

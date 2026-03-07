@@ -14,18 +14,21 @@ let cachedProfilesRoot: string | null = null;
 type ProfileMetadata = {
 	createdAt: number;
 	lastUsedAt: number;
-	proxyIdentity: string;
+	profileIdentity: string;
 	provider: string;
 	warmedUp: boolean;
 };
 
-function hashProxyIdentity(proxyUrl: string): string {
+function hashProfileIdentity(profileIdentity: string): string {
 	try {
-		const parsed = new URL(proxyUrl);
+		const parsed = new URL(profileIdentity);
 		const authority = `${parsed.protocol}//${parsed.hostname}:${parsed.port}`;
 		return createHash("sha256").update(authority).digest("hex").slice(0, 16);
 	} catch {
-		return createHash("sha256").update(proxyUrl).digest("hex").slice(0, 16);
+		return createHash("sha256")
+			.update(profileIdentity)
+			.digest("hex")
+			.slice(0, 16);
 	}
 }
 
@@ -56,11 +59,11 @@ async function resolveProfilesRoot(): Promise<string> {
 
 async function getProfileDir(
 	provider: Provider,
-	proxyUrl: string,
+	profileIdentity: string,
 ): Promise<string> {
-	const ipHash = hashProxyIdentity(proxyUrl);
+	const identityHash = hashProfileIdentity(profileIdentity);
 	const profilesRoot = await resolveProfilesRoot();
-	return join(profilesRoot, provider, ipHash);
+	return join(profilesRoot, provider, identityHash);
 }
 
 async function readMetadata(
@@ -85,27 +88,28 @@ async function writeMetadata(
 
 export async function resolveProfileDir(
 	provider: Provider,
-	proxyUrl: string | null,
+	profileIdentity: string | null,
 ): Promise<{ dir: string; isNew: boolean }> {
-	if (!proxyUrl) {
-		// No proxy — use a temp dir (no persistence without stable IP)
+	if (!profileIdentity) {
+		// No session identity — use a temp dir.
 		const dir = `/tmp/cdp-${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 		mkdirSync(dir, { recursive: true });
 		return { dir, isNew: true };
 	}
 
-	const profileDir = await getProfileDir(provider, proxyUrl);
+	const profileDir = await getProfileDir(provider, profileIdentity);
 
 	const meta = await readMetadata(profileDir);
 	const now = Date.now();
 
 	if (meta) {
 		const age = now - meta.createdAt;
-		const proxyChanged = meta.proxyIdentity !== hashProxyIdentity(proxyUrl);
+		const identityChanged =
+			meta.profileIdentity !== hashProfileIdentity(profileIdentity);
 
-		if (age > PROFILE_MAX_AGE_MS || proxyChanged) {
+		if (age > PROFILE_MAX_AGE_MS || identityChanged) {
 			logger.log(
-				`profile expired (age=${Math.round(age / 3600000)}h) or proxy changed — rotating`,
+				`profile expired (age=${Math.round(age / 3600000)}h) or session identity changed — rotating`,
 			);
 			await rm(profileDir, { recursive: true, force: true }).catch(() => null);
 		} else {
@@ -124,7 +128,7 @@ export async function resolveProfileDir(
 	await writeMetadata(profileDir, {
 		createdAt: now,
 		lastUsedAt: now,
-		proxyIdentity: hashProxyIdentity(proxyUrl),
+		profileIdentity: hashProfileIdentity(profileIdentity),
 		provider,
 		warmedUp: false,
 	});
@@ -135,9 +139,9 @@ export async function resolveProfileDir(
 
 export async function markProfileWarmed(
 	provider: Provider,
-	proxyUrl: string,
+	profileIdentity: string,
 ): Promise<void> {
-	const profileDir = await getProfileDir(provider, proxyUrl);
+	const profileDir = await getProfileDir(provider, profileIdentity);
 	const meta = await readMetadata(profileDir);
 	if (meta) {
 		meta.warmedUp = true;
@@ -147,9 +151,9 @@ export async function markProfileWarmed(
 
 export async function isProfileWarmed(
 	provider: Provider,
-	proxyUrl: string,
+	profileIdentity: string,
 ): Promise<boolean> {
-	const profileDir = await getProfileDir(provider, proxyUrl);
+	const profileDir = await getProfileDir(provider, profileIdentity);
 	const meta = await readMetadata(profileDir);
 	return meta?.warmedUp ?? false;
 }

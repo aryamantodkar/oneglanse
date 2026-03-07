@@ -1,11 +1,15 @@
 import {
-	classifyError,
 	IPRefreshNeededError,
-	toErrorMessage,
 	ValidationError,
+	classifyError,
+	toErrorMessage,
 } from "@oneglanse/errors";
+import type {
+	AskPromptResult,
+	PromptPayload,
+	Provider,
+} from "@oneglanse/types";
 import { exponentialBackoff, logger } from "@oneglanse/utils";
-import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
@@ -14,10 +18,11 @@ import { executePrompt } from "./executePrompt.js";
 const MAX_RETRIES = env.MAX_PROMPT_RETRIES_PER_IP;
 const INITIAL_RETRY_DELAY = env.PROMPT_RETRY_DELAY_MS;
 const MAX_RETRY_DELAY = env.MAX_PROMPT_RETRY_DELAY_MS;
-
-// Canary policy: the first prompt on an unproven proxy gets exactly one shot.
-// A single success "proves" the proxy and unlocks MAX_RETRIES for all subsequent prompts.
-const CANARY_MAX_ATTEMPTS = 1;
+const CANARY_ROTATE_FAILURES = new Set([
+	"bot_detection",
+	"connection_error",
+	"rate_limited",
+]);
 
 // Identifies extraction and validation failures that warrant a log warning.
 const EXTRACTION_FAILURE_RE =
@@ -39,12 +44,19 @@ function buildIPRotationError(
 	);
 }
 
+function shouldRotateImmediatelyOnUnprovenProxy(
+	failureType: ReturnType<typeof classifyError>,
+): boolean {
+	return CANARY_ROTATE_FAILURES.has(failureType);
+}
+
 /**
  * Runs a single prompt through the retry loop with the canary proxy policy applied.
  *
  * Canary policy:
- *   - Unproven proxy → one attempt only. Failure triggers immediate IP rotation.
- *   - Proven proxy   → up to MAX_RETRIES attempts with exponential backoff.
+ *   - Unproven proxy + network/bot/rate-limit failure → immediate IP rotation.
+ *   - Unproven proxy + local UI/extraction failure    → retry locally up to MAX_RETRIES.
+ *   - Proven proxy                                    → up to MAX_RETRIES attempts.
  *
  * The provider's `beforeRetryHook` is called before each retry so providers can
  * reset their page state without any of that logic living here.
@@ -64,12 +76,16 @@ export async function executePromptWithRetry(
 	proxyProven: boolean,
 ): Promise<{ result: AskPromptResult; proxyNowProven: boolean }> {
 	const config = PROVIDER_CONFIGS[provider];
-	const maxAttempts = proxyProven ? MAX_RETRIES : CANARY_MAX_ATTEMPTS;
+	const maxAttempts = MAX_RETRIES;
 	let lastError: unknown = null;
 
 	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 		if (attempt > 1) {
-			const backoffDelay = exponentialBackoff(attempt - 2, INITIAL_RETRY_DELAY, MAX_RETRY_DELAY);
+			const backoffDelay = exponentialBackoff(
+				attempt - 2,
+				INITIAL_RETRY_DELAY,
+				MAX_RETRY_DELAY,
+			);
 			logger.log(
 				`retry ${attempt}/${maxAttempts} for prompt ${promptIndex + 1} (backoff ${backoffDelay / 1000}s)`,
 			);
@@ -78,7 +94,11 @@ export async function executePromptWithRetry(
 		}
 
 		try {
-			const { response, sources } = await executePrompt(page, promptEntry.prompt, provider);
+			const { response, sources } = await executePrompt(
+				page,
+				promptEntry.prompt,
+				provider,
+			);
 
 			logger.success(
 				`prompt ${promptIndex + 1}/${totalPrompts} done${attempt > 1 ? ` (attempt ${attempt})` : ""}`,
@@ -101,19 +121,27 @@ export async function executePromptWithRetry(
 			return { result, proxyNowProven };
 		} catch (err) {
 			lastError = err;
+			const failureType = classifyError(err);
 			logger.error(
 				`attempt ${attempt}/${maxAttempts} failed for prompt ${promptIndex + 1}: ${toErrorMessage(err)}`,
 			);
 
-			// Canary failed: rotate IP immediately, no retry.
-			if (!proxyProven) {
-				logger.warn("canary failed on unproven proxy — rotating IP immediately");
+			if (!proxyProven && shouldRotateImmediatelyOnUnprovenProxy(failureType)) {
+				logger.warn(
+					`canary failed on unproven proxy with ${failureType} — rotating IP immediately`,
+				);
 				throw buildIPRotationError(
 					`${provider} canary prompt failed — rotating IP. Error: ${toErrorMessage(lastError)}`,
 					partialResults,
 					remainingPrompts,
 					promptIndex,
 					lastError,
+				);
+			}
+
+			if (!proxyProven && attempt === 1) {
+				logger.warn(
+					`canary failed on unproven proxy with ${failureType}, retrying locally before rotating IP`,
 				);
 			}
 
@@ -139,5 +167,7 @@ export async function executePromptWithRetry(
 	}
 
 	// Unreachable — the loop always returns or throws.
-	throw new ValidationError("executePromptWithRetry: unexpected exit without result or error");
+	throw new ValidationError(
+		"executePromptWithRetry: unexpected exit without result or error",
+	);
 }

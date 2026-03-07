@@ -7,7 +7,10 @@ import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
 import { env } from "../env.js";
-import { launchContext } from "../lib/browser/launch.js";
+import {
+	type LaunchContextOptions,
+	launchContext,
+} from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
@@ -15,7 +18,10 @@ const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
 const DEFAULT_NAV_TIMEOUT_MS = env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS;
 const HOOK_TIMEOUT_MS = env.PROVIDER_HOOK_TIMEOUT_MS;
 
-export async function createAgent(provider: Provider): Promise<{
+export async function createAgent(
+	provider: Provider,
+	options?: LaunchContextOptions,
+): Promise<{
 	browser: Browser;
 	context: BrowserContext;
 	page: Page;
@@ -24,7 +30,10 @@ export async function createAgent(provider: Provider): Promise<{
 }> {
 	const config = PROVIDER_CONFIGS[provider];
 
-	const { browser, context, proxy, cleanup } = await launchContext(provider);
+	const { browser, context, proxy, cleanup } = await launchContext(
+		provider,
+		options,
+	);
 	let phase = "new_page";
 
 	try {
@@ -89,78 +98,6 @@ export async function createAgent(provider: Provider): Promise<{
 				url: config.url,
 				proxy,
 			},
-			err,
-		);
-	}
-}
-
-/**
- * Opens a new page on an existing browser context, navigates it to the
- * provider's URL, and runs all the same hooks/timeouts as createAgent.
- * Used by the chain runner to add providers to an already-running browser.
- * The returned cleanup only closes the page — context and browser are managed
- * by the caller.
- */
-export async function setupProviderPage(
-	context: BrowserContext,
-	provider: Provider,
-): Promise<{ page: Page; cleanup: () => Promise<void> }> {
-	const config = PROVIDER_CONFIGS[provider];
-	let phase = "new_page";
-	const page = await context.newPage();
-
-	try {
-		if (config.preNavigationHook) {
-			const preNavigationHook = config.preNavigationHook;
-			phase = "pre_navigation_hook";
-			await withTimeout(
-				`[${provider}] preNavigationHook`,
-				async () => preNavigationHook(page),
-				HOOK_TIMEOUT_MS,
-			);
-		}
-
-		phase = "navigate";
-		logger.log(`navigating to ${config.url}`);
-		await navigateWithRetry(page, config.url, {
-			waitUntil: "domcontentloaded",
-			timeout: 60000,
-		});
-
-		if (config.postNavigationHook) {
-			const postNavigationHook = config.postNavigationHook;
-			phase = "post_navigation_hook";
-			await withTimeout(
-				`[${provider}] postNavigationHook`,
-				async () => postNavigationHook(page),
-				HOOK_TIMEOUT_MS,
-			);
-		}
-
-		logger.log(`page ready: ${page.url()}`);
-
-		page.setDefaultTimeout(DEFAULT_PAGE_TIMEOUT_MS);
-		page.setDefaultNavigationTimeout(DEFAULT_NAV_TIMEOUT_MS);
-
-		phase = "warmup_delay";
-		await page.waitForTimeout(config.warmupDelayMs);
-
-		return {
-			page,
-			cleanup: async () => {
-				await page.close().catch(() => {});
-			},
-		};
-	} catch (err) {
-		await page.close().catch(() => {});
-		if (err instanceof BaseError) {
-			throw err;
-		}
-		throw new ExternalServiceError(
-			provider,
-			`setupProviderPage failed during ${phase}: ${toErrorMessage(err)}`,
-			502,
-			{ phase, provider, url: config.url },
 			err,
 		);
 	}

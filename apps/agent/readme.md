@@ -41,7 +41,6 @@ Defined in `src/env.ts` (Zod validated):
 - Core runtime:
   - `NODE_ENV`
   - `DEBUG_ENABLED`
-  - `AGENT_WORKER_CONCURRENCY`
 - Redis:
   - `REDIS_HOST`
   - `REDIS_PORT`
@@ -110,6 +109,8 @@ Provider-aware rotation examples:
 ```env
 # Decodo / Smartproxy:
 # Use either a sticky port endpoint or a gate.decodo.com session username.
+# For sticky-port endpoints, the agent picks one random documented sticky port
+# per provider run and reuses it for that browser session.
 PROXY_PROVIDER=decodo
 PROXY_SCHEME=http
 PROXY_HOST=us.decodo.com
@@ -119,21 +120,27 @@ PROXY_PASSWORD=pass-abc
 # PROXY_URL=http://user-abc-session-old-sessionduration-30:pass-abc@gate.decodo.com:7000
 
 # Bright Data:
+# Bright Data session ids must stay alphanumeric; the agent rewrites only the
+# session token.
 PROXY_PROVIDER=brightdata
 PROXY_URL=http://brd-customer-CUSTOMER-zone-ZONE-session-old:pass@brd.superproxy.io:33335
 
 # Oxylabs:
-# Sticky port example. If your username already contains -sessid-, that token
-# is replaced on each launch too.
+# Start from a documented sticky seed port such as 10001/20001/30001/40001.
+# The agent keeps one random sticky port for the lease. If your username
+# already contains -sessid-, that token is replaced on each launch too.
 PROXY_PROVIDER=oxylabs
 PROXY_URL=http://customer-USERNAME:pass@us-pr.oxylabs.io:10001
 
 # Thordata:
-# sessid is replaced every launch, existing sesstime is preserved.
+# sessid is replaced every launch with a 12-character token, existing sesstime
+# is preserved.
 PROXY_PROVIDER=thordata
 PROXY_URL=http://td-customer-USERNAME-country-US-sessid-old-sesstime-10:pass@treyklah.na.thordata.net:9999
 
 # LunaProxy:
+# sessid is replaced every launch with a 12-character token, existing sesstime
+# is preserved.
 PROXY_PROVIDER=lunaproxy
 PROXY_URL=http://user-USERNAME-region-us-sessid-old-sesstime-10:pass@rw.lunaproxy.com:12233
 

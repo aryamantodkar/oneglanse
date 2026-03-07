@@ -26,10 +26,7 @@ import {
 	type UpstreamProxyConfig,
 	createProxyForwarder,
 } from "./proxy/forwarder.js";
-import {
-	applyProxyProviderStrategy,
-	usesDynamicProxyStrategy,
-} from "./proxy/provider.js";
+import { applyProxyProviderStrategy } from "./proxy/provider.js";
 import { resolveBrowserSessionSettings } from "./sessionSettings.js";
 import {
 	type BrowserSessionSettings,
@@ -45,6 +42,10 @@ const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	https: 443,
 	socks4: 1080,
 	socks5: 1080,
+};
+
+export type LaunchContextOptions = {
+	sessionKey?: string;
 };
 
 function stripTrailingSlash(value: string): string {
@@ -95,7 +96,7 @@ function parseProxyConfig(
 }
 
 function buildProxyConfig(
-	targetProvider: Provider,
+	options?: LaunchContextOptions,
 ): UpstreamProxyConfig | null {
 	if (env.PROXY_URL) {
 		const parsed = new URL(env.PROXY_URL);
@@ -113,7 +114,6 @@ function buildProxyConfig(
 				username,
 				password,
 			),
-			targetProvider,
 		);
 	}
 
@@ -131,11 +131,13 @@ function buildProxyConfig(
 			env.PROXY_USERNAME?.trim() || undefined,
 			env.PROXY_PASSWORD?.trim() || undefined,
 		),
-		targetProvider,
 	);
 }
 
-export async function launchContext(provider: Provider): Promise<{
+export async function launchContext(
+	provider: Provider,
+	options?: LaunchContextOptions,
+): Promise<{
 	browser: Browser;
 	context: BrowserContext;
 	profile: SessionProfile;
@@ -144,12 +146,15 @@ export async function launchContext(provider: Provider): Promise<{
 	cleanup: () => Promise<void>;
 }> {
 	const profile = generateSessionProfile();
-	const upstreamProxy = buildProxyConfig(provider);
-	const persistProfile = Boolean(upstreamProxy) && !usesDynamicProxyStrategy();
+	const upstreamProxy = buildProxyConfig(options);
+	const profileIdentity =
+		options?.sessionKey ??
+		(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
+	const persistProfile = profileIdentity !== null;
 	const port = await getFreePort();
 	const { dir: userDataDir, isNew: isNewProfile } = await resolveProfileDir(
 		provider,
-		persistProfile ? (upstreamProxy?.logProxy ?? null) : null,
+		profileIdentity,
 	);
 	const windowSize = {
 		width: profile.viewport.width + profile.outerDelta.width,
@@ -250,14 +255,14 @@ export async function launchContext(provider: Provider): Promise<{
 		if (
 			isNewProfile &&
 			persistProfile &&
-			upstreamProxy &&
-			!(await isProfileWarmed(provider, upstreamProxy.logProxy))
+			profileIdentity &&
+			!(await isProfileWarmed(provider, profileIdentity))
 		) {
 			try {
 				const warmupPage = await context.newPage();
 				await warmUpProfile(warmupPage);
 				await warmupPage.close();
-				await markProfileWarmed(provider, upstreamProxy.logProxy);
+				await markProfileWarmed(provider, profileIdentity);
 			} catch (err) {
 				logger.warn(
 					`profile warmup failed (non-critical): ${toErrorMessage(err)}`,

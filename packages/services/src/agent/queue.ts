@@ -1,21 +1,11 @@
+import type { Provider } from "@oneglanse/types";
 import { Queue } from "bullmq";
-import { type Provider } from "@oneglanse/types";
 import { env } from "../env.js";
 
 const DEFAULT_JOB_OPTIONS = {
 	attempts: 1,
 	removeOnComplete: true,
 	removeOnFail: false,
-} as const;
-
-const CHAIN_JOB_OPTIONS = {
-	attempts: 10,
-	removeOnComplete: true,
-	removeOnFail: false,
-	backoff: {
-		type: "exponential" as const,
-		delay: 30_000,
-	},
 } as const;
 
 const connection = {
@@ -25,8 +15,6 @@ const connection = {
 };
 
 const queues = new Map<Provider, Queue>();
-
-export const CHAIN_QUEUE_NAME = "oneglanse-agent-chain";
 
 export function getQueueName(provider: Provider): string {
 	return `oneglanse-agent-${provider}`;
@@ -42,16 +30,4 @@ export function getProviderQueue(provider: Provider): Queue {
 		queues.set(provider, q);
 	}
 	return q;
-}
-
-let chainQueue: Queue | null = null;
-
-export function getChainQueue(): Queue {
-	if (!chainQueue) {
-		chainQueue = new Queue(CHAIN_QUEUE_NAME, {
-			connection,
-			defaultJobOptions: CHAIN_JOB_OPTIONS,
-		});
-	}
-	return chainQueue;
 }
