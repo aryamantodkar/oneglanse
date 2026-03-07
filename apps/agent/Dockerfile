@@ -61,6 +61,7 @@ COPY --from=builder /app/out ./
 # Chrome runs in headful mode against the virtual display, eliminating all
 # headless-specific browser fingerprint signals (outerHeight=0, LLVMpipe WebGL, etc.)
 RUN printf '#!/bin/sh\n\
+mkdir -p /storage/profiles /tmp/oneglanse-profiles\n\
 Xvfb :99 -screen 0 3840x2160x24 -ac -nolisten tcp &\n\
 XVFB_PID=$!\n\
 export DISPLAY=:99\n\
@@ -70,6 +71,5 @@ sleep 1\n\
 exec pnpm start:worker\n' > /start-worker.sh && chmod +x /start-worker.sh
 
 RUN chown -R node:node /app
-USER node
 
 CMD ["/start-worker.sh"]

@@ -10,6 +10,7 @@ const FALLBACK_PROFILES_ROOT = "/tmp/oneglanse-profiles";
 const PROFILE_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 const METADATA_FILE = ".profile-meta.json";
 let cachedProfilesRoot: string | null = null;
+let profilesRootPromise: Promise<string> | null = null;
 
 type ProfileMetadata = {
 	createdAt: number;
@@ -37,24 +38,33 @@ async function resolveProfilesRoot(): Promise<string> {
 		return cachedProfilesRoot;
 	}
 
-	try {
-		await writeFile(
-			join(PERSISTENT_PROFILES_ROOT, ".write-test"),
-			String(Date.now()),
-		);
-		await rm(join(PERSISTENT_PROFILES_ROOT, ".write-test"), {
-			force: true,
-		}).catch(() => null);
-		cachedProfilesRoot = PERSISTENT_PROFILES_ROOT;
-		return cachedProfilesRoot;
-	} catch (error) {
-		mkdirSync(FALLBACK_PROFILES_ROOT, { recursive: true });
-		cachedProfilesRoot = FALLBACK_PROFILES_ROOT;
-		logger.warn(
-			`profiles root ${PERSISTENT_PROFILES_ROOT} is not writable, falling back to ${FALLBACK_PROFILES_ROOT}: ${error instanceof Error ? error.message : String(error)}`,
-		);
-		return cachedProfilesRoot;
+	if (!profilesRootPromise) {
+		profilesRootPromise = (async () => {
+			try {
+				mkdirSync(PERSISTENT_PROFILES_ROOT, { recursive: true });
+				await writeFile(
+					join(PERSISTENT_PROFILES_ROOT, ".write-test"),
+					String(Date.now()),
+				);
+				await rm(join(PERSISTENT_PROFILES_ROOT, ".write-test"), {
+					force: true,
+				}).catch(() => null);
+				cachedProfilesRoot = PERSISTENT_PROFILES_ROOT;
+				return cachedProfilesRoot;
+			} catch (error) {
+				mkdirSync(FALLBACK_PROFILES_ROOT, { recursive: true });
+				cachedProfilesRoot = FALLBACK_PROFILES_ROOT;
+				logger.warn(
+					`profiles root ${PERSISTENT_PROFILES_ROOT} is not writable, falling back to ${FALLBACK_PROFILES_ROOT}: ${error instanceof Error ? error.message : String(error)}`,
+				);
+				return cachedProfilesRoot;
+			}
+		})().finally(() => {
+			profilesRootPromise = null;
+		});
 	}
+
+	return profilesRootPromise;
 }
 
 async function getProfileDir(

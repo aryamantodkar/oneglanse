@@ -48,10 +48,6 @@ export type LaunchContextOptions = {
 	sessionKey?: string;
 };
 
-function stripTrailingSlash(value: string): string {
-	return value.endsWith("/") ? value.slice(0, -1) : value;
-}
-
 function normalizeProxyScheme(protocol: string): ProxyScheme {
 	const normalized = protocol.trim().toLowerCase().replace(/:$/, "");
 
@@ -95,28 +91,7 @@ function parseProxyConfig(
 	};
 }
 
-function buildProxyConfig(
-	options?: LaunchContextOptions,
-): UpstreamProxyConfig | null {
-	if (env.PROXY_URL) {
-		const parsed = new URL(env.PROXY_URL);
-		const username = parsed.username
-			? decodeURIComponent(parsed.username)
-			: undefined;
-		const password = parsed.password
-			? decodeURIComponent(parsed.password)
-			: undefined;
-		parsed.username = "";
-		parsed.password = "";
-		return applyProxyProviderStrategy(
-			parseProxyConfig(
-				stripTrailingSlash(parsed.toString()),
-				username,
-				password,
-			),
-		);
-	}
-
+function buildProxyConfig(): UpstreamProxyConfig | null {
 	const host = env.PROXY_HOST?.trim();
 	const port = env.PROXY_PORT?.trim();
 	if (!host || !port) return null;
@@ -146,7 +121,7 @@ export async function launchContext(
 	cleanup: () => Promise<void>;
 }> {
 	const profile = generateSessionProfile();
-	const upstreamProxy = buildProxyConfig(options);
+	const upstreamProxy = buildProxyConfig();
 	const profileIdentity =
 		options?.sessionKey ??
 		(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
