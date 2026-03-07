@@ -9,10 +9,6 @@ import { runStep } from "../lib/utils/runStep.js";
 import { runPrompts } from "./prompt-runner/index.js";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
-function randomBetween(min: number, max: number): number {
-	return min + Math.floor(Math.random() * (max - min + 1));
-}
-
 export async function runAgents(
 	prompts: PromptPayload,
 	page: Page,
@@ -20,7 +16,8 @@ export async function runAgents(
 ): Promise<AskPromptResult[]> {
 	const config = PROVIDER_CONFIGS[provider];
 	if (config.requiresWarmup) {
-		await page.waitForTimeout(randomBetween(2200, 4200));
+		// warmupDelayMs in createAgent already provides the post-navigation wait;
+		// the extra delay here is redundant and adds unnecessary signal.
 		await runStep(`Warming up ${provider}`, page, () =>
 			warmUpEditor(page, provider),
 		);

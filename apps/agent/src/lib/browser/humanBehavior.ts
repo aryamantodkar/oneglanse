@@ -4,6 +4,37 @@ function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
 
+// Adjacent QWERTY keys for realistic typo simulation.
+// Only lowercase letters are mapped; skip chars with no neighbors.
+const QWERTY_NEIGHBORS: Record<string, string[]> = {
+	q: ["w", "a"],
+	w: ["q", "e", "s", "a"],
+	e: ["w", "r", "d", "s"],
+	r: ["e", "t", "f", "d"],
+	t: ["r", "y", "g", "f"],
+	y: ["t", "u", "h", "g"],
+	u: ["y", "i", "j", "h"],
+	i: ["u", "o", "k", "j"],
+	o: ["i", "p", "l", "k"],
+	p: ["o", "l"],
+	a: ["q", "w", "s", "z"],
+	s: ["a", "w", "e", "d", "z", "x"],
+	d: ["s", "e", "r", "f", "x", "c"],
+	f: ["d", "r", "t", "g", "c", "v"],
+	g: ["f", "t", "y", "h", "v", "b"],
+	h: ["g", "y", "u", "j", "b", "n"],
+	j: ["h", "u", "i", "k", "n", "m"],
+	k: ["j", "i", "o", "l", "m"],
+	l: ["k", "o", "p"],
+	z: ["a", "s", "x"],
+	x: ["z", "s", "d", "c"],
+	c: ["x", "d", "f", "v"],
+	v: ["c", "f", "g", "b"],
+	b: ["v", "g", "h", "n"],
+	n: ["b", "h", "j", "m"],
+	m: ["n", "j", "k"],
+};
+
 function bezierPoint(
 	t: number,
 	p0: number,
@@ -77,16 +108,16 @@ export async function humanType(
 			await page.keyboard.press("Enter");
 			await page.keyboard.up("Shift");
 		} else {
-			// Rare typo + correction (~3% of word characters)
+			// Rare typo + correction (~3% of word characters, QWERTY-neighbor only)
+			const qwertyNeighbor = QWERTY_NEIGHBORS[char.toLowerCase()];
 			if (
-				char !== " " &&
+				qwertyNeighbor &&
 				Math.random() < 0.03 &&
 				i > 0 &&
 				i < text.length - 1
 			) {
-				const typoChar = String.fromCharCode(
-					char.charCodeAt(0) + randomBetween(-2, 2),
-				);
+				const typoChar =
+					qwertyNeighbor[Math.floor(Math.random() * qwertyNeighbor.length)]!;
 				await page.keyboard.type(typoChar);
 				await page.waitForTimeout(randomBetween(50, 150));
 				await page.keyboard.press("Backspace");

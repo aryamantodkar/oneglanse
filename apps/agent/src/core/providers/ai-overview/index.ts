@@ -81,8 +81,9 @@ export const aiOverviewConfig: ProviderConfig = {
 	},
 	betweenPromptsHook: async (_page) => {
 		// Each prompt navigates to its own URL via navigateToPrompt — nothing to reset.
-		// Small pause between requests to avoid hammering Google.
-		await _page.waitForTimeout(1000);
+		// Real users take 8-20s between consecutive searches (reading results, deciding).
+		const pause = 8000 + Math.floor(Math.random() * 12000);
+		await _page.waitForTimeout(pause);
 	},
 	extractSources: (page) => extractAIOverviewSources(page),
 };

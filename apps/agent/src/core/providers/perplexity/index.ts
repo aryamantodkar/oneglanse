@@ -14,10 +14,9 @@ export const perplexityConfig: ProviderConfig = {
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
 	postNavigationHook: async (page) => {
-		// Perplexity loads slowly — add a randomised delay to avoid bot detection.
-		const randomDelay = 2000 + Math.floor(Math.random() * 3000);
-		await page.waitForTimeout(randomDelay);
-		await page.waitForTimeout(1000 + Math.floor(Math.random() * 1000));
+		// Perplexity loads slowly — single consolidated randomised delay.
+		const delay = 3000 + Math.floor(Math.random() * 4000);
+		await page.waitForTimeout(delay);
 	},
 	extractSources: async (page) => {
 		const btn = await findSourcesButton(page);

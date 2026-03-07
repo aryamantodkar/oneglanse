@@ -278,6 +278,11 @@ export function spawnChromiumCDP(
 
 	if (options?.proxyServer) {
 		args.push(`--proxy-server=${options.proxyServer}`);
+		// Force all DNS through the proxy CONNECT tunnel to prevent DNS leaks.
+		// Only safe when a proxy is active — breaks DNS resolution in direct mode.
+		args.push("--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1");
+		args.push("--enable-features=DnsOverHttps");
+		args.push("--dns-over-https-mode=automatic");
 	}
 
 	if (!isHeadful) {

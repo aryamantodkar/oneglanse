@@ -185,7 +185,12 @@ export async function launchContext(
 	try {
 		await mkdir(userDataDir, { recursive: true });
 		await clearChromeProfileLocks(userDataDir);
-		const settings = await resolveBrowserSessionSettings(forwarder?.serverUrl);
+		// Use the upstream proxy identity (stable across launches) as the cache key,
+		// not the local forwarder port (which is random and changes every launch).
+		const settings = await resolveBrowserSessionSettings(
+			forwarder?.serverUrl,
+			upstreamProxy?.logProxy ?? "direct",
+		);
 
 		chromProcess = spawnChromiumCDP(port, userDataDir, {
 			proxyServer: forwarder?.serverUrl,
