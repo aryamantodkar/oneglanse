@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
+import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider, UserPrompt } from "@oneglanse/types";
+import { PROVIDER_LIST } from "@oneglanse/types";
 import { ALL_PROVIDERS_JSON } from "@oneglanse/utils";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
 import { getWorkspaceById } from "../workspace/index.js";
 import { getProviderQueue } from "./queue.js";
-import { redis } from "./redis.js";
+import { redis, waitForRedis } from "./redis.js";
 
 const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
 
@@ -23,13 +25,38 @@ export type SubmitAgentJobResult =
 
 async function enqueueProviderJob(payload: ProviderJobPayload): Promise<void> {
 	const queue = getProviderQueue(payload.provider);
-	const jobId = `${payload.jobGroupId}:${payload.provider}`;
-	const existing = await queue.getJob(jobId);
-	if (existing) {
-		return;
-	}
+	try {
+		await queue.waitUntilReady();
+		const jobId = `${payload.jobGroupId}:${payload.provider}`;
+		const existing = await queue.getJob(jobId);
+		if (existing) {
+			return;
+		}
 
-	await queue.add("run-provider", payload, { jobId });
+		await queue.add("run-provider", payload, { jobId });
+	} catch (err) {
+		throw new Error(
+			`failed to enqueue ${payload.provider} provider job: ${toErrorMessage(err)}`,
+		);
+	}
+}
+
+function parseEnabledProviders(
+	rawValue: string | null | undefined,
+): Provider[] {
+	try {
+		const parsed = JSON.parse(rawValue ?? ALL_PROVIDERS_JSON);
+		if (!Array.isArray(parsed)) {
+			return [...PROVIDER_LIST];
+		}
+
+		const filtered = parsed.filter((provider): provider is Provider =>
+			PROVIDER_LIST.includes(provider as Provider),
+		);
+		return filtered.length > 0 ? filtered : [...PROVIDER_LIST];
+	} catch {
+		return [...PROVIDER_LIST];
+	}
 }
 
 export async function enqueueProviderJobs(args: {
@@ -65,7 +92,13 @@ export async function submitAgentJobGroup(args: {
 }): Promise<SubmitAgentJobResult> {
 	const { workspaceId, userId } = args;
 
-	const prompts = await fetchUserPromptsForWorkspace({ workspaceId });
+	let prompts: UserPrompt[];
+	try {
+		prompts = await fetchUserPromptsForWorkspace({ workspaceId });
+	} catch (err) {
+		throw new Error(`failed to load workspace prompts: ${toErrorMessage(err)}`);
+	}
+
 	if (!prompts || prompts.length === 0) {
 		console.warn(
 			`[agent] submitAgentJobGroup: no prompts found for workspace ${workspaceId} — skipping`,
@@ -74,10 +107,13 @@ export async function submitAgentJobGroup(args: {
 	}
 
 	const jobGroupId = randomUUID();
-	const workspace = await getWorkspaceById({ workspaceId });
-	const enabledProviders = JSON.parse(
-		workspace.enabledProviders ?? ALL_PROVIDERS_JSON,
-	) as Provider[];
+	const workspace = await getWorkspaceById({ workspaceId }).catch((err) => {
+		throw new Error(
+			`failed to load workspace settings: ${toErrorMessage(err)}`,
+		);
+	});
+	const enabledProviders = parseEnabledProviders(workspace.enabledProviders);
+	await waitForRedis();
 
 	const progress = {
 		status: "pending" as const,
@@ -103,13 +139,17 @@ export async function submitAgentJobGroup(args: {
 		AGENT_PROGRESS_TTL_SECONDS,
 	);
 
-	await enqueueProviderJobs({
-		jobGroupId,
-		prompts,
-		userId,
-		workspaceId,
-		enabledProviders,
-	});
+	try {
+		await enqueueProviderJobs({
+			jobGroupId,
+			prompts,
+			userId,
+			workspaceId,
+			enabledProviders,
+		});
+	} catch (err) {
+		throw new Error(`failed to queue provider jobs: ${toErrorMessage(err)}`);
+	}
 
 	return { status: "queued", jobGroupId };
 }
