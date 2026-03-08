@@ -1,10 +1,13 @@
 import { extractSourcesFromPerplexity } from "./lib/extractSources.js";
+import { dismissPerplexityModal } from "./lib/dismissModal.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
 import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
+
+const PERPLEXITY_URL = "https://www.perplexity.ai/";
 
 function isPerplexitySearchUrl(rawUrl: string): boolean {
 	try {
@@ -43,21 +46,36 @@ async function perplexityPostNavigationHook(
 	await page.waitForTimeout(delay);
 }
 
+async function resetPerplexityPage(
+	page: Parameters<ProviderConfig["waitForResponse"]>[0],
+): Promise<void> {
+	await resetProviderPage(page, "perplexity", PERPLEXITY_URL, {
+		postNavigationHook: perplexityPostNavigationHook,
+	});
+	await dismissPerplexityModal(page, { waitForAppearanceMs: 1000 });
+}
+
 export const perplexityConfig: ProviderConfig = {
-	url: "https://www.perplexity.ai/",
+	url: PERPLEXITY_URL,
 	warmupDelayMs: 5000,
 	label: "Perplexity",
 	displayName: "Perplexity",
 	requiresWarmup: true,
+	beforePromptHook: (page) =>
+		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+	afterTypingHook: (page) =>
+		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+	beforeSubmitHook: (page) =>
+		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+	afterSubmitHook: (page) =>
+		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+	beforeRetryHook: resetPerplexityPage,
 	checkSubmitSuccess: async (page, { preSubmitUrl }) =>
 		waitForPerplexitySearchUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
 	postNavigationHook: perplexityPostNavigationHook,
-	betweenPromptsHook: async (page) =>
-		resetProviderPage(page, "perplexity", "https://www.perplexity.ai/", {
-			postNavigationHook: perplexityPostNavigationHook,
-		}),
+	betweenPromptsHook: resetPerplexityPage,
 	extractSources: async (page) => {
 		const btn = await findSourcesButton(page, "perplexity");
 		if (!btn) return [];

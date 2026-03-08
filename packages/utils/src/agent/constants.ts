@@ -1,5 +1,23 @@
 import type { Provider } from "@oneglanse/types";
 
+
+export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
+	chatgpt: 90_000,
+	claude: 45_000,
+	perplexity: 45_000,
+	gemini: 45_000,
+	"ai-overview": 45_000,
+};
+
+export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
+	chatgpt: 45_000,
+	claude: 30_000,
+	perplexity: 30_000,
+	gemini: 45_000,
+	"ai-overview": 30_000,
+};
+
+
 // Provider-specific editor selectors used for health checks (most reliable first).
 // Keyed by provider so callers only test selectors relevant to the current session,
 // avoiding false positives and unnecessary timeout ticks on unrelated selectors.
@@ -88,7 +106,6 @@ export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> 
 	chatgpt: [
 		'button[data-testid="stop-button"]',
 		'button[aria-label="Stop streaming"]',
-		'[class*="loading"]',
 		'button[aria-label*="stop" i]',
 		'.loading-shimmer',
 	],
@@ -102,22 +119,6 @@ export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> 
 		'button[aria-label*="stop" i]',
 	],
 	"ai-overview": [],
-};
-
-export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
-	chatgpt: 90_000,
-	claude: 45_000,
-	perplexity: 45_000,
-	gemini: 45_000,
-	"ai-overview": 45_000,
-};
-
-export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
-	chatgpt: 45_000,
-	claude: 30_000,
-	perplexity: 30_000,
-	gemini: 45_000,
-	"ai-overview": 30_000,
 };
 
 export const SOURCES_SELECTORS = [

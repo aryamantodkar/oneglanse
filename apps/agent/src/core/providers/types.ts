@@ -34,10 +34,16 @@ export interface ProviderConfig {
 	waitForResponse: (page: Page) => Promise<void>;
 	/** Reads the AI response from the page and returns it as markdown. */
 	extractResponse: (page: Page) => Promise<string>;
+	/** Called immediately before locating/typing into the editor. */
+	beforePromptHook?: (page: Page) => Promise<void>;
+	/** Called right after typing completes, before submit preparation. */
+	afterTypingHook?: (page: Page) => Promise<void>;
 	/** Called before each retry attempt — e.g. navigate back to a clean state. */
 	beforeRetryHook?: (page: Page) => Promise<void>;
 	/** Called immediately before the submit attempt — e.g. dismiss autocomplete dropdowns. */
 	beforeSubmitHook?: (page: Page) => Promise<void>;
+	/** Called immediately after submit and stabilization, before response waiting begins. */
+	afterSubmitHook?: (page: Page) => Promise<void>;
 	/** Called between consecutive prompts — e.g. reset the page to its initial state. */
 	betweenPromptsHook?: (page: Page) => Promise<void>;
 	/**
