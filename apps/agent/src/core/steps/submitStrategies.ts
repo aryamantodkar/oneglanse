@@ -91,7 +91,9 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	// Ask provider config for a custom success signal first.
 	// undefined = no opinion, fall through to generic checks below.
 	const config = PROVIDER_CONFIGS[provider];
-	const customResult = await config.checkSubmitSuccess?.(page);
+	const customResult = await config.checkSubmitSuccess?.(page, {
+		preSubmitUrl,
+	});
 	if (customResult !== undefined) return customResult;
 
 	// Check 1: Input cleared (most reliable signal)
