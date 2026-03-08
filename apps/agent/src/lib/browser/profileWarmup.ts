@@ -18,8 +18,15 @@ async function randomScroll(page: Page): Promise<void> {
 }
 
 async function randomMouseMove(page: Page): Promise<void> {
-	const x = randomBetween(100, 800);
-	const y = randomBetween(100, 500);
+	const viewport = page.viewportSize() ?? { width: 1280, height: 720 };
+	const x = randomBetween(
+		Math.round(viewport.width * 0.05),
+		Math.round(viewport.width * 0.95),
+	);
+	const y = randomBetween(
+		Math.round(viewport.height * 0.05),
+		Math.round(viewport.height * 0.95),
+	);
 	await page.mouse.move(x, y, { steps: randomBetween(10, 25) });
 	await page.waitForTimeout(randomBetween(200, 500));
 }
