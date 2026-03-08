@@ -22,6 +22,8 @@ import {
 	tryNativeClick,
 } from "./submitStrategies.js";
 
+const NETWORKIDLE_TIMEOUT_MS = 3000;
+
 const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
 
 function randomBetween(min: number, max: number): number {
@@ -39,13 +41,16 @@ export async function askPrompt(
 	const input = await waitForEditorReady(page, provider);
 
 	// Pre-interaction: idle briefly, scroll, then move mouse to input
+	logger.debug("pre-interaction idle…");
 	await preInteractionIdle(page);
 	await smallScroll(page);
 	await moveMouseToElement(page, input);
 
 	await clearEditorInput(page, input, { waitAfterMs: 200 });
 
+	logger.debug(`typing ${prompt.length} chars…`);
 	await humanType(page, prompt);
+	logger.debug("typing complete");
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);
@@ -87,6 +92,7 @@ export async function askPrompt(
 	};
 
 	// Detect bot/CAPTCHA page before attempting submission.
+	logger.debug("attempting submission…");
 	await detectBotPage(page, provider);
 
 	// Try each submission strategy exactly once — if all fail, throw immediately.
@@ -125,7 +131,7 @@ export async function askPrompt(
 		.waitForLoadState("domcontentloaded", { timeout: 20000 })
 		.catch(() => {});
 	await page
-		.waitForLoadState("networkidle", { timeout: 10000 })
+		.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
 		.catch(() => {});
 	await config.afterSubmitHook?.(page);
 

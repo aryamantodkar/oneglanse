@@ -18,7 +18,7 @@ async function resetChatgptPage(
 
 export const chatgptConfig: ProviderConfig = {
 	url: CHATGPT_URL,
-	warmupDelayMs: 5000,
+	warmupDelayMs: 2000,
 	label: "ChatGPT",
 	displayName: "ChatGPT",
 	requiresWarmup: true,

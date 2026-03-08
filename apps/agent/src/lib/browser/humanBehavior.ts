@@ -77,7 +77,7 @@ export async function moveMouseToElement(
 }
 
 export async function preInteractionIdle(page: Page): Promise<void> {
-	await page.waitForTimeout(randomBetween(1000, 3000));
+	await page.waitForTimeout(randomBetween(300, 700));
 }
 
 export async function smallScroll(page: Page): Promise<void> {
@@ -130,7 +130,7 @@ export async function humanType(
 		// Typing delays
 		if (char === " ") {
 			// Between words: longer pause
-			await page.waitForTimeout(randomBetween(80, 200));
+			await page.waitForTimeout(randomBetween(50, 120));
 		} else {
 			// Within word: fast burst
 			await page.waitForTimeout(randomBetween(15, 40));
@@ -139,7 +139,7 @@ export async function humanType(
 		charsSinceLastPause++;
 		// Occasional "thinking" pause
 		if (charsSinceLastPause >= pauseThreshold) {
-			await page.waitForTimeout(randomBetween(500, 1500));
+			await page.waitForTimeout(randomBetween(150, 500));
 			charsSinceLastPause = 0;
 		}
 	}
