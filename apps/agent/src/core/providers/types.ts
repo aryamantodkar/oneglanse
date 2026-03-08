@@ -1,6 +1,10 @@
 import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 
+export interface SubmitSuccessContext {
+	preSubmitUrl: string;
+}
+
 /**
  * Declares all per-provider behavior in one place.
  *
@@ -40,7 +44,10 @@ export interface ProviderConfig {
 	 * Provider-specific check for whether a prompt was submitted successfully.
 	 * Return true/false to short-circuit; return undefined to fall through to generic checks.
 	 */
-	checkSubmitSuccess?: (page: Page) => Promise<boolean | undefined>;
+	checkSubmitSuccess?: (
+		page: Page,
+		context: SubmitSuccessContext,
+	) => Promise<boolean | undefined>;
 	/** Runs before the browser navigates to the provider URL. */
 	preNavigationHook?: (page: Page) => Promise<void>;
 	/** Runs after the browser lands on the provider URL. */

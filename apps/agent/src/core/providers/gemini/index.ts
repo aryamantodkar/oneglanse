@@ -5,12 +5,43 @@ import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import type { ProviderConfig } from "../types.js";
 
+function isGeminiAppUrl(rawUrl: string): boolean {
+	try {
+		const url = new URL(rawUrl);
+		return (
+			url.hostname === "gemini.google.com" &&
+			url.pathname.startsWith("/app/") &&
+			url.pathname.length > "/app/".length
+		);
+	} catch {
+		return false;
+	}
+}
+
+async function waitForGeminiAppUrl(page: Parameters<ProviderConfig["waitForResponse"]>[0], preSubmitUrl: string): Promise<boolean | undefined> {
+	if (isGeminiAppUrl(preSubmitUrl)) {
+		return undefined;
+	}
+
+	const deadline = Date.now() + 4000;
+	while (Date.now() < deadline) {
+		if (isGeminiAppUrl(page.url())) {
+			return true;
+		}
+		await page.waitForTimeout(100);
+	}
+
+	return false;
+}
+
 export const geminiConfig: ProviderConfig = {
 	url: "https://gemini.google.com/",
 	warmupDelayMs: 5000,
 	label: "Gemini",
 	displayName: "Gemini",
 	requiresWarmup: true,
+	checkSubmitSuccess: async (page, { preSubmitUrl }) =>
+		waitForGeminiAppUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "gemini"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "gemini"),
 	extractSources: async (page) => {
