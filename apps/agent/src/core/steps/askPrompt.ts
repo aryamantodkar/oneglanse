@@ -33,6 +33,9 @@ export async function askPrompt(
 	prompt: string,
 	provider: Provider,
 ): Promise<void> {
+	const config = PROVIDER_CONFIGS[provider];
+	await config.beforePromptHook?.(page);
+
 	const input = await waitForEditorReady(page, provider);
 
 	// Pre-interaction: idle briefly, scroll, then move mouse to input
@@ -45,6 +48,7 @@ export async function askPrompt(
 	await humanType(page, prompt);
 
 	await page.waitForTimeout(randomBetween(300, 700));
+	await config.afterTypingHook?.(page);
 
 	// Store pre-submit state for success detection
 	const preSubmitContent = await input.evaluate((el: Element) => {
@@ -63,7 +67,6 @@ export async function askPrompt(
 	}
 
 	// Let the provider dismiss autocomplete or do any pre-submit setup.
-	const config = PROVIDER_CONFIGS[provider];
 	await config.beforeSubmitHook?.(page);
 
 	// Find send button AFTER typing (appears dynamically)
@@ -124,6 +127,7 @@ export async function askPrompt(
 	await page
 		.waitForLoadState("networkidle", { timeout: 10000 })
 		.catch(() => {});
+	await config.afterSubmitHook?.(page);
 
 	logger.log(`post-submit URL: ${page.url()}`);
 }

@@ -123,8 +123,12 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	return false;
 }
 
-async function attemptSubmit(attempt: SubmitAttempt): Promise<boolean> {
+async function attemptSubmit(
+	ctx: SubmitContext,
+	attempt: SubmitAttempt,
+): Promise<boolean> {
 	try {
+		await PROVIDER_CONFIGS[ctx.provider].beforeSubmitHook?.(ctx.page);
 		const success = await attempt.run();
 
 		if (success) {
@@ -145,7 +149,7 @@ async function attemptSubmit(attempt: SubmitAttempt): Promise<boolean> {
 
 export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 	const { page, input } = ctx;
-	return attemptSubmit({
+	return attemptSubmit(ctx, {
 		errorLabel: "Enter submit",
 		successMessage: "Submitted via Enter key",
 		run: async () => {
@@ -171,7 +175,7 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
-	return attemptSubmit({
+	return attemptSubmit(ctx, {
 		errorLabel: "Native click",
 		successMessage: "Submitted via native click",
 		run: async () => {
@@ -197,7 +201,7 @@ export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
 export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
-	return attemptSubmit({
+	return attemptSubmit(ctx, {
 		errorLabel: "Force click",
 		successMessage: "Submitted via force click",
 		run: async () => {
@@ -224,7 +228,7 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 	const { page, sendButton } = ctx;
 	if (!sendButton) return false;
-	return attemptSubmit({
+	return attemptSubmit(ctx, {
 		errorLabel: "Dispatch click",
 		successMessage: "Submitted via dispatched click",
 		run: async () => {
