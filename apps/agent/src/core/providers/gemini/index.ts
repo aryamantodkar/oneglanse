@@ -3,6 +3,7 @@ import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown
 import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
 import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
+import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
 
 function isGeminiAppUrl(rawUrl: string): boolean {
@@ -44,8 +45,10 @@ export const geminiConfig: ProviderConfig = {
 		waitForGeminiAppUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "gemini"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "gemini"),
+	betweenPromptsHook: async (page) =>
+		resetProviderPage(page, "gemini", "https://gemini.google.com/"),
 	extractSources: async (page) => {
-		const btn = await findSourcesButton(page);
+		const btn = await findSourcesButton(page, "gemini");
 		if (!btn) return [];
 		await openSourcesPanel(page, btn);
 		return extractSourcesFromGemini(page, btn);

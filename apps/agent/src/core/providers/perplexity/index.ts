@@ -3,6 +3,7 @@ import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown
 import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
 import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
+import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
 
 function isPerplexitySearchUrl(rawUrl: string): boolean {
@@ -34,6 +35,14 @@ async function waitForPerplexitySearchUrl(page: Parameters<ProviderConfig["waitF
 	return false;
 }
 
+async function perplexityPostNavigationHook(
+	page: Parameters<NonNullable<ProviderConfig["postNavigationHook"]>>[0],
+): Promise<void> {
+	// Perplexity loads slowly — single consolidated randomised delay.
+	const delay = 3000 + Math.floor(Math.random() * 4000);
+	await page.waitForTimeout(delay);
+}
+
 export const perplexityConfig: ProviderConfig = {
 	url: "https://www.perplexity.ai/",
 	warmupDelayMs: 5000,
@@ -44,13 +53,13 @@ export const perplexityConfig: ProviderConfig = {
 		waitForPerplexitySearchUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
-	postNavigationHook: async (page) => {
-		// Perplexity loads slowly — single consolidated randomised delay.
-		const delay = 3000 + Math.floor(Math.random() * 4000);
-		await page.waitForTimeout(delay);
-	},
+	postNavigationHook: perplexityPostNavigationHook,
+	betweenPromptsHook: async (page) =>
+		resetProviderPage(page, "perplexity", "https://www.perplexity.ai/", {
+			postNavigationHook: perplexityPostNavigationHook,
+		}),
 	extractSources: async (page) => {
-		const btn = await findSourcesButton(page);
+		const btn = await findSourcesButton(page, "perplexity");
 		if (!btn) return [];
 		await openSourcesPanel(page, btn);
 		return extractSourcesFromPerplexity(page);
