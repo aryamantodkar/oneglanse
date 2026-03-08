@@ -22,6 +22,9 @@ const CANARY_ROTATE_FAILURES = new Set([
 	"bot_detection",
 	"connection_error",
 	"rate_limited",
+	// Submission/editor failures mean the page is broken — rotating the IP and
+	// getting a fresh browser is better than burning retries on the same session.
+	"no_editor",
 ]);
 
 // Identifies extraction and validation failures that warrant a log warning.

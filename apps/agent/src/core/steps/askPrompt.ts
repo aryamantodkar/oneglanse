@@ -23,18 +23,9 @@ import {
 } from "./submitStrategies.js";
 
 const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
-const SUBMISSION_RETRIES = 3;
 
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
-}
-
-async function humanPause(
-	page: Page,
-	minMs: number,
-	maxMs: number,
-): Promise<void> {
-	await page.waitForTimeout(randomBetween(minMs, maxMs));
 }
 
 export async function askPrompt(
@@ -92,55 +83,34 @@ export async function askPrompt(
 		preSubmitUrl,
 	};
 
-	let success = false;
+	// Detect bot/CAPTCHA page before attempting submission.
+	await detectBotPage(page, provider);
 
-	for (let attempt = 1; attempt <= SUBMISSION_RETRIES; attempt++) {
-		if (attempt > 1) {
-			const retryDelay = 250 + attempt * 250;
-			logger.warn(
-				`submission retry ${attempt}/${SUBMISSION_RETRIES} for ${provider} after ${retryDelay}ms`,
-			);
-			await page.waitForTimeout(retryDelay);
-		}
+	// Try each submission strategy exactly once — if all fail, throw immediately.
+	// Retrying on the same broken page wastes time; the outer retry policy
+	// handles recovery by rotating the IP and launching a fresh browser.
 
-		sendButton = await findEnabledSendButton(page).catch(() => sendButton);
-		ctx.sendButton = sendButton;
-
-		success = await Promise.race([
-			(async () => {
-				let submitted = await tryEnterSubmit(ctx);
-				if (!submitted && sendButton) submitted = await tryNativeClick(ctx);
-				if (!submitted && sendButton) submitted = await tryForceClick(ctx);
-				if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
-				return submitted;
-			})(),
-			new Promise<boolean>((_, reject) =>
-				setTimeout(
-					() =>
-						reject(
-							new ExternalServiceError(
-								provider,
-								`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
-							),
+	const success = await Promise.race([
+		(async () => {
+			let submitted = await tryEnterSubmit(ctx);
+			if (!submitted && sendButton) submitted = await tryNativeClick(ctx);
+			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
+			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
+			return submitted;
+		})(),
+		new Promise<boolean>((_, reject) =>
+			setTimeout(
+				() =>
+					reject(
+						new ExternalServiceError(
+							provider,
+							`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
 						),
-					SUBMISSION_PHASE_TIMEOUT_MS,
-				),
+					),
+				SUBMISSION_PHASE_TIMEOUT_MS,
 			),
-		]).catch((err) => {
-			if (attempt === SUBMISSION_RETRIES) {
-				throw err;
-			}
-			logger.warn(
-				`submission attempt ${attempt}/${SUBMISSION_RETRIES} failed for ${provider}: ${
-					err instanceof Error ? err.message : String(err)
-				}`,
-			);
-			return false;
-		});
-
-		if (success) break;
-		await detectBotPage(page, provider);
-	}
+		),
+	]);
 
 	if (!success) {
 		throw new ExternalServiceError(provider, "All submission methods failed");

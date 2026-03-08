@@ -21,7 +21,7 @@ export function classifyError(err: unknown): FailureType {
 	)
 		return "rate_limited";
 	if (
-		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed/i.test(
+		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed|submission.*failed|submission.*timed? ?out|all submission/i.test(
 			msg,
 		)
 	)

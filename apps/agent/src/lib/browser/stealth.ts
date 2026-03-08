@@ -2656,22 +2656,22 @@ export function buildContextOptions(
 			height: profile.screen.height,
 		},
 		locale: sessionSettings.locale,
+		ignoreHTTPSErrors: env.PROXY_PROVIDER === "brightdata",
 		userAgent: identity.userAgent,
 		extraHTTPHeaders: {
 			"Accept-Language": sessionSettings.acceptLanguage,
+			// Only the three low-entropy Client Hints Chrome sends by default on
+			// every request. High-entropy hints (arch, bitness, full-version-list,
+			// platform-version, wow64, model) are sent by real Chrome ONLY when the
+			// server explicitly requests them via Accept-CH. Sending them on every
+			// sub-resource (images, fonts, scripts) is a hard automation signal.
 			"sec-ch-ua": identity.secChUa,
 			"sec-ch-ua-mobile": "?0",
 			"sec-ch-ua-platform": `"${identity.platform}"`,
-			"sec-ch-ua-full-version": `"${identity.fullVersion}"`,
-			"sec-ch-ua-full-version-list": identity.fullVersionListHeader,
-			"sec-ch-ua-platform-version": `"${identity.platformVersion}"`,
-			"sec-ch-ua-arch": `"${identity.architecture}"`,
-			"sec-ch-ua-bitness": `"${identity.bitness}"`,
-			"sec-ch-ua-model": `"${identity.model}"`,
-			"sec-ch-ua-wow64": identity.wow64 ? "?1" : "?0",
 			Accept:
-				"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-			"Accept-Encoding": "gzip, deflate, br",
+				"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+			// zstd added in Chrome 119; omitting it contradicts the spoofed version.
+			"Accept-Encoding": "gzip, deflate, br, zstd",
 		},
 	};
 
