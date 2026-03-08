@@ -55,8 +55,8 @@ export async function waitForAssistantToFinish(
 				getText(page, provider),
 			]);
 
-			// Track output
-			if (text.length > 0) seenOutput = true;
+			// Track output — require meaningful content to avoid placeholder divs
+			if (text.length >= 20) seenOutput = true;
 
 			// Track changes
 			if (text !== lastText) {

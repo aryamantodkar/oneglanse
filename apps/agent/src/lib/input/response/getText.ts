@@ -17,6 +17,16 @@ export async function getText(
 			try {
 				if (!(await el.isVisible())) continue;
 
+				// Skip placeholder/streaming elements that haven't loaded real content yet
+				const isPlaceholder = await el.evaluate((el) => {
+					if (!(el instanceof HTMLElement)) return false;
+					if (el.getAttribute("aria-busy") === "true") return true;
+					const msgId = el.getAttribute("data-message-id") || "";
+					if (msgId.startsWith("request-placeholder")) return true;
+					return false;
+				});
+				if (isPlaceholder) continue;
+
 				let text = "";
 
 				text = await el.evaluate(

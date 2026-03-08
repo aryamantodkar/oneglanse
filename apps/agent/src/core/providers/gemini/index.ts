@@ -37,7 +37,7 @@ async function waitForGeminiAppUrl(page: Parameters<ProviderConfig["waitForRespo
 
 export const geminiConfig: ProviderConfig = {
 	url: "https://gemini.google.com/",
-	warmupDelayMs: 5000,
+	warmupDelayMs: 2000,
 	label: "Gemini",
 	displayName: "Gemini",
 	requiresWarmup: true,

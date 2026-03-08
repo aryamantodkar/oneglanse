@@ -42,7 +42,7 @@ async function perplexityPostNavigationHook(
 	page: Parameters<NonNullable<ProviderConfig["postNavigationHook"]>>[0],
 ): Promise<void> {
 	// Perplexity loads slowly — single consolidated randomised delay.
-	const delay = 3000 + Math.floor(Math.random() * 4000);
+	const delay = 1000 + Math.floor(Math.random() * 1000);
 	await page.waitForTimeout(delay);
 }
 
@@ -57,18 +57,18 @@ async function resetPerplexityPage(
 
 export const perplexityConfig: ProviderConfig = {
 	url: PERPLEXITY_URL,
-	warmupDelayMs: 5000,
+	warmupDelayMs: 2000,
 	label: "Perplexity",
 	displayName: "Perplexity",
 	requiresWarmup: true,
 	beforePromptHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
 	afterTypingHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
 	beforeSubmitHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
 	afterSubmitHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 500 }),
+		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
 	beforeRetryHook: resetPerplexityPage,
 	checkSubmitSuccess: async (page, { preSubmitUrl }) =>
 		waitForPerplexitySearchUrl(page, preSubmitUrl),

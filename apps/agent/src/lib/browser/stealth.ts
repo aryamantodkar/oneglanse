@@ -2627,7 +2627,120 @@ export function buildStealthInitScript(
 			}
 		} catch {}
 
-		(function hardenToString() {
+
+		// --- Cloudflare bot-detection patches ---
+
+		// 1. window.chrome — headless Chrome omits this; Cloudflare probes chrome.runtime
+		try {
+			if (typeof window.chrome === "undefined") {
+				const chromeObj = {
+					runtime: {
+						id: undefined,
+						connect: function connect() { return {}; },
+						sendMessage: function sendMessage() {},
+						onMessage: { addListener: function() {}, removeListener: function() {} },
+					},
+					csi: function csi() {
+						return { startE: Date.now(), onloadT: Date.now(), pageT: Date.now(), tran: 15 };
+					},
+					loadTimes: function loadTimes() {
+						return {
+							requestTime: Date.now() / 1000,
+							startLoadTime: Date.now() / 1000,
+							commitLoadTime: Date.now() / 1000,
+							finishDocumentLoadTime: Date.now() / 1000,
+							finishLoadTime: Date.now() / 1000,
+							firstPaintTime: Date.now() / 1000,
+							firstPaintAfterLoadTime: 0,
+							navigationType: "Other",
+							wasFetchedViaSpdy: false,
+							wasNpnNegotiated: false,
+							npnNegotiatedProtocol: "unknown",
+							wasAlternateProtocolAvailable: false,
+							connectionInfo: "http/1.1",
+						};
+					},
+					app: { isInstalled: false },
+				};
+				Object.defineProperty(window, "chrome", {
+					value: chromeObj,
+					writable: false,
+					enumerable: true,
+					configurable: false,
+				});
+			}
+		} catch {}
+
+		// 2. navigator.plugins / navigator.mimeTypes — headless has 0 plugins
+		try {
+			if (navigator.plugins.length === 0) {
+				const pluginData = [
+					{ name: "Chrome PDF Plugin", filename: "internal-pdf-viewer", description: "Portable Document Format" },
+					{ name: "Chrome PDF Viewer", filename: "mhjfbmdgcfjbbpaeojofohoefgiehjai", description: "" },
+					{ name: "Native Client", filename: "internal-nacl-plugin", description: "" },
+				];
+
+				const fakePlugins = pluginData.map(function(pd) {
+					const plugin = Object.create(Plugin.prototype);
+					Object.defineProperty(plugin, "name", { value: pd.name, enumerable: true });
+					Object.defineProperty(plugin, "filename", { value: pd.filename, enumerable: true });
+					Object.defineProperty(plugin, "description", { value: pd.description, enumerable: true });
+					Object.defineProperty(plugin, "length", { value: 0, enumerable: true });
+					return plugin;
+				});
+
+				const fakePluginArray = Object.create(PluginArray.prototype);
+				fakePlugins.forEach(function(p, i) {
+					Object.defineProperty(fakePluginArray, i, { value: p, enumerable: true });
+				});
+				Object.defineProperty(fakePluginArray, "length", { value: fakePlugins.length, enumerable: true });
+				fakePluginArray.item = function(i) { return fakePlugins[i] || null; };
+				fakePluginArray.namedItem = function(name) {
+					for (var j = 0; j < fakePlugins.length; j++) {
+						if (fakePlugins[j].name === name) return fakePlugins[j];
+					}
+					return null;
+				};
+				fakePluginArray.refresh = function() {};
+
+				defineGetter(Navigator.prototype, "plugins", function plugins() {
+					return fakePluginArray;
+				});
+
+				const fakeMimeTypeArray = Object.create(MimeTypeArray.prototype);
+				Object.defineProperty(fakeMimeTypeArray, "length", { value: 0, enumerable: true });
+				fakeMimeTypeArray.item = function() { return null; };
+				fakeMimeTypeArray.namedItem = function() { return null; };
+
+				defineGetter(Navigator.prototype, "mimeTypes", function mimeTypes() {
+					return fakeMimeTypeArray;
+				});
+			}
+		} catch {}
+
+		// 3. navigator.permissions — headless returns 'denied' for notifications; real Chrome returns 'prompt'
+		try {
+			if (typeof Permissions !== "undefined" && Permissions.prototype.query) {
+				const origQuery = Permissions.prototype.query;
+				Permissions.prototype.query = markNative(function query(params) {
+					if (params && params.name === "notifications") {
+						return Promise.resolve({ state: "prompt", onchange: null });
+					}
+					return origQuery.call(this, params);
+				});
+			}
+		} catch {}
+
+		// 4. document.hasFocus — headless always returns false; Cloudflare checks this
+		try {
+			Object.defineProperty(document, "hasFocus", {
+				value: markNative(function hasFocus() { return true; }),
+				writable: true,
+				configurable: true,
+			});
+		} catch {}
+
+				(function hardenToString() {
 			const originalToString = Function.prototype.toString;
 			Function.prototype.toString = markNative(function toString() {
 				if (patchedFns.has(this)) {
