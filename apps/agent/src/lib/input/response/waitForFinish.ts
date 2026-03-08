@@ -1,7 +1,11 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { logger } from "@oneglanse/utils";
+import {
+	logger,
+	PROVIDER_FORCE_EXIT_STABLE_MS,
+	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
+} from "@oneglanse/utils";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
 
@@ -39,6 +43,7 @@ export async function waitForAssistantToFinish(
 ): Promise<void> {
 	logger.debug("⏳ Waiting for assistant to finish…");
 	// Chat models (ChatGPT, Claude, Perplexity, Gemini)
+	const waitStart = Date.now();
 	let lastText = "";
 	let lastChange = Date.now();
 	let seenOutput = false;
@@ -46,7 +51,7 @@ export async function waitForAssistantToFinish(
 	await pollUntilCondition(
 		async () => {
 			const [generating, text] = await Promise.all([
-				isGenerating(page),
+				isGenerating(page, provider),
 				getText(page, provider),
 			]);
 
@@ -60,11 +65,14 @@ export async function waitForAssistantToFinish(
 			}
 
 			const stableFor = Date.now() - lastChange;
-			const elapsed = Date.now() - lastChange;
+			const noOutputFor = Date.now() - waitStart;
 
-			// Error: No output after 45s
-			if (!seenOutput && elapsed >= 45_000) {
-				throw new ExternalServiceError(provider, "No response detected after 45s");
+			// Error: No output after the provider-specific grace period.
+			if (!seenOutput && noOutputFor >= PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider]) {
+				throw new ExternalServiceError(
+					provider,
+					`No response detected after ${Math.round(PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider] / 1000)}s`,
+				);
 			}
 
 			// Still generating and no output yet - keep waiting
@@ -76,9 +84,12 @@ export async function waitForAssistantToFinish(
 				return true;
 			}
 
-			// Force exit: stable for 15s (handles stuck generation indicators)
-			if (seenOutput && stableFor >= 15_000) {
-				logger.warn("Text stable 15s but still generating — forcing exit");
+			// Force exit: long text stability handles stuck generation indicators
+			// without cutting off legitimate long-think responses too early.
+			if (seenOutput && stableFor >= PROVIDER_FORCE_EXIT_STABLE_MS[provider]) {
+				logger.warn(
+					`Text stable ${Math.round(PROVIDER_FORCE_EXIT_STABLE_MS[provider] / 1000)}s but still generating — forcing exit`,
+				);
 				return true;
 			}
 

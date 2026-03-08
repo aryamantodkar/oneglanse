@@ -68,10 +68,10 @@ export async function askPrompt(
 
 	// Find send button AFTER typing (appears dynamically)
 	// Wait a bit longer if needed for button to appear
-	let sendButton = await findEnabledSendButton(page);
+	let sendButton = await findEnabledSendButton(page, provider);
 	if (!sendButton) {
 		await page.waitForTimeout(500);
-		sendButton = await findEnabledSendButton(page);
+		sendButton = await findEnabledSendButton(page, provider);
 	}
 
 	const ctx: SubmitContext = {

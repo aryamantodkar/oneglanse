@@ -67,7 +67,7 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 	}
 
 	// Diagnostic only. Plain text is never returned to avoid UI inconsistency.
-	const visibleText = await getText(page, provider, true).catch(() => "");
+	const visibleText = await getText(page, provider).catch(() => "");
 	const visibleTextChars = visibleText?.trim().length ?? 0;
 	throw new ExternalServiceError(
 		provider,

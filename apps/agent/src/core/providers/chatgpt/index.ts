@@ -3,6 +3,7 @@ import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown
 import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
 import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
+import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
 
 export const chatgptConfig: ProviderConfig = {
@@ -13,8 +14,10 @@ export const chatgptConfig: ProviderConfig = {
 	requiresWarmup: true,
 	waitForResponse: (page) => waitForAssistantToFinish(page, "chatgpt"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "chatgpt"),
+	betweenPromptsHook: async (page) =>
+		resetProviderPage(page, "chatgpt", "https://chatgpt.com/"),
 	extractSources: async (page) => {
-		const btn = await findSourcesButton(page);
+		const btn = await findSourcesButton(page, "chatgpt");
 		if (!btn) return [];
 		await openSourcesPanel(page, btn);
 		return extractSourcesFromChatgpt(page, btn);

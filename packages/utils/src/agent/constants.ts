@@ -7,24 +7,19 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
 		"#prompt-textarea",
 		'div#prompt-textarea[contenteditable="true"]',
-		'[data-testid="composer"] #prompt-textarea',
 		'textarea[name="prompt-textarea"]',
 	],
-	claude: [
-		'[data-testid="chat-input"][contenteditable="true"]',
-		'.ProseMirror[contenteditable="true"]',
-		'[data-testid="chat-input-grid-container"] [contenteditable="true"]',
-		'textarea[data-testid="chat-input-ssr"]',
-	],
+	claude: [],
 	perplexity: [
 		'#ask-input[contenteditable="true"]',
 		'[data-lexical-editor="true"][contenteditable="true"]',
-		'div.relative #ask-input[contenteditable="true"]',
 		'div[contenteditable="true"][spellcheck="true"]',
 	],
 	gemini: [
-		'[contenteditable="true"]',
+		'[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
 		'div.ql-editor[contenteditable="true"]',
+		'rich-textarea [contenteditable="true"]',
+		'[role="textbox"][contenteditable="true"]',
 	],
 	"ai-overview": [
 		'textarea[name="q"]',
@@ -35,156 +30,102 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	],
 };
 
-// Flat list of all editor selectors across providers, used when the provider is
-// unknown or when scanning for any available input (e.g. findActiveEditor).
-export const EDITOR_SELECTORS = [
-	// ======================
-	// ChatGPT
-	// ======================
-	"#prompt-textarea",
-	'div#prompt-textarea[contenteditable="true"]',
-	'[data-testid="composer"] #prompt-textarea',
-	'textarea[name="prompt-textarea"]',
+export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
+	chatgpt: [
+		'button[data-testid="send-button"]',
+		'button[aria-label="Send prompt"]',
+		'button[aria-label*="send" i]',
+		'button[type="submit"]',
+	],
+	claude: [],
+	perplexity: [
+		'button[aria-label="Submit"]',
+		'button[aria-label*="submit" i]',
+		'button[type="submit"]',
+	],
+	gemini: [
+		'button[aria-label="Send message"]',
+		'button.send-button',
+		'button[aria-label*="send" i]',
+		'button[type="submit"]',
+	],
+	"ai-overview": [
+		'button[aria-label="Search"]',
+		'input[name="btnK"]',
+		'input[type="submit"][value="Google Search"]',
+		'input[aria-label="Google Search"]',
+		'input[name="btnI"]',
+		'input[type="submit"][value="I\'m Feeling Lucky"]',
+		'button[type="submit"]',
+	],
+};
 
-	// ======================
-	// Claude
-	// ======================
-	'[data-testid="chat-input"][contenteditable="true"]',
-	'.ProseMirror[contenteditable="true"]',
-	'[data-testid="chat-input-grid-container"] [contenteditable="true"]',
-	'textarea[data-testid="chat-input-ssr"]',
+export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
+	chatgpt: [
+		'[data-message-author-role="assistant"]',
+		'.prose',
+		'article[data-testid*="conversation-turn"]',
+	],
+	claude: [
+		'message-content',
+		'.prose',
+	],
+	perplexity: [
+		'.prose',
+	],
+	gemini: [
+		'message-content',
+		'.model-response-text',
+		'model-response',
+	],
+	"ai-overview": [
+		'[data-container-id="model-response-placeholder"] [data-container-id="main-col"]',
+		'[role="region"] .markdown-content',
+	],
+};
 
-	// ======================
-	// Perplexity
-	// ======================
-	'#ask-input[contenteditable="true"]',
-	'[data-lexical-editor="true"][contenteditable="true"]',
-	'div.relative #ask-input[contenteditable="true"]',
-	'div[contenteditable="true"][spellcheck="true"]',
+export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> = {
+	chatgpt: [
+		'button[data-testid="stop-button"]',
+		'button[aria-label="Stop streaming"]',
+		'[class*="loading"]',
+		'button[aria-label*="stop" i]',
+		'.loading-shimmer',
+	],
+	claude: [],
+	perplexity: [
+		'button[aria-label="Stop response (Esc)"]',
+		'button[aria-label*="stop" i]',
+	],
+	gemini: [
+		'button[aria-label="Stop response"]',
+		'button[aria-label*="stop" i]',
+	],
+	"ai-overview": [],
+};
 
-	// ======================
-	// Gemini
-	// ======================
-	'div.ql-editor[contenteditable="true"]',
+export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
+	chatgpt: 90_000,
+	claude: 45_000,
+	perplexity: 45_000,
+	gemini: 45_000,
+	"ai-overview": 45_000,
+};
 
-	// ======================
-	// Search (AI Overview)
-	// ======================
-	'textarea[name="q"]',
-	'input[name="q"]',
-
-	// ======================
-	// Cross-platform fallbacks
-	// ======================
-	'[role="textbox"][contenteditable="true"]',
-	'[contenteditable="true"]',
-
-	// ======================
-	// Absolute last resort
-	// ======================
-	"textarea",
-	'[role="textbox"]',
-	'[data-testid*="editor"]',
-	'[aria-label*="message" i]',
-	'.text-input-field [contenteditable="true"]',
-];
-
-export const SUBMIT_BTN_SELECTORS = [
-	// ChatGPT
-	'button[data-testid="send-button"]',
-	'button[aria-label*="send" i]',
-	'button:has(svg[aria-label*="send" i])',
-
-	// Claude
-	'button[aria-label="Send message"]',
-
-	// Perplexity
-	'button[aria-label*="ask" i]',
-	'button[aria-label*="submit" i]',
-
-	// Gemini
-	"button.send-button",
-
-	'button[aria-label="Search"]',
-
-	// Google Search (uses input[type="submit"], not a button element)
-	'input[name="btnK"]',
-	'input[type="submit"][value="Google Search"]',
-	'input[aria-label="Google Search"]',
-	'input[name="btnI"]',
-	'input[type="submit"][value="I\'m Feeling Lucky"]',
-
-	// Fallback
-	'button[type="submit"]',
-];
-
-export const MODEL_RESPONSE_SELECTORS = [
-	// ChatGPT
-	'[data-message-author-role="assistant"]',
-
-	// Claude
-	'[data-testid="message-content"]',
-	".message.assistant",
-	".prose",
-	// Claude (current UI – authoritative)
-	'div[data-is-streaming="false"].group.relative.pb-3',
-
-	// Claude (older / fallback)
-	".font-claude-response",
-	"message-content",
-
-	// Perplexity
-	"article",
-	'[data-testid="answer"]',
-	".answer",
-
-	// Gemini and AI Overview response blocks
-	'[data-message-author-role="model"]',
-	".model-response-text",
-	"message-content",
-	'[role="region"] .markdown-content',
-	'[data-container-id="model-response-placeholder"] [data-container-id="main-col"]',
-
-	// Fallback
-	"main div:has(p)",
-];
-
-export const RESPONSE_GENERATION_SELECTORS = [
-	'button[aria-label*="stop" i]',
-	'button[aria-label*="cancel" i]',
-	'button[aria-label="Stop generating response"]',
-	'button[aria-label="Stop response"]',
-
-	// Streaming states (Claude, ChatGPT)
-	'[data-streaming="true"]',
-	".result-streaming",
-	".is-typing",
-	'[class*="typing"]',
-	'[class*="loading"]',
-	'[class*="spinner"]',
-	'[class*="streaming"]',
-
-	'[class*="answer"]',
-	'[class*="response"]',
-	'[class*="result"]',
-	'div[role="article"]',
-];
+export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
+	chatgpt: 45_000,
+	claude: 30_000,
+	perplexity: 30_000,
+	gemini: 45_000,
+	"ai-overview": 30_000,
+};
 
 export const SOURCES_SELECTORS = [
-	// True buttons
-	'button:has-text("Sources")',
-	'button:has-text("Source")',
-	'button:has-text("Citations")',
-
 	// ARIA-driven (ChatGPT, Claude, Perplexity)
 	'button[aria-label*="source" i]',
 	'button[aria-label*="citation" i]',
 	'[role="button"][aria-label*="source" i]',
 	'[role="button"][aria-label*="citation" i]',
-
-	// Anchor buttons (rare but exists)
-	'a[role="button"]:has-text("Sources")',
-	'a:has-text("Sources")',
 
 	// Data-testid
 	'[data-testid*="source" i]',

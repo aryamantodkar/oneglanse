@@ -1,14 +1,13 @@
 import type { Provider } from "@oneglanse/types";
-import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
+import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { extractClaudeBlocks } from "./claudeBlocks.js";
 import { turndown } from "./converter.js";
 
 export async function extractAssistantMarkdown(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	for (const selector of MODEL_RESPONSE_SELECTORS) {
+	for (const selector of PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || []) {
 		const nodes = page.locator(selector);
 		const count = await nodes.count();
 		if (count === 0) continue;
@@ -19,13 +18,10 @@ export async function extractAssistantMarkdown(
 			try {
 				if (!(await el.isVisible())) continue;
 
-				const html =
-					provider === "claude"
-						? await extractClaudeBlocks(el, "html")
-						: await el.evaluate((root) => {
-								if (!(root instanceof HTMLElement)) return "";
-								return root.innerHTML?.trim() || "";
-							});
+				const html = await el.evaluate((root) => {
+					if (!(root instanceof HTMLElement)) return "";
+					return root.innerHTML?.trim() || "";
+				});
 
 				if (html.length > 0) {
 					// Convert and normalize multiple newlines to double newlines

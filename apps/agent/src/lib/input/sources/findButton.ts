@@ -1,9 +1,13 @@
+import type { Provider } from "@oneglanse/types";
 import { SOURCES_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { findLastAssistantBox } from "../response/findElement.js";
 
-export async function findSourcesButton(page: Page): Promise<Locator | null> {
-	const assistantBox = await findLastAssistantBox(page);
+export async function findSourcesButton(
+	page: Page,
+	provider: Provider,
+): Promise<Locator | null> {
+	const assistantBox = await findLastAssistantBox(page, provider);
 	if (!assistantBox) return null;
 
 	let sourcesButton: Locator | null = null;

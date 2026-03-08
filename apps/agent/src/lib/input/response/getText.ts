@@ -1,14 +1,12 @@
 import type { Provider } from "@oneglanse/types";
-import { MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
+import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { extractClaudeBlocks } from "../markdown/claudeBlocks.js";
 
 export async function getText(
 	page: Page,
 	provider: Provider,
-	fetchingResponses = false,
 ): Promise<string> {
-	for (const selector of MODEL_RESPONSE_SELECTORS) {
+	for (const selector of PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || []) {
 		const nodes = page.locator(selector);
 		const count = await nodes.count();
 		if (count === 0) continue;
@@ -21,14 +19,24 @@ export async function getText(
 
 				let text = "";
 
-				if (provider === "claude" && fetchingResponses) {
-					text = await extractClaudeBlocks(el, "text");
-				} else {
-					text = await el.evaluate((el) => {
+				text = await el.evaluate(
+					(el, currentProvider) => {
 						if (!(el instanceof HTMLElement)) return "";
+
+						if (currentProvider === "gemini") {
+							const inner =
+								el.querySelector("message-content") ||
+								el.querySelector(".model-response-text") ||
+								el;
+
+							if (!(inner instanceof HTMLElement)) return "";
+							return inner.innerText?.trim() || inner.textContent?.trim() || "";
+						}
+
 						return el.innerText?.trim() || el.textContent?.trim() || "";
-					});
-				}
+					},
+					provider,
+				);
 
 				if (text.length > 0) return text;
 			} catch {}

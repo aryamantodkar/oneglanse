@@ -1,15 +1,16 @@
 import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { EDITOR_SELECTORS, logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
+import { logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
 export async function findActiveEditor(
 	page: Page,
 	provider?: Provider,
 ): Promise<Locator> {
+	const fallbackSelectors = [...new Set(Object.values(PROVIDER_EDITOR_SELECTORS).flat())];
 	const selectors = provider
-		? PROVIDER_EDITOR_SELECTORS[provider] || EDITOR_SELECTORS
-		: EDITOR_SELECTORS;
+		? PROVIDER_EDITOR_SELECTORS[provider] || fallbackSelectors
+		: fallbackSelectors;
 
 	for (const selector of selectors) {
 		const nodes = page.locator(selector);
