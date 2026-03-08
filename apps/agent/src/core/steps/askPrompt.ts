@@ -92,10 +92,11 @@ export async function askPrompt(
 
 	const success = await Promise.race([
 		(async () => {
-			let submitted = await tryEnterSubmit(ctx);
-			if (!submitted && sendButton) submitted = await tryNativeClick(ctx);
+			let submitted = false;
+			if (sendButton) submitted = await tryNativeClick(ctx);
 			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
 			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
+			if (!submitted) submitted = await tryEnterSubmit(ctx);
 			return submitted;
 		})(),
 		new Promise<boolean>((_, reject) =>

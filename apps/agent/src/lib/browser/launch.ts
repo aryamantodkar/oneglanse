@@ -228,7 +228,6 @@ export async function launchContext(
 	cleanup: () => Promise<void>;
 }> {
 	const profile = generateSessionProfile();
-	const port = await getFreePort();
 	const windowSize = {
 		width: profile.viewport.width + profile.outerDelta.width,
 		height: profile.viewport.height + profile.outerDelta.height,
@@ -247,6 +246,7 @@ export async function launchContext(
 	let forwarder: ProxyForwarderHandle | null = null;
 	let workerStealthCleanup: (() => Promise<void>) | null = null;
 	let chromiumStderr = "";
+	let port = 0;
 
 	const cleanup = async () => {
 		await workerStealthCleanup?.().catch(() => null);
@@ -273,9 +273,16 @@ export async function launchContext(
 	};
 
 	try {
+		logger.log("resolving proxy before browser launch");
 		const proxyAllocation = await buildProxyAllocation();
 		upstreamProxy = proxyAllocation.proxy;
 		releaseProxyLease = proxyAllocation.release;
+		if (upstreamProxy) {
+			logger.log(`selected proxy for browser launch: ${upstreamProxy.logProxy}`);
+		} else {
+			logger.warn("no proxy resolved for browser launch; using direct connection");
+		}
+		port = await getFreePort();
 		profileIdentity =
 			options?.sessionKey ??
 			(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
