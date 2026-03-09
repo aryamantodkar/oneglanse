@@ -1,6 +1,10 @@
 import type { Source } from "@oneglanse/types";
 import { SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
+import {
+	canUseOsLevelInput,
+	pressKeyLikeUser,
+} from "../../../../lib/browser/humanBehavior.js";
 import { type RawSource, buildSources } from "../../_shared/sourceUtils.js";
 
 export async function extractSourcesFromPerplexity(
@@ -74,7 +78,10 @@ export async function extractSourcesFromPerplexity(
 		return results;
 	}, SELECTORS.perplexity)) as RawSource[];
 
-	await page.keyboard.press("Escape").catch(() => {});
+	const escaped = await pressKeyLikeUser(page, "Escape").catch(() => false);
+	if (!escaped && canUseOsLevelInput(page)) {
+		return buildSources(rawSources);
+	}
 	await page.waitForTimeout(300);
 
 	return buildSources(rawSources);

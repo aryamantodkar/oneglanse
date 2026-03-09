@@ -1,4 +1,9 @@
 import type { Locator, Page } from "playwright";
+import {
+	canUseOsLevelInput,
+	clickLocatorLikeUser,
+	pressKeyLikeUser,
+} from "../../browser/humanBehavior.js";
 
 type ClearInputOptions = {
 	clickTimeoutMs?: number;
@@ -21,11 +26,26 @@ export async function clearEditorInput(
 	if (count === 0) return false;
 
 	try {
-		await input.click({ force: true, timeout: clickTimeoutMs });
+		const useOsInput = canUseOsLevelInput(page);
+		const clicked = await clickLocatorLikeUser(page, input, {
+			force: true,
+			timeout: clickTimeoutMs,
+		}).catch(() => false);
+		if (!clicked && useOsInput) {
+			return false;
+		}
 
 		const modKey = process.platform === "darwin" ? "Meta" : "Control";
-		await page.keyboard.press(`${modKey}+A`).catch(() => null);
-		await page.keyboard.press("Backspace").catch(() => null);
+		if (useOsInput) {
+			await pressKeyLikeUser(
+				page,
+				modKey === "Meta" ? "Meta+A" : "Control+A",
+			).catch(() => null);
+			await pressKeyLikeUser(page, "Backspace").catch(() => null);
+		} else {
+			await pressKeyLikeUser(page, `${modKey}+A`).catch(() => null);
+			await pressKeyLikeUser(page, "Backspace").catch(() => null);
+		}
 		const clearedByKeyboard = await input
 			.evaluate((el) => {
 				if (
@@ -38,7 +58,7 @@ export async function clearEditorInput(
 			})
 			.catch(() => false);
 
-		if (!clearedByKeyboard) {
+		if (!clearedByKeyboard && !useOsInput) {
 			await input.evaluate((el) => {
 				if (
 					el instanceof HTMLTextAreaElement ||
@@ -57,7 +77,7 @@ export async function clearEditorInput(
 		}
 
 		if (dismissWithEscape) {
-			await page.keyboard.press("Escape").catch(() => null);
+			await pressKeyLikeUser(page, "Escape").catch(() => null);
 		}
 
 		if (waitAfterMs > 0) {

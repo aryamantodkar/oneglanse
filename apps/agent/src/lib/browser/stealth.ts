@@ -357,7 +357,6 @@ function formatSecChUa(brands: BrowserBrand[]): string {
 		.join(", ");
 }
 
-
 function buildGreaseBrand(noiseSeed = 0): BrowserBrand {
 	const brand =
 		UA_GREASE_BRANDS[Math.abs(noiseSeed) % UA_GREASE_BRANDS.length] ??
@@ -568,6 +567,32 @@ export function buildWorkerStealthBootstrap(
 			});
 		}
 
+		function hideAutomationArtifacts(target) {
+			if (!target) {
+				return;
+			}
+
+			for (const property of ["__playwright__binding__", "__pwInitScripts"]) {
+				try {
+					delete target[property];
+				} catch {}
+
+				try {
+					Object.defineProperty(target, property, {
+						get: markNative(
+							function automationArtifactGetter() {
+								return undefined;
+							},
+							getNativeSource(String(property), "getter"),
+						),
+						set: markNative(function automationArtifactSetter() {}),
+						configurable: true,
+						enumerable: false,
+					});
+				} catch {}
+			}
+		}
+
 		function cloneImageData(context, imageData) {
 			const clone = context.createImageData(imageData.width, imageData.height);
 			clone.data.set(imageData.data);
@@ -693,6 +718,13 @@ export function buildWorkerStealthBootstrap(
 				return uaDataValue;
 			});
 		}
+
+		try {
+			hideAutomationArtifacts(self);
+			if (typeof globalThis !== "undefined" && globalThis !== self) {
+				hideAutomationArtifacts(globalThis);
+			}
+		} catch {}
 
 		try {
 			const originalPerformanceNow = Performance.prototype.now;
@@ -1248,6 +1280,32 @@ export function buildStealthInitScript(
 			});
 		}
 
+		function hideAutomationArtifacts(target) {
+			if (!target) {
+				return;
+			}
+
+			for (const property of ["__playwright__binding__", "__pwInitScripts"]) {
+				try {
+					delete target[property];
+				} catch {}
+
+				try {
+					Object.defineProperty(target, property, {
+						get: markNative(
+							function automationArtifactGetter() {
+								return undefined;
+							},
+							getNativeSource(String(property), "getter"),
+						),
+						set: markNative(function automationArtifactSetter() {}),
+						configurable: true,
+						enumerable: false,
+					});
+				} catch {}
+			}
+		}
+
 		function buildCanvasSample(imageData) {
 			const limit = Math.min(imageData.data.length, 400);
 			let sample = imageData.width + "x" + imageData.height + ":";
@@ -1502,6 +1560,13 @@ export function buildStealthInitScript(
 		defineGetter(Navigator.prototype, "webdriver", function webdriver() {
 			return false;
 		});
+
+		try {
+			hideAutomationArtifacts(window);
+			if (typeof globalThis !== "undefined" && globalThis !== window) {
+				hideAutomationArtifacts(globalThis);
+			}
+		} catch {}
 
 		defineGetter(Navigator.prototype, "userAgent", function userAgentGetter() {
 			return userAgent;

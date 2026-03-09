@@ -1,9 +1,12 @@
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
+import {
+	canUseOsLevelInput,
+	clickLocatorLikeUser,
+} from "../../../../lib/browser/humanBehavior.js";
 
 const AUTH_DIALOG_SELECTOR = '[role="dialog"][data-state="open"]';
-const AUTH_DIALOG_TEXT_RE =
-	/Thanks for trying ChatGPT|Log in or sign up/i;
+const AUTH_DIALOG_TEXT_RE = /Thanks for trying ChatGPT|Log in or sign up/i;
 const DISMISS_MODAL_TEXT_RE = /^Stay logged out$/i;
 const MODAL_POLL_INTERVAL_MS = 200;
 
@@ -37,7 +40,12 @@ export async function dismissChatgptAuthModal(
 
 		logger.log("[chatgpt] dismissing auth modal via Stay logged out");
 
-		await dismissTarget.click({ timeout: 5000 });
+		const clicked = await clickLocatorLikeUser(page, dismissTarget, {
+			timeout: 5000,
+		}).catch(() => false);
+		if (!clicked && canUseOsLevelInput(page)) {
+			return;
+		}
 		await dialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
 		await page.waitForTimeout(300);
 		return;

@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   fontconfig \
   wget gnupg \
   xvfb \
+  xdotool \
   fonts-liberation fonts-dejavu fonts-freefont-ttf \
   fonts-noto fonts-noto-cjk-extra fonts-noto-color-emoji \
   fonts-roboto \

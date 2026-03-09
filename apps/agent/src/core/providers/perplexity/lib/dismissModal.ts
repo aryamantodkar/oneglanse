@@ -1,4 +1,8 @@
 import type { Page } from "playwright";
+import {
+	canUseOsLevelInput,
+	pressKeyLikeUser,
+} from "../../../../lib/browser/humanBehavior.js";
 
 const PERPLEXITY_DIALOG_SELECTOR = '[role="dialog"], [aria-modal="true"]';
 const MODAL_POLL_INTERVAL_MS = 200;
@@ -24,7 +28,10 @@ export async function dismissPerplexityModal(
 			continue;
 		}
 
-		await page.keyboard.press("Escape").catch(() => null);
+		const escaped = await pressKeyLikeUser(page, "Escape").catch(() => false);
+		if (!escaped && canUseOsLevelInput(page)) {
+			return;
+		}
 		await page.waitForTimeout(200);
 		return;
 	} while (Date.now() <= deadline);
