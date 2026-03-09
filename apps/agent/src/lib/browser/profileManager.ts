@@ -9,6 +9,7 @@ const PERSISTENT_PROFILES_ROOT = "/storage/profiles";
 const FALLBACK_PROFILES_ROOT = "/tmp/oneglanse-profiles";
 const PROFILE_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 const METADATA_FILE = ".profile-meta.json";
+const STORAGE_STATE_FILE = ".storage-state.json";
 const CHROME_SINGLETON_FILES = [
 	"SingletonCookie",
 	"SingletonLock",
@@ -80,6 +81,25 @@ async function getProfileDir(
 	const identityHash = hashProfileIdentity(profileIdentity);
 	const profilesRoot = await resolveProfilesRoot();
 	return join(profilesRoot, profileScope, identityHash);
+}
+
+export async function getProfileStorageStatePath(
+	profileScope: string,
+	profileIdentity: string,
+): Promise<string> {
+	const profileDir = await getProfileDir(profileScope, profileIdentity);
+	return join(profileDir, STORAGE_STATE_FILE);
+}
+
+export async function hasProfileStorageState(
+	profileScope: string,
+	profileIdentity: string,
+): Promise<boolean> {
+	const statePath = await getProfileStorageStatePath(
+		profileScope,
+		profileIdentity,
+	);
+	return existsSync(statePath);
 }
 
 async function readMetadata(

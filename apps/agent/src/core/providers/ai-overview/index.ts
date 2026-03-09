@@ -1,12 +1,16 @@
 import { ExternalServiceError } from "@oneglanse/errors";
-import { extractAIOverviewSources } from "./lib/extractSources.js";
-import { extractAIOverviewResponse } from "./lib/extractResponse.js";
+import { logger } from "@oneglanse/utils";
+import type { Page } from "playwright";
+import { env } from "../../../env.js";
+import {
+	canUseOsLevelInput,
+	clickLocatorLikeUser,
+} from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
-import { logger } from "@oneglanse/utils";
-import { env } from "../../../env.js";
-import type { Page } from "playwright";
 import type { ProviderConfig } from "../types.js";
+import { extractAIOverviewResponse } from "./lib/extractResponse.js";
+import { extractAIOverviewSources } from "./lib/extractSources.js";
 
 function buildSearchUrl(prompt: string): string {
 	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&pws=0`;
@@ -35,11 +39,13 @@ async function ensureGoogleCookies(page: Page): Promise<void> {
 		timeout: 30000,
 	});
 	assertNotSorryPage(page);
-	await page
-		.locator('button:has-text("Accept all")')
-		.first()
-		.click({ timeout: 3000 })
-		.catch(() => null);
+	const acceptCookies = page.locator('button:has-text("Accept all")').first();
+	const clicked = await clickLocatorLikeUser(page, acceptCookies, {
+		timeout: 3000,
+	}).catch(() => false);
+	if (!clicked && canUseOsLevelInput(page)) {
+		return;
+	}
 	warmedPages.add(page);
 }
 
@@ -60,11 +66,13 @@ export const aiOverviewConfig: ProviderConfig = {
 		});
 		assertNotSorryPage(page);
 		// Dismiss consent dialog if it re-appears on the search result page
-		await page
-			.locator('button:has-text("Accept all")')
-			.first()
-			.click({ timeout: 3000 })
-			.catch(() => null);
+		const acceptCookies = page.locator('button:has-text("Accept all")').first();
+		const clicked = await clickLocatorLikeUser(page, acceptCookies, {
+			timeout: 3000,
+		}).catch(() => false);
+		if (!clicked && canUseOsLevelInput(page)) {
+			return;
+		}
 		logger.log(`[ai-overview] search page ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {

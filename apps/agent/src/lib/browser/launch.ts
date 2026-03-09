@@ -8,15 +8,17 @@ import type { Browser, BrowserContext } from "playwright";
 import { chromium } from "playwright";
 import { env } from "../../env.js";
 import {
-	attachWorkerStealthTargets,
 	detectDisplay,
 	ensureDisplay,
 	getFreePort,
 	spawnChromiumCDP,
 	waitForCDPEndpoint,
 } from "./cdp.js";
+import { bindContextDisplay, unbindContextDisplay } from "./humanBehavior.js";
 import {
 	clearChromeProfileLocks,
+	getProfileStorageStatePath,
+	hasProfileStorageState,
 	isProfileWarmed,
 	markProfileWarmed,
 	resolveProfileDir,
@@ -243,13 +245,30 @@ export async function launchContext(
 	let display: string | undefined;
 	let chromProcess: ChildProcess | null = null;
 	let browser: Browser | null = null;
+	let context: BrowserContext | null = null;
 	let forwarder: ProxyForwarderHandle | null = null;
-	let workerStealthCleanup: (() => Promise<void>) | null = null;
 	let chromiumStderr = "";
 	let port = 0;
+	const profileScope = options?.profileScope ?? provider;
 
 	const cleanup = async () => {
-		await workerStealthCleanup?.().catch(() => null);
+		if (context && persistProfile && profileIdentity) {
+			try {
+				await context.storageState({
+					path: await getProfileStorageStatePath(profileScope, profileIdentity),
+				});
+			} catch (error) {
+				logger.warn(
+					`failed to persist browser storage state: ${toErrorMessage(error)}`,
+				);
+			}
+		}
+
+		if (context) {
+			unbindContextDisplay(context);
+		}
+
+		await context?.close().catch(() => null);
 		await browser?.close().catch(() => null);
 
 		if (chromProcess) {
@@ -278,9 +297,13 @@ export async function launchContext(
 		upstreamProxy = proxyAllocation.proxy;
 		releaseProxyLease = proxyAllocation.release;
 		if (upstreamProxy) {
-			logger.log(`selected proxy for browser launch: ${upstreamProxy.logProxy}`);
+			logger.log(
+				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
+			);
 		} else {
-			logger.warn("no proxy resolved for browser launch; using direct connection");
+			logger.warn(
+				"no proxy resolved for browser launch; using direct connection",
+			);
 		}
 		port = await getFreePort();
 		profileIdentity =
@@ -290,7 +313,7 @@ export async function launchContext(
 		const profileDir = await resolveProfileDir(
 			provider,
 			profileIdentity,
-			options?.profileScope,
+			profileScope,
 		);
 		userDataDir = profileDir.dir;
 		isNewProfile = profileDir.isNew;
@@ -342,39 +365,56 @@ export async function launchContext(
 		]);
 		browser = await chromium.connectOverCDP(wsEndpoint);
 		const browserVersion = browser.version();
-		workerStealthCleanup = await attachWorkerStealthTargets(
-			wsEndpoint,
-			buildWorkerStealthBootstrap(profile, browserVersion, settings),
-		).catch((error) => {
-			logger.warn(
-				`worker stealth auto-attach unavailable, continuing with page-level stealth only: ${toErrorMessage(error)}`,
-			);
-			return async () => {};
-		});
 
-		const context = await browser.newContext(
-			buildContextOptions(profile, browserVersion, settings),
+		const contextOptions = buildContextOptions(
+			profile,
+			browserVersion,
+			settings,
 		);
+		if (
+			persistProfile &&
+			profileIdentity &&
+			(await hasProfileStorageState(profileScope, profileIdentity))
+		) {
+			contextOptions.storageState = await getProfileStorageStatePath(
+				profileScope,
+				profileIdentity,
+			);
+		}
+		context = await browser.newContext(contextOptions);
+		if (display) {
+			bindContextDisplay(context, display);
+		}
 		await context.addInitScript(
 			buildStealthInitScript(profile, browserVersion, settings),
 		);
+
+		// Inject worker stealth bootstrap via Playwright's worker event API.
+		// This avoids sending Runtime.enable on worker CDP sessions (Cloudflare detects it).
+		// rebrowser-playwright uses Runtime.callFunctionOn in isolated contexts instead.
+		const workerBootstrap = buildWorkerStealthBootstrap(
+			profile,
+			browserVersion,
+			settings,
+		);
+		context.on("page", (page) => {
+			page.on("worker", (worker) => {
+				worker.evaluate(workerBootstrap).catch(() => {});
+			});
+		});
 
 		// Warm up new profiles to build realistic cookie/cache state
 		if (
 			isNewProfile &&
 			persistProfile &&
 			profileIdentity &&
-			!(await isProfileWarmed(provider, profileIdentity, options?.profileScope))
+			!(await isProfileWarmed(provider, profileIdentity, profileScope))
 		) {
 			try {
 				const warmupPage = await context.newPage();
 				await warmUpProfile(warmupPage);
 				await warmupPage.close();
-				await markProfileWarmed(
-					provider,
-					profileIdentity,
-					options?.profileScope,
-				);
+				await markProfileWarmed(provider, profileIdentity, profileScope);
 			} catch (err) {
 				logger.warn(
 					`profile warmup failed (non-critical): ${toErrorMessage(err)}`,

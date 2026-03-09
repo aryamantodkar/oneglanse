@@ -3,6 +3,13 @@ import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { env } from "../../env.js";
+import {
+	canUseOsLevelInput,
+	clickLocatorLikeUser,
+	pressKeyLikeUser,
+	xdotoolClickLocator,
+	xdotoolMouseMove,
+} from "../../lib/browser/humanBehavior.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
@@ -37,16 +44,30 @@ async function humanPause(
 
 async function humanizeFocus(page: Page, input: Locator): Promise<void> {
 	const box = await input.boundingBox().catch(() => null);
+	const useOsInput = canUseOsLevelInput(page);
 	if (box) {
 		const x = box.x + box.width * (0.35 + Math.random() * 0.3);
 		const y = box.y + box.height * (0.35 + Math.random() * 0.3);
-		await page.mouse.move(x, y, { steps: randomBetween(8, 20) });
+		if (useOsInput) {
+			await xdotoolMouseMove(page, x, y);
+		} else {
+			await page.mouse.move(x, y, { steps: randomBetween(8, 20) });
+		}
 		await humanPause(page, 40, 120);
-		await page.mouse.click(x, y, {
-			delay: randomBetween(40, 120),
-		});
+		const clicked = await xdotoolClickLocator(page, input);
+		if (!clicked && !useOsInput) {
+			await clickLocatorLikeUser(page, input, {
+				delay: randomBetween(40, 120),
+				timeout: 3000,
+			}).catch(() => null);
+		}
 	} else {
-		await input.click({ force: true, timeout: 3000 }).catch(() => null);
+		if (!useOsInput) {
+			await clickLocatorLikeUser(page, input, {
+				force: true,
+				timeout: 3000,
+			}).catch(() => null);
+		}
 	}
 
 	await humanPause(page, 80, 180);
@@ -161,9 +182,9 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 
 					await humanPause(page, 120, 260);
 
-					await page.keyboard.press("Enter", {
+					await pressKeyLikeUser(page, "Enter", {
 						delay: randomBetween(40, 120),
-					});
+					}).catch(() => null);
 					return await checkSubmissionSuccess(ctx);
 				},
 				SUBMIT_METHOD_TIMEOUT_MS,
@@ -184,12 +205,12 @@ export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
 				"Native-click submit",
 				async () => {
 					await humanPause(ctx.page, 80, 180);
-					await sendButton.hover().catch(() => null);
+					await sendButton.scrollIntoViewIfNeeded().catch(() => null);
 					await humanPause(ctx.page, 50, 150);
-					await sendButton.click({
+					await clickLocatorLikeUser(ctx.page, sendButton, {
 						timeout: SUBMIT_METHOD_TIMEOUT_MS,
 						delay: randomBetween(35, 120),
-					});
+					}).catch(() => null);
 					return await checkSubmissionSuccess(ctx);
 				},
 				SUBMIT_METHOD_TIMEOUT_MS,
@@ -201,6 +222,7 @@ export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
 export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
+	if (canUseOsLevelInput(ctx.page)) return false;
 	return attemptSubmit(ctx, {
 		errorLabel: "Force click",
 		successMessage: "Submitted via force click",
@@ -210,9 +232,9 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 				"Force-click submit",
 				async () => {
 					await humanPause(ctx.page, 80, 180);
-					await sendButton.hover().catch(() => null);
+					await sendButton.scrollIntoViewIfNeeded().catch(() => null);
 					await humanPause(ctx.page, 50, 150);
-					await sendButton.click({
+					await clickLocatorLikeUser(ctx.page, sendButton, {
 						force: true,
 						timeout: SUBMIT_METHOD_TIMEOUT_MS,
 						delay: randomBetween(35, 120),
@@ -228,6 +250,7 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 	const { page, sendButton } = ctx;
 	if (!sendButton) return false;
+	if (canUseOsLevelInput(page)) return false;
 	return attemptSubmit(ctx, {
 		errorLabel: "Dispatch click",
 		successMessage: "Submitted via dispatched click",
