@@ -3,7 +3,7 @@ import { getDomain, getFaviconUrls } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
 /**
- * Shape returned by each provider's page.evaluate() before Node.js post-processing.
+ * Shape returned by the browser bridge before Node.js post-processing.
  * URL should already be resolved to absolute by the browser (via new URL(href, location.origin)),
  * but fragment stripping and domain extraction happen here in Node.js.
  */
@@ -61,24 +61,9 @@ export function buildSources(
  * Returns true if the click was dispatched, false if the element handle was unavailable.
  */
 export async function clickButtonViaDispatch(
-	page: Page,
+	_page: Page,
 	button: Locator,
 ): Promise<boolean> {
-	const handle = await button.elementHandle();
-	if (!handle) return false;
-
-	await page.evaluate((el) => {
-		if (el instanceof HTMLElement) {
-			el.dispatchEvent(
-				new MouseEvent("click", {
-					bubbles: true,
-					cancelable: true,
-					composed: true,
-					view: window,
-				}),
-			);
-		}
-	}, handle);
-
+	await button.dispatchClick();
 	return true;
 }

@@ -26,7 +26,7 @@ async function waitForGeminiAppUrl(page: Parameters<ProviderConfig["waitForRespo
 
 	const deadline = Date.now() + 4000;
 	while (Date.now() < deadline) {
-		if (isGeminiAppUrl(page.url())) {
+		if (isGeminiAppUrl(await page.getUrl().catch(() => page.url()))) {
 			return true;
 		}
 		await page.waitForTimeout(100);

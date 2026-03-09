@@ -139,7 +139,7 @@ export async function resolveProfileDir(
 ): Promise<{ dir: string; isNew: boolean }> {
 	if (!profileIdentity) {
 		// No session identity — use a temp dir.
-		const dir = `/tmp/cdp-${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+		const dir = `/tmp/chrome-session-${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 		mkdirSync(dir, { recursive: true });
 		return { dir, isNew: true };
 	}

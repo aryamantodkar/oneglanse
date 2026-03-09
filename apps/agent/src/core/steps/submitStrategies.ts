@@ -80,12 +80,7 @@ function hasWords(content: string): boolean {
 }
 
 async function readInputContent(input: Locator): Promise<string> {
-	return input.evaluate((el) => {
-		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
-			return el.value.trim();
-		}
-		return (el.textContent || "").trim();
-	});
+	return input.readInputValue();
 }
 
 async function ensureInputHasWords(
@@ -118,20 +113,14 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	if (customResult !== undefined) return customResult;
 
 	// Check 1: Input cleared (most reliable signal)
-	const currentContent = await input
-		.evaluate((el) => {
-			if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement)
-				return el.value.trim();
-			return (el.textContent || "").trim();
-		})
-		.catch(() => preSubmitContent);
+	const currentContent = await input.readInputValue().catch(() => preSubmitContent);
 
 	if (currentContent !== preSubmitContent && currentContent.length === 0) {
 		return true;
 	}
 
 	// Check 2: URL changed (navigation-based submission)
-	if (page.url() !== preSubmitUrl) {
+	if ((await page.getUrl().catch(() => page.url())) !== preSubmitUrl) {
 		return true;
 	}
 
@@ -256,28 +245,10 @@ export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 		successMessage: "Submitted via dispatched click",
 		run: async () => {
 			await ensureInputHasWords(ctx, "Dispatch click");
-			const handle = await withTimeout(
-				"Dispatch-click submit",
-				async () => await sendButton.elementHandle(),
-				SUBMIT_METHOD_TIMEOUT_MS,
-			);
-			if (!handle) return false;
-
 			return await withTimeout(
 				"Dispatch-click submit",
 				async () => {
-					await page.evaluate((el) => {
-						if (el instanceof HTMLElement) {
-							el.dispatchEvent(
-								new MouseEvent("click", {
-									bubbles: true,
-									cancelable: true,
-									composed: true,
-									view: window,
-								}),
-							);
-						}
-					}, handle);
+					await sendButton.dispatchClick();
 					return await checkSubmissionSuccess(ctx);
 				},
 				SUBMIT_METHOD_TIMEOUT_MS,

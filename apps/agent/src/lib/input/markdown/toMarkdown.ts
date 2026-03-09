@@ -7,30 +7,11 @@ export async function extractAssistantMarkdown(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	for (const selector of PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || []) {
-		const nodes = page.locator(selector);
-		const count = await nodes.count();
-		if (count === 0) continue;
+	const html = await page.runDomOp<string>("response-html", {
+		selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
+	});
+	if (!html) return "";
 
-		for (let i = count - 1; i >= 0; i--) {
-			const el = nodes.nth(i);
-
-			try {
-				if (!(await el.isVisible())) continue;
-
-				const html = await el.evaluate((root) => {
-					if (!(root instanceof HTMLElement)) return "";
-					return root.innerHTML?.trim() || "";
-				});
-
-				if (html.length > 0) {
-					// Convert and normalize multiple newlines to double newlines
-					const markdown = turndown.turndown(html);
-					return markdown.replace(/\n{3,}/g, "\n\n").trim();
-				}
-			} catch {}
-		}
-	}
-
-	return "";
+	const markdown = turndown.turndown(html);
+	return markdown.replace(/\n{3,}/g, "\n\n").trim();
 }
