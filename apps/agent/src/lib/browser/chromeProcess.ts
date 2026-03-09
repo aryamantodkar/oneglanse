@@ -248,11 +248,12 @@ export async function materializeChromeExtension(): Promise<ChromeLaunchAssets> 
 					"https://gemini.google.com/*",
 					"https://www.google.com/*",
 					"https://claude.ai/*",
-				],
-				background: {
-					service_worker: "background.js",
-				},
-				content_scripts: [
+					],
+					background: {
+						service_worker: "background.js",
+						type: "module",
+					},
+					content_scripts: [
 					{
 						matches: [
 							"https://chatgpt.com/*",
