@@ -291,6 +291,13 @@ export function spawnChromeProcess(options: ChromeSpawnOptions): ChildProcess {
 		"about:blank",
 	];
 
+	// Containers often run the worker as root. Chrome refuses to start there
+	// unless sandboxing is disabled explicitly.
+	if (typeof process.getuid === "function" && process.getuid() === 0) {
+		args.unshift("--disable-setuid-sandbox");
+		args.unshift("--no-sandbox");
+	}
+
 	if (options.proxyServer) {
 		args.push(`--proxy-server=${options.proxyServer}`);
 		args.push("--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1");
