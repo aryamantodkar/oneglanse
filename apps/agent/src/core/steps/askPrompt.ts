@@ -56,11 +56,7 @@ export async function askPrompt(
 	await config.afterTypingHook?.(page);
 
 	// Store pre-submit state for success detection
-	const preSubmitContent = await input.evaluate((el: Element) => {
-		if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement)
-			return el.value.trim();
-		return (el.textContent || "").trim();
-	});
+	const preSubmitContent = await input.readInputValue();
 	const preSubmitUrl = page.url();
 
 	// Verify we have content before attempting submission

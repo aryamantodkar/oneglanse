@@ -9,7 +9,8 @@
 		"noEmit": true,
 		"baseUrl": ".",
 		"paths": {
-			"@oneglanse/*": ["packages/*/src", "packages/*/dist"]
+			"@oneglanse/*": ["packages/*/src", "packages/*/dist"],
+			"playwright": ["apps/agent/src/lib/browser/runtimeTypes.ts"]
 		}
 	},
 	"references": [

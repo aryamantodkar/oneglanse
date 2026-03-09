@@ -42,9 +42,6 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.3.1
-      playwright:
-        specifier: npm:rebrowser-playwright@1.52.0
-        version: rebrowser-playwright@1.52.0
       turndown:
         specifier: ^7.2.2
         version: 7.2.2
@@ -3118,11 +3115,6 @@ packages:
     engines: {node: '>=18.3.0'}
     hasBin: true
 
-  fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-
   gel@2.2.0:
     resolution: {integrity: sha512-q0ma7z2swmoamHQusey8ayo8+ilVdzDt4WTxSPzq/yRqvucWRfymRVMvNgmSC0XK7eNjjEZEcplxpgaNojKdmQ==}
     engines: {node: '>= 18.0.0'}
@@ -4102,16 +4094,6 @@ packages:
 
   reading-time@1.5.0:
     resolution: {integrity: sha512-onYyVhBNr4CmAxFsKS7bz+uTLRakypIe4R+5A824vBSkQy/hB3fZepoVEf8OVAxzLvK+H/jm9TzpI3ETSm64Kg==}
-
-  rebrowser-playwright-core@1.52.0:
-    resolution: {integrity: sha512-gjrvLNh0RX6B/tg6pWaPNGf+9+z1Jl2EyAh5MXD5xMa2lputGRZ9V2MJ/uofcC5Np3vSOJ3SdVSRqwteC0FjfQ==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  rebrowser-playwright@1.52.0:
-    resolution: {integrity: sha512-UjpqfwmF9+XtOuCCxGQ2ZlLeuSaSv//4Z6ZQgYPsJovz3d7nWodCd2hSRQigAswAUnsPmVwnQUpSn+TLKaKV+A==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   recma-build-jsx@1.0.0:
     resolution: {integrity: sha512-8GtdyqaBcDfva+GUKDr3nev3VpKAhup1+RvkMvUxURHpW7QyIvk9F5wz7Vzo06CEMSilw6uArgRqhpiUcWp8ew==}
@@ -7119,9 +7101,6 @@ snapshots:
     dependencies:
       fd-package-json: 2.0.0
 
-  fsevents@2.3.2:
-    optional: true
-
   gel@2.2.0:
     dependencies:
       '@petamoriken/float16': 3.9.3
@@ -8518,14 +8497,6 @@ snapshots:
   readdirp@4.1.2: {}
 
   reading-time@1.5.0: {}
-
-  rebrowser-playwright-core@1.52.0: {}
-
-  rebrowser-playwright@1.52.0:
-    dependencies:
-      playwright-core: rebrowser-playwright-core@1.52.0
-    optionalDependencies:
-      fsevents: 2.3.2
 
   recma-build-jsx@1.0.0:
     dependencies:

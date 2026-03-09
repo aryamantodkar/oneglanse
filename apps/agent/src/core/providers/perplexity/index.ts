@@ -29,7 +29,7 @@ async function waitForPerplexitySearchUrl(page: Parameters<ProviderConfig["waitF
 
 	const deadline = Date.now() + 4000;
 	while (Date.now() < deadline) {
-		if (isPerplexitySearchUrl(page.url())) {
+		if (isPerplexitySearchUrl(await page.getUrl().catch(() => page.url()))) {
 			return true;
 		}
 		await page.waitForTimeout(100);

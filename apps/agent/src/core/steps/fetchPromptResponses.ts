@@ -68,43 +68,13 @@ async function captureResponseHtmlForLogs(
 	page: Page,
 	provider: Provider,
 ): Promise<{ selector: string; html: string }> {
-	for (const selector of PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || []) {
-		const nodes = page.locator(selector);
-		const count = await nodes.count().catch(() => 0);
-		if (count === 0) continue;
-
-		for (let i = count - 1; i >= 0; i--) {
-			const node = nodes.nth(i);
-			const visible = await node.isVisible().catch(() => false);
-			if (!visible) continue;
-
-			const outerHtml = await node
-				.evaluate((el) =>
-					el instanceof HTMLElement ? el.outerHTML.trim() : "",
-				)
-				.catch(() => "");
-			if (!outerHtml) continue;
-
-			return { selector, html: outerHtml };
-		}
-	}
-
-	for (const fallbackSelector of ["main", "body"]) {
-		const node = page.locator(fallbackSelector).first();
-		const visible = await node.isVisible().catch(() => false);
-		if (!visible) continue;
-
-		const outerHtml = await node
-			.evaluate((el) =>
-				el instanceof HTMLElement ? el.outerHTML.trim() : "",
-			)
-			.catch(() => "");
-		if (!outerHtml) continue;
-
-		return { selector: fallbackSelector, html: outerHtml };
-	}
-
-	return { selector: "none", html: "" };
+	return await page.runDomOp<{ selector: string; html: string }>(
+		"capture-visible-html",
+		{
+			selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
+			fallbackSelectors: ["main", "body"],
+		},
+	);
 }
 
 export async function fetchPromptResponses(page: Page, provider: Provider): Promise<string> {
@@ -152,7 +122,7 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 			? `${html.slice(0, MAX_DIAGNOSTIC_HTML_CHARS)}\n<!-- truncated -->`
 			: html;
 	logger.warn(
-		`extraction empty HTML snapshot (${provider}, selector=${selector}, url=${page.url()}):\n${formatHtmlForLogs(diagnosticHtml || "<empty>")}`,
+		`extraction empty HTML snapshot (${provider}, selector=${selector}, url=${await page.getUrl().catch(() => page.url())}):\n${formatHtmlForLogs(diagnosticHtml || "<empty>")}`,
 	);
 	throw new ExternalServiceError(
 		provider,

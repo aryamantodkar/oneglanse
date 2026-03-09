@@ -4,21 +4,19 @@ import { mkdir, rm } from "node:fs/promises";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
-import type { Browser, BrowserContext } from "playwright";
-import { chromium } from "playwright";
 import { env } from "../../env.js";
 import {
 	detectDisplay,
 	ensureDisplay,
-	getFreePort,
-	spawnChromiumCDP,
-	waitForCDPEndpoint,
-} from "./cdp.js";
+	materializeChromeExtension,
+	readChromeVersion,
+	spawnChromeProcess,
+} from "./chromeProcess.js";
 import { bindContextDisplay, unbindContextDisplay } from "./humanBehavior.js";
+import { NativeBridge } from "./native/bridge.js";
+import { NativeBrowser, NativeBrowserContext } from "./runtime.js";
 import {
 	clearChromeProfileLocks,
-	getProfileStorageStatePath,
-	hasProfileStorageState,
 	isProfileWarmed,
 	markProfileWarmed,
 	resolveProfileDir,
@@ -31,15 +29,6 @@ import {
 	createProxyForwarder,
 } from "./proxy/forwarder.js";
 import { applyProxyProviderStrategy } from "./proxy/provider.js";
-import { resolveBrowserSessionSettings } from "./sessionSettings.js";
-import {
-	type BrowserSessionSettings,
-	type SessionProfile,
-	buildContextOptions,
-	buildStealthInitScript,
-	buildWorkerStealthBootstrap,
-	generateSessionProfile,
-} from "./stealth.js";
 
 const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	http: 80,
@@ -59,6 +48,32 @@ type ProxyAllocation = {
 	proxy: UpstreamProxyConfig | null;
 	release: () => void;
 };
+
+function pickViewport(): {
+	viewport: { width: number; height: number };
+	windowSize: { width: number; height: number };
+} {
+	const candidates = [
+		{ width: 1365, height: 768 },
+		{ width: 1440, height: 900 },
+		{ width: 1536, height: 864 },
+		{ width: 1600, height: 900 },
+	];
+	const viewport = candidates[randomInt(candidates.length)] || candidates[0];
+	if (!viewport) {
+		return {
+			viewport: { width: 1440, height: 900 },
+			windowSize: { width: 1440, height: 900 },
+		};
+	}
+	return {
+		viewport,
+		windowSize: {
+			width: viewport.width,
+			height: viewport.height,
+		},
+	};
+}
 
 function normalizeProxyScheme(protocol: string): ProxyScheme {
 	const normalized = protocol.trim().toLowerCase().replace(/:$/, "");
@@ -222,18 +237,12 @@ export async function launchContext(
 	provider: Provider,
 	options?: LaunchContextOptions,
 ): Promise<{
-	browser: Browser;
-	context: BrowserContext;
-	profile: SessionProfile;
-	settings: BrowserSessionSettings;
+	browser: NativeBrowser;
+	context: NativeBrowserContext;
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
-	const profile = generateSessionProfile();
-	const windowSize = {
-		width: profile.viewport.width + profile.outerDelta.width,
-		height: profile.viewport.height + profile.outerDelta.height,
-	};
+	const { viewport, windowSize } = pickViewport();
 
 	let upstreamProxy: UpstreamProxyConfig | null = null;
 	let releaseProxyLease = () => {};
@@ -243,48 +252,40 @@ export async function launchContext(
 	let isNewProfile = false;
 	let displayHandle: Awaited<ReturnType<typeof ensureDisplay>> | null = null;
 	let display: string | undefined;
-	let chromProcess: ChildProcess | null = null;
-	let browser: Browser | null = null;
-	let context: BrowserContext | null = null;
+	let chromeProcess: ChildProcess | null = null;
+	let chromeStderr = "";
 	let forwarder: ProxyForwarderHandle | null = null;
-	let chromiumStderr = "";
-	let port = 0;
+	let bridge: NativeBridge | null = null;
+	let extensionAssets: Awaited<
+		ReturnType<typeof materializeChromeExtension>
+	> | null = null;
+	let context: NativeBrowserContext | null = null;
+	let browser: NativeBrowser | null = null;
 	const profileScope = options?.profileScope ?? provider;
 
 	const cleanup = async () => {
-		if (context && persistProfile && profileIdentity) {
-			try {
-				await context.storageState({
-					path: await getProfileStorageStatePath(profileScope, profileIdentity),
-				});
-			} catch (error) {
-				logger.warn(
-					`failed to persist browser storage state: ${toErrorMessage(error)}`,
-				);
-			}
-		}
-
 		if (context) {
 			unbindContextDisplay(context);
 		}
 
 		await context?.close().catch(() => null);
-		await browser?.close().catch(() => null);
 
-		if (chromProcess) {
+		if (chromeProcess) {
 			try {
-				chromProcess.kill("SIGTERM");
+				chromeProcess.kill("SIGTERM");
 				await new Promise((resolve) => setTimeout(resolve, 300));
-				if (chromProcess.exitCode === null) {
-					chromProcess.kill("SIGKILL");
+				if (chromeProcess.exitCode === null) {
+					chromeProcess.kill("SIGKILL");
 				}
 			} catch {
-				// Chromium may have already exited.
+				// Chrome may already be gone.
 			}
 		}
 
+		await bridge?.close().catch(() => null);
 		await forwarder?.close().catch(() => null);
 		releaseProxyLease();
+		await extensionAssets?.cleanup().catch(() => null);
 		await displayHandle?.cleanup().catch(() => null);
 		if (!persistProfile && userDataDir) {
 			await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
@@ -301,15 +302,14 @@ export async function launchContext(
 				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
 			);
 		} else {
-			logger.warn(
-				"no proxy resolved for browser launch; using direct connection",
-			);
+			logger.warn("no proxy resolved for browser launch; using direct connection");
 		}
-		port = await getFreePort();
+
 		profileIdentity =
 			options?.sessionKey ??
 			(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
 		persistProfile = profileIdentity !== null;
+
 		const profileDir = await resolveProfileDir(
 			provider,
 			profileIdentity,
@@ -317,93 +317,57 @@ export async function launchContext(
 		);
 		userDataDir = profileDir.dir;
 		isNewProfile = profileDir.isNew;
-		displayHandle = await ensureDisplay(windowSize);
-		display = displayHandle?.display ?? detectDisplay() ?? undefined;
-		if (upstreamProxy) {
-			forwarder = await createProxyForwarder(upstreamProxy);
-			logger.log(
-				`launching chromium (proxy: ${upstreamProxy.logProxy})${display ? " [headful/Xvfb]" : " [headless]"}`,
-			);
-		} else {
-			logger.warn("no proxies available, launching without proxy");
-			logger.log(
-				`launching chromium (direct)${display ? " [headful/Xvfb]" : " [headless]"}`,
-			);
-		}
 		await mkdir(userDataDir, { recursive: true });
 		await clearChromeProfileLocks(userDataDir);
-		// Use the upstream proxy identity (stable across launches) as the cache key,
-		// not the local forwarder port (which is random and changes every launch).
-		const settings = await resolveBrowserSessionSettings(
-			forwarder?.serverUrl,
-			upstreamProxy?.logProxy ?? "direct",
-		);
 
-		chromProcess = spawnChromiumCDP(port, userDataDir, {
-			proxyServer: forwarder?.serverUrl,
+		displayHandle = await ensureDisplay(windowSize);
+		display = displayHandle?.display ?? detectDisplay() ?? undefined;
+
+		if (upstreamProxy) {
+			forwarder = await createProxyForwarder(upstreamProxy);
+		}
+
+		bridge = await NativeBridge.start();
+		extensionAssets = await materializeChromeExtension();
+		chromeProcess = spawnChromeProcess({
+			userDataDir,
+			extensionDir: extensionAssets.extensionDir,
+			nativePort: bridge.getPort(),
 			windowSize,
-			locale: settings.locale,
-			display: displayHandle?.display,
+			display,
+			locale: env.BROWSER_LOCALE?.trim(),
+			proxyServer: forwarder?.serverUrl,
 		});
 
-		chromProcess.stderr?.on("data", (chunk: Buffer | string) => {
-			chromiumStderr = `${chromiumStderr}${chunk.toString()}`.slice(-8_192);
+		chromeProcess.stderr?.on("data", (chunk: Buffer | string) => {
+			chromeStderr = `${chromeStderr}${chunk.toString()}`.slice(-8_192);
 		});
 
-		const wsEndpoint = await Promise.race([
-			waitForCDPEndpoint(port),
+		await Promise.race([
+			bridge.waitForEvent("host-connected", 20_000),
 			new Promise<never>((_, reject) => {
-				chromProcess?.once("error", reject);
-				chromProcess?.once("exit", (code, signal) => {
+				chromeProcess?.once("error", reject);
+				chromeProcess?.once("exit", (code, signal) => {
 					reject(
 						new Error(
-							`Chromium exited before CDP was ready (code=${code ?? "null"}, signal=${signal ?? "null"})`,
+							`Chrome exited before native host was ready (code=${code ?? "null"}, signal=${signal ?? "null"})`,
 						),
 					);
 				});
 			}),
 		]);
-		browser = await chromium.connectOverCDP(wsEndpoint);
-		const browserVersion = browser.version();
+		await bridge.waitForEvent("extension-ready", 20_000);
 
-		const contextOptions = buildContextOptions(
-			profile,
-			browserVersion,
-			settings,
-		);
-		if (
-			persistProfile &&
-			profileIdentity &&
-			(await hasProfileStorageState(profileScope, profileIdentity))
-		) {
-			contextOptions.storageState = await getProfileStorageStatePath(
-				profileScope,
-				profileIdentity,
-			);
-		}
-		context = await browser.newContext(contextOptions);
+		context = new NativeBrowserContext(bridge, viewport);
 		if (display) {
 			bindContextDisplay(context, display);
 		}
-		await context.addInitScript(
-			buildStealthInitScript(profile, browserVersion, settings),
-		);
 
-		// Inject worker stealth bootstrap via Playwright's worker event API.
-		// This avoids sending Runtime.enable on worker CDP sessions (Cloudflare detects it).
-		// rebrowser-playwright uses Runtime.callFunctionOn in isolated contexts instead.
-		const workerBootstrap = buildWorkerStealthBootstrap(
-			profile,
-			browserVersion,
-			settings,
+		const browserVersion = await readChromeVersion().catch(
+			() => "Google Chrome",
 		);
-		context.on("page", (page) => {
-			page.on("worker", (worker) => {
-				worker.evaluate(workerBootstrap).catch(() => {});
-			});
-		});
+		browser = new NativeBrowser(browserVersion, cleanup);
 
-		// Warm up new profiles to build realistic cookie/cache state
 		if (
 			isNewProfile &&
 			persistProfile &&
@@ -413,11 +377,11 @@ export async function launchContext(
 			try {
 				const warmupPage = await context.newPage();
 				await warmUpProfile(warmupPage);
-				await warmupPage.close();
+				await warmupPage.close().catch(() => null);
 				await markProfileWarmed(provider, profileIdentity, profileScope);
-			} catch (err) {
+			} catch (error) {
 				logger.warn(
-					`profile warmup failed (non-critical): ${toErrorMessage(err)}`,
+					`profile warmup failed (non-critical): ${toErrorMessage(error)}`,
 				);
 			}
 		}
@@ -425,28 +389,19 @@ export async function launchContext(
 		return {
 			browser,
 			context,
-			profile,
-			settings,
 			proxy: upstreamProxy?.logProxy ?? null,
 			cleanup,
 		};
-	} catch (err) {
+	} catch (error) {
 		await cleanup();
-		if (
-			/process_singleton_posix|profile appears to be in use/i.test(
-				chromiumStderr,
-			)
-		) {
-			await clearChromeProfileLocks(userDataDir).catch(() => null);
-		}
 		throw new ExternalServiceError(
 			"browser",
-			chromiumStderr.trim()
-				? `${toErrorMessage(err)} | chromium stderr: ${chromiumStderr.trim()}`
-				: toErrorMessage(err),
+			chromeStderr.trim()
+				? `${toErrorMessage(error)} | chrome stderr: ${chromeStderr.trim()}`
+				: toErrorMessage(error),
 			502,
 			{ provider },
-			err,
+			error,
 		);
 	}
 }

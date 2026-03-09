@@ -125,12 +125,18 @@ async function getBrowserDims(
 	}
 
 	try {
-		const [oh, ih, ow, iw] = await Promise.all([
-			page.evaluate(() => window.outerHeight).catch(() => 0),
-			page.evaluate(() => window.innerHeight).catch(() => 0),
-			page.evaluate(() => window.outerWidth).catch(() => 0),
-			page.evaluate(() => window.innerWidth).catch(() => 0),
-		]);
+		const metrics = await page
+			.runDomOp<{
+				outerHeight: number;
+				innerHeight: number;
+				outerWidth: number;
+				innerWidth: number;
+			}>("window-metrics")
+			.catch(() => null);
+		if (!metrics) return null;
+
+		const { outerHeight: oh, innerHeight: ih, outerWidth: ow, innerWidth: iw } =
+			metrics;
 
 		const dims: BrowserDims = {
 			chromeH: Math.max(0, oh - ih),

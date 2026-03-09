@@ -34,12 +34,7 @@ export async function getWarmBrowser(
 	}
 
 	const alive = await Promise.race([
-		entry.page
-			.evaluate(() => true)
-			.then(
-				() => true,
-				() => false,
-			),
+		entry.page.ping().catch(() => false),
 		new Promise<false>((r) => setTimeout(() => r(false), 3_000)),
 	]);
 

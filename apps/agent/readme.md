@@ -1,6 +1,6 @@
 # @oneglanse/agent
 
-Playwright-launched Chromium + BullMQ worker responsible for executing provider prompt jobs and persisting results.
+Chrome-extension/native-messaging browser worker + BullMQ worker responsible for executing provider prompt jobs and persisting results.
 
 ## Responsibilities
 
@@ -63,10 +63,8 @@ Defined in `src/env.ts` (Zod validated):
   - `PROXY_USERNAME` (optional; requires `PROXY_PASSWORD`)
   - `PROXY_PASSWORD` (optional; requires `PROXY_USERNAME`)
   - Supported schemes: `http`, `https`, `socks4`, `socks5`
-- Browser fingerprint alignment:
+- Chrome locale:
   - `BROWSER_LOCALE`
-  - `BROWSER_TIMEZONE`
-  - `BROWSER_ACCEPT_LANGUAGE`
 - Provider tuning:
   - `MIN_RESPONSE_CHARS`
   - `PROVIDER_HOOK_TIMEOUT_MS`

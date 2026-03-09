@@ -47,33 +47,12 @@ export async function clearEditorInput(
 			await pressKeyLikeUser(page, "Backspace").catch(() => null);
 		}
 		const clearedByKeyboard = await input
-			.evaluate((el) => {
-				if (
-					el instanceof HTMLTextAreaElement ||
-					el instanceof HTMLInputElement
-				) {
-					return el.value.trim().length === 0;
-				}
-				return (el.textContent || "").trim().length === 0;
-			})
+			.readInputValue()
+			.then((value) => value.trim().length === 0)
 			.catch(() => false);
 
 		if (!clearedByKeyboard && !useOsInput) {
-			await input.evaluate((el) => {
-				if (
-					el instanceof HTMLTextAreaElement ||
-					el instanceof HTMLInputElement
-				) {
-					el.value = "";
-					el.dispatchEvent(new Event("input", { bubbles: true }));
-					el.dispatchEvent(new Event("change", { bubbles: true }));
-					return;
-				}
-				if (el instanceof HTMLElement) {
-					el.innerText = "";
-					el.dispatchEvent(new Event("input", { bubbles: true }));
-				}
-			});
+			await input.setInputValue("");
 		}
 
 		if (dismissWithEscape) {
