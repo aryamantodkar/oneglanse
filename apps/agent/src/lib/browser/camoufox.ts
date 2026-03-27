@@ -536,7 +536,8 @@ export async function resolveCamoufoxLaunchOptions(args: {
 				maxBuffer: 512 * 1024,
 			},
 		);
-		const parsed = JSON.parse(stdout) as {
+		const jsonLine = stdout.trim().split("\n").findLast((l) => l.trimStart().startsWith("{")) ?? stdout.trim();
+		const parsed = JSON.parse(jsonLine) as {
 			args?: string[];
 			env?: Record<string, PrimitiveEnvValue>;
 			executable_path?: string;
