@@ -22,55 +22,39 @@ RUN pnpm deploy --filter @oneglanse/agent --prod /app/out
 
 FROM node:20-bookworm-slim AS runner
 ARG PNPM_VERSION=10.16.0
+ARG CAMOUFOX_PIP_SPEC
+ARG CAMOUFOX_BROWSER_CHANNEL
 
-# Browser runtime deps + Xvfb for headful mode (eliminates headless fingerprint signals)
-# System fonts are critical — VPS by default has almost no fonts, which creates
-# a distinctive font-enumeration fingerprint that bot-detection systems recognise.
-# We install real Google Chrome (not Chromium) because Chrome has a different
-# TLS/JA3 fingerprint that matches anti-bot allowlists. Chromium's BoringSSL
-# build uses different cipher suites and gets flagged.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  python3 \
+  python3-pip \
   libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
   libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-  libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 \
+  libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 libdbus-glib-1-2 \
+  libx11-xcb1 libxt6 \
   ca-certificates \
   fontconfig \
-  wget gnupg \
   xvfb \
-  xdotool \
-  fonts-liberation fonts-dejavu fonts-freefont-ttf \
-  fonts-noto fonts-noto-cjk-extra fonts-noto-color-emoji \
-  fonts-roboto \
-  fonts-crosextra-carlito fonts-crosextra-caladea \
-  && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
-  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-  && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable \
+  fonts-noto fonts-noto-color-emoji \
   && fc-cache -f \
+  && test -n "${CAMOUFOX_PIP_SPEC}" \
+  && test -n "${CAMOUFOX_BROWSER_CHANNEL}" \
+  && python3 -m pip install --no-cache-dir --break-system-packages \
+    "${CAMOUFOX_PIP_SPEC}" \
+  && python3 -m camoufox set "${CAMOUFOX_BROWSER_CHANNEL}" \
+  && python3 -m camoufox fetch \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENV NODE_ENV=production
-ENV CHROME_PATH=/usr/bin/google-chrome-stable
-
-RUN google-chrome-stable --version
+ENV CAMOUFOX_PYTHON_BIN=python3
 
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 COPY --from=builder /app/out ./
-
-# Startup script: launch Xvfb virtual display then start the worker.
-# Chrome runs in headful mode against the virtual display, eliminating all
-# headless-specific browser fingerprint signals (outerHeight=0, LLVMpipe WebGL, etc.)
-RUN printf '#!/bin/sh\n\
-mkdir -p /storage/profiles /tmp/oneglanse-profiles\n\
-Xvfb :99 -screen 0 3840x2160x24 -ac -nolisten tcp &\n\
-XVFB_PID=$!\n\
-export DISPLAY=:99\n\
-# Give Xvfb a moment to initialise before Chrome tries to connect\n\
-sleep 1\n\
-# exec replaces this shell — signals (SIGTERM) go directly to the worker\n\
-exec pnpm start:worker\n' > /start-worker.sh && chmod +x /start-worker.sh
+COPY apps/agent/docker/start-worker.sh /usr/local/bin/start-worker
+RUN chmod +x /usr/local/bin/start-worker
 
 RUN chown -R node:node /app
 
-CMD ["/start-worker.sh"]
+CMD ["/usr/local/bin/start-worker"]

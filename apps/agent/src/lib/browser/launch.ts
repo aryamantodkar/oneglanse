@@ -1,34 +1,26 @@
-import type { ChildProcess } from "node:child_process";
-import { randomInt } from "node:crypto";
 import { mkdir, rm } from "node:fs/promises";
+import { firefox } from "playwright-core";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
+import type { Browser, BrowserContext } from "playwright";
 import { env } from "../../env.js";
+import { resolveCamoufoxLaunchOptions, type CamoufoxProxyConfig } from "./camoufox.js";
+import { detectDisplay, ensureDisplay } from "./display.js";
+import { PlaywrightBrowserContextCompat } from "./playwrightCompat.js";
 import {
-	detectDisplay,
-	ensureDisplay,
-	materializeChromeExtension,
-	readChromeVersion,
-	spawnChromeProcess,
-} from "./chromeProcess.js";
-import { bindContextDisplay, unbindContextDisplay } from "./humanBehavior.js";
-import { NativeBridge } from "./native/bridge.js";
-import { NativeBrowser, NativeBrowserContext } from "./runtime.js";
-import {
-	clearChromeProfileLocks,
+	clearBrowserProfileLocks,
 	isProfileWarmed,
 	markProfileWarmed,
 	resolveProfileDir,
 } from "./profileManager.js";
 import { warmUpProfile } from "./profileWarmup.js";
 import {
-	type ProxyForwarderHandle,
 	type ProxyScheme,
 	type UpstreamProxyConfig,
-	createProxyForwarder,
 } from "./proxy/forwarder.js";
 import { applyProxyProviderStrategy } from "./proxy/provider.js";
+import type { DisplayHandle } from "./display.js";
 
 const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	http: 80,
@@ -38,6 +30,9 @@ const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 };
 const THORDATA_PROXY_API_TIMEOUT_MS = 10_000;
 const leasedThorDataProxyUrls = new Set<string>();
+type FirefoxPersistentContextOptions = NonNullable<
+	Parameters<typeof firefox.launchPersistentContext>[1]
+>;
 
 export type LaunchContextOptions = {
 	sessionKey?: string;
@@ -48,32 +43,6 @@ type ProxyAllocation = {
 	proxy: UpstreamProxyConfig | null;
 	release: () => void;
 };
-
-function pickViewport(): {
-	viewport: { width: number; height: number };
-	windowSize: { width: number; height: number };
-} {
-	const candidates = [
-		{ width: 1365, height: 768 },
-		{ width: 1440, height: 900 },
-		{ width: 1536, height: 864 },
-		{ width: 1600, height: 900 },
-	];
-	const viewport = candidates[randomInt(candidates.length)] || candidates[0];
-	if (!viewport) {
-		return {
-			viewport: { width: 1440, height: 900 },
-			windowSize: { width: 1440, height: 900 },
-		};
-	}
-	return {
-		viewport,
-		windowSize: {
-			width: viewport.width,
-			height: viewport.height,
-		},
-	};
-}
 
 function normalizeProxyScheme(protocol: string): ProxyScheme {
 	const normalized = protocol.trim().toLowerCase().replace(/:$/, "");
@@ -192,7 +161,7 @@ async function acquireThorDataProxy(): Promise<ProxyAllocation> {
 		);
 	}
 
-	const selected = candidates[randomInt(candidates.length)];
+	const selected = candidates[Math.floor(Math.random() * candidates.length)];
 	if (!selected) {
 		throw new Error("Could not select a ThorData proxy from the API response.");
 	}
@@ -207,7 +176,8 @@ async function acquireThorDataProxy(): Promise<ProxyAllocation> {
 }
 
 async function buildProxyAllocation(): Promise<ProxyAllocation> {
-	if (env.PROXY_PROVIDER === "thordata" && env.THORDATA_PROXY_API_URL?.trim()) {
+	const proxyProvider = env.PROXY_PROVIDER?.trim().toLowerCase();
+	if (proxyProvider === "thordata" && env.THORDATA_PROXY_API_URL?.trim()) {
 		return acquireThorDataProxy();
 	}
 
@@ -233,59 +203,42 @@ async function buildProxyAllocation(): Promise<ProxyAllocation> {
 	};
 }
 
+function toCamoufoxProxyConfig(
+	proxy: UpstreamProxyConfig | null,
+): CamoufoxProxyConfig | undefined {
+	if (!proxy) return undefined;
+	return {
+		server: proxy.serverUrl,
+		username: proxy.username,
+		password: proxy.password,
+	};
+}
+
 export async function launchContext(
 	provider: Provider,
 	options?: LaunchContextOptions,
 ): Promise<{
-	browser: NativeBrowser;
-	context: NativeBrowserContext;
+	browser: Browser;
+	context: BrowserContext;
 	proxy: string | null;
 	cleanup: () => Promise<void>;
 }> {
-	const { viewport, windowSize } = pickViewport();
-
 	let upstreamProxy: UpstreamProxyConfig | null = null;
 	let releaseProxyLease = () => {};
 	let profileIdentity: string | null = options?.sessionKey ?? null;
 	let persistProfile = profileIdentity !== null;
 	let userDataDir = "";
 	let isNewProfile = false;
-	let displayHandle: Awaited<ReturnType<typeof ensureDisplay>> | null = null;
-	let display: string | undefined;
-	let chromeProcess: ChildProcess | null = null;
-	let chromeStderr = "";
-	let forwarder: ProxyForwarderHandle | null = null;
-	let bridge: NativeBridge | null = null;
-	let extensionAssets: Awaited<
-		ReturnType<typeof materializeChromeExtension>
-	> | null = null;
-	let context: NativeBrowserContext | null = null;
-	let browser: NativeBrowser | null = null;
-	const profileScope = options?.profileScope ?? provider;
+	let displayHandle: DisplayHandle | null = null;
+	let rawContext:
+		| import("playwright-core").BrowserContext
+		| null = null;
+	let context: PlaywrightBrowserContextCompat | null = null;
 
 	const cleanup = async () => {
-		if (context) {
-			unbindContextDisplay(context);
-		}
-
 		await context?.close().catch(() => null);
-
-		if (chromeProcess) {
-			try {
-				chromeProcess.kill("SIGTERM");
-				await new Promise((resolve) => setTimeout(resolve, 300));
-				if (chromeProcess.exitCode === null) {
-					chromeProcess.kill("SIGKILL");
-				}
-			} catch {
-				// Chrome may already be gone.
-			}
-		}
-
-		await bridge?.close().catch(() => null);
-		await forwarder?.close().catch(() => null);
+		await rawContext?.close().catch(() => null);
 		releaseProxyLease();
-		await extensionAssets?.cleanup().catch(() => null);
 		await displayHandle?.cleanup().catch(() => null);
 		if (!persistProfile && userDataDir) {
 			await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
@@ -310,6 +263,7 @@ export async function launchContext(
 			(upstreamProxy ? `proxy:${upstreamProxy.logProxy}` : null);
 		persistProfile = profileIdentity !== null;
 
+		const profileScope = options?.profileScope ?? provider;
 		const profileDir = await resolveProfileDir(
 			provider,
 			profileIdentity,
@@ -318,55 +272,37 @@ export async function launchContext(
 		userDataDir = profileDir.dir;
 		isNewProfile = profileDir.isNew;
 		await mkdir(userDataDir, { recursive: true });
-		await clearChromeProfileLocks(userDataDir);
+		await clearBrowserProfileLocks(userDataDir);
 
-		displayHandle = await ensureDisplay(windowSize);
-		display = displayHandle?.display ?? detectDisplay() ?? undefined;
+		displayHandle =
+			env.CAMOUFOX_HEADLESS_MODE === "headless" ? null : await ensureDisplay();
+		const display =
+			env.CAMOUFOX_HEADLESS_MODE === "headless"
+				? undefined
+				: displayHandle?.display ?? detectDisplay() ?? undefined;
 
-		if (upstreamProxy) {
-			forwarder = await createProxyForwarder(upstreamProxy);
-		}
-
-		bridge = await NativeBridge.start();
-		extensionAssets = await materializeChromeExtension();
-		chromeProcess = spawnChromeProcess({
-			userDataDir,
-			extensionDir: extensionAssets.extensionDir,
-			nativePort: bridge.getPort(),
-			windowSize,
+		const camoufoxOptions = await resolveCamoufoxLaunchOptions({
 			display,
-			locale: env.BROWSER_LOCALE?.trim(),
-			proxyServer: forwarder?.serverUrl,
+			provider,
+			proxy: toCamoufoxProxyConfig(upstreamProxy),
 		});
 
-		chromeProcess.stderr?.on("data", (chunk: Buffer | string) => {
-			chromeStderr = `${chromeStderr}${chunk.toString()}`.slice(-8_192);
+		const {
+			executablePath,
+			firefoxUserPrefs,
+			...persistentContextOptions
+		} = camoufoxOptions;
+
+		rawContext = await firefox.launchPersistentContext(userDataDir, {
+			...(persistentContextOptions as FirefoxPersistentContextOptions),
+			executablePath,
+			firefoxUserPrefs: firefoxUserPrefs as
+				| Record<string, string | number | boolean>
+				| undefined,
 		});
 
-		await Promise.race([
-			bridge.waitForEvent("host-connected", 20_000),
-			new Promise<never>((_, reject) => {
-				chromeProcess?.once("error", reject);
-				chromeProcess?.once("exit", (code, signal) => {
-					reject(
-						new Error(
-							`Chrome exited before native host was ready (code=${code ?? "null"}, signal=${signal ?? "null"})`,
-						),
-					);
-				});
-			}),
-		]);
-		await bridge.waitForEvent("extension-ready", 20_000);
-
-		context = new NativeBrowserContext(bridge, viewport);
-		if (display) {
-			bindContextDisplay(context, display);
-		}
-
-		const browserVersion = await readChromeVersion().catch(
-			() => "Google Chrome",
-		);
-		browser = new NativeBrowser(browserVersion, cleanup);
+		context = new PlaywrightBrowserContextCompat(rawContext);
+		const browser = context.getBrowser();
 
 		if (
 			isNewProfile &&
@@ -396,9 +332,7 @@ export async function launchContext(
 		await cleanup();
 		throw new ExternalServiceError(
 			"browser",
-			chromeStderr.trim()
-				? `${toErrorMessage(error)} | chrome stderr: ${chromeStderr.trim()}`
-				: toErrorMessage(error),
+			toErrorMessage(error),
 			502,
 			{ provider },
 			error,

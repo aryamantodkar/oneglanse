@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
-	"description": "Local agent that runs real Chrome through an extension/native-messaging bridge to execute LLM prompts",
+	"description": "Local agent that runs Camoufox-backed Playwright sessions to execute LLM prompts",
 	"scripts": {
 		"dev": "node --loader ts-node/esm src/index.ts",
 		"start:worker": "node dist/worker.js",
@@ -17,6 +17,7 @@
 		"@oneglanse/utils": "workspace:*",
 		"bullmq": "^5.66.4",
 		"dotenv": "^17.2.3",
+		"playwright-core": "^1.51.1",
 		"turndown": "^7.2.2",
 		"zod": "^3.24.1"
 	},

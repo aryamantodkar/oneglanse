@@ -1,11 +1,6 @@
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import {
-	canUseOsLevelInput,
-	clickLocatorLikeUser,
-	xdotoolMouseMove,
-	xdotoolScroll,
-} from "./humanBehavior.js";
+import { clickLocatorLikeUser } from "./humanBehavior.js";
 
 const WARMUP_SITES = [
 	"https://www.google.com",
@@ -28,10 +23,9 @@ async function randomScroll(page: Page): Promise<void> {
 		Math.round(viewport.height * 0.2),
 		Math.round(viewport.height * 0.8),
 	);
-	const scrolled = await xdotoolScroll(page, x, y, scrollAmount);
-	if (!scrolled && !canUseOsLevelInput(page)) {
-		await page.mouse.wheel(0, scrollAmount);
-	}
+	void x;
+	void y;
+	await page.mouse.wheel(0, scrollAmount);
 	await page.waitForTimeout(randomBetween(300, 800));
 }
 
@@ -45,10 +39,7 @@ async function randomMouseMove(page: Page): Promise<void> {
 		Math.round(viewport.height * 0.05),
 		Math.round(viewport.height * 0.95),
 	);
-	const moved = await xdotoolMouseMove(page, x, y);
-	if (!moved && !canUseOsLevelInput(page)) {
-		await page.mouse.move(x, y, { steps: randomBetween(10, 25) });
-	}
+	await page.mouse.move(x, y, { steps: randomBetween(10, 25) });
 	await page.waitForTimeout(randomBetween(200, 500));
 }
 
@@ -87,8 +78,8 @@ export async function warmUpProfile(page: Page): Promise<void> {
 			const clicked = await clickLocatorLikeUser(page, acceptButton.first(), {
 				timeout: 3000,
 			}).catch(() => false);
-			if (!clicked && canUseOsLevelInput(page)) {
-				throw new Error("xdotool click failed for warmup consent button");
+			if (!clicked) {
+				throw new Error("failed to click warmup consent button");
 			}
 			await page.waitForTimeout(randomBetween(500, 1000));
 		}

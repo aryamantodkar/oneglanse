@@ -130,7 +130,7 @@ function connectTls(host: string, port: number): Promise<Socket> {
 			servername: host,
 			// Proxy providers (e.g. BrightData) may use custom CA certs.
 			// rejectUnauthorized applies only to the proxy TLS hop, not to the
-			// end-to-end TLS inside the CONNECT tunnel (which Chrome validates).
+			// end-to-end TLS inside the CONNECT tunnel (which the browser validates).
 			rejectUnauthorized: false,
 		});
 
@@ -638,7 +638,7 @@ export async function createProxyForwarder(
 					// Log the real tunnel failure so the cause is visible in agent logs.
 					logger.warn(`[forwarder] CONNECT tunnel failed: ${body}`);
 					// Use end() not destroy() — destroy() discards buffered writes so
-					// Chrome never sees the 502 and gets ERR_CONNECTION_CLOSED instead.
+					// The browser never sees the 502 and gets ERR_CONNECTION_CLOSED instead.
 					clientSocket.end(
 						`HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
 					);
