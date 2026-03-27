@@ -3,8 +3,15 @@ services:
   # Agent Worker
   # ----------------------------
   agent-worker:
+    build:
+      context: .
+      dockerfile: ./apps/agent/Dockerfile
+      args:
+        PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
+        CAMOUFOX_PIP_SPEC: "${CAMOUFOX_PIP_SPEC:-cloverlabs-camoufox[geoip]}"
+        CAMOUFOX_BROWSER_CHANNEL: "${CAMOUFOX_BROWSER_CHANNEL:-official/prerelease}"
     image: ghcr.io/${GHCR_USERNAME:?GHCR_USERNAME is required}/oneglanse-agent:latest
-    pull_policy: always
+    pull_policy: missing
     container_name: oneglanse-agent-worker
     restart: unless-stopped
     stop_grace_period: 16m
@@ -17,7 +24,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    command: pnpm start:worker
     networks:
       - backend
       - data

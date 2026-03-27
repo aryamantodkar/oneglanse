@@ -1,6 +1,6 @@
 # @oneglanse/agent
 
-Chrome-extension/native-messaging browser worker + BullMQ worker responsible for executing provider prompt jobs and persisting results.
+Camoufox-backed browser worker + BullMQ worker responsible for executing provider prompt jobs and persisting results.
 
 ## Responsibilities
 
@@ -63,8 +63,42 @@ Defined in `src/env.ts` (Zod validated):
   - `PROXY_USERNAME` (optional; requires `PROXY_PASSWORD`)
   - `PROXY_PASSWORD` (optional; requires `PROXY_USERNAME`)
   - Supported schemes: `http`, `https`, `socks4`, `socks5`
-- Chrome locale:
-  - `BROWSER_LOCALE`
+- Camoufox runtime:
+  - `CAMOUFOX_PYTHON_BIN` (optional)
+  - `CAMOUFOX_HEADLESS_MODE` (`virtual`, `headful`, `headless`)
+  - `CAMOUFOX_XVFB_DISPLAY`
+  - `CAMOUFOX_XVFB_SCREEN`
+  - `CAMOUFOX_HUMANIZE`
+  - `CAMOUFOX_HUMANIZE_MAX_TIME_S`
+  - `CAMOUFOX_GEOIP`
+  - `CAMOUFOX_GEOIP_DB`
+  - `CAMOUFOX_OS`
+  - `CAMOUFOX_LOCALE`
+  - `CAMOUFOX_FONTS`
+  - `CAMOUFOX_ADDONS`
+  - `CAMOUFOX_EXCLUDE_ADDONS`
+  - `CAMOUFOX_SCREEN`
+  - `CAMOUFOX_WINDOW`
+  - `CAMOUFOX_WEBGL_CONFIG`
+  - `CAMOUFOX_BROWSER`
+  - `CAMOUFOX_FF_VERSION`
+  - `CAMOUFOX_CONFIG_JSON`
+  - `CAMOUFOX_FINGERPRINT_JSON`
+  - `CAMOUFOX_FINGERPRINT_PRESET`
+  - `CAMOUFOX_FIREFOX_USER_PREFS_JSON`
+  - `CAMOUFOX_ENV_JSON`
+  - `CAMOUFOX_ARGS`
+  - `CAMOUFOX_EXECUTABLE_PATH`
+  - `CAMOUFOX_MAIN_WORLD_EVAL`
+  - `CAMOUFOX_ENABLE_CACHE`
+  - `CAMOUFOX_BLOCK_IMAGES`
+  - `CAMOUFOX_BLOCK_WEBRTC`
+  - `CAMOUFOX_BLOCK_WEBGL`
+  - `CAMOUFOX_DISABLE_COOP`
+  - `CAMOUFOX_CUSTOM_FONTS_ONLY`
+  - `CAMOUFOX_I_KNOW_WHAT_IM_DOING`
+  - `CAMOUFOX_DEBUG`
+  - `CAMOUFOX_EXTRA_LAUNCH_JSON`
 - Provider tuning:
   - `MIN_RESPONSE_CHARS`
   - `PROVIDER_HOOK_TIMEOUT_MS`
@@ -225,6 +259,20 @@ PROXY_PASSWORD=pass
 Provider-specific sticky-session handling rewrites only the documented session
 token for that provider. The base host, port, username, and password should
 come directly from your provider dashboard.
+
+Camoufox runtime example:
+
+```env
+CAMOUFOX_HEADLESS_MODE=virtual
+CAMOUFOX_XVFB_DISPLAY=:99
+CAMOUFOX_XVFB_SCREEN=1920x1080x24
+CAMOUFOX_HUMANIZE=true
+CAMOUFOX_HUMANIZE_MAX_TIME_S=1.5
+CAMOUFOX_GEOIP=true
+CAMOUFOX_OS=["windows","macos","linux"]
+CAMOUFOX_LOCALE=["en-US","en"]
+CAMOUFOX_EXTRA_LAUNCH_JSON={"ignore_default_args":["--enable-automation"]}
+```
 
 3. Start Redis and required dependencies.
 

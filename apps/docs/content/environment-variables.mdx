@@ -10,6 +10,9 @@ This reference is extracted from the current codebase validation schemas and com
 ## Container Image Namespace (Compose)
 
 - `GHCR_USERNAME`
+- `PNPM_VERSION` (default `10.16.0`)
+- `CAMOUFOX_PIP_SPEC` (default `cloverlabs-camoufox[geoip]`)
+- `CAMOUFOX_BROWSER_CHANNEL` (default `official/prerelease`)
 
 `docker-compose.yml` uses inline image URLs like `ghcr.io/${GHCR_USERNAME}/oneglanse-web:latest`.
 
@@ -50,17 +53,48 @@ This reference is extracted from the current codebase validation schemas and com
   - `MAX_PROMPT_RETRY_DELAY_MS`
   - `SUBMISSION_PHASE_TIMEOUT_MS`
 - Proxy:
-  - `PROXY_URL`
   - `PROXY_SCHEME`
   - `PROXY_HOST`
   - `PROXY_PORT`
   - `PROXY_USERNAME` (optional)
   - `PROXY_PASSWORD` (optional)
   - `THORDATA_PROXY_API_URL` (ThorData only)
-- Browser fingerprint alignment:
-  - `BROWSER_LOCALE`
-  - `BROWSER_TIMEZONE`
-  - `BROWSER_ACCEPT_LANGUAGE`
+- Camoufox browser runtime:
+  - `CAMOUFOX_PYTHON_BIN` (optional)
+  - `CAMOUFOX_HEADLESS_MODE`
+  - `CAMOUFOX_XVFB_DISPLAY`
+  - `CAMOUFOX_XVFB_SCREEN`
+  - `CAMOUFOX_HUMANIZE`
+  - `CAMOUFOX_HUMANIZE_MAX_TIME_S`
+  - `CAMOUFOX_GEOIP`
+  - `CAMOUFOX_GEOIP_DB`
+  - `CAMOUFOX_OS`
+  - `CAMOUFOX_LOCALE`
+  - `CAMOUFOX_FONTS`
+  - `CAMOUFOX_ADDONS`
+  - `CAMOUFOX_EXCLUDE_ADDONS`
+  - `CAMOUFOX_SCREEN`
+  - `CAMOUFOX_WINDOW`
+  - `CAMOUFOX_WEBGL_CONFIG`
+  - `CAMOUFOX_BROWSER`
+  - `CAMOUFOX_FF_VERSION`
+  - `CAMOUFOX_CONFIG_JSON`
+  - `CAMOUFOX_FINGERPRINT_JSON`
+  - `CAMOUFOX_FINGERPRINT_PRESET`
+  - `CAMOUFOX_FIREFOX_USER_PREFS_JSON`
+  - `CAMOUFOX_ENV_JSON`
+  - `CAMOUFOX_ARGS`
+  - `CAMOUFOX_EXECUTABLE_PATH`
+  - `CAMOUFOX_MAIN_WORLD_EVAL`
+  - `CAMOUFOX_ENABLE_CACHE`
+  - `CAMOUFOX_BLOCK_IMAGES`
+  - `CAMOUFOX_BLOCK_WEBRTC`
+  - `CAMOUFOX_BLOCK_WEBGL`
+  - `CAMOUFOX_DISABLE_COOP`
+  - `CAMOUFOX_CUSTOM_FONTS_ONLY`
+  - `CAMOUFOX_I_KNOW_WHAT_IM_DOING`
+  - `CAMOUFOX_DEBUG`
+  - `CAMOUFOX_EXTRA_LAUNCH_JSON`
 
 ## Provider Variables
 

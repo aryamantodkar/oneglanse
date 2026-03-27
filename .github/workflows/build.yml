@@ -201,7 +201,10 @@ jobs:
         with:
           context: .
           file: ./apps/agent/Dockerfile
-          build-args: PNPM_VERSION=${{ env.PNPM }}
+          build-args: |
+            PNPM_VERSION=${{ env.PNPM }}
+            CAMOUFOX_PIP_SPEC=cloverlabs-camoufox[geoip]
+            CAMOUFOX_BROWSER_CHANNEL=official/prerelease
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

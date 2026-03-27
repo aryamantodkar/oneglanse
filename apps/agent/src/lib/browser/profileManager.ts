@@ -10,11 +10,14 @@ const FALLBACK_PROFILES_ROOT = "/tmp/oneglanse-profiles";
 const PROFILE_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 const METADATA_FILE = ".profile-meta.json";
 const STORAGE_STATE_FILE = ".storage-state.json";
-const CHROME_SINGLETON_FILES = [
+const BROWSER_PROFILE_LOCK_FILES = [
 	"SingletonCookie",
 	"SingletonLock",
 	"SingletonSocket",
 	"DevToolsActivePort",
+	"lock",
+	".parentlock",
+	"parent.lock",
 ];
 let cachedProfilesRoot: string | null = null;
 let profilesRootPromise: Promise<string> | null = null;
@@ -122,11 +125,11 @@ async function writeMetadata(
 	await writeFile(metaPath, JSON.stringify(meta, null, 2));
 }
 
-export async function clearChromeProfileLocks(
+export async function clearBrowserProfileLocks(
 	profileDir: string,
 ): Promise<void> {
 	await Promise.all(
-		CHROME_SINGLETON_FILES.map((file) =>
+		BROWSER_PROFILE_LOCK_FILES.map((file) =>
 			rm(join(profileDir, file), { force: true }).catch(() => null),
 		),
 	);
@@ -139,7 +142,7 @@ export async function resolveProfileDir(
 ): Promise<{ dir: string; isNew: boolean }> {
 	if (!profileIdentity) {
 		// No session identity — use a temp dir.
-		const dir = `/tmp/chrome-session-${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+		const dir = `/tmp/browser-session-${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 		mkdirSync(dir, { recursive: true });
 		return { dir, isNew: true };
 	}
