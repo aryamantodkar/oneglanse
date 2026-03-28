@@ -17,6 +17,7 @@ import {
 } from "./profileManager.js";
 import { warmUpProfile } from "./profileWarmup.js";
 import {
+	checkProxyReachable,
 	type ProxyScheme,
 	type UpstreamProxyConfig,
 } from "./proxy/forwarder.js";
@@ -334,6 +335,12 @@ export async function launchContext(
 			logger.log(
 				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
 			);
+			const reachable = await checkProxyReachable(upstreamProxy.host, upstreamProxy.port);
+			if (!reachable) {
+				throw new Error(
+					`proxy connect failed: ${upstreamProxy.logProxy} unreachable (TCP pre-check)`,
+				);
+			}
 		} else {
 			logger.warn("no proxy resolved for browser launch; using direct connection");
 		}
@@ -399,7 +406,12 @@ export async function launchContext(
 			try {
 				const warmupPage = await context.newPage();
 				await warmUpProfile(warmupPage, provider);
-				await warmupPage.close().catch(() => null);
+				// Do NOT close the warmup page — closing all pages in a Firefox
+				// persistent context orphans the browser window reference, causing
+				// the next context.newPage() to fail with "window is null".
+				// The page stays open as a blank background tab; context.close()
+				// in cleanup() will close it along with everything else.
+				void warmupPage;
 				await markProfileWarmed(provider, profileIdentity, profileScope);
 			} catch (error) {
 				logger.warn(

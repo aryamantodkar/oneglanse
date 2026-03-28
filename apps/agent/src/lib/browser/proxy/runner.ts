@@ -16,7 +16,8 @@ import {
 } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
-import { storeWarmBrowser } from "../warmPool.js";
+import { getProviderSessionScope } from "../providerScope.js";
+import { evictWarmBrowser, storeWarmBrowser } from "../warmPool.js";
 
 const PROVIDER_TIMEOUT_PER_PROMPT_MS = 5 * 60 * 1000; // 5 min per prompt
 const ATTEMPTS_PER_CYCLE = 10;
@@ -79,13 +80,29 @@ function getFailureType(err: unknown): ReturnType<typeof classifyError> {
 	return classifyError(err);
 }
 
+async function invalidateAndEvict(
+	refs: Refs,
+	provider: Provider,
+	sessionKey: string | undefined,
+): Promise<void> {
+	await invalidateAndEvict(refs, provider, sessionKey);
+	// Also evict the warm pool — any stored browser is tied to the now-invalid
+	// proxy and must not be reused by the next retry cycle.
+	if (sessionKey) {
+		await evictWarmBrowser(provider, sessionKey).catch(() => {});
+	}
+}
+
 async function closeContextAndBrowser(refs: Refs): Promise<void> {
 	// Close context first, then let cleanup() handle browser + process + forwarder.
 	// Don't call refs.browser.close() here — cleanup() already does it and
 	// double-closing triggers silent errors.
+	const hadRefs = refs.context !== null || refs.cleanup !== null;
 	await refs.context?.close().catch(() => {});
 	await refs.cleanup?.().catch(() => {});
-	logger.debug("browser closed");
+	if (hadRefs) {
+		logger.debug("browser closed");
+	}
 }
 
 function updatePayloadAfterIpRefresh(
@@ -183,12 +200,14 @@ async function runRetryCycle(
 					page: refs.page,
 					proxy: refs.proxy,
 					cleanup: refs.cleanup ?? null,
+					invalidateProxyHint: refs.invalidateProxyHint ?? null,
 					storedAt: Date.now(),
 				}).catch(() => {}); // storage failure → finally closes normally
 				refs.browser = null;
 				refs.context = null;
 				refs.page = null;
 				refs.cleanup = null;
+				refs.invalidateProxyHint = null;
 			}
 
 			return { done: true };
@@ -206,7 +225,7 @@ async function runRetryCycle(
 					plog.warn(
 						`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 					);
-					await refs.invalidateProxyHint?.();
+					await invalidateAndEvict(refs, provider, sessionKey);
 					await sleep(BOT_DETECTION_COOLDOWN);
 					break;
 				}
@@ -215,7 +234,7 @@ async function runRetryCycle(
 					plog.warn(
 						`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
 					);
-					await refs.invalidateProxyHint?.();
+					await invalidateAndEvict(refs, provider, sessionKey);
 					break;
 				}
 
@@ -223,8 +242,19 @@ async function runRetryCycle(
 					plog.warn(
 						`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 					);
-					await refs.invalidateProxyHint?.();
+					await invalidateAndEvict(refs, provider, sessionKey);
 					break;
+				}
+
+				if (failureType === "unknown" && getProviderSessionScope(provider) === "google") {
+					// Only invalidate the shared proxy hint for Google-family providers
+					// (gemini / ai-overview). For non-Google providers, unknown failures
+					// are more likely DOM drift than a proxy problem — invalidating would
+					// burn a healthy proxy for ChatGPT/Perplexity with no benefit.
+					plog.warn(
+						`unknown failure on attempt ${totalAttempt}/${totalMax}; invalidating google proxy hint before IP refresh`,
+					);
+					await invalidateAndEvict(refs, provider, sessionKey);
 				}
 
 				if (attempt < ATTEMPTS_PER_CYCLE - 1) {
@@ -243,7 +273,7 @@ async function runRetryCycle(
 				plog.warn(
 					`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 				);
-				await refs.invalidateProxyHint?.();
+				await invalidateAndEvict(refs, provider, sessionKey);
 				await sleep(BOT_DETECTION_COOLDOWN);
 				break;
 			}
@@ -252,7 +282,7 @@ async function runRetryCycle(
 				plog.warn(
 					`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
 				);
-				await refs.invalidateProxyHint?.();
+				await invalidateAndEvict(refs, provider, sessionKey);
 				break;
 			}
 
@@ -260,7 +290,7 @@ async function runRetryCycle(
 				plog.warn(
 					`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 				);
-				await refs.invalidateProxyHint?.();
+				await invalidateAndEvict(refs, provider, sessionKey);
 				break;
 			}
 

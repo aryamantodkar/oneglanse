@@ -461,9 +461,13 @@ function buildLaunchPayload(args: {
 	}
 	if (env.CAMOUFOX_GEOIP_DB) payload.geoip_db = env.CAMOUFOX_GEOIP_DB;
 
-	const os = parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS);
-	if (os !== undefined) payload.os = os;
+	// Default to Windows + macOS only — Linux desktop is ~2-5% market share and
+	// heavily scrutinised by bot detection. Override with CAMOUFOX_OS if needed.
+	payload.os = parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS) ?? ["windows", "macos"];
 
+	// Let camoufox derive locale from geoip by default — it picks the correct
+	// locale for the proxy's exit country, keeping locale/timezone/IP coherent.
+	// Only override via CAMOUFOX_LOCALE if you know all exit IPs share a region.
 	const locale = parseStringOrList("CAMOUFOX_LOCALE", env.CAMOUFOX_LOCALE);
 	if (locale !== undefined) payload.locale = locale;
 
@@ -479,8 +483,15 @@ function buildLaunchPayload(args: {
 	)?.map((value) => value.toUpperCase());
 	if (excludeAddons !== undefined) payload.exclude_addons = excludeAddons;
 
-	const screen = parseScreenConstraints(env.CAMOUFOX_SCREEN);
-	if (screen !== undefined) payload.screen = screen;
+	// Constrain screen to real-world resolutions by default. Without constraints
+	// BrowserForge can generate a screen smaller than the viewport — physically
+	// impossible and a fingerprinting signal. Override with CAMOUFOX_SCREEN if needed.
+	payload.screen = parseScreenConstraints(env.CAMOUFOX_SCREEN) ?? {
+		min_width: 1366,
+		max_width: 1920,
+		min_height: 768,
+		max_height: 1080,
+	};
 
 	const window = parseNumberPair("CAMOUFOX_WINDOW", env.CAMOUFOX_WINDOW);
 	if (window !== undefined) payload.window = window;
@@ -502,10 +513,9 @@ function buildLaunchPayload(args: {
 		(isJsonRecord(extraLaunch.fingerprint) ? extraLaunch.fingerprint : undefined);
 	if (fingerprint !== undefined) payload.fingerprint = fingerprint;
 
-	const fingerprintPreset = parseFingerprintPreset(env.CAMOUFOX_FINGERPRINT_PRESET);
-	if (fingerprintPreset !== undefined) {
-		payload.fingerprint_preset = fingerprintPreset;
-	}
+	// Use real device capture data by default — more coherent attribute bundles
+	// (canvas, fonts, audio, plugins) than synthetic generation.
+	payload.fingerprint_preset = parseFingerprintPreset(env.CAMOUFOX_FINGERPRINT_PRESET) ?? true;
 
 	const argsList = parseStringList("CAMOUFOX_ARGS", env.CAMOUFOX_ARGS) ?? extraArgs;
 	if (argsList !== undefined) payload.args = argsList;

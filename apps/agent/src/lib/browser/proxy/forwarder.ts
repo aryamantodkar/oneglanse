@@ -595,6 +595,34 @@ function relaySockets(
 	upstreamSocket.pipe(clientSocket);
 }
 
+/**
+ * Quick TCP reachability check for an upstream proxy.
+ * Returns true if a connection can be established within timeoutMs, false otherwise.
+ * Uses a 2s default — fast enough to not block launch, long enough for residential proxies.
+ */
+export function checkProxyReachable(
+	host: string,
+	port: number,
+	timeoutMs = 2_000,
+): Promise<boolean> {
+	return new Promise((resolve) => {
+		const socket = netConnect({ host, port });
+		const timer = setTimeout(() => {
+			socket.destroy();
+			resolve(false);
+		}, timeoutMs);
+		socket.once("connect", () => {
+			clearTimeout(timer);
+			socket.destroy();
+			resolve(true);
+		});
+		socket.once("error", () => {
+			clearTimeout(timer);
+			resolve(false);
+		});
+	});
+}
+
 export async function createProxyForwarder(
 	proxy: UpstreamProxyConfig,
 ): Promise<ProxyForwarderHandle> {

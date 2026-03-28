@@ -53,7 +53,10 @@ async function startWorkers() {
 		);
 
 		worker.on("active", (job) => {
-			logger.log(`[provider:${provider}] job started ${job.id}`);
+			// BullMQ fires "active" when the job is dequeued — before the stagger
+			// delay and execution gate run. Real execution start is logged inside
+			// runWithProviderExecutionGate after all gates are acquired.
+			logger.debug(`[provider:${provider}] job queued ${job.id}`);
 		});
 
 		worker.on("completed", (job) => {

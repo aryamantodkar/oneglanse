@@ -8,6 +8,7 @@ export type WarmEntry = {
 	page: Page;
 	proxy: string | null;
 	cleanup: (() => Promise<void>) | null;
+	invalidateProxyHint: (() => Promise<void>) | null;
 	storedAt: number;
 };
 
