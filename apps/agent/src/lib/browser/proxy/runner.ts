@@ -18,7 +18,7 @@ import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
 import { storeWarmBrowser } from "../warmPool.js";
 
-const PROVIDER_TIMEOUT = 25 * 60 * 1000; // 25 minutes
+const PROVIDER_TIMEOUT_PER_PROMPT_MS = 5 * 60 * 1000; // 5 min per prompt
 const ATTEMPTS_PER_CYCLE = 10;
 const MAX_CYCLES = 3;
 const INITIAL_BACKOFF = 5_000;
@@ -104,6 +104,7 @@ async function runSingleAttempt(
 	label: string,
 	refs: Refs,
 	executor: AttemptExecutor,
+	timeoutMs: number,
 ): Promise<AskPromptResult[]> {
 	return await Promise.race([
 		(async () => {
@@ -124,10 +125,10 @@ async function runSingleAttempt(
 					reject(
 						new ExternalServiceError(
 							label,
-							`timed out after ${PROVIDER_TIMEOUT / 1000}s`,
+							`timed out after ${timeoutMs / 1000}s`,
 						),
 					),
-				PROVIDER_TIMEOUT,
+				timeoutMs,
 			),
 		),
 	]);
@@ -143,6 +144,7 @@ async function runRetryCycle(
 	plog: ReturnType<typeof createProviderLogger>,
 	executor: AttemptExecutor,
 	sessionKey?: string,
+	timeoutMs?: number,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
 	let nextPayload = currentPayload;
 
@@ -166,6 +168,7 @@ async function runRetryCycle(
 				label,
 				refs,
 				executor,
+				timeoutMs ?? PROVIDER_TIMEOUT_PER_PROMPT_MS,
 			);
 
 			accumulatedResults.push(...result);
@@ -261,6 +264,13 @@ async function runRetryCycle(
 				break;
 			}
 
+			if (failureType === "browser_crash") {
+				plog.warn(
+					`browser crash on attempt ${totalAttempt}/${totalMax}; retrying immediately`,
+				);
+				continue;
+			}
+
 			if (attempt < ATTEMPTS_PER_CYCLE - 1) {
 				await sleep(jitter(RETRY_DELAY));
 			}
@@ -295,6 +305,11 @@ export async function runWithRetryCycles(
 		((attempt, currentAttemptPayload) =>
 			runAgents(currentAttemptPayload, attempt.page, provider));
 
+	// Scale timeout by prompt count so multi-prompt jobs don't time out mid-run.
+	// Each prompt gets 5 min; browser launch/warmup overhead is absorbed in the first slot.
+	const timeoutMs = Math.max(1, payload.prompts.length) * PROVIDER_TIMEOUT_PER_PROMPT_MS;
+	plog.log(`attempt timeout: ${timeoutMs / 60000}min (${payload.prompts.length} prompt(s))`);
+
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
 		if (cycle > 0) {
 			const backoff = jitter(
@@ -316,6 +331,7 @@ export async function runWithRetryCycles(
 			plog,
 			executor,
 			options?.sessionKey,
+			timeoutMs,
 		);
 
 		if (outcome.done) {

@@ -28,5 +28,11 @@ export function classifyError(err: unknown): FailureType {
 		return "no_editor";
 	if (/extraction.*fail|empty.*response/i.test(msg)) return "extraction_failed";
 	if (/timed?\s*out/i.test(msg)) return "timeout";
+	if (
+		/window is null|protocol error|browser has been closed|target crashed|browser.*disconnect/i.test(
+			msg,
+		)
+	)
+		return "browser_crash";
 	return "unknown";
 }
