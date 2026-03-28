@@ -21,7 +21,7 @@ import { evictWarmBrowser, storeWarmBrowser } from "../warmPool.js";
 
 // Per-prompt attempt budget. Browser launch/warmup overhead is absorbed into the
 // first prompt slot. Scale by prompt count in runWithRetryCycles.
-const PROVIDER_TIMEOUT_PER_PROMPT_MS = 2.5 * 60 * 1000; // 2.5 min per prompt
+const PROVIDER_TIMEOUT_PER_PROMPT_MS = 3.5 * 60 * 1000; // 3.5 min per prompt (accounts for warmup overhead on slow proxies)
 const ATTEMPTS_PER_CYCLE = 10;
 const MAX_CYCLES = 3;
 const INITIAL_BACKOFF = 5_000;
