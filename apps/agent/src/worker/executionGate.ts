@@ -5,7 +5,7 @@ import {
 	getProviderStartupDelayRange,
 } from "../lib/browser/providerScope.js";
 
-export const MAX_PARALLEL_PROVIDER_JOBS = 2;
+export const MAX_PARALLEL_PROVIDER_JOBS = 3;
 
 const slotWaiters: Array<() => void> = [];
 const familyWaiters = new Map<string, Array<() => void>>();

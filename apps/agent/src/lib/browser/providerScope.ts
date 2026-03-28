@@ -17,8 +17,10 @@ export function getProviderStartupDelayRange(provider: Provider): {
 	}
 
 	if (provider === "ai-overview") {
-		// Let Gemini establish Google cookies first when both are enabled.
-		return { minMs: 8_000, maxMs: 14_000 };
+		// Small stagger to avoid simultaneous proxy allocation with Gemini.
+		// ensureGoogleCookies() handles Google cookie establishment inline,
+		// so a full 8-14s delay to "wait for Gemini" is no longer needed.
+		return { minMs: 3_000, maxMs: 5_000 };
 	}
 
 	return { minMs: 1_500, maxMs: 4_500 };

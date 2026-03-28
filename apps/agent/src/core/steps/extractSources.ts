@@ -23,7 +23,8 @@ async function extractSourcesFromPanel(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
-	await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+	// Sources are rendered as part of the response — no need to wait for networkidle.
+	// The 5s networkidle wait was adding ~5s to every prompt's critical path.
 
 	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
 
