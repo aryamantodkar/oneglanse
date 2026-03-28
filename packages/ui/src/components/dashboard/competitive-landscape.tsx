@@ -5,8 +5,18 @@ import { Users } from "lucide-react";
 import { useMemo, type JSX } from "react";
 import { Card } from "../card.js";
 import { SentimentMetricCell } from "../cell.js";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table.js";
-import { useSortState, type SortDirection } from "../../hooks/use-sort-state.js";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../table.js";
+import {
+	useSortState,
+	type SortDirection,
+} from "../../hooks/use-sort-state.js";
 import { DashboardEmptyState } from "./empty-state.js";
 import { SortableHeader } from "./sortable-header.js";
 import type { DashboardCompetitorData } from "./types.js";
@@ -109,8 +119,8 @@ export function CompetitiveLandscape({
 					description="No analysis data is available for the selected filters."
 				/>
 			) : (
-				<div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-					<Table className="w-full table-fixed">
+				<div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+					<Table className="min-w-[420px] w-full table-fixed sm:min-w-0">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
 								<TableHead className="px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -162,18 +172,19 @@ export function CompetitiveLandscape({
 										className="border-b border-gray-100 last:border-0 dark:border-gray-800"
 									>
 										<TableCell className="px-3 py-3.5">
-											<div className="flex items-center gap-2.5">
+											<div className="flex min-w-0 items-center gap-2.5">
 												{favicon ? (
 													<img
 														src={favicon}
 														alt=""
-														className="h-4 w-4 rounded-sm"
+														className="h-4 w-4 shrink-0 rounded-sm"
 														onError={(e) => {
-															(e.target as HTMLImageElement).style.display = "none";
+															(e.target as HTMLImageElement).style.display =
+																"none";
 														}}
 													/>
 												) : null}
-												<span className="whitespace-normal break-words text-sm font-medium text-gray-900 dark:text-gray-100">
+												<span className="min-w-0 whitespace-normal break-words text-sm font-medium text-gray-900 dark:text-gray-100">
 													{row.name}
 												</span>
 												{row.isBrand ? (

@@ -162,33 +162,49 @@
 
 @layer components {
 	.web-page-wide {
-		@apply min-h-svh;
-		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+		@apply min-h-svh min-w-0 overflow-x-hidden;
+		animation: ui-fade-up var(--motion-duration-slow)
+			var(--motion-ease-emphasized) both;
 	}
 
 	.web-page-wide-inner {
-		@apply mx-auto w-full max-w-[95vw] px-4 sm:px-6 lg:px-8 xl:max-w-[1600px];
+		@apply mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 xl:max-w-[1600px];
 	}
 
 	.web-page-panel {
-		@apply mx-auto w-full space-y-8 py-6;
-		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+		@apply mx-auto w-full min-w-0 max-w-full space-y-8 py-6;
+		animation: ui-fade-up var(--motion-duration-slow)
+			var(--motion-ease-emphasized) both;
 	}
 
 	.web-page-panel > * {
 		opacity: 0;
-		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+		animation: ui-fade-up var(--motion-duration-slow)
+			var(--motion-ease-emphasized) both;
 	}
 
-	.web-page-panel > *:nth-child(1) { animation-delay: 30ms; }
-	.web-page-panel > *:nth-child(2) { animation-delay: 80ms; }
-	.web-page-panel > *:nth-child(3) { animation-delay: 130ms; }
-	.web-page-panel > *:nth-child(4) { animation-delay: 180ms; }
-	.web-page-panel > *:nth-child(5) { animation-delay: 230ms; }
-	.web-page-panel > *:nth-child(6) { animation-delay: 280ms; }
+	.web-page-panel > *:nth-child(1) {
+		animation-delay: 30ms;
+	}
+	.web-page-panel > *:nth-child(2) {
+		animation-delay: 80ms;
+	}
+	.web-page-panel > *:nth-child(3) {
+		animation-delay: 130ms;
+	}
+	.web-page-panel > *:nth-child(4) {
+		animation-delay: 180ms;
+	}
+	.web-page-panel > *:nth-child(5) {
+		animation-delay: 230ms;
+	}
+	.web-page-panel > *:nth-child(6) {
+		animation-delay: 280ms;
+	}
 
 	.web-centered-page {
-		@apply flex min-h-svh items-center justify-center bg-background p-4;
-		animation: ui-fade-up var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+		@apply flex min-h-svh min-w-0 items-center justify-center overflow-x-hidden bg-background p-4;
+		animation: ui-fade-up var(--motion-duration-slow)
+			var(--motion-ease-emphasized) both;
 	}
 }

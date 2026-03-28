@@ -34,15 +34,15 @@ export function DashboardFilters({
 
 		setModelFilter("All Models");
 		setTimeFilter("all");
-		
+
 		const query = params.toString();
 		router.push(query ? `?${query}` : "?", { scroll: false });
 	};
 
 	return (
-		<div className="flex items-center gap-3">
+		<div className="flex w-full flex-wrap items-center gap-2 sm:gap-3">
 			{/* Brand pill */}
-			<div className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-px hover:shadow-sm dark:border-gray-800 dark:bg-gray-950">
+			<div className="flex h-9 min-w-0 max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-px hover:shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:max-w-[240px]">
 				{faviconUrls[0] && (
 					<img
 						src={faviconUrls[0]}
@@ -53,7 +53,7 @@ export function DashboardFilters({
 						}
 					/>
 				)}
-				<span className="font-medium text-gray-900 dark:text-gray-100">
+				<span className="truncate font-medium text-gray-900 dark:text-gray-100">
 					{brandName}
 				</span>
 			</div>
@@ -61,24 +61,24 @@ export function DashboardFilters({
 			<ProviderModelSelect
 				value={modelFilter}
 				onValueChange={setModelFilter}
-				triggerClassName="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+				triggerClassName="h-9 w-full rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 sm:w-44"
 				contentClassName="z-[9999]"
 			/>
 
 			<TimeRangeSelect
 				value={timeFilter}
 				onValueChange={setTimeFilter}
-				triggerClassName="h-9 w-40 text-sm"
+				triggerClassName="h-9 w-full text-sm sm:w-40"
 			/>
 
 			{(modelFilter !== "All Models" || timeFilter !== "all") && (
 				<>
-					<Separator orientation="vertical" className="h-4" />
+					<Separator orientation="vertical" className="hidden h-4 sm:block" />
 					<Button
 						variant="ghost"
 						size="sm"
 						onClick={clearFilters}
-						className="gap-2 text-gray-500 transition-[color,transform] duration-200 hover:text-gray-700"
+						className="w-full gap-2 text-gray-500 transition-[color,transform] duration-200 hover:text-gray-700 sm:w-auto"
 					>
 						<FilterX size={14} />
 						Clear

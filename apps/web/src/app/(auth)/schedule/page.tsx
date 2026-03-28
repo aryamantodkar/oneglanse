@@ -319,10 +319,10 @@ export default function SchedulePage() {
 			) : (
 				<>
 					{currentSchedule && (
-						<div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/20">
-							<div className="flex items-center gap-2">
+						<div className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-blue-800 dark:bg-blue-950/20">
+							<div className="flex min-w-0 items-center gap-2">
 								<Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-								<span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+								<span className="break-words text-sm font-medium text-blue-900 dark:text-blue-100">
 									Active: {getScheduleLabel(currentSchedule)}
 								</span>
 							</div>
@@ -378,7 +378,7 @@ export default function SchedulePage() {
 
 					{/* Save button */}
 					{hasChanges && (
-						<div className="flex justify-end">
+						<div className="flex justify-stretch sm:justify-end">
 							<Button onClick={handleSave} disabled={saving} className="gap-2">
 								{saving ? (
 									<Loader2 className="h-4 w-4 animate-spin" />
@@ -391,8 +391,8 @@ export default function SchedulePage() {
 
 					{/* Run Now — self-hosted only */}
 					{isSelfHosted && (
-						<div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3">
-							<div>
+						<div className="flex flex-col gap-3 rounded-lg border border-gray-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
+							<div className="min-w-0">
 								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 									Run Now
 								</p>
@@ -405,7 +405,7 @@ export default function SchedulePage() {
 								size="sm"
 								onClick={handleRunNow}
 								disabled={isRunning}
-								className="gap-2 shrink-0"
+								className="w-full gap-2 shrink-0 sm:w-auto"
 							>
 								{isRunning ? (
 									<>

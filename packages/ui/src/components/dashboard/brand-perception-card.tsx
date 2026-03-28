@@ -25,7 +25,7 @@ export function BrandPerceptionCard({
 		bestKnownFor || coreClaims.length > 0 || differentiators.length > 0;
 
 	return (
-		<Card className="flex h-full min-h-[460px] flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
+		<Card className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
 			<div>
 				<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 					AI Perception
@@ -77,10 +77,12 @@ export function BrandPerceptionCard({
 								{coreClaims.slice(0, 4).map((claim) => (
 									<li
 										key={claim}
-										className="ui-list-item flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-black"
+										className="ui-list-item flex min-w-0 items-start gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-black"
 									>
 										<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-										<span>{claim.charAt(0).toUpperCase() + claim.slice(1)}</span>
+										<span className="min-w-0 break-words">
+											{claim.charAt(0).toUpperCase() + claim.slice(1)}
+										</span>
 									</li>
 								))}
 							</ul>

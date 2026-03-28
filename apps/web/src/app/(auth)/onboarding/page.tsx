@@ -30,7 +30,7 @@ const SUGGESTED_PROMPTS = [
 
 type ProviderState = "pending" | "running" | "completed" | "failed";
 
-export default function FirstWorkspaceOnboardingPage(){
+export default function FirstWorkspaceOnboardingPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
@@ -105,7 +105,7 @@ export default function FirstWorkspaceOnboardingPage(){
 
 	const analysisCount = useMemo(() => {
 		return analysisQuery.data?.length ?? 0;
-	  }, [analysisQuery.data]);
+	}, [analysisQuery.data]);
 
 	useEffect(() => {
 		if (!started || redirecting || analysisCount === 0) return;
@@ -176,7 +176,7 @@ export default function FirstWorkspaceOnboardingPage(){
 
 	return (
 		<div className="ui-page-enter min-h-screen bg-gradient-to-b from-gray-50 to-white px-4 py-10 dark:from-gray-950 dark:to-gray-950">
-			<div className="ui-stagger mx-auto w-full max-w-5xl">
+			<div className="ui-stagger mx-auto w-full min-w-0 max-w-5xl">
 				<Card className="overflow-hidden border-gray-200/80 shadow-xl dark:border-gray-800">
 					<CardHeader className="border-b border-gray-100 bg-white/90 pb-5 dark:border-gray-800 dark:bg-gray-900/50">
 						<div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
@@ -229,7 +229,7 @@ export default function FirstWorkspaceOnboardingPage(){
 												key={prompt}
 												type="button"
 												onClick={() => appendPrompt(prompt)}
-												className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-left text-xs text-gray-700 transition hover:border-gray-300 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-800"
+												className="max-w-full rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-left text-xs text-gray-700 transition hover:border-gray-300 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-800"
 											>
 												+ {prompt}
 											</button>
@@ -289,7 +289,7 @@ export default function FirstWorkspaceOnboardingPage(){
 									</div>
 								</div>
 
-								<div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+								<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
 									{PROVIDER_LIST.map((provider) => {
 										const state = providerStates[provider] ?? "pending";
 										const isDone = state === "completed";
