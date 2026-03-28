@@ -61,16 +61,21 @@ export async function warmUpProfile(page: Page, provider?: Provider): Promise<vo
 	logger.log("warming up browser profile...");
 	let successCount = 0;
 
-	// Always visit YouTube first — establishes .google.com cookies for every proxy IP.
-	// For Google-destined providers also visit gemini.google.com for deeper session signals.
-	const guaranteedGoogle = provider && GOOGLE_PROVIDERS.has(provider)
-		? [...GOOGLE_WARMUP_SITES]   // youtube + gemini
-		: [GOOGLE_WARMUP_SITES[0]!]; // youtube only
-
-	// Shuffle neutral sites and pick 0–1 of them
+	// Google-family providers: visit YouTube + Gemini to establish .google.com cookies
+	// (NID, SOCS, 1P_JAR) that google.com search reads. Then 0-1 neutral sites.
+	// Non-Google providers: ChatGPT/Perplexity anti-detection is independent of Google.
+	// Skip YouTube (which doesn't help their session signals) and visit 1 neutral site
+	// to simulate a natural browsing history before hitting the target service.
 	const shuffledNeutral = [...NEUTRAL_WARMUP_SITES].sort(() => Math.random() - 0.5);
-	const neutralCount = Math.floor(Math.random() * 2); // 0 or 1
-	const toVisit = [...guaranteedGoogle, ...shuffledNeutral.slice(0, neutralCount)];
+	let toVisit: string[];
+
+	if (provider && GOOGLE_PROVIDERS.has(provider)) {
+		const neutralCount = Math.floor(Math.random() * 2); // 0 or 1
+		toVisit = [...GOOGLE_WARMUP_SITES, ...shuffledNeutral.slice(0, neutralCount)];
+	} else {
+		// One neutral site — provides browsing history without the Google detour
+		toVisit = [shuffledNeutral[0]!];
+	}
 
 	const deadline = Date.now() + WARMUP_TOTAL_TIMEOUT_MS;
 
