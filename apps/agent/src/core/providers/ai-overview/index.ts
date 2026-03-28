@@ -8,6 +8,7 @@ import {
 	humanType,
 	moveMouseToElement,
 } from "../../../lib/browser/humanBehavior.js";
+import { clearEditorInput } from "../../../lib/input/editor/clearInput.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 import type { ProviderConfig } from "../types.js";
@@ -95,16 +96,19 @@ export const aiOverviewConfig: ProviderConfig = {
 			.isVisible({ timeout: 5000 })
 			.catch(() => false);
 
-		if (inputVisible) {
-			await moveMouseToElement(page, searchInput);
-			await searchInput.click();
-			await page.waitForTimeout(randomBetween(300, 700));
-			// Select any existing text (e.g. previous query on SERP) before typing
-			await page.keyboard.press("Control+a");
-			await humanType(page, prompt);
-			await page.waitForTimeout(randomBetween(400, 900));
-			await page.keyboard.press("Enter");
-			await page.waitForLoadState("domcontentloaded").catch(() => {});
+			if (inputVisible) {
+				await moveMouseToElement(page, searchInput);
+				await searchInput.click();
+				await page.waitForTimeout(randomBetween(300, 700));
+				// Clear any existing SERP query using the browser-appropriate modifier
+				// first, while keeping the current Control/setInputValue fallbacks.
+				await clearEditorInput(page, searchInput, {
+					waitAfterMs: randomBetween(80, 180),
+				}).catch(() => false);
+				await humanType(page, prompt);
+				await page.waitForTimeout(randomBetween(400, 900));
+				await page.keyboard.press("Enter");
+				await page.waitForLoadState("domcontentloaded").catch(() => {});
 		} else {
 			// Fallback: search box not found — navigate directly
 			logger.log("[ai-overview] search box not found, falling back to direct URL");
