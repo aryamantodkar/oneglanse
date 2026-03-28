@@ -1,19 +1,12 @@
 import type { Provider } from "@oneglanse/types";
 
 
-export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
-	chatgpt: 90_000,
-	perplexity: 45_000,
-	gemini: 45_000,
-	"ai-overview": 45_000,
-};
+// If no output renders within this window, the page is broken or logged out.
+export const NO_OUTPUT_TIMEOUT_MS = 30_000;
 
-export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
-	chatgpt: 45_000,
-	perplexity: 30_000,
-	gemini: 45_000,
-	"ai-overview": 30_000,
-};
+// If text hasn't changed for this long but the generating indicator is still showing,
+// the model is stuck — force exit rather than waiting indefinitely.
+export const FORCE_EXIT_STABLE_MS = 20_000;
 
 
 // Provider-specific editor selectors used for health checks (most reliable first).

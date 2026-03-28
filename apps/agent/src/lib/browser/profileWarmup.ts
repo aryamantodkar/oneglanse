@@ -55,7 +55,7 @@ async function randomMouseMove(page: Page): Promise<void> {
 }
 
 const WARMUP_NAV_TIMEOUT_MS = 8_000;
-const WARMUP_TOTAL_TIMEOUT_MS = 30_000;
+const WARMUP_TOTAL_TIMEOUT_MS = 20_000;
 
 export async function warmUpProfile(page: Page, provider?: Provider): Promise<void> {
 	logger.log("warming up browser profile...");

@@ -17,5 +17,5 @@ export async function openSourcesPanel(page: Page, btn: Locator): Promise<void> 
 	if (!clicked) {
 		if (!(await clickButtonViaDispatch(page, btn))) return;
 	}
-	await page.waitForTimeout(1000);
+	await page.waitForTimeout(500);
 }

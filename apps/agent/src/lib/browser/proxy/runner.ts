@@ -19,7 +19,9 @@ import { runAgents } from "../../../core/runAgents.js";
 import { getProviderSessionScope } from "../providerScope.js";
 import { evictWarmBrowser, storeWarmBrowser } from "../warmPool.js";
 
-const PROVIDER_TIMEOUT_PER_PROMPT_MS = 5 * 60 * 1000; // 5 min per prompt
+// Per-prompt attempt budget. Browser launch/warmup overhead is absorbed into the
+// first prompt slot. Scale by prompt count in runWithRetryCycles.
+const PROVIDER_TIMEOUT_PER_PROMPT_MS = 2.5 * 60 * 1000; // 2.5 min per prompt
 const ATTEMPTS_PER_CYCLE = 10;
 const MAX_CYCLES = 3;
 const INITIAL_BACKOFF = 5_000;
@@ -336,7 +338,7 @@ export async function runWithRetryCycles(
 			runAgents(currentAttemptPayload, attempt.page, provider));
 
 	// Scale timeout by prompt count so multi-prompt jobs don't time out mid-run.
-	// Each prompt gets 5 min; browser launch/warmup overhead is absorbed in the first slot.
+	// Browser launch/warmup overhead is absorbed into the first prompt slot.
 	const timeoutMs = Math.max(1, payload.prompts.length) * PROVIDER_TIMEOUT_PER_PROMPT_MS;
 	plog.log(`attempt timeout: ${timeoutMs / 60000}min (${payload.prompts.length} prompt(s))`);
 

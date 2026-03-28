@@ -218,6 +218,16 @@ export async function runPageDomOp<T>(
 							) || /challenge/i.test(title),
 						reason: "bot detection: challenge UI present",
 					},
+					{
+						matched:
+							/accounts\.google\.com|auth\.openai\.com|perplexity\.ai\/login/.test(url),
+						reason: "session expired: redirected to login page",
+					},
+					{
+						matched:
+							/sign in to continue|you('ve| have) been signed out|create a free account|log in to continue|sign in to (?:chat|use|access)|please (?:sign|log) in/i.test(bodyText),
+						reason: "session expired: login wall detected",
+					},
 				];
 
 				const hit = signals.find((signal) => signal.matched);
