@@ -54,6 +54,9 @@ async function randomMouseMove(page: Page): Promise<void> {
 	await page.waitForTimeout(randomBetween(200, 500));
 }
 
+const WARMUP_NAV_TIMEOUT_MS = 8_000;
+const WARMUP_TOTAL_TIMEOUT_MS = 30_000;
+
 export async function warmUpProfile(page: Page, provider?: Provider): Promise<void> {
 	logger.log("warming up browser profile...");
 	let successCount = 0;
@@ -69,17 +72,20 @@ export async function warmUpProfile(page: Page, provider?: Provider): Promise<vo
 	const neutralCount = Math.floor(Math.random() * 2); // 0 or 1
 	const toVisit = [...guaranteedGoogle, ...shuffledNeutral.slice(0, neutralCount)];
 
+	const deadline = Date.now() + WARMUP_TOTAL_TIMEOUT_MS;
+
 	for (const url of toVisit) {
+		if (Date.now() >= deadline) break;
 		try {
+			logger.log(`[warmup] visiting ${url}`);
 			await page.goto(url, {
 				waitUntil: "domcontentloaded",
-				timeout: 15_000,
+				timeout: Math.min(WARMUP_NAV_TIMEOUT_MS, deadline - Date.now()),
 			});
-			await page.waitForTimeout(randomBetween(1000, 2500));
+			await page.waitForTimeout(randomBetween(800, 1500));
 			await randomMouseMove(page);
 			await randomScroll(page);
-			await randomMouseMove(page);
-			await page.waitForTimeout(randomBetween(500, 1500));
+			await page.waitForTimeout(randomBetween(300, 800));
 			successCount += 1;
 		} catch {
 			// Non-critical — skip failed warmup sites
