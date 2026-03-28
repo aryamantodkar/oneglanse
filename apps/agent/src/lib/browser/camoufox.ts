@@ -441,7 +441,24 @@ function buildLaunchPayload(args: {
 	}
 
 	const geoip = parseGeoipValue();
-	if (geoip !== undefined) payload.geoip = geoip;
+	if (geoip !== undefined) {
+		// When geoip=true (default), camoufox calls ipecho.net through the proxy to discover
+		// the proxy's public IP for GeoIP lookup. Residential/datacenter proxies commonly
+		// block or SSL-strip this HTTPS request, causing a hard launch failure.
+		// Fix: extract the proxy IP directly and pass it as the geoip value — camoufox
+		// accepts an IP string and uses it for local MaxMind lookup without any network call.
+		if (geoip === true && args.proxy?.server) {
+			try {
+				const { hostname } = new URL(args.proxy.server);
+				const isIpv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+				payload.geoip = isIpv4 ? hostname : geoip;
+			} catch {
+				payload.geoip = geoip;
+			}
+		} else {
+			payload.geoip = geoip;
+		}
+	}
 	if (env.CAMOUFOX_GEOIP_DB) payload.geoip_db = env.CAMOUFOX_GEOIP_DB;
 
 	const os = parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS);
