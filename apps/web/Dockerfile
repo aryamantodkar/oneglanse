@@ -22,6 +22,8 @@ ENV SKIP_ENV_VALIDATION=true
 ENV DATABASE_URL=postgres://stub/stub
 ENV BETTER_AUTH_SECRET=docker-build-secret
 ENV INTERNAL_CRON_SECRET=docker-build-secret
+ARG NEXT_PUBLIC_SELF_HOSTED
+ENV NEXT_PUBLIC_SELF_HOSTED=${NEXT_PUBLIC_SELF_HOSTED}
 
 RUN pnpm turbo build --filter=@oneglanse/web...
 
