@@ -13,10 +13,7 @@ import {
 } from "@oneglanse/services";
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { authorizedWorkspaceProcedure } from "../../../procedures";
-import {
-	parseCronExpressionOrThrow,
-	submitImmediateRunWithRetry,
-} from "../_helpers/scheduling";
+import { parseCronExpressionOrThrow } from "../_helpers/scheduling";
 import {
 	addMemberInputSchema,
 	removeMemberInputSchema,
@@ -133,25 +130,7 @@ export const authorizedWorkspaceRoutes = {
 				schedule,
 			});
 
-			let immediateRun:
-				| { status: "not-requested" }
-				| { status: "queued"; jobId: string }
-				| { status: "empty" }
-				| { status: "failed" } = { status: "not-requested" };
-
-			if (schedule) {
-				const immediateRunResult = await submitImmediateRunWithRetry({
-					workspaceId,
-					userId,
-					maxAttempts: 3,
-				});
-				immediateRun =
-					immediateRunResult.status === "failed"
-						? { status: "failed" }
-						: immediateRunResult;
-			}
-
-			return { ...result, immediateRun };
+			return result;
 		}),
 
 	getCronTiming: authorizedWorkspaceProcedure.query(async ({ ctx }) => {

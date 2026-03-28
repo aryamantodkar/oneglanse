@@ -1,10 +1,13 @@
 "use client";
 
+import { env } from "@/env";
 import { api } from "@/trpc/react";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
-import { Calendar, Check, Clock, Loader2, PlayCircle } from "lucide-react";
+import { Calendar, Check, Clock, Loader2, PlayCircle, Zap } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === "true";
 
 // Helper to convert local hour to UTC hour
 function localHourToUTC(localHour: number): number {
@@ -96,13 +99,18 @@ function getScheduleLabel(cron: string | null): string {
 	return match?.label ?? cron;
 }
 
-export default function SchedulePage(){
+export default function SchedulePage() {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
 	const [selected, setSelected] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
+
+	// On-demand run state
+	const [runJobId, setRunJobId] = useState<string | null>(null);
+	const [isRunning, setIsRunning] = useState(false);
+	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 	const scheduleQuery = api.workspace.getSchedule.useQuery(
 		{ workspaceId },
@@ -119,6 +127,34 @@ export default function SchedulePage(){
 	);
 
 	const setScheduleMutation = api.workspace.setSchedule.useMutation();
+	const runNowMutation = api.agent.run.useMutation();
+
+	const jobStatusQuery = api.agent.status.useQuery(
+		{ workspaceId, jobId: runJobId ?? "" },
+		{
+			enabled: !!runJobId && isRunning,
+			refetchInterval: 3000,
+			refetchIntervalInBackground: true,
+		},
+	);
+
+	// Watch job status and stop polling when complete
+	useEffect(() => {
+		if (!isRunning || !runJobId) return;
+		if (jobStatusQuery.data?.status === "completed") {
+			setIsRunning(false);
+			setRunJobId(null);
+			cronTimingQuery.refetch().catch(() => {});
+			toast.success("Run completed successfully.");
+		}
+	}, [jobStatusQuery.data?.status, isRunning, runJobId]);
+
+	// Cleanup on unmount
+	useEffect(() => {
+		return () => {
+			if (pollRef.current) clearInterval(pollRef.current);
+		};
+	}, []);
 
 	// Sync selected state with fetched schedule
 	useEffect(() => {
@@ -141,21 +177,9 @@ export default function SchedulePage(){
 			setSelected(result.schedule);
 			await Promise.all([scheduleQuery.refetch(), cronTimingQuery.refetch()]);
 			if (!selected) {
-				toast.success("Schedule disabled");
+				toast.success("Schedule disabled.");
 			} else {
-				if (result.immediateRun?.status === "queued") {
-					toast.success("Schedule saved and immediate run started.");
-				} else if (result.immediateRun?.status === "empty") {
-					toast.warning(
-						"Schedule saved, but no prompts are configured for this workspace.",
-					);
-				} else if (result.immediateRun?.status === "failed") {
-					toast.warning(
-						"Schedule saved, but immediate run failed. It will run on the next cron cycle.",
-					);
-				} else {
-					toast.success("Schedule saved.");
-				}
+				toast.success("Schedule saved.");
 			}
 		} catch (err) {
 			console.error(err);
@@ -181,6 +205,26 @@ export default function SchedulePage(){
 			toast.error("Failed to disable schedule.");
 		} finally {
 			setSaving(false);
+		}
+	};
+
+	const handleRunNow = async () => {
+		setIsRunning(true);
+		try {
+			const result = await runNowMutation.mutateAsync({ workspaceId });
+			if (result.status === "queued" && result.jobId) {
+				setRunJobId(result.jobId);
+			} else if (result.status === "empty") {
+				setIsRunning(false);
+				toast.warning("No prompts configured for this workspace.");
+			} else {
+				setIsRunning(false);
+				toast.error("Failed to start run.");
+			}
+		} catch (err) {
+			console.error(err);
+			setIsRunning(false);
+			toast.error("Failed to start run.");
 		}
 	};
 
@@ -334,7 +378,7 @@ export default function SchedulePage(){
 
 					{/* Save button */}
 					{hasChanges && (
-						<div className="flex flex-col items-end gap-2">
+						<div className="flex justify-end">
 							<Button onClick={handleSave} disabled={saving} className="gap-2">
 								{saving ? (
 									<Loader2 className="h-4 w-4 animate-spin" />
@@ -342,10 +386,39 @@ export default function SchedulePage(){
 									"Save Schedule"
 								)}
 							</Button>
-							<p className="text-xs text-gray-400 dark:text-gray-500">
-								Prompts will run immediately and then follow the selected
-								schedule.
-							</p>
+						</div>
+					)}
+
+					{/* Run Now — self-hosted only */}
+					{isSelfHosted && (
+						<div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3">
+							<div>
+								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+									Run Now
+								</p>
+								<p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+									Trigger an immediate run outside of the schedule.
+								</p>
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleRunNow}
+								disabled={isRunning}
+								className="gap-2 shrink-0"
+							>
+								{isRunning ? (
+									<>
+										<Loader2 className="h-4 w-4 animate-spin" />
+										Running…
+									</>
+								) : (
+									<>
+										<Zap className="h-4 w-4" />
+										Run Now
+									</>
+								)}
+							</Button>
 						</div>
 					)}
 				</>
