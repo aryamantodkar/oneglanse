@@ -4,8 +4,8 @@ import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
 import {
-	humanType,
 	moveMouseToElement,
+	pastePrompt,
 	preInteractionIdle,
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
@@ -52,9 +52,9 @@ export async function askPrompt(
 	// type into the DOM but readInputValue() to return empty (ChatGPT prompt 2+).
 	await input.click();
 
-	logger.debug(`typing ${prompt.length} chars…`);
-	await humanType(page, prompt);
-	logger.debug("typing complete");
+	logger.debug(`pasting ${prompt.length} chars…`);
+	await pastePrompt(page, prompt);
+	logger.debug("paste complete");
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);

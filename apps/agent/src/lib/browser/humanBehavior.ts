@@ -136,6 +136,24 @@ export async function randomMouseJitter(page: Page): Promise<void> {
 	await page.mouse.move(x, y, { steps: randomBetween(5, 12) });
 }
 
+/**
+ * Inserts prompt text instantly via keyboard.insertText (no char-by-char simulation).
+ * Handles multiline prompts by splitting on \n and pressing Shift+Enter between lines
+ * so the newline doesn't trigger submit in chat UIs.
+ */
+export async function pastePrompt(page: Page, text: string): Promise<void> {
+	const lines = text.split("\n");
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (line) {
+			await page.keyboard.type(line);
+		}
+		if (i < lines.length - 1) {
+			await page.keyboard.press("Shift+Enter");
+		}
+	}
+}
+
 export async function humanType(page: Page, text: string): Promise<void> {
 	let charsSinceLastPause = 0;
 	const pauseThreshold = randomBetween(10, 20);

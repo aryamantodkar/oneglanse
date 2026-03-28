@@ -131,7 +131,8 @@ async function attemptSubmit(
 	attempt: SubmitAttempt,
 ): Promise<boolean> {
 	try {
-		await PROVIDER_CONFIGS[ctx.provider].beforeSubmitHook?.(ctx.page);
+		// beforeSubmitHook is called once in askPrompt.ts before the submit loop.
+		// Do NOT call it again here — it was causing double modal sweeps per attempt.
 		const success = await attempt.run();
 
 		if (success) {
