@@ -2,11 +2,12 @@ import type { Provider } from "@oneglanse/types";
 
 
 // If no output renders within this window, the page is broken or logged out.
-export const NO_OUTPUT_TIMEOUT_MS = 30_000;
+export const NO_OUTPUT_TIMEOUT_MS = 45_000;
 
 // If text hasn't changed for this long but the generating indicator is still showing,
 // the model is stuck — force exit rather than waiting indefinitely.
-export const FORCE_EXIT_STABLE_MS = 20_000;
+// 30s accommodates reasoning-model pauses (ChatGPT o-series can pause 20s+ mid-thought).
+export const FORCE_EXIT_STABLE_MS = 30_000;
 
 
 // Provider-specific editor selectors used for health checks (most reliable first).

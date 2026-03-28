@@ -105,6 +105,16 @@ export const aiOverviewConfig: ProviderConfig = {
 			await page.waitForTimeout(randomBetween(400, 900));
 			await page.keyboard.press("Enter");
 			await page.waitForLoadState("domcontentloaded").catch(() => {});
+
+			// Guard: if the navigation didn't land on search results (timeout or no-op),
+			// fall back to direct URL so extraction never runs on the wrong page.
+			if (!page.url().includes("/search")) {
+				logger.log("[ai-overview] Enter navigation did not reach search results, falling back to direct URL");
+				await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
+					waitUntil: "domcontentloaded",
+					timeout: 30000,
+				});
+			}
 		} else {
 			// Fallback: search box not found — navigate directly
 			logger.log("[ai-overview] search box not found, falling back to direct URL");
