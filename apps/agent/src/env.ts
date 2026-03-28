@@ -48,7 +48,7 @@ const AgentEnvSchema = z
 		MAX_PROMPT_RETRIES_PER_IP: asNumber(3).default(3),
 		PROMPT_RETRY_DELAY_MS: asNumber(1_000).default(1_000),
 		MAX_PROMPT_RETRY_DELAY_MS: asNumber(5_000).default(5_000),
-		SUBMISSION_PHASE_TIMEOUT_MS: asNumber(15_000).default(15_000),
+		SUBMISSION_PHASE_TIMEOUT_MS: asNumber(30_000).default(30_000),
 		PROXY_SCHEME: z.enum(["http", "https", "socks4", "socks5"]).optional(),
 		PROXY_HOST: z.string().trim().optional(),
 		PROXY_PORT: z.string().trim().optional(),
