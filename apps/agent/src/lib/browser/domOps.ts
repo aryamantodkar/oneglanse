@@ -187,10 +187,10 @@ export async function runPageDomOp<T>(
 				return { selector: "none", html: "" };
 			}
 
-			function detectBotPageState(): {
-				botDetected: boolean;
-				reason: string | null;
-			} {
+				function detectBotPageState(): {
+					botDetected: boolean;
+					reason: string | null;
+				} {
 				const bodyText = (document.body?.innerText || "")
 					.replace(/\s+/g, " ")
 					.trim();
@@ -231,11 +231,21 @@ export async function runPageDomOp<T>(
 				];
 
 				const hit = signals.find((signal) => signal.matched);
-				return {
-					botDetected: Boolean(hit),
-					reason: hit?.reason ?? null,
-				};
-			}
+					return {
+						botDetected: Boolean(hit),
+						reason: hit?.reason ?? null,
+					};
+				}
+
+				function getPlatformName(): string {
+					const uaDataPlatform =
+						(
+							navigator as Navigator & {
+								userAgentData?: { platform?: string };
+							}
+						).userAgentData?.platform || "";
+					return String(uaDataPlatform || navigator.platform || "").toLowerCase();
+				}
 
 			function extractChatgptRawSources(sels: any) {
 				const results: Array<{
@@ -616,10 +626,12 @@ export async function runPageDomOp<T>(
 						outerWidth: window.outerWidth,
 						innerWidth: window.innerWidth,
 					};
-				case "detect-bot-page":
-					return detectBotPageState();
-				case "response-text":
-					return readResponseText(
+					case "detect-bot-page":
+						return detectBotPageState();
+					case "platform-name":
+						return getPlatformName();
+					case "response-text":
+						return readResponseText(
 						String(currentParams?.provider || ""),
 						(currentParams?.selectors as string[]) || [],
 					);

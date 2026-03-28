@@ -44,6 +44,17 @@ export async function pressKeyLikeUser(
 	return true;
 }
 
+export async function getBrowserPrimaryModifier(
+	page: Page,
+): Promise<"Meta" | "Control"> {
+	try {
+		const platform = await page.runDomOp<string>("platform-name");
+		return platform.includes("mac") ? "Meta" : "Control";
+	} catch {
+		return "Control";
+	}
+}
+
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }

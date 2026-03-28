@@ -1,6 +1,7 @@
 import type { Locator, Page } from "playwright";
 import {
 	clickLocatorLikeUser,
+	getBrowserPrimaryModifier,
 	pressKeyLikeUser,
 } from "../../browser/humanBehavior.js";
 
@@ -24,27 +25,35 @@ export async function clearEditorInput(
 	const count = await input.count().catch(() => 0);
 	if (count === 0) return false;
 
-	try {
-		const clicked = await clickLocatorLikeUser(page, input, {
-			force: true,
-			timeout: clickTimeoutMs,
-		}).catch(() => false);
+		try {
+			const clicked = await clickLocatorLikeUser(page, input, {
+				force: true,
+				timeout: clickTimeoutMs,
+			}).catch(() => false);
 		if (!clicked) {
 			return false;
 		}
 
-		// Always use Control — Camoufox presents as Windows/macOS but the host is
-		// Linux. Control+A selects all in browser inputs regardless of the claimed OS.
-		await pressKeyLikeUser(page, "Control+A").catch(() => null);
-		await pressKeyLikeUser(page, "Backspace").catch(() => null);
-		const clearedByKeyboard = await input
-			.readInputValue()
-			.then((value) => value.trim().length === 0)
-			.catch(() => false);
+			const primaryModifier = await getBrowserPrimaryModifier(page);
+			const selectAllShortcuts =
+				primaryModifier === "Control"
+					? ["Control+A"]
+					: [`${primaryModifier}+A`, "Control+A"];
 
-		if (!clearedByKeyboard) {
-			await input.setInputValue("");
-		}
+			let clearedByKeyboard = false;
+			for (const shortcut of selectAllShortcuts) {
+				await pressKeyLikeUser(page, shortcut).catch(() => null);
+				await pressKeyLikeUser(page, "Backspace").catch(() => null);
+				clearedByKeyboard = await input
+					.readInputValue()
+					.then((value) => value.trim().length === 0)
+					.catch(() => false);
+				if (clearedByKeyboard) break;
+			}
+
+			if (!clearedByKeyboard) {
+				await input.setInputValue("");
+			}
 
 		if (dismissWithEscape) {
 			await pressKeyLikeUser(page, "Escape").catch(() => null);
