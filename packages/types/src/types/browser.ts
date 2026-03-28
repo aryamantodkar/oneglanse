@@ -6,6 +6,7 @@ export type FailureType =
 	| "no_editor"
 	| "extraction_failed"
 	| "timeout"
+	| "browser_crash"
 	| "unknown";
 
 
