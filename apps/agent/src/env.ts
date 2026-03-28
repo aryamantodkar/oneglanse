@@ -38,7 +38,7 @@ const AgentEnvSchema = z
 		MIN_RESPONSE_CHARS: asNumber(600).default(600),
 		STEP_EXECUTION_TIMEOUT_MS: asNumber(180_000).default(180_000),
 		PAGE_DEFAULT_TIMEOUT_MS: asNumber(30_000).default(30_000),
-		PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS: asNumber(30_000).default(30_000),
+		PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS: asNumber(60_000).default(60_000),
 		PROVIDER_HOOK_TIMEOUT_MS: asNumber(20_000).default(20_000),
 		MAX_EXTRACTION_RETRIES: asNumber(2).default(2),
 		EXTRACTION_RETRY_DELAY_MS: asNumber(2_000).default(2_000),
