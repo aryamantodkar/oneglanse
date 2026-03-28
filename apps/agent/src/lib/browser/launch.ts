@@ -392,7 +392,6 @@ export async function launchContext(
 		const browser = context.getBrowser();
 
 		if (
-			isNewProfile &&
 			persistProfile &&
 			profileIdentity &&
 			!(await isProfileWarmed(provider, profileIdentity, profileScope))
