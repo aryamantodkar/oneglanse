@@ -89,7 +89,10 @@ async function ensureInputHasWords(
 
 async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
-	await page.waitForTimeout(300);
+	// 500ms gives the page time to react before we sample state.
+	// 300ms was too short — some providers briefly hide the input during a
+	// React state transition, causing Check 3 to fire as a false positive.
+	await page.waitForTimeout(500);
 
 	// Ask provider config for a custom success signal first.
 	// undefined = no opinion, fall through to generic checks below.
@@ -101,7 +104,6 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 
 	// Check 1: Input cleared (most reliable signal)
 	const currentContent = await input.readInputValue().catch(() => preSubmitContent);
-
 	if (currentContent !== preSubmitContent && currentContent.length === 0) {
 		return true;
 	}
@@ -111,10 +113,14 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 		return true;
 	}
 
-	// Check 3: Input field is gone (some providers remove it after submit)
-	const inputGone = await input.isVisible().catch(() => false);
-	if (!inputGone) {
-		return true;
+	// Check 3: Input field is gone — double-check to rule out transient DOM hides.
+	// isVisible() returns false if the element is hidden/removed. On error, assume
+	// visible (conservative) so we don't falsely report success on a page crash.
+	const inputVisible = await input.isVisible().catch(() => true);
+	if (!inputVisible) {
+		await page.waitForTimeout(200);
+		const stillGone = !(await input.isVisible().catch(() => true));
+		return stillGone;
 	}
 
 	return false;

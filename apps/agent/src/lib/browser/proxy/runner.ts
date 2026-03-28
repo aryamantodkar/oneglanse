@@ -85,7 +85,7 @@ async function invalidateAndEvict(
 	provider: Provider,
 	sessionKey: string | undefined,
 ): Promise<void> {
-	await invalidateAndEvict(refs, provider, sessionKey);
+	await refs.invalidateProxyHint?.();
 	// Also evict the warm pool — any stored browser is tied to the now-invalid
 	// proxy and must not be reused by the next retry cycle.
 	if (sessionKey) {

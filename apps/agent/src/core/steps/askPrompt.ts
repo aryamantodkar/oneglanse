@@ -103,8 +103,8 @@ export async function askPrompt(
 		(async () => {
 			let submitted = false;
 			if (sendButton) submitted = await tryNativeClick(ctx);
-			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
 			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
+			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
 			if (!submitted) submitted = await tryEnterSubmit(ctx);
 			return submitted;
 		})(),
