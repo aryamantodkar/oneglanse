@@ -51,18 +51,20 @@ export function SignupForm({
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		setIsLoading(true);
-		try {
-			await authClient.signUp.email({
-				email: values.email,
-				password: values.password,
-				name: values.username,
-			});
+
+		const { error } = await authClient.signUp.email({
+			email: values.email,
+			password: values.password,
+			name: values.username,
+		});
+
+		if (error) {
+			toast.error(error.message ?? "Failed to sign up.");
+		} else {
 			toast.success("Signed up successfully!");
 			router.push("/");
-		} catch (err) {
-			console.log(err);
-			toast.error("Failed to sign up!");
 		}
+
 		setIsLoading(false);
 	}
 
