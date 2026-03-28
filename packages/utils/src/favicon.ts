@@ -8,7 +8,7 @@ export const getModelFavicon = (model: string): string => {
 	// If "All Models", return empty string (we'll use Bot icon instead)
 	if (model === "All Models") return "";
 
-	// Check known provider keys first (chatgpt, claude, perplexity, gemini, ai-overview)
+	// Check known provider keys first (chatgpt, perplexity, gemini, ai-overview)
 	const providerConfig = PROVIDER_DISPLAY[normalizedModel as keyof typeof PROVIDER_DISPLAY];
 	if (providerConfig) {
 		return `https://www.google.com/s2/favicons?sz=32&domain=${providerConfig.domain}`;
@@ -17,7 +17,6 @@ export const getModelFavicon = (model: string): string => {
 	// Fallback: display name aliases and other models
 	const fallbackDomains: Record<string, string> = {
 		chatgpt: "openai.com",
-		claude: "claude.ai",
 		gemini: "gemini.google.com",
 		mistral: "mistral.ai",
 		meta: "about.fb.com",

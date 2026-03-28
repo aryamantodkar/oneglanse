@@ -32,6 +32,7 @@ export type AgentFactory = () => Promise<{
 	page: Page;
 	proxy?: string | null;
 	cleanup?: () => Promise<void>;
+	invalidateProxyHint?: () => Promise<void>;
 }>;
 
 export type BrowserAttempt = {
@@ -40,6 +41,9 @@ export type BrowserAttempt = {
 	page: Page;
 	proxy?: string | null;
 	cleanup?: () => Promise<void>;
+	// Invalidates the shared Google proxy hint in Redis so the next retry cycle
+	// picks a fresh proxy instead of reusing the same blocked/dead session.
+	invalidateProxyHint?: () => Promise<void>;
 };
 
 export type AttemptExecutor = (
@@ -53,6 +57,7 @@ type Refs = {
 	page: Page | null;
 	proxy: string | null;
 	cleanup?: (() => Promise<void>) | null;
+	invalidateProxyHint?: (() => Promise<void>) | null;
 };
 
 function jitter(baseMs: number, factor = 0.3): number {
@@ -105,6 +110,7 @@ async function runSingleAttempt(
 			const agent = await agentFactory();
 			// Set cleanup first so timeout/failure paths can always attempt teardown.
 			refs.cleanup = agent.cleanup ?? null;
+			refs.invalidateProxyHint = agent.invalidateProxyHint ?? null;
 			refs.browser = agent.browser;
 			refs.context = agent.context;
 			refs.page = agent.page;
@@ -150,6 +156,7 @@ async function runRetryCycle(
 			page: null,
 			proxy: null,
 			cleanup: null,
+			invalidateProxyHint: null,
 		};
 
 		try {
@@ -196,6 +203,7 @@ async function runRetryCycle(
 					plog.warn(
 						`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 					);
+					await refs.invalidateProxyHint?.();
 					await sleep(BOT_DETECTION_COOLDOWN);
 					break;
 				}
@@ -204,6 +212,7 @@ async function runRetryCycle(
 					plog.warn(
 						`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
 					);
+					await refs.invalidateProxyHint?.();
 					break;
 				}
 
@@ -211,6 +220,7 @@ async function runRetryCycle(
 					plog.warn(
 						`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 					);
+					await refs.invalidateProxyHint?.();
 					break;
 				}
 
@@ -230,6 +240,7 @@ async function runRetryCycle(
 				plog.warn(
 					`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 				);
+				await refs.invalidateProxyHint?.();
 				await sleep(BOT_DETECTION_COOLDOWN);
 				break;
 			}
@@ -238,6 +249,7 @@ async function runRetryCycle(
 				plog.warn(
 					`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
 				);
+				await refs.invalidateProxyHint?.();
 				break;
 			}
 
@@ -245,6 +257,7 @@ async function runRetryCycle(
 				plog.warn(
 					`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 				);
+				await refs.invalidateProxyHint?.();
 				break;
 			}
 

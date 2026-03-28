@@ -95,7 +95,7 @@ export async function waitForAssistantToFinish(
 
 			return false;
 		},
-		300, // Poll every 300ms
+		280 + Math.floor(Math.random() * 60), // Poll ~300ms with ±50ms jitter
 		20 * 60 * 1000, // 20 min max
 		new ExternalServiceError(provider, "Assistant wait timed out"),
 	);

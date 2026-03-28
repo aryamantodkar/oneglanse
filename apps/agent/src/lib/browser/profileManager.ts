@@ -7,7 +7,11 @@ import { logger } from "@oneglanse/utils";
 
 const PERSISTENT_PROFILES_ROOT = "/storage/profiles";
 const FALLBACK_PROFILES_ROOT = "/tmp/oneglanse-profiles";
-const PROFILE_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
+// With proxy-session-scoped profile identities (one profile per sticky session),
+// each 10-minute rotation creates a new profile directory. Keeping them for 48h
+// would accumulate 288 orphaned directories per provider. 2 hours = 12 rotations
+// max on disk at any time, which is well within acceptable disk usage.
+const PROFILE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 const METADATA_FILE = ".profile-meta.json";
 const STORAGE_STATE_FILE = ".storage-state.json";
 const BROWSER_PROFILE_LOCK_FILES = [

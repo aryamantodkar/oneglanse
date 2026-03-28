@@ -1,6 +1,13 @@
 import type { Provider } from "@oneglanse/types";
 
-const MIN_RESPONSE_CHARS = Number(process.env["MIN_RESPONSE_CHARS"] ?? 600);
+const DEFAULT_MIN_RESPONSE_CHARS = Number(process.env["MIN_RESPONSE_CHARS"] ?? 600);
+
+// AI Overview is a SERP feature, not a chat model — valid responses are often
+// 150-400 chars for simple queries. Using the chat-model threshold rejects
+// real answers and triggers unnecessary retries / IP rotations.
+const PROVIDER_MIN_RESPONSE_CHARS: Partial<Record<Provider, number>> = {
+	"ai-overview": 100,
+};
 
 /**
  * Known false/garbage response patterns across all providers.
@@ -30,14 +37,15 @@ type ValidationResult =
 
 export function validateResponse(
 	response: string,
-	_provider: Provider,
+	provider: Provider,
 ): ValidationResult {
 	const trimmed = response.trim();
+	const minChars = PROVIDER_MIN_RESPONSE_CHARS[provider] ?? DEFAULT_MIN_RESPONSE_CHARS;
 
-	if (trimmed.length < MIN_RESPONSE_CHARS) {
+	if (trimmed.length < minChars) {
 		return {
 			valid: false,
-			reason: `Response too short (${trimmed.length} chars, min ${MIN_RESPONSE_CHARS})`,
+			reason: `Response too short (${trimmed.length} chars, min ${minChars})`,
 		};
 	}
 

@@ -27,10 +27,11 @@ export async function createAgent(
 	page: Page;
 	proxy: string | null;
 	cleanup: () => Promise<void>;
+	invalidateProxyHint: () => Promise<void>;
 }> {
 	const config = PROVIDER_CONFIGS[provider];
 
-	const { browser, context, proxy, cleanup } = await launchContext(
+	const { browser, context, proxy, cleanup, invalidateProxyHint } = await launchContext(
 		provider,
 		options,
 	);
@@ -82,7 +83,7 @@ export async function createAgent(
 			// console.log(`[${provider.toUpperCase()} PAGE]`, _msg.text())
 		});
 
-		return { browser, context, page, proxy, cleanup };
+		return { browser, context, page, proxy, cleanup, invalidateProxyHint };
 	} catch (err) {
 		await cleanup();
 		if (err instanceof BaseError) {

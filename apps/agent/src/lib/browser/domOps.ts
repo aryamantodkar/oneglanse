@@ -400,27 +400,38 @@ export async function runPageDomOp<T>(
 					imgSrc: string | null;
 				}> = [];
 
-				let aoContainer: HTMLElement | null = null;
+				// Prefer structural/data-attribute selectors (locale-independent).
+				// Fall back to text-content scan only as a last resort.
+				let aoContainer: HTMLElement | null =
+					(document.querySelector(sels.placeholder) as HTMLElement | null) ||
+					(document.querySelector(sels.mainCol) as HTMLElement | null);
 
-				for (const heading of Array.from(document.querySelectorAll(sels.headings))) {
-					if (!heading.textContent?.toLowerCase().includes("ai overview")) continue;
-					let current: HTMLElement | null = heading.parentElement;
-					for (let index = 0; index < 8; index += 1) {
-						if (!current) break;
-						if ((current.innerText || "").length > 500) {
-							aoContainer = current;
-							break;
+				if (!aoContainer) {
+					for (const heading of Array.from(document.querySelectorAll(sels.headings))) {
+						// data-container-id presence means we're already inside the AI Overview
+						// block — use it regardless of language. Fall back to English text match.
+						const inAiBlock = (heading as HTMLElement).closest('[data-container-id]') !== null;
+						const textMatch = heading.textContent?.toLowerCase().includes("ai overview");
+						if (!inAiBlock && !textMatch) continue;
+						let current: HTMLElement | null = (heading as HTMLElement).parentElement;
+						for (let index = 0; index < 8; index += 1) {
+							if (!current) break;
+							if ((current.innerText || "").length > 500) {
+								aoContainer = current;
+								break;
+							}
+							current = current.parentElement;
 						}
-						current = current.parentElement;
+						if (aoContainer) break;
 					}
-					if (aoContainer) break;
 				}
 
 				if (!aoContainer) {
 					for (const div of Array.from(document.querySelectorAll(sels.containers))) {
 						if (!(div instanceof HTMLElement)) continue;
+						const hasAiOverviewContainer = div.querySelector('[data-container-id="model-response-placeholder"]') !== null;
 						const text = div.innerText || "";
-						if (text.toLowerCase().includes("ai overview") && text.length > 500) {
+						if ((hasAiOverviewContainer || text.toLowerCase().includes("ai overview")) && text.length > 500) {
 							aoContainer = div;
 							break;
 						}

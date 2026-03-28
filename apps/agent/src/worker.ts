@@ -3,11 +3,14 @@ import { PROVIDER_LIST } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import { Worker } from "bullmq";
 import { env } from "./env.js";
+import { cleanExpiredProfiles } from "./lib/browser/profileManager.js";
 import {
 	MAX_PARALLEL_PROVIDER_JOBS,
 	runWithProviderExecutionGate,
 } from "./worker/executionGate.js";
 import { handleJob } from "./worker/jobHandler.js";
+
+const PROFILE_CLEANUP_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 // Exported so index.ts can call worker.close() during graceful shutdown.
 export let workers: Worker[] = [];
@@ -15,6 +18,19 @@ const WORKER_LOCK_DURATION_MS = 4 * 60 * 60 * 1000;
 
 async function startWorkers() {
 	await waitForRedis();
+
+	// Clean up profile directories from previous runs on startup, then
+	// periodically so orphaned proxy-session profiles don't accumulate on disk.
+	// With the 2-hour TTL and 10-minute sticky sessions, each cleanup cycle
+	// removes profiles older than 2 hours (~12 rotations worth of directories).
+	cleanExpiredProfiles().catch((err: unknown) =>
+		logger.warn("startup profile cleanup failed:", String(err)),
+	);
+	setInterval(() => {
+		cleanExpiredProfiles().catch((err: unknown) =>
+			logger.warn("periodic profile cleanup failed:", String(err)),
+		);
+	}, PROFILE_CLEANUP_INTERVAL_MS).unref();
 
 	const connection = {
 		host: env.REDIS_HOST,

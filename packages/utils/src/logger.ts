@@ -25,7 +25,6 @@ const BOLD = "\x1b[1m";
 
 const PROVIDER_COLORS: Record<string, string> = {
 	chatgpt: "\x1b[32m",
-	claude: "\x1b[35m",
 	perplexity: "\x1b[36m",
 	gemini: "\x1b[33m",
 	"ai-overview": "\x1b[34m",
@@ -33,7 +32,6 @@ const PROVIDER_COLORS: Record<string, string> = {
 
 const RAW_PROVIDER_LABELS: Record<string, string> = {
 	chatgpt: "CHATGPT",
-	claude: "CLAUDE",
 	perplexity: "PERPLEXITY",
 	gemini: "GEMINI",
 	"ai-overview": "AI OVERVIEW",

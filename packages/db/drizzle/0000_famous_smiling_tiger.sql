@@ -93,7 +93,7 @@ CREATE TABLE "workspaces" (
 	"domain" varchar(256) NOT NULL,
     "tenant_id" varchar(256) NOT NULL,
     "schedule" varchar(64),
-    "enabled_providers" text DEFAULT '["chatgpt","claude","perplexity","gemini","ai-overview"]' NOT NULL,
+    "enabled_providers" text DEFAULT '["chatgpt","perplexity","gemini","ai-overview"]' NOT NULL,
     "created_at" timestamp NOT NULL,
     "deleted_at" timestamp
 );

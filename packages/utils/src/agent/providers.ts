@@ -13,11 +13,6 @@ export const PROVIDER_DISPLAY = {
 		domain: "openai.com",
 		description: "ChatGPT - Powered by GPT-4",
 	},
-	claude: {
-		displayName: "Claude",
-		domain: "claude.ai",
-		description: "Claude - Advanced reasoning and analysis",
-	},
 	perplexity: {
 		displayName: "Perplexity",
 		domain: "perplexity.ai",
@@ -39,7 +34,7 @@ export const ALL_PROVIDERS_JSON = JSON.stringify([...PROVIDER_LIST]);
 
 /**
  * Get the user-friendly display name for a provider
- * @param provider - The provider key (chatgpt, claude, perplexity, gemini, ai-overview)
+ * @param provider - The provider key (chatgpt, perplexity, gemini, ai-overview)
  * @returns Display name (ChatGPT, Claude, Perplexity, Gemini)
  */
 export function getProviderDisplayName(provider: string): string {
