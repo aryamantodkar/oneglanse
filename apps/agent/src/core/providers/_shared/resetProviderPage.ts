@@ -1,10 +1,7 @@
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import {
-	preInteractionIdle,
-	randomMouseJitter,
-} from "../../../lib/browser/humanBehavior.js";
+import { preInteractionIdle } from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { detectBotPage } from "../../../lib/input/response/detectBotPage.js";
 
@@ -25,7 +22,6 @@ export async function resetProviderPage(
 	logger.log(`[${provider}] resetting page for next prompt`);
 
 	await preInteractionIdle(page).catch(() => {});
-	await randomMouseJitter(page).catch(() => {});
 	await page.waitForTimeout(randomBetween(600, 1400));
 
 	await navigateWithRetry(page, url, {

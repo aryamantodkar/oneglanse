@@ -73,6 +73,15 @@ turndown.addRule("table", {
 	},
 });
 
+// Strip link hrefs — keep anchor text only. Citation URLs are captured in
+// extractSources; embedding raw URLs in the response text is noise.
+turndown.addRule("link", {
+	filter: "a",
+	replacement(content) {
+		return content;
+	},
+});
+
 // Strip all visual media — only plain text responses are needed
 turndown.addRule("image", { filter: "img", replacement: () => "" });
 turndown.addRule("figure", { filter: "figure", replacement: () => "" });
