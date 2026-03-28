@@ -6,6 +6,7 @@ import {
 	randomMouseJitter,
 } from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
+import { detectBotPage } from "../../../lib/input/response/detectBotPage.js";
 
 type ResetProviderPageOptions = {
 	postNavigationHook?: (page: Page) => Promise<void>;
@@ -29,10 +30,11 @@ export async function resetProviderPage(
 
 	await navigateWithRetry(page, url, {
 		waitUntil: "domcontentloaded",
-		timeout: 60000,
+		timeout: 30000,
 	});
 	logger.log(`[${provider}] redirected back to provider page: ${page.url()}`);
 
+	await detectBotPage(page, provider);
 	await options.postNavigationHook?.(page);
 	await page.waitForTimeout(randomBetween(1200, 2600));
 

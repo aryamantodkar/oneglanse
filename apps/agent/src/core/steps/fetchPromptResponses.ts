@@ -86,7 +86,7 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 
 	// Retry extraction — keep retries short so we can rotate IPs faster on failure.
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
-		await page.waitForTimeout(500);
+		await page.waitForTimeout(150);
 
 		const response = await config.extractResponse(page);
 

@@ -14,7 +14,7 @@ export async function navigateWithRetry(
 	url: string,
 	options: Parameters<Page["goto"]>[1] = {},
 	maxRetries = 3,
-	delayMs = 5000,
+	delayMs = 2000,
 ): Promise<void> {
 	// Scope the Referer to just this navigation request (not all sub-resources).
 	// page.goto referer option is per-navigation; setExtraHTTPHeaders would

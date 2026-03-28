@@ -3,8 +3,8 @@ import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import {
 	logger,
-	PROVIDER_FORCE_EXIT_STABLE_MS,
-	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
+	FORCE_EXIT_STABLE_MS,
+	NO_OUTPUT_TIMEOUT_MS,
 } from "@oneglanse/utils";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
@@ -67,11 +67,11 @@ export async function waitForAssistantToFinish(
 			const stableFor = Date.now() - lastChange;
 			const noOutputFor = Date.now() - waitStart;
 
-			// Error: No output after the provider-specific grace period.
-			if (!seenOutput && noOutputFor >= PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider]) {
+			// Error: No output after the grace period.
+			if (!seenOutput && noOutputFor >= NO_OUTPUT_TIMEOUT_MS) {
 				throw new ExternalServiceError(
 					provider,
-					`No response detected after ${Math.round(PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider] / 1000)}s`,
+					`No response detected after ${Math.round(NO_OUTPUT_TIMEOUT_MS / 1000)}s`,
 				);
 			}
 
@@ -84,11 +84,10 @@ export async function waitForAssistantToFinish(
 				return true;
 			}
 
-			// Force exit: long text stability handles stuck generation indicators
-			// without cutting off legitimate long-think responses too early.
-			if (seenOutput && stableFor >= PROVIDER_FORCE_EXIT_STABLE_MS[provider]) {
+			// Force exit: text stable but generating indicator still stuck.
+			if (seenOutput && stableFor >= FORCE_EXIT_STABLE_MS) {
 				logger.warn(
-					`Text stable ${Math.round(PROVIDER_FORCE_EXIT_STABLE_MS[provider] / 1000)}s but still generating — forcing exit`,
+					`Text stable ${Math.round(FORCE_EXIT_STABLE_MS / 1000)}s but still generating — forcing exit`,
 				);
 				return true;
 			}
@@ -96,7 +95,7 @@ export async function waitForAssistantToFinish(
 			return false;
 		},
 		280 + Math.floor(Math.random() * 60), // Poll ~300ms with ±50ms jitter
-		20 * 60 * 1000, // 20 min max
+		5 * 60 * 1000, // 5 min max — if a response hasn't arrived by then, something is wrong
 		new ExternalServiceError(provider, "Assistant wait timed out"),
 	);
 }

@@ -128,7 +128,7 @@ export async function askPrompt(
 
 	// Wait for page stabilization
 	await page
-		.waitForLoadState("domcontentloaded", { timeout: 20000 })
+		.waitForLoadState("domcontentloaded", { timeout: 5000 })
 		.catch(() => {});
 	await page
 		.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })

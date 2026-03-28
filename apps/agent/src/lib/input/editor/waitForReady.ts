@@ -8,7 +8,7 @@ export async function waitForEditorReady(
 	provider: Provider,
 ): Promise<Locator> {
 	const start = Date.now();
-	const TIMEOUT = 30000;
+	const TIMEOUT = 10000;
 
 	while (Date.now() - start < TIMEOUT) {
 		const input = await findActiveEditor(page, provider).catch(() => null);

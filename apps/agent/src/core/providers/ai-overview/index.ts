@@ -110,7 +110,7 @@ export const aiOverviewConfig: ProviderConfig = {
 			logger.log("[ai-overview] search box not found, falling back to direct URL");
 			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
 				waitUntil: "domcontentloaded",
-				timeout: 60000,
+				timeout: 30000,
 			});
 		}
 
@@ -132,9 +132,9 @@ export const aiOverviewConfig: ProviderConfig = {
 	},
 	betweenPromptsHook: async (_page) => {
 		// Each prompt navigates to its own URL via navigateToPrompt — nothing to reset.
-		// Real users take 8-20s between consecutive searches (reading results, deciding).
-		const pause = 8000 + Math.floor(Math.random() * 12000);
-		await _page.waitForTimeout(pause);
+		// Brief pause before the next search; reading time is already implicit in the
+		// response wait above. 2-4s is sufficient to avoid query-bursting patterns.
+		await _page.waitForTimeout(randomBetween(2000, 4000));
 	},
 	extractSources: (page) => extractAIOverviewSources(page),
 };

@@ -55,7 +55,7 @@ export async function createAgent(
 			logger.log(`navigating to ${config.url}`);
 			await navigateWithRetry(page, config.url, {
 				waitUntil: "domcontentloaded",
-				timeout: 60000,
+				timeout: 30000,
 			});
 
 			if (config.postNavigationHook) {
