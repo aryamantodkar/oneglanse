@@ -87,9 +87,8 @@ async function invalidateAndEvict(
 	provider: Provider,
 	sessionKey: string | undefined,
 ): Promise<void> {
-	await refs.invalidateProxyHint?.();
-	// Also evict the warm pool — any stored browser is tied to the now-invalid
-	// proxy and must not be reused by the next retry cycle.
+	// Catch individually so a hint invalidation failure never skips eviction.
+	await refs.invalidateProxyHint?.().catch(() => {});
 	if (sessionKey) {
 		await evictWarmBrowser(provider, sessionKey).catch(() => {});
 	}
@@ -125,26 +124,28 @@ async function runSingleAttempt(
 	executor: AttemptExecutor,
 	timeoutMs: number,
 ): Promise<AskPromptResult[]> {
-	return await Promise.race([
-		(async () => {
-			const agent = await agentFactory();
-			// Set cleanup first so timeout/failure paths can always attempt teardown.
-			refs.cleanup = agent.cleanup ?? null;
-			refs.invalidateProxyHint = agent.invalidateProxyHint ?? null;
-			refs.browser = agent.browser;
-			refs.context = agent.context;
-			refs.page = agent.page;
-			refs.proxy = agent.proxy ?? null;
+	// Browser launch and warmup are NOT included in the prompt timeout — they have
+	// their own internal timeouts (navigation, warmup budget, TCP pre-check, etc.).
+	// The 5min budget only counts against actual prompt execution (type, submit,
+	// wait for response, extract).
+	const agent = await agentFactory();
+	// Set cleanup first so timeout/failure paths can always attempt teardown.
+	refs.cleanup = agent.cleanup ?? null;
+	refs.invalidateProxyHint = agent.invalidateProxyHint ?? null;
+	refs.browser = agent.browser;
+	refs.context = agent.context;
+	refs.page = agent.page;
+	refs.proxy = agent.proxy ?? null;
 
-			return await executor(agent, currentPayload);
-		})(),
+	return await Promise.race([
+		executor(agent, currentPayload),
 		new Promise<never>((_, reject) =>
 			setTimeout(
 				() =>
 					reject(
 						new ExternalServiceError(
 							label,
-							`timed out after ${timeoutMs / 1000}s`,
+							`prompt execution timed out after ${timeoutMs / 1000}s`,
 						),
 					),
 				timeoutMs,

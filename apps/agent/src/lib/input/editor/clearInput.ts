@@ -33,8 +33,9 @@ export async function clearEditorInput(
 			return false;
 		}
 
-		const modKey = process.platform === "darwin" ? "Meta" : "Control";
-		await pressKeyLikeUser(page, `${modKey}+A`).catch(() => null);
+		// Always use Control — Camoufox presents as Windows/macOS but the host is
+		// Linux. Control+A selects all in browser inputs regardless of the claimed OS.
+		await pressKeyLikeUser(page, "Control+A").catch(() => null);
 		await pressKeyLikeUser(page, "Backspace").catch(() => null);
 		const clearedByKeyboard = await input
 			.readInputValue()
