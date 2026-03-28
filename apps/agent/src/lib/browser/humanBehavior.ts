@@ -148,9 +148,9 @@ export async function randomMouseJitter(page: Page): Promise<void> {
 }
 
 /**
- * Inserts prompt text instantly via keyboard.insertText (no char-by-char simulation).
- * Handles multiline prompts by splitting on \n and pressing Shift+Enter between lines
- * so the newline doesn't trigger submit in chat UIs.
+ * Inserts prompt text instantly via keyboard.type (no char-by-char simulation).
+ * Handles multiline prompts by splitting on \n and pressing Shift+Enter between
+ * lines so the newline doesn't trigger submit in chat UIs.
  */
 export async function pastePrompt(page: Page, text: string): Promise<void> {
 	const lines = text.split("\n");

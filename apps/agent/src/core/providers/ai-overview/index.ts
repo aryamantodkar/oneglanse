@@ -132,7 +132,7 @@ export const aiOverviewConfig: ProviderConfig = {
 	},
 	extractResponse: async (page) => {
 		const html = await extractAIOverviewResponse(page);
-		return turndown.turndown(html);
+		return turndown.turndown(html).replace(/\n{3,}/g, "\n\n").trim();
 	},
 	betweenPromptsHook: async (_page) => {
 		// Each prompt navigates to its own URL via navigateToPrompt — nothing to reset.
