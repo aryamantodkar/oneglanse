@@ -1,10 +1,12 @@
 import { ExternalServiceError } from "@oneglanse/errors";
+import { PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../../env.js";
 import {
-	canUseOsLevelInput,
 	clickLocatorLikeUser,
+	humanType,
+	moveMouseToElement,
 } from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
@@ -12,45 +14,71 @@ import type { ProviderConfig } from "../types.js";
 import { extractAIOverviewResponse } from "./lib/extractResponse.js";
 import { extractAIOverviewSources } from "./lib/extractSources.js";
 
-function buildSearchUrl(prompt: string): string {
-	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}&hl=en&pws=0`;
+function randomBetween(min: number, max: number): number {
+	return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-function assertNotSorryPage(page: Page): void {
-	if (page.url().includes("/sorry/")) {
+// Fallback only — used when the search box cannot be found on the page.
+// Typing via the search box is strongly preferred as it produces organic
+// oq= / gs_lcrp parameters that a direct URL navigation never has.
+function buildFallbackSearchUrl(prompt: string): string {
+	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
+}
+
+// Join all editor selectors so the first visible one is matched
+const GOOGLE_SEARCH_INPUT = PROVIDER_EDITOR_SELECTORS["ai-overview"].join(", ");
+
+function assertNotBlockedPage(page: Page): void {
+	const url = page.url();
+	if (url.includes("/sorry/")) {
 		throw new ExternalServiceError(
 			"ai-overview",
 			"Google bot detection triggered (sorry page) — proxy IP blocked",
 			429,
 		);
 	}
+	if (url.includes("accounts.google.com")) {
+		throw new ExternalServiceError(
+			"ai-overview",
+			"Google redirected to login page — session cookie missing or expired",
+			401,
+		);
+	}
 }
+
+// Google consent button IDs are locale-independent (unlike button text).
+// #L2AGLb = "Accept all", #W0wltc = "Reject all"
+const GOOGLE_CONSENT_SELECTOR = "button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
 
 // Track pages that have already completed the Google cookie warm-up so that
 // subsequent prompts within the same browser session skip the extra navigation.
 const warmedPages = new WeakSet<Page>();
 
+async function dismissConsentDialog(page: Page): Promise<void> {
+	const consentBtn = page.locator(GOOGLE_CONSENT_SELECTOR).first();
+	const visible = await consentBtn.isVisible({ timeout: 2500 }).catch(() => false);
+	if (!visible) return;
+
+	// Consent dialog is present — click accept. If we can't, throw so the caller
+	// can retry on a fresh page rather than silently proceeding without cookies.
+	await clickLocatorLikeUser(page, consentBtn, { timeout: 4000 });
+}
+
 async function ensureGoogleCookies(page: Page): Promise<void> {
 	if (warmedPages.has(page)) return;
 
 	logger.log("[ai-overview] warming up Google cookies");
-	await navigateWithRetry(page, "https://www.google.com/?hl=en&pws=0", {
+	await navigateWithRetry(page, "https://www.google.com/", {
 		waitUntil: "domcontentloaded",
 		timeout: 30000,
 	});
-	assertNotSorryPage(page);
-	const acceptCookies = page.locator('button:has-text("Accept all")').first();
-	const clicked = await clickLocatorLikeUser(page, acceptCookies, {
-		timeout: 3000,
-	}).catch(() => false);
-	if (!clicked && canUseOsLevelInput(page)) {
-		return;
-	}
+	assertNotBlockedPage(page);
+	await dismissConsentDialog(page);
 	warmedPages.add(page);
 }
 
 export const aiOverviewConfig: ProviderConfig = {
-	url: "https://www.google.com/?hl=en&pws=0",
+	url: "https://www.google.com/",
 	warmupDelayMs: 0,
 	label: "AI Overview",
 	displayName: "AI Overview",
@@ -58,22 +86,37 @@ export const aiOverviewConfig: ProviderConfig = {
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
 		await ensureGoogleCookies(page);
-		const url = buildSearchUrl(prompt);
-		logger.log(`[ai-overview] navigating to ${url}`);
-		await navigateWithRetry(page, url, {
-			waitUntil: "domcontentloaded",
-			timeout: 60000,
-		});
-		assertNotSorryPage(page);
-		// Dismiss consent dialog if it re-appears on the search result page
-		const acceptCookies = page.locator('button:has-text("Accept all")').first();
-		const clicked = await clickLocatorLikeUser(page, acceptCookies, {
-			timeout: 3000,
-		}).catch(() => false);
-		if (!clicked && canUseOsLevelInput(page)) {
-			return;
+
+		// Prefer typing in the search box: produces organic oq= parameter,
+		// triggers real autocomplete requests, and creates the click→type→submit
+		// pattern that distinguishes human sessions from direct URL navigation.
+		const searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
+		const inputVisible = await searchInput
+			.isVisible({ timeout: 5000 })
+			.catch(() => false);
+
+		if (inputVisible) {
+			await moveMouseToElement(page, searchInput);
+			await searchInput.click();
+			await page.waitForTimeout(randomBetween(300, 700));
+			// Select any existing text (e.g. previous query on SERP) before typing
+			await page.keyboard.press("Control+a");
+			await humanType(page, prompt);
+			await page.waitForTimeout(randomBetween(400, 900));
+			await page.keyboard.press("Enter");
+			await page.waitForLoadState("domcontentloaded").catch(() => {});
+		} else {
+			// Fallback: search box not found — navigate directly
+			logger.log("[ai-overview] search box not found, falling back to direct URL");
+			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
+				waitUntil: "domcontentloaded",
+				timeout: 60000,
+			});
 		}
-		logger.log(`[ai-overview] search page ready: ${page.url()}`);
+
+		assertNotBlockedPage(page);
+		await dismissConsentDialog(page);
+		logger.log(`[ai-overview] search ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {
 		await page

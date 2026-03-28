@@ -105,7 +105,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 184,
     share: 19.3,
     brandMentions: 128,
-    providers: ["chatgpt", "claude", "perplexity", "gemini"],
+    providers: ["chatgpt", "perplexity", "gemini", "ai-overview"],
   },
   {
     domain: "capterra.com",
@@ -113,7 +113,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 161,
     share: 16.9,
     brandMentions: 111,
-    providers: ["chatgpt", "claude", "gemini"],
+    providers: ["chatgpt", "perplexity", "gemini"],
   },
   {
     domain: "trustradius.com",
@@ -137,7 +137,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 101,
     share: 10.6,
     brandMentions: 72,
-    providers: ["claude", "gemini", "ai-overview"],
+    providers: ["perplexity", "gemini", "ai-overview"],
   },
   {
     domain: "salesforce.com",
@@ -145,7 +145,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 96,
     share: 10.1,
     brandMentions: 68,
-    providers: ["chatgpt", "claude", "gemini"],
+    providers: ["chatgpt", "perplexity", "gemini"],
   },
   {
     domain: "hubspot.com",
@@ -153,7 +153,7 @@ export const PREVIEW_SOURCE_GROUPS = [
     citations: 84,
     share: 8.8,
     brandMentions: 63,
-    providers: ["chatgpt", "claude"],
+    providers: ["chatgpt", "perplexity"],
   },
   {
     domain: "mailchimp.com",
@@ -176,7 +176,7 @@ export const PREVIEW_CITATION_ROWS = [
   {
     domain: "capterra.com",
     title: "Best Marketing Automation Software",
-    provider: "claude",
+    provider: "perplexity",
     citations: 16,
     excerpt: "Frequently recommended for unified sales and marketing workflows at mid-market scale.",
   },
@@ -227,12 +227,12 @@ export const PREVIEW_AGGREGATE_STATS = {
 } as const;
 
 export const PREVIEW_COMPETITOR_PROVIDERS: Record<string, string[]> = {
-  HubSpot: ["chatgpt", "claude", "perplexity", "gemini"],
-  Salesforce: ["chatgpt", "claude", "gemini"],
+  HubSpot: ["chatgpt", "perplexity", "gemini", "ai-overview"],
+  Salesforce: ["chatgpt", "perplexity", "gemini"],
   "Adobe Marketo": ["chatgpt", "perplexity", "ai-overview"],
-  Mailchimp: ["chatgpt", "claude", "perplexity"],
+  Mailchimp: ["chatgpt", "gemini", "perplexity"],
   ActiveCampaign: ["chatgpt", "gemini", "perplexity"],
-  Pardot: ["claude", "gemini", "ai-overview"],
+  Pardot: ["perplexity", "gemini", "ai-overview"],
 } as const;
 
 export const PREVIEW_PROMPT_RESPONSES = [

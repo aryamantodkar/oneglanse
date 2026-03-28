@@ -3,7 +3,6 @@ import type { Provider } from "@oneglanse/types";
 
 export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
 	chatgpt: 90_000,
-	claude: 45_000,
 	perplexity: 45_000,
 	gemini: 45_000,
 	"ai-overview": 45_000,
@@ -11,7 +10,6 @@ export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
 
 export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
 	chatgpt: 45_000,
-	claude: 30_000,
 	perplexity: 30_000,
 	gemini: 45_000,
 	"ai-overview": 30_000,
@@ -27,7 +25,6 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 		'div#prompt-textarea[contenteditable="true"]',
 		'textarea[name="prompt-textarea"]',
 	],
-	claude: [],
 	perplexity: [
 		'#ask-input[contenteditable="true"]',
 		'[data-lexical-editor="true"][contenteditable="true"]',
@@ -55,7 +52,6 @@ export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
 		'button[aria-label*="send" i]',
 		'button[type="submit"]',
 	],
-	claude: [],
 	perplexity: [
 		'button[aria-label="Submit"]',
 		'button[aria-label*="submit" i]',
@@ -84,10 +80,6 @@ export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 		'.prose',
 		'article[data-testid*="conversation-turn"]',
 	],
-	claude: [
-		'message-content',
-		'.prose',
-	],
 	perplexity: [
 		'.prose',
 	],
@@ -109,7 +101,6 @@ export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> 
 		'button[aria-label*="stop" i]',
 		'.loading-shimmer',
 	],
-	claude: [],
 	perplexity: [
 		'button[aria-label="Stop response (Esc)"]',
 		'button[aria-label*="stop" i]',
@@ -122,7 +113,7 @@ export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> 
 };
 
 export const SOURCES_SELECTORS = [
-	// ARIA-driven (ChatGPT, Claude, Perplexity)
+	// ARIA-driven (ChatGPT, Perplexity)
 	'button[aria-label*="source" i]',
 	'button[aria-label*="citation" i]',
 	'[role="button"][aria-label*="source" i]',

@@ -43,9 +43,11 @@ export const SELECTORS = {
 			'[data-xid="aim-aside-initial-corroboration-container"]',
 			'[role="dialog"][data-type="hovc"]',
 		],
-		sourceLink: 'a[target="_blank"][rel="noopener"][aria-label*="Opens in"]',
+		// Structural selectors only — "Opens in" aria-label text is English-specific
+		// and breaks when Camoufox's geoip resolves to a non-English locale.
+		sourceLink: 'a[target="_blank"][rel="noopener"]',
 		heading: '[role="heading"]',
-		inlineSourceLink: 'a[aria-label*="Opens in"]',
+		inlineSourceLink: 'a[target="_blank"][rel="noopener"]',
 	},
 	perplexity: {
 		anchor: 'a[href^="http"]',

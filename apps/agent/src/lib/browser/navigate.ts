@@ -22,13 +22,14 @@ export async function navigateWithRetry(
 	let referer = options?.referer;
 	if (referer === undefined) {
 		try {
-			const targetHost = new URL(url).hostname;
 			const currentUrl = page.url();
 			if (currentUrl && currentUrl !== "about:blank") {
 				referer = currentUrl;
-			} else if (!targetHost.includes("google")) {
-				referer = "https://www.google.com/";
 			}
+			// No synthetic referer injection for cold starts — sending a hardcoded
+			// Google referer on every first navigation is a detectable behavioral
+			// pattern. Let the browser send no referer (equivalent to a direct
+			// address-bar navigation) which is also natural.
 		} catch {
 			// Non-critical — proceed without referrer
 		}

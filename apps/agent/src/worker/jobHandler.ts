@@ -2,7 +2,6 @@ import { ValidationError, toErrorMessage } from "@oneglanse/errors";
 import { redis, storePromptResponses } from "@oneglanse/services";
 import type {
 	AgentResult,
-	AskPromptResult,
 	ModelResult,
 	PromptPayload,
 	Provider,
@@ -13,7 +12,6 @@ import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
-import { runAgents } from "../core/runAgents.js";
 import { getProviderSessionScope } from "../lib/browser/providerScope.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
@@ -26,6 +24,7 @@ type ProviderJobData = {
 	user_id: string;
 	workspace_id: string;
 	created_at?: string;
+	googleSharedSessionId?: string;
 };
 
 const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
@@ -86,7 +85,11 @@ function buildProviderSessionKey(args: {
 	workspaceId: string;
 }): string {
 	const { provider, userId, workspaceId } = args;
-	return `session:v3:${workspaceId}:${userId}:${getProviderSessionScope(provider)}`;
+	// Keyed by provider (not scope) so gemini and ai-overview each get their own
+	// warm-pool slot and never steal each other's live browser session.
+	// Profile cookie sharing (both under the "google" scope on disk) is
+	// controlled separately via profileScope in createAgent().
+	return `session:v3:${workspaceId}:${userId}:${provider}`;
 }
 
 async function ensureProgressSeed(
@@ -145,7 +148,7 @@ async function updateProgress(
 }
 
 export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
-	const { provider, jobGroupId, prompts, runProviders, user_id, workspace_id } =
+	const { provider, jobGroupId, prompts, runProviders, user_id, workspace_id, googleSharedSessionId } =
 		job.data;
 	const plog = createProviderLogger(provider);
 	const ownedProviders = normalizeRunProviders(provider, runProviders);
@@ -206,75 +209,17 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	const providerResults = buildEmptyResults();
 
 	try {
-		if (ownedProviders.length === 1) {
-			const result = await agentHandler(
-				label,
-				() => createAgent(provider, { sessionKey, profileScope }),
-				payload,
-				provider,
-				{ sessionKey },
-			);
-			providerResults[provider] = {
-				status: result.length > 0 ? "fulfilled" : "rejected",
-				data: result,
-			};
-		} else {
-			const combinedResultsByProvider: Partial<
-				Record<Provider, AskPromptResult[]>
-			> = {};
-			const sharedResult = await agentHandler(
-				label,
-				() => createAgent(provider, { sessionKey, profileScope }),
-				payload,
-				provider,
-				{
-					sessionKey,
-					executor: async (attempt, currentPayload) => {
-						let lastError: unknown = null;
-						let flattened: AskPromptResult[] = [];
-						for (const currentProvider of ownedProviders) {
-							try {
-								const results = await runAgents(
-									currentPayload,
-									attempt.page,
-									currentProvider,
-								);
-								if (results.length > 0) {
-									combinedResultsByProvider[currentProvider] = results;
-									flattened = flattened.concat(results);
-								}
-							} catch (error) {
-								lastError = error;
-								plog.warn(
-									`${currentProvider} failed inside shared Google session: ${toErrorMessage(error)}`,
-								);
-							}
-						}
-
-						if (flattened.length === 0 && lastError) {
-							throw lastError;
-						}
-
-						return flattened;
-					},
-				},
-			);
-
-			for (const currentProvider of ownedProviders) {
-				const data = combinedResultsByProvider[currentProvider] ?? [];
-				providerResults[currentProvider] = {
-					status: data.length > 0 ? "fulfilled" : "rejected",
-					data,
-				};
-			}
-
-			if (sharedResult.length === 0) {
-				providerResults[provider] = {
-					status: "rejected",
-					data: [],
-				};
-			}
-		}
+		const result = await agentHandler(
+			label,
+			() => createAgent(provider, { sessionKey, profileScope, googleSharedProxyKey: googleSharedSessionId }),
+			payload,
+			provider,
+			{ sessionKey },
+		);
+		providerResults[provider] = {
+			status: result.length > 0 ? "fulfilled" : "rejected",
+			data: result,
+		};
 	} catch (err) {
 		plog.error("failed:", toErrorMessage(err));
 	}

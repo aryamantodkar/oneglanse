@@ -36,7 +36,6 @@ export interface AskPromptResult {
 
 export const PROVIDER_LIST = [
 	"chatgpt",
-	"claude",
 	"perplexity",
 	"gemini",
 	"ai-overview",

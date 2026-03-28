@@ -1,12 +1,23 @@
 import { logger } from "@oneglanse/utils";
+import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { clickLocatorLikeUser } from "./humanBehavior.js";
 
-const WARMUP_SITES = [
-	"https://www.google.com",
+// Visited first for every profile — shares .google.com cookies (NID, SOCS, 1P_JAR)
+// with google.com search. YouTube is the safest first visit: highest-traffic Google
+// property, completely natural, establishes Google rep for the proxy IP.
+const GOOGLE_WARMUP_SITES = [
+	"https://www.youtube.com",
+	"https://gemini.google.com",
+];
+
+// Neutral sites visited after Google properties to simulate natural browsing
+const NEUTRAL_WARMUP_SITES = [
 	"https://en.wikipedia.org",
 	"https://www.reddit.com",
 ];
+
+const GOOGLE_PROVIDERS = new Set<Provider>(["ai-overview", "gemini"]);
 
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
@@ -43,11 +54,22 @@ async function randomMouseMove(page: Page): Promise<void> {
 	await page.waitForTimeout(randomBetween(200, 500));
 }
 
-export async function warmUpProfile(page: Page): Promise<void> {
+export async function warmUpProfile(page: Page, provider?: Provider): Promise<void> {
 	logger.log("warming up browser profile...");
 	let successCount = 0;
 
-	for (const url of WARMUP_SITES) {
+	// Always visit YouTube first — establishes .google.com cookies for every proxy IP.
+	// For Google-destined providers also visit gemini.google.com for deeper session signals.
+	const guaranteedGoogle = provider && GOOGLE_PROVIDERS.has(provider)
+		? [...GOOGLE_WARMUP_SITES]   // youtube + gemini
+		: [GOOGLE_WARMUP_SITES[0]!]; // youtube only
+
+	// Shuffle neutral sites and pick 0–1 of them
+	const shuffledNeutral = [...NEUTRAL_WARMUP_SITES].sort(() => Math.random() - 0.5);
+	const neutralCount = Math.floor(Math.random() * 2); // 0 or 1
+	const toVisit = [...guaranteedGoogle, ...shuffledNeutral.slice(0, neutralCount)];
+
+	for (const url of toVisit) {
 		try {
 			await page.goto(url, {
 				waitUntil: "domcontentloaded",

@@ -45,6 +45,7 @@ export async function agentHandler(
 							page: warm.page,
 							proxy: warm.proxy ?? undefined,
 							cleanup: warm.cleanup ?? undefined,
+							invalidateProxyHint: undefined,
 						};
 					} catch {
 						// Navigation on warm browser failed — close and fall through to cold factory.

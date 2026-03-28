@@ -43,7 +43,7 @@ const AgentEnvSchema = z
 		MAX_EXTRACTION_RETRIES: asNumber(2).default(2),
 		EXTRACTION_RETRY_DELAY_MS: asNumber(2_000).default(2_000),
 		MAX_EXTRACTION_RETRY_DELAY_MS: asNumber(5_000).default(5_000),
-		AI_OVERVIEW_WAIT_TIMEOUT_MS: asNumber(10_000).default(10_000),
+		AI_OVERVIEW_WAIT_TIMEOUT_MS: asNumber(25_000).default(25_000),
 		SUBMIT_METHOD_TIMEOUT_MS: asNumber(10_000).default(10_000),
 		MAX_PROMPT_RETRIES_PER_IP: asNumber(3).default(3),
 		PROMPT_RETRY_DELAY_MS: asNumber(1_000).default(1_000),

@@ -18,6 +18,9 @@ type ProviderJobPayload = {
 	user_id: string;
 	workspace_id: string;
 	created_at?: string;
+	// Set for Google-family providers (gemini + ai-overview) in the same job group
+	// so both jobs can coordinate on a shared proxy session. See launch.ts.
+	googleSharedSessionId?: string;
 };
 
 export type SubmitAgentJobResult =
@@ -49,34 +52,30 @@ async function enqueueProviderJob(payload: ProviderJobPayload): Promise<void> {
 function buildProviderJobs(enabledProviders: Provider[]): Array<{
 	provider: Provider;
 	runProviders: Provider[];
+	googleSharedSessionId?: string;
 }> {
-	const plan: Array<{
-		provider: Provider;
-		runProviders: Provider[];
-	}> = [];
+	// Each provider runs in its own independent job with its own browser session
+	// and retry budget. Gemini and AI Overview share a persistent profile (cookie
+	// jar) via getProviderSessionScope returning "google" for both, but they must
+	// NOT share a browser process — a failure in one must not silently swallow
+	// the other's result, and each needs its own proxy/IP rotation on failure.
+	//
+	// When both are enabled they still benefit from sharing the same proxy IP on
+	// their first attempt (same IP → same profile identity → AI Overview inherits
+	// Gemini's warm Google cookies). A shared session ID coordinates this in Redis.
 	const hasGemini = enabledProviders.includes("gemini");
 	const hasAiOverview = enabledProviders.includes("ai-overview");
+	const googleSharedSessionId =
+		hasGemini && hasAiOverview ? randomUUID() : undefined;
 
-	for (const provider of enabledProviders) {
-		if (provider === "ai-overview" && hasGemini) {
-			continue;
-		}
-
-		if (provider === "gemini" && hasAiOverview) {
-			plan.push({
-				provider,
-				runProviders: ["gemini", "ai-overview"],
-			});
-			continue;
-		}
-
-		plan.push({
-			provider,
-			runProviders: [provider],
-		});
-	}
-
-	return plan;
+	return enabledProviders.map((provider) => ({
+		provider,
+		runProviders: [provider],
+		googleSharedSessionId:
+			provider === "gemini" || provider === "ai-overview"
+				? googleSharedSessionId
+				: undefined,
+	}));
 }
 
 function parseEnabledProviders(
@@ -107,7 +106,7 @@ export async function enqueueProviderJobs(args: {
 	const { jobGroupId, prompts, userId, workspaceId, enabledProviders } = args;
 	const providerJobs = buildProviderJobs(enabledProviders);
 	await Promise.all(
-		providerJobs.map(({ provider, runProviders }) =>
+		providerJobs.map(({ provider, runProviders, googleSharedSessionId }) =>
 			enqueueProviderJob({
 				jobGroupId,
 				provider,
@@ -115,6 +114,7 @@ export async function enqueueProviderJobs(args: {
 				prompts,
 				user_id: userId,
 				workspace_id: workspaceId,
+				googleSharedSessionId,
 			}),
 		),
 	);
