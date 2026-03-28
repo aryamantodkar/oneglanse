@@ -19,7 +19,7 @@ export default function LayoutContent({
 	workspace: Workspace | null;
 	userName: string;
 	userEmail: string;
-}){
+}) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
@@ -45,8 +45,8 @@ export default function LayoutContent({
 
 	if (!resolvedWorkspace) {
 		return (
-			<div className="ui-page-enter flex min-h-svh w-full">
-				<main className="flex-1 flex flex-col min-h-0">
+			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
+				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
 					{/* Header */}
 					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
 						<div className="flex items-center gap-3">
@@ -57,7 +57,7 @@ export default function LayoutContent({
 					</div>
 
 					{/* Page content */}
-					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-4 sm:px-6">
+					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden px-4 sm:px-6">
 						{children}
 					</div>
 				</main>
@@ -67,9 +67,9 @@ export default function LayoutContent({
 
 	if (isOnboardingFlow) {
 		return (
-			<div className="ui-page-enter flex min-h-svh w-full">
-				<main className="flex flex-1 flex-col min-h-0">
-					<div className="ui-page-enter flex-1 min-h-0 overflow-auto">
+			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
+				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
+					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden">
 						{children}
 					</div>
 				</main>
@@ -79,13 +79,13 @@ export default function LayoutContent({
 
 	return (
 		<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
-			<div className="ui-page-enter flex min-h-svh w-full">
+			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
 				<AppSidebar
 					workspace={resolvedWorkspace}
 					userName={userName}
 					userEmail={userEmail}
 				/>
-				<main className="flex-1 flex flex-col min-h-0">
+				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
 					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
 						<div className="flex items-center gap-3">
 							<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
@@ -96,7 +96,7 @@ export default function LayoutContent({
 					</div>
 
 					{/* Page content */}
-					<div className="ui-page-enter flex-1 min-h-0 overflow-auto px-4 sm:px-6">
+					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden px-4 sm:px-6">
 						{children}
 					</div>
 				</main>

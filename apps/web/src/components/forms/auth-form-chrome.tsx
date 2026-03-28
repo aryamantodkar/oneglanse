@@ -41,13 +41,13 @@ export function AuthFormChrome({
 			className={cn("ui-page-enter flex flex-col gap-6", className)}
 			{...props}
 		>
-			<Card className="ui-list-item">
+			<Card className="ui-list-item min-w-0 overflow-hidden">
 				<CardHeader className="text-center">
 					<CardTitle className="text-xl">{title}</CardTitle>
 					<CardDescription>{description}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<div className="ui-stagger grid gap-6">
+					<div className="ui-stagger grid min-w-0 gap-6">
 						<div className="flex flex-col gap-4">
 							<Button
 								variant="outline"

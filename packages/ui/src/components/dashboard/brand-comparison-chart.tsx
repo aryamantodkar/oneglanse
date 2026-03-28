@@ -78,7 +78,7 @@ export function BrandComparisonChart({
 	brandRecommendationRate: number;
 	brandSentimentScore: number;
 	brandAvgRank: number | null;
-}){
+}) {
 	const svgRef = useRef<SVGSVGElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -207,9 +207,11 @@ export function BrandComparisonChart({
 		point.y = y;
 		const screenPoint = point.matrixTransform(ctm);
 
+		const rawLeft = screenPoint.x - containerRect.left;
+		const rawTop = screenPoint.y - containerRect.top;
 		return {
-			leftPx: screenPoint.x - containerRect.left,
-			topPx: screenPoint.y - containerRect.top,
+			leftPx: Math.max(72, Math.min(containerRect.width - 72, rawLeft)),
+			topPx: Math.max(24, rawTop),
 		};
 	};
 
@@ -217,8 +219,8 @@ export function BrandComparisonChart({
 
 	return (
 		<Card className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-black">
-			<div className="mb-4 flex items-start justify-between gap-3">
-				<div>
+			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+				<div className="min-w-0">
 					<h1 className="mt-1 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 						Brand Comparison
 					</h1>
@@ -227,18 +229,22 @@ export function BrandComparisonChart({
 						in one view.
 					</p>
 				</div>
-				<span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800">
+				<span className="max-w-full self-start rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-gray-800">
 					Leader: {leader?.name ?? "N/A"}
 				</span>
 			</div>
 
 			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
-				<div ref={containerRef} className="relative" onMouseLeave={() => setHoveredPoint(null)}>
+				<div
+					ref={containerRef}
+					className="relative"
+					onMouseLeave={() => setHoveredPoint(null)}
+				>
 					<div className="overflow-x-auto">
 						<svg
 							ref={svgRef}
 							viewBox={`0 0 ${width} ${height}`}
-							className="h-[280px] w-full min-w-[560px] sm:min-w-[680px]"
+							className="h-[280px] w-full min-w-[480px] sm:min-w-[620px] lg:min-w-[680px]"
 						>
 							{[0, 25, 50, 75, 100].map((tick) => {
 								const y = yFor(tick);
@@ -402,7 +408,7 @@ export function BrandComparisonChart({
 						})()}
 				</div>
 
-				<div className="space-y-2">
+				<div className="min-w-0 space-y-2">
 					{series.map((s, idx) => {
 						const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
 						return (
@@ -416,7 +422,7 @@ export function BrandComparisonChart({
 								onMouseEnter={() => setHoveredBrand(s.name)}
 								onMouseLeave={() => setHoveredBrand(null)}
 							>
-								<div className="flex items-center justify-between gap-2">
+								<div className="flex min-w-0 items-center justify-between gap-2">
 									<div className="flex min-w-0 items-center gap-2">
 										<span
 											className="h-2.5 w-2.5 shrink-0 rounded-full"

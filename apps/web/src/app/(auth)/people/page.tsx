@@ -71,7 +71,8 @@ export default function PeoplePage() {
 		{ workspaceId },
 		{
 			enabled: !!workspaceId,
-			initialData: layoutWorkspace?.id === workspaceId ? layoutWorkspace : undefined,
+			initialData:
+				layoutWorkspace?.id === workspaceId ? layoutWorkspace : undefined,
 		},
 	);
 	const joinInfoQuery = api.workspace.getJoinInfo.useQuery(
@@ -160,7 +161,9 @@ export default function PeoplePage() {
 			toast.success("Member removed from workspace.");
 			await wsMembersQuery.refetch();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Failed to remove member.");
+			toast.error(
+				err instanceof Error ? err.message : "Failed to remove member.",
+			);
 		}
 	};
 
@@ -205,7 +208,11 @@ export default function PeoplePage() {
 			await utils.workspace.getJoinInfo.invalidate({ workspaceId });
 			setIsEditingWorkspace(false);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Failed to update workspace details.");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Failed to update workspace details.",
+			);
 		} finally {
 			setSavingWorkspace(false);
 		}
@@ -230,7 +237,9 @@ export default function PeoplePage() {
 			setIsEditingOrg(false);
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Only workspace owners can update organization name.",
+				err instanceof Error
+					? err.message
+					: "Only workspace owners can update organization name.",
 			);
 		} finally {
 			setSavingOrg(false);
@@ -296,9 +305,17 @@ export default function PeoplePage() {
 									}
 									setIsEditingWorkspace(true);
 								}}
-								aria-label={isEditingWorkspace ? "Cancel editing workspace" : "Edit workspace"}
+								aria-label={
+									isEditingWorkspace
+										? "Cancel editing workspace"
+										: "Edit workspace"
+								}
 							>
-								{isEditingWorkspace ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+								{isEditingWorkspace ? (
+									<X className="h-4 w-4" />
+								) : (
+									<Pencil className="h-4 w-4" />
+								)}
 							</Button>
 						</div>
 						<div className="space-y-2">
@@ -321,22 +338,24 @@ export default function PeoplePage() {
 								disabled={!isEditingWorkspace}
 							/>
 							<p className="text-xs text-gray-500">
-								Used to track your brand visibility and citations in AI responses.
+								Used to track your brand visibility and citations in AI
+								responses.
 							</p>
 							{isEditingWorkspace && (
 								<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/60 dark:bg-amber-950/20">
 									<p className="text-xs text-amber-800 dark:text-amber-300">
-										Warning: Changing brand details clears all analyzed data in this workspace. Raw prompt responses are not deleted.
+										Warning: Changing brand details clears all analyzed data in
+										this workspace. Raw prompt responses are not deleted.
 									</p>
 								</div>
 							)}
 						</div>
-						<div className="mt-auto flex items-center justify-end gap-2 pt-4">
+						<div className="mt-auto flex flex-col gap-2 pt-4 sm:flex-row sm:items-center sm:justify-end">
 							{isEditingWorkspace && (
 								<>
 									<Button
 										variant="outline"
-										className="w-28"
+										className="w-full sm:w-28"
 										onClick={() => {
 											setWorkspaceName(workspace?.name ?? "");
 											setWorkspaceDomain(workspace?.domain ?? "");
@@ -354,9 +373,13 @@ export default function PeoplePage() {
 											!workspaceDomain.trim() ||
 											!workspaceDetailsChanged
 										}
-										className="w-28"
+										className="w-full sm:w-28"
 									>
-										{savingWorkspace ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+										{savingWorkspace ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											"Save"
+										)}
 									</Button>
 								</>
 							)}
@@ -384,9 +407,17 @@ export default function PeoplePage() {
 									}
 									setIsEditingOrg(true);
 								}}
-								aria-label={isEditingOrg ? "Cancel editing organization" : "Edit organization"}
+								aria-label={
+									isEditingOrg
+										? "Cancel editing organization"
+										: "Edit organization"
+								}
 							>
-								{isEditingOrg ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+								{isEditingOrg ? (
+									<X className="h-4 w-4" />
+								) : (
+									<Pencil className="h-4 w-4" />
+								)}
 							</Button>
 						</div>
 						<div className="space-y-2">
@@ -402,12 +433,12 @@ export default function PeoplePage() {
 								Only workspace owners can rename the organization.
 							</p>
 						</div>
-						<div className="mt-auto flex items-center justify-end gap-2 pt-4">
+						<div className="mt-auto flex flex-col gap-2 pt-4 sm:flex-row sm:items-center sm:justify-end">
 							{isEditingOrg && (
 								<>
 									<Button
 										variant="outline"
-										className="w-28"
+										className="w-full sm:w-28"
 										onClick={() => {
 											setOrganizationName(organization?.name ?? "");
 											setIsEditingOrg(false);
@@ -418,10 +449,18 @@ export default function PeoplePage() {
 									</Button>
 									<Button
 										onClick={handleSaveOrganizationName}
-										disabled={savingOrg || !organizationName.trim() || !organizationNameChanged}
-										className="w-28"
+										disabled={
+											savingOrg ||
+											!organizationName.trim() ||
+											!organizationNameChanged
+										}
+										className="w-full sm:w-28"
 									>
-										{savingOrg ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+										{savingOrg ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											"Save"
+										)}
 									</Button>
 								</>
 							)}
@@ -443,7 +482,8 @@ export default function PeoplePage() {
 							Workspace Join Code
 						</p>
 						<p className="text-xs text-gray-500 mt-1">
-							Share this code with teammates to let them join instantly. Each workspace has a globally unique code.
+							Share this code with teammates to let them join instantly. Each
+							workspace has a globally unique code.
 						</p>
 						{joinInfo?.organization?.name && (
 							<div className="mt-2 flex flex-wrap gap-4 text-xs text-gray-500">
@@ -464,11 +504,11 @@ export default function PeoplePage() {
 							</div>
 						)}
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 						{joinInfoLoading ? (
 							<>
-								<Skeleton className="h-9 w-[300px]" />
-								<Skeleton className="h-9 w-16" />
+								<Skeleton className="h-9 w-full sm:w-[300px]" />
+								<Skeleton className="h-9 w-full sm:w-16" />
 							</>
 						) : (
 							<>
@@ -476,13 +516,16 @@ export default function PeoplePage() {
 									readOnly
 									value={joinInfo?.workspaceCode ?? ""}
 									placeholder="Workspace code"
-									className="max-w-md font-mono text-xs"
+									className="w-full max-w-md font-mono text-xs"
 								/>
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")}
+									onClick={() =>
+										handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")
+									}
 									disabled={!joinInfo?.workspaceCode}
+									className="w-full sm:w-auto"
 								>
 									Copy
 								</Button>
@@ -501,16 +544,16 @@ export default function PeoplePage() {
 				</div>
 
 				{/* Add member form */}
-				<div className="mb-4 flex flex-wrap items-center gap-2">
+				<div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
 					<Input
 						placeholder="Email address (we'll invite if needed)"
 						value={wsInviteEmail}
 						onChange={(e) => setWsInviteEmail(e.target.value)}
-						className="max-w-xs"
+						className="w-full sm:max-w-xs"
 						onKeyDown={(e) => e.key === "Enter" && handleWsAddMember()}
 					/>
 					<Select value={wsInviteRole} onValueChange={setWsInviteRole}>
-						<SelectTrigger className="w-32">
+						<SelectTrigger className="w-full sm:w-32">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -522,7 +565,7 @@ export default function PeoplePage() {
 						onClick={handleWsAddMember}
 						disabled={wsAdding || !wsInviteEmail.trim()}
 						size="sm"
-						className="gap-2"
+						className="gap-2 sm:w-auto"
 					>
 						{wsAdding ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
@@ -593,7 +636,9 @@ export default function PeoplePage() {
 													<Button
 														variant="ghost"
 														size="sm"
-														onClick={() => handleWsRemoveMember(member.userId, member.role)}
+														onClick={() =>
+															handleWsRemoveMember(member.userId, member.role)
+														}
 														className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
 													>
 														<Trash2 className="h-4 w-4" />

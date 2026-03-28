@@ -13,18 +13,20 @@ export function ExportMenu({
 	onExportJson,
 	onExportCsv,
 	disabled = false,
+	className,
 }: {
 	onExportJson: () => void;
 	onExportCsv: () => void;
 	disabled?: boolean;
-}){
+	className?: string;
+}) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button
 					variant="outline"
 					size="sm"
-					className="gap-2"
+					className={className ? `gap-2 ${className}` : "gap-2"}
 					disabled={disabled}
 				>
 					<Download className="h-4 w-4" />

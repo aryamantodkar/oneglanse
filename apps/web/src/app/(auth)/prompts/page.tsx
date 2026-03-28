@@ -38,14 +38,7 @@ import {
 	joinSourceUrls,
 	modelSelectors,
 } from "@oneglanse/utils";
-import {
-	Bot,
-	ChevronDown,
-	FilterX,
-	Pencil,
-	Plus,
-	Trash2,
-} from "lucide-react";
+import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
@@ -61,7 +54,7 @@ type SortColumn =
 	| "visibility"
 	| "position";
 
-export default function Prompts(){
+export default function Prompts() {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
@@ -70,11 +63,14 @@ export default function Prompts(){
 	const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "14d" | "30d">(
 		"all",
 	);
-	const { sortColumn: sortBy, sortDirection, toggleSort: handleColumnSort } =
-		useSortState<SortColumn>("prompt", "asc", {
-			nextDirectionForNewColumn: (column) =>
-				column === "prompt" ? "asc" : "desc",
-		});
+	const {
+		sortColumn: sortBy,
+		sortDirection,
+		toggleSort: handleColumnSort,
+	} = useSortState<SortColumn>("prompt", "asc", {
+		nextDirectionForNewColumn: (column) =>
+			column === "prompt" ? "asc" : "desc",
+	});
 	const [currentPrompt, setCurrentPrompt] = useState("");
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -577,7 +573,7 @@ export default function Prompts(){
 						<ProviderModelSelect
 							value={modelFilter}
 							onValueChange={setModelFilter}
-							triggerClassName="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+							triggerClassName="h-9 w-full rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 sm:w-44"
 							contentClassName="z-[9999]"
 						/>
 
@@ -585,13 +581,16 @@ export default function Prompts(){
 						<TimeRangeSelect
 							value={timeFilter}
 							onValueChange={setTimeFilter}
-							triggerClassName="h-9 w-40 text-sm"
+							triggerClassName="h-9 w-full text-sm sm:w-40"
 						/>
 
 						{/* Clear filters button */}
 						{(modelFilter !== "All Models" || timeFilter !== "all") && (
 							<>
-								<Separator orientation="vertical" className="h-4" />
+								<Separator
+									orientation="vertical"
+									className="hidden h-4 sm:block"
+								/>
 								<Button
 									variant="ghost"
 									size="sm"
@@ -611,6 +610,7 @@ export default function Prompts(){
 					{/* Right: Save action */}
 					<div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
 						<ExportMenu
+							className="w-full sm:w-auto"
 							disabled={!hasExportableData}
 							onExportJson={() => {
 								const analyzedRows = sortedPromptsWithMetrics.filter(
@@ -738,7 +738,7 @@ export default function Prompts(){
 							variant="outline"
 							onClick={handleSave}
 							disabled={loading || !isModified || editIndex !== null}
-							className="gap-2"
+							className="w-full gap-2 sm:w-auto"
 						>
 							{loading ? "Saving..." : "Save Changes"}
 						</Button>
@@ -928,12 +928,12 @@ export default function Prompts(){
 								</DialogHeader>
 
 								{/* Filter bar */}
-								<div className="flex flex-wrap items-center gap-3 pb-6">
+								<div className="flex flex-col gap-3 pb-6 sm:flex-row sm:flex-wrap sm:items-center">
 									{/* Model filter */}
 									<ProviderModelSelect
 										value={modelFilter}
 										onValueChange={setModelFilter}
-										triggerClassName="h-9 w-44 shrink-0 rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950"
+										triggerClassName="h-9 w-full rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 sm:w-44"
 										contentClassName="z-[9999]"
 									/>
 
@@ -941,7 +941,7 @@ export default function Prompts(){
 									<TimeRangeSelect
 										value={timeFilter}
 										onValueChange={setTimeFilter}
-										triggerClassName="h-9 w-40 text-sm"
+										triggerClassName="h-9 w-full text-sm sm:w-40"
 									/>
 								</div>
 

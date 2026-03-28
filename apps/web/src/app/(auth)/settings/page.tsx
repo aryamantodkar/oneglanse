@@ -351,10 +351,10 @@ export default function SettingsPage() {
 								file.
 							</p>
 						</div>
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 							<Button
 								variant="outline"
-								className="gap-2"
+								className="w-full gap-2 sm:w-auto"
 								onClick={handleExportAllJson}
 								disabled={
 									userPromptsQuery.isLoading ||
@@ -368,7 +368,7 @@ export default function SettingsPage() {
 							</Button>
 							<Button
 								variant="outline"
-								className="gap-2"
+								className="w-full gap-2 sm:w-auto"
 								onClick={handleExportAllCsv}
 								disabled={
 									userPromptsQuery.isLoading ||
@@ -517,7 +517,7 @@ export default function SettingsPage() {
 								</p>
 							)}
 
-							<div className="flex justify-end gap-2 pt-2">
+							<div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
 								<Button
 									variant="outline"
 									size="sm"
@@ -551,7 +551,7 @@ export default function SettingsPage() {
 					</h2>
 				</div>
 				<div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
-					<div className="flex flex-wrap items-center justify-between gap-4">
+					<div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
 						<div>
 							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 								Delete Account

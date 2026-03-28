@@ -27,7 +27,7 @@ function StatCard({
 		: [];
 
 	return (
-		<div className="ui-list-item group flex min-h-[120px] flex-col justify-between rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 dark:border-gray-800 dark:bg-black">
+		<div className="ui-list-item group flex min-h-[120px] min-w-0 flex-col justify-between rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 dark:border-gray-800 dark:bg-black">
 			<div className="flex items-center gap-2">
 				<Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:scale-110" />
 				<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -35,7 +35,7 @@ function StatCard({
 				</span>
 			</div>
 
-			<div className="mt-3 flex min-h-[40px] items-center gap-2 py-0.5">
+			<div className="mt-3 flex min-h-[40px] min-w-0 items-center gap-2 py-0.5">
 				{showFavicon && faviconUrls[0] && (
 					<img
 						src={faviconUrls[0]}
@@ -47,14 +47,14 @@ function StatCard({
 					/>
 				)}
 				<span
-					className={`truncate text-2xl font-semibold leading-tight tracking-tight ${valueClassName}`}
+					className={`min-w-0 break-words text-xl font-semibold leading-tight tracking-tight sm:text-2xl ${valueClassName}`}
 				>
 					{value}
 				</span>
 			</div>
 
 			{subtitle && (
-				<span className="mt-1 truncate text-xs text-muted-foreground">
+				<span className="mt-1 break-words text-xs text-muted-foreground">
 					{subtitle}
 				</span>
 			)}

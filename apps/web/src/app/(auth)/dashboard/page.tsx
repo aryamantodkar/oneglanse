@@ -31,7 +31,7 @@ import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
 // Hooks
 import { useDashboardData } from "./_hooks/use-dashboard-data";
 
-export default function Dashboard(){
+export default function Dashboard() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
@@ -76,10 +76,15 @@ export default function Dashboard(){
 	void setSelectedRecord;
 
 	// Computed data
-	const metrics = useDashboardData(analysedPromptData ?? [], modelFilter, timeFilter, {
-		name: workspace?.name,
-		domain: workspace?.domain,
-	});
+	const metrics = useDashboardData(
+		analysedPromptData ?? [],
+		modelFilter,
+		timeFilter,
+		{
+			name: workspace?.name,
+			domain: workspace?.domain,
+		},
+	);
 	const hasAnyAnalysisInWorkspace = useMemo(() => {
 		return analysedPromptData?.some((r) =>
 			Boolean(r?.is_analysed && r?.brand_analysis),
@@ -111,8 +116,7 @@ export default function Dashboard(){
 	if (isLoading) return <DashboardSkeleton />;
 	if (
 		!analysedPromptData ||
-		(Array.isArray(analysedPromptData) &&
-			analysedPromptData.length === 0)
+		(Array.isArray(analysedPromptData) && analysedPromptData.length === 0)
 	) {
 		return <EmptyState />;
 	}
@@ -123,7 +127,7 @@ export default function Dashboard(){
 			<div className="web-page-wide-inner pt-4 pb-12">
 				<div className="ui-stagger space-y-6">
 					{/* Filters */}
-					<div className="flex items-center justify-between gap-3">
+					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 						<DashboardFilters
 							brandName={metrics.brandName}
 							brandDomain={metrics.brandDomain}
@@ -133,6 +137,7 @@ export default function Dashboard(){
 							setTimeFilter={setTimeFilter}
 						/>
 						<ExportMenu
+							className="w-full sm:w-auto"
 							disabled={!hasExportableData}
 							onExportJson={() =>
 								exportAnalysisJson({
@@ -142,9 +147,7 @@ export default function Dashboard(){
 									timeFilter,
 								})
 							}
-							onExportCsv={() =>
-								exportAnalysisCsv({ workspaceId, metrics })
-							}
+							onExportCsv={() => exportAnalysisCsv({ workspaceId, metrics })}
 						/>
 					</div>
 
@@ -175,9 +178,7 @@ export default function Dashboard(){
 
 					{/* 3-Column Grid */}
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-						<CompetitiveLandscape
-							competitors={metrics.competitorData}
-						/>
+						<CompetitiveLandscape competitors={metrics.competitorData} />
 						<TopSources
 							sources={metrics.sourcesIntelligence}
 							totalCitations={metrics.totalCitations}
