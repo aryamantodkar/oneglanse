@@ -83,14 +83,26 @@ export async function warmUpProfile(page: Page, provider?: Provider): Promise<vo
 		if (Date.now() >= deadline) break;
 		try {
 			logger.log(`[warmup] visiting ${url}`);
+			// Math.max(1, ...) prevents a negative or zero value when the deadline
+			// has drifted past — Playwright treats timeout ≤ 0 as "no timeout",
+			// which would let this navigation hang indefinitely.
 			await page.goto(url, {
 				waitUntil: "domcontentloaded",
-				timeout: Math.min(WARMUP_NAV_TIMEOUT_MS, deadline - Date.now()),
+				timeout: Math.max(1, Math.min(WARMUP_NAV_TIMEOUT_MS, deadline - Date.now())),
 			});
-			await page.waitForTimeout(randomBetween(800, 1500));
-			await randomMouseMove(page);
-			await randomScroll(page);
-			await page.waitForTimeout(randomBetween(300, 800));
+
+			// Dwell + micro-interactions — only run if there is budget remaining.
+			const remaining = deadline - Date.now();
+			if (remaining > 0) {
+				await page.waitForTimeout(Math.min(randomBetween(800, 1500), remaining));
+				if (Date.now() < deadline) await randomMouseMove(page);
+				if (Date.now() < deadline) await randomScroll(page);
+				const remaining2 = deadline - Date.now();
+				if (remaining2 > 0) {
+					await page.waitForTimeout(Math.min(randomBetween(300, 800), remaining2));
+				}
+			}
+
 			successCount += 1;
 		} catch {
 			// Non-critical — skip failed warmup sites

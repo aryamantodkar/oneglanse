@@ -19,8 +19,14 @@ import { runAgents } from "../../../core/runAgents.js";
 import { getProviderSessionScope } from "../providerScope.js";
 import { evictWarmBrowser, storeWarmBrowser } from "../warmPool.js";
 
-// Per-prompt attempt budget. Browser launch/warmup overhead is absorbed into the
-// first prompt slot. Scale by prompt count in runWithRetryCycles.
+// Hard ceiling on browser launch + profile warmup + initial provider navigation.
+// This phase runs entirely outside the executor timeout — its own budget prevents
+// a slow proxy from silently eating into the prompt execution window.
+const AGENT_SETUP_TIMEOUT_MS = 2 * 60 * 1000; // 2 min
+
+// Per-prompt budget for actual prompt execution (type → submit → wait → extract).
+// Browser launch/warmup are NOT included — they are covered by AGENT_SETUP_TIMEOUT_MS.
+// Scale by prompt count in runWithRetryCycles.
 const PROVIDER_TIMEOUT_PER_PROMPT_MS = 5 * 60 * 1000; // 5 min per prompt
 const ATTEMPTS_PER_CYCLE = 10;
 const MAX_CYCLES = 3;
@@ -124,12 +130,29 @@ async function runSingleAttempt(
 	executor: AttemptExecutor,
 	timeoutMs: number,
 ): Promise<AskPromptResult[]> {
-	// Browser launch and warmup are NOT included in the prompt timeout — they have
-	// their own internal timeouts (navigation, warmup budget, TCP pre-check, etc.).
-	// The 5min budget only counts against actual prompt execution (type, submit,
-	// wait for response, extract).
-	const agent = await agentFactory();
-	// Set cleanup first so timeout/failure paths can always attempt teardown.
+	// Phase 1 — setup (browser launch + warmup + initial navigation).
+	// Bounded by AGENT_SETUP_TIMEOUT_MS, completely separate from the execution
+	// budget below. If setup times out here any partially-launched browser is
+	// abandoned (refs are still null so the finally block is a no-op); the outer
+	// retry cycle will attempt a fresh launch.
+	const agent = await Promise.race([
+		agentFactory(),
+		new Promise<never>((_, reject) =>
+			setTimeout(
+				() =>
+					reject(
+						new ExternalServiceError(
+							label,
+							`browser setup timed out after ${AGENT_SETUP_TIMEOUT_MS / 1000}s`,
+						),
+					),
+				AGENT_SETUP_TIMEOUT_MS,
+			),
+		),
+	]);
+
+	// Set cleanup refs before entering the execution phase so that any failure
+	// or timeout during execution can always attempt teardown.
 	refs.cleanup = agent.cleanup ?? null;
 	refs.invalidateProxyHint = agent.invalidateProxyHint ?? null;
 	refs.browser = agent.browser;
@@ -137,6 +160,8 @@ async function runSingleAttempt(
 	refs.page = agent.page;
 	refs.proxy = agent.proxy ?? null;
 
+	// Phase 2 — execution (type → submit → wait for response → extract).
+	// The 5-min clock starts here, after setup is fully complete.
 	return await Promise.race([
 		executor(agent, currentPayload),
 		new Promise<never>((_, reject) =>
@@ -249,13 +274,17 @@ async function runRetryCycle(
 					break;
 				}
 
-				if (failureType === "unknown" && getProviderSessionScope(provider) === "google") {
-					// Only invalidate the shared proxy hint for Google-family providers
-					// (gemini / ai-overview). For non-Google providers, unknown failures
-					// are more likely DOM drift than a proxy problem — invalidating would
-					// burn a healthy proxy for ChatGPT/Perplexity with no benefit.
+				if (
+					(failureType === "unknown" || failureType === "no_editor") &&
+					getProviderSessionScope(provider) === "google"
+				) {
+					// Invalidate the shared proxy hint for Google-family providers on
+					// unknown or no_editor failures. no_editor on Gemini/AIO often means
+					// Google returned a consent page, a bot-challenge redirect, or a
+					// degraded session — all proxy-specific. Keeping the stale hint would
+					// cause the next attempt to reuse the same bad proxy.
 					plog.warn(
-						`unknown failure on attempt ${totalAttempt}/${totalMax}; invalidating google proxy hint before IP refresh`,
+						`${failureType} failure on attempt ${totalAttempt}/${totalMax}; invalidating google proxy hint before IP refresh`,
 					);
 					await invalidateAndEvict(refs, provider, sessionKey);
 				}
@@ -338,10 +367,12 @@ export async function runWithRetryCycles(
 		((attempt, currentAttemptPayload) =>
 			runAgents(currentAttemptPayload, attempt.page, provider));
 
-	// Scale timeout by prompt count so multi-prompt jobs don't time out mid-run.
-	// Browser launch/warmup overhead is absorbed into the first prompt slot.
+	// Scale execution timeout by prompt count so multi-prompt jobs don't time out mid-run.
+	// Setup (launch + warmup + nav) is bounded separately by AGENT_SETUP_TIMEOUT_MS.
 	const timeoutMs = Math.max(1, payload.prompts.length) * PROVIDER_TIMEOUT_PER_PROMPT_MS;
-	plog.log(`attempt timeout: ${timeoutMs / 60000}min (${payload.prompts.length} prompt(s))`);
+	plog.log(
+		`setup budget: ${AGENT_SETUP_TIMEOUT_MS / 1000}s | execution budget: ${timeoutMs / 60000}min (${payload.prompts.length} prompt(s))`,
+	);
 
 	for (let cycle = 0; cycle < MAX_CYCLES; cycle++) {
 		if (cycle > 0) {

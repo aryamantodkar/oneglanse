@@ -7,7 +7,9 @@ export function classifyError(err: unknown): FailureType {
 	const msg = toErrorMessage(err).toLowerCase();
 
 	if (
-		/err_proxy|err_connection|err_tunnel|err_ssl|err_timed_out|proxy connect failed|tunnel connection/i.test(
+		// Chromium format: ERR_SSL_*, ERR_PROXY_*, ERR_CONNECTION_*, ERR_TUNNEL_*, ERR_TIMED_OUT
+		// Firefox/Camoufox format: SSL_ERROR_*, PR_CONNECT_*, SEC_ERROR_*
+		/err_proxy|err_connection|err_tunnel|err_ssl|err_timed_out|proxy connect failed|tunnel connection|ssl_error|pr_connect|sec_error/i.test(
 			msg,
 		)
 	)
@@ -21,7 +23,10 @@ export function classifyError(err: unknown): FailureType {
 	)
 		return "rate_limited";
 	if (
-		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed|submission.*failed|submission.*timed? ?out|all submission/i.test(
+		// submission.*timed? ?out is intentionally excluded — it maps to "timeout" below.
+		// "All submission methods failed" stays here: it means no submit path worked,
+		// which is an editor/UI problem, not a timeout.
+		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed|submission.*failed|all submission/i.test(
 			msg,
 		)
 	)

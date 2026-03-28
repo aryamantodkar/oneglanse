@@ -99,26 +99,29 @@ export async function askPrompt(
 	// Retrying on the same broken page wastes time; the outer retry policy
 	// handles recovery by rotating the IP and launching a fresh browser.
 
+	// Shared flag — set by the timeout branch so that any strategy not yet
+	// started is skipped rather than firing against a browser being torn down.
+	let submissionAborted = false;
+
 	const success = await Promise.race([
 		(async () => {
 			let submitted = false;
-			if (sendButton) submitted = await tryNativeClick(ctx);
-			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
-			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
-			if (!submitted) submitted = await tryEnterSubmit(ctx);
+			if (!submissionAborted && sendButton) submitted = await tryNativeClick(ctx);
+			if (!submitted && !submissionAborted && sendButton) submitted = await tryForceClick(ctx);
+			if (!submitted && !submissionAborted && sendButton) submitted = await tryDispatchClick(ctx);
+			if (!submitted && !submissionAborted) submitted = await tryEnterSubmit(ctx);
 			return submitted;
 		})(),
 		new Promise<boolean>((_, reject) =>
-			setTimeout(
-				() =>
-					reject(
-						new ExternalServiceError(
-							provider,
-							`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
-						),
+			setTimeout(() => {
+				submissionAborted = true;
+				reject(
+					new ExternalServiceError(
+						provider,
+						`Submission phase timed out after ${SUBMISSION_PHASE_TIMEOUT_MS}ms`,
 					),
-				SUBMISSION_PHASE_TIMEOUT_MS,
-			),
+				);
+			}, SUBMISSION_PHASE_TIMEOUT_MS),
 		),
 	]);
 
