@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   fontconfig \
   xvfb \
-  fonts-noto fonts-noto-color-emoji \
+  fonts-noto-core fonts-noto-color-emoji \
   && fc-cache -f \
   && test -n "${CAMOUFOX_PIP_SPEC}" \
   && test -n "${CAMOUFOX_BROWSER_CHANNEL}" \
@@ -49,7 +49,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV CAMOUFOX_PYTHON_BIN=python3
 
-RUN npm install -g pnpm@${PNPM_VERSION}
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY --from=builder /app/out ./
 COPY apps/agent/docker/start-worker.sh /usr/local/bin/start-worker
