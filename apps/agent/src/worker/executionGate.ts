@@ -82,6 +82,8 @@ export async function runWithProviderExecutionGate<T>(
 	await acquireFamilySlot(family);
 	await acquireGlobalSlot();
 
+	logger.log(`[${provider}] execution started`);
+
 	try {
 		return await task();
 	} finally {

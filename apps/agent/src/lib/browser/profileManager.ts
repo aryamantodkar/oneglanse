@@ -35,16 +35,12 @@ type ProfileMetadata = {
 };
 
 function hashProfileIdentity(profileIdentity: string): string {
-	try {
-		const parsed = new URL(profileIdentity);
-		const authority = `${parsed.protocol}//${parsed.hostname}:${parsed.port}`;
-		return createHash("sha256").update(authority).digest("hex").slice(0, 16);
-	} catch {
-		return createHash("sha256")
-			.update(profileIdentity)
-			.digest("hex")
-			.slice(0, 16);
-	}
+	// Hash the raw identity string directly. The previous URL-parsing approach
+	// was intended to normalise session URLs, but it silently collapsed all
+	// proxy identities (e.g. "proxy:1.2.3.4:10001:user") to the same hash:
+	// new URL("proxy:...") treats "proxy" as an opaque scheme, leaving hostname=""
+	// and port="" — so every proxy mapped to authority "proxy://:".
+	return createHash("sha256").update(profileIdentity).digest("hex").slice(0, 16);
 }
 
 async function resolveProfilesRoot(): Promise<string> {

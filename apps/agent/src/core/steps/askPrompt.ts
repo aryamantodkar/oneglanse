@@ -46,7 +46,11 @@ export async function askPrompt(
 	await smallScroll(page);
 	await moveMouseToElement(page, input);
 
-	await clearEditorInput(page, input, { waitAfterMs: 200 });
+	await clearEditorInput(page, input, { waitAfterMs: 400 });
+	// Explicit click re-focuses the element after clear. Without this, React's
+	// synthetic event state can desync after a page reset, causing humanType to
+	// type into the DOM but readInputValue() to return empty (ChatGPT prompt 2+).
+	await input.click();
 
 	logger.debug(`typing ${prompt.length} chars…`);
 	await humanType(page, prompt);
@@ -99,8 +103,8 @@ export async function askPrompt(
 		(async () => {
 			let submitted = false;
 			if (sendButton) submitted = await tryNativeClick(ctx);
-			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
 			if (!submitted && sendButton) submitted = await tryDispatchClick(ctx);
+			if (!submitted && sendButton) submitted = await tryForceClick(ctx);
 			if (!submitted) submitted = await tryEnterSubmit(ctx);
 			return submitted;
 		})(),
