@@ -4,8 +4,9 @@ import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../../env.js";
 import {
-	humanType,
+	getBrowserPrimaryModifier,
 	moveMouseToElement,
+	pastePrompt,
 } from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
@@ -19,6 +20,10 @@ function randomBetween(min: number, max: number): number {
 
 function buildFallbackSearchUrl(prompt: string): string {
 	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
+}
+
+function normalizeSearchQuery(prompt: string): string {
+	return prompt.replace(/\s+/g, " ").trim();
 }
 
 const GOOGLE_CONSENT_SELECTOR =
@@ -74,29 +79,36 @@ export const aiOverviewConfig: ProviderConfig = {
 	displayName: "AI Overview",
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
+		const query = normalizeSearchQuery(prompt);
 		const searchInput = await findVisibleSearchInput(page);
 
 		if (searchInput) {
 			await moveMouseToElement(page, searchInput);
 			await searchInput.click();
 			await page.waitForTimeout(randomBetween(300, 700));
-			await page.keyboard.press("Control+a");
-			await humanType(page, prompt);
+			const primaryModifier = await getBrowserPrimaryModifier(page);
+			await page.keyboard
+				.press(`${primaryModifier}+A`)
+				.catch(() => page.keyboard.press("Control+A"));
+			logger.debug(`[ai-overview] pasting ${query.length} chars…`);
+			await pastePrompt(page, query);
+			logger.debug("[ai-overview] paste complete");
 			const inputContent = await searchInput.readInputValue().catch(() => "");
-			if (inputContent.trim().length < prompt.trim().length * 0.9) {
+			if (inputContent.trim().length < query.length * 0.9) {
 				throw new ExternalServiceError(
 					"ai-overview",
-					`Typing failed: input length ${inputContent.trim().length} is less than 90% of prompt length ${prompt.trim().length}`,
+					`Typing failed: input length ${inputContent.trim().length} is less than 90% of prompt length ${query.length}`,
 				);
 			}
 			await page.waitForTimeout(randomBetween(400, 900));
+			logger.debug("[ai-overview] attempting submission…");
 			await page.keyboard.press("Enter");
 			await page.waitForLoadState("domcontentloaded").catch(() => {});
 		} else {
 			logger.log(
 				"[ai-overview] search box not found, falling back to direct URL",
 			);
-			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
+			await navigateWithRetry(page, buildFallbackSearchUrl(query), {
 				waitUntil: "domcontentloaded",
 				timeout: 60000,
 			});
