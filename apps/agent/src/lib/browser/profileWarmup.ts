@@ -13,8 +13,8 @@ function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-const WARMUP_NAV_TIMEOUT_MS = 8_000;
-const WARMUP_TOTAL_TIMEOUT_MS = 15_000;
+const WARMUP_NAV_TIMEOUT_MS = 20_000;
+const WARMUP_TOTAL_TIMEOUT_MS = 25_000;
 
 export async function warmUpProfile(page: Page, provider?: Provider): Promise<void> {
 	logger.log("warming up browser profile...");
