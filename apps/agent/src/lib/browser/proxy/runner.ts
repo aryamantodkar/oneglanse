@@ -16,7 +16,6 @@ import {
 } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
-import { getProviderSessionScope } from "../providerScope.js";
 import { evictWarmBrowser, storeWarmBrowser } from "../warmPool.js";
 
 // Hard ceiling on browser launch + profile warmup + initial provider navigation.
@@ -274,20 +273,6 @@ async function runRetryCycle(
 					break;
 				}
 
-				if (
-					(failureType === "unknown" || failureType === "no_editor") &&
-					getProviderSessionScope(provider) === "google"
-				) {
-					// Invalidate the shared proxy hint for Google-family providers on
-					// unknown or no_editor failures. no_editor on Gemini/AIO often means
-					// Google returned a consent page, a bot-challenge redirect, or a
-					// degraded session — all proxy-specific. Keeping the stale hint would
-					// cause the next attempt to reuse the same bad proxy.
-					plog.warn(
-						`${failureType} failure on attempt ${totalAttempt}/${totalMax}; invalidating google proxy hint before IP refresh`,
-					);
-					await invalidateAndEvict(refs, provider, sessionKey);
-				}
 
 				if (attempt < ATTEMPTS_PER_CYCLE - 1) {
 					await sleep(jitter(RETRY_DELAY));

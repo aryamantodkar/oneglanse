@@ -3,7 +3,6 @@ import { firefox } from "playwright-core";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
-import { redis } from "@oneglanse/services";
 import type { Browser, BrowserContext } from "playwright";
 import { env } from "../../env.js";
 import { resolveCamoufoxLaunchOptions, type CamoufoxProxyConfig } from "./camoufox.js";
@@ -39,11 +38,6 @@ type FirefoxPersistentContextOptions = NonNullable<
 export type LaunchContextOptions = {
 	sessionKey?: string;
 	profileScope?: string;
-	// When set, both gemini and ai-overview jobs with the same key will try to
-	// share a proxy session: the first job allocates and stores it in Redis, the
-	// second reads and reuses it. On proxy failure, the hint is invalidated so
-	// the next retry picks a fresh proxy independently.
-	googleSharedProxyKey?: string;
 };
 
 type ProxyAllocation = {
@@ -210,77 +204,6 @@ async function buildProxyAllocation(): Promise<ProxyAllocation> {
 	};
 }
 
-// Stored in Redis so gemini + ai-overview jobs in the same group share an IP.
-type StoredProxyHint = {
-	scheme: ProxyScheme;
-	host: string;
-	port: number;
-	username?: string;
-	password?: string;
-};
-
-const GOOGLE_PROXY_HINT_REDIS_PREFIX = "google-proxy-hint:";
-// Slightly under the ThorData 10-min sticky session so the hint expires before
-// the underlying session does.
-const GOOGLE_PROXY_HINT_TTL_SECONDS = 540;
-
-async function buildProxyAllocationWithHint(
-	googleSharedProxyKey: string | undefined,
-): Promise<ProxyAllocation & { invalidateHint: () => Promise<void> }> {
-	const redisKey = googleSharedProxyKey
-		? `${GOOGLE_PROXY_HINT_REDIS_PREFIX}${googleSharedProxyKey}`
-		: null;
-
-	const invalidateHint = async (): Promise<void> => {
-		if (redisKey) {
-			await redis.del(redisKey).catch(() => {});
-		}
-	};
-
-	if (redisKey) {
-		try {
-			const raw = await redis.get(redisKey);
-			if (raw) {
-				const hint = JSON.parse(raw) as StoredProxyHint;
-				const serverUrl = formatProxyServerUrl(hint.scheme, hint.host, hint.port);
-				const proxy: UpstreamProxyConfig = {
-					scheme: hint.scheme,
-					host: hint.host,
-					port: hint.port,
-					username: hint.username,
-					password: hint.password,
-					serverUrl,
-					logProxy: serverUrl,
-				};
-				logger.log(`[google-proxy-hint] reusing shared proxy ${proxy.logProxy}`);
-				return { proxy, release: () => {}, invalidateHint };
-			}
-		} catch {
-			// Redis unavailable — fall through to normal allocation
-		}
-	}
-
-	// Normal allocation path
-	const allocation = await buildProxyAllocation();
-
-	if (redisKey && allocation.proxy) {
-		const hint: StoredProxyHint = {
-			scheme: allocation.proxy.scheme,
-			host: allocation.proxy.host,
-			port: allocation.proxy.port,
-			username: allocation.proxy.username,
-			password: allocation.proxy.password,
-		};
-		// SET NX so only the first job wins; subsequent jobs read the same hint.
-		await redis
-			.set(redisKey, JSON.stringify(hint), "EX", GOOGLE_PROXY_HINT_TTL_SECONDS, "NX")
-			.catch(() => {});
-		logger.log(`[google-proxy-hint] stored shared proxy ${allocation.proxy.logProxy}`);
-	}
-
-	return { ...allocation, invalidateHint };
-}
-
 function toCamoufoxProxyConfig(
 	proxy: UpstreamProxyConfig | null,
 ): CamoufoxProxyConfig | undefined {
@@ -327,10 +250,9 @@ export async function launchContext(
 
 	try {
 		logger.log("resolving proxy before browser launch");
-		const proxyAllocation = await buildProxyAllocationWithHint(options?.googleSharedProxyKey);
+		const proxyAllocation = await buildProxyAllocation();
 		upstreamProxy = proxyAllocation.proxy;
 		releaseProxyLease = proxyAllocation.release;
-		invalidateProxyHint = proxyAllocation.invalidateHint;
 		if (upstreamProxy) {
 			logger.log(
 				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
