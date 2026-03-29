@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 import SchedulePageClient from "./schedule-page-client";
 
-export default function SchedulePage({
+export default async function SchedulePage({
 	searchParams,
 }: {
-	searchParams?: { workspace?: string };
+	searchParams?: Promise<{ workspace?: string }>;
 }) {
 	const isSelfHosted = process.env.NEXT_PUBLIC_SELF_HOSTED === "true";
 	if (!isSelfHosted) {
-		const workspaceQuery = searchParams?.workspace
-			? `?workspace=${encodeURIComponent(searchParams.workspace)}`
+		const params = await searchParams;
+		const workspaceQuery = params?.workspace
+			? `?workspace=${encodeURIComponent(params.workspace)}`
 			: "";
 		redirect(`/dashboard${workspaceQuery}`);
 	}
