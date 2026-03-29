@@ -24,7 +24,8 @@ export default async function RootLayout({
 	children,
 }: {
 	children: React.ReactNode;
-}){
+}) {
+	const isSelfHosted = process.env.NEXT_PUBLIC_SELF_HOSTED === "true";
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});
@@ -48,6 +49,7 @@ export default async function RootLayout({
 			<TRPCReactProvider>
 				<SidebarProvider defaultOpen={defaultOpen}>
 					<LayoutContent
+						isSelfHosted={isSelfHosted}
 						workspace={workspace}
 						userName={session.user.name}
 						userEmail={session.user.email}
