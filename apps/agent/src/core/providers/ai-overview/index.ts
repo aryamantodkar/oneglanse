@@ -4,7 +4,6 @@ import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../../env.js";
 import {
-	clickLocatorLikeUser,
 	humanType,
 	moveMouseToElement,
 } from "../../../lib/browser/humanBehavior.js";
@@ -49,48 +48,24 @@ async function dismissConsentDialog(page: Page): Promise<void> {
 	const consentBtn = page.locator(GOOGLE_CONSENT_SELECTOR).first();
 	const visible = await consentBtn.isVisible({ timeout: 2500 }).catch(() => false);
 	if (!visible) return;
-	await clickLocatorLikeUser(page, consentBtn, { timeout: 4000 });
-}
-
-async function navigateToGoogleHome(page: Page): Promise<void> {
-	await navigateWithRetry(page, "https://www.google.com/", {
-		waitUntil: "domcontentloaded",
-		timeout: 30000,
-	});
-	assertNotBlockedPage(page);
-	await dismissConsentDialog(page);
+	await consentBtn.click({ timeout: 4000 });
 }
 
 export const aiOverviewConfig: ProviderConfig = {
 	url: "https://www.google.com/",
 	label: "AI Overview",
 	displayName: "AI Overview",
-
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
-		// Try the search box on the current page (google.com homepage or SERP).
-		// Reusing the SERP avoids extra navigation on prompt 2+.
-		let searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
-		let inputVisible = await searchInput.isVisible({ timeout: 3000 }).catch(() => false);
-
-		if (!inputVisible) {
-			// Search box gone (e.g. SERP state changed) — navigate back to google.com
-			// homepage before falling back to direct URL. Homepage is more reliable
-			// and avoids the block-prone direct-URL pattern.
-			logger.log("[ai-overview] search box not found, returning to google.com homepage");
-			await navigateToGoogleHome(page);
-			searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
-			inputVisible = await searchInput.isVisible({ timeout: 5000 }).catch(() => false);
-		}
+		const searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
+		const inputVisible = await searchInput.isVisible({ timeout: 3000 }).catch(() => false);
 
 		if (inputVisible) {
 			await moveMouseToElement(page, searchInput);
 			await searchInput.click();
 			await page.waitForTimeout(randomBetween(300, 700));
-			// Select any existing query (e.g. previous search on SERP) then type to replace
 			await page.keyboard.press("Control+a");
 			await humanType(page, prompt);
-			// Verify the input received the full prompt before submitting
 			const inputContent = await searchInput.readInputValue().catch(() => "");
 			if (inputContent.trim().length < prompt.trim().length * 0.9) {
 				throw new ExternalServiceError(
@@ -102,8 +77,7 @@ export const aiOverviewConfig: ProviderConfig = {
 			await page.keyboard.press("Enter");
 			await page.waitForLoadState("domcontentloaded").catch(() => {});
 		} else {
-			// Last resort: direct URL — more block-prone but prevents a total failure.
-			logger.log("[ai-overview] search box still not found, falling back to direct URL");
+			logger.log("[ai-overview] search box not found, falling back to direct URL");
 			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
 				waitUntil: "domcontentloaded",
 				timeout: 60000,
@@ -115,21 +89,12 @@ export const aiOverviewConfig: ProviderConfig = {
 		logger.log(`[ai-overview] search ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {
-		// Guard: check for bot detection before waiting on response selectors.
 		const url = page.url();
 		if (url.includes("/sorry/")) {
 			throw new ExternalServiceError(
 				"ai-overview",
 				"Google bot detection triggered (sorry page) — proxy IP blocked",
 				429,
-			);
-		}
-
-		// Must be on a real search results page before waiting for AI Overview.
-		if (!url.includes("google.com/search")) {
-			throw new ExternalServiceError(
-				"ai-overview",
-				`Not on search results page after submission (url: ${url})`,
 			);
 		}
 
