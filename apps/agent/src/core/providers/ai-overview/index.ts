@@ -8,6 +8,7 @@ import {
 	humanType,
 	moveMouseToElement,
 } from "../../../lib/browser/humanBehavior.js";
+import { clearEditorInput } from "../../../lib/input/editor/clearInput.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 import type { ProviderConfig } from "../types.js";
@@ -18,15 +19,14 @@ function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-// Fallback only — used when the search box cannot be found on the page.
-// Typing via the search box is strongly preferred as it produces organic
-// oq= / gs_lcrp parameters that a direct URL navigation never has.
 function buildFallbackSearchUrl(prompt: string): string {
 	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
 }
 
-// Join all editor selectors so the first visible one is matched
 const GOOGLE_SEARCH_INPUT = PROVIDER_EDITOR_SELECTORS["ai-overview"].join(", ");
+
+const GOOGLE_CONSENT_SELECTOR =
+	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
 
 function assertNotBlockedPage(page: Page): void {
 	const url = page.url();
@@ -46,24 +46,16 @@ function assertNotBlockedPage(page: Page): void {
 	}
 }
 
-// Google consent button IDs are locale-independent (unlike button text).
-// #L2AGLb = "Accept all", #W0wltc = "Reject all"
-const GOOGLE_CONSENT_SELECTOR =
-	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
-
-// Track pages that have already completed the Google cookie warm-up so that
-// subsequent prompts within the same browser session skip the extra navigation.
-const warmedPages = new WeakSet<Page>();
-
 async function dismissConsentDialog(page: Page): Promise<void> {
 	const consentBtn = page.locator(GOOGLE_CONSENT_SELECTOR).first();
 	const visible = await consentBtn.isVisible({ timeout: 2500 }).catch(() => false);
 	if (!visible) return;
-
-	// Consent dialog is present — click accept. If we can't, throw so the caller
-	// can retry on a fresh page rather than silently proceeding without cookies.
 	await clickLocatorLikeUser(page, consentBtn, { timeout: 4000 });
 }
+
+// Track pages that have already established Google cookies so the first
+// prompt skips the extra google.com navigation.
+const warmedPages = new WeakSet<Page>();
 
 async function ensureGoogleCookies(page: Page): Promise<void> {
 	if (warmedPages.has(page)) return;
@@ -78,42 +70,55 @@ async function ensureGoogleCookies(page: Page): Promise<void> {
 	warmedPages.add(page);
 }
 
+async function navigateToGoogleHome(page: Page): Promise<void> {
+	await navigateWithRetry(page, "https://www.google.com/", {
+		waitUntil: "domcontentloaded",
+		timeout: 30000,
+	});
+	assertNotBlockedPage(page);
+	await dismissConsentDialog(page);
+}
+
 export const aiOverviewConfig: ProviderConfig = {
 	url: "https://www.google.com/",
 	warmupDelayMs: 0,
 	label: "AI Overview",
 	displayName: "AI Overview",
 	requiresWarmup: false,
-	// Skip initial navigation — navigateToPrompt handles the first google.com visit
-	// via ensureGoogleCookies(), avoiding a redundant double navigation on prompt 1.
 	skipInitialNavigation: true,
-	// navigateToPrompt owns the full search flow: cookies → type → Enter → SERP.
-	// This bypasses the generic askPrompt pipeline entirely, keeping Google search
-	// interactions clean (no synthetic clear/focus/button-detection overhead).
 	navigateToPrompt: async (page, prompt) => {
+		// First prompt: ensure Google cookies are established via google.com visit.
+		// Subsequent prompts: session is reused (warmedPages check is a no-op).
 		await ensureGoogleCookies(page);
 
-		// Prefer typing in the search box: produces organic oq= parameter,
-		// triggers real autocomplete requests, and creates the click→type→submit
-		// pattern that distinguishes human sessions from direct URL navigation.
-		const searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
-		const inputVisible = await searchInput
-			.isVisible({ timeout: 5000 })
-			.catch(() => false);
+		// Try the search box on the current page (google.com homepage or SERP).
+		// Reusing the SERP avoids extra navigation on prompt 2+.
+		let searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
+		let inputVisible = await searchInput.isVisible({ timeout: 3000 }).catch(() => false);
+
+		if (!inputVisible) {
+			// Search box gone (e.g. SERP state changed) — navigate back to google.com
+			// homepage before falling back to direct URL. Homepage is more reliable
+			// and avoids the block-prone direct-URL pattern.
+			logger.log("[ai-overview] search box not found, returning to google.com homepage");
+			await navigateToGoogleHome(page);
+			searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
+			inputVisible = await searchInput.isVisible({ timeout: 5000 }).catch(() => false);
+		}
 
 		if (inputVisible) {
 			await moveMouseToElement(page, searchInput);
 			await searchInput.click();
 			await page.waitForTimeout(randomBetween(300, 700));
-			// Select any existing text (e.g. previous query on SERP) before typing
-			await page.keyboard.press("Control+a");
+			// Clear any existing query (e.g. previous search still in the box on SERP)
+			await clearEditorInput(page, searchInput);
 			await humanType(page, prompt);
 			await page.waitForTimeout(randomBetween(400, 900));
 			await page.keyboard.press("Enter");
 			await page.waitForLoadState("domcontentloaded").catch(() => {});
 		} else {
-			// Fallback: search box not found — navigate directly
-			logger.log("[ai-overview] search box not found, falling back to direct URL");
+			// Last resort: direct URL — more block-prone but prevents a total failure.
+			logger.log("[ai-overview] search box still not found, falling back to direct URL");
 			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
 				waitUntil: "domcontentloaded",
 				timeout: 60000,
@@ -125,6 +130,24 @@ export const aiOverviewConfig: ProviderConfig = {
 		logger.log(`[ai-overview] search ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {
+		// Guard: check for bot detection before waiting on response selectors.
+		const url = page.url();
+		if (url.includes("/sorry/")) {
+			throw new ExternalServiceError(
+				"ai-overview",
+				"Google bot detection triggered (sorry page) — proxy IP blocked",
+				429,
+			);
+		}
+
+		// Must be on a real search results page before waiting for AI Overview.
+		if (!url.includes("google.com/search")) {
+			throw new ExternalServiceError(
+				"ai-overview",
+				`Not on search results page after submission (url: ${url})`,
+			);
+		}
+
 		await page
 			.waitForSelector(
 				'[data-container-id="model-response-placeholder"], [data-container-id="main-col"]',
@@ -135,12 +158,6 @@ export const aiOverviewConfig: ProviderConfig = {
 	extractResponse: async (page) => {
 		const html = await extractAIOverviewResponse(page);
 		return turndown.turndown(html);
-	},
-	betweenPromptsHook: async (_page) => {
-		// Each prompt navigates to its own URL via navigateToPrompt — nothing to reset.
-		// Real users take 8-20s between consecutive searches (reading results, deciding).
-		const pause = 8000 + Math.floor(Math.random() * 12000);
-		await _page.waitForTimeout(pause);
 	},
 	extractSources: (page) => extractAIOverviewSources(page),
 };

@@ -31,6 +31,31 @@ const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 };
 const THORDATA_PROXY_API_TIMEOUT_MS = 10_000;
 const leasedThorDataProxyUrls = new Set<string>();
+
+// Serialize all proxy acquisitions to prevent race conditions where two
+// providers fetch the same list and pick the same entry before either has
+// added it to the leased set.
+let proxyAcquisitionLock = Promise.resolve();
+
+// Proxy quarantine — hosts that trigger bot detection or hard failures are
+// quarantined for a cooldown period so they are not immediately reused.
+const QUARANTINE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const quarantinedProxies = new Map<string, number>(); // host:port → expiry
+
+export function quarantineProxy(hostPort: string): void {
+	quarantinedProxies.set(hostPort, Date.now() + QUARANTINE_TTL_MS);
+	logger.warn(`[proxy-quarantine] ${hostPort} quarantined for ${QUARANTINE_TTL_MS / 60000}min`);
+}
+
+function isProxyQuarantined(hostPort: string): boolean {
+	const expiry = quarantinedProxies.get(hostPort);
+	if (!expiry) return false;
+	if (Date.now() >= expiry) {
+		quarantinedProxies.delete(hostPort);
+		return false;
+	}
+	return true;
+}
 type FirefoxPersistentContextOptions = NonNullable<
 	Parameters<typeof firefox.launchPersistentContext>[1]
 >;
@@ -118,7 +143,7 @@ function parseThorDataProxyLine(
 	return { host, port };
 }
 
-async function acquireThorDataProxy(): Promise<ProxyAllocation> {
+async function acquireThorDataProxyInner(): Promise<ProxyAllocation> {
 	const apiUrl = env.THORDATA_PROXY_API_URL?.trim();
 	if (!apiUrl) {
 		throw new Error(
@@ -152,13 +177,17 @@ async function acquireThorDataProxy(): Promise<ProxyAllocation> {
 			return {
 				proxy: parseProxyConfig(serverUrl),
 				serverUrl,
+				hostPort: `${proxy.host}:${proxy.port}`,
 			};
 		})
-		.filter(({ serverUrl }) => !leasedThorDataProxyUrls.has(serverUrl));
+		.filter(
+			({ serverUrl, hostPort }) =>
+				!leasedThorDataProxyUrls.has(serverUrl) && !isProxyQuarantined(hostPort),
+		);
 
 	if (candidates.length === 0) {
 		throw new Error(
-			"ThorData proxy API returned only proxies that are already leased by other workers.",
+			"ThorData proxy API returned only proxies that are already leased or quarantined.",
 		);
 	}
 
@@ -176,19 +205,21 @@ async function acquireThorDataProxy(): Promise<ProxyAllocation> {
 	};
 }
 
-async function buildProxyAllocation(): Promise<ProxyAllocation> {
+async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
 	const proxyProvider = env.PROXY_PROVIDER?.trim().toLowerCase();
 	if (proxyProvider === "thordata" && env.THORDATA_PROXY_API_URL?.trim()) {
-		return acquireThorDataProxy();
+		return acquireThorDataProxyInner();
 	}
 
 	const host = env.PROXY_HOST?.trim();
 	const port = env.PROXY_PORT?.trim();
 	if (!host || !port) {
-		return {
-			proxy: null,
-			release: () => {},
-		};
+		return { proxy: null, release: () => {} };
+	}
+
+	const hostPort = `${host}:${port}`;
+	if (isProxyQuarantined(hostPort)) {
+		throw new Error(`proxy ${hostPort} is quarantined — skipping until cooldown expires`);
 	}
 
 	const scheme = normalizeProxyScheme(env.PROXY_SCHEME?.trim() || "http");
@@ -202,6 +233,17 @@ async function buildProxyAllocation(): Promise<ProxyAllocation> {
 		),
 		release: () => {},
 	};
+}
+
+async function buildProxyAllocation(): Promise<ProxyAllocation> {
+	// Serialize all acquisitions to prevent concurrent providers from picking
+	// the same proxy before either has registered it as leased.
+	const result = proxyAcquisitionLock.then(() => buildProxyAllocationInner());
+	proxyAcquisitionLock = result.then(
+		() => {},
+		() => {},
+	);
+	return result;
 }
 
 function toCamoufoxProxyConfig(
@@ -254,15 +296,17 @@ export async function launchContext(
 		upstreamProxy = proxyAllocation.proxy;
 		releaseProxyLease = proxyAllocation.release;
 		if (upstreamProxy) {
-			logger.log(
-				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
-			);
+			logger.log(`selected proxy for browser launch: ${upstreamProxy.logProxy}`);
 			const reachable = await checkProxyReachable(upstreamProxy.host, upstreamProxy.port);
 			if (!reachable) {
 				throw new Error(
 					`proxy connect failed: ${upstreamProxy.logProxy} unreachable (TCP pre-check)`,
 				);
 			}
+			const hostPort = `${upstreamProxy.host}:${upstreamProxy.port}`;
+			invalidateProxyHint = async () => {
+				quarantineProxy(hostPort);
+			};
 		} else {
 			logger.warn("no proxy resolved for browser launch; using direct connection");
 		}
