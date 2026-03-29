@@ -4,8 +4,8 @@ import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
 import {
-	humanType,
 	moveMouseToElement,
+	pastePrompt,
 	preInteractionIdle,
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
@@ -43,9 +43,9 @@ export async function askPrompt(
 	if (Math.random() < 0.4) await smallScroll(page);
 	if (Math.random() < 0.6) await moveMouseToElement(page, input);
 
-	logger.debug(`typing ${prompt.length} chars…`);
-	await humanType(page, prompt);
-	logger.debug("typing complete");
+	logger.debug(`pasting ${prompt.length} chars…`);
+	await pastePrompt(page, prompt);
+	logger.debug("paste complete");
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);
