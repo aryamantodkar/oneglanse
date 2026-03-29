@@ -8,24 +8,13 @@ export function getProviderStartupDelayRange(provider: Provider): {
 	minMs: number;
 	maxMs: number;
 } {
-	// Fixed deterministic startup order: chatgpt → perplexity → gemini → ai-overview.
-	// Overlapping random ranges caused non-deterministic ordering (e.g. perplexity
-	// could start before ai-overview). Fixed values guarantee the sequence every run.
-	if (provider === "chatgpt") {
-		return { minMs: 0, maxMs: 0 };
-	}
-
-	if (provider === "perplexity") {
-		return { minMs: 1_000, maxMs: 1_000 };
-	}
-
 	if (provider === "gemini") {
-		return { minMs: 2_000, maxMs: 2_000 };
+		return { minMs: 800, maxMs: 1_800 };
 	}
 
 	if (provider === "ai-overview") {
-		return { minMs: 3_000, maxMs: 3_000 };
+		return { minMs: 3_000, maxMs: 5_000 };
 	}
 
-	return { minMs: 1_500, maxMs: 1_500 };
+	return { minMs: 1_500, maxMs: 4_500 };
 }
