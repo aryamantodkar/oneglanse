@@ -68,6 +68,11 @@ export const aiOverviewConfig: ProviderConfig = {
 	label: "AI Overview",
 	displayName: "AI Overview",
 	requiresWarmup: false,
+	// Skip initial navigation — beforePromptHook handles the first google.com visit
+	// via ensureGoogleCookies(), avoiding a redundant double navigation on prompt 1.
+	skipInitialNavigation: true,
+	// Enter is the most reliable submission for Google search forms.
+	submitOrder: ["enter", "dispatch", "native", "force"],
 	// beforePromptHook handles Google cookie warmup and consent before askPrompt
 	// takes over the standard type-and-submit flow.
 	beforePromptHook: async (page) => {
@@ -80,8 +85,9 @@ export const aiOverviewConfig: ProviderConfig = {
 		await dismissConsentDialog(page).catch(() => {});
 	},
 	checkSubmitSuccess: async (page, { preSubmitUrl }) => {
-		// Give the page up to 5s to navigate to search results.
-		const deadline = Date.now() + 5000;
+		// Give the page up to 15s to navigate to search results.
+		// 5s was too short — slow proxies can take longer for the SERP to load.
+		const deadline = Date.now() + 15000;
 		while (Date.now() < deadline) {
 			const url = await page.getUrl().catch(() => page.url());
 			if (url.includes("google.com/search")) return true;
