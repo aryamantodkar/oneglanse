@@ -79,16 +79,15 @@ function buildProgressSeed(providers: Provider[], promptCount: number): string {
 }
 
 function buildProviderSessionKey(args: {
-	provider: Provider;
+	sessionScope: string;
 	userId: string;
 	workspaceId: string;
 }): string {
-	const { provider, userId, workspaceId } = args;
-	// Keyed by provider (not scope) so gemini and ai-overview each get their own
-	// warm-pool slot and never steal each other's live browser session.
-	// Profile cookie sharing (both under the "google" scope on disk) is
-	// controlled separately via profileScope in createAgent().
-	return `session:v3:${workspaceId}:${userId}:${provider}`;
+	const { sessionScope, userId, workspaceId } = args;
+	// Keyed by session scope so provider families that intentionally share a
+	// browser session (for example Gemini + AI Overview under "google") can
+	// reuse the same warm browser, cookies, and proxy/IP between jobs.
+	return `session:v4:${workspaceId}:${userId}:${sessionScope}`;
 }
 
 async function ensureProgressSeed(
@@ -198,12 +197,12 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	};
 
 	const label = PROVIDER_CONFIGS[provider].label;
+	const profileScope = getProviderSessionScope(provider);
 	const sessionKey = buildProviderSessionKey({
-		provider,
+		sessionScope: profileScope,
 		userId: user_id,
 		workspaceId: workspace_id,
 	});
-	const profileScope = getProviderSessionScope(provider);
 
 	const providerResults = buildEmptyResults();
 

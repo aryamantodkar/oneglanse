@@ -1,12 +1,17 @@
 import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
+import { PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
-export async function findActiveEditorFromSelectors(
+export type EditorCandidate = {
+	locator: Locator;
+	selector: string;
+};
+
+export async function findActiveEditorCandidateFromSelectors(
 	page: Page,
 	selectors: string[],
-): Promise<Locator> {
+): Promise<EditorCandidate> {
 	for (const selector of selectors) {
 		const nodes = page.locator(selector);
 
@@ -39,21 +44,37 @@ export async function findActiveEditorFromSelectors(
 				}
 
 				await el.focus().catch(() => {});
-				logger.debug(`found editor: ${selector}`);
-				return el;
-			} catch (_error) {
-				logger.debug(`found but hidden: ${selector}`);
-			}
+				return { locator: el, selector };
+			} catch (_error) {}
 		}
 	}
 
 	throw new NotFoundError("active prompt editor");
 }
 
+export async function findActiveEditorFromSelectors(
+	page: Page,
+	selectors: string[],
+): Promise<Locator> {
+	const candidate = await findActiveEditorCandidateFromSelectors(
+		page,
+		selectors,
+	);
+	return candidate.locator;
+}
+
 export async function findActiveEditor(
 	page: Page,
 	provider?: Provider,
 ): Promise<Locator> {
+	const candidate = await findActiveEditorCandidate(page, provider);
+	return candidate.locator;
+}
+
+export async function findActiveEditorCandidate(
+	page: Page,
+	provider?: Provider,
+): Promise<EditorCandidate> {
 	const fallbackSelectors = [
 		...new Set(Object.values(PROVIDER_EDITOR_SELECTORS).flat()),
 	];
@@ -61,5 +82,5 @@ export async function findActiveEditor(
 		? PROVIDER_EDITOR_SELECTORS[provider] || fallbackSelectors
 		: fallbackSelectors;
 
-	return findActiveEditorFromSelectors(page, selectors);
+	return findActiveEditorCandidateFromSelectors(page, selectors);
 }

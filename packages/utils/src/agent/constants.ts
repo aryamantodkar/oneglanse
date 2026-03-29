@@ -21,7 +21,6 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
 		"#prompt-textarea",
 		'div#prompt-textarea[contenteditable="true"]',
-		'textarea[name="prompt-textarea"]',
 	],
 	perplexity: [
 		'#ask-input[contenteditable="true"]',
@@ -30,15 +29,11 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	gemini: [
 		'[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
 		'div.ql-editor[contenteditable="true"]',
-		'rich-textarea [contenteditable="true"]',
-		'[role="textbox"][contenteditable="true"]',
 	],
 	"ai-overview": [
 		'textarea[name="q"]',
 		'textarea[name="q"][role="combobox"]',
 		'input[name="q"]',
-		'textarea[aria-label="Search"]',
-		'input[aria-label="Search"]',
 	],
 };
 
@@ -74,11 +69,9 @@ export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
 export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
 		'[data-message-author-role="assistant"]',
-		".prose",
-		'article[data-testid*="conversation-turn"]',
 	],
 	perplexity: [".prose"],
-	gemini: ["model-response", "message-content", ".model-response-text"],
+	gemini: ["model-response"],
 	"ai-overview": [
 		'[data-container-id="main-col"]',
 		'[role="region"] .markdown-content',

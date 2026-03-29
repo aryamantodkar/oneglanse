@@ -1,11 +1,12 @@
 import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
+import { logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { detectBotPage } from "../response/detectBotPage.js";
 import {
-	findActiveEditor,
-	findActiveEditorFromSelectors,
+	type EditorCandidate,
+	findActiveEditorCandidate,
+	findActiveEditorCandidateFromSelectors,
 } from "./findEditor.js";
 
 // Check for bot/login wall every N polls instead of every poll to avoid overhead.
@@ -35,36 +36,36 @@ async function isEditorReady(input: Locator): Promise<boolean> {
 
 async function waitForStableEditorCandidate(
 	page: Page,
-	resolveCandidate: () => Promise<Locator | null>,
-): Promise<Locator | null> {
+	resolveCandidate: () => Promise<EditorCandidate | null>,
+): Promise<EditorCandidate | null> {
 	let stablePolls = 0;
-	let lastLocator: Locator | null = null;
+	let lastCandidate: EditorCandidate | null = null;
 
 	while (stablePolls < STABLE_POLLS_REQUIRED) {
 		const candidate = await resolveCandidate();
 		if (!candidate) {
 			stablePolls = 0;
-			lastLocator = null;
+			lastCandidate = null;
 			return null;
 		}
 
-		const ready = await isEditorReady(candidate);
+		const ready = await isEditorReady(candidate.locator);
 		if (!ready) {
 			stablePolls = 0;
-			lastLocator = null;
+			lastCandidate = null;
 			return null;
 		}
 
-		lastLocator = candidate;
+		lastCandidate = candidate;
 		stablePolls += 1;
 		if (stablePolls >= STABLE_POLLS_REQUIRED) {
-			return lastLocator;
+			return lastCandidate;
 		}
 
 		await page.waitForTimeout(POLL_INTERVAL_MS);
 	}
 
-	return lastLocator;
+	return lastCandidate;
 }
 
 export async function waitForEditorReady(
@@ -82,12 +83,12 @@ export async function waitForEditorReady(
 		const input =
 			primarySelector && elapsedMs < PRIMARY_SELECTOR_GRACE_MS
 				? await waitForStableEditorCandidate(page, () =>
-						findActiveEditorFromSelectors(page, [primarySelector]).catch(
-							() => null,
-						),
+						findActiveEditorCandidateFromSelectors(page, [
+							primarySelector,
+						]).catch(() => null),
 					)
 				: await waitForStableEditorCandidate(page, () =>
-						findActiveEditor(page, provider).catch(() => null),
+						findActiveEditorCandidate(page, provider).catch(() => null),
 					);
 
 		if (!input) {
@@ -101,7 +102,8 @@ export async function waitForEditorReady(
 			continue;
 		}
 
-		return input;
+		logger.debug(`found editor: ${input.selector}`);
+		return input.locator;
 	}
 
 	// Final bot/login check before throwing — gives a better error message than
