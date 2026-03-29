@@ -1,8 +1,13 @@
 import { ExternalServiceError } from "@oneglanse/errors";
+import { PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../../env.js";
-import { clickLocatorLikeUser } from "../../../lib/browser/humanBehavior.js";
+import {
+	clickLocatorLikeUser,
+	humanType,
+	moveMouseToElement,
+} from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 import type { ProviderConfig } from "../types.js";
@@ -12,6 +17,16 @@ import { extractAIOverviewSources } from "./lib/extractSources.js";
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
+
+// Fallback only — used when the search box cannot be found on the page.
+// Typing via the search box is strongly preferred as it produces organic
+// oq= / gs_lcrp parameters that a direct URL navigation never has.
+function buildFallbackSearchUrl(prompt: string): string {
+	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
+}
+
+// Join all editor selectors so the first visible one is matched
+const GOOGLE_SEARCH_INPUT = PROVIDER_EDITOR_SELECTORS["ai-overview"].join(", ");
 
 function assertNotBlockedPage(page: Page): void {
 	const url = page.url();
@@ -33,7 +48,8 @@ function assertNotBlockedPage(page: Page): void {
 
 // Google consent button IDs are locale-independent (unlike button text).
 // #L2AGLb = "Accept all", #W0wltc = "Reject all"
-const GOOGLE_CONSENT_SELECTOR = "button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
+const GOOGLE_CONSENT_SELECTOR =
+	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
 
 // Track pages that have already completed the Google cookie warm-up so that
 // subsequent prompts within the same browser session skip the extra navigation.
@@ -68,34 +84,45 @@ export const aiOverviewConfig: ProviderConfig = {
 	label: "AI Overview",
 	displayName: "AI Overview",
 	requiresWarmup: false,
-	// Skip initial navigation — beforePromptHook handles the first google.com visit
+	// Skip initial navigation — navigateToPrompt handles the first google.com visit
 	// via ensureGoogleCookies(), avoiding a redundant double navigation on prompt 1.
 	skipInitialNavigation: true,
-	// Enter is the most reliable submission for Google search forms.
-	submitOrder: ["enter", "dispatch", "native", "force"],
-	// beforePromptHook handles Google cookie warmup and consent before askPrompt
-	// takes over the standard type-and-submit flow.
-	beforePromptHook: async (page) => {
+	// navigateToPrompt owns the full search flow: cookies → type → Enter → SERP.
+	// This bypasses the generic askPrompt pipeline entirely, keeping Google search
+	// interactions clean (no synthetic clear/focus/button-detection overhead).
+	navigateToPrompt: async (page, prompt) => {
 		await ensureGoogleCookies(page);
-		assertNotBlockedPage(page);
-	},
-	// After submit, dismiss any consent dialog that appeared on search results,
-	// then verify we landed on a search results page.
-	afterSubmitHook: async (page) => {
-		await dismissConsentDialog(page).catch(() => {});
-	},
-	checkSubmitSuccess: async (page, { preSubmitUrl }) => {
-		// Give the page up to 15s to navigate to search results.
-		// 5s was too short — slow proxies can take longer for the SERP to load.
-		const deadline = Date.now() + 15000;
-		while (Date.now() < deadline) {
-			const url = await page.getUrl().catch(() => page.url());
-			if (url.includes("google.com/search")) return true;
-			await page.waitForTimeout(100);
+
+		// Prefer typing in the search box: produces organic oq= parameter,
+		// triggers real autocomplete requests, and creates the click→type→submit
+		// pattern that distinguishes human sessions from direct URL navigation.
+		const searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
+		const inputVisible = await searchInput
+			.isVisible({ timeout: 5000 })
+			.catch(() => false);
+
+		if (inputVisible) {
+			await moveMouseToElement(page, searchInput);
+			await searchInput.click();
+			await page.waitForTimeout(randomBetween(300, 700));
+			// Select any existing text (e.g. previous query on SERP) before typing
+			await page.keyboard.press("Control+a");
+			await humanType(page, prompt);
+			await page.waitForTimeout(randomBetween(400, 900));
+			await page.keyboard.press("Enter");
+			await page.waitForLoadState("domcontentloaded").catch(() => {});
+		} else {
+			// Fallback: search box not found — navigate directly
+			logger.log("[ai-overview] search box not found, falling back to direct URL");
+			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
+				waitUntil: "domcontentloaded",
+				timeout: 60000,
+			});
 		}
-		// If we're still on the same URL, submission didn't navigate.
-		const currentUrl = await page.getUrl().catch(() => page.url());
-		return currentUrl !== preSubmitUrl;
+
+		assertNotBlockedPage(page);
+		await dismissConsentDialog(page);
+		logger.log(`[ai-overview] search ready: ${page.url()}`);
 	},
 	waitForResponse: async (page) => {
 		await page
@@ -104,24 +131,16 @@ export const aiOverviewConfig: ProviderConfig = {
 				{ timeout: env.AI_OVERVIEW_WAIT_TIMEOUT_MS },
 			)
 			.catch(() => {});
-
-		// Guard: if we're not on a search results page, extraction will produce garbage.
-		if (!page.url().includes("google.com/search")) {
-			throw new ExternalServiceError(
-				"ai-overview",
-				"Not on search results page when response wait completed",
-			);
-		}
 	},
 	extractResponse: async (page) => {
 		const html = await extractAIOverviewResponse(page);
-		return turndown.turndown(html).replace(/\n{3,}/g, "\n\n").trim();
+		return turndown.turndown(html);
 	},
-	betweenPromptsHook: async (page) => {
-		// After a search, the page is on google.com/search — the search box is still
-		// present so askPrompt can clear and reuse it directly for the next prompt.
-		// Brief pause to avoid query-bursting patterns.
-		await page.waitForTimeout(randomBetween(2000, 4000));
+	betweenPromptsHook: async (_page) => {
+		// Each prompt navigates to its own URL via navigateToPrompt — nothing to reset.
+		// Real users take 8-20s between consecutive searches (reading results, deciding).
+		const pause = 8000 + Math.floor(Math.random() * 12000);
+		await _page.waitForTimeout(pause);
 	},
 	extractSources: (page) => extractAIOverviewSources(page),
 };

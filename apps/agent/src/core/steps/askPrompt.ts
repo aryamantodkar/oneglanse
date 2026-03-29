@@ -4,8 +4,8 @@ import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
 import {
+	humanType,
 	moveMouseToElement,
-	pastePrompt,
 	preInteractionIdle,
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
@@ -46,19 +46,18 @@ export async function askPrompt(
 	await smallScroll(page);
 	await moveMouseToElement(page, input);
 
-	logger.debug("clearing editor…");
-	await clearEditorInput(page, input, { waitAfterMs: 400 });
-	logger.debug("refocusing input…");
-	// Explicit click re-focuses the element after clear. Without this, React's
-	// synthetic event state can desync after a page reset, causing humanType to
-	// type into the DOM but readInputValue() to return empty (ChatGPT prompt 2+).
-	// 3s timeout prevents this from hanging on shadow-DOM inputs (e.g. Gemini).
-	await input.click({ timeout: 3000 }).catch(() => {});
-	logger.debug("input ready");
+	// Only clear if the editor already has content — after a page reset (e.g.
+	// Gemini's betweenPromptsHook navigates back to a fresh composer), the editor
+	// is already empty and a forced clear adds unnecessary synthetic interaction.
+	const existingContent = await input.readInputValue().catch(() => "");
+	if (existingContent.trim().length > 0) {
+		logger.debug("clearing editor…");
+		await clearEditorInput(page, input, { waitAfterMs: 200 });
+	}
 
-	logger.debug(`pasting ${prompt.length} chars…`);
-	await pastePrompt(page, prompt);
-	logger.debug("paste complete");
+	logger.debug(`typing ${prompt.length} chars…`);
+	await humanType(page, prompt);
+	logger.debug("typing complete");
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);
