@@ -56,23 +56,20 @@ const WARMUP_NAV_TIMEOUT_MS = 8_000;
 const WARMUP_TOTAL_TIMEOUT_MS = 20_000;
 
 export async function warmUpProfile(page: Page, provider?: Provider): Promise<void> {
-	// Gemini does not need warmup — skip entirely.
-	if (provider === "gemini") {
-		logger.log("skipping warmup for gemini");
-		return;
-	}
-
 	logger.log("warming up browser profile...");
 	let successCount = 0;
 
 	// ai-overview: visit YouTube + gemini.google.com to establish .google.com cookies
 	// (NID, SOCS, 1P_JAR) that google.com search reads.
+	// gemini: visit YouTube only — establishes Google session rep for the proxy IP.
 	// Other providers: one neutral site to simulate natural browsing history.
 	const shuffledNeutral = [...NEUTRAL_WARMUP_SITES].sort(() => Math.random() - 0.5);
 	let toVisit: string[];
 
 	if (provider === "ai-overview") {
 		toVisit = [...GOOGLE_WARMUP_SITES];
+	} else if (provider === "gemini") {
+		toVisit = ["https://www.youtube.com"];
 	} else {
 		// One neutral site — provides browsing history without the Google detour
 		toVisit = [shuffledNeutral[0]!];
