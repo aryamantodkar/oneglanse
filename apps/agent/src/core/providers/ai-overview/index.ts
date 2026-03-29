@@ -18,16 +18,14 @@ function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-function buildFallbackSearchUrl(prompt: string): string {
-	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
-}
-
 function normalizeSearchQuery(prompt: string): string {
 	return prompt.replace(/\s+/g, " ").trim();
 }
 
 const GOOGLE_CONSENT_SELECTOR =
 	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
+
+const GOOGLE_HOME_URL = "https://www.google.com/";
 
 async function findVisibleSearchInput(page: Page) {
 	for (const selector of PROVIDER_EDITOR_SELECTORS["ai-overview"]) {
@@ -44,6 +42,17 @@ async function findVisibleSearchInput(page: Page) {
 	}
 
 	return null;
+}
+
+function isGoogleSearchResultsUrl(rawUrl: string): boolean {
+	try {
+		const url = new URL(rawUrl);
+		return (
+			url.hostname === "www.google.com" && url.pathname.startsWith("/search")
+		);
+	} catch {
+		return false;
+	}
 }
 
 function assertNotBlockedPage(page: Page): void {
@@ -73,6 +82,44 @@ async function dismissConsentDialog(page: Page): Promise<void> {
 	await consentBtn.click({ timeout: 4000 });
 }
 
+async function ensureHomepageSearchInput(page: Page) {
+	let input = await findVisibleSearchInput(page);
+	if (input) return input;
+
+	logger.log(
+		"[ai-overview] search box not found, returning to google.com homepage",
+	);
+	await navigateWithRetry(page, GOOGLE_HOME_URL, {
+		waitUntil: "domcontentloaded",
+		timeout: 30_000,
+	});
+	assertNotBlockedPage(page);
+	await dismissConsentDialog(page);
+
+	input = await findVisibleSearchInput(page);
+	if (input) return input;
+
+	throw new ExternalServiceError(
+		"ai-overview",
+		"Search box not found on Google homepage",
+	);
+}
+
+async function waitForSearchResults(page: Page): Promise<void> {
+	const deadline = Date.now() + 5_000;
+	while (Date.now() < deadline) {
+		const url = await page.getUrl().catch(() => page.url());
+		if (isGoogleSearchResultsUrl(url)) return;
+		assertNotBlockedPage(page);
+		await page.waitForTimeout(100);
+	}
+
+	throw new ExternalServiceError(
+		"ai-overview",
+		`Not on search results page after submission (url: ${page.url()})`,
+	);
+}
+
 export const aiOverviewConfig: ProviderConfig = {
 	url: "https://www.google.com/",
 	label: "AI Overview",
@@ -80,39 +127,30 @@ export const aiOverviewConfig: ProviderConfig = {
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
 		const query = normalizeSearchQuery(prompt);
-		const searchInput = await findVisibleSearchInput(page);
+		const searchInput = await ensureHomepageSearchInput(page);
 
-		if (searchInput) {
-			await moveMouseToElement(page, searchInput);
-			await searchInput.click();
-			await page.waitForTimeout(randomBetween(300, 700));
-			const primaryModifier = await getBrowserPrimaryModifier(page);
-			await page.keyboard
-				.press(`${primaryModifier}+A`)
-				.catch(() => page.keyboard.press("Control+A"));
-			logger.debug(`[ai-overview] pasting ${query.length} chars…`);
-			await pastePrompt(page, query);
-			logger.debug("[ai-overview] paste complete");
-			const inputContent = await searchInput.readInputValue().catch(() => "");
-			if (inputContent.trim().length < query.length * 0.9) {
-				throw new ExternalServiceError(
-					"ai-overview",
-					`Typing failed: input length ${inputContent.trim().length} is less than 90% of prompt length ${query.length}`,
-				);
-			}
-			await page.waitForTimeout(randomBetween(400, 900));
-			logger.debug("[ai-overview] attempting submission…");
-			await page.keyboard.press("Enter");
-			await page.waitForLoadState("domcontentloaded").catch(() => {});
-		} else {
-			logger.log(
-				"[ai-overview] search box not found, falling back to direct URL",
+		await moveMouseToElement(page, searchInput);
+		await searchInput.click();
+		await page.waitForTimeout(randomBetween(300, 700));
+		const primaryModifier = await getBrowserPrimaryModifier(page);
+		await searchInput
+			.press(`${primaryModifier}+A`)
+			.catch(() => searchInput.press("Control+A"));
+		logger.debug(`[ai-overview] pasting ${query.length} chars…`);
+		await pastePrompt(page, query);
+		logger.debug("[ai-overview] paste complete");
+		const inputContent = await searchInput.readInputValue().catch(() => "");
+		if (inputContent.trim().length < query.length * 0.9) {
+			throw new ExternalServiceError(
+				"ai-overview",
+				`Typing failed: input length ${inputContent.trim().length} is less than 90% of prompt length ${query.length}`,
 			);
-			await navigateWithRetry(page, buildFallbackSearchUrl(query), {
-				waitUntil: "domcontentloaded",
-				timeout: 60000,
-			});
 		}
+		await page.waitForTimeout(randomBetween(400, 900));
+		logger.debug("[ai-overview] attempting submission…");
+		await searchInput.press("Enter").catch(() => null);
+		await page.waitForLoadState("domcontentloaded").catch(() => {});
+		await waitForSearchResults(page);
 
 		assertNotBlockedPage(page);
 		await dismissConsentDialog(page);

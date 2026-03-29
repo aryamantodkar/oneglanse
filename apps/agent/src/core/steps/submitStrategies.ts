@@ -40,6 +40,17 @@ async function humanPause(
 }
 
 async function humanizeFocus(page: Page, input: Locator): Promise<void> {
+	if (env.CAMOUFOX_HUMANIZE) {
+		await clickLocatorLikeUser(page, input, {
+			delay: randomBetween(40, 120),
+			timeout: 3000,
+		}).catch(() => null);
+		await humanPause(page, 50, 140);
+		await input.focus().catch(() => null);
+		await humanPause(page, 40, 120);
+		return;
+	}
+
 	const box = await input.boundingBox().catch(() => null);
 	if (box) {
 		const x = box.x + box.width * (0.35 + Math.random() * 0.3);
@@ -103,7 +114,9 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	if (customResult !== undefined) return customResult;
 
 	// Check 1: Input cleared (most reliable signal)
-	const currentContent = await input.readInputValue().catch(() => preSubmitContent);
+	const currentContent = await input
+		.readInputValue()
+		.catch(() => preSubmitContent);
 	if (currentContent !== preSubmitContent && currentContent.length === 0) {
 		return true;
 	}

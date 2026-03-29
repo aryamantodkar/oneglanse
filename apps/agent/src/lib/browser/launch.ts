@@ -5,6 +5,8 @@ import { logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext } from "playwright";
 import { env } from "../../env.js";
 import {
+	inferCamoufoxOsFromLaunchOptions,
+	resolveCamoufoxContextOptions,
 	resolveCamoufoxLaunchOptions,
 	type CamoufoxProxyConfig,
 } from "./camoufox.js";
@@ -319,9 +321,19 @@ export async function launchContext(
 			provider,
 			proxy: toCamoufoxProxyConfig(upstreamProxy),
 		});
+		const camoufoxContext = await resolveCamoufoxContextOptions({
+			provider,
+			proxy: toCamoufoxProxyConfig(upstreamProxy),
+			os: inferCamoufoxOsFromLaunchOptions(camoufoxOptions),
+		});
 
 		rawBrowser = await firefox.launch(camoufoxOptions as FirefoxLaunchOptions);
-		rawContext = await rawBrowser.newContext();
+		rawContext = await rawBrowser.newContext(
+			camoufoxContext.contextOptions as never,
+		);
+		if (camoufoxContext.initScript) {
+			await rawContext.addInitScript(camoufoxContext.initScript);
+		}
 
 		context = new PlaywrightBrowserContextCompat(rawContext);
 		const browser = context.getBrowser();
