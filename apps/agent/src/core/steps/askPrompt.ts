@@ -9,7 +9,6 @@ import {
 	preInteractionIdle,
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
-import { clearEditorInput } from "../../lib/input/editor/clearInput.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
@@ -45,15 +44,6 @@ export async function askPrompt(
 	await preInteractionIdle(page);
 	await smallScroll(page);
 	await moveMouseToElement(page, input);
-
-	// Only clear if the editor already has content — after a page reset (e.g.
-	// Gemini's betweenPromptsHook navigates back to a fresh composer), the editor
-	// is already empty and a forced clear adds unnecessary synthetic interaction.
-	const existingContent = await input.readInputValue().catch(() => "");
-	if (existingContent.trim().length > 0) {
-		logger.debug("clearing editor…");
-		await clearEditorInput(page, input, { waitAfterMs: 200 });
-	}
 
 	logger.debug(`typing ${prompt.length} chars…`);
 	await humanType(page, prompt);
