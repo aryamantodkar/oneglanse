@@ -6,18 +6,15 @@ import {
 	getWorkspaceJoinInfo,
 	getWorkspaceMembersWithUsers,
 	removeMemberFromWorkspace,
-	setWorkspaceEnabledProviders,
 	updateOrganizationName,
 	updateWorkspaceDetails,
 	updateWorkspaceSchedule,
 } from "@oneglanse/services";
-import { PROVIDER_LIST } from "@oneglanse/types";
 import { authorizedWorkspaceProcedure } from "../../../procedures";
 import { parseCronExpressionOrThrow } from "../_helpers/scheduling";
 import {
 	addMemberInputSchema,
 	removeMemberInputSchema,
-	setEnabledProvidersInputSchema,
 	setScheduleInputSchema,
 	updateDetailsInputSchema,
 	updateOrganizationNameInputSchema,
@@ -95,23 +92,6 @@ export const authorizedWorkspaceRoutes = {
 		const workspace = await getWorkspaceById({ workspaceId: ctx.workspaceId });
 		return { schedule: workspace.schedule ?? null };
 	}),
-
-	getEnabledProviders: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
-		const workspace = await getWorkspaceById({ workspaceId: ctx.workspaceId });
-		const enabledProviders = workspace.enabledProviders
-			? JSON.parse(workspace.enabledProviders)
-			: [...PROVIDER_LIST];
-		return { enabledProviders };
-	}),
-
-	setEnabledProviders: authorizedWorkspaceProcedure
-		.input(setEnabledProvidersInputSchema)
-		.mutation(async ({ ctx, input }) => {
-			return setWorkspaceEnabledProviders({
-				workspaceId: ctx.workspaceId,
-				providers: input.providers,
-			});
-		}),
 
 	setSchedule: authorizedWorkspaceProcedure
 		.input(setScheduleInputSchema)

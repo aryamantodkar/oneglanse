@@ -22,7 +22,6 @@ export type RawSource = {
  * - deduplicates using the provided key function
  *
  * @param keyFn Controls dedup granularity. Defaults to url|title.
- *              Pass `(url) => url` to dedup by URL only (e.g. ai-overview).
  *              Pass `(url, title, citedText) => \`${url}|${title}|${citedText}\`` for tightest dedup.
  */
 export function buildSources(

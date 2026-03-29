@@ -4,24 +4,19 @@ export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
 	chatgpt: 90_000,
 	perplexity: 45_000,
 	gemini: 45_000,
-	"ai-overview": 45_000,
 };
 
 export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
 	chatgpt: 45_000,
 	perplexity: 30_000,
 	gemini: 45_000,
-	"ai-overview": 30_000,
 };
 
 // Provider-specific editor selectors used for health checks (most reliable first).
 // Keyed by provider so callers only test selectors relevant to the current session,
 // avoiding false positives and unnecessary timeout ticks on unrelated selectors.
 export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
-	chatgpt: [
-		"#prompt-textarea",
-		'div#prompt-textarea[contenteditable="true"]',
-	],
+	chatgpt: ["#prompt-textarea", 'div#prompt-textarea[contenteditable="true"]'],
 	perplexity: [
 		'#ask-input[contenteditable="true"]',
 		'[data-lexical-editor="true"][contenteditable="true"]',
@@ -29,11 +24,6 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	gemini: [
 		'[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
 		'div.ql-editor[contenteditable="true"]',
-	],
-	"ai-overview": [
-		'textarea[name="q"]',
-		'textarea[name="q"][role="combobox"]',
-		'input[name="q"]',
 	],
 };
 
@@ -55,27 +45,12 @@ export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
 		'button[aria-label*="send" i]',
 		'button[type="submit"]',
 	],
-	"ai-overview": [
-		'button[aria-label="Search"]',
-		'input[name="btnK"]',
-		'input[type="submit"][value="Google Search"]',
-		'input[aria-label="Google Search"]',
-		'input[name="btnI"]',
-		'input[type="submit"][value="I\'m Feeling Lucky"]',
-		'button[type="submit"]',
-	],
 };
 
 export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
-	chatgpt: [
-		'[data-message-author-role="assistant"]',
-	],
+	chatgpt: ['[data-message-author-role="assistant"]'],
 	perplexity: [".prose"],
 	gemini: ["model-response"],
-	"ai-overview": [
-		'[data-container-id="main-col"]',
-		'[role="region"] .markdown-content',
-	],
 };
 
 export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<
@@ -96,7 +71,6 @@ export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<
 		'button[aria-label="Stop response"]',
 		'button[aria-label*="stop" i]',
 	],
-	"ai-overview": [],
 };
 
 export const SOURCES_SELECTORS = [

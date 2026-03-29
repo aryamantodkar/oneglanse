@@ -2,7 +2,7 @@ import { db, schema } from "@oneglanse/db";
 import type { Workspace } from "@oneglanse/db";
 import { ValidationError } from "@oneglanse/errors";
 import type { CreateWorkspaceForTenantArgs } from "@oneglanse/types";
-import { ALL_PROVIDERS_JSON, newId } from "@oneglanse/utils";
+import { newId } from "@oneglanse/utils";
 
 export async function createWorkspaceForTenant(
 	args: CreateWorkspaceForTenantArgs,
@@ -16,7 +16,6 @@ export async function createWorkspaceForTenant(
 		domain,
 		tenantId,
 		schedule: null,
-		enabledProviders: ALL_PROVIDERS_JSON,
 		createdAt: new Date(),
 		deletedAt: null,
 	};

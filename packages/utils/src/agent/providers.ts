@@ -23,18 +23,13 @@ export const PROVIDER_DISPLAY = {
 		domain: "gemini.google.com",
 		description: "Gemini - Latest AI model",
 	},
-	"ai-overview": {
-		displayName: "AI Overview",
-		domain: "google.com",
-		description: "AI-powered search summaries",
-	},
 } satisfies Record<Provider, ProviderDisplayConfig>;
 
 export const ALL_PROVIDERS_JSON = JSON.stringify([...PROVIDER_LIST]);
 
 /**
  * Get the user-friendly display name for a provider
- * @param provider - The provider key (chatgpt, perplexity, gemini, ai-overview)
+ * @param provider - The provider key (chatgpt, perplexity, gemini)
  * @returns Display name (ChatGPT, Claude, Perplexity, Gemini)
  */
 export function getProviderDisplayName(provider: string): string {

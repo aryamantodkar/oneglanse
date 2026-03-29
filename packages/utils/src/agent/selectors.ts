@@ -20,35 +20,6 @@ export const SELECTORS = {
 		snippet: ".snippet",
 		icon: "img.icon-image, img",
 	},
-	aiOverview: {
-		headings: 'h1, h2, h3, [role="heading"]',
-		containers: '[role="region"], main > div, [data-sokoban-container]',
-		anchor: "a[href]",
-		paragraph: 'li, p, div[role="paragraph"]',
-		placeholder: '[data-container-id="model-response-placeholder"]',
-		placeholderWrapper: 'div:has(> [data-container-id="main-col"])',
-		mainCol: '[data-container-id="main-col"]',
-		noiseTags: [
-			"script",
-			"style",
-			"button",
-			"svg",
-			"noscript",
-			"iframe",
-			"sup",
-		],
-		aiOverviewChip: 'a[href*="google.com/search"]',
-		sourceContainers: [
-			'[data-container-id="rhs-col"]',
-			'[data-xid="aim-aside-initial-corroboration-container"]',
-			'[role="dialog"][data-type="hovc"]',
-		],
-		// Structural selectors only — "Opens in" aria-label text is English-specific
-		// and breaks when Camoufox's geoip resolves to a non-English locale.
-		sourceLink: 'a[target="_blank"][rel="noopener"]',
-		heading: '[role="heading"]',
-		inlineSourceLink: 'a[target="_blank"][rel="noopener"]',
-	},
 	perplexity: {
 		anchor: 'a[href^="http"]',
 		img: "img",

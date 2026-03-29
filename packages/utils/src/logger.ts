@@ -27,14 +27,12 @@ const PROVIDER_COLORS: Record<string, string> = {
 	chatgpt: "\x1b[32m",
 	perplexity: "\x1b[36m",
 	gemini: "\x1b[33m",
-	"ai-overview": "\x1b[34m",
 };
 
 const RAW_PROVIDER_LABELS: Record<string, string> = {
 	chatgpt: "CHATGPT",
 	perplexity: "PERPLEXITY",
 	gemini: "GEMINI",
-	"ai-overview": "AI OVERVIEW",
 };
 
 function centerLabel(label: string, width: number): string {
@@ -57,8 +55,7 @@ export const PROVIDER_LABELS: Record<string, string> = Object.fromEntries(
 function coloredPrefix(provider: string): string {
 	const color = PROVIDER_COLORS[provider] ?? "\x1b[37m";
 	const label =
-		PROVIDER_LABELS[provider] ??
-		provider.toUpperCase().slice(0, 11).padEnd(11);
+		PROVIDER_LABELS[provider] ?? provider.toUpperCase().slice(0, 11).padEnd(11);
 	return `${BOLD}${color}[${label}]${R}`;
 }
 
@@ -107,10 +104,7 @@ export const logger = {
 
 	debug: (...args: unknown[]) => {
 		if (!DEBUG_ENABLED) return;
-		console.log(
-			`${ts()} ${DIM}${contextPrefix()}${R}`,
-			...formatArgs(args),
-		);
+		console.log(`${ts()} ${DIM}${contextPrefix()}${R}`, ...formatArgs(args));
 	},
 };
 
@@ -123,33 +117,20 @@ export function createProviderLogger(provider: string): ProviderLogger {
 	const prefix = coloredPrefix(provider);
 
 	return {
-		log: (...args) =>
-			console.log(`${ts()} ${prefix}`, ...formatArgs(args)),
+		log: (...args) => console.log(`${ts()} ${prefix}`, ...formatArgs(args)),
 
 		warn: (...args) =>
-			console.warn(
-				`${ts()} ${prefix} ${YELLOW}⚠${R}`,
-				...formatArgs(args),
-			),
+			console.warn(`${ts()} ${prefix} ${YELLOW}⚠${R}`, ...formatArgs(args)),
 
 		error: (...args) =>
-			console.error(
-				`${ts()} ${prefix} ${RED}✕${R}`,
-				...formatArgs(args),
-			),
+			console.error(`${ts()} ${prefix} ${RED}✕${R}`, ...formatArgs(args)),
 
 		success: (...args) =>
-			console.log(
-				`${ts()} ${prefix} ${GREEN}✓${R}`,
-				...formatArgs(args),
-			),
+			console.log(`${ts()} ${prefix} ${GREEN}✓${R}`, ...formatArgs(args)),
 
 		debug: (...args) => {
 			if (!DEBUG_ENABLED) return;
-			console.log(
-				`${ts()} ${DIM}${prefix}${R}`,
-				...formatArgs(args),
-			);
+			console.log(`${ts()} ${DIM}${prefix}${R}`, ...formatArgs(args));
 		},
 	};
 }

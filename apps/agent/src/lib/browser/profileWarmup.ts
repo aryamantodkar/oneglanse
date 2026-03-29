@@ -4,7 +4,6 @@ import type { Page } from "playwright";
 import { clickLocatorLikeUser } from "./humanBehavior.js";
 
 const WARMUP_SITE_POOLS: Partial<Record<Provider, string[]>> = {
-	"ai-overview": ["https://www.google.com/", "https://www.youtube.com/"],
 	gemini: ["https://www.google.com/", "https://www.youtube.com/"],
 };
 

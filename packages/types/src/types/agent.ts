@@ -34,12 +34,7 @@ export interface AskPromptResult {
 	sources: Source[];
 }
 
-export const PROVIDER_LIST = [
-	"chatgpt",
-	"perplexity",
-	"gemini",
-	"ai-overview",
-] as const;
+export const PROVIDER_LIST = ["chatgpt", "perplexity", "gemini"] as const;
 
 export type Provider = (typeof PROVIDER_LIST)[number];
 

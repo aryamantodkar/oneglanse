@@ -64,7 +64,7 @@ export interface ProviderConfig {
 	 * When set, replaces the normal type-and-submit flow entirely.
 	 * The hook receives the prompt text and is responsible for navigating
 	 * the page to the state where `waitForResponse` can be called.
-	 * Used by providers that accept the query via URL (e.g. AI Overview).
+	 * Used by providers that need a fully custom per-prompt navigation flow.
 	 */
 	navigateToPrompt?: (page: Page, prompt: string) => Promise<void>;
 	/** Extracts citation sources from the page after the response is read. */

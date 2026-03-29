@@ -22,24 +22,5 @@ export async function findEnabledSendButton(
 		}
 	}
 
-	// Second pass: enabled-only, ignoring visibility.
-	// Restricted to ai-overview where Google's input[name="btnK"] is opacity:0
-	// until hover. Applying this to other providers risks returning a wrong
-	// hidden button (e.g. a shadow-DOM button[type="submit"] on Gemini).
-	if (provider === "ai-overview") {
-		for (const selector of selectors) {
-			const buttons = page.locator(selector);
-			const count = await buttons.count();
-			for (let i = 0; i < count; i++) {
-				const btn = buttons.nth(i);
-				try {
-					if (await btn.isEnabled()) {
-						return btn;
-					}
-				} catch {}
-			}
-		}
-	}
-
 	return null;
 }

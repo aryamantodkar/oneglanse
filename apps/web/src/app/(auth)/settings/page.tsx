@@ -8,7 +8,6 @@ import {
 	type DomainStats,
 	type GroupedSource,
 	PROVIDER_LIST,
-	type Provider,
 	type Source,
 	type SourceExcerpt,
 } from "@oneglanse/types";
@@ -32,16 +31,9 @@ import {
 	getUniqueModelProviders,
 	joinCitedTexts,
 } from "@oneglanse/utils";
-import {
-	CheckCircle2,
-	Download,
-	Loader2,
-	Pencil,
-	Settings,
-	X,
-} from "lucide-react";
+import { CheckCircle2, Download, Loader2, Settings } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLayoutUserEmail } from "../workspace-context";
 
 export default function SettingsPage() {
@@ -70,77 +62,6 @@ export default function SettingsPage() {
 		{ workspaceId },
 		{ enabled: !!workspaceId },
 	);
-
-	// Provider settings state
-	const [enabledProviders, setEnabledProviders] = useState<Provider[]>([]);
-	const [tempProviders, setTempProviders] = useState<Provider[]>([]);
-	const [isEditingProviders, setIsEditingProviders] = useState(false);
-	const [savingProviders, setSavingProviders] = useState(false);
-
-	// Fetch enabled providers
-	const { data: providersData } = api.workspace.getEnabledProviders.useQuery(
-		{ workspaceId },
-		{ enabled: !!workspaceId, refetchOnMount: true },
-	);
-
-	// Update mutation for providers
-	const updateProvidersMutation = api.workspace.setEnabledProviders.useMutation(
-		{
-			onSuccess: () => {
-				toast.success("Provider settings updated");
-			},
-			onError: (err) => {
-				toast.error(err.message);
-			},
-		},
-	);
-
-	useEffect(() => {
-		if (providersData?.enabledProviders) {
-			setEnabledProviders(providersData.enabledProviders);
-			setTempProviders(providersData.enabledProviders);
-		}
-	}, [providersData]);
-
-	// Toggle provider handler (for edit mode)
-	const handleProviderToggle = (provider: Provider) => {
-		const isEnabled = tempProviders.includes(provider);
-		const newProviders = isEnabled
-			? tempProviders.filter((p) => p !== provider)
-			: [...tempProviders, provider];
-
-		if (newProviders.length === 0) {
-			toast.error("At least one provider must be enabled");
-			return;
-		}
-
-		setTempProviders(newProviders);
-	};
-
-	// Save provider changes
-	const handleSaveProviders = async () => {
-		setSavingProviders(true);
-		try {
-			await updateProvidersMutation.mutateAsync({
-				workspaceId,
-				providers: tempProviders,
-			});
-			setEnabledProviders(tempProviders);
-			setIsEditingProviders(false);
-			toast.success("AI provider settings updated successfully");
-		} catch (err) {
-			console.error(err);
-			toast.error("Failed to update provider settings");
-		} finally {
-			setSavingProviders(false);
-		}
-	};
-
-	// Cancel provider editing
-	const handleCancelProviders = () => {
-		setTempProviders(enabledProviders);
-		setIsEditingProviders(false);
-	};
 
 	// Delete account handler
 	const handleDeleteAccount = async () => {
@@ -394,152 +315,42 @@ export default function SettingsPage() {
 				</div>
 
 				<div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-					<div className="mb-3 flex items-center justify-between gap-2">
-						<div className="flex items-center gap-2">
-							<Settings className="h-4 w-4 text-gray-500" />
-							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-								Active AI Providers
-							</p>
-						</div>
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-8 w-8 p-0"
-							onClick={() => {
-								if (isEditingProviders) {
-									handleCancelProviders();
-								} else {
-									setIsEditingProviders(true);
-								}
-							}}
-							aria-label={
-								isEditingProviders
-									? "Cancel editing providers"
-									: "Edit providers"
-							}
-						>
-							{isEditingProviders ? (
-								<X className="h-4 w-4" />
-							) : (
-								<Pencil className="h-4 w-4" />
-							)}
-						</Button>
+					<div className="mb-3 flex items-center gap-2">
+						<Settings className="h-4 w-4 text-gray-500" />
+						<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+							Active AI Providers
+						</p>
 					</div>
 
-					{!isEditingProviders ? (
-						// View mode - show selected providers
-						<div className="space-y-2">
-							<p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-								Your prompts will be sent to these AI providers
-							</p>
-							<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-								{PROVIDER_LIST.map((provider) => {
-									const isEnabled = enabledProviders.includes(provider);
-									return (
-										<div
-											key={provider}
-											className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
-												isEnabled
-													? "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
-													: "border-gray-200 bg-gray-50/30 dark:border-gray-800 dark:bg-gray-900/30 opacity-40"
-											}`}
-										>
-											{isEnabled ? (
-												<CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
-											) : (
-												<div className="h-5 w-5 shrink-0 rounded-full border-2 border-gray-300 dark:border-gray-700" />
-											)}
-											<img
-												src={getModelFavicon(provider)}
-												alt={getProviderDisplayName(provider)}
-												className="h-5 w-5 shrink-0 rounded-sm"
-											/>
-											<div className="min-w-0 flex-1">
-												<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-													{getProviderDisplayName(provider)}
-												</p>
-												<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-													{PROVIDER_DISPLAY[provider].description}
-												</p>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						</div>
-					) : (
-						// Edit mode - allow selection
-						<div className="space-y-3">
-							<p className="text-xs text-gray-500 dark:text-gray-400">
-								Select which AI providers to query for prompts (at least one
-								required)
-							</p>
-							<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-								{PROVIDER_LIST.map((provider) => {
-									const isSelected = tempProviders.includes(provider);
-									return (
-										<button
-											key={provider}
-											type="button"
-											onClick={() => handleProviderToggle(provider)}
-											className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all ${
-												isSelected
-													? "border-blue-300 bg-blue-50/50 ring-2 ring-blue-200 dark:border-blue-700 dark:bg-blue-950/20 dark:ring-blue-800"
-													: "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 dark:hover:bg-gray-800/50"
-											}`}
-										>
-											{isSelected ? (
-												<CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
-											) : (
-												<div className="h-5 w-5 shrink-0 rounded-full border-2 border-gray-300 dark:border-gray-700" />
-											)}
-											<img
-												src={getModelFavicon(provider)}
-												alt={getProviderDisplayName(provider)}
-												className="h-5 w-5 shrink-0 rounded-sm"
-											/>
-											<div className="min-w-0 flex-1">
-												<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-													{getProviderDisplayName(provider)}
-												</p>
-												<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-													{PROVIDER_DISPLAY[provider].description}
-												</p>
-											</div>
-										</button>
-									);
-								})}
-							</div>
-
-							{tempProviders.length === 0 && (
-								<p className="text-xs text-red-600 dark:text-red-400">
-									At least one provider must be enabled
-								</p>
-							)}
-
-							<div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleCancelProviders}
-									disabled={savingProviders}
+					<div className="space-y-2">
+						<p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+							All supported providers are enabled by default and cannot be
+							changed per workspace.
+						</p>
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+							{PROVIDER_LIST.map((provider) => (
+								<div
+									key={provider}
+									className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/20"
 								>
-									Cancel
-								</Button>
-								<Button
-									size="sm"
-									onClick={handleSaveProviders}
-									disabled={savingProviders || tempProviders.length === 0}
-									className="gap-2"
-								>
-									{savingProviders && (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									)}
-									Save Changes
-								</Button>
-							</div>
+									<CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
+									<img
+										src={getModelFavicon(provider)}
+										alt={getProviderDisplayName(provider)}
+										className="h-5 w-5 shrink-0 rounded-sm"
+									/>
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+											{getProviderDisplayName(provider)}
+										</p>
+										<p className="truncate text-xs text-gray-500 dark:text-gray-400">
+											{PROVIDER_DISPLAY[provider].description}
+										</p>
+									</div>
+								</div>
+							))}
 						</div>
-					)}
+					</div>
 				</div>
 			</section>
 

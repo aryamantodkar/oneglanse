@@ -101,11 +101,12 @@ export async function runPageDomOp<T>(
 
 				for (const part of splitTopLevelSelectors(selector)) {
 					const { baseSelector, textFilters } = parseHasTextSelector(part);
-					const matches = Array.from(root.querySelectorAll(baseSelector)).filter(
-						(el) =>
-							textFilters.every((filter) =>
-								elementText(el).toLowerCase().includes(filter.toLowerCase()),
-							),
+					const matches = Array.from(
+						root.querySelectorAll(baseSelector),
+					).filter((el) =>
+						textFilters.every((filter) =>
+							elementText(el).toLowerCase().includes(filter.toLowerCase()),
+						),
 					);
 					elements.push(...matches);
 				}
@@ -187,10 +188,10 @@ export async function runPageDomOp<T>(
 				return { selector: "none", html: "" };
 			}
 
-				function detectBotPageState(): {
-					botDetected: boolean;
-					reason: string | null;
-				} {
+			function detectBotPageState(): {
+				botDetected: boolean;
+				reason: string | null;
+			} {
 				const bodyText = (document.body?.innerText || "")
 					.replace(/\s+/g, " ")
 					.trim();
@@ -205,8 +206,9 @@ export async function runPageDomOp<T>(
 						reason: "bot detection: unusual traffic / sorry page",
 					},
 					{
-						matched:
-							/captcha|recaptcha|turnstile|verify you are human/i.test(bodyText),
+						matched: /captcha|recaptcha|turnstile|verify you are human/i.test(
+							bodyText,
+						),
 						reason: "bot detection: captcha or human verification challenge",
 					},
 					{
@@ -220,32 +222,36 @@ export async function runPageDomOp<T>(
 					},
 					{
 						matched:
-							/accounts\.google\.com|auth\.openai\.com|perplexity\.ai\/login/.test(url),
+							/accounts\.google\.com|auth\.openai\.com|perplexity\.ai\/login/.test(
+								url,
+							),
 						reason: "session expired: redirected to login page",
 					},
 					{
 						matched:
-							/sign in to continue|you('ve| have) been signed out|create a free account|log in to continue|sign in to (?:chat|use|access)|please (?:sign|log) in/i.test(bodyText),
+							/sign in to continue|you('ve| have) been signed out|create a free account|log in to continue|sign in to (?:chat|use|access)|please (?:sign|log) in/i.test(
+								bodyText,
+							),
 						reason: "session expired: login wall detected",
 					},
 				];
 
 				const hit = signals.find((signal) => signal.matched);
-					return {
-						botDetected: Boolean(hit),
-						reason: hit?.reason ?? null,
-					};
-				}
+				return {
+					botDetected: Boolean(hit),
+					reason: hit?.reason ?? null,
+				};
+			}
 
-				function getPlatformName(): string {
-					const uaDataPlatform =
-						(
-							navigator as Navigator & {
-								userAgentData?: { platform?: string };
-							}
-						).userAgentData?.platform || "";
-					return String(uaDataPlatform || navigator.platform || "").toLowerCase();
-				}
+			function getPlatformName(): string {
+				const uaDataPlatform =
+					(
+						navigator as Navigator & {
+							userAgentData?: { platform?: string };
+						}
+					).userAgentData?.platform || "";
+				return String(uaDataPlatform || navigator.platform || "").toLowerCase();
+			}
 
 			function extractChatgptRawSources(sels: any) {
 				const results: Array<{
@@ -259,10 +265,14 @@ export async function runPageDomOp<T>(
 					[sels.flyout.threadFlyout, sels.flyout.aside]
 						.map((selector: string) => document.querySelector(selector))
 						.find(Boolean) ||
-					Array.from(document.querySelectorAll(sels.flyout.dialog)).find((dialog) =>
-						dialog.querySelector(sels.anchor),
+					Array.from(document.querySelectorAll(sels.flyout.dialog)).find(
+						(dialog) => dialog.querySelector(sels.anchor),
 					) ||
-					[sels.flyout.testId, sels.flyout.classSources, sels.flyout.classCitation]
+					[
+						sels.flyout.testId,
+						sels.flyout.classSources,
+						sels.flyout.classCitation,
+					]
 						.map((selector: string) => document.querySelector(selector))
 						.find(Boolean) ||
 					Array.from(document.querySelectorAll("div")).find(
@@ -289,7 +299,9 @@ export async function runPageDomOp<T>(
 						if (!href) continue;
 
 						try {
-							href = new URL(href, location.origin).toString().replace(/#.*$/, "");
+							href = new URL(href, location.origin)
+								.toString()
+								.replace(/#.*$/, "");
 						} catch {
 							continue;
 						}
@@ -302,7 +314,8 @@ export async function runPageDomOp<T>(
 							rawHref: href,
 							title: blocks[1]?.textContent?.trim() || "",
 							citedText: blocks[2]?.textContent?.trim() || "",
-							imgSrc: anchor.querySelector(sels.img)?.getAttribute("src") ?? null,
+							imgSrc:
+								anchor.querySelector(sels.img)?.getAttribute("src") ?? null,
 						});
 					}
 				}
@@ -334,7 +347,8 @@ export async function runPageDomOp<T>(
 				const anchors = Array.from(
 					flyout.querySelectorAll<HTMLAnchorElement>(sels.anchor),
 				).filter(
-					(anchor) => anchor.querySelector(sels.img) && anchor.offsetHeight > 40,
+					(anchor) =>
+						anchor.querySelector(sels.img) && anchor.offsetHeight > 40,
 				);
 
 				for (const anchor of anchors) {
@@ -384,7 +398,9 @@ export async function runPageDomOp<T>(
 					imgSrc: string | null;
 				}> = [];
 
-				for (const card of Array.from(document.querySelectorAll(sels.sourceCard))) {
+				for (const card of Array.from(
+					document.querySelectorAll(sels.sourceCard),
+				)) {
 					const anchor = card.querySelector(sels.anchor);
 					let href = anchor?.getAttribute("href") || "";
 					if (!href) continue;
@@ -412,210 +428,6 @@ export async function runPageDomOp<T>(
 				return results;
 			}
 
-			function extractAIOverviewRawSources(sels: any) {
-				const results: Array<{
-					rawHref: string;
-					title: string;
-					citedText: string;
-					imgSrc: string | null;
-				}> = [];
-
-				// Prefer structural/data-attribute selectors (locale-independent).
-				// Fall back to text-content scan only as a last resort.
-				let aoContainer: HTMLElement | null =
-					(document.querySelector(sels.placeholder) as HTMLElement | null) ||
-					(document.querySelector(sels.mainCol) as HTMLElement | null);
-
-				if (!aoContainer) {
-					for (const heading of Array.from(document.querySelectorAll(sels.headings))) {
-						// data-container-id presence means we're already inside the AI Overview
-						// block — use it regardless of language. Fall back to English text match.
-						const inAiBlock = (heading as HTMLElement).closest('[data-container-id]') !== null;
-						const textMatch = heading.textContent?.toLowerCase().includes("ai overview");
-						if (!inAiBlock && !textMatch) continue;
-						let current: HTMLElement | null = (heading as HTMLElement).parentElement;
-						for (let index = 0; index < 8; index += 1) {
-							if (!current) break;
-							if ((current.innerText || "").length > 500) {
-								aoContainer = current;
-								break;
-							}
-							current = current.parentElement;
-						}
-						if (aoContainer) break;
-					}
-				}
-
-				if (!aoContainer) {
-					for (const div of Array.from(document.querySelectorAll(sels.containers))) {
-						if (!(div instanceof HTMLElement)) continue;
-						const hasAiOverviewContainer = div.querySelector('[data-container-id="model-response-placeholder"]') !== null;
-						const text = div.innerText || "";
-						if ((hasAiOverviewContainer || text.toLowerCase().includes("ai overview")) && text.length > 500) {
-							aoContainer = div;
-							break;
-						}
-					}
-				}
-
-				if (!aoContainer) {
-					return { rawSources: results, containerFound: false };
-				}
-
-				for (const link of Array.from(aoContainer.querySelectorAll(sels.anchor))) {
-					if (!(link instanceof HTMLAnchorElement)) continue;
-					const url = link.href;
-					if (
-						!url ||
-						url.includes("google.com/search") ||
-						url.includes("google.com/")
-					) {
-						continue;
-					}
-
-					const rawHref = url.split("#")[0];
-					if (!rawHref) continue;
-
-					let title =
-						link.getAttribute("aria-label")?.trim() ||
-						link.getAttribute("title")?.trim() ||
-						link.textContent?.trim() ||
-						"";
-					if (!title) title = rawHref;
-
-					let citedText = "";
-					let textNode: ChildNode | null = link.previousSibling;
-					while (textNode) {
-						if (textNode.nodeType === Node.TEXT_NODE) {
-							const text = textNode.textContent?.trim();
-							if (text && text.length > 10) {
-								citedText = text.substring(0, 150);
-								break;
-							}
-						} else if (textNode instanceof HTMLElement) {
-							const text = textNode.textContent?.trim();
-							if (text && text.length > 10) {
-								citedText = text.substring(0, 150);
-								break;
-							}
-						}
-						textNode = textNode.previousSibling;
-					}
-
-					if (!citedText) {
-						const paragraph = link.closest(sels.paragraph);
-						if (paragraph) {
-							citedText =
-								paragraph.textContent?.trim().substring(0, 200) || "";
-						}
-					}
-
-					results.push({
-						rawHref,
-						title,
-						citedText: citedText || title,
-						imgSrc: null,
-					});
-				}
-
-				return { rawSources: results, containerFound: true };
-			}
-
-			function extractAIOverviewResponseHtml(sels: any) {
-				const sourceCardDatePattern =
-					/([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2} [A-Z][a-z]+ \d{4}|\d+\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\b\d{4}\b\s(?:—|·))/;
-
-				const placeholder =
-					document.querySelector(sels.placeholder) ||
-					document.querySelector(sels.placeholderWrapper) ||
-					document.querySelector(sels.mainCol)?.parentElement;
-				if (!placeholder) {
-					return {
-						success: false,
-						error: "model-response-placeholder not found",
-					};
-				}
-
-				const mainCol = placeholder.querySelector(sels.mainCol) || placeholder;
-				if (((mainCol.textContent || "").trim()).length < 50) {
-					return { success: false, error: "no-ai-overview: main-col empty" };
-				}
-
-				const clone = placeholder.cloneNode(true) as HTMLElement;
-
-				for (const tag of sels.noiseTags) {
-					for (const element of Array.from(clone.querySelectorAll(tag))) {
-						element.remove();
-					}
-				}
-
-				for (const anchor of Array.from(
-					clone.querySelectorAll(sels.aiOverviewChip),
-				)) {
-					const span = document.createElement("span");
-					span.textContent = anchor.textContent;
-					anchor.parentNode?.replaceChild(span, anchor);
-				}
-
-				for (const selector of sels.sourceContainers) {
-					for (const element of Array.from(clone.querySelectorAll(selector))) {
-						element.remove();
-					}
-				}
-
-				const remainingSourceLinks = Array.from(
-					clone.querySelectorAll(sels.sourceLink),
-				);
-				const toRemove = new Set<Element>();
-				for (const link of remainingSourceLinks) {
-					let element: Element = link;
-					while (element.parentElement && element.parentElement !== clone) {
-						const parent = element.parentElement;
-						if (parent.querySelector(sels.heading)) break;
-						const hasNonSourceSibling = Array.from(parent.children).some(
-							(sibling) =>
-								sibling !== element &&
-								(sibling.textContent || "").length > 100 &&
-								!sibling.querySelector(sels.inlineSourceLink),
-						);
-						if (hasNonSourceSibling) break;
-						element = parent;
-					}
-					toRemove.add(element);
-				}
-				for (const element of toRemove) {
-					element.remove();
-				}
-
-				const extractedMainCol = clone.querySelector(sels.mainCol) || clone;
-				for (const element of Array.from(clone.querySelectorAll("*"))) {
-					if (
-						extractedMainCol &&
-						(element === extractedMainCol || extractedMainCol.contains(element))
-					) {
-						continue;
-					}
-					const text = element.textContent || "";
-					if (
-						text.length < 5000 &&
-						sourceCardDatePattern.test(text) &&
-						!element.querySelector(sels.heading)
-					) {
-						element.remove();
-					}
-				}
-
-				const html = (extractedMainCol || clone).outerHTML.trim();
-				if (!html) {
-					return {
-						success: false,
-						error: "AI Overview HTML was empty after extraction",
-					};
-				}
-
-				return { success: true, html };
-			}
-
 			switch (currentOperation) {
 				case "ping":
 					return true;
@@ -626,12 +438,12 @@ export async function runPageDomOp<T>(
 						outerWidth: window.outerWidth,
 						innerWidth: window.innerWidth,
 					};
-					case "detect-bot-page":
-						return detectBotPageState();
-					case "platform-name":
-						return getPlatformName();
-					case "response-text":
-						return readResponseText(
+				case "detect-bot-page":
+					return detectBotPageState();
+				case "platform-name":
+					return getPlatformName();
+				case "response-text":
+					return readResponseText(
 						String(currentParams?.provider || ""),
 						(currentParams?.selectors as string[]) || [],
 					);
@@ -650,13 +462,9 @@ export async function runPageDomOp<T>(
 							return extractPerplexityRawSources(currentParams?.selectors);
 						case "gemini":
 							return extractGeminiRawSources(currentParams?.selectors);
-						case "ai-overview":
-							return extractAIOverviewRawSources(currentParams?.selectors);
 						default:
 							return [];
 					}
-				case "ai-overview-response-html":
-					return extractAIOverviewResponseHtml(currentParams?.selectors);
 				default:
 					throw new Error(`unknown page operation: ${currentOperation}`);
 			}

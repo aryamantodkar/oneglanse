@@ -1,4 +1,3 @@
-import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
 import { z } from "zod";
 
 export const createWorkspaceInputSchema = z.object({
@@ -38,12 +37,6 @@ export const joinByCodeInputSchema = z.object({ code: z.string().min(1) });
 export const removeMemberInputSchema = z.object({
 	userId: z.string().min(1),
 	role: z.string().min(1),
-});
-
-export const setEnabledProvidersInputSchema = z.object({
-	providers: z
-		.array(z.enum([...PROVIDER_LIST] as [Provider, ...Provider[]]))
-		.min(1, "At least one provider must be enabled"),
 });
 
 export const setScheduleInputSchema = z.object({

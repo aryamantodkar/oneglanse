@@ -84,9 +84,7 @@ function buildProviderSessionKey(args: {
 	workspaceId: string;
 }): string {
 	const { sessionScope, userId, workspaceId } = args;
-	// Keyed by session scope so provider families that intentionally share a
-	// browser session (for example Gemini + AI Overview under "google") can
-	// reuse the same warm browser, cookies, and proxy/IP between jobs.
+	// Keyed by provider session scope.
 	return `session:v4:${workspaceId}:${userId}:${sessionScope}`;
 }
 

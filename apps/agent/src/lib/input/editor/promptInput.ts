@@ -4,27 +4,12 @@ import { logger } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import {
 	clickLocatorLikeUser,
-	humanType,
 	pastePrompt,
 } from "../../browser/humanBehavior.js";
 import { clearEditorInput } from "./clearInput.js";
 
-const SHORT_PROMPT_GRAPHEME_THRESHOLD = 100;
-
-const graphemeSegmenter =
-	typeof Intl !== "undefined" && "Segmenter" in Intl
-		? new Intl.Segmenter(undefined, { granularity: "grapheme" })
-		: null;
-
-export type PromptInsertionStrategy = "humanType" | "pacedPaste";
-
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
-}
-
-export function countGraphemes(text: string): number {
-	if (!graphemeSegmenter) return Array.from(text).length;
-	return Array.from(graphemeSegmenter.segment(text)).length;
 }
 
 export function normalizePromptValue(text: string): string {
@@ -35,18 +20,8 @@ export function normalizePromptValue(text: string): string {
 		.trim();
 }
 
-export function getPromptInsertionStrategy(
-	prompt: string,
-): PromptInsertionStrategy {
-	return countGraphemes(prompt) <= SHORT_PROMPT_GRAPHEME_THRESHOLD
-		? "humanType"
-		: "pacedPaste";
-}
-
-export function formatPromptInsertionStrategy(
-	strategy: PromptInsertionStrategy,
-): "typing" | "pasting" {
-	return strategy === "humanType" ? "typing" : "pasting";
+export function getPromptInsertionStrategy(): "pacedPaste" {
+	return "pacedPaste";
 }
 
 async function focusEditorTarget(page: Page, input: Locator): Promise<void> {
@@ -118,16 +93,7 @@ export async function prepareEditorForPrompt(
 	await focusEditorTarget(page, input);
 }
 
-async function insertPromptOnce(
-	page: Page,
-	prompt: string,
-	strategy: PromptInsertionStrategy,
-): Promise<void> {
-	if (strategy === "humanType") {
-		await humanType(page, prompt);
-		return;
-	}
-
+async function insertPromptOnce(page: Page, prompt: string): Promise<void> {
 	await pastePrompt(page, prompt);
 }
 
@@ -136,13 +102,13 @@ export async function insertPromptIntoEditor(
 	input: Locator,
 	prompt: string,
 	provider: Provider,
-): Promise<{ rawValue: string; strategy: PromptInsertionStrategy }> {
-	const strategy = getPromptInsertionStrategy(prompt);
+): Promise<{ rawValue: string; strategy: "pacedPaste" }> {
+	const strategy = getPromptInsertionStrategy();
 	const expectedValue = normalizePromptValue(prompt);
 
 	for (let attempt = 1; attempt <= 2; attempt++) {
 		await prepareEditorForPrompt(page, input, provider);
-		await insertPromptOnce(page, prompt, strategy);
+		await insertPromptOnce(page, prompt);
 		await page.waitForTimeout(randomBetween(80, 160));
 
 		const rawValue = await input.readInputValue().catch(() => "");
@@ -152,7 +118,7 @@ export async function insertPromptIntoEditor(
 
 		if (attempt === 1) {
 			logger.warn(
-				`[${provider}] prompt verification mismatch after ${formatPromptInsertionStrategy(strategy)} — retrying local overwrite once`,
+				`[${provider}] prompt verification mismatch after pasting — retrying local overwrite once`,
 			);
 		}
 	}

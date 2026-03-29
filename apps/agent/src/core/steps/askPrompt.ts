@@ -10,8 +10,6 @@ import {
 } from "../../lib/browser/humanBehavior.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import {
-	formatPromptInsertionStrategy,
-	getPromptInsertionStrategy,
 	insertPromptIntoEditor,
 	normalizePromptValue,
 } from "../../lib/input/editor/promptInput.js";
@@ -50,19 +48,14 @@ export async function askPrompt(
 		await moveMouseToElement(page, input);
 	}
 
-	const predictedStrategy = getPromptInsertionStrategy(prompt);
-	logger.debug(
-		`${formatPromptInsertionStrategy(predictedStrategy)} ${prompt.length} chars…`,
-	);
-	const { rawValue: insertedValue, strategy } = await insertPromptIntoEditor(
+	logger.debug(`pasting ${prompt.length} chars…`);
+	const { rawValue: insertedValue } = await insertPromptIntoEditor(
 		page,
 		input,
 		prompt,
 		provider,
 	);
-	logger.debug(
-		`${formatPromptInsertionStrategy(strategy)} ${prompt.length} chars complete`,
-	);
+	logger.debug(`pasting ${prompt.length} chars complete`);
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);

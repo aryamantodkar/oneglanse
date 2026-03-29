@@ -1,6 +1,5 @@
 import { db, schema } from "@oneglanse/db";
 import type { Workspace } from "@oneglanse/db";
-import type { Provider } from "@oneglanse/types";
 import { and, eq, isNull } from "drizzle-orm";
 import { resetWorkspaceAnalysis } from "../analysis/analysis.js";
 import {
@@ -67,18 +66,6 @@ export async function updateOrganizationName(args: {
 	return db.query.organization.findFirst({
 		where: eq(schema.organization.id, workspace.tenantId),
 	});
-}
-
-export async function setWorkspaceEnabledProviders(args: {
-	workspaceId: string;
-	providers: Provider[];
-}): Promise<{ providers: Provider[] }> {
-	const { workspaceId, providers } = args;
-	await db
-		.update(schema.workspaces)
-		.set({ enabledProviders: JSON.stringify(providers) })
-		.where(eq(schema.workspaces.id, workspaceId));
-	return { providers };
 }
 
 export async function updateWorkspaceSchedule(args: {
