@@ -388,34 +388,42 @@ export default function SchedulePageClient({
 					)}
 
 					{isSelfHosted && (
-						<div className="flex flex-col gap-3 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
-							<div className="min-w-0">
-								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-									Run Now
-								</p>
-								<p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-									Trigger an immediate run outside of the schedule.
-								</p>
+						<div className="relative overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-white to-orange-50 px-4 py-4 shadow-sm dark:border-amber-800/70 dark:from-amber-950/40 dark:via-gray-950 dark:to-orange-950/20">
+							<div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/80 to-transparent dark:via-amber-500/60" />
+							<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+								<div className="min-w-0">
+									<div className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-300/80 bg-amber-100/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
+										<Zap className="h-3.5 w-3.5" />
+										Manual Run
+									</div>
+									<p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+										Run prompts immediately
+									</p>
+									<p className="mt-1 max-w-xl text-sm text-amber-900/80 dark:text-amber-100/75">
+										Trigger an on-demand workspace run right now without waiting
+										for the next scheduled window.
+									</p>
+								</div>
+								<Button
+									variant="default"
+									size="sm"
+									onClick={handleRunNow}
+									disabled={isRunning}
+									className="w-full shrink-0 gap-2 border-0 bg-amber-500 text-white shadow-sm shadow-amber-500/25 hover:bg-amber-600 dark:bg-amber-500 dark:text-black dark:hover:bg-amber-400 sm:w-auto"
+								>
+									{isRunning ? (
+										<>
+											<Loader2 className="h-4 w-4 animate-spin" />
+											Running…
+										</>
+									) : (
+										<>
+											<Zap className="h-4 w-4" />
+											Run Now
+										</>
+									)}
+								</Button>
 							</div>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleRunNow}
-								disabled={isRunning}
-								className="w-full shrink-0 gap-2 sm:w-auto"
-							>
-								{isRunning ? (
-									<>
-										<Loader2 className="h-4 w-4 animate-spin" />
-										Running…
-									</>
-								) : (
-									<>
-										<Zap className="h-4 w-4" />
-										Run Now
-									</>
-								)}
-							</Button>
 						</div>
 					)}
 				</>
