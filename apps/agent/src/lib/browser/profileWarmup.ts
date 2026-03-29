@@ -70,8 +70,9 @@ export async function warmUpProfile(page: Page, provider?: Provider): Promise<vo
 	let toVisit: string[];
 
 	if (provider && GOOGLE_PROVIDERS.has(provider)) {
-		const neutralCount = Math.floor(Math.random() * 2); // 0 or 1
-		toVisit = [...GOOGLE_WARMUP_SITES, ...shuffledNeutral.slice(0, neutralCount)];
+		// YouTube + Gemini is sufficient for .google.com cookie establishment.
+		// Neutral sites add ~10-15s without Google-cookie value.
+		toVisit = [...GOOGLE_WARMUP_SITES];
 	} else {
 		// One neutral site — provides browsing history without the Google detour
 		toVisit = [shuffledNeutral[0]!];
