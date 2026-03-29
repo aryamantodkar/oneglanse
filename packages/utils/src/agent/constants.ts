@@ -89,7 +89,7 @@ export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 		'model-response',
 	],
 	"ai-overview": [
-		'[data-container-id="model-response-placeholder"] [data-container-id="main-col"]',
+		'[data-container-id="main-col"]',
 		'[role="region"] .markdown-content',
 	],
 };

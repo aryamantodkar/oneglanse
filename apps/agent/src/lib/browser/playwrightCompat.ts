@@ -92,7 +92,10 @@ export class PlaywrightLocatorCompat implements Locator {
 		return this.locator.press(key, options);
 	}
 
-	waitFor(options?: { timeout?: number; state?: "visible" | "hidden" }): Promise<void> {
+	waitFor(options?: {
+		timeout?: number;
+		state?: "visible" | "hidden";
+	}): Promise<void> {
 		return this.locator.waitFor({
 			timeout: options?.timeout,
 			state: options?.state,
@@ -105,10 +108,10 @@ export class PlaywrightLocatorCompat implements Locator {
 				element instanceof HTMLInputElement ||
 				element instanceof HTMLTextAreaElement
 			) {
-				return element.value.trim();
+				return element.value;
 			}
 			if (element instanceof HTMLElement) {
-				return (element.innerText || element.textContent || "").trim();
+				return element.innerText || element.textContent || "";
 			}
 			return "";
 		});
@@ -184,7 +187,10 @@ export class PlaywrightLocatorCompat implements Locator {
 }
 
 export class PlaywrightBrowserContextCompat implements BrowserContext {
-	private readonly pageMap = new WeakMap<PlaywrightPage, PlaywrightPageCompat>();
+	private readonly pageMap = new WeakMap<
+		PlaywrightPage,
+		PlaywrightPageCompat
+	>();
 	private initialPage: PlaywrightPage | null;
 
 	constructor(private readonly context: PlaywrightBrowserContext) {

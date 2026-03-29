@@ -4,11 +4,11 @@ export type FailureType =
 	| "logged_out"
 	| "rate_limited"
 	| "no_editor"
+	| "submission_failed"
 	| "extraction_failed"
 	| "timeout"
 	| "browser_crash"
 	| "unknown";
-
 
 export type HealthCheckResult = {
 	healthy: boolean;
