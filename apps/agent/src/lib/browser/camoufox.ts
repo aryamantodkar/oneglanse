@@ -513,9 +513,10 @@ function buildLaunchPayload(args: {
 		(isJsonRecord(extraLaunch.fingerprint) ? extraLaunch.fingerprint : undefined);
 	if (fingerprint !== undefined) payload.fingerprint = fingerprint;
 
-	// Use real device capture data by default — more coherent attribute bundles
-	// (canvas, fonts, audio, plugins) than synthetic generation.
-	payload.fingerprint_preset = parseFingerprintPreset(env.CAMOUFOX_FINGERPRINT_PRESET) ?? true;
+	const fingerprintPreset = parseFingerprintPreset(env.CAMOUFOX_FINGERPRINT_PRESET);
+	if (fingerprintPreset !== undefined) {
+		payload.fingerprint_preset = fingerprintPreset;
+	}
 
 	const argsList = parseStringList("CAMOUFOX_ARGS", env.CAMOUFOX_ARGS) ?? extraArgs;
 	if (argsList !== undefined) payload.args = argsList;
