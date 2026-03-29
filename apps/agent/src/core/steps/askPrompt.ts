@@ -46,12 +46,15 @@ export async function askPrompt(
 	await smallScroll(page);
 	await moveMouseToElement(page, input);
 
+	logger.debug("clearing editor…");
 	await clearEditorInput(page, input, { waitAfterMs: 400 });
+	logger.debug("refocusing input…");
 	// Explicit click re-focuses the element after clear. Without this, React's
 	// synthetic event state can desync after a page reset, causing humanType to
 	// type into the DOM but readInputValue() to return empty (ChatGPT prompt 2+).
 	// 3s timeout prevents this from hanging on shadow-DOM inputs (e.g. Gemini).
 	await input.click({ timeout: 3000 }).catch(() => {});
+	logger.debug("input ready");
 
 	logger.debug(`pasting ${prompt.length} chars…`);
 	await pastePrompt(page, prompt);
@@ -105,6 +108,7 @@ export async function askPrompt(
 	let submissionAborted = false;
 
 	const submitOrder = config.submitOrder ?? ["native", "enter", "force", "dispatch"];
+	const needsButton = new Set(["native", "force", "dispatch"]);
 	const strategyMap = {
 		native: () => (sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
 		enter: () => tryEnterSubmit(ctx),
@@ -112,12 +116,23 @@ export async function askPrompt(
 		dispatch: () => (sendButton ? tryDispatchClick(ctx) : Promise.resolve(false)),
 	};
 
+	if (!sendButton) {
+		const skipped = submitOrder.filter((s) => needsButton.has(s));
+		if (skipped.length > 0) {
+			logger.debug(`  ⚠️ no send button — skipping: ${skipped.join(", ")}`);
+		}
+	}
+
 	const success = await Promise.race([
 		(async () => {
 			let submitted = false;
 			for (const strategy of submitOrder) {
 				if (submitted || submissionAborted) break;
-				submitted = await strategyMap[strategy]();
+				const result = await strategyMap[strategy]();
+				if (!result) {
+					logger.debug(`  ↩ ${strategy}: returned false`);
+				}
+				submitted = result;
 			}
 			return submitted;
 		})(),
