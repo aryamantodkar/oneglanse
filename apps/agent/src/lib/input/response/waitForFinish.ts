@@ -3,8 +3,8 @@ import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import {
 	logger,
-	FORCE_EXIT_STABLE_MS,
-	NO_OUTPUT_TIMEOUT_MS,
+	PROVIDER_FORCE_EXIT_STABLE_MS,
+	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
 } from "@oneglanse/utils";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
@@ -68,10 +68,11 @@ export async function waitForAssistantToFinish(
 			const noOutputFor = Date.now() - waitStart;
 
 			// Error: No output after the grace period.
-			if (!seenOutput && noOutputFor >= NO_OUTPUT_TIMEOUT_MS) {
+			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
+			if (!seenOutput && noOutputFor >= noOutputTimeoutMs) {
 				throw new ExternalServiceError(
 					provider,
-					`No response detected after ${Math.round(NO_OUTPUT_TIMEOUT_MS / 1000)}s`,
+					`No response detected after ${Math.round(noOutputTimeoutMs / 1000)}s`,
 				);
 			}
 
@@ -85,9 +86,10 @@ export async function waitForAssistantToFinish(
 			}
 
 			// Force exit: text stable but generating indicator still stuck.
-			if (seenOutput && stableFor >= FORCE_EXIT_STABLE_MS) {
+			const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
+			if (seenOutput && stableFor >= forceExitStableMs) {
 				logger.warn(
-					`Text stable ${Math.round(FORCE_EXIT_STABLE_MS / 1000)}s but still generating — forcing exit`,
+					`Text stable ${Math.round(forceExitStableMs / 1000)}s but still generating — forcing exit`,
 				);
 				return true;
 			}
