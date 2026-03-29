@@ -365,6 +365,7 @@ export async function launchContext(
 		const browser = context.getBrowser();
 
 		if (
+			provider === "ai-overview" &&
 			persistProfile &&
 			profileIdentity &&
 			!(await isProfileWarmed(provider, profileIdentity, profileScope))

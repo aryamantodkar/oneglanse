@@ -14,8 +14,6 @@ export interface SubmitSuccessContext {
 export interface ProviderConfig {
 	/** Landing URL the browser navigates to before sending prompts. */
 	url: string;
-	/** Milliseconds to wait after the page loads before the first prompt. */
-	warmupDelayMs: number;
 	/** Short identifier used in logs (e.g. "ChatGPT"). */
 	label: string;
 	/** Human-readable product name shown in the UI (e.g. "ChatGPT"). */
@@ -28,8 +26,6 @@ export interface ProviderConfig {
 	 * making the base URL navigation redundant.
 	 */
 	skipInitialNavigation?: boolean;
-	/** Whether to run the editor warm-up sequence before the first prompt. */
-	requiresWarmup: boolean;
 	/** Waits until the AI response is fully generated and ready to read. */
 	waitForResponse: (page: Page) => Promise<void>;
 	/** Reads the AI response from the page and returns it as markdown. */

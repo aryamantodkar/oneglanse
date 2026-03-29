@@ -18,10 +18,8 @@ async function resetChatgptPage(
 
 export const chatgptConfig: ProviderConfig = {
 	url: CHATGPT_URL,
-	warmupDelayMs: 2000,
 	label: "ChatGPT",
 	displayName: "ChatGPT",
-	requiresWarmup: true,
 	waitForResponse: (page) => waitForAssistantToFinish(page, "chatgpt"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "chatgpt"),
 	beforePromptHook: (page) =>

@@ -52,23 +52,6 @@ async function dismissConsentDialog(page: Page): Promise<void> {
 	await clickLocatorLikeUser(page, consentBtn, { timeout: 4000 });
 }
 
-// Track pages that have already established Google cookies so the first
-// prompt skips the extra google.com navigation.
-const warmedPages = new WeakSet<Page>();
-
-async function ensureGoogleCookies(page: Page): Promise<void> {
-	if (warmedPages.has(page)) return;
-
-	logger.log("[ai-overview] warming up Google cookies");
-	await navigateWithRetry(page, "https://www.google.com/", {
-		waitUntil: "domcontentloaded",
-		timeout: 30000,
-	});
-	assertNotBlockedPage(page);
-	await dismissConsentDialog(page);
-	warmedPages.add(page);
-}
-
 async function navigateToGoogleHome(page: Page): Promise<void> {
 	await navigateWithRetry(page, "https://www.google.com/", {
 		waitUntil: "domcontentloaded",
@@ -80,16 +63,11 @@ async function navigateToGoogleHome(page: Page): Promise<void> {
 
 export const aiOverviewConfig: ProviderConfig = {
 	url: "https://www.google.com/",
-	warmupDelayMs: 0,
 	label: "AI Overview",
 	displayName: "AI Overview",
-	requiresWarmup: false,
+
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
-		// First prompt: ensure Google cookies are established via google.com visit.
-		// Subsequent prompts: session is reused (warmedPages check is a no-op).
-		await ensureGoogleCookies(page);
-
 		// Try the search box on the current page (google.com homepage or SERP).
 		// Reusing the SERP avoids extra navigation on prompt 2+.
 		let searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
