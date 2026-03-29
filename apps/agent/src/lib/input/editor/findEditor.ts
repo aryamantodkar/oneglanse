@@ -21,7 +21,15 @@ export async function findActiveEditorFromSelectors(
 				}
 
 				const state = await el.getEditableState().catch(() => null);
-				if (!(state?.connected && state.visible && state.editable)) {
+				if (
+					!(
+						state?.connected &&
+						state.visible &&
+						state.editable &&
+						state.enabled &&
+						state.acceptsTextInput
+					)
+				) {
 					continue;
 				}
 
