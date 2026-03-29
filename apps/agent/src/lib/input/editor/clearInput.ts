@@ -2,7 +2,6 @@ import type { Locator, Page } from "playwright";
 import {
 	clickLocatorLikeUser,
 	getBrowserPrimaryModifier,
-	pressKeyLikeUser,
 } from "../../browser/humanBehavior.js";
 
 type ClearInputOptions = {
@@ -42,8 +41,9 @@ export async function clearEditorInput(
 
 			let clearedByKeyboard = false;
 			for (const shortcut of selectAllShortcuts) {
-				await pressKeyLikeUser(page, shortcut).catch(() => null);
-				await pressKeyLikeUser(page, "Backspace").catch(() => null);
+				// Target input directly so keys land on the element regardless of focus state
+				await input.press(shortcut).catch(() => null);
+				await input.press("Backspace").catch(() => null);
 				clearedByKeyboard = await input
 					.readInputValue()
 					.then((value) => value.trim().length === 0)
@@ -56,7 +56,7 @@ export async function clearEditorInput(
 			}
 
 		if (dismissWithEscape) {
-			await pressKeyLikeUser(page, "Escape").catch(() => null);
+			await input.press("Escape").catch(() => null);
 		}
 
 		if (waitAfterMs > 0) {
