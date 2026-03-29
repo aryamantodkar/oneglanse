@@ -69,9 +69,6 @@ export async function createAgent(
 			}
 
 			logger.log(`page ready: ${page.url()}`);
-
-			phase = "warmup_delay";
-			await page.waitForTimeout(config.warmupDelayMs);
 		}
 
 		// Keep finite defaults to prevent indefinite hangs in locator/actions.

@@ -67,10 +67,8 @@ async function waitForGeminiAppUrl(
 
 export const geminiConfig: ProviderConfig = {
 	url: "https://gemini.google.com/",
-	warmupDelayMs: 2000,
 	label: "Gemini",
 	displayName: "Gemini",
-	requiresWarmup: true,
 // Detect consent pages before attempting to locate the editor.
 	// consent.google.com has no Gemini composer, so without this check
 	// waitForEditorReady times out and misclassifies it as "no_editor".

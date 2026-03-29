@@ -57,10 +57,8 @@ async function resetPerplexityPage(
 
 export const perplexityConfig: ProviderConfig = {
 	url: PERPLEXITY_URL,
-	warmupDelayMs: 2000,
 	label: "Perplexity",
 	displayName: "Perplexity",
-	requiresWarmup: true,
 	beforePromptHook: (page) =>
 		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
 	afterTypingHook: (page) =>
