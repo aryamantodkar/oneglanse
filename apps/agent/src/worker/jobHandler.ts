@@ -24,7 +24,6 @@ type ProviderJobData = {
 	user_id: string;
 	workspace_id: string;
 	created_at?: string;
-	googleSharedSessionId?: string;
 };
 
 const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
@@ -148,7 +147,7 @@ async function updateProgress(
 }
 
 export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
-	const { provider, jobGroupId, prompts, runProviders, user_id, workspace_id, googleSharedSessionId } =
+	const { provider, jobGroupId, prompts, runProviders, user_id, workspace_id } =
 		job.data;
 	const plog = createProviderLogger(provider);
 	const ownedProviders = normalizeRunProviders(provider, runProviders);
@@ -211,7 +210,7 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	try {
 		const result = await agentHandler(
 			label,
-			() => createAgent(provider, { sessionKey, profileScope, googleSharedProxyKey: googleSharedSessionId }),
+			() => createAgent(provider, { sessionKey, profileScope }),
 			payload,
 			provider,
 			{ sessionKey },

@@ -1,10 +1,6 @@
 import type { Provider } from "@oneglanse/types";
 
 export function getProviderSessionScope(provider: Provider): string {
-	if (provider === "gemini" || provider === "ai-overview") {
-		return "google";
-	}
-
 	return provider;
 }
 
@@ -28,8 +24,7 @@ export function getProviderStartupDelayRange(provider: Provider): {
 	}
 
 	if (provider === "ai-overview") {
-		// Starts after gemini has had time to establish the Google proxy hint.
-		return { minMs: 4_000, maxMs: 4_000 };
+		return { minMs: 3_000, maxMs: 3_000 };
 	}
 
 	return { minMs: 1_500, maxMs: 1_500 };

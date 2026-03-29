@@ -17,8 +17,6 @@ const NEUTRAL_WARMUP_SITES = [
 	"https://www.reddit.com",
 ];
 
-const GOOGLE_PROVIDERS = new Set<Provider>(["ai-overview", "gemini"]);
-
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
 }
@@ -58,20 +56,22 @@ const WARMUP_NAV_TIMEOUT_MS = 8_000;
 const WARMUP_TOTAL_TIMEOUT_MS = 20_000;
 
 export async function warmUpProfile(page: Page, provider?: Provider): Promise<void> {
+	// Gemini does not need warmup — skip entirely.
+	if (provider === "gemini") {
+		logger.log("skipping warmup for gemini");
+		return;
+	}
+
 	logger.log("warming up browser profile...");
 	let successCount = 0;
 
-	// Google-family providers: visit YouTube + Gemini to establish .google.com cookies
-	// (NID, SOCS, 1P_JAR) that google.com search reads. Then 0-1 neutral sites.
-	// Non-Google providers: ChatGPT/Perplexity anti-detection is independent of Google.
-	// Skip YouTube (which doesn't help their session signals) and visit 1 neutral site
-	// to simulate a natural browsing history before hitting the target service.
+	// ai-overview: visit YouTube + gemini.google.com to establish .google.com cookies
+	// (NID, SOCS, 1P_JAR) that google.com search reads.
+	// Other providers: one neutral site to simulate natural browsing history.
 	const shuffledNeutral = [...NEUTRAL_WARMUP_SITES].sort(() => Math.random() - 0.5);
 	let toVisit: string[];
 
-	if (provider && GOOGLE_PROVIDERS.has(provider)) {
-		// YouTube + Gemini is sufficient for .google.com cookie establishment.
-		// Neutral sites add ~10-15s without Google-cookie value.
+	if (provider === "ai-overview") {
 		toVisit = [...GOOGLE_WARMUP_SITES];
 	} else {
 		// One neutral site — provides browsing history without the Google detour
