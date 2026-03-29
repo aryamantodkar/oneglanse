@@ -39,34 +39,6 @@ const quarantinedProxies = new Map<string, number>(); // host:port → expiry
 
 type FirefoxLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
 
-const CONTEXT_OPTION_KEYS = new Set([
-	"acceptDownloads",
-	"baseURL",
-	"bypassCSP",
-	"clientCertificates",
-	"colorScheme",
-	"deviceScaleFactor",
-	"extraHTTPHeaders",
-	"geolocation",
-	"hasTouch",
-	"httpCredentials",
-	"ignoreHTTPSErrors",
-	"isMobile",
-	"javaScriptEnabled",
-	"locale",
-	"offline",
-	"permissions",
-	"recordHar",
-	"recordVideo",
-	"reducedMotion",
-	"screen",
-	"serviceWorkers",
-	"storageState",
-	"timezoneId",
-	"userAgent",
-	"viewport",
-]);
-
 export function quarantineProxy(hostPort: string): void {
 	quarantinedProxies.set(hostPort, Date.now() + QUARANTINE_TTL_MS);
 	logger.warn(
@@ -282,60 +254,6 @@ function toCamoufoxProxyConfig(
 	};
 }
 
-function splitCamoufoxOptions(options: Record<string, unknown>): {
-	launchOptions: Record<string, unknown>;
-	contextOptions: Record<string, unknown>;
-} {
-	const {
-		args,
-		channel,
-		devtools,
-		downloadsPath,
-		env: browserEnv,
-		executablePath,
-		firefoxUserPrefs,
-		handleSIGHUP,
-		handleSIGINT,
-		handleSIGTERM,
-		headless,
-		ignoreAllDefaultArgs,
-		ignoreDefaultArgs,
-		proxy,
-		slowMo,
-		timeout,
-		tracesDir,
-		...rest
-	} = options;
-
-	const launchOptions: Record<string, unknown> = {
-		args,
-		channel,
-		devtools,
-		downloadsPath,
-		env: browserEnv,
-		executablePath,
-		firefoxUserPrefs,
-		handleSIGHUP,
-		handleSIGINT,
-		handleSIGTERM,
-		headless,
-		ignoreAllDefaultArgs,
-		ignoreDefaultArgs,
-		proxy,
-		slowMo,
-		timeout,
-		tracesDir,
-	};
-
-	const contextOptions: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(rest)) {
-		if (!CONTEXT_OPTION_KEYS.has(key) || value === undefined) continue;
-		contextOptions[key] = value;
-	}
-
-	return { launchOptions, contextOptions };
-}
-
 export async function launchContext(
 	provider: Provider,
 	_options?: LaunchContextOptions,
@@ -402,12 +320,8 @@ export async function launchContext(
 			proxy: toCamoufoxProxyConfig(upstreamProxy),
 		});
 
-		const { launchOptions, contextOptions } = splitCamoufoxOptions(
-			camoufoxOptions as Record<string, unknown>,
-		);
-
-		rawBrowser = await firefox.launch(launchOptions as FirefoxLaunchOptions);
-		rawContext = await rawBrowser.newContext(contextOptions as never);
+		rawBrowser = await firefox.launch(camoufoxOptions as FirefoxLaunchOptions);
+		rawContext = await rawBrowser.newContext();
 
 		context = new PlaywrightBrowserContextCompat(rawContext);
 		const browser = context.getBrowser();
