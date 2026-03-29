@@ -1,13 +1,19 @@
 import type { Provider } from "@oneglanse/types";
 
 
-// If no output renders within this window, the page is broken or logged out.
-export const NO_OUTPUT_TIMEOUT_MS = 45_000;
+export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
+	chatgpt: 90_000,
+	perplexity: 45_000,
+	gemini: 45_000,
+	"ai-overview": 45_000,
+};
 
-// If text hasn't changed for this long but the generating indicator is still showing,
-// the model is stuck — force exit rather than waiting indefinitely.
-// 30s accommodates reasoning-model pauses (ChatGPT o-series can pause 20s+ mid-thought).
-export const FORCE_EXIT_STABLE_MS = 30_000;
+export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
+	chatgpt: 45_000,
+	perplexity: 30_000,
+	gemini: 45_000,
+	"ai-overview": 30_000,
+};
 
 
 // Provider-specific editor selectors used for health checks (most reliable first).
@@ -15,76 +21,95 @@ export const FORCE_EXIT_STABLE_MS = 30_000;
 // avoiding false positives and unnecessary timeout ticks on unrelated selectors.
 export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
-	  "#prompt-textarea",
+		"#prompt-textarea",
+		'div#prompt-textarea[contenteditable="true"]',
+		'textarea[name="prompt-textarea"]',
 	],
-  
 	perplexity: [
-	  '#ask-input[contenteditable="true"]',
+		'#ask-input[contenteditable="true"]',
+		'[data-lexical-editor="true"][contenteditable="true"]',
+		'div[contenteditable="true"][spellcheck="true"]',
 	],
-  
 	gemini: [
-	  '[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
+		'[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
+		'div.ql-editor[contenteditable="true"]',
+		'rich-textarea [contenteditable="true"]',
+		'[role="textbox"][contenteditable="true"]',
 	],
-  
 	"ai-overview": [
-	  'textarea[name="q"]',
+		'textarea[name="q"]',
+		'textarea[name="q"][role="combobox"]',
+		'input[name="q"]',
+		'textarea[aria-label="Search"]',
+		'input[aria-label="Search"]',
 	],
-  };
-  
-  
-  export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
+};
+
+export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
-	  'button[data-testid="send-button"]',
+		'button[data-testid="send-button"]',
+		'button[aria-label="Send prompt"]',
+		'button[aria-label*="send" i]',
+		'button[type="submit"]',
 	],
-  
 	perplexity: [
-	  'button[aria-label="Submit"]',
+		'button[aria-label="Submit"]',
+		'button[aria-label*="submit" i]',
+		'button[type="submit"]',
 	],
-  
 	gemini: [
-	  'button[aria-label="Send message"]',
+		'button[aria-label="Send message"]',
+		'button.send-button',
+		'button[aria-label*="send" i]',
+		'button[type="submit"]',
 	],
-  
 	"ai-overview": [
-	  'button[aria-label="Search"]',
+		// Search icon button inside the search bar — always visible/enabled
+		'button[aria-label="Search"]',
+		// Google's form submit buttons (may be opacity:0 until hover on some variants)
+		'input[name="btnK"]',
+		'input[type="submit"][value="Google Search"]',
+		'input[aria-label="Google Search"]',
 	],
-  };
-  
-  
-  export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
+};
+
+export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
-	  '[data-message-author-role="assistant"]',
+		'[data-message-author-role="assistant"]',
+		'.prose',
+		'article[data-testid*="conversation-turn"]',
 	],
-  
 	perplexity: [
-	  '.prose',
+		'.prose',
 	],
-  
 	gemini: [
-	  'model-response',
+		'message-content',
+		'.model-response-text',
+		'model-response',
 	],
-  
 	"ai-overview": [
-	  '[data-container-id="model-response-placeholder"] [data-container-id="main-col"]',
+		'[data-container-id="model-response-placeholder"] [data-container-id="main-col"]',
+		'[role="region"] .markdown-content',
 	],
-  };
-  
-  
-  export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> = {
+};
+
+export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
-	  'button[data-testid="stop-button"]',
+		'button[data-testid="stop-button"]',
+		'button[aria-label="Stop streaming"]',
+		'button[aria-label*="stop" i]',
+		'.loading-shimmer',
 	],
-  
 	perplexity: [
-	  'button[aria-label="Stop response (Esc)"]',
+		'button[aria-label="Stop response (Esc)"]',
+		'button[aria-label*="stop" i]',
 	],
-  
 	gemini: [
-	  'button[aria-label="Stop response"]',
+		'button[aria-label="Stop response"]',
+		'button[aria-label*="stop" i]',
 	],
-  
 	"ai-overview": [],
-  };
+};
 
 export const SOURCES_SELECTORS = [
 	// ARIA-driven (ChatGPT, Perplexity)
