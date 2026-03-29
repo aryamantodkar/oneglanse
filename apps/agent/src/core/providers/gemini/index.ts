@@ -41,6 +41,7 @@ export const geminiConfig: ProviderConfig = {
 	label: "Gemini",
 	displayName: "Gemini",
 	requiresWarmup: true,
+	submitOrder: ["dispatch", "native", "enter", "force"],
 	checkSubmitSuccess: async (page, { preSubmitUrl }) =>
 		waitForGeminiAppUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "gemini"),

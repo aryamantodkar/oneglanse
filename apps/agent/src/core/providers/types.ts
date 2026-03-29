@@ -47,6 +47,12 @@ export interface ProviderConfig {
 	/** Called between consecutive prompts — e.g. reset the page to its initial state. */
 	betweenPromptsHook?: (page: Page) => Promise<void>;
 	/**
+	 * Override the submission strategy order for this provider.
+	 * Defaults to ["native", "enter", "force", "dispatch"] when unset.
+	 * Strategies not in the array are skipped entirely.
+	 */
+	submitOrder?: Array<"native" | "enter" | "force" | "dispatch">;
+	/**
 	 * Provider-specific check for whether a prompt was submitted successfully.
 	 * Return true/false to short-circuit; return undefined to fall through to generic checks.
 	 */
