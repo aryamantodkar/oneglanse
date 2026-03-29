@@ -21,10 +21,25 @@ function buildFallbackSearchUrl(prompt: string): string {
 	return `https://www.google.com/search?q=${encodeURIComponent(prompt)}`;
 }
 
-const GOOGLE_SEARCH_INPUT = PROVIDER_EDITOR_SELECTORS["ai-overview"].join(", ");
-
 const GOOGLE_CONSENT_SELECTOR =
 	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
+
+async function findVisibleSearchInput(page: Page) {
+	for (const selector of PROVIDER_EDITOR_SELECTORS["ai-overview"]) {
+		const nodes = page.locator(selector);
+		const count = await nodes.count().catch(() => 0);
+		for (let i = 0; i < count; i++) {
+			const candidate = nodes.nth(i);
+			const visible = await candidate.isVisible().catch(() => false);
+			if (visible) {
+				logger.log(`[ai-overview] using search selector: ${selector}`);
+				return candidate;
+			}
+		}
+	}
+
+	return null;
+}
 
 function assertNotBlockedPage(page: Page): void {
 	const url = page.url();
@@ -46,7 +61,9 @@ function assertNotBlockedPage(page: Page): void {
 
 async function dismissConsentDialog(page: Page): Promise<void> {
 	const consentBtn = page.locator(GOOGLE_CONSENT_SELECTOR).first();
-	const visible = await consentBtn.isVisible({ timeout: 2500 }).catch(() => false);
+	const visible = await consentBtn
+		.isVisible({ timeout: 2500 })
+		.catch(() => false);
 	if (!visible) return;
 	await consentBtn.click({ timeout: 4000 });
 }
@@ -57,10 +74,9 @@ export const aiOverviewConfig: ProviderConfig = {
 	displayName: "AI Overview",
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
-		const searchInput = page.locator(GOOGLE_SEARCH_INPUT).first();
-		const inputVisible = await searchInput.isVisible({ timeout: 3000 }).catch(() => false);
+		const searchInput = await findVisibleSearchInput(page);
 
-		if (inputVisible) {
+		if (searchInput) {
 			await moveMouseToElement(page, searchInput);
 			await searchInput.click();
 			await page.waitForTimeout(randomBetween(300, 700));
@@ -77,7 +93,9 @@ export const aiOverviewConfig: ProviderConfig = {
 			await page.keyboard.press("Enter");
 			await page.waitForLoadState("domcontentloaded").catch(() => {});
 		} else {
-			logger.log("[ai-overview] search box not found, falling back to direct URL");
+			logger.log(
+				"[ai-overview] search box not found, falling back to direct URL",
+			);
 			await navigateWithRetry(page, buildFallbackSearchUrl(prompt), {
 				waitUntil: "domcontentloaded",
 				timeout: 60000,
