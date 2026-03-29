@@ -46,12 +46,14 @@ import { CreateWorkspaceDialog } from "./dialogs/create-workspace-dialog";
 import { JoinWorkspaceDialog } from "./dialogs/join-workspace-dialog";
 
 interface AppSidebarProps {
+	isSelfHosted: boolean;
 	workspace: Workspace | null;
 	userName: string;
 	userEmail: string;
 }
 
 export function AppSidebar({
+	isSelfHosted,
 	workspace,
 	userName,
 	userEmail,
@@ -111,16 +113,19 @@ export function AppSidebar({
 			icon: Globe,
 		},
 		{
-			title: "Schedule",
-			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
-			icon: Clock,
-		},
-		{
 			title: "People",
 			url: `/people?workspace=${activeWorkspace?.id ?? ""}`,
 			icon: Users,
 		},
 	];
+
+	if (isSelfHosted) {
+		generalItems.splice(3, 0, {
+			title: "Schedule",
+			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
+			icon: Clock,
+		});
+	}
 
 	const settingsItems = [
 		{

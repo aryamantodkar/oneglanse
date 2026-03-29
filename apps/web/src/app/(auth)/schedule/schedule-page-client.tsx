@@ -6,10 +6,6 @@ import { Calendar, Check, Clock, Loader2, PlayCircle, Zap } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type SchedulePageClientProps = {
-	isSelfHosted: boolean;
-};
-
 // Helper to convert local hour to UTC hour
 function localHourToUTC(localHour: number): number {
 	const now = new Date();
@@ -102,9 +98,7 @@ function getScheduleLabel(cron: string | null): string {
 	return match?.label ?? cron;
 }
 
-export default function SchedulePageClient({
-	isSelfHosted,
-}: SchedulePageClientProps) {
+export default function SchedulePageClient() {
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
@@ -387,45 +381,42 @@ export default function SchedulePageClient({
 						</div>
 					)}
 
-					{isSelfHosted && (
-						<div className="relative overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-white to-orange-50 px-4 py-4 shadow-sm dark:border-amber-800/70 dark:from-amber-950/40 dark:via-gray-950 dark:to-orange-950/20">
-							<div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/80 to-transparent dark:via-amber-500/60" />
-							<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-								<div className="min-w-0">
-									<div className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-300/80 bg-amber-100/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
-										<Zap className="h-3.5 w-3.5" />
-										Manual Run
-									</div>
-									<p className="text-base font-semibold text-gray-900 dark:text-gray-100">
-										Run prompts immediately
-									</p>
-									<p className="mt-1 max-w-xl text-sm text-amber-900/80 dark:text-amber-100/75">
-										Trigger an on-demand workspace run right now without waiting
-										for the next scheduled window.
-									</p>
+					<div className="relative overflow-hidden rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-4 shadow-sm ring-1 ring-gray-200/70 dark:border-gray-700 dark:bg-gray-900/70 dark:ring-gray-800/80">
+						<div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-400/70 to-transparent dark:via-gray-500/60" />
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<div className="min-w-0">
+								<div className="mb-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200">
+									<Zap className="h-3.5 w-3.5" />
+									Manual Run
 								</div>
-								<Button
-									variant="default"
-									size="sm"
-									onClick={handleRunNow}
-									disabled={isRunning}
-									className="w-full shrink-0 gap-2 border-0 bg-amber-500 text-white shadow-sm shadow-amber-500/25 hover:bg-amber-600 dark:bg-amber-500 dark:text-black dark:hover:bg-amber-400 sm:w-auto"
-								>
-									{isRunning ? (
-										<>
-											<Loader2 className="h-4 w-4 animate-spin" />
-											Running…
-										</>
-									) : (
-										<>
-											<Zap className="h-4 w-4" />
-											Run Now
-										</>
-									)}
-								</Button>
+								<p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+									Run prompts immediately
+								</p>
+								<p className="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">
+									Trigger an on-demand workspace run right away without waiting
+									for the next scheduled window.
+								</p>
 							</div>
+							<Button
+								size="sm"
+								onClick={handleRunNow}
+								disabled={isRunning}
+								className="w-full shrink-0 gap-2 shadow-sm sm:w-auto"
+							>
+								{isRunning ? (
+									<>
+										<Loader2 className="h-4 w-4 animate-spin" />
+										Running…
+									</>
+								) : (
+									<>
+										<Zap className="h-4 w-4" />
+										Run Now
+									</>
+								)}
+							</Button>
 						</div>
-					)}
+					</div>
 				</>
 			)}
 		</div>
