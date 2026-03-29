@@ -8,6 +8,7 @@ const execFileAsync = promisify(execFile);
 const PYTHON_CANDIDATES = ["python3.12", "python3.11", "python3.10", "python3"];
 const PYTHON_PROBE_TIMEOUT_MS = 5_000;
 const CAMOUFOX_OPTIONS_TIMEOUT_MS = 30_000;
+const CAMOUFOX_CONTEXT_TIMEOUT_MS = 30_000;
 
 const PYTHON_PROBE_SCRIPT = `
 import json
@@ -54,6 +55,72 @@ options = launch_options(**payload)
 print(json.dumps(options))
 `;
 
+const CAMOUFOX_CONTEXT_SCRIPT = `
+import json
+import os
+import sys
+import urllib.request
+from urllib.parse import urlparse
+
+try:
+    from camoufox.fingerprints import generate_context_fingerprint
+except Exception as exc:
+    print(f"CAMOUFOX_IMPORT_ERROR::{exc}", file=sys.stderr)
+    raise
+
+payload = json.loads(os.environ["CAMOUFOX_CONTEXT_PAYLOAD"])
+proxy = payload.get("proxy")
+webrtc_ip = payload.get("webrtc_ip")
+context_kwargs = payload.get("context_kwargs") or {}
+
+def _proxy_url_with_creds(proxy_cfg):
+    parsed = urlparse(proxy_cfg.get("server", ""))
+    user = proxy_cfg.get("username", "")
+    pwd = proxy_cfg.get("password", "")
+    if user and pwd:
+        return f"{parsed.scheme}://{user}:{pwd}@{parsed.netloc}"
+    return proxy_cfg.get("server", "")
+
+def _resolve_proxy_geo(proxy_cfg):
+    proxy_url = _proxy_url_with_creds(proxy_cfg)
+    handler = urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url})
+    opener = urllib.request.build_opener(handler)
+    try:
+        with opener.open("http://ip-api.com/json?fields=query,timezone", timeout=10) as resp:
+            data = json.loads(resp.read())
+            return {"ip": data.get("query") or None, "timezone": data.get("timezone") or None}
+    except Exception:
+        return {"ip": None, "timezone": None}
+
+def _snake_to_camel(value):
+    parts = value.split("_")
+    return parts[0] + "".join(part[:1].upper() + part[1:] for part in parts[1:])
+
+if proxy and (not webrtc_ip or "timezone_id" not in context_kwargs):
+    geo = _resolve_proxy_geo(proxy)
+    if not webrtc_ip:
+        webrtc_ip = geo["ip"]
+    if "timezone_id" not in context_kwargs and geo["timezone"]:
+        context_kwargs["timezone_id"] = geo["timezone"]
+
+fp = generate_context_fingerprint(
+    preset=payload.get("preset"),
+    os=payload.get("os"),
+    ff_version=payload.get("ff_version"),
+    webrtc_ip=webrtc_ip,
+)
+
+context_options = {
+    _snake_to_camel(key): value
+    for key, value in {**fp["context_options"], **context_kwargs}.items()
+}
+
+print(json.dumps({
+    "context_options": context_options,
+    "init_script": fp["init_script"],
+}))
+`;
+
 export type CamoufoxProxyConfig = {
 	server: string;
 	username?: string;
@@ -78,6 +145,13 @@ type CamoufoxLaunchOptions = {
 	proxy?: CamoufoxProxyConfig;
 	[key: string]: unknown;
 };
+
+export type CamoufoxContextOptions = {
+	contextOptions: Record<string, unknown>;
+	initScript: string;
+};
+
+export type CamoufoxTargetOs = "windows" | "macos" | "linux";
 
 let cachedPythonBinary: string | null = null;
 
@@ -142,7 +216,10 @@ function isJsonRecord(value: unknown): value is JsonRecord {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseJsonValue<T>(name: string, raw: string | undefined): T | undefined {
+function parseJsonValue<T>(
+	name: string,
+	raw: string | undefined,
+): T | undefined {
 	if (!raw) return undefined;
 	try {
 		return JSON.parse(raw) as T;
@@ -153,7 +230,10 @@ function parseJsonValue<T>(name: string, raw: string | undefined): T | undefined
 	}
 }
 
-function parseJsonRecord(name: string, raw: string | undefined): JsonRecord | undefined {
+function parseJsonRecord(
+	name: string,
+	raw: string | undefined,
+): JsonRecord | undefined {
 	const parsed = parseJsonValue<unknown>(name, raw);
 	if (parsed === undefined) return undefined;
 	if (!isJsonRecord(parsed)) {
@@ -206,7 +286,10 @@ function toPrimitiveRecord(
 	return result;
 }
 
-function parseStringList(name: string, raw: string | undefined): string[] | undefined {
+function parseStringList(
+	name: string,
+	raw: string | undefined,
+): string[] | undefined {
 	if (!raw) return undefined;
 
 	const trimmed = raw.trim();
@@ -214,7 +297,10 @@ function parseStringList(name: string, raw: string | undefined): string[] | unde
 
 	if (trimmed.startsWith("[")) {
 		const parsed = parseJsonValue<unknown>(name, trimmed);
-		if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
+		if (
+			!Array.isArray(parsed) ||
+			parsed.some((item) => typeof item !== "string")
+		) {
 			throw new Error(`${name} must be a JSON array of strings.`);
 		}
 		return parsed.map((item) => item.trim()).filter(Boolean);
@@ -294,12 +380,19 @@ function parsePositiveInteger(
 	return parsed;
 }
 
-function parseScreenConstraints(raw: string | undefined): CamoufoxScreen | undefined {
+function parseScreenConstraints(
+	raw: string | undefined,
+): CamoufoxScreen | undefined {
 	const parsed = parseJsonRecord("CAMOUFOX_SCREEN", raw);
 	if (!parsed) return undefined;
 
 	const result: CamoufoxScreen = {};
-	for (const key of ["min_width", "max_width", "min_height", "max_height"] as const) {
+	for (const key of [
+		"min_width",
+		"max_width",
+		"min_height",
+		"max_height",
+	] as const) {
 		const value = parsed[key];
 		if (value === undefined) continue;
 		if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -379,13 +472,45 @@ function stringifyEnv(
 	return result;
 }
 
+export function inferCamoufoxOsFromLaunchOptions(
+	options: CamoufoxLaunchOptions,
+): CamoufoxTargetOs | undefined {
+	const configChunks = Object.entries(options.env ?? {})
+		.filter(([key]) => /^CAMOU_CONFIG_\d+$/.test(key))
+		.sort(
+			([left], [right]) =>
+				Number(left.replace("CAMOU_CONFIG_", "")) -
+				Number(right.replace("CAMOU_CONFIG_", "")),
+		)
+		.map(([, value]) => value);
+
+	if (configChunks.length === 0) return undefined;
+
+	try {
+		const config = JSON.parse(configChunks.join("")) as Record<string, unknown>;
+		const userAgent = config["navigator.userAgent"];
+		if (typeof userAgent !== "string") return undefined;
+		if (userAgent.includes("Windows")) return "windows";
+		if (userAgent.includes("Mac OS X") || userAgent.includes("Macintosh")) {
+			return "macos";
+		}
+		if (userAgent.includes("Linux")) return "linux";
+	} catch {
+		return undefined;
+	}
+
+	return undefined;
+}
+
 function buildLaunchPayload(args: {
 	display?: string;
 	proxy?: CamoufoxProxyConfig;
 }): Record<string, unknown> {
 	const extraLaunch =
-		parseJsonRecord("CAMOUFOX_EXTRA_LAUNCH_JSON", env.CAMOUFOX_EXTRA_LAUNCH_JSON) ??
-		{};
+		parseJsonRecord(
+			"CAMOUFOX_EXTRA_LAUNCH_JSON",
+			env.CAMOUFOX_EXTRA_LAUNCH_JSON,
+		) ?? {};
 
 	const extraArgs =
 		Array.isArray(extraLaunch.args) &&
@@ -397,7 +522,8 @@ function buildLaunchPayload(args: {
 
 	const config = {
 		...(isJsonRecord(extraLaunch.config) ? extraLaunch.config : {}),
-		...(parseJsonRecord("CAMOUFOX_CONFIG_JSON", env.CAMOUFOX_CONFIG_JSON) ?? {}),
+		...(parseJsonRecord("CAMOUFOX_CONFIG_JSON", env.CAMOUFOX_CONFIG_JSON) ??
+			{}),
 	};
 	if (Object.keys(config).length > 0) payload.config = config;
 
@@ -415,7 +541,8 @@ function buildLaunchPayload(args: {
 	}
 
 	payload.env = {
-		...(toPrimitiveRecord("CAMOUFOX_EXTRA_LAUNCH_JSON.env", extraLaunch.env) ?? {}),
+		...(toPrimitiveRecord("CAMOUFOX_EXTRA_LAUNCH_JSON.env", extraLaunch.env) ??
+			{}),
 		...pickBrowserEnv(args.display),
 	};
 
@@ -442,28 +569,12 @@ function buildLaunchPayload(args: {
 
 	const geoip = parseGeoipValue();
 	if (geoip !== undefined) {
-		// When geoip=true (default), camoufox calls ipecho.net through the proxy to discover
-		// the proxy's public IP for GeoIP lookup. Residential/datacenter proxies commonly
-		// block or SSL-strip this HTTPS request, causing a hard launch failure.
-		// Fix: extract the proxy IP directly and pass it as the geoip value — camoufox
-		// accepts an IP string and uses it for local MaxMind lookup without any network call.
-		if (geoip === true && args.proxy?.server) {
-			try {
-				const { hostname } = new URL(args.proxy.server);
-				const isIpv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
-				payload.geoip = isIpv4 ? hostname : geoip;
-			} catch {
-				payload.geoip = geoip;
-			}
-		} else {
-			payload.geoip = geoip;
-		}
+		payload.geoip = geoip;
 	}
 	if (env.CAMOUFOX_GEOIP_DB) payload.geoip_db = env.CAMOUFOX_GEOIP_DB;
 
-	// Default to Windows + macOS only — Linux desktop is ~2-5% market share and
-	// heavily scrutinised by bot detection. Override with CAMOUFOX_OS if needed.
-	payload.os = parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS) ?? ["windows", "macos"];
+	const os = parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS);
+	if (os !== undefined) payload.os = os;
 
 	// Let camoufox derive locale from geoip by default — it picks the correct
 	// locale for the proxy's exit country, keeping locale/timezone/IP coherent.
@@ -483,15 +594,8 @@ function buildLaunchPayload(args: {
 	)?.map((value) => value.toUpperCase());
 	if (excludeAddons !== undefined) payload.exclude_addons = excludeAddons;
 
-	// Constrain screen to real-world resolutions by default. Without constraints
-	// BrowserForge can generate a screen smaller than the viewport — physically
-	// impossible and a fingerprinting signal. Override with CAMOUFOX_SCREEN if needed.
-	payload.screen = parseScreenConstraints(env.CAMOUFOX_SCREEN) ?? {
-		min_width: 1366,
-		max_width: 1920,
-		min_height: 768,
-		max_height: 1080,
-	};
+	const screen = parseScreenConstraints(env.CAMOUFOX_SCREEN);
+	if (screen !== undefined) payload.screen = screen;
 
 	const window = parseNumberPair("CAMOUFOX_WINDOW", env.CAMOUFOX_WINDOW);
 	if (window !== undefined) payload.window = window;
@@ -509,16 +613,24 @@ function buildLaunchPayload(args: {
 	if (ffVersion !== undefined) payload.ff_version = ffVersion;
 
 	const fingerprint =
-		parseJsonRecord("CAMOUFOX_FINGERPRINT_JSON", env.CAMOUFOX_FINGERPRINT_JSON) ??
-		(isJsonRecord(extraLaunch.fingerprint) ? extraLaunch.fingerprint : undefined);
+		parseJsonRecord(
+			"CAMOUFOX_FINGERPRINT_JSON",
+			env.CAMOUFOX_FINGERPRINT_JSON,
+		) ??
+		(isJsonRecord(extraLaunch.fingerprint)
+			? extraLaunch.fingerprint
+			: undefined);
 	if (fingerprint !== undefined) payload.fingerprint = fingerprint;
 
-	const fingerprintPreset = parseFingerprintPreset(env.CAMOUFOX_FINGERPRINT_PRESET);
+	const fingerprintPreset = parseFingerprintPreset(
+		env.CAMOUFOX_FINGERPRINT_PRESET,
+	);
 	if (fingerprintPreset !== undefined) {
 		payload.fingerprint_preset = fingerprintPreset;
 	}
 
-	const argsList = parseStringList("CAMOUFOX_ARGS", env.CAMOUFOX_ARGS) ?? extraArgs;
+	const argsList =
+		parseStringList("CAMOUFOX_ARGS", env.CAMOUFOX_ARGS) ?? extraArgs;
 	if (argsList !== undefined) payload.args = argsList;
 
 	if (env.CAMOUFOX_BROWSER) payload.browser = env.CAMOUFOX_BROWSER;
@@ -565,7 +677,9 @@ export async function resolveCamoufoxLaunchOptions(args: {
 			},
 		);
 		const lines = stdout.trim().split("\n");
-		const jsonLine = [...lines].reverse().find((l) => l.trimStart().startsWith("{")) ?? stdout.trim();
+		const jsonLine =
+			[...lines].reverse().find((l) => l.trimStart().startsWith("{")) ??
+			stdout.trim();
 		const parsed = JSON.parse(jsonLine) as {
 			args?: string[];
 			env?: Record<string, PrimitiveEnvValue>;
@@ -608,6 +722,66 @@ export async function resolveCamoufoxLaunchOptions(args: {
 			message.includes("CAMOUFOX_IMPORT_ERROR::")
 				? `Camoufox is not installed for ${python}. ${installHint}`
 				: `Failed to resolve Camoufox launch options: ${message}`,
+		);
+	}
+}
+
+export async function resolveCamoufoxContextOptions(args: {
+	provider: Provider;
+	proxy?: CamoufoxProxyConfig;
+	os?: CamoufoxTargetOs;
+}): Promise<CamoufoxContextOptions> {
+	const python = await resolvePythonBinary(args.provider);
+	const ffVersion = parsePositiveInteger(
+		"CAMOUFOX_FF_VERSION",
+		env.CAMOUFOX_FF_VERSION,
+	);
+	const payload = {
+		proxy: args.proxy,
+		os: args.os,
+		ff_version: ffVersion,
+		context_kwargs: {},
+	};
+	const childEnv = {
+		...process.env,
+		CAMOUFOX_CONTEXT_PAYLOAD: JSON.stringify(payload),
+	};
+
+	try {
+		const { stdout } = await execFileAsync(
+			python,
+			["-c", CAMOUFOX_CONTEXT_SCRIPT],
+			{
+				encoding: "utf8",
+				env: childEnv,
+				timeout: CAMOUFOX_CONTEXT_TIMEOUT_MS,
+				maxBuffer: 512 * 1024,
+			},
+		);
+		const lines = stdout.trim().split("\n");
+		const jsonLine =
+			[...lines].reverse().find((line) => line.trimStart().startsWith("{")) ??
+			stdout.trim();
+		const parsed = JSON.parse(jsonLine) as {
+			context_options?: Record<string, unknown>;
+			init_script?: string;
+		};
+
+		return {
+			contextOptions: parsed.context_options ?? {},
+			initScript: parsed.init_script ?? "",
+		};
+	} catch (error) {
+		const stderr =
+			typeof (error as { stderr?: unknown })?.stderr === "string"
+				? (error as { stderr: string }).stderr.trim()
+				: "";
+		const message = stderr || toErrorMessage(error);
+		throw new ExternalServiceError(
+			args.provider,
+			message.includes("CAMOUFOX_IMPORT_ERROR::")
+				? `Camoufox context fingerprint generation is not available for ${python}`
+				: `Failed to resolve Camoufox context options: ${message}`,
 		);
 	}
 }

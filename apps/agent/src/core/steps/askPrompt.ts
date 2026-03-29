@@ -40,8 +40,10 @@ export async function askPrompt(
 	const input = await waitForEditorReady(page, provider);
 
 	await preInteractionIdle(page);
-	if (Math.random() < 0.4) await smallScroll(page);
-	if (Math.random() < 0.6) await moveMouseToElement(page, input);
+	if (!env.CAMOUFOX_HUMANIZE && Math.random() < 0.4) await smallScroll(page);
+	if (!env.CAMOUFOX_HUMANIZE && Math.random() < 0.6) {
+		await moveMouseToElement(page, input);
+	}
 
 	logger.debug(`pasting ${prompt.length} chars…`);
 	await pastePrompt(page, prompt);
@@ -58,7 +60,10 @@ export async function askPrompt(
 	// Compare lengths rather than exact text — some providers normalise whitespace
 	// or handle newlines differently, but a major length shortfall means typing failed.
 	if (!preSubmitContent || preSubmitContent.trim().length === 0) {
-		throw new ExternalServiceError(provider, "Typing failed: editor is empty before submit");
+		throw new ExternalServiceError(
+			provider,
+			"Typing failed: editor is empty before submit",
+		);
 	}
 	if (preSubmitContent.trim().length < prompt.trim().length * 0.9) {
 		throw new ExternalServiceError(
@@ -99,13 +104,19 @@ export async function askPrompt(
 	// started is skipped rather than firing against a browser being torn down.
 	let submissionAborted = false;
 
-	const submitOrder = config.submitOrder ?? ["native", "enter", "dispatch", "force"];
+	const submitOrder = config.submitOrder ?? [
+		"native",
+		"enter",
+		"force",
+		"dispatch",
+	];
 	const needsButton = new Set(["native", "force", "dispatch"]);
 	const strategyMap = {
 		native: () => (sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
 		enter: () => tryEnterSubmit(ctx),
 		force: () => (sendButton ? tryForceClick(ctx) : Promise.resolve(false)),
-		dispatch: () => (sendButton ? tryDispatchClick(ctx) : Promise.resolve(false)),
+		dispatch: () =>
+			sendButton ? tryDispatchClick(ctx) : Promise.resolve(false),
 	};
 
 	if (!sendButton) {

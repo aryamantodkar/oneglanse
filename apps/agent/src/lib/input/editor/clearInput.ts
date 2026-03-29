@@ -24,36 +24,45 @@ export async function clearEditorInput(
 	const count = await input.count().catch(() => 0);
 	if (count === 0) return false;
 
-		try {
-			const clicked = await clickLocatorLikeUser(page, input, {
+	try {
+		const existingValue = await input.readInputValue().catch(() => "");
+		if (existingValue.trim().length === 0) {
+			return true;
+		}
+
+		const clicked =
+			(await clickLocatorLikeUser(page, input, {
+				timeout: clickTimeoutMs,
+			}).catch(() => false)) ||
+			(await clickLocatorLikeUser(page, input, {
 				force: true,
 				timeout: clickTimeoutMs,
-			}).catch(() => false);
+			}).catch(() => false));
 		if (!clicked) {
 			return false;
 		}
 
-			const primaryModifier = await getBrowserPrimaryModifier(page);
-			const selectAllShortcuts =
-				primaryModifier === "Control"
-					? ["Control+A"]
-					: [`${primaryModifier}+A`, "Control+A"];
+		const primaryModifier = await getBrowserPrimaryModifier(page);
+		const selectAllShortcuts =
+			primaryModifier === "Control"
+				? ["Control+A"]
+				: [`${primaryModifier}+A`, "Control+A"];
 
-			let clearedByKeyboard = false;
-			for (const shortcut of selectAllShortcuts) {
-				// Target input directly so keys land on the element regardless of focus state
-				await input.press(shortcut).catch(() => null);
-				await input.press("Backspace").catch(() => null);
-				clearedByKeyboard = await input
-					.readInputValue()
-					.then((value) => value.trim().length === 0)
-					.catch(() => false);
-				if (clearedByKeyboard) break;
-			}
+		let clearedByKeyboard = false;
+		for (const shortcut of selectAllShortcuts) {
+			// Target input directly so keys land on the element regardless of focus state
+			await input.press(shortcut).catch(() => null);
+			await input.press("Backspace").catch(() => null);
+			clearedByKeyboard = await input
+				.readInputValue()
+				.then((value) => value.trim().length === 0)
+				.catch(() => false);
+			if (clearedByKeyboard) break;
+		}
 
-			if (!clearedByKeyboard) {
-				await input.setInputValue("");
-			}
+		if (!clearedByKeyboard) {
+			await input.setInputValue("");
+		}
 
 		if (dismissWithEscape) {
 			await input.press("Escape").catch(() => null);
