@@ -146,27 +146,111 @@ export class PlaywrightLocatorCompat implements Locator {
 
 	async getEditableState(): Promise<ElementEditableState> {
 		return await this.locator.evaluate((element) => {
-			if (!(element instanceof HTMLElement)) {
-				return { connected: false, visible: false, editable: false };
+			function hasHiddenAncestor(target: HTMLElement): boolean {
+				let current: HTMLElement | null = target;
+				while (current) {
+					if (
+						current.hidden ||
+						current.getAttribute("aria-hidden") === "true" ||
+						current.hasAttribute("inert")
+					) {
+						return true;
+					}
+
+					const style = window.getComputedStyle(current);
+					if (
+						style.display === "none" ||
+						style.visibility === "hidden" ||
+						style.visibility === "collapse" ||
+						style.opacity === "0" ||
+						style.pointerEvents === "none"
+					) {
+						return true;
+					}
+
+					current = current.parentElement;
+				}
+
+				return false;
 			}
 
-			const style = window.getComputedStyle(element);
+			function acceptsTextInput(target: HTMLElement): boolean {
+				if (target instanceof HTMLTextAreaElement) {
+					return true;
+				}
+
+				if (target instanceof HTMLInputElement) {
+					const blockedTypes = new Set([
+						"hidden",
+						"button",
+						"checkbox",
+						"color",
+						"file",
+						"image",
+						"radio",
+						"range",
+						"reset",
+						"submit",
+					]);
+					return !blockedTypes.has(target.type);
+				}
+
+				return (
+					target.isContentEditable ||
+					target.getAttribute("contenteditable") === "true"
+				);
+			}
+
+			function isEnabled(target: HTMLElement): boolean {
+				if (
+					target instanceof HTMLInputElement ||
+					target instanceof HTMLTextAreaElement
+				) {
+					return !target.disabled && !target.readOnly;
+				}
+
+				return (
+					target.getAttribute("aria-disabled") !== "true" &&
+					!target.hasAttribute("disabled") &&
+					target.getAttribute("contenteditable") !== "false"
+				);
+			}
+
+			if (!(element instanceof HTMLElement)) {
+				return {
+					connected: false,
+					visible: false,
+					editable: false,
+					enabled: false,
+					acceptsTextInput: false,
+				};
+			}
+
 			const rect = element.getBoundingClientRect();
+			const clientRects = element.getClientRects();
+			const visibleByBrowser =
+				typeof element.checkVisibility === "function"
+					? element.checkVisibility({
+							checkOpacity: true,
+							checkVisibilityCSS: true,
+						})
+					: true;
 			const visible =
 				element.isConnected &&
-				style.display !== "none" &&
-				style.visibility !== "hidden" &&
-				style.opacity !== "0" &&
+				visibleByBrowser &&
+				!hasHiddenAncestor(element) &&
+				clientRects.length > 0 &&
 				rect.width > 0 &&
 				rect.height > 0;
+			const enabled = isEnabled(element);
+			const textInput = acceptsTextInput(element);
 
 			return {
 				connected: element.isConnected,
 				visible,
-				editable:
-					element.tagName === "TEXTAREA" ||
-					element.tagName === "INPUT" ||
-					element.getAttribute("contenteditable") === "true",
+				editable: visible && enabled && textInput,
+				enabled,
+				acceptsTextInput: textInput,
 			};
 		});
 	}

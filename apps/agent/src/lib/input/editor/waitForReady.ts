@@ -24,7 +24,13 @@ async function waitForInitialDomSettle(page: Page): Promise<void> {
 
 async function isEditorReady(input: Locator): Promise<boolean> {
 	const state = await input.getEditableState().catch(() => null);
-	return Boolean(state?.connected && state.visible && state.editable);
+	return Boolean(
+		state?.connected &&
+			state.visible &&
+			state.editable &&
+			state.enabled &&
+			state.acceptsTextInput,
+	);
 }
 
 async function waitForStableEditorCandidate(

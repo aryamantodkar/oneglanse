@@ -50,6 +50,8 @@ export type ElementEditableState = {
 	connected: boolean;
 	visible: boolean;
 	editable: boolean;
+	enabled: boolean;
+	acceptsTextInput: boolean;
 };
 
 export interface ConsoleMessage {

@@ -74,7 +74,14 @@ export async function prepareEditorForPrompt(
 	}
 
 	const state = await input.getEditableState().catch(() => null);
-	if (!(state?.connected && state.editable)) {
+	if (
+		!(
+			state?.connected &&
+			state.editable &&
+			state.enabled &&
+			state.acceptsTextInput
+		)
+	) {
 		throw new ExternalServiceError(
 			provider,
 			`Editor not ready for ${provider}: input is not editable`,
