@@ -162,7 +162,7 @@
 
 @layer components {
 	.web-page-wide {
-		@apply min-h-svh min-w-0 overflow-x-hidden;
+		@apply min-h-full min-w-0 overflow-x-hidden;
 		animation: ui-fade-up var(--motion-duration-slow)
 			var(--motion-ease-emphasized) both;
 	}
@@ -172,7 +172,7 @@
 	}
 
 	.web-page-panel {
-		@apply mx-auto w-full min-w-0 max-w-full space-y-8 py-6;
+		@apply mx-auto min-h-full w-full min-w-0 max-w-full space-y-8 py-6;
 		animation: ui-fade-up var(--motion-duration-slow)
 			var(--motion-ease-emphasized) both;
 	}
@@ -203,7 +203,7 @@
 	}
 
 	.web-centered-page {
-		@apply flex min-h-svh min-w-0 items-center justify-center overflow-x-hidden bg-background p-4;
+		@apply flex min-h-full min-w-0 items-center justify-center overflow-x-hidden bg-background p-4;
 		animation: ui-fade-up var(--motion-duration-slow)
 			var(--motion-ease-emphasized) both;
 	}
