@@ -1,20 +1,15 @@
-import { mkdir, rm } from "node:fs/promises";
 import { firefox } from "playwright-core";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext } from "playwright";
 import { env } from "../../env.js";
-import { resolveCamoufoxLaunchOptions, type CamoufoxProxyConfig } from "./camoufox.js";
+import {
+	resolveCamoufoxLaunchOptions,
+	type CamoufoxProxyConfig,
+} from "./camoufox.js";
 import { detectDisplay, ensureDisplay } from "./display.js";
 import { PlaywrightBrowserContextCompat } from "./playwrightCompat.js";
-import {
-	clearBrowserProfileLocks,
-	isProfileWarmed,
-	markProfileWarmed,
-	resolveProfileDir,
-} from "./profileManager.js";
-import { warmUpProfile } from "./profileWarmup.js";
 import {
 	checkProxyReachable,
 	type ProxyScheme,
@@ -42,9 +37,41 @@ let proxyAcquisitionLock = Promise.resolve();
 const QUARANTINE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const quarantinedProxies = new Map<string, number>(); // host:port → expiry
 
+type FirefoxLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
+
+const CONTEXT_OPTION_KEYS = new Set([
+	"acceptDownloads",
+	"baseURL",
+	"bypassCSP",
+	"clientCertificates",
+	"colorScheme",
+	"deviceScaleFactor",
+	"extraHTTPHeaders",
+	"geolocation",
+	"hasTouch",
+	"httpCredentials",
+	"ignoreHTTPSErrors",
+	"isMobile",
+	"javaScriptEnabled",
+	"locale",
+	"offline",
+	"permissions",
+	"recordHar",
+	"recordVideo",
+	"reducedMotion",
+	"screen",
+	"serviceWorkers",
+	"storageState",
+	"timezoneId",
+	"userAgent",
+	"viewport",
+]);
+
 export function quarantineProxy(hostPort: string): void {
 	quarantinedProxies.set(hostPort, Date.now() + QUARANTINE_TTL_MS);
-	logger.warn(`[proxy-quarantine] ${hostPort} quarantined for ${QUARANTINE_TTL_MS / 60000}min`);
+	logger.warn(
+		`[proxy-quarantine] ${hostPort} quarantined for ${QUARANTINE_TTL_MS / 60000}min`,
+	);
 }
 
 function isProxyQuarantined(hostPort: string): boolean {
@@ -56,9 +83,6 @@ function isProxyQuarantined(hostPort: string): boolean {
 	}
 	return true;
 }
-type FirefoxPersistentContextOptions = NonNullable<
-	Parameters<typeof firefox.launchPersistentContext>[1]
->;
 
 export type LaunchContextOptions = {
 	sessionKey?: string;
@@ -182,7 +206,8 @@ async function acquireThorDataProxyInner(): Promise<ProxyAllocation> {
 		})
 		.filter(
 			({ serverUrl, hostPort }) =>
-				!leasedThorDataProxyUrls.has(serverUrl) && !isProxyQuarantined(hostPort),
+				!leasedThorDataProxyUrls.has(serverUrl) &&
+				!isProxyQuarantined(hostPort),
 		);
 
 	if (candidates.length === 0) {
@@ -219,7 +244,9 @@ async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
 
 	const hostPort = `${host}:${port}`;
 	if (isProxyQuarantined(hostPort)) {
-		throw new Error(`proxy ${hostPort} is quarantined — skipping until cooldown expires`);
+		throw new Error(
+			`proxy ${hostPort} is quarantined — skipping until cooldown expires`,
+		);
 	}
 
 	const scheme = normalizeProxyScheme(env.PROXY_SCHEME?.trim() || "http");
@@ -236,8 +263,6 @@ async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
 }
 
 async function buildProxyAllocation(): Promise<ProxyAllocation> {
-	// Serialize all acquisitions to prevent concurrent providers from picking
-	// the same proxy before either has registered it as leased.
 	const result = proxyAcquisitionLock.then(() => buildProxyAllocationInner());
 	proxyAcquisitionLock = result.then(
 		() => {},
@@ -257,9 +282,63 @@ function toCamoufoxProxyConfig(
 	};
 }
 
+function splitCamoufoxOptions(options: Record<string, unknown>): {
+	launchOptions: Record<string, unknown>;
+	contextOptions: Record<string, unknown>;
+} {
+	const {
+		args,
+		channel,
+		devtools,
+		downloadsPath,
+		env: browserEnv,
+		executablePath,
+		firefoxUserPrefs,
+		handleSIGHUP,
+		handleSIGINT,
+		handleSIGTERM,
+		headless,
+		ignoreAllDefaultArgs,
+		ignoreDefaultArgs,
+		proxy,
+		slowMo,
+		timeout,
+		tracesDir,
+		...rest
+	} = options;
+
+	const launchOptions: Record<string, unknown> = {
+		args,
+		channel,
+		devtools,
+		downloadsPath,
+		env: browserEnv,
+		executablePath,
+		firefoxUserPrefs,
+		handleSIGHUP,
+		handleSIGINT,
+		handleSIGTERM,
+		headless,
+		ignoreAllDefaultArgs,
+		ignoreDefaultArgs,
+		proxy,
+		slowMo,
+		timeout,
+		tracesDir,
+	};
+
+	const contextOptions: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(rest)) {
+		if (!CONTEXT_OPTION_KEYS.has(key) || value === undefined) continue;
+		contextOptions[key] = value;
+	}
+
+	return { launchOptions, contextOptions };
+}
+
 export async function launchContext(
 	provider: Provider,
-	options?: LaunchContextOptions,
+	_options?: LaunchContextOptions,
 ): Promise<{
 	browser: Browser;
 	context: BrowserContext;
@@ -270,24 +349,16 @@ export async function launchContext(
 	let upstreamProxy: UpstreamProxyConfig | null = null;
 	let releaseProxyLease = () => {};
 	let invalidateProxyHint: () => Promise<void> = async () => {};
-	let profileIdentity: string | null = options?.sessionKey ?? null;
-	let persistProfile = profileIdentity !== null;
-	let userDataDir = "";
-	let isNewProfile = false;
 	let displayHandle: DisplayHandle | null = null;
-	let rawContext:
-		| import("playwright-core").BrowserContext
-		| null = null;
+	let rawBrowser: import("playwright-core").Browser | null = null;
+	let rawContext: import("playwright-core").BrowserContext | null = null;
 	let context: PlaywrightBrowserContextCompat | null = null;
 
 	const cleanup = async () => {
 		await context?.close().catch(() => null);
-		await rawContext?.close().catch(() => null);
+		await rawBrowser?.close().catch(() => null);
 		releaseProxyLease();
 		await displayHandle?.cleanup().catch(() => null);
-		if (!persistProfile && userDataDir) {
-			await rm(userDataDir, { recursive: true, force: true }).catch(() => null);
-		}
 	};
 
 	try {
@@ -296,8 +367,13 @@ export async function launchContext(
 		upstreamProxy = proxyAllocation.proxy;
 		releaseProxyLease = proxyAllocation.release;
 		if (upstreamProxy) {
-			logger.log(`selected proxy for browser launch: ${upstreamProxy.logProxy}`);
-			const reachable = await checkProxyReachable(upstreamProxy.host, upstreamProxy.port);
+			logger.log(
+				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
+			);
+			const reachable = await checkProxyReachable(
+				upstreamProxy.host,
+				upstreamProxy.port,
+			);
 			if (!reachable) {
 				throw new Error(
 					`proxy connect failed: ${upstreamProxy.logProxy} unreachable (TCP pre-check)`,
@@ -308,38 +384,17 @@ export async function launchContext(
 				quarantineProxy(hostPort);
 			};
 		} else {
-			logger.warn("no proxy resolved for browser launch; using direct connection");
+			logger.warn(
+				"no proxy resolved for browser launch; using direct connection",
+			);
 		}
-
-		// Profile identity must reflect the actual proxy session so that cookie
-		// jars are never reused across different IPs. ThorData (and other sticky
-		// proxy providers) encode the session token in the username; including it
-		// here ensures each 10-minute sticky window gets its own profile directory
-		// and triggers fresh warmup when the session rotates to a new IP.
-		// Fall back to the sessionKey (workspace-scoped) only when there is no
-		// proxy at all (direct connection), where IP is stable.
-		profileIdentity = upstreamProxy
-			? `proxy:${upstreamProxy.host}:${upstreamProxy.port}:${upstreamProxy.username ?? ""}`
-			: options?.sessionKey ?? null;
-		persistProfile = profileIdentity !== null;
-
-		const profileScope = options?.profileScope ?? provider;
-		const profileDir = await resolveProfileDir(
-			provider,
-			profileIdentity,
-			profileScope,
-		);
-		userDataDir = profileDir.dir;
-		isNewProfile = profileDir.isNew;
-		await mkdir(userDataDir, { recursive: true });
-		await clearBrowserProfileLocks(userDataDir);
 
 		displayHandle =
 			env.CAMOUFOX_HEADLESS_MODE === "headless" ? null : await ensureDisplay();
 		const display =
 			env.CAMOUFOX_HEADLESS_MODE === "headless"
 				? undefined
-				: displayHandle?.display ?? detectDisplay() ?? undefined;
+				: (displayHandle?.display ?? detectDisplay() ?? undefined);
 
 		const camoufoxOptions = await resolveCamoufoxLaunchOptions({
 			display,
@@ -347,45 +402,15 @@ export async function launchContext(
 			proxy: toCamoufoxProxyConfig(upstreamProxy),
 		});
 
-		const {
-			executablePath,
-			firefoxUserPrefs,
-			...persistentContextOptions
-		} = camoufoxOptions;
+		const { launchOptions, contextOptions } = splitCamoufoxOptions(
+			camoufoxOptions as Record<string, unknown>,
+		);
 
-		rawContext = await firefox.launchPersistentContext(userDataDir, {
-			...(persistentContextOptions as FirefoxPersistentContextOptions),
-			executablePath,
-			firefoxUserPrefs: firefoxUserPrefs as
-				| Record<string, string | number | boolean>
-				| undefined,
-		});
+		rawBrowser = await firefox.launch(launchOptions as FirefoxLaunchOptions);
+		rawContext = await rawBrowser.newContext(contextOptions as never);
 
 		context = new PlaywrightBrowserContextCompat(rawContext);
 		const browser = context.getBrowser();
-
-		if (
-			provider === "ai-overview" &&
-			persistProfile &&
-			profileIdentity &&
-			!(await isProfileWarmed(provider, profileIdentity, profileScope))
-		) {
-			try {
-				const warmupPage = await context.newPage();
-				await warmUpProfile(warmupPage, provider);
-				// Do NOT close the warmup page — closing all pages in a Firefox
-				// persistent context orphans the browser window reference, causing
-				// the next context.newPage() to fail with "window is null".
-				// The page stays open as a blank background tab; context.close()
-				// in cleanup() will close it along with everything else.
-				void warmupPage;
-				await markProfileWarmed(provider, profileIdentity, profileScope);
-			} catch (error) {
-				logger.warn(
-					`profile warmup failed (non-critical): ${toErrorMessage(error)}`,
-				);
-			}
-		}
 
 		return {
 			browser,
