@@ -55,7 +55,7 @@ export function AppSidebar({
 	workspace,
 	userName,
 	userEmail,
-}: AppSidebarProps){
+}: AppSidebarProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] =
 		useState(false);
@@ -163,7 +163,7 @@ export function AppSidebar({
 
 	return (
 		<>
-			<Sidebar className="flex h-screen flex-col border-r border-gray-200/70 bg-white dark:border-gray-800 dark:bg-gray-950">
+			<Sidebar className="flex h-full min-h-full flex-col self-stretch border-r border-gray-200/70 bg-white dark:border-gray-800 dark:bg-gray-950">
 				<SidebarHeader className="p-3">
 					<SidebarMenu>
 						<SidebarMenuItem>

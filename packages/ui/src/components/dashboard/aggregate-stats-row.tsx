@@ -47,7 +47,7 @@ function StatCard({
 					/>
 				)}
 				<span
-					className={`min-w-0 break-words text-xl font-semibold leading-tight tracking-tight sm:text-2xl ${valueClassName}`}
+					className={`min-w-0 break-words [overflow-wrap:anywhere] text-xl font-semibold leading-tight tracking-tight sm:text-2xl ${valueClassName}`}
 				>
 					{value}
 				</span>

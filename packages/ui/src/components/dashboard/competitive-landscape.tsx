@@ -102,7 +102,7 @@ export function CompetitiveLandscape({
 	);
 
 	return (
-		<Card className="flex h-full min-h-[460px] flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-black">
+		<Card className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-black">
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
 					Competitors
@@ -119,14 +119,14 @@ export function CompetitiveLandscape({
 					description="No analysis data is available for the selected filters."
 				/>
 			) : (
-				<div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-					<Table className="min-w-[420px] w-full table-fixed sm:min-w-0">
+				<div className="min-w-0 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+					<Table className="w-full min-w-[34rem] table-fixed">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
-								<TableHead className="px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-[46%] min-w-[13rem] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Competitor
 								</TableHead>
-								<TableHead className="w-24 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-20 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:w-24">
 									<SortableHeader
 										column="visibility"
 										currentSort={sortColumn}
@@ -137,7 +137,7 @@ export function CompetitiveLandscape({
 										Visibility
 									</SortableHeader>
 								</TableHead>
-								<TableHead className="w-24 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-20 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:w-24">
 									<SortableHeader
 										column="mentions"
 										currentSort={sortColumn}
@@ -171,8 +171,8 @@ export function CompetitiveLandscape({
 										key={row.name}
 										className="border-b border-gray-100 last:border-0 dark:border-gray-800"
 									>
-										<TableCell className="px-3 py-3.5">
-											<div className="flex min-w-0 items-center gap-2.5">
+										<TableCell className="px-3 py-3.5 align-top">
+											<div className="flex min-w-0 items-start gap-2.5">
 												{favicon ? (
 													<img
 														src={favicon}
@@ -184,14 +184,18 @@ export function CompetitiveLandscape({
 														}}
 													/>
 												) : null}
-												<span className="min-w-0 whitespace-normal break-words text-sm font-medium text-gray-900 dark:text-gray-100">
-													{row.name}
-												</span>
-												{row.isBrand ? (
-													<span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:bg-neutral-800 dark:text-gray-200">
-														You
-													</span>
-												) : null}
+												<div className="min-w-0 flex-1">
+													<div className="flex min-w-0 flex-wrap items-center gap-1.5">
+														<span className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-gray-900 [overflow-wrap:anywhere] dark:text-gray-100">
+															{row.name}
+														</span>
+														{row.isBrand ? (
+															<span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:bg-neutral-800 dark:text-gray-200">
+																You
+															</span>
+														) : null}
+													</div>
+												</div>
 											</div>
 										</TableCell>
 										<TableCell className="px-3 py-3.5 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
