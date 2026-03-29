@@ -41,6 +41,7 @@ type AiOverviewState = {
 };
 
 const aiOverviewState = new WeakMap<Page, AiOverviewState>();
+const warmedPages = new WeakSet<Page>();
 
 async function findVisibleSearchInput(page: Page) {
 	for (const selector of PROVIDER_EDITOR_SELECTORS["ai-overview"]) {
@@ -131,6 +132,27 @@ async function hasVisibleMatch(page: Page, selector: string): Promise<boolean> {
 	}
 
 	return false;
+}
+
+async function ensureGoogleCookies(page: Page): Promise<void> {
+	if (warmedPages.has(page)) {
+		return;
+	}
+
+	logger.log("[ai-overview] warming up Google cookies");
+
+	if (!isGoogleHomepageUrl(page.url())) {
+		await navigateWithRetry(page, GOOGLE_HOME_URL, {
+			waitUntil: "domcontentloaded",
+			timeout: 30_000,
+		});
+	} else {
+		await page.waitForLoadState("domcontentloaded").catch(() => {});
+	}
+
+	assertNotBlockedPage(page);
+	await dismissConsentDialog(page);
+	warmedPages.add(page);
 }
 
 async function ensureHomepageSearchInput(page: Page) {
@@ -240,6 +262,7 @@ async function runAiOverviewSearch(
 			: 0,
 	});
 
+	await ensureGoogleCookies(page);
 	const searchInput = await ensureHomepageSearchInput(page);
 
 	if (!env.CAMOUFOX_HUMANIZE) {
