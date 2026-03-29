@@ -1,5 +1,4 @@
 import type { Provider } from "@oneglanse/types";
-import { aiOverviewConfig } from "./ai-overview/index.js";
 import { chatgptConfig } from "./chatgpt/index.js";
 import { geminiConfig } from "./gemini/index.js";
 import { perplexityConfig } from "./perplexity/index.js";
@@ -19,5 +18,4 @@ export const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
 	gemini: geminiConfig,
 	chatgpt: chatgptConfig,
 	perplexity: perplexityConfig,
-	"ai-overview": aiOverviewConfig,
 };

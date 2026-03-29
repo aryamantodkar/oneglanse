@@ -2,9 +2,7 @@ import { randomUUID } from "node:crypto";
 import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider, UserPrompt } from "@oneglanse/types";
 import { PROVIDER_LIST } from "@oneglanse/types";
-import { ALL_PROVIDERS_JSON } from "@oneglanse/utils";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
-import { getWorkspaceById } from "../workspace/index.js";
 import { getProviderQueue } from "./queue.js";
 import { redis, waitForRedis } from "./redis.js";
 
@@ -18,9 +16,6 @@ type ProviderJobPayload = {
 	user_id: string;
 	workspace_id: string;
 	created_at?: string;
-	// Set for Google-family providers (gemini + ai-overview) in the same job group
-	// so both jobs can coordinate on a shared proxy session. See launch.ts.
-	googleSharedSessionId?: string;
 };
 
 export type SubmitAgentJobResult =
@@ -49,51 +44,14 @@ async function enqueueProviderJob(payload: ProviderJobPayload): Promise<void> {
 	}
 }
 
-function buildProviderJobs(enabledProviders: Provider[]): Array<{
+function buildProviderJobs(): Array<{
 	provider: Provider;
 	runProviders: Provider[];
-	googleSharedSessionId?: string;
 }> {
-	// Each provider runs in its own independent job with its own browser session
-	// and retry budget. Gemini and AI Overview share a persistent profile (cookie
-	// jar) via getProviderSessionScope returning "google" for both, but they must
-	// NOT share a browser process — a failure in one must not silently swallow
-	// the other's result, and each needs its own proxy/IP rotation on failure.
-	//
-	// When both are enabled they still benefit from sharing the same proxy IP on
-	// their first attempt (same IP → same profile identity → AI Overview inherits
-	// Gemini's warm Google cookies). A shared session ID coordinates this in Redis.
-	const hasGemini = enabledProviders.includes("gemini");
-	const hasAiOverview = enabledProviders.includes("ai-overview");
-	const googleSharedSessionId =
-		hasGemini && hasAiOverview ? randomUUID() : undefined;
-
-	return enabledProviders.map((provider) => ({
+	return PROVIDER_LIST.map((provider) => ({
 		provider,
 		runProviders: [provider],
-		googleSharedSessionId:
-			provider === "gemini" || provider === "ai-overview"
-				? googleSharedSessionId
-				: undefined,
 	}));
-}
-
-function parseEnabledProviders(
-	rawValue: string | null | undefined,
-): Provider[] {
-	try {
-		const parsed = JSON.parse(rawValue ?? ALL_PROVIDERS_JSON);
-		if (!Array.isArray(parsed)) {
-			return [...PROVIDER_LIST];
-		}
-
-		const filtered = parsed.filter((provider): provider is Provider =>
-			PROVIDER_LIST.includes(provider as Provider),
-		);
-		return filtered.length > 0 ? filtered : [...PROVIDER_LIST];
-	} catch {
-		return [...PROVIDER_LIST];
-	}
 }
 
 export async function enqueueProviderJobs(args: {
@@ -101,12 +59,11 @@ export async function enqueueProviderJobs(args: {
 	prompts: UserPrompt[];
 	userId: string;
 	workspaceId: string;
-	enabledProviders: Provider[];
 }): Promise<void> {
-	const { jobGroupId, prompts, userId, workspaceId, enabledProviders } = args;
-	const providerJobs = buildProviderJobs(enabledProviders);
+	const { jobGroupId, prompts, userId, workspaceId } = args;
+	const providerJobs = buildProviderJobs();
 	await Promise.all(
-		providerJobs.map(({ provider, runProviders, googleSharedSessionId }) =>
+		providerJobs.map(({ provider, runProviders }) =>
 			enqueueProviderJob({
 				jobGroupId,
 				provider,
@@ -114,14 +71,13 @@ export async function enqueueProviderJobs(args: {
 				prompts,
 				user_id: userId,
 				workspace_id: workspaceId,
-				googleSharedSessionId,
 			}),
 		),
 	);
 }
 
 /**
- * Fetches the workspace's prompts and enabled providers, then fans out one
+ * Fetches the workspace's prompts, then fans out one
  * BullMQ job per provider so they can run in parallel with isolated browser/
  * proxy state. Sets the Redis progress key so the client can poll for status.
  * Returns "empty" if no prompts are configured.
@@ -147,27 +103,21 @@ export async function submitAgentJobGroup(args: {
 	}
 
 	const jobGroupId = randomUUID();
-	const workspace = await getWorkspaceById({ workspaceId }).catch((err) => {
-		throw new Error(
-			`failed to load workspace settings: ${toErrorMessage(err)}`,
-		);
-	});
-	const enabledProviders = parseEnabledProviders(workspace.enabledProviders);
 	await waitForRedis();
 
 	const progress = {
 		status: "pending" as const,
 		updateId: 0,
 		providers: Object.fromEntries(
-			enabledProviders.map((p) => [p, "pending"]),
+			PROVIDER_LIST.map((p) => [p, "pending"]),
 		) as Record<string, string>,
-		results: Object.fromEntries(enabledProviders.map((p) => [p, 0])) as Record<
+		results: Object.fromEntries(PROVIDER_LIST.map((p) => [p, 0])) as Record<
 			string,
 			number
 		>,
 		stats: {
 			totalPrompts: prompts.length,
-			expectedResponses: prompts.length * enabledProviders.length,
+			expectedResponses: prompts.length * PROVIDER_LIST.length,
 			actualResponses: 0,
 		},
 	};
@@ -185,7 +135,6 @@ export async function submitAgentJobGroup(args: {
 			prompts,
 			userId,
 			workspaceId,
-			enabledProviders,
 		});
 	} catch (err) {
 		throw new Error(`failed to queue provider jobs: ${toErrorMessage(err)}`);

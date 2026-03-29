@@ -1,5 +1,5 @@
-import { getQueueName, redis, waitForRedis } from "@oneglanse/services";
-import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
+import { getQueueName, waitForRedis } from "@oneglanse/services";
+import { PROVIDER_LIST } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import { Worker } from "bullmq";
 import { env } from "./env.js";
@@ -11,72 +11,10 @@ import {
 import { handleJob } from "./worker/jobHandler.js";
 
 const PROFILE_CLEANUP_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const AI_OVERVIEW_GEMINI_WAIT_TIMEOUT_MS = 15 * 60 * 1000;
-const AI_OVERVIEW_GEMINI_WAIT_POLL_MS = 1_000;
 
 // Exported so index.ts can call worker.close() during graceful shutdown.
 export let workers: Worker[] = [];
 const WORKER_LOCK_DURATION_MS = 4 * 60 * 60 * 1000;
-
-type ProviderWorkerJobData = {
-	jobGroupId?: string;
-	provider?: Provider;
-	runProviders?: Provider[];
-};
-
-type ProgressPayload = {
-	providers?: Partial<
-		Record<Provider, "pending" | "running" | "completed" | "failed">
-	>;
-};
-
-function shouldAiOverviewWaitForGemini(
-	jobData: ProviderWorkerJobData,
-): boolean {
-	return (
-		jobData.provider === "ai-overview" &&
-		Boolean(jobData.jobGroupId) &&
-		(jobData.runProviders?.includes("gemini") ?? true)
-	);
-}
-
-async function waitForGeminiBeforeAiOverview(
-	jobData: ProviderWorkerJobData,
-): Promise<void> {
-	if (!shouldAiOverviewWaitForGemini(jobData) || !jobData.jobGroupId) {
-		return;
-	}
-
-	const progressKey = `job:${jobData.jobGroupId}:result`;
-	const deadline = Date.now() + AI_OVERVIEW_GEMINI_WAIT_TIMEOUT_MS;
-	let loggedWait = false;
-
-	while (Date.now() < deadline) {
-		const raw = await redis.get(progressKey).catch(() => null);
-		if (raw) {
-			const parsed = JSON.parse(raw) as ProgressPayload;
-			const geminiStatus = parsed.providers?.gemini;
-			if (geminiStatus === "completed" || geminiStatus === "failed") {
-				return;
-			}
-		}
-
-		if (!loggedWait) {
-			logger.log(
-				`[ai-overview] waiting for gemini to finish first so AI Overview can reuse the shared Google session`,
-			);
-			loggedWait = true;
-		}
-
-		await new Promise<void>((resolve) =>
-			setTimeout(resolve, AI_OVERVIEW_GEMINI_WAIT_POLL_MS),
-		);
-	}
-
-	logger.warn(
-		"[ai-overview] timed out waiting for gemini completion — continuing without guaranteed session reuse",
-	);
-}
 
 async function startWorkers() {
 	await waitForRedis();
@@ -104,10 +42,7 @@ async function startWorkers() {
 		const queueName = getQueueName(provider);
 		const worker = new Worker(
 			queueName,
-			async (job) => {
-				await waitForGeminiBeforeAiOverview(job.data as ProviderWorkerJobData);
-				return runWithProviderExecutionGate(provider, () => handleJob(job));
-			},
+			(job) => runWithProviderExecutionGate(provider, () => handleJob(job)),
 			{
 				connection,
 				concurrency: 1,

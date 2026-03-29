@@ -89,9 +89,19 @@ async function ensureInputHasWords(
 	const liveContent = await readInputContent(ctx.input).catch(
 		() => ctx.preSubmitContent,
 	);
-	const content = liveContent.length > 0 ? liveContent : ctx.preSubmitContent;
+	const normalizedLiveContent = normalizePromptValue(liveContent);
+	const normalizedPreSubmitContent = normalizePromptValue(ctx.preSubmitContent);
+	const content =
+		normalizedLiveContent.length > 0 ? liveContent : ctx.preSubmitContent;
 
 	if (hasWords(content)) return true;
+	if (
+		normalizedLiveContent.length === 0 &&
+		normalizedPreSubmitContent.length > 0 &&
+		hasWords(ctx.preSubmitContent)
+	) {
+		return true;
+	}
 
 	throw new ExternalServiceError(
 		ctx.provider,
@@ -184,7 +194,7 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 
 					// Press Enter directly on the input locator rather than via page.keyboard
 					// so the key event is guaranteed to land on the input element itself,
-					// bypassing any autocomplete dropdown focus drift (critical for AI Overview).
+					// bypassing any autocomplete dropdown focus drift.
 					await input
 						.press("Enter", { delay: randomBetween(40, 120) })
 						.catch(() => null);
