@@ -86,6 +86,7 @@ export interface Locator {
 	boundingBox(): Promise<BoundingBox | null>;
 	scrollIntoViewIfNeeded(): Promise<void>;
 	click(options?: ClickOptions): Promise<void>;
+	press(key: string, options?: KeyboardPressOptions): Promise<void>;
 	waitFor(options?: WaitForOptions): Promise<void>;
 	readInputValue(): Promise<string>;
 	setInputValue(value: string): Promise<void>;

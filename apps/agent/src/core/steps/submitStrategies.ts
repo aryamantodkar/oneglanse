@@ -165,9 +165,12 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 
 					await humanPause(page, 120, 260);
 
-					await pressKeyLikeUser(page, "Enter", {
-						delay: randomBetween(40, 120),
-					}).catch(() => null);
+					// Press Enter directly on the input locator rather than via page.keyboard
+					// so the key event is guaranteed to land on the input element itself,
+					// bypassing any autocomplete dropdown focus drift (critical for AI Overview).
+					await input
+						.press("Enter", { delay: randomBetween(40, 120) })
+						.catch(() => null);
 					return await checkSubmissionSuccess(ctx);
 				},
 				SUBMIT_METHOD_TIMEOUT_MS,

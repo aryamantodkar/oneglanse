@@ -88,6 +88,10 @@ export class PlaywrightLocatorCompat implements Locator {
 		return this.locator.click(options);
 	}
 
+	press(key: string, options?: { delay?: number }): Promise<void> {
+		return this.locator.press(key, options);
+	}
+
 	waitFor(options?: { timeout?: number; state?: "visible" | "hidden" }): Promise<void> {
 		return this.locator.waitFor({
 			timeout: options?.timeout,
