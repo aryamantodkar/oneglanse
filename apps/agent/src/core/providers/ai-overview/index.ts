@@ -8,7 +8,6 @@ import {
 	humanType,
 	moveMouseToElement,
 } from "../../../lib/browser/humanBehavior.js";
-import { clearEditorInput } from "../../../lib/input/editor/clearInput.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
 import type { ProviderConfig } from "../types.js";
@@ -110,9 +109,17 @@ export const aiOverviewConfig: ProviderConfig = {
 			await moveMouseToElement(page, searchInput);
 			await searchInput.click();
 			await page.waitForTimeout(randomBetween(300, 700));
-			// Clear any existing query (e.g. previous search still in the box on SERP)
-			await clearEditorInput(page, searchInput);
+			// Select any existing query (e.g. previous search on SERP) then type to replace
+			await page.keyboard.press("Control+a");
 			await humanType(page, prompt);
+			// Verify the input received the full prompt before submitting
+			const inputContent = await searchInput.readInputValue().catch(() => "");
+			if (inputContent.trim().length < prompt.trim().length * 0.9) {
+				throw new ExternalServiceError(
+					"ai-overview",
+					`Typing failed: input length ${inputContent.trim().length} is less than 90% of prompt length ${prompt.trim().length}`,
+				);
+			}
 			await page.waitForTimeout(randomBetween(400, 900));
 			await page.keyboard.press("Enter");
 			await page.waitForLoadState("domcontentloaded").catch(() => {});

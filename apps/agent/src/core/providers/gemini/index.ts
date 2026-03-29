@@ -71,8 +71,7 @@ export const geminiConfig: ProviderConfig = {
 	label: "Gemini",
 	displayName: "Gemini",
 	requiresWarmup: true,
-	submitOrder: ["dispatch", "native", "enter", "force"],
-	// Detect consent pages before attempting to locate the editor.
+// Detect consent pages before attempting to locate the editor.
 	// consent.google.com has no Gemini composer, so without this check
 	// waitForEditorReady times out and misclassifies it as "no_editor".
 	postNavigationHook: async (page) => {

@@ -54,11 +54,16 @@ export async function askPrompt(
 	const preSubmitContent = await input.readInputValue();
 	const preSubmitUrl = page.url();
 
-	// Verify we have content before attempting submission
-	if (!preSubmitContent || preSubmitContent.length === 0) {
+	// Verify the editor received the full prompt before attempting submission.
+	// Compare lengths rather than exact text — some providers normalise whitespace
+	// or handle newlines differently, but a major length shortfall means typing failed.
+	if (!preSubmitContent || preSubmitContent.trim().length === 0) {
+		throw new ExternalServiceError(provider, "Typing failed: editor is empty before submit");
+	}
+	if (preSubmitContent.trim().length < prompt.trim().length * 0.9) {
 		throw new ExternalServiceError(
 			provider,
-			"Typing failed: editor did not receive prompt",
+			`Typing failed: input length ${preSubmitContent.trim().length} is less than 90% of prompt length ${prompt.trim().length}`,
 		);
 	}
 
@@ -94,7 +99,7 @@ export async function askPrompt(
 	// started is skipped rather than firing against a browser being torn down.
 	let submissionAborted = false;
 
-	const submitOrder = config.submitOrder ?? ["native", "enter", "force", "dispatch"];
+	const submitOrder = config.submitOrder ?? ["native", "enter", "dispatch", "force"];
 	const needsButton = new Set(["native", "force", "dispatch"]);
 	const strategyMap = {
 		native: () => (sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
