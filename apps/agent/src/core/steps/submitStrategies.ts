@@ -7,6 +7,7 @@ import {
 	clickLocatorLikeUser,
 	pressKeyLikeUser,
 } from "../../lib/browser/humanBehavior.js";
+import { normalizePromptValue } from "../../lib/input/editor/promptInput.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
@@ -117,7 +118,10 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	const currentContent = await input
 		.readInputValue()
 		.catch(() => preSubmitContent);
-	if (currentContent !== preSubmitContent && currentContent.length === 0) {
+	if (
+		normalizePromptValue(currentContent).length === 0 &&
+		normalizePromptValue(preSubmitContent).length > 0
+	) {
 		return true;
 	}
 

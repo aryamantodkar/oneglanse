@@ -23,10 +23,13 @@ export function classifyError(err: unknown): FailureType {
 	)
 		return "rate_limited";
 	if (
-		// submission.*timed? ?out is intentionally excluded — it maps to "timeout" below.
-		// "All submission methods failed" stays here: it means no submit path worked,
-		// which is an editor/UI problem, not a timeout.
-		/no.*editor|editor.*not.*ready|no_editor|send failed|no send button|no generation|typing failed|submission.*failed|all submission/i.test(
+		/send failed|no send button|no generation|typing failed|input has no content before submit|editor is empty before submit|submission.*failed|all submission/i.test(
+			msg,
+		)
+	)
+		return "submission_failed";
+	if (
+		/no.*editor|editor for .* not found|editor.*not.*ready|no_editor|search box not found/i.test(
 			msg,
 		)
 	)

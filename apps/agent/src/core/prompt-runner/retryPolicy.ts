@@ -22,8 +22,8 @@ const CANARY_ROTATE_FAILURES = new Set([
 	"bot_detection",
 	"connection_error",
 	"rate_limited",
-	// Submission/editor failures mean the page is broken — rotating the IP and
-	// getting a fresh browser is better than burning retries on the same session.
+	// True editor absence on the first canary attempt usually means the page or
+	// session is unusable; submit-path failures retry locally first.
 	"no_editor",
 ]);
 

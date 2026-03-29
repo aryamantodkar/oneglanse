@@ -5,11 +5,16 @@ import type { Page } from "playwright";
 import { env } from "../../env.js";
 import {
 	moveMouseToElement,
-	pastePrompt,
 	preInteractionIdle,
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
+import {
+	formatPromptInsertionStrategy,
+	getPromptInsertionStrategy,
+	insertPromptIntoEditor,
+	normalizePromptValue,
+} from "../../lib/input/editor/promptInput.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
@@ -45,30 +50,42 @@ export async function askPrompt(
 		await moveMouseToElement(page, input);
 	}
 
-	logger.debug(`pasting ${prompt.length} chars…`);
-	await pastePrompt(page, prompt);
-	logger.debug("paste complete");
+	const predictedStrategy = getPromptInsertionStrategy(prompt);
+	logger.debug(
+		`${formatPromptInsertionStrategy(predictedStrategy)} ${prompt.length} chars…`,
+	);
+	const { rawValue: insertedValue, strategy } = await insertPromptIntoEditor(
+		page,
+		input,
+		prompt,
+		provider,
+	);
+	logger.debug(
+		`${formatPromptInsertionStrategy(strategy)} ${prompt.length} chars complete`,
+	);
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);
 
 	// Store pre-submit state for success detection
-	const preSubmitContent = await input.readInputValue();
+	const preSubmitContent = await input
+		.readInputValue()
+		.catch(() => insertedValue);
 	const preSubmitUrl = page.url();
 
-	// Verify the editor received the full prompt before attempting submission.
-	// Compare lengths rather than exact text — some providers normalise whitespace
-	// or handle newlines differently, but a major length shortfall means typing failed.
-	if (!preSubmitContent || preSubmitContent.trim().length === 0) {
+	if (
+		!preSubmitContent ||
+		normalizePromptValue(preSubmitContent).length === 0
+	) {
 		throw new ExternalServiceError(
 			provider,
 			"Typing failed: editor is empty before submit",
 		);
 	}
-	if (preSubmitContent.trim().length < prompt.trim().length * 0.9) {
+	if (normalizePromptValue(preSubmitContent) !== normalizePromptValue(prompt)) {
 		throw new ExternalServiceError(
 			provider,
-			`Typing failed: input length ${preSubmitContent.trim().length} is less than 90% of prompt length ${prompt.trim().length}`,
+			`Typing failed: normalized input mismatch before submit (expected ${normalizePromptValue(prompt).length} chars, got ${normalizePromptValue(preSubmitContent).length})`,
 		);
 	}
 
@@ -104,14 +121,15 @@ export async function askPrompt(
 	// started is skipped rather than firing against a browser being torn down.
 	let submissionAborted = false;
 
-	const submitOrder = config.submitOrder ?? [
+	type SubmitStrategy = "native" | "enter" | "force" | "dispatch";
+	const submitOrder: SubmitStrategy[] = config.submitOrder ?? [
 		"native",
 		"enter",
 		"force",
 		"dispatch",
 	];
-	const needsButton = new Set(["native", "force", "dispatch"]);
-	const strategyMap = {
+	const needsButton = new Set<SubmitStrategy>(["native", "force", "dispatch"]);
+	const strategyMap: Record<SubmitStrategy, () => Promise<boolean>> = {
 		native: () => (sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
 		enter: () => tryEnterSubmit(ctx),
 		force: () => (sendButton ? tryForceClick(ctx) : Promise.resolve(false)),
@@ -126,10 +144,16 @@ export async function askPrompt(
 		}
 	}
 
+	const effectiveSubmitOrder: SubmitStrategy[] = sendButton
+		? submitOrder
+		: submitOrder.includes("enter")
+			? ["enter"]
+			: [];
+
 	const success = await Promise.race([
 		(async () => {
 			let submitted = false;
-			for (const strategy of submitOrder) {
+			for (const strategy of effectiveSubmitOrder) {
 				if (submitted || submissionAborted) break;
 				const result = await strategyMap[strategy]();
 				if (!result) {
