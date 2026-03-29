@@ -39,11 +39,9 @@ export async function askPrompt(
 
 	const input = await waitForEditorReady(page, provider);
 
-	// Pre-interaction: idle briefly, scroll, then move mouse to input
-	logger.debug("pre-interaction idle…");
 	await preInteractionIdle(page);
-	await smallScroll(page);
-	await moveMouseToElement(page, input);
+	if (Math.random() < 0.4) await smallScroll(page);
+	if (Math.random() < 0.6) await moveMouseToElement(page, input);
 
 	logger.debug(`typing ${prompt.length} chars…`);
 	await humanType(page, prompt);
