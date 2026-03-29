@@ -33,7 +33,6 @@ export const chatgptConfig: ProviderConfig = {
 	afterSubmitHook: (page) =>
 		dismissChatgptAuthModal(page, { waitForAppearanceMs: 1500 }),
 	beforeRetryHook: resetChatgptPage,
-	betweenPromptsHook: resetChatgptPage,
 	extractSources: async (page) => {
 		const btn = await findSourcesButton(page, "chatgpt");
 		if (!btn) return [];
