@@ -107,9 +107,9 @@ export async function askPrompt(
 		(async () => {
 			let submitted = false;
 			if (!submissionAborted && sendButton) submitted = await tryNativeClick(ctx);
+			if (!submitted && !submissionAborted) submitted = await tryEnterSubmit(ctx);
 			if (!submitted && !submissionAborted && sendButton) submitted = await tryForceClick(ctx);
 			if (!submitted && !submissionAborted && sendButton) submitted = await tryDispatchClick(ctx);
-			if (!submitted && !submissionAborted) submitted = await tryEnterSubmit(ctx);
 			return submitted;
 		})(),
 		new Promise<boolean>((_, reject) =>
