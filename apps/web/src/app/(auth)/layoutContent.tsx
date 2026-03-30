@@ -6,6 +6,7 @@ import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
+import type { AppMode } from "@oneglanse/types";
 import { SidebarTrigger } from "@oneglanse/ui";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -13,13 +14,13 @@ import { WorkspaceProvider } from "./workspace-context";
 
 export default function LayoutContent({
 	children,
-	isSelfHosted,
+	appMode,
 	workspace,
 	userName,
 	userEmail,
 }: {
 	children: React.ReactNode;
-	isSelfHosted: boolean;
+	appMode: AppMode;
 	workspace: Workspace | null;
 	userName: string;
 	userEmail: string;
@@ -111,7 +112,7 @@ export default function LayoutContent({
 		<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
 			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
 				<AppSidebar
-					isSelfHosted={isSelfHosted}
+					appMode={appMode}
 					workspace={resolvedWorkspace}
 					userName={userName}
 					userEmail={userEmail}

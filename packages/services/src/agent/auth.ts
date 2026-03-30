@@ -5,10 +5,13 @@ import { readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 import {
+	type AppMode,
 	AUTH_PROVIDER_LIST,
 	type AuthProvider,
+	isInteractiveAuthAllowedInMode,
 	type Provider,
 	type ProviderAuthStatus,
+	resolveAppMode,
 } from "@oneglanse/types";
 import {
 	AUTH_PROVIDER_CONFIG,
@@ -55,7 +58,6 @@ type RuntimeProfileSeedPlan = {
 	userDataDir: string;
 };
 
-const AGENT_RUNTIME_ENVIRONMENTS = ["local", "vps"] as const;
 const DEFAULT_LOCAL_STORAGE_ROOT = ".oneglanse-storage";
 
 function resolveMonorepoRoot(startDir = process.cwd()): string {
@@ -94,23 +96,23 @@ function getUploadConfig(): {
 }
 
 function isRemoteSyncConfigured(): boolean {
-	return getAgentRuntimeEnvironment() === "local" && getUploadConfig() !== null;
+	return getAppMode() === "local" && getUploadConfig() !== null;
 }
 
 function getStorageRootDir(): string {
-	if (getAgentRuntimeEnvironment() === "vps") {
+	if (getAppMode() !== "local") {
 		return "/storage";
 	}
 
 	return path.join(resolveMonorepoRoot(), DEFAULT_LOCAL_STORAGE_ROOT);
 }
 
-export function getAgentRuntimeEnvironment(): (typeof AGENT_RUNTIME_ENVIRONMENTS)[number] {
-	return process.env.AGENT_RUNTIME_ENV === "vps" ? "vps" : "local";
+export function getAppMode(): AppMode {
+	return resolveAppMode(process.env.ONEGLANSE_APP_MODE);
 }
 
 export function isInteractiveAuthLaunchAllowed(): boolean {
-	return getAgentRuntimeEnvironment() === "local";
+	return isInteractiveAuthAllowedInMode(getAppMode());
 }
 
 export function getAgentAuthRootDir(): string {
@@ -335,7 +337,7 @@ function clearRuntimeProfileDirectory(provider: Provider): void {
 async function getSpawnEnv(): Promise<NodeJS.ProcessEnv> {
 	return {
 		...process.env,
-		AGENT_RUNTIME_ENV: getAgentRuntimeEnvironment(),
+		ONEGLANSE_APP_MODE: getAppMode(),
 		AGENT_AUTH_ROOT_DIR: getAgentAuthRootDir(),
 	};
 }
@@ -466,7 +468,7 @@ export async function uploadAuthSession(
 	provider: AuthProvider,
 	state?: StorageState,
 ): Promise<void> {
-	if (getAgentRuntimeEnvironment() !== "local") {
+	if (getAppMode() !== "local") {
 		return;
 	}
 

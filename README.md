@@ -32,6 +32,7 @@ This:
 - runs database migrations
 - starts the web app and the agent locally
 - opens the app at [http://127.0.0.1:3000](http://127.0.0.1:3000)
+- forces app mode to `local`
 
 If provider auth is missing, the app routes you to `/connections`.
 
@@ -58,6 +59,7 @@ This starts both self-hosted stacks:
 
 - the main app stack from `docker-compose.yml`
 - the always-on public stack from `docker-compose.public.yml`
+- forces app mode to `self-hosted`
 
 Default ports:
 
@@ -185,6 +187,18 @@ about:
   - `CAMOUFOX_HEADLESS_MODE`
   - `CAMOUFOX_PYTHON_BIN`
   - `DEBUG_ENABLED`
+
+Deployment mode is controlled by one variable:
+
+- `ONEGLANSE_APP_MODE=cloud|self-hosted|local`
+
+Behavior:
+
+- `pnpm local` and `pnpm auth` force `local`
+- `docker-compose.yml` forces `self-hosted`
+- anything else defaults to `cloud`
+
+Schedule is only available in `local` and `self-hosted` mode.
 
 For VPS auth capture, prefer passing `--upload-url` and `--upload-token`
 directly to `pnpm auth`.

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import dotenv from "dotenv";
+import { APP_MODE_LIST } from "@oneglanse/types";
 import { z } from "zod";
 
 if (process.env.NODE_ENV !== "production") {
@@ -34,7 +35,7 @@ const AgentEnvSchema = z
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
-		AGENT_RUNTIME_ENV: z.enum(["local", "vps"]).default("local"),
+		ONEGLANSE_APP_MODE: z.enum(APP_MODE_LIST).default("local"),
 		AGENT_AUTH_ROOT_DIR: z.string().trim().optional(),
 		AGENT_AUTH_UPLOAD_URL: z.string().trim().url().optional(),
 		AGENT_AUTH_UPLOAD_TOKEN: z.string().trim().optional(),
