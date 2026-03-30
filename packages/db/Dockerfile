@@ -6,7 +6,3 @@ RUN apt-get update && \
     postgresql-16-cron \
     postgresql-16-http && \
     rm -rf /var/lib/apt/lists/*
-
-# Enable pg_cron and link it to your database
-RUN echo "shared_preload_libraries = 'pg_cron'" >> /usr/share/postgresql/postgresql.conf.sample \
- && echo "cron.database_name = 'mydb'" >> /usr/share/postgresql/postgresql.conf.sample

@@ -1,5 +1,6 @@
 import {
 	attachTerminationHandler,
+	buildLocalRuntimeEnv,
 	edgeNetworkName,
 	ensureDockerNetwork,
 	ensureEnvFiles,
@@ -14,9 +15,18 @@ const localAppUrl = "http://127.0.0.1:3000";
 
 async function main() {
 	await ensureEnvFiles();
+	const localEnv = buildLocalRuntimeEnv(localAppUrl);
 	await ensureDockerNetwork(edgeNetworkName);
-	await runCommand("docker", ["compose", "up", "-d", "db", "clickhouse", "redis"]);
-	await runCommand("pnpm", ["db:migrate"]);
+	await runCommand("docker", [
+		"compose",
+		"up",
+		"-d",
+		"--build",
+		"db",
+		"clickhouse",
+		"redis",
+	]);
+	await runCommand("pnpm", ["db:migrate"], { env: localEnv });
 
 	const child = spawnCommand(
 		"pnpm",
@@ -28,14 +38,7 @@ async function main() {
 			"--filter=@oneglanse/agent",
 		],
 		{
-			env: {
-				...process.env,
-				ONEGLANSE_APP_MODE: "local",
-				APP_URL: localAppUrl,
-				API_BASE_URL: localAppUrl,
-				BETTER_AUTH_URL: localAppUrl,
-				NEXT_PUBLIC_API_URL: localAppUrl,
-			},
+			env: localEnv,
 		},
 	);
 

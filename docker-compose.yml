@@ -95,9 +95,18 @@ services:
   # PostgreSQL (OFFICIAL IMAGE)
   # ----------------------------
   db:
-    image: postgres:16-alpine
+    build:
+      context: .
+      dockerfile: ./packages/db/Dockerfile
+    image: oneglanse-postgres:local
     container_name: postgres_db
     restart: always
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_cron
+      - -c
+      - cron.database_name=${POSTGRES_DB:-oneglanse}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
