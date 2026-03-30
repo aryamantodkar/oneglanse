@@ -20,7 +20,7 @@ services:
       - apps/agent/.env
     shm_size: "2gb"
     volumes:
-      - agent_storage:/storage
+      - ${AGENT_STORAGE_HOST_PATH:-/opt/oneglanse/storage}:/storage
     depends_on:
       redis:
         condition: service_healthy
@@ -142,6 +142,8 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       PORT: "3000"
+    volumes:
+      - ${AGENT_STORAGE_HOST_PATH:-/opt/oneglanse/storage}:/storage:ro
     networks:
       - frontend
       - backend
@@ -236,7 +238,6 @@ volumes:
   db_data:
   clickhouse_data:
   redis_data:
-  agent_storage:
 
 networks:
   frontend:

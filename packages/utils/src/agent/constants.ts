@@ -4,12 +4,16 @@ export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
 	chatgpt: 90_000,
 	perplexity: 45_000,
 	gemini: 45_000,
+	claude: 60_000,
+	"ai-overview": 45_000,
 };
 
 export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
 	chatgpt: 45_000,
 	perplexity: 30_000,
 	gemini: 45_000,
+	claude: 45_000,
+	"ai-overview": 30_000,
 };
 
 // Provider-specific editor selectors used for health checks (most reliable first).
@@ -25,6 +29,12 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 		'[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
 		'div.ql-editor[contenteditable="true"]',
 	],
+	claude: [
+		'[data-testid="chat-input"][contenteditable="true"]',
+		'.ProseMirror[contenteditable="true"]',
+		'[data-testid="chat-input-grid-container"] [contenteditable="true"]',
+	],
+	"ai-overview": ['textarea[name="q"]', 'input[name="q"][role="combobox"]'],
 };
 
 export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
@@ -45,12 +55,24 @@ export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
 		'button[aria-label*="send" i]',
 		'button[type="submit"]',
 	],
+	claude: [
+		'button[aria-label="Send message"]',
+		'button[aria-label*="send" i]',
+		'button[type="submit"]',
+	],
+	"ai-overview": [],
 };
 
 export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: ['[data-message-author-role="assistant"]'],
 	perplexity: [".prose"],
 	gemini: ["model-response"],
+	claude: [
+		'div[data-is-streaming="false"].group.relative.pb-3 .standard-markdown',
+		'[data-testid="message-content"] .standard-markdown',
+		'[data-testid="message-content"]',
+	],
+	"ai-overview": ['[data-container-id="main-col"]', '[role="region"] .markdown-content'],
 };
 
 export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<
@@ -71,19 +93,12 @@ export const PROVIDER_RESPONSE_GENERATION_SELECTORS: Record<
 		'button[aria-label="Stop response"]',
 		'button[aria-label*="stop" i]',
 	],
+	claude: [
+		'button[aria-label*="stop" i]',
+		'button[aria-label*="cancel" i]',
+	],
+	"ai-overview": [],
 };
-
-export const SOURCES_SELECTORS = [
-	// ARIA-driven (ChatGPT, Perplexity)
-	'button[aria-label*="source" i]',
-	'button[aria-label*="citation" i]',
-	'[role="button"][aria-label*="source" i]',
-	'[role="button"][aria-label*="citation" i]',
-
-	// Data-testid
-	'[data-testid*="source" i]',
-	'[data-testid*="citation" i]',
-];
 
 export const RETRYABLE_ERRORS = [
 	"ERR_SSL_PROTOCOL_ERROR",

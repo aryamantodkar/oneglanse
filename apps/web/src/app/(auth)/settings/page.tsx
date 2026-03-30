@@ -3,11 +3,11 @@
 import { authClient } from "@/lib/auth/auth-client";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { api } from "@/trpc/react";
+import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 import {
 	type AnalysisRecord,
 	type DomainStats,
 	type GroupedSource,
-	PROVIDER_LIST,
 	type Source,
 	type SourceExcerpt,
 } from "@oneglanse/types";
@@ -24,14 +24,11 @@ import {
 	toast,
 } from "@oneglanse/ui";
 import {
-	PROVIDER_DISPLAY,
 	buildAnalysisCsvRow,
-	getModelFavicon,
-	getProviderDisplayName,
 	getUniqueModelProviders,
 	joinCitedTexts,
 } from "@oneglanse/utils";
-import { CheckCircle2, Download, Loader2, Settings } from "lucide-react";
+import { Download, Loader2, Settings } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useLayoutUserEmail } from "../workspace-context";
@@ -237,14 +234,6 @@ export default function SettingsPage() {
 		(analysisQuery.data?.length ?? 0) > 0 ||
 		(sourcesQuery.data?.sourceStats?.combined?.length ?? 0) > 0;
 
-	if (!workspaceId) {
-		return (
-			<div className="flex h-[60vh] items-center justify-center">
-				<p className="text-sm text-gray-500">No workspace selected.</p>
-			</div>
-		);
-	}
-
 	return (
 		<div className="web-page-panel max-w-4xl">
 			{/* Page Header */}
@@ -255,104 +244,60 @@ export default function SettingsPage() {
 				</h1>
 			</div>
 
-			<section>
-				<div className="mb-4 flex items-center gap-2">
-					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-						Export Data
-					</h2>
-				</div>
-				<div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<div>
-							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-								Export All Data
-							</p>
-							<p className="text-xs text-gray-500">
-								Export Dashboard, Prompts, and Sources data together in one
-								file.
-							</p>
-						</div>
-						<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-							<Button
-								variant="outline"
-								className="w-full gap-2 sm:w-auto"
-								onClick={handleExportAllJson}
-								disabled={
-									userPromptsQuery.isLoading ||
-									analysisQuery.isLoading ||
-									sourcesQuery.isLoading ||
-									!hasAnyExportData
-								}
-							>
-								<Download className="h-4 w-4" />
-								Export All JSON
-							</Button>
-							<Button
-								variant="outline"
-								className="w-full gap-2 sm:w-auto"
-								onClick={handleExportAllCsv}
-								disabled={
-									userPromptsQuery.isLoading ||
-									analysisQuery.isLoading ||
-									sourcesQuery.isLoading ||
-									!hasAnyExportData
-								}
-							>
-								<Download className="h-4 w-4" />
-								Export All CSV
-							</Button>
-						</div>
+			{workspaceId ? (
+				<section>
+					<div className="mb-4 flex items-center gap-2">
+						<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+							Export Data
+						</h2>
 					</div>
-				</div>
-			</section>
-
-			{/* Provider Settings */}
-			<section>
-				<div className="mb-4 flex items-center gap-2">
-					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-						AI Providers
-					</h2>
-				</div>
-
-				<div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-					<div className="mb-3 flex items-center gap-2">
-						<Settings className="h-4 w-4 text-gray-500" />
-						<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-							Active AI Providers
-						</p>
-					</div>
-
-					<div className="space-y-2">
-						<p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
-							All supported providers are enabled by default and cannot be
-							changed per workspace.
-						</p>
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-							{PROVIDER_LIST.map((provider) => (
-								<div
-									key={provider}
-									className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/20"
+					<div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<div>
+								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+									Export All Data
+								</p>
+								<p className="text-xs text-gray-500">
+									Export Dashboard, Prompts, and Sources data together in one
+									file.
+								</p>
+							</div>
+							<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+								<Button
+									variant="outline"
+									className="w-full gap-2 sm:w-auto"
+									onClick={handleExportAllJson}
+									disabled={
+										userPromptsQuery.isLoading ||
+										analysisQuery.isLoading ||
+										sourcesQuery.isLoading ||
+										!hasAnyExportData
+									}
 								>
-									<CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
-									<img
-										src={getModelFavicon(provider)}
-										alt={getProviderDisplayName(provider)}
-										className="h-5 w-5 shrink-0 rounded-sm"
-									/>
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-											{getProviderDisplayName(provider)}
-										</p>
-										<p className="truncate text-xs text-gray-500 dark:text-gray-400">
-											{PROVIDER_DISPLAY[provider].description}
-										</p>
-									</div>
-								</div>
-							))}
+									<Download className="h-4 w-4" />
+									Export All JSON
+								</Button>
+								<Button
+									variant="outline"
+									className="w-full gap-2 sm:w-auto"
+									onClick={handleExportAllCsv}
+									disabled={
+										userPromptsQuery.isLoading ||
+										analysisQuery.isLoading ||
+										sourcesQuery.isLoading ||
+										!hasAnyExportData
+									}
+								>
+									<Download className="h-4 w-4" />
+									Export All CSV
+								</Button>
+							</div>
 						</div>
 					</div>
-				</div>
-			</section>
+				</section>
+			) : null}
+
+			<ProviderConnectionsPanel />
 
 			{/* Danger Zone */}
 			<section>

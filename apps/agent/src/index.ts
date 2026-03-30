@@ -1,8 +1,8 @@
+import "./api.js";
 import "./worker.js";
 import { redis } from "@oneglanse/services";
 import { workers } from "./worker.js";
 import { logger } from "@oneglanse/utils";
-import { closeAllWarm } from "./lib/browser/warmPool.js";
 
 const shutdown = async (signal: string) => {
 	logger.log(`[agent] Received ${signal}. Starting graceful shutdown...`);
@@ -16,12 +16,7 @@ const shutdown = async (signal: string) => {
 	}, 15 * 60 * 1000);
 
 	try {
-		// Step 1: Close warm browser pool to free Chromium processes.
-		logger.log("[agent] Closing warm browser pool...");
-		await closeAllWarm();
-		logger.log("[agent] Warm browser pool closed.");
-
-		// Step 2: Stop accepting new jobs and wait for current jobs to finish.
+		// Step 1: Stop accepting new jobs and wait for current jobs to finish.
 		// BullMQ re-queues any job that was picked up but not acknowledged, so
 		// nothing is lost — the next worker restart will retry it.
 		if (workers.length > 0) {
@@ -30,7 +25,7 @@ const shutdown = async (signal: string) => {
 			logger.log("[agent] Workers closed.");
 		}
 
-		// Step 3: Close the Redis connection cleanly.
+		// Step 2: Close the Redis connection cleanly.
 		// Must happen AFTER workers.close() because workers write job progress
 		// to Redis as current jobs complete.
 		logger.log("[agent] Closing Redis connection...");

@@ -2,7 +2,7 @@ import type { Provider } from "@oneglanse/types";
 import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
-async function findLastAssistantLocator(
+export async function findLastAssistantLocator(
 	page: Page,
 	provider: Provider,
 ): Promise<Locator | null> {

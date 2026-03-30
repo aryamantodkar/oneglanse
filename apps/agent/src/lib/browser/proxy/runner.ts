@@ -16,7 +16,6 @@ import {
 } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { runAgents } from "../../../core/runAgents.js";
-import { evictWarmBrowser, storeWarmBrowser } from "../warmPool.js";
 
 // Hard ceiling on browser launch + profile warmup + initial provider navigation.
 // This phase runs entirely outside the executor timeout — its own budget prevents
@@ -90,13 +89,9 @@ function getFailureType(err: unknown): ReturnType<typeof classifyError> {
 async function invalidateAndEvict(
 	refs: Refs,
 	provider: Provider,
-	sessionKey: string | undefined,
 ): Promise<void> {
 	// Catch individually so a hint invalidation failure never skips eviction.
 	await refs.invalidateProxyHint?.().catch(() => {});
-	if (sessionKey) {
-		await evictWarmBrowser(provider, sessionKey).catch(() => {});
-	}
 }
 
 async function closeContextAndBrowser(refs: Refs): Promise<void> {
@@ -187,7 +182,6 @@ async function runRetryCycle(
 	cycle: number,
 	plog: ReturnType<typeof createProviderLogger>,
 	executor: AttemptExecutor,
-	sessionKey?: string,
 	timeoutMs?: number,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
 	let nextPayload = currentPayload;
@@ -217,26 +211,6 @@ async function runRetryCycle(
 
 			accumulatedResults.push(...result);
 
-			// Store the healthy browser in the warm pool so the next job for this
-			// provider can reuse it without a full browser launch. Null refs so the
-			// finally block's closeContextAndBrowser becomes a no-op.
-			if (sessionKey && refs.browser && refs.context && refs.page) {
-				await storeWarmBrowser(provider, sessionKey, {
-					browser: refs.browser,
-					context: refs.context,
-					page: refs.page,
-					proxy: refs.proxy,
-					cleanup: refs.cleanup ?? null,
-					invalidateProxyHint: refs.invalidateProxyHint ?? null,
-					storedAt: Date.now(),
-				}).catch(() => {}); // storage failure → finally closes normally
-				refs.browser = null;
-				refs.context = null;
-				refs.page = null;
-				refs.cleanup = null;
-				refs.invalidateProxyHint = null;
-			}
-
 			return { done: true };
 		} catch (err) {
 			if (err instanceof IPRefreshNeededError) {
@@ -252,7 +226,7 @@ async function runRetryCycle(
 					plog.warn(
 						`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 					);
-					await invalidateAndEvict(refs, provider, sessionKey);
+					await invalidateAndEvict(refs, provider);
 					await sleep(BOT_DETECTION_COOLDOWN);
 					break;
 				}
@@ -261,7 +235,7 @@ async function runRetryCycle(
 					plog.warn(
 						`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
 					);
-					await invalidateAndEvict(refs, provider, sessionKey);
+					await invalidateAndEvict(refs, provider);
 					break;
 				}
 
@@ -269,7 +243,7 @@ async function runRetryCycle(
 					plog.warn(
 						`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 					);
-					await invalidateAndEvict(refs, provider, sessionKey);
+					await invalidateAndEvict(refs, provider);
 					break;
 				}
 
@@ -290,7 +264,7 @@ async function runRetryCycle(
 				plog.warn(
 					`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 				);
-				await invalidateAndEvict(refs, provider, sessionKey);
+				await invalidateAndEvict(refs, provider);
 				await sleep(BOT_DETECTION_COOLDOWN);
 				break;
 			}
@@ -299,7 +273,7 @@ async function runRetryCycle(
 				plog.warn(
 					`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
 				);
-				await invalidateAndEvict(refs, provider, sessionKey);
+				await invalidateAndEvict(refs, provider);
 				break;
 			}
 
@@ -307,7 +281,7 @@ async function runRetryCycle(
 				plog.warn(
 					`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
 				);
-				await invalidateAndEvict(refs, provider, sessionKey);
+				await invalidateAndEvict(refs, provider);
 				break;
 			}
 
@@ -341,7 +315,6 @@ export async function runWithRetryCycles(
 	provider: Provider,
 	options?: {
 		executor?: AttemptExecutor;
-		sessionKey?: string;
 	},
 ): Promise<AskPromptResult[]> {
 	const plog = createProviderLogger(provider);
@@ -370,18 +343,17 @@ export async function runWithRetryCycles(
 			await sleep(backoff);
 		}
 
-		const outcome = await runRetryCycle(
-			label,
-			provider,
-			agentFactory,
-			accumulatedResults,
-			currentPayload,
-			cycle,
-			plog,
-			executor,
-			options?.sessionKey,
-			timeoutMs,
-		);
+			const outcome = await runRetryCycle(
+				label,
+				provider,
+				agentFactory,
+				accumulatedResults,
+				currentPayload,
+				cycle,
+				plog,
+				executor,
+				timeoutMs,
+			);
 
 		if (outcome.done) {
 			return accumulatedResults;

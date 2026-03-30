@@ -97,6 +97,27 @@ async function insertPromptOnce(page: Page, prompt: string): Promise<void> {
 	await pastePrompt(page, prompt);
 }
 
+async function waitForPromptValue(
+	page: Page,
+	input: Locator,
+	expectedValue: string,
+	timeoutMs: number,
+): Promise<string> {
+	const deadline = Date.now() + timeoutMs;
+	let lastValue = await input.readInputValue().catch(() => "");
+
+	while (Date.now() < deadline) {
+		if (normalizePromptValue(lastValue) === expectedValue) {
+			return lastValue;
+		}
+
+		await page.waitForTimeout(randomBetween(80, 140));
+		lastValue = await input.readInputValue().catch(() => "");
+	}
+
+	return lastValue;
+}
+
 export async function insertPromptIntoEditor(
 	page: Page,
 	input: Locator,
@@ -109,9 +130,12 @@ export async function insertPromptIntoEditor(
 	for (let attempt = 1; attempt <= 2; attempt++) {
 		await prepareEditorForPrompt(page, input, provider);
 		await insertPromptOnce(page, prompt);
-		await page.waitForTimeout(randomBetween(80, 160));
-
-		const rawValue = await input.readInputValue().catch(() => "");
+		const rawValue = await waitForPromptValue(
+			page,
+			input,
+			expectedValue,
+			attempt === 1 ? 1_800 : 2_500,
+		);
 		if (normalizePromptValue(rawValue) === expectedValue) {
 			return { rawValue, strategy };
 		}

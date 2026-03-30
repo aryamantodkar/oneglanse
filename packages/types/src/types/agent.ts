@@ -34,9 +34,34 @@ export interface AskPromptResult {
 	sources: Source[];
 }
 
-export const PROVIDER_LIST = ["chatgpt", "perplexity", "gemini"] as const;
+export const PROVIDER_LIST = [
+	"chatgpt",
+	"perplexity",
+	"gemini",
+	"claude",
+	"ai-overview",
+] as const;
 
 export type Provider = (typeof PROVIDER_LIST)[number];
+
+export const AUTH_PROVIDER_LIST = [
+	"chatgpt",
+	"perplexity",
+	"google",
+	"claude",
+] as const;
+
+export type AuthProvider = (typeof AUTH_PROVIDER_LIST)[number];
+
+export interface ProviderAuthStatus {
+	provider: AuthProvider;
+	connected: boolean;
+	connecting: boolean;
+	synced: boolean;
+	lastUpdatedAt: string | null;
+	syncedAt: string | null;
+	error: string | null;
+}
 
 export type AgentResult = {
 	status: "fulfilled" | "rejected";

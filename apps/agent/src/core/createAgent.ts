@@ -7,10 +7,7 @@ import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
 import { env } from "../env.js";
-import {
-	type LaunchContextOptions,
-	launchContext,
-} from "../lib/browser/launch.js";
+import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
@@ -20,7 +17,6 @@ const HOOK_TIMEOUT_MS = env.PROVIDER_HOOK_TIMEOUT_MS;
 
 export async function createAgent(
 	provider: Provider,
-	options?: LaunchContextOptions,
 ): Promise<{
 	browser: Browser;
 	context: BrowserContext;
@@ -31,10 +27,8 @@ export async function createAgent(
 }> {
 	const config = PROVIDER_CONFIGS[provider];
 
-	const { browser, context, proxy, cleanup, invalidateProxyHint } = await launchContext(
-		provider,
-		options,
-	);
+	const { browser, context, proxy, cleanup, invalidateProxyHint } =
+		await launchContext(provider);
 	let phase = "new_page";
 
 	try {

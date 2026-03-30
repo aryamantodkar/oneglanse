@@ -428,6 +428,284 @@ export async function runPageDomOp<T>(
 				return results;
 			}
 
+			function extractClaudeRawSources(sels: any) {
+				const results: Array<{
+					rawHref: string;
+					title: string;
+					citedText: string;
+					imgSrc: string | null;
+				}> = [];
+				const seen = new Set<string>();
+				const containers = Array.from(
+					document.querySelectorAll(sels.messageContent),
+				).filter(isVisible);
+
+				for (let containerIndex = containers.length - 1; containerIndex >= 0; containerIndex -= 1) {
+					const container = containers[containerIndex];
+					if (!(container instanceof HTMLElement)) continue;
+
+					for (const paragraph of Array.from(container.querySelectorAll("p"))) {
+						let buffer = "";
+						let lastCitedText = "";
+
+						for (const node of Array.from(paragraph.childNodes)) {
+							if (node.nodeType === Node.TEXT_NODE) {
+								buffer += node.textContent ?? "";
+								continue;
+							}
+
+							let anchor: HTMLAnchorElement | null = null;
+							if (
+								node.nodeType === Node.ELEMENT_NODE &&
+								(node as Element).matches(sels.anchor)
+							) {
+								anchor = node as HTMLAnchorElement;
+							} else if (node instanceof HTMLElement) {
+								anchor = node.querySelector(sels.anchor);
+								if (!anchor) {
+									buffer += node.innerText ?? "";
+									continue;
+								}
+							}
+
+							if (!anchor?.href) continue;
+
+							const citedText = (lastCitedText || buffer)
+								.replace(/\s+/g, " ")
+								.trim();
+							if (citedText.length < 30) continue;
+
+							lastCitedText = citedText;
+							buffer = "";
+
+							const key = `${anchor.href}|${citedText}`;
+							if (seen.has(key)) continue;
+							seen.add(key);
+
+							let title =
+								anchor.getAttribute("title")?.trim() ||
+								anchor.textContent?.trim() ||
+								anchor.href;
+
+							results.push({
+								rawHref: anchor.href,
+								title,
+								citedText,
+								imgSrc: null,
+							});
+						}
+					}
+				}
+
+				return results;
+			}
+
+			function extractAIOverviewRawSources(sels: any) {
+				const results: Array<{
+					rawHref: string;
+					title: string;
+					citedText: string;
+					imgSrc: string | null;
+				}> = [];
+
+				let aoContainer: HTMLElement | null =
+					(document.querySelector(sels.placeholder) as HTMLElement | null) ||
+					(document.querySelector(sels.mainCol) as HTMLElement | null);
+
+				if (!aoContainer) {
+					for (const heading of Array.from(document.querySelectorAll(sels.headings))) {
+						const element = heading as HTMLElement;
+						const inAiBlock =
+							element.closest("[data-container-id]") !== null;
+						const textMatch =
+							element.textContent?.toLowerCase().includes("ai overview");
+						if (!inAiBlock && !textMatch) continue;
+
+						let current: HTMLElement | null = element.parentElement;
+						for (let index = 0; index < 8; index += 1) {
+							if (!current) break;
+							if ((current.innerText || "").length > 500) {
+								aoContainer = current;
+								break;
+							}
+							current = current.parentElement;
+						}
+
+						if (aoContainer) break;
+					}
+				}
+
+				if (!aoContainer) {
+					for (const container of Array.from(document.querySelectorAll(sels.containers))) {
+						if (!(container instanceof HTMLElement)) continue;
+						const hasAiOverviewContainer =
+							container.querySelector(
+								'[data-container-id="model-response-placeholder"]',
+							) !== null;
+						const text = container.innerText || "";
+						if (
+							(hasAiOverviewContainer ||
+								text.toLowerCase().includes("ai overview")) &&
+							text.length > 500
+						) {
+							aoContainer = container;
+							break;
+						}
+					}
+				}
+
+				if (!aoContainer) {
+					return { rawSources: results, containerFound: false };
+				}
+
+				for (const link of Array.from(aoContainer.querySelectorAll(sels.anchor))) {
+					if (!(link instanceof HTMLAnchorElement)) continue;
+					const href = link.href;
+					if (
+						!href ||
+						href.includes("google.com/search") ||
+						href.includes("google.com/")
+					) {
+						continue;
+					}
+
+					const rawHref = href.split("#")[0];
+					if (!rawHref) continue;
+
+					let title =
+						link.getAttribute("aria-label")?.trim() ||
+						link.getAttribute("title")?.trim() ||
+						link.textContent?.trim() ||
+						rawHref;
+
+					let citedText = "";
+					let textNode: ChildNode | null = link.previousSibling;
+					while (textNode) {
+						const text =
+							textNode.nodeType === Node.TEXT_NODE
+								? textNode.textContent?.trim()
+								: textNode instanceof HTMLElement
+									? textNode.textContent?.trim()
+									: "";
+						if (text && text.length > 10) {
+							citedText = text.slice(0, 150);
+							break;
+						}
+						textNode = textNode.previousSibling;
+					}
+
+					if (!citedText) {
+						const paragraph = link.closest(sels.paragraph);
+						if (paragraph instanceof HTMLElement) {
+							citedText = paragraph.textContent?.trim().slice(0, 200) || "";
+						}
+					}
+
+					results.push({
+						rawHref,
+						title,
+						citedText: citedText || title,
+						imgSrc: null,
+					});
+				}
+
+				return { rawSources: results, containerFound: true };
+			}
+
+			function extractAIOverviewResponseHtml(sels: any) {
+				const sourceCardDatePattern =
+					/([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2} [A-Z][a-z]+ \d{4}|\d+\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\b\d{4}\b\s(?:—|·))/;
+
+				const placeholder =
+					document.querySelector(sels.placeholder) ||
+					document.querySelector(sels.placeholderWrapper) ||
+					document.querySelector(sels.mainCol)?.parentElement;
+				if (!placeholder) {
+					return {
+						success: false,
+						error: "model-response-placeholder not found",
+					};
+				}
+
+				const mainCol = placeholder.querySelector(sels.mainCol) || placeholder;
+				if (((mainCol.textContent || "").trim()).length < 50) {
+					return { success: false, error: "no-ai-overview: main-col empty" };
+				}
+
+				const clone = placeholder.cloneNode(true) as HTMLElement;
+
+				for (const tag of sels.noiseTags) {
+					for (const element of Array.from(clone.querySelectorAll(tag))) {
+						element.remove();
+					}
+				}
+
+				for (const anchor of Array.from(clone.querySelectorAll(sels.aiOverviewChip))) {
+					const span = document.createElement("span");
+					span.textContent = anchor.textContent;
+					anchor.parentNode?.replaceChild(span, anchor);
+				}
+
+				for (const selector of sels.sourceContainers) {
+					for (const element of Array.from(clone.querySelectorAll(selector))) {
+						element.remove();
+					}
+				}
+
+				const remainingSourceLinks = Array.from(
+					clone.querySelectorAll(sels.sourceLink),
+				);
+				const toRemove = new Set<Element>();
+				for (const link of remainingSourceLinks) {
+					let element: Element = link;
+					while (element.parentElement && element.parentElement !== clone) {
+						const parent = element.parentElement;
+						if (parent.querySelector(sels.heading)) break;
+						const hasNonSourceSibling = Array.from(parent.children).some(
+							(sibling) =>
+								sibling !== element &&
+								(sibling.textContent || "").length > 100 &&
+								!sibling.querySelector(sels.inlineSourceLink),
+						);
+						if (hasNonSourceSibling) break;
+						element = parent;
+					}
+					toRemove.add(element);
+				}
+				for (const element of toRemove) {
+					element.remove();
+				}
+
+				const extractedMainCol = clone.querySelector(sels.mainCol) || clone;
+				for (const element of Array.from(clone.querySelectorAll("*"))) {
+					if (
+						extractedMainCol &&
+						(element === extractedMainCol || extractedMainCol.contains(element))
+					) {
+						continue;
+					}
+
+					const text = element.textContent || "";
+					if (
+						text.length < 5000 &&
+						sourceCardDatePattern.test(text) &&
+						!element.querySelector(sels.heading)
+					) {
+						element.remove();
+					}
+				}
+
+				const html = (extractedMainCol || clone).outerHTML.trim();
+				if (!html) {
+					return {
+						success: false,
+						error: "AI Overview HTML was empty after extraction",
+					};
+				}
+
+				return { success: true, html };
+			}
+
 			switch (currentOperation) {
 				case "ping":
 					return true;
@@ -462,9 +740,15 @@ export async function runPageDomOp<T>(
 							return extractPerplexityRawSources(currentParams?.selectors);
 						case "gemini":
 							return extractGeminiRawSources(currentParams?.selectors);
+						case "claude":
+							return extractClaudeRawSources(currentParams?.selectors);
+						case "ai-overview":
+							return extractAIOverviewRawSources(currentParams?.selectors);
 						default:
 							return [];
 					}
+				case "ai-overview-response-html":
+					return extractAIOverviewResponseHtml(currentParams?.selectors);
 				default:
 					throw new Error(`unknown page operation: ${currentOperation}`);
 			}

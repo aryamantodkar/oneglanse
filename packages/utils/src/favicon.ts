@@ -19,6 +19,8 @@ export const getModelFavicon = (model: string): string => {
 	const fallbackDomains: Record<string, string> = {
 		chatgpt: "openai.com",
 		gemini: "gemini.google.com",
+		"ai-overview": "google.com",
+		claude: "claude.ai",
 		mistral: "mistral.ai",
 		meta: "about.fb.com",
 		cohere: "cohere.com",

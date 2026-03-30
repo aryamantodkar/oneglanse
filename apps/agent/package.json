@@ -6,7 +6,8 @@
 	"description": "Local agent that runs Camoufox-backed Playwright sessions to execute LLM prompts",
 	"scripts": {
 		"dev": "node --loader ts-node/esm src/index.ts",
-		"start:worker": "node dist/worker.js",
+		"start:worker": "node dist/index.js",
+		"auth:login": "node dist/auth/cli.js",
 		"build": "tsc",
 		"typecheck": "tsc --noEmit"
 	},
