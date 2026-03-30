@@ -1,6 +1,10 @@
 import { firefox } from "playwright-core";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import type { Provider } from "@oneglanse/types";
+import {
+	type Provider,
+	resolveAppMode,
+	shouldUseProxyInMode,
+} from "@oneglanse/types";
 import {
 	ensureAuthDirectories,
 	getRuntimeProfileSeedPlan,
@@ -207,7 +211,7 @@ async function acquireThorDataProxyInner(): Promise<ProxyAllocation> {
 }
 
 async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
-	if (env.AGENT_RUNTIME_ENV !== "vps") {
+	if (!shouldUseProxyInMode(resolveAppMode(env.ONEGLANSE_APP_MODE))) {
 		return { proxy: null, release: () => {} };
 	}
 

@@ -4,6 +4,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
+import { canAccessScheduleInMode, type AppMode } from "@oneglanse/types";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -46,14 +47,14 @@ import { CreateWorkspaceDialog } from "./dialogs/create-workspace-dialog";
 import { JoinWorkspaceDialog } from "./dialogs/join-workspace-dialog";
 
 interface AppSidebarProps {
-	isSelfHosted: boolean;
+	appMode: AppMode;
 	workspace: Workspace | null;
 	userName: string;
 	userEmail: string;
 }
 
 export function AppSidebar({
-	isSelfHosted,
+	appMode,
 	workspace,
 	userName,
 	userEmail,
@@ -119,7 +120,7 @@ export function AppSidebar({
 		},
 	];
 
-	if (isSelfHosted) {
+	if (canAccessScheduleInMode(appMode)) {
 		generalItems.splice(3, 0, {
 			title: "Schedule",
 			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,

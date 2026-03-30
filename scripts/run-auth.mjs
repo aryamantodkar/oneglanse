@@ -20,6 +20,7 @@ async function main() {
 	await ensureEnvFiles();
 
 	const port = readArg("--port", process.env.PORT ?? "3000");
+	const localAppUrl = `http://127.0.0.1:${port}`;
 	const uploadUrl = readArg("--upload-url", process.env.AGENT_AUTH_UPLOAD_URL);
 	const uploadToken = readArg(
 		"--upload-token",
@@ -31,7 +32,7 @@ async function main() {
 		);
 	}
 
-	const authUrl = `http://127.0.0.1:${port}/provider-connections`;
+	const authUrl = `${localAppUrl}/provider-connections`;
 
 	const child = spawnCommand(
 		"pnpm",
@@ -48,7 +49,11 @@ async function main() {
 		{
 			env: {
 				...process.env,
-				AGENT_RUNTIME_ENV: "local",
+				ONEGLANSE_APP_MODE: "local",
+				APP_URL: localAppUrl,
+				API_BASE_URL: localAppUrl,
+				BETTER_AUTH_URL: localAppUrl,
+				NEXT_PUBLIC_API_URL: localAppUrl,
 				...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
 				...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
 			},

@@ -2,6 +2,7 @@ import "../../styles/globals.css";
 import { auth } from "@/lib/auth/auth";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { TRPCReactProvider } from "@/trpc/react";
+import { resolveAppMode } from "@oneglanse/types";
 import { SidebarProvider } from "@oneglanse/ui";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
@@ -25,7 +26,7 @@ export default async function RootLayout({
 }: {
 	children: React.ReactNode;
 }) {
-	const isSelfHosted = process.env.NEXT_PUBLIC_SELF_HOSTED === "true";
+	const appMode = resolveAppMode(process.env.ONEGLANSE_APP_MODE);
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});
@@ -49,7 +50,7 @@ export default async function RootLayout({
 			<TRPCReactProvider>
 				<SidebarProvider defaultOpen={defaultOpen}>
 					<LayoutContent
-						isSelfHosted={isSelfHosted}
+						appMode={appMode}
 						workspace={workspace}
 						userName={session.user.name}
 						userEmail={session.user.email}

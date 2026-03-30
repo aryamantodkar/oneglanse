@@ -18,7 +18,7 @@ services:
     stop_grace_period: 16m
     shm_size: "2gb"
     environment:
-      AGENT_RUNTIME_ENV: vps
+      ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
       AGENT_API_HOST: 0.0.0.0
       AGENT_API_PORT: 3333
@@ -171,7 +171,7 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       PORT: "3000"
-      AGENT_RUNTIME_ENV: vps
+      ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
       CLICKHOUSE_URL: http://clickhouse:8123
@@ -184,7 +184,6 @@ services:
       INTERNAL_CRON_SECRET: ${INTERNAL_CRON_SECRET:-oneglanse-cron-secret}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      NEXT_PUBLIC_SELF_HOSTED: "true"
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     volumes:
       - /opt/oneglanse/storage:/storage:ro

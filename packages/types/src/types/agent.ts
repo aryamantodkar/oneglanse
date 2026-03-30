@@ -44,6 +44,30 @@ export const PROVIDER_LIST = [
 
 export type Provider = (typeof PROVIDER_LIST)[number];
 
+export const APP_MODE_LIST = ["cloud", "self-hosted", "local"] as const;
+
+export type AppMode = (typeof APP_MODE_LIST)[number];
+
+export function resolveAppMode(rawMode?: string | null): AppMode {
+	if (rawMode === "self-hosted" || rawMode === "local") {
+		return rawMode;
+	}
+
+	return "cloud";
+}
+
+export function canAccessScheduleInMode(appMode: AppMode): boolean {
+	return appMode !== "cloud";
+}
+
+export function shouldUseProxyInMode(appMode: AppMode): boolean {
+	return appMode !== "local";
+}
+
+export function isInteractiveAuthAllowedInMode(appMode: AppMode): boolean {
+	return appMode === "local";
+}
+
 export const AUTH_PROVIDER_LIST = [
 	"chatgpt",
 	"perplexity",
