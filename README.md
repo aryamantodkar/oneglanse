@@ -1,376 +1,209 @@
-# OneGlanse Monorepo
+# OneGlanse
 
-OneGlanse tracks how AI providers mention your brand by running scheduled prompts across LLMs, storing responses, and analyzing visibility/sentiment/position metrics.
+OneGlanse tracks how your brand appears across real AI chat interfaces, stores
+responses and citations, and turns them into visibility and source metrics.
 
-This repository is a `pnpm` + Turborepo monorepo with:
-- Product app (`apps/web`)
-- Browser automation worker (`apps/agent`)
-- Landing site (`apps/landing`)
-- Docs site (`apps/docs`)
-- Shared workspace packages under `packages/*`
+This monorepo contains:
 
-## Repository Layout
+- `apps/web` - the main product app
+- `apps/agent` - the Camoufox-based worker
+- `apps/landing` - the marketing site
+- `apps/docs` - the documentation site
 
-| Path | Role |
-| --- | --- |
-| `apps/web` | Main authenticated product app (Next.js + tRPC) |
-| `apps/agent` | BullMQ + Playwright worker that executes provider jobs |
-| `apps/landing` | Public marketing website |
-| `apps/docs` | Public technical documentation (Nextra) |
-| `packages/db` | Database schema/clients (Postgres + ClickHouse) |
-| `packages/services` | Business/service layer used by apps |
-| `packages/types` | Shared TypeScript domain types |
-| `packages/ui` | Shared React UI component library |
-| `packages/utils` | Shared utility helpers |
-| `packages/errors` | Shared error classes + error helpers |
-
-## Tech Stack
-
-- Monorepo: Turborepo + pnpm workspaces
-- Web framework: Next.js 15 (App Router)
-- API: tRPC
-- Auth: Better Auth
-- Queue: BullMQ + Redis
-- Browser automation: Camoufox + Playwright
-- Databases: PostgreSQL + ClickHouse
-- ORM: Drizzle ORM
-- Styling: Tailwind CSS + shared `@oneglanse/ui`
-- Validation: Zod
-
-## Prerequisites
+## Requirements
 
 - Node.js 20+
 - pnpm 10+
-- Docker + Docker Compose (recommended for infra)
+- Docker + Docker Compose
 
-## Local Run
+## Quick Start
 
-This is the full local development flow. In local mode:
-
-- the worker does **not** use proxies
-- provider login happens on **this machine**
-- auth bundles are stored under `.oneglanse-storage/auth`
-- persistent runtime browser profiles are stored under `.oneglanse-storage/runtime`
-
-### 1. Install dependencies
+### Local
 
 ```bash
 pnpm install
+pnpm local
 ```
 
-### 2. Create environment files
+This:
+
+- creates `.env` and `apps/agent/.env` if missing
+- starts Postgres, ClickHouse, and Redis
+- runs database migrations
+- starts the web app and the agent locally
+- opens the app at [http://127.0.0.1:3000](http://127.0.0.1:3000)
+
+If provider auth is missing, the app routes you to `/connections`.
+
+### Local Auth Only
 
 ```bash
-cp .env.example .env
-cp apps/agent/.env.example apps/agent/.env
+pnpm auth
 ```
 
-Keep these defaults for local development:
+This starts only the shared provider-connections flow at
+[http://127.0.0.1:3000/provider-connections](http://127.0.0.1:3000/provider-connections).
 
-- `.env`
-  - `AGENT_RUNTIME_ENV=local`
-- `apps/agent/.env`
-  - `AGENT_RUNTIME_ENV=local`
-  - leave `AGENT_AUTH_UPLOAD_URL` and `AGENT_AUTH_UPLOAD_TOKEN` unset unless you are capturing auth for a VPS
+Use it when you want to connect providers without running the full local app
+flow.
 
-### 3. Start local infrastructure
+### Self-Host / VPS
 
 ```bash
-docker compose up -d db clickhouse redis
+pnpm install
+pnpm self-host
 ```
 
-### 4. Run database migrations
+This starts both self-hosted stacks:
+
+- the main app stack from `docker-compose.yml`
+- the always-on public stack from `docker-compose.public.yml`
+
+Default ports:
+
+- landing: `http://<host>:3000`
+- app: `http://<host>:3001`
+- docs: `http://<host>:3002`
+- auth upload API: `http://<host>:3333`
+
+Persistent VPS state is stored under `/opt/oneglanse/storage` and mounted into
+the containers as `/storage`.
+
+### App-Only Redeploys
+
+Routine product updates should use the default app stack:
 
 ```bash
-pnpm db:migrate
+docker compose up -d --build
 ```
 
-### 5. Start the app and the agent
-
-Run these in separate terminals:
+Or:
 
 ```bash
-pnpm dev:web
-pnpm dev:agent
+pnpm self-host:app
 ```
 
-Optional:
+Because `docker-compose.yml` is app-only, `docker compose down` no longer takes
+down landing or docs.
+
+### Public-Site Redeploys
+
+Only redeploy landing/docs when you actually change them:
 
 ```bash
-pnpm dev:landing
-pnpm dev:docs
+docker compose -f docker-compose.public.yml up -d --build
 ```
 
-### 6. Sign in to providers locally
+Or:
 
-You have two ways to reach the same shared connections module:
+```bash
+pnpm self-host:public
+```
 
-- full app mode: open the app normally and it will redirect to `/connections` if any provider auth is missing
-- isolated mode: open `http://localhost:3000/provider-connections`
+### Maintenance Page
 
-Then:
+The app port is now fronted by an always-on gateway in the public stack. If the
+web app is restarting or temporarily unavailable, that gateway serves a short
+"Be right back in a few seconds" page instead of a connection error.
 
-1. Click `Connect with ChatGPT`, `Connect with Perplexity`, `Connect with Google`, or `Connect with Claude`
-2. A local browser window opens for that provider
-3. Sign in
-4. After the session is captured and saved, the UI shows a checkmark for that provider group
+## Provider Auth
 
-Google is shared:
+Provider auth is one shared module used in two places:
 
-- one Google auth bundle covers both `gemini` and `ai-overview`
+- in-app at `/connections`
+- standalone at `/provider-connections`
 
-### 7. How local auth is reused
+Supported runtime providers:
 
-Local auth uses two layers of state:
+- ChatGPT
+- Perplexity
+- Gemini
+- Claude
+- AI Overview
 
-- portable auth bundles
-  - `.oneglanse-storage/auth/sessions/<authProvider>/<authProvider>-auth.json`
-- persistent runtime profiles
-  - `.oneglanse-storage/runtime/<provider>/profile`
+Auth groups:
+
+- ChatGPT
+- Perplexity
+- Google
+- Claude
+
+Google auth is shared by both Gemini and AI Overview.
+
+### Local auth flow
+
+1. Open the app or run `pnpm auth`
+2. Click a connect button
+3. A local Camoufox sign-in browser opens
+4. Sign in and close it when done
+5. The UI shows a checkmark when that provider auth is saved
+
+### VPS auth flow
+
+The VPS never opens an interactive login browser.
+
+Run this on your **local machine** instead:
+
+```bash
+pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
+```
+
+That flow captures auth locally, stores it locally, uploads it to the VPS, and
+invalidates the matching VPS runtime profiles so the next run reseeds cleanly.
+
+## Auth and Runtime State
+
+OneGlanse uses both:
+
+- one portable `storageState` bundle per auth group
+- one persistent Camoufox runtime profile per runtime provider
+
+The auth bundle is the portable source of truth. Runtime profiles are the
+machine-local execution state.
 
 Runtime behavior:
 
-- when a provider runtime profile does not exist, it is seeded from the saved auth bundle
-- when the auth bundle changes, that runtime profile is invalidated and reseeded on the next run
-- otherwise the provider reuses its persistent Camoufox profile directly
-
-This means:
-
-- `storageState` is the portable source of truth
-- persistent profile directories are the execution state on that machine
-
-## VPS Run
-
-This is the production/VPS flow. In VPS mode:
-
-- the worker **does** use proxies, if proxy env vars are set
-- the VPS never opens an interactive login browser
-- auth bundles and runtime profiles are persisted on the VPS host under a bind-mounted storage directory
-- the user captures auth locally and uploads it to the VPS
-
-### 1. Prepare persistent host storage on the VPS
-
-Create a host directory that will survive container restarts:
-
-```bash
-sudo mkdir -p /opt/oneglanse/storage
-sudo chown -R "$USER":"$USER" /opt/oneglanse/storage
-```
-
-### 2. Configure VPS environment
-
-Set these in your VPS environment:
-
-- `.env`
-  - `AGENT_STORAGE_HOST_PATH=/opt/oneglanse/storage`
-- `apps/agent/.env`
-  - `AGENT_RUNTIME_ENV=vps`
-  - `AGENT_AUTH_ROOT_DIR=/storage/auth`
-  - `AGENT_API_HOST=0.0.0.0`
-  - `AGENT_API_PORT=3333`
-  - `AGENT_AUTH_UPLOAD_TOKEN=<long-random-token>`
-  - proxy settings as needed:
-    - `PROXY_PROVIDER`
-    - `PROXY_SCHEME`
-    - `PROXY_HOST`
-    - `PROXY_PORT`
-    - `PROXY_USERNAME`
-    - `PROXY_PASSWORD`
-    - `THORDATA_PROXY_API_URL` when using ThorData
-
-Notes:
-
-- proxies are used only when `AGENT_RUNTIME_ENV=vps`
-- `docker-compose.yml` mounts `${AGENT_STORAGE_HOST_PATH}` into both containers as `/storage`
-- `agent-worker` gets write access
-- `web` gets read-only access for connection status visibility
-
-### 3. Start the VPS stack
-
-```bash
-docker compose up -d
-```
-
-That gives you:
-
-- `web`
-- `agent-worker`
-- `redis`
-- `db`
-- `clickhouse`
-
-### 4. Capture auth locally for the VPS
-
-Do this on your **local machine**, not on the VPS.
-
-In your local checkout:
-
-1. Copy env files if you have not already:
-
-```bash
-cp .env.example .env
-cp apps/agent/.env.example apps/agent/.env
-```
-
-2. Configure the local machine for auth capture:
-
-- `.env`
-  - `AGENT_RUNTIME_ENV=local`
-- `apps/agent/.env`
-  - `AGENT_RUNTIME_ENV=local`
-  - `AGENT_AUTH_UPLOAD_URL=https://<your-vps-host>:3333/auth/sessions`
-  - `AGENT_AUTH_UPLOAD_TOKEN=<same-token-as-vps>`
-
-3. Start the local app and local agent:
-
-```bash
-pnpm dev:web
-pnpm dev:agent
-```
-
-4. Open:
-
-```text
-http://localhost:3000/provider-connections
-```
-
-5. Connect each provider locally
-
-What happens on each successful connection:
-
-- the auth bundle is saved locally first
-- the bundle is gzip-compressed and uploaded to the VPS
-- the VPS writes it to `/storage/auth/sessions/...`
-- affected runtime profiles on the VPS are invalidated
-- the next VPS run reseeds from the uploaded bundle
-
-### 5. How auth is reused on the VPS
-
-VPS storage layout:
-
-- auth bundles
-  - `/storage/auth/sessions/<authProvider>/<authProvider>-auth.json`
-- auth status
-  - `/storage/auth/status/<authProvider>.json`
-- persistent runtime profiles
-  - `/storage/runtime/<provider>/profile`
-
-Runtime behavior on the VPS:
-
-- if `/storage/runtime/<provider>/profile` does not exist, the worker seeds it from the corresponding auth bundle
-- if the saved auth bundle hash changed, the worker rebuilds that runtime profile from the new bundle
-- otherwise it launches the existing persistent Camoufox profile directly
-
-Provider mapping:
-
-- `chatgpt` auth bundle -> `chatgpt` runtime profile
-- `perplexity` auth bundle -> `perplexity` runtime profile
-- `claude` auth bundle -> `claude` runtime profile
-- `google` auth bundle -> both:
-  - `gemini` runtime profile
-  - `ai-overview` runtime profile
-
-### 6. Important VPS rule
-
-Do **not** try to log in on the VPS.
-
-On the VPS:
-
-- `/connections` and `/provider-connections` are status/control screens only
-- interactive connect is disabled there by design
-- if auth is missing, use the same connections page on your local machine and upload the sessions to the VPS
-
-## Root Scripts
-
-| Command | Description |
-| --- | --- |
-| `pnpm build` | Build all workspaces through Turbo |
-| `pnpm dev` | Run all dev tasks through Turbo |
-| `pnpm dev:web` | Start only `@oneglanse/web` |
-| `pnpm dev:agent` | Start only `@oneglanse/agent` |
-| `pnpm dev:landing` | Start only `@oneglanse/landing` |
-| `pnpm dev:docs` | Start only `@oneglanse/docs` |
-| `pnpm typecheck` | Typecheck all workspaces |
-| `pnpm lint` | Run lint pipelines |
-| `pnpm clean` | Clear Turbo outputs and root `node_modules` |
-| `pnpm db:generate` | Generate Drizzle files via `@oneglanse/db` |
-| `pnpm db:migrate` | Run migrations via `@oneglanse/db` |
-| `pnpm db:push` | Push schema via `@oneglanse/db` |
-| `pnpm db:studio` | Open Drizzle Studio via `@oneglanse/db` |
+- if a runtime profile is missing, it is seeded from the auth bundle
+- if the auth bundle changes, the runtime profile is reseeded
+- otherwise the existing persistent profile is reused directly
 
 ## Environment Variables
 
-Primary variables used across services (see `.env.example`):
+Most variables already have good defaults. In most cases you only need to care
+about:
 
-- Database:
-  - `DATABASE_URL`
-  - `CLICKHOUSE_URL`
-  - `CLICKHOUSE_DB`
-  - `CLICKHOUSE_USER`
-  - `CLICKHOUSE_PASSWORD`
-- Auth and web:
+- `.env`
+  - `OPENAI_API_KEY`
+  - `BETTER_AUTH_SECRET`
   - `APP_URL`
   - `API_BASE_URL`
-  - `BETTER_AUTH_URL`
-  - `NEXT_PUBLIC_API_URL`
-  - `BETTER_AUTH_SECRET`
   - `GOOGLE_CLIENT_ID`
   - `GOOGLE_CLIENT_SECRET`
-- Queue/worker:
-  - `REDIS_HOST`
-  - `REDIS_PORT`
-  - `REDIS_PASSWORD`
-  - `REDIS_URL`
-  - `AGENT_WORKER_CONCURRENCY`
-  - `AGENT_RUNTIME_ENV`
-  - `AGENT_AUTH_ROOT_DIR`
-  - `AGENT_AUTH_UPLOAD_URL`
   - `AGENT_AUTH_UPLOAD_TOKEN`
-  - `AGENT_STORAGE_HOST_PATH`
-- Internal operations:
-  - `INTERNAL_CRON_SECRET`
-  - `OPENAI_API_KEY`
+  - `PROXY_*` / `THORDATA_PROXY_API_URL` for VPS proxying
+- `apps/agent/.env`
+  - `CAMOUFOX_HEADLESS_MODE`
+  - `CAMOUFOX_PYTHON_BIN`
   - `DEBUG_ENABLED`
-  - `PROXY_HOST`
-  - `PROXY_PORT`
-  - `PROXY_USERNAME`
-  - `PROXY_PASSWORD`
 
-Agent proxy notes:
+For VPS auth capture, prefer passing `--upload-url` and `--upload-token`
+directly to `pnpm auth`.
 
-- set `PROXY_HOST` + `PROXY_PORT`
-- add `PROXY_USERNAME` + `PROXY_PASSWORD` for authenticated providers
-- proxies are ignored in local mode and only applied when `AGENT_RUNTIME_ENV=vps`
+## Useful Commands
 
-## Runtime Data Flow
+- `pnpm local` - full local app + worker
+- `pnpm auth` - shared local auth flow only
+- `pnpm self-host` - start both the app and public VPS stacks
+- `pnpm self-host:app` - rebuild only the app stack
+- `pnpm self-host:public` - rebuild only the public stack
+- `pnpm self-host:pull` - pull both stacks before an update
+- `pnpm typecheck` - typecheck the monorepo
+- `pnpm build` - build the monorepo
 
-1. User configures prompts and workspace settings in `apps/web`.
-2. `apps/web` submits job groups via `@oneglanse/services` (`submitAgentJobGroup`).
-3. Jobs are pushed to provider queues in Redis/BullMQ.
-4. `apps/agent` workers consume jobs, run provider browser sessions, and store prompt responses.
-5. Analysis jobs process responses into structured metrics.
-6. `apps/web` reads analysis data and renders dashboard/prompts views.
+## Docs
 
-## Workspace Standards
+For detailed local setup, VPS deployment, env reference, and proxy guidance,
+open:
 
-- App-level business logic should call `@oneglanse/services`.
-- Cross-app contracts should live in `@oneglanse/types`.
-- Reusable presentational UI should live in `@oneglanse/ui`.
-- Generic helpers should live in `@oneglanse/utils`.
-- Shared error primitives should come from `@oneglanse/errors`.
-
-## Contributor Navigation
-
-Start here based on task type:
-
-- Product/API behavior: `apps/web` + `packages/services`
-- Provider automation / queue behavior: `apps/agent` + `packages/services/src/agent`
-- Data/schema work: `packages/db`
-- Shared contracts: `packages/types`
-- Shared components: `packages/ui`
-- Generic helpers: `packages/utils`
-
-## Current OSS Notes
-
-- Per-workspace READMEs are provided in every `apps/*` and `packages/*` directory.
-- Review each workspace README for exact scripts, env vars, and folder maps before making changes.
+- the local docs app with `pnpm dev:docs`, or
+- the self-hosted docs app at `http://<host>:3002`

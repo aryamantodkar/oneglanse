@@ -7,18 +7,33 @@ import * as authSchema from "@oneglanse/db";
 import { env } from "@/env";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
+const authSecret =
+	env.BETTER_AUTH_SECRET ??
+	(env.NEXT_PHASE === "phase-production-build"
+		? "build-placeholder"
+		: env.NODE_ENV === "production"
+			? undefined
+			: "o1Gk9Q2mR7xL4vP8sN6dF3hT5yC1uJ0wB4eK7aM2p");
+
+const authBaseUrl =
+	env.APP_URL ??
+	env.NEXT_PUBLIC_API_URL ??
+	(env.NODE_ENV === "production" ? undefined : "http://localhost:3000");
+
+const socialProviders =
+	env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+		? {
+				google: {
+					clientId: env.GOOGLE_CLIENT_ID,
+					clientSecret: env.GOOGLE_CLIENT_SECRET,
+				},
+			}
+		: {};
+
 export const auth = betterAuth({
-	secret:
-		env.BETTER_AUTH_SECRET ??
-		(env.NEXT_PHASE === "phase-production-build"
-			? "build-placeholder"
-			: undefined),
-	socialProviders: {
-		google: {
-			clientId: env.GOOGLE_CLIENT_ID as string,
-			clientSecret: env.GOOGLE_CLIENT_SECRET as string,
-		},
-	},
+	...(authBaseUrl ? { baseURL: authBaseUrl } : {}),
+	secret: authSecret,
+	socialProviders,
 	emailAndPassword: {
 		enabled: true,
 	},

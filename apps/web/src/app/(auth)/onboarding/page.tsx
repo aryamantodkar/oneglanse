@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import {
 	Button,
 	Card,
@@ -14,7 +15,7 @@ import {
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { getProviderDisplayName } from "@oneglanse/utils";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const SUGGESTED_PROMPTS = [
@@ -32,7 +33,7 @@ type ProviderState = "pending" | "running" | "completed" | "failed";
 
 export default function FirstWorkspaceOnboardingPage() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
 	const [promptInput, setPromptInput] = useState("");

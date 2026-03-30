@@ -1,3 +1,4 @@
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import {
 	Button,
 	ProviderModelSelect,
@@ -6,7 +7,7 @@ import {
 } from "@oneglanse/ui";
 import { getFaviconUrls } from "@oneglanse/utils";
 import { FilterX } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export function DashboardFilters({
 	brandName,
@@ -24,7 +25,7 @@ export function DashboardFilters({
 	setTimeFilter: (v: "all" | "7d" | "14d" | "30d") => void;
 }) {
 	const router = useRouter();
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const faviconUrls = getFaviconUrls(brandDomain);
 
 	const clearFilters = () => {

@@ -1,47 +1,17 @@
 ---
 title: Proxy Setup
-description: Configure HTTP, HTTPS, SOCKS4, or SOCKS5 proxies for the agent worker.
+description: Configure optional VPS proxying for the agent worker. Local mode runs direct by default.
 ---
 
 # Proxy Setup
 
-Proxy settings apply to `apps/agent`.
+Proxy settings are only relevant for the VPS runtime path.
 
-Use one of these formats.
+Local mode runs direct by default.
 
-## ThorData API Link
+## Supported Inputs
 
-For `PROXY_PROVIDER=thordata`, prefer the ThorData API URL instead of static
-proxy host/user/pass fields.
-
-```env
-PROXY_PROVIDER=thordata
-PROXY_SCHEME=http
-THORDATA_PROXY_API_URL=https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER_ID&sesstype=1&number=5&country=US
-```
-
-Runtime behavior:
-
-- The agent fetches the proxy list from the API URL on each launch.
-- It picks one random returned proxy.
-- It does not lease the same returned proxy to two workers concurrently.
-
-## `PROXY_URL`
-
-```env
-PROXY_URL=http://user:pass@proxy.example.com:8080
-```
-
-Supported schemes:
-
-- `http`
-- `https`
-- `socks4`
-- `socks5`
-
-Host and port are required.
-
-## Split fields
+Split proxy fields:
 
 ```env
 PROXY_SCHEME=http
@@ -51,21 +21,31 @@ PROXY_USERNAME=user
 PROXY_PASSWORD=pass
 ```
 
-Notes:
+## ThorData
 
-- `PROXY_SCHEME` is optional and defaults to `http`.
-- `PROXY_USERNAME` and `PROXY_PASSWORD` must be set together.
-- `PROXY_HOST` and `PROXY_PORT` must be set together.
-- Do not set `PROXY_URL` together with the split `PROXY_*` fields.
+ThorData can use the API discovery path:
 
-## Runtime behavior
+```env
+PROXY_PROVIDER=thordata
+PROXY_SCHEME=http
+THORDATA_PROXY_API_URL=https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER_ID&sesstype=1&number=5&country=US
+```
 
-- The agent creates a local forwarder and points Chromium at it.
-- Upstream proxy authentication is handled by the app, not by Chromium directly.
-- Logs redact credentials and only keep scheme, host, and port.
+Runtime behavior:
 
-## Operational Guidance
+- the worker fetches the proxy list at launch time
+- picks one returned proxy
+- avoids leasing the same returned proxy to multiple workers concurrently
 
-- Keep proxy credentials out of source control.
-- Track provider-specific failure rates.
-- Increase `AGENT_WORKER_CONCURRENCY` only after proxy stability is verified.
+## Important Rules
+
+- `PROXY_HOST` and `PROXY_PORT` must be set together
+- `PROXY_USERNAME` and `PROXY_PASSWORD` must be set together
+- `THORDATA_PROXY_API_URL` is only valid with `PROXY_PROVIDER=thordata`
+
+## Recommended Usage
+
+Only enable proxies on the VPS when needed.
+
+Most self-hosted users should start without proxying, validate that the stack is
+working, then add proxy settings if the provider runtime needs them.

@@ -1,23 +1,40 @@
 ---
 title: Introduction
-description: OneGlanse is an open-source platform for monitoring AI visibility with UI-level response collection.
+description: OneGlanse measures how your brand appears across real AI chat interfaces and lets you self-host the full stack.
 ---
 
 # Introduction
 
-OneGlanse helps teams measure how brands appear in real LLM answers.
+OneGlanse helps teams understand how brands appear in real LLM interfaces, not
+just API responses.
 
-Most teams test only LLM APIs. That misses a core problem: API output often differs from what users see in web chat interfaces. OneGlanse focuses on UI-level answer collection so ranking, sentiment, and source citations reflect buyer-facing reality.
+It runs prompts across supported providers, extracts responses and sources, and
+turns them into visibility, sentiment, and citation intelligence.
 
-## What OneGlanse Tracks
+## What It Tracks
 
-- Brand presence and ranking strength by provider
-- Recommendation quality and sentiment trends
-- Citation sources and domain concentration
-- Competitive co-mentions in the same answers
+- brand presence by provider
+- competitive co-mentions
+- recommendation quality and sentiment
+- citation sources and source concentration
 
-## Why This Matters
+## What Makes It Different
 
-AI visibility is now a distribution channel. If your brand is absent, misrepresented, or weakly cited, demand generation performance declines upstream.
+OneGlanse focuses on UI-level collection with real browser sessions. That gives
+you a closer view of what users actually see in products like ChatGPT, Gemini,
+Perplexity, Claude, and Google AI Overview.
 
-OneGlanse gives technical teams an auditable system for operating this channel with repeatable prompt runs and source-linked analysis.
+## Core Ideas
+
+- local-first auth capture
+- portable auth bundles for VPS sync
+- persistent Camoufox runtime profiles for stable repeated runs
+- split app and public Docker stacks for safer VPS redeploys
+- separate operational and analytical data stores
+
+## Start Here
+
+- [Getting Started](/getting-started) for local setup
+- [Self Hosting](/self-hosting) for the one-command self-hosted stack
+- [VPS Deployment](/vps-deployment) for the production deployment model
+- [Environment Variables](/environment-variables) for the minimal env surface

@@ -2,6 +2,7 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
 import {
 	Button,
@@ -39,7 +40,6 @@ import {
 	modelSelectors,
 } from "@oneglanse/utils";
 import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import {
@@ -55,7 +55,7 @@ type SortColumn =
 	| "position";
 
 export default function Prompts() {
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
 	const [initialPrompts, setInitialPrompts] = useState<UserPrompt[]>([]);

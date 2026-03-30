@@ -1,48 +1,113 @@
 ---
 title: Getting Started
-description: Run OneGlanse locally in minutes with Docker Compose and baseline environment variables.
+description: Start OneGlanse locally in one command, connect providers, and understand the default runtime behavior.
 ---
 
 # Getting Started
 
-## Prerequisites
+## Requirements
 
-- Docker and Docker Compose
 - Node.js 20+
 - pnpm 10+
+- Docker + Docker Compose
 
-## Clone and Configure
-
-```bash
-git clone https://github.com/aryamantodkar/oneglanse.git
-cd oneglanse
-cp .env.example .env
-```
-
-Set minimum required values in `.env`:
-
-- `DATABASE_URL`
-- `CLICKHOUSE_URL`
-- `REDIS_URL`
-- Authentication and encryption secrets
-
-## Start the Stack
+## Install
 
 ```bash
-docker compose up -d
 pnpm install
-pnpm build
 ```
 
-## Run Applications
+## Start the Full Local App
 
 ```bash
-pnpm dev:web
-pnpm dev:agent
-pnpm dev:docs
+pnpm local
 ```
 
-Open:
+`pnpm local` is the main local entrypoint. It:
 
-- Web dashboard: `http://localhost:3000`
-- Docs: `http://localhost:3002/docs`
+- creates `.env` and `apps/agent/.env` if they do not exist
+- starts PostgreSQL, ClickHouse, and Redis in Docker
+- runs the database migrations
+- starts the web app and the agent locally
+- opens the app at `http://127.0.0.1:3000`
+
+## Connect Providers
+
+If auth is missing, the app redirects to `/connections`.
+
+You can also start only the auth flow:
+
+```bash
+pnpm auth
+```
+
+That opens the shared provider-connections UI at
+`http://127.0.0.1:3000/provider-connections`.
+
+Connect flow:
+
+1. Click a provider button
+2. A local Camoufox sign-in browser opens
+3. Sign in
+4. Close the browser when finished
+5. The UI shows a checkmark when the auth session is saved
+
+## Self-Hosted Deploys
+
+For VPS use, `pnpm self-host` starts both:
+
+- the app stack
+- the public stack
+
+Routine product changes should then use the default app stack only:
+
+```bash
+docker compose up -d --build
+```
+
+That keeps landing and docs online during app redeploys.
+
+## Supported Providers
+
+Runtime providers:
+
+- ChatGPT
+- Perplexity
+- Gemini
+- Claude
+- AI Overview
+
+Auth groups:
+
+- ChatGPT
+- Perplexity
+- Google
+- Claude
+
+Google auth is shared by both Gemini and AI Overview.
+
+## Local Defaults
+
+Local mode is designed to work with minimal configuration.
+
+- proxies are not used
+- auth bundles are stored under `.oneglanse-storage/auth`
+- persistent runtime profiles are stored under `.oneglanse-storage/runtime`
+- runtime profiles are bootstrapped from saved auth bundles when needed
+
+## Most Common Local Variables
+
+Most users only need these in `.env`:
+
+- `OPENAI_API_KEY`
+- `BETTER_AUTH_SECRET`
+- `APP_URL`
+- `API_BASE_URL`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
+And these in `apps/agent/.env` only if needed:
+
+- `CAMOUFOX_HEADLESS_MODE`
+- `CAMOUFOX_PYTHON_BIN`
+- `DEBUG_ENABLED`

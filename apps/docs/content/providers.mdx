@@ -1,18 +1,69 @@
 ---
 title: Providers
-description: Configure model providers and understand collection constraints for each integration.
+description: Supported runtime providers, auth groups, and how provider auth is reused across the system.
 ---
 
 # Providers
 
-OneGlanse supports multi-provider prompt execution:
+## Runtime Providers
+
+OneGlanse currently runs prompts against:
 
 - ChatGPT
-- Gemini
 - Perplexity
+- Gemini
+- Claude
+- AI Overview
 
-## Provider Operations
+These are the providers the worker executes at runtime.
 
-- Validate each provider independently during setup
-- Track provider-specific latency and failure rates
-- Keep credentials scoped to least privilege
+## Auth Groups
+
+The auth model is intentionally grouped:
+
+- ChatGPT
+- Perplexity
+- Google
+- Claude
+
+This keeps auth storage portable and avoids duplicating browser state across
+providers that share the same login.
+
+## Google Group
+
+Google auth is shared by:
+
+- Gemini
+- AI Overview
+
+When you click `Connect with Google`, the login flow visits both:
+
+- `https://gemini.google.com/`
+- `https://www.google.com/`
+
+That allows one saved Google auth bundle to cover both domains.
+
+## Connect Flow
+
+The provider-connections module is shared between:
+
+- `/connections`
+- `/provider-connections`
+
+Each connect action:
+
+1. launches a local Camoufox sign-in browser
+2. waits for an authenticated session
+3. saves a compact auth bundle for that auth group
+4. shows a completed checkmark in the UI
+
+## Runtime Reuse
+
+At runtime, the worker:
+
+- loads the auth bundle for the auth group
+- seeds the runtime profile if needed
+- otherwise reuses the provider’s persistent runtime profile directly
+
+That keeps local and VPS execution consistent without replaying auth state on
+every launch.

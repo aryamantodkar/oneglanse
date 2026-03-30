@@ -1,125 +1,109 @@
 ---
 title: Environment Variables
-description: Verified environment variable reference from web, agent, services, db, and docker-compose runtime.
+description: Minimal environment reference for local use, self-hosting, auth sync, and optional proxy configuration.
 ---
 
 # Environment Variables
 
-This reference is extracted from the current codebase validation schemas and compose runtime.
+Most variables already have defaults. The repo is designed so local setup and
+self-hosting work with very little manual configuration.
 
-## Container Image Namespace (Compose)
+## `.env`
 
-- `GHCR_USERNAME`
-- `PNPM_VERSION` (default `10.16.0`)
-- `CAMOUFOX_PIP_SPEC` (default `cloverlabs-camoufox[geoip]`)
-- `CAMOUFOX_BROWSER_CHANNEL` (default `official/prerelease`)
+These are the variables most users will care about.
 
-`docker-compose.yml` uses inline image URLs like `ghcr.io/${GHCR_USERNAME}/oneglanse-web:latest`.
-
-## Required Runtime Variables
+### Core
 
 - `DATABASE_URL`
 - `CLICKHOUSE_URL`
-- `CLICKHOUSE_DB`
-- `CLICKHOUSE_USER`
-- `CLICKHOUSE_PASSWORD`
 - `REDIS_HOST`
 - `REDIS_PORT`
 - `REDIS_PASSWORD`
-- `BETTER_AUTH_URL`
-- `NEXT_PUBLIC_API_URL`
+
+These already have good local defaults in `.env.example`.
+
+### App
+
+- `BETTER_AUTH_SECRET`
 - `APP_URL`
 - `API_BASE_URL`
-- `BETTER_AUTH_SECRET`
-- `INTERNAL_CRON_SECRET`
+- `OPENAI_API_KEY`
 
-## Agent Runtime Controls
+### Optional login integrations
 
-- `AGENT_WORKER_CONCURRENCY` (default `1`)
-- `DEBUG_ENABLED`
-- `MIN_RESPONSE_CHARS`
-- Timeout and retry controls:
-  - `STEP_EXECUTION_TIMEOUT_MS`
-  - `PAGE_DEFAULT_TIMEOUT_MS`
-  - `PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS`
-  - `PROVIDER_HOOK_TIMEOUT_MS`
-  - `MAX_EXTRACTION_RETRIES`
-  - `EXTRACTION_RETRY_DELAY_MS`
-  - `MAX_EXTRACTION_RETRY_DELAY_MS`
-  - `AI_OVERVIEW_WAIT_TIMEOUT_MS`
-  - `SUBMIT_METHOD_TIMEOUT_MS`
-  - `MAX_PROMPT_RETRIES_PER_IP`
-  - `PROMPT_RETRY_DELAY_MS`
-  - `MAX_PROMPT_RETRY_DELAY_MS`
-  - `SUBMISSION_PHASE_TIMEOUT_MS`
-- Proxy:
-  - `PROXY_SCHEME`
-  - `PROXY_HOST`
-  - `PROXY_PORT`
-  - `PROXY_USERNAME` (optional)
-  - `PROXY_PASSWORD` (optional)
-  - `THORDATA_PROXY_API_URL` (ThorData only)
-- Camoufox browser runtime:
-  - `CAMOUFOX_PYTHON_BIN` (optional)
-  - `CAMOUFOX_HEADLESS_MODE`
-  - `CAMOUFOX_XVFB_DISPLAY`
-  - `CAMOUFOX_XVFB_SCREEN`
-  - `CAMOUFOX_HUMANIZE`
-  - `CAMOUFOX_HUMANIZE_MAX_TIME_S`
-  - `CAMOUFOX_GEOIP`
-  - `CAMOUFOX_GEOIP_DB`
-  - `CAMOUFOX_OS`
-  - `CAMOUFOX_LOCALE`
-  - `CAMOUFOX_FONTS`
-  - `CAMOUFOX_ADDONS`
-  - `CAMOUFOX_EXCLUDE_ADDONS`
-  - `CAMOUFOX_SCREEN`
-  - `CAMOUFOX_WINDOW`
-  - `CAMOUFOX_WEBGL_CONFIG`
-  - `CAMOUFOX_BROWSER`
-  - `CAMOUFOX_FF_VERSION`
-  - `CAMOUFOX_CONFIG_JSON`
-  - `CAMOUFOX_FINGERPRINT_JSON`
-  - `CAMOUFOX_FINGERPRINT_PRESET`
-  - `CAMOUFOX_FIREFOX_USER_PREFS_JSON`
-  - `CAMOUFOX_ENV_JSON`
-  - `CAMOUFOX_ARGS`
-  - `CAMOUFOX_EXECUTABLE_PATH`
-  - `CAMOUFOX_MAIN_WORLD_EVAL`
-  - `CAMOUFOX_ENABLE_CACHE`
-  - `CAMOUFOX_BLOCK_IMAGES`
-  - `CAMOUFOX_BLOCK_WEBRTC`
-  - `CAMOUFOX_BLOCK_WEBGL`
-  - `CAMOUFOX_DISABLE_COOP`
-  - `CAMOUFOX_CUSTOM_FONTS_ONLY`
-  - `CAMOUFOX_I_KNOW_WHAT_IM_DOING`
-  - `CAMOUFOX_DEBUG`
-  - `CAMOUFOX_EXTRA_LAUNCH_JSON`
-
-## Provider Variables
-
-- `OPENAI_API_KEY` (used by shared services)
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 
-## Production Example
+### VPS auth sync
 
-```env
-DATABASE_URL=postgresql://user:password@db:5432/mydb
-CLICKHOUSE_URL=http://clickhouse:8123
-CLICKHOUSE_DB=analytics
-CLICKHOUSE_USER=default
-CLICKHOUSE_PASSWORD=replace-me
+- `AGENT_AUTH_UPLOAD_TOKEN`
 
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=replace-me
+This is the token the VPS auth upload API expects.
 
-APP_URL=http://web:3000
-API_BASE_URL=http://web:3000
-BETTER_AUTH_URL=https://app.domain.com
-NEXT_PUBLIC_API_URL=https://app.domain.com
+### Optional VPS proxying
 
-BETTER_AUTH_SECRET=replace-me
-INTERNAL_CRON_SECRET=replace-me
+- `PROXY_PROVIDER`
+- `PROXY_SCHEME`
+- `PROXY_HOST`
+- `PROXY_PORT`
+- `PROXY_USERNAME`
+- `PROXY_PASSWORD`
+- `THORDATA_PROXY_API_URL`
+
+Proxy settings are only used on the VPS runtime path.
+
+## `apps/agent/.env`
+
+This file is intentionally small.
+
+Most users only need it for browser/runtime overrides:
+
+- `CAMOUFOX_HEADLESS_MODE`
+- `CAMOUFOX_PYTHON_BIN`
+- `DEBUG_ENABLED`
+
+## Local Auth Upload
+
+For local-to-VPS auth capture, prefer passing the upload destination directly
+to `pnpm auth`:
+
+```bash
+pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
 ```
+
+That is cleaner than editing env files just for a one-off auth sync.
+
+## Variables You Usually Do Not Need to Touch
+
+These are already handled by defaults or Docker wiring:
+
+- `AGENT_RUNTIME_ENV`
+- `AGENT_AUTH_ROOT_DIR`
+- `AGENT_API_HOST`
+- `AGENT_API_PORT`
+- Postgres/ClickHouse internal container paths
+- the VPS storage bind mount path inside containers (`/storage`)
+
+## Recommended Minimums
+
+### Local
+
+Edit only when needed:
+
+- `OPENAI_API_KEY`
+- `BETTER_AUTH_SECRET`
+
+### VPS
+
+Set these:
+
+- `OPENAI_API_KEY`
+- `BETTER_AUTH_SECRET`
+- `APP_URL`
+- `API_BASE_URL`
+- `AGENT_AUTH_UPLOAD_TOKEN`
+
+Optional:
+
+- Google OAuth values
+- proxy values

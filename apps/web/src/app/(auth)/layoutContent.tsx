@@ -2,10 +2,12 @@
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { useProviderConnections } from "@/lib/provider-connections/client";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
 import { SidebarTrigger } from "@oneglanse/ui";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { WorkspaceProvider } from "./workspace-context";
 
@@ -24,7 +26,7 @@ export default function LayoutContent({
 }) {
 	const pathname = usePathname();
 	const router = useRouter();
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
 	const capitalizedTitle =
 		pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
@@ -39,7 +41,7 @@ export default function LayoutContent({
 		{ workspaceId: workspaceIdFromUrl },
 		{ enabled: shouldFetchWorkspace },
 	);
-	const authProvidersQuery = api.agent.authProviders.useQuery();
+	const authProvidersQuery = useProviderConnections();
 
 	const resolvedWorkspace = workspaceQuery.data ?? workspace ?? null;
 	const isConnectionsPage = pathname?.startsWith("/connections");

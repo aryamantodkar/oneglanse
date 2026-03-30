@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useLayoutWorkspace } from "../workspace-context";
 import {
 	Button,
@@ -29,7 +30,6 @@ import {
 	Users,
 	X,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface WorkspaceMember {
@@ -43,7 +43,7 @@ interface WorkspaceMember {
 }
 
 export default function PeoplePage() {
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 	const utils = api.useUtils();
 	const layoutWorkspace = useLayoutWorkspace();

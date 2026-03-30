@@ -2,6 +2,7 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import type { GroupedSource, SourceGroupResult } from "@oneglanse/types";
 import {
 	ProviderModelSelect,
@@ -20,7 +21,6 @@ import {
 	joinCitedTexts,
 } from "@oneglanse/utils";
 import { AlertTriangle, SearchX } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
 
@@ -36,7 +36,7 @@ export default function SourcesPage(): React.JSX.Element {
 	const [selectedProvider, setSelectedProvider] =
 		useState<string>("All Models");
 
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 	const {
 		data: promptSources,

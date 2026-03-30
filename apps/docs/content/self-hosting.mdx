@@ -1,38 +1,131 @@
 ---
 title: Self Hosting
-description: Run the full stack in your own infrastructure with isolated networking and deterministic service dependencies.
+description: Run the full OneGlanse stack in your own infrastructure with one command and persistent VPS storage.
 ---
 
 # Self Hosting
 
-OneGlanse is built for private infrastructure and full data ownership.
+OneGlanse now runs as two Docker stacks:
 
-## Service Topology
+- the app stack in `docker-compose.yml`
+- the public stack in `docker-compose.public.yml`
 
-- `landing` (Next.js): public marketing site on `127.0.0.1:3000`
-- `web` (Next.js): app + API on `127.0.0.1:3001`
-- `docs` (Next.js): documentation on `127.0.0.1:3002`
-- `agent-worker`: async provider execution worker
-- `redis`: queue and coordination backend
-- `db` (Postgres): auth/workspace/transactional data
-- `clickhouse`: analytics and reporting data
-- `migrate`: one-shot schema migration job
+That separation keeps landing and docs online while you redeploy the main app.
 
-## Startup Dependencies
+## Start the Stack
 
-- `agent-worker` depends on healthy `redis`
-- `web` depends on healthy `db`, `redis`, `clickhouse`, plus successful `migrate`
-- `migrate` depends on healthy `db`
+```bash
+pnpm install
+pnpm self-host
+```
 
-## Networking Model
+That creates env files if missing, ensures the shared edge network exists, and
+starts both stacks.
 
-- Public ingress: Nginx only (`80/443`)
-- App containers are loopback-bound (`127.0.0.1`) and not internet-exposed
-- Data services are internal-only Docker networks
+## App Stack
 
-## Security Baseline
+- `web`
+- `agent-worker`
+- `redis`
+- `db`
+- `clickhouse`
+- `migrate`
 
-- Use strong unique values for `BETTER_AUTH_SECRET`, `INTERNAL_CRON_SECRET`, and `REDIS_PASSWORD`.
-- Restrict SSH and enforce key-based authentication.
-- Keep egress controls for agent proxy traffic where required.
-- Back up `db_data`, `clickhouse_data`, and `redis_data` volumes.
+This is the default stack, so raw `docker compose up -d --build` and
+`docker compose down` only affect these services.
+
+## Public Stack
+
+- `landing`
+- `docs`
+- `app-gateway`
+
+The app gateway stays online and serves a short maintenance page on port `3001`
+when the `web` container is unavailable.
+
+## Default Ports
+
+- `3000` - landing
+- `3001` - app gateway
+- `3002` - docs
+- `3333` - auth upload API
+
+## Common Deployment Commands
+
+Initial VPS setup:
+
+```bash
+pnpm self-host
+```
+
+Routine app-only update:
+
+```bash
+docker compose up -d --build
+```
+
+Or:
+
+```bash
+pnpm self-host:app
+```
+
+Public-only update:
+
+```bash
+docker compose -f docker-compose.public.yml up -d --build
+```
+
+Or:
+
+```bash
+pnpm self-host:public
+```
+
+## Persistent Storage
+
+The self-hosted stack persists auth and runtime state on the host at:
+
+```text
+/opt/oneglanse/storage
+```
+
+Containers see the same storage at:
+
+```text
+/storage
+```
+
+This includes:
+
+- auth bundles
+- auth status files
+- persistent runtime browser profiles
+
+## What You Usually Need to Configure
+
+In most deployments, only a few variables matter:
+
+- `OPENAI_API_KEY`
+- `BETTER_AUTH_SECRET`
+- `APP_URL`
+- `API_BASE_URL`
+- `AGENT_AUTH_UPLOAD_TOKEN`
+
+Optional:
+
+- Google OAuth values
+- proxy settings
+
+## Auth in Self-Hosted Mode
+
+Interactive provider login never runs on the VPS.
+
+Use the local auth flow:
+
+```bash
+pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
+```
+
+That pushes the auth bundle to the VPS and lets the runtime reseed from it on
+the next run.

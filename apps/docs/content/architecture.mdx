@@ -1,27 +1,102 @@
 ---
 title: Architecture
-description: Understand the system design for prompt collection, processing, and AI visibility analytics.
+description: Understand the current auth, runtime, storage, and queue model used by OneGlanse.
 ---
 
 # Architecture
 
-## Pipeline Overview
+## High-Level Flow
 
-1. Prompts are created in workspace context
-2. Queue jobs are scheduled per model provider
-3. Agent workers execute prompts through provider interfaces
-4. Responses and citations are extracted and normalized
-5. Analytics are computed and materialized for dashboard queries
+1. Users create prompts inside the app
+2. The web app submits provider jobs through shared services
+3. BullMQ queues those jobs in Redis
+4. The agent worker launches Camoufox-backed provider sessions
+5. Responses, citations, and sources are extracted
+6. Post-processing writes structured analytics for the dashboard
 
-## Design Principles
+## Main Services
 
-- Provider isolation in workers
-- Deterministic prompt run metadata
-- Source-linked analysis records
-- Separate operational and analytical storage
+- `apps/web` - product app and API
+- `apps/agent` - provider execution worker and auth upload API
+- `app-gateway` - stable front door for the product app during redeploys
+- `apps/landing` - marketing site in the public stack
+- `apps/docs` - documentation site in the public stack
+- `redis` - queue coordination
+- `db` (Postgres) - auth, workspace, and transactional state
+- `clickhouse` - analytics and reporting data
 
-## Data Separation
+## Deployment Split
 
-- Postgres: workspace, user, and scheduling state
-- ClickHouse: response/citation analytics and metrics
-- Redis: queue orchestration and transient job state
+The VPS runtime is intentionally split into two Docker projects:
+
+- `docker-compose.yml` for the app stack
+- `docker-compose.public.yml` for landing, docs, and the app gateway
+
+That means a normal `docker compose down` only affects the app stack. Landing
+and docs stay online because they live in a separate compose project.
+
+## Auth and Browser State
+
+OneGlanse intentionally keeps two browser state layers:
+
+- one portable `storageState` bundle per auth group
+- one persistent runtime Camoufox profile per runtime provider
+
+This gives two benefits:
+
+- auth can be moved from a local machine to a VPS
+- runtime sessions still keep machine-local browser continuity
+
+## Auth Groups
+
+- `chatgpt`
+- `perplexity`
+- `google`
+- `claude`
+
+Google auth is shared by both:
+
+- `gemini`
+- `ai-overview`
+
+## Runtime Providers
+
+- `chatgpt`
+- `perplexity`
+- `gemini`
+- `claude`
+- `ai-overview`
+
+## Runtime Bootstrap Rules
+
+- if a runtime profile is missing, seed it from the saved auth bundle
+- if the auth bundle changed, invalidate and reseed that runtime profile
+- otherwise reuse the persistent runtime profile directly
+
+That means:
+
+- auth bundles are the portable source of truth
+- runtime profiles are the machine-local execution state
+
+## Storage Layout
+
+### Local
+
+- `.oneglanse-storage/auth/...`
+- `.oneglanse-storage/runtime/...`
+
+### VPS
+
+- `/opt/oneglanse/storage/auth/...`
+- `/opt/oneglanse/storage/runtime/...`
+
+Inside containers, VPS storage is mounted at `/storage`.
+
+## Auth UX
+
+The provider-connections UI is shared:
+
+- `/connections` inside the app
+- `/provider-connections` for isolated auth-only use
+
+Interactive login always happens locally. The VPS never opens a sign-in browser.
