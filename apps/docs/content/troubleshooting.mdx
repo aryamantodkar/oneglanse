@@ -1,39 +1,86 @@
 ---
 title: Troubleshooting
-description: Diagnose common deployment and collection issues quickly.
+description: Diagnose common local, self-hosted, auth, and provider runtime issues.
 ---
 
 # Troubleshooting
 
-## Web Starts, But No Analytics
+## The app starts, but provider auth is missing
 
-Check:
+Expected behavior.
 
-- Agent process is running
-- Redis connectivity
-- ClickHouse write permissions
+Open:
 
-## Prompt Jobs Stuck
+- `/connections` inside the app, or
+- `pnpm auth` for the isolated auth screen
 
-Check:
+Then connect the missing provider groups locally.
 
-- Worker concurrency limits
-- Provider/session validity
-- Proxy pool health
+## The VPS says auth is missing
 
-## Missing Citations
+The VPS does not run interactive login.
 
-Check:
-
-- Extraction fallback configuration
-- Provider response format changes
-- Parsing errors in worker logs
-
-## Build Issues in Monorepo
+Use the local upload flow:
 
 ```bash
-pnpm install --no-frozen-lockfile
-pnpm --filter @oneglanse/docs build
+pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
 ```
 
-If TypeScript fails, ensure workspace packages are built and lockfile is current.
+## Prompt jobs are not being processed
+
+Check:
+
+- the agent worker is running
+- Redis is reachable
+- provider auth is valid
+- proxy settings are correct if you enabled VPS proxying
+
+## Provider runtime is reusing stale auth
+
+Expected runtime behavior is:
+
+- auth bundle changes invalidate the matching runtime profile
+- the next run reseeds from the new auth bundle
+
+If you suspect stale state, reconnect the provider again through the auth UI and
+rerun the job.
+
+## Local startup fails
+
+Run:
+
+```bash
+pnpm install
+pnpm local
+```
+
+If infrastructure ports are already taken, stop the conflicting services first.
+
+## The app shows a short maintenance page during deploys
+
+Expected behavior.
+
+Port `3001` is now served by the public `app-gateway`. If the `web` container
+is restarting, the gateway returns a short "Be right back in a few seconds"
+page until the app becomes reachable again.
+
+## Typecheck or build fails
+
+Run:
+
+```bash
+pnpm typecheck
+pnpm build
+```
+
+If the web package complains about stale generated Next route types, rerun the
+typecheck command again. The current script clears the stale `.next/types`
+directory before regenerating it.
+
+## Missing sources or citations
+
+Check:
+
+- the provider response format changed
+- the source button is not present for that provider response
+- worker logs for extraction warnings

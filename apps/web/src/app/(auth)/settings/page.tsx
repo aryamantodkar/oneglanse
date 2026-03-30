@@ -2,6 +2,7 @@
 
 import { authClient } from "@/lib/auth/auth-client";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 import {
@@ -29,12 +30,12 @@ import {
 	joinCitedTexts,
 } from "@oneglanse/utils";
 import { Download, Loader2, Settings } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useLayoutUserEmail } from "../workspace-context";
 
 export default function SettingsPage() {
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 	const router = useRouter();
 

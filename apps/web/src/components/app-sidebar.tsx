@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
 import {
@@ -39,8 +40,7 @@ import {
 	Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CreateWorkspaceDialog } from "./dialogs/create-workspace-dialog";
 import { JoinWorkspaceDialog } from "./dialogs/join-workspace-dialog";
@@ -64,7 +64,7 @@ export function AppSidebar({
 	const [showJoinWorkspaceDialog, setShowJoinWorkspaceDialog] = useState(false);
 	const router = useRouter();
 	const pathname = usePathname();
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 
 	const activeOrgId = workspace?.tenantId ?? null;
 

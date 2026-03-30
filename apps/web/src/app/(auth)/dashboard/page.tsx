@@ -1,6 +1,7 @@
 "use client";
 
 import { ExportMenu } from "@/components/export-menu";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AnalysisRecord } from "@oneglanse/types";
 import {
@@ -11,7 +12,7 @@ import {
 	TopSources,
 } from "@oneglanse/ui";
 import { AlertTriangle, Info } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
 	useFetchAnalysedPrompts,
@@ -33,7 +34,7 @@ import { useDashboardData } from "./_hooks/use-dashboard-data";
 
 export default function Dashboard() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
 	const {

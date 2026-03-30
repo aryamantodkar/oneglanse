@@ -1,6 +1,9 @@
 "use client";
 
-import { api } from "@/trpc/react";
+import {
+	useConnectProvider,
+	useProviderConnections,
+} from "@/lib/provider-connections/client";
 import { Button, toast } from "@oneglanse/ui";
 import { getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -10,17 +13,14 @@ export function ProviderConnectionsPanel(props: {
 	description?: string;
 }) {
 	const { title = "Provider Connections", description } = props;
-	const authProvidersQuery = api.agent.authProviders.useQuery(undefined, {
-		refetchInterval: 3_000,
-	});
-	const connectProviderMutation = api.agent.connectProvider.useMutation({
+	const authProvidersQuery = useProviderConnections();
+	const connectProviderMutation = useConnectProvider({
 		onSuccess: (result) => {
 			toast.success(
 				result.started
 					? "Connection flow started on this machine."
 					: "Connection flow is already running.",
 			);
-			void authProvidersQuery.refetch();
 		},
 		onError: (error) => {
 			toast.error(error.message);
@@ -40,6 +40,17 @@ export function ProviderConnectionsPanel(props: {
 					{description ??
 						"Each provider group uses a portable auth bundle plus a persistent Camoufox runtime profile. Start the local sign-in flow for any missing connection."}
 				</p>
+				{authProvidersQuery.isLoading ? (
+					<div className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+						<Loader2 className="h-4 w-4 animate-spin" />
+						Loading provider connections...
+					</div>
+				) : null}
+				{authProvidersQuery.error ? (
+					<p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+						{authProvidersQuery.error.message}
+					</p>
+				) : null}
 				{!authProvidersQuery.data?.interactiveConnectAllowed ? (
 					<p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
 						Interactive sign-in is disabled in this environment. Open this same
@@ -51,7 +62,7 @@ export function ProviderConnectionsPanel(props: {
 						const status = card.status;
 						const isPendingConnect =
 							connectProviderMutation.isPending &&
-							connectProviderMutation.variables?.provider === card.provider;
+							connectProviderMutation.variables === card.provider;
 						const isConnected = status.connected;
 						const isSynced = status.synced;
 						const primaryProvider = card.providers[0] ?? card.provider;
@@ -119,9 +130,7 @@ export function ProviderConnectionsPanel(props: {
 										<Button
 											variant="outline"
 											onClick={() =>
-												connectProviderMutation.mutate({
-													provider: card.provider,
-												})
+												connectProviderMutation.mutate(card.provider)
 											}
 											disabled={
 												status.connecting ||

@@ -12,11 +12,11 @@ export default function PublicProviderConnectionsPage() {
 				<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
 					Use this standalone page on your local machine to capture provider
 					sessions without running the full app flow. The same connection module
-					is used inside the app whenever required provider auth is missing.
+					is reused inside the app whenever required provider auth is missing.
 				</p>
 			</div>
 
-			<ProviderConnectionsPanel description="Capture each provider auth bundle locally, then let the runtime seed persistent Camoufox profiles from those saved sessions." />
+			<ProviderConnectionsPanel description="Capture each provider auth bundle locally, then let the runtime seed persistent Camoufox profiles from those saved sessions. This is the page opened by the `pnpm auth` command." />
 		</main>
 	);
 }

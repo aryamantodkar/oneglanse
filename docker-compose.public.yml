@@ -1,0 +1,74 @@
+name: oneglanse-public
+
+services:
+  app-gateway:
+    image: nginx:1.27-alpine
+    container_name: oneglanse-app-gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:80"
+    volumes:
+      - ./ops/gateway/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ops/gateway/maintenance.html:/usr/share/nginx/html/maintenance.html:ro
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  landing:
+    build:
+      context: .
+      dockerfile: ./apps/landing/Dockerfile
+      args:
+        PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
+    image: oneglanse-landing:local
+    container_name: oneglanse-landing
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    networks:
+      - edge
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  docs:
+    build:
+      context: .
+      dockerfile: ./apps/docs/Dockerfile
+      args:
+        PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
+    image: oneglanse-docs:local
+    container_name: oneglanse-docs
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3002"
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3002"
+    networks:
+      - edge
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+networks:
+  edge:
+    external: true
+    name: oneglanse-edge

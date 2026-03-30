@@ -1,9 +1,9 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
 import { Calendar, Check, Clock, Loader2, PlayCircle, Zap } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 // Helper to convert local hour to UTC hour
@@ -99,7 +99,7 @@ function getScheduleLabel(cron: string | null): string {
 }
 
 export default function SchedulePageClient() {
-	const searchParams = useSearchParams();
+	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
 
 	const [selected, setSelected] = useState<string | null>(null);
