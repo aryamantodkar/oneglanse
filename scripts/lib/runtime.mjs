@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { copyFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -23,9 +23,49 @@ async function ensureFile(targetFile, sourceFile) {
 	console.log(`Created ${path.relative(repoRoot, targetFile)} from ${path.relative(repoRoot, sourceFile)}.`);
 }
 
+function stripWrappingQuotes(value) {
+	if (
+		(value.startsWith('"') && value.endsWith('"')) ||
+		(value.startsWith("'") && value.endsWith("'"))
+	) {
+		return value.slice(1, -1);
+	}
+
+	return value;
+}
+
+function loadEnvFile(filePath) {
+	if (!existsSync(filePath)) {
+		return;
+	}
+
+	const raw = readFileSync(filePath, "utf8");
+	for (const line of raw.split(/\r?\n/)) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith("#")) {
+			continue;
+		}
+
+		const separatorIndex = trimmed.indexOf("=");
+		if (separatorIndex <= 0) {
+			continue;
+		}
+
+		const key = trimmed.slice(0, separatorIndex).trim();
+		if (!key || process.env[key] !== undefined) {
+			continue;
+		}
+
+		const value = stripWrappingQuotes(trimmed.slice(separatorIndex + 1).trim());
+		process.env[key] = value;
+	}
+}
+
 export async function ensureEnvFiles() {
 	await ensureFile(rootEnvFile, rootEnvExampleFile);
 	await ensureFile(agentEnvFile, agentEnvExampleFile);
+	loadEnvFile(rootEnvFile);
+	loadEnvFile(agentEnvFile);
 }
 
 export function spawnCommand(command, args, options = {}) {
@@ -35,6 +75,30 @@ export function spawnCommand(command, args, options = {}) {
 		env: process.env,
 		...options,
 	});
+}
+
+function encodeSegment(value) {
+	return encodeURIComponent(value);
+}
+
+export function buildLocalRuntimeEnv(localAppUrl) {
+	const postgresUser = process.env.POSTGRES_USER || "postgres";
+	const postgresPassword = process.env.POSTGRES_PASSWORD || "postgres";
+	const postgresDatabase = process.env.POSTGRES_DB || "oneglanse";
+	const redisPort = process.env.REDIS_PORT || "6379";
+
+	return {
+		...process.env,
+		ONEGLANSE_APP_MODE: "local",
+		APP_URL: localAppUrl,
+		API_BASE_URL: localAppUrl,
+		BETTER_AUTH_URL: localAppUrl,
+		NEXT_PUBLIC_API_URL: localAppUrl,
+		DATABASE_URL: `postgresql://${encodeSegment(postgresUser)}:${encodeSegment(postgresPassword)}@127.0.0.1:5432/${encodeSegment(postgresDatabase)}`,
+		CLICKHOUSE_URL: "http://127.0.0.1:8123",
+		REDIS_HOST: "127.0.0.1",
+		REDIS_PORT: redisPort,
+	};
 }
 
 export function runCommand(command, args, options = {}) {
