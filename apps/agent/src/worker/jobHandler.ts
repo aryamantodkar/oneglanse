@@ -12,7 +12,6 @@ import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
-import { getProviderSessionScope } from "../lib/browser/providerScope.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
 type ProviderStatus = "pending" | "running" | "completed" | "failed";
@@ -76,16 +75,6 @@ function buildProgressSeed(providers: Provider[], promptCount: number): string {
 			actualResponses: 0,
 		},
 	});
-}
-
-function buildProviderSessionKey(args: {
-	sessionScope: string;
-	userId: string;
-	workspaceId: string;
-}): string {
-	const { sessionScope, userId, workspaceId } = args;
-	// Keyed by provider session scope.
-	return `session:v4:${workspaceId}:${userId}:${sessionScope}`;
 }
 
 async function ensureProgressSeed(
@@ -195,23 +184,10 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 	};
 
 	const label = PROVIDER_CONFIGS[provider].label;
-	const profileScope = getProviderSessionScope(provider);
-	const sessionKey = buildProviderSessionKey({
-		sessionScope: profileScope,
-		userId: user_id,
-		workspaceId: workspace_id,
-	});
-
 	const providerResults = buildEmptyResults();
 
 	try {
-		const result = await agentHandler(
-			label,
-			() => createAgent(provider, { sessionKey, profileScope }),
-			payload,
-			provider,
-			{ sessionKey },
-		);
+		const result = await agentHandler(label, () => createAgent(provider), payload, provider);
 		providerResults[provider] = {
 			status: result.length > 0 ? "fulfilled" : "rejected",
 			data: result,

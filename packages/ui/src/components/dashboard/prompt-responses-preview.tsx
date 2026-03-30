@@ -1,6 +1,11 @@
 "use client";
 
-import { formatDate, formatMarkdown, getModelFavicon, modelSelectors } from "@oneglanse/utils";
+import {
+	formatDate,
+	formatMarkdown,
+	getModelFavicon,
+	getProviderDisplayName,
+} from "@oneglanse/utils";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { PositionMetricCell, SentimentMetricCell } from "../cell.js";
@@ -29,11 +34,7 @@ export type PromptResponsePreviewRow = {
 
 function getProviderName(row: PromptResponsePreviewRow): string {
   if (row.modelName) return row.modelName;
-  if (row.modelProvider === "chatgpt") return "ChatGPT";
-  if (row.modelProvider === "gemini") return "Gemini";
-  if (row.modelProvider === "perplexity") return "Perplexity";
-
-  return modelSelectors.find((provider) => provider.value === row.modelProvider)?.label ?? row.modelProvider;
+  return getProviderDisplayName(row.modelProvider);
 }
 
 export function PromptResponsesPreview({

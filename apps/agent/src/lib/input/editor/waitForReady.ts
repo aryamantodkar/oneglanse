@@ -11,8 +11,14 @@ import {
 
 // Check for bot/login wall every N polls instead of every poll to avoid overhead.
 const BOT_CHECK_EVERY_N_POLLS = 10; // ~2s intervals at 200ms per poll
-const EDITOR_READY_TIMEOUT_MS = 10_000;
-const PRIMARY_SELECTOR_GRACE_MS = 2_500;
+const DEFAULT_EDITOR_READY_TIMEOUT_MS = 18_000;
+const DEFAULT_PRIMARY_SELECTOR_GRACE_MS = 5_000;
+const EDITOR_READY_TIMEOUT_MS: Partial<Record<Provider, number>> = {
+	gemini: 20_000,
+};
+const PRIMARY_SELECTOR_GRACE_MS: Partial<Record<Provider, number>> = {
+	gemini: 8_000,
+};
 const STABLE_POLLS_REQUIRED = 2;
 const POLL_INTERVAL_MS = 200;
 
@@ -20,6 +26,7 @@ async function waitForInitialDomSettle(page: Page): Promise<void> {
 	await page
 		.waitForLoadState("domcontentloaded", { timeout: 4_000 })
 		.catch(() => {});
+	await page.waitForLoadState("networkidle", { timeout: 2_500 }).catch(() => {});
 	await page.waitForTimeout(150);
 }
 
@@ -76,12 +83,16 @@ export async function waitForEditorReady(
 
 	const start = Date.now();
 	const primarySelector = PROVIDER_EDITOR_SELECTORS[provider]?.[0];
+	const readyTimeoutMs =
+		EDITOR_READY_TIMEOUT_MS[provider] ?? DEFAULT_EDITOR_READY_TIMEOUT_MS;
+	const primaryGraceMs =
+		PRIMARY_SELECTOR_GRACE_MS[provider] ?? DEFAULT_PRIMARY_SELECTOR_GRACE_MS;
 	let polls = 0;
 
-	while (Date.now() - start < EDITOR_READY_TIMEOUT_MS) {
+	while (Date.now() - start < readyTimeoutMs) {
 		const elapsedMs = Date.now() - start;
 		const input =
-			primarySelector && elapsedMs < PRIMARY_SELECTOR_GRACE_MS
+			primarySelector && elapsedMs < primaryGraceMs
 				? await waitForStableEditorCandidate(page, () =>
 						findActiveEditorCandidateFromSelectors(page, [
 							primarySelector,

@@ -1,12 +1,16 @@
 import { firefox } from "playwright-core";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
+import {
+	ensureAuthDirectories,
+	getRuntimeProfileSeedPlan,
+	markRuntimeProfileSeeded,
+	prepareRuntimeProfileBootstrap,
+} from "@oneglanse/services";
 import { logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext } from "playwright";
 import { env } from "../../env.js";
 import {
-	inferCamoufoxOsFromLaunchOptions,
-	resolveCamoufoxContextOptions,
 	resolveCamoufoxLaunchOptions,
 	type CamoufoxProxyConfig,
 } from "./camoufox.js";
@@ -40,6 +44,9 @@ const QUARANTINE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const quarantinedProxies = new Map<string, number>(); // host:port → expiry
 
 type FirefoxLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
+type FirefoxPersistentLaunchOptions = NonNullable<
+	Parameters<typeof firefox.launchPersistentContext>[1]
+>;
 
 export function quarantineProxy(hostPort: string): void {
 	quarantinedProxies.set(hostPort, Date.now() + QUARANTINE_TTL_MS);
@@ -57,11 +64,6 @@ function isProxyQuarantined(hostPort: string): boolean {
 	}
 	return true;
 }
-
-export type LaunchContextOptions = {
-	sessionKey?: string;
-	profileScope?: string;
-};
 
 type ProxyAllocation = {
 	proxy: UpstreamProxyConfig | null;
@@ -205,6 +207,10 @@ async function acquireThorDataProxyInner(): Promise<ProxyAllocation> {
 }
 
 async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
+	if (env.AGENT_RUNTIME_ENV !== "vps") {
+		return { proxy: null, release: () => {} };
+	}
+
 	const proxyProvider = env.PROXY_PROVIDER?.trim().toLowerCase();
 	if (proxyProvider === "thordata" && env.THORDATA_PROXY_API_URL?.trim()) {
 		return acquireThorDataProxyInner();
@@ -256,10 +262,7 @@ function toCamoufoxProxyConfig(
 	};
 }
 
-export async function launchContext(
-	provider: Provider,
-	_options?: LaunchContextOptions,
-): Promise<{
+export async function launchContext(provider: Provider): Promise<{
 	browser: Browser;
 	context: BrowserContext;
 	proxy: string | null;
@@ -270,13 +273,11 @@ export async function launchContext(
 	let releaseProxyLease = () => {};
 	let invalidateProxyHint: () => Promise<void> = async () => {};
 	let displayHandle: DisplayHandle | null = null;
-	let rawBrowser: import("playwright-core").Browser | null = null;
 	let rawContext: import("playwright-core").BrowserContext | null = null;
 	let context: PlaywrightBrowserContextCompat | null = null;
 
 	const cleanup = async () => {
 		await context?.close().catch(() => null);
-		await rawBrowser?.close().catch(() => null);
 		releaseProxyLease();
 		await displayHandle?.cleanup().catch(() => null);
 	};
@@ -316,23 +317,31 @@ export async function launchContext(
 				? undefined
 				: (displayHandle?.display ?? detectDisplay() ?? undefined);
 
+		ensureAuthDirectories();
+		const runtimeSeedPlan = await getRuntimeProfileSeedPlan(provider);
+		if (runtimeSeedPlan.shouldBootstrap) {
+			prepareRuntimeProfileBootstrap(provider);
+		}
+
 		const camoufoxOptions = await resolveCamoufoxLaunchOptions({
 			display,
 			provider,
 			proxy: toCamoufoxProxyConfig(upstreamProxy),
 		});
-		const camoufoxContext = await resolveCamoufoxContextOptions({
-			provider,
-			proxy: toCamoufoxProxyConfig(upstreamProxy),
-			os: inferCamoufoxOsFromLaunchOptions(camoufoxOptions),
-		});
+		const persistentOptions: FirefoxPersistentLaunchOptions = {
+			...(camoufoxOptions as FirefoxLaunchOptions),
+			...(runtimeSeedPlan.shouldBootstrap && runtimeSeedPlan.authStatePath
+				? { storageState: runtimeSeedPlan.authStatePath }
+				: {}),
+		};
 
-		rawBrowser = await firefox.launch(camoufoxOptions as FirefoxLaunchOptions);
-		rawContext = await rawBrowser.newContext(
-			camoufoxContext.contextOptions as never,
+		rawContext = await firefox.launchPersistentContext(
+			runtimeSeedPlan.userDataDir,
+			persistentOptions,
 		);
-		if (camoufoxContext.initScript) {
-			await rawContext.addInitScript(camoufoxContext.initScript);
+
+		if (runtimeSeedPlan.shouldBootstrap && runtimeSeedPlan.authStateHash) {
+			await markRuntimeProfileSeeded(provider, runtimeSeedPlan.authStateHash);
 		}
 
 		context = new PlaywrightBrowserContextCompat(rawContext);

@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
 import { SidebarTrigger } from "@oneglanse/ui";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { WorkspaceProvider } from "./workspace-context";
 
@@ -23,6 +23,7 @@ export default function LayoutContent({
 	userEmail: string;
 }) {
 	const pathname = usePathname();
+	const router = useRouter();
 	const searchParams = useSearchParams();
 	const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
 	const capitalizedTitle =
@@ -38,12 +39,37 @@ export default function LayoutContent({
 		{ workspaceId: workspaceIdFromUrl },
 		{ enabled: shouldFetchWorkspace },
 	);
+	const authProvidersQuery = api.agent.authProviders.useQuery();
 
 	const resolvedWorkspace = workspaceQuery.data ?? workspace ?? null;
+	const isConnectionsPage = pathname?.startsWith("/connections");
+	const shouldBypassConnectionGate =
+		!resolvedWorkspace ||
+		isOnboardingFlow ||
+		isConnectionsPage ||
+		pathname?.startsWith("/settings") ||
+		pathname?.startsWith("/workspace");
 
 	useEffect(() => {
 		shownJobsRef.current.clear();
 	}, [resolvedWorkspace?.id]);
+
+	useEffect(() => {
+		if (shouldBypassConnectionGate) {
+			return;
+		}
+
+		if (!authProvidersQuery.data) {
+			return;
+		}
+
+		const hasMissingConnection = authProvidersQuery.data.cards.some(
+			(card) => !card.status.connected,
+		);
+		if (hasMissingConnection) {
+			router.replace("/connections");
+		}
+	}, [authProvidersQuery.data, router, shouldBypassConnectionGate]);
 
 	if (!resolvedWorkspace) {
 		return (

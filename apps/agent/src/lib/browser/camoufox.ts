@@ -8,7 +8,6 @@ const execFileAsync = promisify(execFile);
 const PYTHON_CANDIDATES = ["python3.12", "python3.11", "python3.10", "python3"];
 const PYTHON_PROBE_TIMEOUT_MS = 5_000;
 const CAMOUFOX_OPTIONS_TIMEOUT_MS = 30_000;
-const CAMOUFOX_CONTEXT_TIMEOUT_MS = 30_000;
 
 const PYTHON_PROBE_SCRIPT = `
 import json
@@ -55,72 +54,6 @@ options = launch_options(**payload)
 print(json.dumps(options))
 `;
 
-const CAMOUFOX_CONTEXT_SCRIPT = `
-import json
-import os
-import sys
-import urllib.request
-from urllib.parse import urlparse
-
-try:
-    from camoufox.fingerprints import generate_context_fingerprint
-except Exception as exc:
-    print(f"CAMOUFOX_IMPORT_ERROR::{exc}", file=sys.stderr)
-    raise
-
-payload = json.loads(os.environ["CAMOUFOX_CONTEXT_PAYLOAD"])
-proxy = payload.get("proxy")
-webrtc_ip = payload.get("webrtc_ip")
-context_kwargs = payload.get("context_kwargs") or {}
-
-def _proxy_url_with_creds(proxy_cfg):
-    parsed = urlparse(proxy_cfg.get("server", ""))
-    user = proxy_cfg.get("username", "")
-    pwd = proxy_cfg.get("password", "")
-    if user and pwd:
-        return f"{parsed.scheme}://{user}:{pwd}@{parsed.netloc}"
-    return proxy_cfg.get("server", "")
-
-def _resolve_proxy_geo(proxy_cfg):
-    proxy_url = _proxy_url_with_creds(proxy_cfg)
-    handler = urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url})
-    opener = urllib.request.build_opener(handler)
-    try:
-        with opener.open("http://ip-api.com/json?fields=query,timezone", timeout=10) as resp:
-            data = json.loads(resp.read())
-            return {"ip": data.get("query") or None, "timezone": data.get("timezone") or None}
-    except Exception:
-        return {"ip": None, "timezone": None}
-
-def _snake_to_camel(value):
-    parts = value.split("_")
-    return parts[0] + "".join(part[:1].upper() + part[1:] for part in parts[1:])
-
-if proxy and (not webrtc_ip or "timezone_id" not in context_kwargs):
-    geo = _resolve_proxy_geo(proxy)
-    if not webrtc_ip:
-        webrtc_ip = geo["ip"]
-    if "timezone_id" not in context_kwargs and geo["timezone"]:
-        context_kwargs["timezone_id"] = geo["timezone"]
-
-fp = generate_context_fingerprint(
-    preset=payload.get("preset"),
-    os=payload.get("os"),
-    ff_version=payload.get("ff_version"),
-    webrtc_ip=webrtc_ip,
-)
-
-context_options = {
-    _snake_to_camel(key): value
-    for key, value in {**fp["context_options"], **context_kwargs}.items()
-}
-
-print(json.dumps({
-    "context_options": context_options,
-    "init_script": fp["init_script"],
-}))
-`;
-
 export type CamoufoxProxyConfig = {
 	server: string;
 	username?: string;
@@ -146,13 +79,6 @@ type CamoufoxLaunchOptions = {
 	[key: string]: unknown;
 };
 
-export type CamoufoxContextOptions = {
-	contextOptions: Record<string, unknown>;
-	initScript: string;
-};
-
-export type CamoufoxTargetOs = "windows" | "macos" | "linux";
-
 let cachedPythonBinary: string | null = null;
 
 function getHumanizeValue(): false | true | number {
@@ -161,8 +87,16 @@ function getHumanizeValue(): false | true | number {
 	return maxTime > 0 ? maxTime : true;
 }
 
-function getHeadlessValue(): boolean {
-	return env.CAMOUFOX_HEADLESS_MODE === "headless";
+function resolveHeadlessMode(
+	override?: "virtual" | "headful" | "headless",
+): "virtual" | "headful" | "headless" {
+	return override ?? env.CAMOUFOX_HEADLESS_MODE;
+}
+
+function getHeadlessValue(
+	override?: "virtual" | "headful" | "headless",
+): boolean {
+	return resolveHeadlessMode(override) === "headless";
 }
 
 async function canUsePythonBinary(candidate: string): Promise<boolean> {
@@ -472,39 +406,10 @@ function stringifyEnv(
 	return result;
 }
 
-export function inferCamoufoxOsFromLaunchOptions(
-	options: CamoufoxLaunchOptions,
-): CamoufoxTargetOs | undefined {
-	const configChunks = Object.entries(options.env ?? {})
-		.filter(([key]) => /^CAMOU_CONFIG_\d+$/.test(key))
-		.sort(
-			([left], [right]) =>
-				Number(left.replace("CAMOU_CONFIG_", "")) -
-				Number(right.replace("CAMOU_CONFIG_", "")),
-		)
-		.map(([, value]) => value);
-
-	if (configChunks.length === 0) return undefined;
-
-	try {
-		const config = JSON.parse(configChunks.join("")) as Record<string, unknown>;
-		const userAgent = config["navigator.userAgent"];
-		if (typeof userAgent !== "string") return undefined;
-		if (userAgent.includes("Windows")) return "windows";
-		if (userAgent.includes("Mac OS X") || userAgent.includes("Macintosh")) {
-			return "macos";
-		}
-		if (userAgent.includes("Linux")) return "linux";
-	} catch {
-		return undefined;
-	}
-
-	return undefined;
-}
-
 function buildLaunchPayload(args: {
 	display?: string;
 	proxy?: CamoufoxProxyConfig;
+	headlessMode?: "virtual" | "headful" | "headless";
 }): Record<string, unknown> {
 	const extraLaunch =
 		parseJsonRecord(
@@ -546,8 +451,9 @@ function buildLaunchPayload(args: {
 		...pickBrowserEnv(args.display),
 	};
 
-	payload.headless = getHeadlessValue();
-	if (args.display && env.CAMOUFOX_HEADLESS_MODE === "virtual") {
+	const headlessMode = resolveHeadlessMode(args.headlessMode);
+	payload.headless = getHeadlessValue(args.headlessMode);
+	if (args.display && headlessMode === "virtual") {
 		payload.virtual_display = args.display;
 	}
 	payload.humanize = getHumanizeValue();
@@ -656,6 +562,7 @@ export async function resolveCamoufoxLaunchOptions(args: {
 	display?: string;
 	provider: Provider;
 	proxy?: CamoufoxProxyConfig;
+	headlessMode?: "virtual" | "headful" | "headless";
 }): Promise<CamoufoxLaunchOptions> {
 	const python = await resolvePythonBinary(args.provider);
 	const payload = buildLaunchPayload(args);
@@ -722,66 +629,6 @@ export async function resolveCamoufoxLaunchOptions(args: {
 			message.includes("CAMOUFOX_IMPORT_ERROR::")
 				? `Camoufox is not installed for ${python}. ${installHint}`
 				: `Failed to resolve Camoufox launch options: ${message}`,
-		);
-	}
-}
-
-export async function resolveCamoufoxContextOptions(args: {
-	provider: Provider;
-	proxy?: CamoufoxProxyConfig;
-	os?: CamoufoxTargetOs;
-}): Promise<CamoufoxContextOptions> {
-	const python = await resolvePythonBinary(args.provider);
-	const ffVersion = parsePositiveInteger(
-		"CAMOUFOX_FF_VERSION",
-		env.CAMOUFOX_FF_VERSION,
-	);
-	const payload = {
-		proxy: args.proxy,
-		os: args.os,
-		ff_version: ffVersion,
-		context_kwargs: {},
-	};
-	const childEnv = {
-		...process.env,
-		CAMOUFOX_CONTEXT_PAYLOAD: JSON.stringify(payload),
-	};
-
-	try {
-		const { stdout } = await execFileAsync(
-			python,
-			["-c", CAMOUFOX_CONTEXT_SCRIPT],
-			{
-				encoding: "utf8",
-				env: childEnv,
-				timeout: CAMOUFOX_CONTEXT_TIMEOUT_MS,
-				maxBuffer: 512 * 1024,
-			},
-		);
-		const lines = stdout.trim().split("\n");
-		const jsonLine =
-			[...lines].reverse().find((line) => line.trimStart().startsWith("{")) ??
-			stdout.trim();
-		const parsed = JSON.parse(jsonLine) as {
-			context_options?: Record<string, unknown>;
-			init_script?: string;
-		};
-
-		return {
-			contextOptions: parsed.context_options ?? {},
-			initScript: parsed.init_script ?? "",
-		};
-	} catch (error) {
-		const stderr =
-			typeof (error as { stderr?: unknown })?.stderr === "string"
-				? (error as { stderr: string }).stderr.trim()
-				: "";
-		const message = stderr || toErrorMessage(error);
-		throw new ExternalServiceError(
-			args.provider,
-			message.includes("CAMOUFOX_IMPORT_ERROR::")
-				? `Camoufox context fingerprint generation is not available for ${python}`
-				: `Failed to resolve Camoufox context options: ${message}`,
-		);
+			);
 	}
 }

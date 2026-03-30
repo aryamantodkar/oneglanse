@@ -34,6 +34,12 @@ const AgentEnvSchema = z
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
+		AGENT_RUNTIME_ENV: z.enum(["local", "vps"]).default("local"),
+		AGENT_AUTH_ROOT_DIR: z.string().trim().optional(),
+		AGENT_AUTH_UPLOAD_URL: z.string().trim().url().optional(),
+		AGENT_AUTH_UPLOAD_TOKEN: z.string().trim().optional(),
+		AGENT_API_HOST: z.string().trim().default("0.0.0.0"),
+		AGENT_API_PORT: asNumber(3333).default(3333),
 		DEBUG_ENABLED: asBoolean(false).default(false),
 		MIN_RESPONSE_CHARS: asNumber(600).default(600),
 		STEP_EXECUTION_TIMEOUT_MS: asNumber(180_000).default(180_000),
@@ -128,6 +134,18 @@ const AgentEnvSchema = z
 		const usesThorDataApi =
 			values.PROXY_PROVIDER === "thordata" &&
 			Boolean(values.THORDATA_PROXY_API_URL);
+
+		const hasAuthUploadUrl = Boolean(values.AGENT_AUTH_UPLOAD_URL);
+		const hasAuthUploadToken = Boolean(values.AGENT_AUTH_UPLOAD_TOKEN);
+
+		if (hasAuthUploadUrl !== hasAuthUploadToken) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["AGENT_AUTH_UPLOAD_URL"],
+				message:
+					"AGENT_AUTH_UPLOAD_URL and AGENT_AUTH_UPLOAD_TOKEN must be set together.",
+			});
+		}
 
 		if (values.THORDATA_PROXY_API_URL && values.PROXY_PROVIDER !== "thordata") {
 			ctx.addIssue({

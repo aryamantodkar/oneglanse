@@ -27,12 +27,16 @@ const PROVIDER_COLORS: Record<string, string> = {
 	chatgpt: "\x1b[32m",
 	perplexity: "\x1b[36m",
 	gemini: "\x1b[33m",
+	claude: "\x1b[35m",
+	"ai-overview": "\x1b[34m",
 };
 
 const RAW_PROVIDER_LABELS: Record<string, string> = {
 	chatgpt: "CHATGPT",
 	perplexity: "PERPLEXITY",
 	gemini: "GEMINI",
+	claude: "CLAUDE",
+	"ai-overview": "AI OVERVIEW",
 };
 
 function centerLabel(label: string, width: number): string {
