@@ -24,6 +24,7 @@ type PersistedAuthStatus = {
 	lastUpdatedAt: ProviderAuthStatus["lastUpdatedAt"];
 	syncedAt: ProviderAuthStatus["syncedAt"];
 	error: ProviderAuthStatus["error"];
+	launcherPid?: number | null;
 };
 
 type StorageState = {
@@ -59,6 +60,7 @@ type RuntimeProfileSeedPlan = {
 };
 
 const DEFAULT_LOCAL_STORAGE_ROOT = ".oneglanse-storage";
+const authLaunchInFlight = new Set<AuthProvider>();
 
 function resolveMonorepoRoot(startDir = process.cwd()): string {
 	let current = path.resolve(startDir);
@@ -281,6 +283,19 @@ async function readPersistedAuthStatus(
 	}
 }
 
+function isProcessAlive(pid: number | null | undefined): boolean {
+	if (!pid || pid <= 0) {
+		return false;
+	}
+
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 async function readStorageStateFile(
 	filePath: string,
 ): Promise<StorageState | null> {
@@ -335,22 +350,51 @@ function clearRuntimeProfileDirectory(provider: Provider): void {
 }
 
 async function getSpawnEnv(): Promise<NodeJS.ProcessEnv> {
-	return {
+	const spawnEnv: NodeJS.ProcessEnv = {
 		...process.env,
 		ONEGLANSE_APP_MODE: getAppMode(),
 		AGENT_AUTH_ROOT_DIR: getAgentAuthRootDir(),
 	};
+
+	if (!spawnEnv.CAMOUFOX_HUMANIZE) {
+		spawnEnv.CAMOUFOX_HUMANIZE = "false";
+	}
+	// Auth capture is a manual headful flow. Prefer visual stability over the
+	// more aggressive runtime fingerprinting defaults that can cause visible
+	// text/layout churn on Google/Apple OAuth pages.
+	spawnEnv.CAMOUFOX_USE_FULL_OS_FONTS = "false";
+	delete spawnEnv.CAMOUFOX_WINDOW;
+
+	return spawnEnv;
 }
 
 async function resolveBuiltAuthCli(repoRoot: string): Promise<{
 	command: string;
 	args: string[];
+	cwd: string;
 }> {
+	const agentAppDir = path.join(repoRoot, "apps/agent");
+
+	if (getAppMode() === "local") {
+		return {
+			command: "pnpm",
+			args: [
+				"exec",
+				"node",
+				"--loader",
+				"ts-node/esm",
+				"src/auth/cli.ts",
+			],
+			cwd: agentAppDir,
+		};
+	}
+
 	const builtCliPath = path.join(repoRoot, "apps/agent/dist/auth/cli.js");
 	if (existsSync(builtCliPath)) {
 		return {
 			command: "node",
 			args: [builtCliPath],
+			cwd: repoRoot,
 		};
 	}
 
@@ -361,8 +405,9 @@ async function resolveBuiltAuthCli(repoRoot: string): Promise<{
 			"node",
 			"--loader",
 			"ts-node/esm",
-			"apps/agent/src/auth/cli.ts",
+			"src/auth/cli.ts",
 		],
+		cwd: agentAppDir,
 	};
 }
 
@@ -374,6 +419,7 @@ function buildPersistedStatus(
 		lastUpdatedAt: null,
 		syncedAt: null,
 		error: null,
+		launcherPid: null,
 		...status,
 	};
 }
@@ -459,9 +505,31 @@ export async function saveAuthSession(
 		lastUpdatedAt: now,
 		syncedAt: isRemoteSyncConfigured() ? null : now,
 		error: null,
+		launcherPid: null,
 	});
 
 	return compactState;
+}
+
+export async function resetProviderAuthData(
+	provider: AuthProvider,
+): Promise<void> {
+	ensureAuthDirectories();
+
+	rmSync(getAuthSessionFile(provider), { force: true });
+	rmSync(getAuthProfileDir(provider), { recursive: true, force: true });
+
+	for (const runtimeProvider of AUTH_PROVIDER_CONFIG[provider].providers) {
+		prepareRuntimeProfileBootstrap(runtimeProvider);
+	}
+
+	await writeProviderAuthStatus(provider, {
+		connecting: false,
+		lastUpdatedAt: new Date().toISOString(),
+		syncedAt: null,
+		error: null,
+		launcherPid: null,
+	});
 }
 
 export async function uploadAuthSession(
@@ -511,6 +579,7 @@ export async function uploadAuthSession(
 		lastUpdatedAt: new Date().toISOString(),
 		syncedAt: new Date().toISOString(),
 		error: null,
+		launcherPid: null,
 	});
 }
 
@@ -536,7 +605,9 @@ export async function readProviderAuthStatuses(): Promise<
 			return {
 				provider,
 				connected,
-				connecting: storedStatus?.connecting ?? false,
+				connecting:
+					Boolean(storedStatus?.connecting) &&
+					isProcessAlive(storedStatus?.launcherPid),
 				synced: connected && Boolean(syncedAt),
 				lastUpdatedAt: sessionUpdatedAt ?? storedStatus?.lastUpdatedAt ?? null,
 				syncedAt,
@@ -598,8 +669,43 @@ export function prepareRuntimeProfileBootstrap(provider: Provider): void {
 	deleteRuntimeProfileMetadata(provider);
 }
 
+async function waitForAuthLoginStartup(
+	child: ReturnType<typeof spawn>,
+	timeoutMs = 2_000,
+): Promise<Error | null> {
+	return new Promise((resolve) => {
+		let settled = false;
+		const timer = setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			resolve(null);
+		}, timeoutMs);
+
+		child.once("error", (error) => {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			resolve(error instanceof Error ? error : new Error(String(error)));
+		});
+
+		child.once("exit", (code, signal) => {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			resolve(
+				new Error(
+					`Provider auth launcher exited early with ${signal ? `signal ${signal}` : `code ${code ?? "unknown"}`}.`,
+				),
+			);
+		});
+	});
+}
+
 export async function spawnProviderAuthLogin(
 	provider: AuthProvider,
+	options?: {
+		resetExisting?: boolean;
+	},
 ): Promise<{ started: boolean }> {
 	if (!isInteractiveAuthLaunchAllowed()) {
 		throw new Error(
@@ -607,30 +713,75 @@ export async function spawnProviderAuthLogin(
 		);
 	}
 
-	const existing = await readPersistedAuthStatus(provider);
-	if (existing?.connecting) {
+	if (authLaunchInFlight.has(provider)) {
 		return { started: false };
 	}
 
-	ensureAuthDirectories();
-	await writeProviderAuthStatus(provider, {
-		connecting: true,
-		lastUpdatedAt: new Date().toISOString(),
-		syncedAt: existing?.syncedAt ?? null,
-		error: null,
-	});
+	authLaunchInFlight.add(provider);
 
-	const repoRoot = resolveMonorepoRoot();
-	const { command, args } = await resolveBuiltAuthCli(repoRoot);
-	const child = spawn(command, [...args, "--provider", provider], {
-		cwd: repoRoot,
-		env: await getSpawnEnv(),
-		detached: true,
-		stdio: "ignore",
-	});
+	try {
+		const existing = await readPersistedAuthStatus(provider);
+		if (existing?.connecting) {
+			if (isProcessAlive(existing.launcherPid)) {
+				return { started: false };
+			}
 
-	child.unref();
-	return { started: true };
+			await writeProviderAuthStatus(provider, {
+				...existing,
+				connecting: false,
+				launcherPid: null,
+			});
+		}
+
+		if (options?.resetExisting) {
+			await resetProviderAuthData(provider);
+		}
+
+		ensureAuthDirectories();
+		await writeProviderAuthStatus(provider, {
+			connecting: true,
+			lastUpdatedAt: new Date().toISOString(),
+			syncedAt: options?.resetExisting ? null : existing?.syncedAt ?? null,
+			error: null,
+			launcherPid: null,
+		});
+
+		const repoRoot = resolveMonorepoRoot();
+		const { command, args, cwd } = await resolveBuiltAuthCli(repoRoot);
+		const child = spawn(command, [...args, "--provider", provider], {
+			cwd,
+			env: await getSpawnEnv(),
+			detached: true,
+			stdio: "ignore",
+		});
+
+		await writeProviderAuthStatus(provider, {
+			connecting: true,
+			lastUpdatedAt: new Date().toISOString(),
+			syncedAt: options?.resetExisting ? null : existing?.syncedAt ?? null,
+			error: null,
+			launcherPid: child.pid ?? null,
+		});
+
+		const startupError = await waitForAuthLoginStartup(child);
+		if (startupError) {
+			const latestStatus = await readPersistedAuthStatus(provider);
+			const errorMessage = latestStatus?.error ?? startupError.message;
+			await writeProviderAuthStatus(provider, {
+				connecting: false,
+				lastUpdatedAt: new Date().toISOString(),
+				syncedAt: options?.resetExisting ? null : existing?.syncedAt ?? null,
+				error: errorMessage,
+				launcherPid: null,
+			});
+			throw new Error(errorMessage);
+		}
+
+		child.unref();
+		return { started: true };
+	} finally {
+		authLaunchInFlight.delete(provider);
+	}
 }
 
 export function getAuthProviderCards(): Array<{

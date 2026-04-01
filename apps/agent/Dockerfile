@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   fontconfig \
   xvfb \
-  fonts-noto-core fonts-noto-color-emoji \
+  fonts-noto-core fonts-noto-extra fonts-noto-cjk fonts-noto-color-emoji \
   && fc-cache -f \
   && test -n "${CAMOUFOX_PIP_SPEC}" \
   && test -n "${CAMOUFOX_BROWSER_CHANNEL}" \

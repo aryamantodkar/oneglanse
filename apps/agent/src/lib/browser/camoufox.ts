@@ -1,13 +1,14 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import type { Provider } from "@oneglanse/types";
+import { resolveAppMode, type Provider } from "@oneglanse/types";
 import { env } from "../../env.js";
 
 const execFileAsync = promisify(execFile);
 const PYTHON_CANDIDATES = ["python3.12", "python3.11", "python3.10", "python3"];
 const PYTHON_PROBE_TIMEOUT_MS = 5_000;
 const CAMOUFOX_OPTIONS_TIMEOUT_MS = 30_000;
+const SYSTEM_FONTS_TIMEOUT_MS = 15_000;
 
 const PYTHON_PROBE_SCRIPT = `
 import json
@@ -28,12 +29,15 @@ import sys
 try:
     from browserforge.fingerprints import Fingerprint, Screen
     from camoufox.addons import DefaultAddons
+    from camoufox.pkgman import OS_NAME
     from camoufox.utils import launch_options
 except Exception as exc:
     print(f"CAMOUFOX_IMPORT_ERROR::{exc}", file=sys.stderr)
     raise
 
 payload = json.loads(os.environ["CAMOUFOX_OPTIONS_PAYLOAD"])
+use_full_os_fonts = bool(payload.pop("use_full_os_fonts", False))
+disable_default_addons = bool(payload.pop("disable_default_addons", False))
 
 if isinstance(payload.get("screen"), dict):
     payload["screen"] = Screen(**payload["screen"])
@@ -49,6 +53,34 @@ if isinstance(payload.get("fingerprint"), dict):
 
 if isinstance(payload.get("exclude_addons"), list):
     payload["exclude_addons"] = [DefaultAddons[item] for item in payload["exclude_addons"]]
+
+if disable_default_addons:
+    current = payload.get("exclude_addons")
+    existing = list(current) if isinstance(current, list) else []
+    merged = []
+    seen = set()
+    for addon in [*existing, *list(DefaultAddons)]:
+        key = addon.name if hasattr(addon, "name") else str(addon)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(addon)
+    payload["exclude_addons"] = merged
+
+if use_full_os_fonts:
+    fonts_path = os.path.join(os.path.dirname(__import__("camoufox").__file__), "fonts.json")
+    with open(fonts_path, "rb") as fonts_file:
+        fonts_by_os = json.load(fonts_file)
+
+    target_os = payload.get("os")
+    if isinstance(target_os, list):
+        target_os = next((item for item in target_os if isinstance(item, str)), None)
+    os_key = {"windows": "win", "macos": "mac", "linux": "lin"}.get(target_os, OS_NAME)
+    full_os_fonts = fonts_by_os.get(os_key, [])
+    if isinstance(payload.get("fonts"), list):
+        payload["fonts"] = list(dict.fromkeys([*full_os_fonts, *payload["fonts"]]))
+    else:
+        payload["fonts"] = full_os_fonts
 
 options = launch_options(**payload)
 print(json.dumps(options))
@@ -80,6 +112,12 @@ type CamoufoxLaunchOptions = {
 };
 
 let cachedPythonBinary: string | null = null;
+let cachedSystemFontFamilies: string[] | null = null;
+let pendingSystemFontFamilies: Promise<string[]> | null = null;
+
+function isLocalAppMode(): boolean {
+	return resolveAppMode(env.ONEGLANSE_APP_MODE) === "local";
+}
 
 function getHumanizeValue(): false | true | number {
 	if (!env.CAMOUFOX_HUMANIZE) return false;
@@ -359,6 +397,140 @@ function parseGeoipValue(): string | boolean | undefined {
 	return raw;
 }
 
+function normalizeFontFamilyName(value: string): string | null {
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	return trimmed.replace(/^['"]|['"]$/g, "") || null;
+}
+
+function dedupeStrings(values: string[]): string[] {
+	return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function parseFontFamilyLines(raw: string): string[] {
+	return dedupeStrings(
+		raw
+			.split(/\r?\n/)
+			.flatMap((line) => line.split(","))
+			.map((part) => normalizeFontFamilyName(part))
+			.filter((value): value is string => Boolean(value)),
+	);
+}
+
+async function listFontsWithFcList(): Promise<string[]> {
+	const { stdout } = await execFileAsync(
+		"fc-list",
+		["--format=%{family}\\n"],
+		{
+			encoding: "utf8",
+			timeout: SYSTEM_FONTS_TIMEOUT_MS,
+			maxBuffer: 8 * 1024 * 1024,
+		},
+	);
+	return parseFontFamilyLines(stdout);
+}
+
+async function listFontsWithSystemProfiler(): Promise<string[]> {
+	const { stdout } = await execFileAsync(
+		"system_profiler",
+		["SPFontsDataType", "-json"],
+		{
+			encoding: "utf8",
+			timeout: SYSTEM_FONTS_TIMEOUT_MS,
+			maxBuffer: 16 * 1024 * 1024,
+		},
+	);
+	const parsed = JSON.parse(stdout) as {
+		SPFontsDataType?: Array<{
+			typefaces?: Array<{ family?: string }>;
+		}>;
+	};
+	return dedupeStrings(
+		(parsed.SPFontsDataType ?? [])
+			.flatMap((entry) => entry.typefaces ?? [])
+			.map((typeface) => normalizeFontFamilyName(typeface.family ?? ""))
+			.filter((value): value is string => Boolean(value)),
+	);
+}
+
+async function listFontsWithPowerShell(): Promise<string[]> {
+	const script = [
+		"Add-Type -AssemblyName System.Drawing",
+		"$fonts = (New-Object System.Drawing.Text.InstalledFontCollection).Families | ForEach-Object { $_.Name }",
+		"$fonts | ConvertTo-Json -Compress",
+	].join("; ");
+	const { stdout } = await execFileAsync(
+		"powershell",
+		["-NoProfile", "-Command", script],
+		{
+			encoding: "utf8",
+			timeout: SYSTEM_FONTS_TIMEOUT_MS,
+			maxBuffer: 4 * 1024 * 1024,
+		},
+	);
+	const parsed = JSON.parse(stdout) as unknown;
+	if (!Array.isArray(parsed)) return [];
+	return dedupeStrings(
+		parsed
+			.map((value) =>
+				typeof value === "string" ? normalizeFontFamilyName(value) : null,
+			)
+			.filter((value): value is string => Boolean(value)),
+	);
+}
+
+async function discoverSystemFontFamilies(): Promise<string[]> {
+	if (cachedSystemFontFamilies) {
+		return cachedSystemFontFamilies;
+	}
+	if (pendingSystemFontFamilies) {
+		return pendingSystemFontFamilies;
+	}
+
+	pendingSystemFontFamilies = (async () => {
+		const resolvers: Array<() => Promise<string[]>> = [];
+		if (process.platform === "win32") {
+			resolvers.push(listFontsWithPowerShell);
+		} else {
+			resolvers.push(listFontsWithFcList);
+			if (process.platform === "darwin") {
+				resolvers.push(listFontsWithSystemProfiler);
+			}
+		}
+
+		for (const resolveFonts of resolvers) {
+			try {
+				const fonts = await resolveFonts();
+				if (fonts.length > 0) {
+					cachedSystemFontFamilies = fonts;
+					return fonts;
+				}
+			} catch {}
+		}
+
+		cachedSystemFontFamilies = [];
+		return [];
+	})()
+		.finally(() => {
+			pendingSystemFontFamilies = null;
+		});
+
+	return pendingSystemFontFamilies;
+}
+
+function resolveHostOs(): "windows" | "macos" | "linux" | undefined {
+	switch (process.platform) {
+		case "win32":
+			return "windows";
+		case "darwin":
+			return "macos";
+		case "linux":
+			return "linux";
+		default:
+			return undefined;
+	}
+}
+
 function pickBrowserEnv(display?: string): Record<string, PrimitiveEnvValue> {
 	const baseEnv: Record<string, PrimitiveEnvValue> = {};
 
@@ -406,11 +578,13 @@ function stringifyEnv(
 	return result;
 }
 
-function buildLaunchPayload(args: {
+async function buildLaunchPayload(args: {
 	display?: string;
 	proxy?: CamoufoxProxyConfig;
 	headlessMode?: "virtual" | "headful" | "headless";
-}): Record<string, unknown> {
+	humanize?: boolean;
+	disableDefaultAddons?: boolean;
+}): Promise<Record<string, unknown>> {
 	const extraLaunch =
 		parseJsonRecord(
 			"CAMOUFOX_EXTRA_LAUNCH_JSON",
@@ -456,7 +630,15 @@ function buildLaunchPayload(args: {
 	if (args.display && headlessMode === "virtual") {
 		payload.virtual_display = args.display;
 	}
-	payload.humanize = getHumanizeValue();
+	// Disable humanize in local mode and headful mode: the user can see the browser,
+	// so camoufox's cursor animation serves no anti-detection purpose and just
+	// triggers :hover states on every element the simulated cursor passes through.
+	payload.humanize =
+		isLocalAppMode() || headlessMode === "headful"
+			? false
+			: typeof args.humanize === "boolean"
+				? args.humanize
+				: getHumanizeValue();
 	payload.block_images = env.CAMOUFOX_BLOCK_IMAGES;
 	payload.block_webrtc = env.CAMOUFOX_BLOCK_WEBRTC;
 	payload.block_webgl = env.CAMOUFOX_BLOCK_WEBGL;
@@ -473,26 +655,40 @@ function buildLaunchPayload(args: {
 		delete payload.proxy;
 	}
 
-	const geoip = parseGeoipValue();
-	if (geoip !== undefined) {
-		payload.geoip = geoip;
+	if (!isLocalAppMode()) {
+		const geoip = parseGeoipValue();
+		if (geoip !== undefined) {
+			payload.geoip = geoip;
+		}
+		if (env.CAMOUFOX_GEOIP_DB) payload.geoip_db = env.CAMOUFOX_GEOIP_DB;
 	}
-	if (env.CAMOUFOX_GEOIP_DB) payload.geoip_db = env.CAMOUFOX_GEOIP_DB;
 
-	const os = parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS);
+	const os =
+		parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS) ??
+		(isLocalAppMode() && resolveHeadlessMode(args.headlessMode) === "headful"
+			? resolveHostOs()
+			: undefined);
 	if (os !== undefined) payload.os = os;
 
-	// Let camoufox derive locale from geoip by default — it picks the correct
-	// locale for the proxy's exit country, keeping locale/timezone/IP coherent.
-	// Only override via CAMOUFOX_LOCALE if you know all exit IPs share a region.
-	const locale = parseStringOrList("CAMOUFOX_LOCALE", env.CAMOUFOX_LOCALE);
-	if (locale !== undefined) payload.locale = locale;
+	// GeoIP handles timezone/location fingerprint — locale is always en-US so
+	// the browser renders in English regardless of the proxy exit country.
+	// Override with CAMOUFOX_LOCALE env var if needed.
+	const locale = parseStringOrList("CAMOUFOX_LOCALE", env.CAMOUFOX_LOCALE) ?? "en-US";
+	payload.locale = locale;
 
 	const addons = parseStringList("CAMOUFOX_ADDONS", env.CAMOUFOX_ADDONS);
 	if (addons !== undefined) payload.addons = addons;
 
 	const fonts = parseStringList("CAMOUFOX_FONTS", env.CAMOUFOX_FONTS);
-	if (fonts !== undefined) payload.fonts = fonts;
+	const systemFonts = env.CAMOUFOX_USE_FULL_OS_FONTS
+		? await discoverSystemFontFamilies()
+		: [];
+	const mergedFonts = dedupeStrings([...(fonts ?? []), ...systemFonts]);
+	if (mergedFonts.length > 0) payload.fonts = mergedFonts;
+	payload.use_full_os_fonts = env.CAMOUFOX_USE_FULL_OS_FONTS;
+	if (args.disableDefaultAddons) {
+		payload.disable_default_addons = true;
+	}
 
 	const excludeAddons = parseStringList(
 		"CAMOUFOX_EXCLUDE_ADDONS",
@@ -563,9 +759,11 @@ export async function resolveCamoufoxLaunchOptions(args: {
 	provider: Provider;
 	proxy?: CamoufoxProxyConfig;
 	headlessMode?: "virtual" | "headful" | "headless";
+	humanize?: boolean;
+	disableDefaultAddons?: boolean;
 }): Promise<CamoufoxLaunchOptions> {
 	const python = await resolvePythonBinary(args.provider);
-	const payload = buildLaunchPayload(args);
+	const payload = await buildLaunchPayload(args);
 	const childEnv = {
 		...process.env,
 		...(args.display ? { DISPLAY: args.display } : {}),
@@ -623,12 +821,12 @@ export async function resolveCamoufoxLaunchOptions(args: {
 				: "";
 		const message = stderr || toErrorMessage(error);
 		const installHint =
-			"Install Camoufox in the runtime image, for example: python3 -m pip install 'cloverlabs-camoufox[geoip]' && python3 -m camoufox set official/prerelease && python3 -m camoufox fetch";
+			"Install Camoufox in the runtime image, for example: python3 -m pip install 'cloverlabs-camoufox[geoip]' && python3 -m camoufox set official/stable && python3 -m camoufox fetch";
 		throw new ExternalServiceError(
 			args.provider,
 			message.includes("CAMOUFOX_IMPORT_ERROR::")
 				? `Camoufox is not installed for ${python}. ${installHint}`
 				: `Failed to resolve Camoufox launch options: ${message}`,
-			);
+		);
 	}
 }

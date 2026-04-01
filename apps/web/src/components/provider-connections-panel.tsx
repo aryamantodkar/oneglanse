@@ -1,12 +1,12 @@
 "use client";
 
 import {
-	useConnectProvider,
+	useProviderConnectionAction,
 	useProviderConnections,
 } from "@/lib/provider-connections/client";
 import { Button, toast } from "@oneglanse/ui";
 import { getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, RotateCw } from "lucide-react";
 
 export function ProviderConnectionsPanel(props: {
 	title?: string;
@@ -14,11 +14,13 @@ export function ProviderConnectionsPanel(props: {
 }) {
 	const { title = "Provider Connections", description } = props;
 	const authProvidersQuery = useProviderConnections();
-	const connectProviderMutation = useConnectProvider({
-		onSuccess: (result) => {
+	const providerActionMutation = useProviderConnectionAction({
+		onSuccess: (result, variables) => {
 			toast.success(
 				result.started
-					? "Connection flow started on this machine."
+					? variables.action === "refresh"
+						? "Connection flow restarted on this machine."
+						: "Connection flow started on this machine."
 					: "Connection flow is already running.",
 			);
 		},
@@ -60,9 +62,16 @@ export function ProviderConnectionsPanel(props: {
 				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					{(authProvidersQuery.data?.cards ?? []).map((card) => {
 						const status = card.status;
+						const currentAction = providerActionMutation.variables;
+						const isPendingForProvider =
+							providerActionMutation.isPending &&
+							currentAction?.provider === card.provider;
 						const isPendingConnect =
-							connectProviderMutation.isPending &&
-							connectProviderMutation.variables === card.provider;
+							isPendingForProvider &&
+							(currentAction?.action ?? "connect") === "connect";
+						const isPendingRefresh =
+							isPendingForProvider &&
+							currentAction?.action === "refresh";
 						const isConnected = status.connected;
 						const isSynced = status.synced;
 						const primaryProvider = card.providers[0] ?? card.provider;
@@ -122,15 +131,42 @@ export function ProviderConnectionsPanel(props: {
 										) : null}
 									</div>
 									{isConnected ? (
-										<div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-											<CheckCircle2 className="h-4 w-4" />
-											{badgeLabel}
+										<div className="flex flex-col items-end gap-2">
+											<div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+												<CheckCircle2 className="h-4 w-4" />
+												{badgeLabel}
+											</div>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() =>
+													providerActionMutation.mutate({
+														provider: card.provider,
+														action: "refresh",
+													})
+												}
+												disabled={
+													status.connecting ||
+													isPendingForProvider ||
+													!authProvidersQuery.data?.interactiveConnectAllowed
+												}
+											>
+												{status.connecting || isPendingRefresh ? (
+													<Loader2 className="h-4 w-4 animate-spin" />
+												) : (
+													<RotateCw className="h-4 w-4" />
+												)}
+												Reconnect
+											</Button>
 										</div>
 									) : (
 										<Button
 											variant="outline"
 											onClick={() =>
-												connectProviderMutation.mutate(card.provider)
+												providerActionMutation.mutate({
+													provider: card.provider,
+													action: "connect",
+												})
 											}
 											disabled={
 												status.connecting ||

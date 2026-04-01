@@ -1,7 +1,9 @@
 import {
 	attachTerminationHandler,
+	buildLocalWorkspacePackages,
 	buildLocalRuntimeEnv,
 	edgeNetworkName,
+	ensureLocalCamoufoxRuntime,
 	ensureDockerNetwork,
 	ensureEnvFiles,
 	openBrowser,
@@ -11,10 +13,12 @@ import {
 	waitForHttp,
 } from "./lib/runtime.mjs";
 
-const localAppUrl = "http://127.0.0.1:3000";
+const localAppUrl = "http://localhost:3000";
 
 async function main() {
 	await ensureEnvFiles();
+	await ensureLocalCamoufoxRuntime();
+	await buildLocalWorkspacePackages();
 	const localEnv = buildLocalRuntimeEnv(localAppUrl);
 	await ensureDockerNetwork(edgeNetworkName);
 	await runCommand("docker", [
@@ -28,28 +32,43 @@ async function main() {
 	]);
 	await runCommand("pnpm", ["db:migrate"], { env: localEnv });
 
-	const child = spawnCommand(
+	const webChild = spawnCommand(
 		"pnpm",
 		[
+			"--filter",
+			"@oneglanse/web",
 			"exec",
-			"turbo",
+			"next",
 			"dev",
-			"--filter=@oneglanse/web",
-			"--filter=@oneglanse/agent",
+			"--hostname",
+			"localhost",
+			"--port",
+			"3000",
 		],
 		{
 			env: localEnv,
 		},
 	);
+	const agentChild = spawnCommand("pnpm", ["--filter", "@oneglanse/agent", "dev"], {
+		env: localEnv,
+	});
 
-	attachTerminationHandler(child);
+	const stopWeb = attachTerminationHandler(webChild);
+	const stopAgent = attachTerminationHandler(agentChild);
 
 	try {
 		await waitForHttp(localAppUrl);
 		openBrowser(localAppUrl);
-	} catch {}
+	} catch (error) {
+		stopWeb();
+		stopAgent();
+		throw error;
+	}
 
-	await waitForChildExit(child, "Local dev");
+	await Promise.all([
+		waitForChildExit(webChild, "Web dev"),
+		waitForChildExit(agentChild, "Agent dev"),
+	]);
 }
 
 main().catch((error) => {

@@ -17,7 +17,7 @@ export default function ConnectionsPage() {
 				</p>
 			</div>
 
-			<ProviderConnectionsPanel description="Connect each provider group below. Google covers both Gemini and Google Search domains in one shared auth state." />
+			<ProviderConnectionsPanel description="Connect each provider below. Gemini and Google Search now use separate auth sessions so each flow stays isolated." />
 		</div>
 	);
 }

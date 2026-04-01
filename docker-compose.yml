@@ -11,7 +11,7 @@ services:
       args:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
         CAMOUFOX_PIP_SPEC: "${CAMOUFOX_PIP_SPEC:-cloverlabs-camoufox[geoip]}"
-        CAMOUFOX_BROWSER_CHANNEL: "${CAMOUFOX_BROWSER_CHANNEL:-official/prerelease}"
+        CAMOUFOX_BROWSER_CHANNEL: "${CAMOUFOX_BROWSER_CHANNEL:-official/stable}"
     image: oneglanse-agent:local
     container_name: oneglanse-agent-worker
     restart: unless-stopped

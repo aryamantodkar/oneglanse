@@ -8,6 +8,12 @@ import {
 } from "@tanstack/react-query";
 import type { AuthProvider, Provider, ProviderAuthStatus } from "@oneglanse/types";
 
+export type ProviderConnectionAction = "connect" | "refresh";
+export type ProviderConnectionRequest = {
+	provider: AuthProvider;
+	action?: ProviderConnectionAction;
+};
+
 export type ProviderConnectionCard = {
 	provider: AuthProvider;
 	displayName: string;
@@ -41,7 +47,10 @@ async function fetchProviderConnections(): Promise<ProviderConnectionsState> {
 	return readJson<ProviderConnectionsState>(response);
 }
 
-async function startProviderConnection(provider: AuthProvider): Promise<{
+async function startProviderConnection({
+	provider,
+	action = "connect",
+}: ProviderConnectionRequest): Promise<{
 	started: boolean;
 }> {
 	const response = await fetch("/api/provider-connections", {
@@ -49,7 +58,7 @@ async function startProviderConnection(provider: AuthProvider): Promise<{
 		headers: {
 			"Content-Type": "application/json",
 		},
-		body: JSON.stringify({ provider }),
+		body: JSON.stringify({ provider, action }),
 	});
 	return readJson<{ started: boolean }>(response);
 }
@@ -58,13 +67,21 @@ export function useProviderConnections() {
 	return useQuery({
 		queryKey: ["provider-connections"],
 		queryFn: fetchProviderConnections,
-		refetchInterval: 3_000,
+		// Always considered stale so window focus triggers a refetch immediately.
+		staleTime: 0,
+		// Only poll while a connection is in progress; otherwise window focus is enough.
+		refetchInterval: (query) => {
+			const data = query.state.data;
+			if (!data) return 3_000;
+			const anyConnecting = data.cards.some((card) => card.status.connecting);
+			return anyConnecting ? 3_000 : false;
+		},
 	});
 }
 
-export function useConnectProvider(
+export function useProviderConnectionAction(
 	options?: Omit<
-		UseMutationOptions<{ started: boolean }, Error, AuthProvider>,
+		UseMutationOptions<{ started: boolean }, Error, ProviderConnectionRequest>,
 		"mutationFn"
 	>,
 ) {

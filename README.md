@@ -28,10 +28,11 @@ pnpm local
 This:
 
 - creates `.env` and `apps/agent/.env` if missing
+- bootstraps a pinned local Camoufox package/browser pair automatically on first run
 - starts Postgres, ClickHouse, and Redis
 - runs database migrations
 - starts the web app and the agent locally
-- opens the app at [http://127.0.0.1:3000](http://127.0.0.1:3000)
+- opens the app at [http://localhost:3000](http://localhost:3000)
 - forces app mode to `local`
 
 If provider auth is missing, the app routes you to `/connections`.
@@ -43,10 +44,10 @@ pnpm auth
 ```
 
 This starts only the shared provider-connections flow at
-[http://127.0.0.1:3000/provider-connections](http://127.0.0.1:3000/provider-connections).
+[http://localhost:3000/provider-connections](http://localhost:3000/provider-connections).
 
 Use it when you want to connect providers without running the full local app
-flow.
+flow. It bootstraps the same pinned local Camoufox auth runtime automatically.
 
 ### Self-Host / VPS
 
@@ -130,7 +131,7 @@ Auth groups:
 - Google
 - Claude
 
-Google auth is shared by both Gemini and AI Overview.
+Gemini and Google Search auth are stored separately.
 
 ### Local auth flow
 
@@ -186,7 +187,13 @@ about:
 - `apps/agent/.env`
   - `CAMOUFOX_HEADLESS_MODE`
   - `CAMOUFOX_PYTHON_BIN`
+  - `CAMOUFOX_PIP_SPEC`
+  - `CAMOUFOX_BROWSER_CHANNEL`
   - `DEBUG_ENABLED`
+
+Local bootstrap defaults are pinned to `cloverlabs-camoufox==0.5.5` and
+`official/stable/135.0.1-beta.24`. Override those in `apps/agent/.env` only if
+you intentionally want to test a different Camoufox package/browser pair.
 
 Deployment mode is controlled by one variable:
 
