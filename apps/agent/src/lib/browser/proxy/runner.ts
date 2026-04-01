@@ -210,7 +210,6 @@ async function runRetryCycle(
 			);
 
 			accumulatedResults.push(...result);
-
 			return { done: true };
 		} catch (err) {
 			if (err instanceof IPRefreshNeededError) {

@@ -23,25 +23,20 @@ The auth model is intentionally grouped:
 
 - ChatGPT
 - Perplexity
+- Gemini
 - Google
 - Claude
 
-This keeps auth storage portable and avoids duplicating browser state across
-providers that share the same login.
+Gemini and Google Search now use separate auth bundles so their login flows stay
+independent.
 
-## Google Group
+Google auth is used by:
 
-Google auth is shared by:
-
-- Gemini
 - AI Overview
 
-When you click `Connect with Google`, the login flow visits both:
+Gemini auth is used by:
 
-- `https://gemini.google.com/`
-- `https://www.google.com/`
-
-That allows one saved Google auth bundle to cover both domains.
+- Gemini
 
 ## Connect Flow
 

@@ -96,6 +96,7 @@ const AgentEnvSchema = z
 		CAMOUFOX_OS: z.string().trim().optional(),
 		CAMOUFOX_LOCALE: z.string().trim().optional(),
 		CAMOUFOX_FONTS: z.string().trim().optional(),
+		CAMOUFOX_USE_FULL_OS_FONTS: asBoolean(true).default(true),
 		CAMOUFOX_ADDONS: z.string().trim().optional(),
 		CAMOUFOX_EXCLUDE_ADDONS: z.string().trim().optional(),
 		CAMOUFOX_WINDOW: z.string().trim().optional(),

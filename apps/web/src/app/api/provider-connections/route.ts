@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 const connectProviderSchema = z.object({
 	provider: z.enum(AUTH_PROVIDER_LIST),
+	action: z.enum(["connect", "refresh"]).default("connect"),
 });
 
 export async function GET() {
@@ -43,7 +44,11 @@ export async function GET() {
 export async function POST(request: Request) {
 	try {
 		const payload = connectProviderSchema.parse(await request.json());
-		return NextResponse.json(await spawnProviderAuthLogin(payload.provider));
+		return NextResponse.json(
+			await spawnProviderAuthLogin(payload.provider, {
+				resetExisting: payload.action === "refresh",
+			}),
+		);
 	} catch (error) {
 		return NextResponse.json(
 			{

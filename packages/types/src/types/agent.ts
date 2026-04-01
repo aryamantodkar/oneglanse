@@ -71,6 +71,7 @@ export function isInteractiveAuthAllowedInMode(appMode: AppMode): boolean {
 export const AUTH_PROVIDER_LIST = [
 	"chatgpt",
 	"perplexity",
+	"gemini",
 	"google",
 	"claude",
 ] as const;

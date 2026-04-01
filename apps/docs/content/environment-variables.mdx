@@ -60,8 +60,15 @@ This file is intentionally small.
 Most users only need it for browser/runtime overrides:
 
 - `CAMOUFOX_HEADLESS_MODE`
-- `CAMOUFOX_PYTHON_BIN`
+- `CAMOUFOX_PYTHON_BIN` if automatic local detection picks the wrong interpreter
+- `CAMOUFOX_PIP_SPEC` if you need to override the pinned Python package version
+- `CAMOUFOX_BROWSER_CHANNEL` if you need to override the pinned browser spec
 - `DEBUG_ENABLED`
+
+Local bootstrap defaults are pinned to:
+
+- `CAMOUFOX_PIP_SPEC=cloverlabs-camoufox==0.5.5`
+- `CAMOUFOX_BROWSER_CHANNEL=official/stable/135.0.1-beta.24`
 
 ## Local Auth Upload
 

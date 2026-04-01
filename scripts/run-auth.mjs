@@ -1,7 +1,9 @@
 import {
 	attachTerminationHandler,
+	buildLocalWorkspacePackages,
 	buildLocalRuntimeEnv,
 	ensureEnvFiles,
+	ensureLocalCamoufoxRuntime,
 	openBrowser,
 	spawnCommand,
 	waitForChildExit,
@@ -19,9 +21,11 @@ function readArg(flag, fallback) {
 
 async function main() {
 	await ensureEnvFiles();
+	await ensureLocalCamoufoxRuntime();
+	await buildLocalWorkspacePackages();
 
 	const port = readArg("--port", process.env.PORT ?? "3000");
-	const localAppUrl = `http://127.0.0.1:${port}`;
+	const localAppUrl = `http://localhost:${port}`;
 	const localEnv = buildLocalRuntimeEnv(localAppUrl);
 	const uploadUrl = readArg("--upload-url", process.env.AGENT_AUTH_UPLOAD_URL);
 	const uploadToken = readArg(
@@ -41,10 +45,11 @@ async function main() {
 		[
 			"--filter",
 			"@oneglanse/web",
+			"exec",
+			"next",
 			"dev",
-			"--",
 			"--hostname",
-			"127.0.0.1",
+			"localhost",
 			"--port",
 			String(port),
 		],
