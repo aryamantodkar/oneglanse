@@ -14,6 +14,7 @@ import {
 	normalizePromptValue,
 } from "../../lib/input/editor/promptInput.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
+import { primeSelectorProfile } from "../../lib/selectors/intelligence.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 import {
@@ -85,19 +86,11 @@ export async function askPrompt(
 	// Let the provider dismiss autocomplete or do any pre-submit setup.
 	await config.beforeSubmitHook?.(page);
 
-	// Find send button AFTER typing (appears dynamically)
-	// Wait a bit longer if needed for button to appear
-	let sendButton = await findEnabledSendButton(page, provider);
-	if (!sendButton) {
-		await page.waitForTimeout(500);
-		sendButton = await findEnabledSendButton(page, provider);
-	}
-
 	const ctx: SubmitContext = {
 		page,
 		provider,
 		input,
-		sendButton,
+		sendButton: null,
 		preSubmitContent,
 		preSubmitUrl,
 	};
@@ -115,7 +108,7 @@ export async function askPrompt(
 	let submissionAborted = false;
 
 	type SubmitStrategy = "native" | "enter" | "force" | "dispatch";
-	const submitOrder: SubmitStrategy[] = config.submitOrder ?? [
+	const configuredSubmitOrder: SubmitStrategy[] = config.submitOrder ?? [
 		"native",
 		"enter",
 		"force",
@@ -123,38 +116,54 @@ export async function askPrompt(
 	];
 	const needsButton = new Set<SubmitStrategy>(["native", "force", "dispatch"]);
 	const strategyMap: Record<SubmitStrategy, () => Promise<boolean>> = {
-		native: () => (sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
+		native: () => (ctx.sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
 		enter: () => tryEnterSubmit(ctx),
-		force: () => (sendButton ? tryForceClick(ctx) : Promise.resolve(false)),
+		force: () => (ctx.sendButton ? tryForceClick(ctx) : Promise.resolve(false)),
 		dispatch: () =>
-			sendButton ? tryDispatchClick(ctx) : Promise.resolve(false),
+			ctx.sendButton ? tryDispatchClick(ctx) : Promise.resolve(false),
 	};
-
-	if (!sendButton) {
-		const skipped = submitOrder.filter((s) => needsButton.has(s));
-		if (skipped.length > 0) {
-			logger.debug(`  ⚠️ no send button — skipping: ${skipped.join(", ")}`);
-		}
-	}
-
-	const effectiveSubmitOrder: SubmitStrategy[] = sendButton
-		? submitOrder
-		: submitOrder.includes("enter")
-			? ["enter"]
-			: [];
+	const buttonSubmitOrder = configuredSubmitOrder.filter((strategy) =>
+		needsButton.has(strategy),
+	);
 
 	const success = await Promise.race([
 		(async () => {
-			let submitted = false;
-			for (const strategy of effectiveSubmitOrder) {
-				if (submitted || submissionAborted) break;
-				const result = await strategyMap[strategy]();
-				if (!result) {
-					logger.debug(`  ↩ ${strategy}: returned false`);
+			if (configuredSubmitOrder.includes("enter") && !submissionAborted) {
+				const enterSubmitted = await strategyMap.enter();
+				if (enterSubmitted) {
+					return true;
 				}
-				submitted = result;
+				logger.debug("  ↩ enter: returned false");
 			}
-			return submitted;
+
+			if (buttonSubmitOrder.length === 0 || submissionAborted) {
+				return false;
+			}
+
+			void primeSelectorProfile(page, provider, "submit");
+			let sendButton = await findEnabledSendButton(page, provider);
+			if (!sendButton) {
+				await page.waitForTimeout(500);
+				sendButton = await findEnabledSendButton(page, provider);
+			}
+			ctx.sendButton = sendButton;
+
+			if (!ctx.sendButton) {
+				logger.debug(
+					`  ⚠️ no send button after typed-state scan — skipping: ${buttonSubmitOrder.join(", ")}`,
+				);
+				return false;
+			}
+
+			for (const strategy of buttonSubmitOrder) {
+				if (submissionAborted) break;
+				const result = await strategyMap[strategy]();
+				if (result) {
+					return true;
+				}
+				logger.debug(`  ↩ ${strategy}: returned false`);
+			}
+			return false;
 		})(),
 		new Promise<boolean>((_, reject) =>
 			setTimeout(() => {

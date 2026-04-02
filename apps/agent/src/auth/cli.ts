@@ -11,7 +11,10 @@ import { AUTH_PROVIDER_LIST, type AuthProvider } from "@oneglanse/types";
 import {
 	ensureAuthDirectories,
 	getAuthProfileDir,
+	getReusableIdentityDomainSuffixes,
+	readReusableIdentitySeedState,
 	saveAuthSession,
+	saveReusableIdentitySessions,
 	uploadAuthSession,
 	writeProviderAuthStatus,
 } from "@oneglanse/services";
@@ -23,6 +26,7 @@ import {
 } from "@oneglanse/utils";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
 import { detectDisplay } from "../lib/browser/display.js";
+import { applyCookiesToPersistentContext } from "../lib/browser/storageState.js";
 
 const AUTH_SNAPSHOT_DEBOUNCE_MS = 250;
 const AUTH_SNAPSHOT_HEARTBEAT_MS = 2_000;
@@ -36,6 +40,10 @@ type SnapshotOrigin = {
 	origin: string;
 	localStorage: Array<{ name: string; value: string }>;
 };
+
+function dedupeStrings(values: readonly string[]): string[] {
+	return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
 
 function parseProviderArg(argv: string[]): AuthProvider {
 	const providerFlagIndex = argv.findIndex((value) => value === "--provider");
@@ -245,7 +253,10 @@ class AuthSessionTracker {
 		private readonly context: BrowserContext,
 		provider: AuthProvider,
 	) {
-		this.suffixes = AUTH_PROVIDER_CONFIG[provider].domainSuffixes;
+		this.suffixes = dedupeStrings([
+			...AUTH_PROVIDER_CONFIG[provider].domainSuffixes,
+			...getReusableIdentityDomainSuffixes(),
+		]);
 	}
 
 	start(): void {
@@ -533,6 +544,7 @@ async function waitForManualBrowserClose(
 			`${AUTH_PROVIDER_DISPLAY[provider].displayName} sign-in window was closed before the session was captured.`,
 		);
 	}
+	await saveReusableIdentitySessions(finalState);
 	const savedState = await saveAuthSession(provider, finalState);
 	await uploadAuthSession(provider, savedState);
 	await context.close().catch(() => {});
@@ -547,13 +559,13 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 
 	ensureAuthDirectories();
 	const authProfileDir = createAuthProfileDir(provider);
+	const identitySeedState = await readReusableIdentitySeedState();
 
 	const launchOptions = await resolveCamoufoxLaunchOptions({
 		display: detectDisplay() ?? undefined,
 		provider: browserProvider,
 		headlessMode: "headful",
 		humanize: false,
-		disableDefaultAddons: true,
 	});
 
 	const context = await firefox.launchPersistentContext(
@@ -563,6 +575,10 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 			headless: false,
 		},
 	);
+	// Seed only the latest IdP cookies into the visible auth window so the
+	// provider opens directly on its own URL instead of navigating the user
+	// through intermediate OAuth origins just to restore localStorage.
+	await applyCookiesToPersistentContext(context, identitySeedState);
 	attachAuthDebugLogging(context, provider);
 
 	try {

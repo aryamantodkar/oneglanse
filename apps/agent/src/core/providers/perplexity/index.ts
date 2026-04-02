@@ -1,8 +1,5 @@
-import { extractSourcesFromPerplexity } from "./lib/extractSources.js";
 import { dismissPerplexityModal } from "./lib/dismissModal.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
-import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
-import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
@@ -73,10 +70,4 @@ export const perplexityConfig: ProviderConfig = {
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
 	postNavigationHook: perplexityPostNavigationHook,
-	extractSources: async (page) => {
-		const btn = await findSourcesButton(page, "perplexity");
-		if (!btn) return [];
-		await openSourcesPanel(page, btn);
-		return extractSourcesFromPerplexity(page);
-	},
 };

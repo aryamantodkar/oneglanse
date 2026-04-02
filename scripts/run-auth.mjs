@@ -38,7 +38,7 @@ async function main() {
 		);
 	}
 
-	const authUrl = `${localAppUrl}/provider-connections`;
+	const authUrl = `${localAppUrl}/providers`;
 
 	const child = spawnCommand(
 		"pnpm",
@@ -59,6 +59,7 @@ async function main() {
 				...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
 				...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
 			},
+			detached: process.platform !== "win32",
 		},
 	);
 

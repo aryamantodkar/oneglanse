@@ -98,6 +98,10 @@ export interface Locator {
 
 export interface Page {
 	goto(url: string, options?: GotoOptions): Promise<void>;
+	evaluate<T, Arg = unknown>(
+		pageFunction: (arg: Arg) => T | Promise<T>,
+		arg: Arg,
+	): Promise<T>;
 	url(): string;
 	getUrl(): Promise<string>;
 	waitForTimeout(ms: number): Promise<void>;

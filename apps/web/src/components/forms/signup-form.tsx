@@ -2,6 +2,10 @@
 import { AuthFormChrome } from "@/components/forms/auth-form-chrome";
 import { PasswordField } from "@/components/forms/password-field";
 import { authClient } from "@/lib/auth/auth-client";
+import {
+	getPostAuthProvidersPath,
+	getSafeAuthRedirectPath,
+} from "@/lib/auth/redirect";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Button,
@@ -16,7 +20,7 @@ import {
 	useForm,
 } from "@oneglanse/ui";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -31,12 +35,20 @@ export function SignupForm({
 	...props
 }: React.ComponentProps<"div">) {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [isLoading, setIsLoading] = useState(false);
+	const rawNext = searchParams?.get("next");
+	const redirectPath = getSafeAuthRedirectPath(rawNext);
+	const postAuthRedirectPath = getPostAuthProvidersPath(rawNext);
+	const loginHref =
+		redirectPath === "/"
+			? "/login"
+			: `/login?next=${encodeURIComponent(redirectPath)}`;
 
 	const signInWithGoogle = async () => {
 		await authClient.signIn.social({
 			provider: "google",
-			callbackURL: "/",
+			callbackURL: postAuthRedirectPath,
 		});
 	};
 
@@ -62,7 +74,7 @@ export function SignupForm({
 			toast.error(error.message ?? "Failed to sign up.");
 		} else {
 			toast.success("Signed up successfully!");
-			router.push("/");
+			router.push(postAuthRedirectPath);
 		}
 
 		setIsLoading(false);
@@ -75,7 +87,7 @@ export function SignupForm({
 			googleLabel="Signup with Google"
 			switchText="Already have an account?"
 			switchLabel="Login"
-			switchHref="/login"
+			switchHref={loginHref}
 			onGoogleClick={signInWithGoogle}
 			className={className}
 			{...props}

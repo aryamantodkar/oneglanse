@@ -18,8 +18,9 @@ import {
 	resolveCamoufoxLaunchOptions,
 	type CamoufoxProxyConfig,
 } from "./camoufox.js";
-import { detectDisplay, ensureDisplay } from "./display.js";
+import { ensureDisplay } from "./display.js";
 import { PlaywrightBrowserContextCompat } from "./playwrightCompat.js";
+import { applyStorageStateToPersistentContext } from "./storageState.js";
 import {
 	checkProxyReachable,
 	type ProxyScheme,
@@ -51,6 +52,23 @@ type FirefoxLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
 type FirefoxPersistentLaunchOptions = NonNullable<
 	Parameters<typeof firefox.launchPersistentContext>[1]
 >;
+
+function resolveRuntimeHeadlessMode(): "virtual" | "headless" {
+	if (env.CAMOUFOX_HEADLESS_MODE === "headless") {
+		return "headless";
+	}
+
+	const appMode = resolveAppMode(env.ONEGLANSE_APP_MODE);
+	if (appMode === "local") {
+		return "headless";
+	}
+
+	if (process.platform === "linux") {
+		return "virtual";
+	}
+
+	return "headless";
+}
 
 export function quarantineProxy(hostPort: string): void {
 	quarantinedProxies.set(hostPort, Date.now() + QUARANTINE_TTL_MS);
@@ -277,53 +295,65 @@ export async function launchContext(provider: Provider): Promise<{
 	let releaseProxyLease = () => {};
 	let invalidateProxyHint: () => Promise<void> = async () => {};
 	let displayHandle: DisplayHandle | null = null;
+	let rawBrowser: import("playwright-core").Browser | null = null;
 	let rawContext: import("playwright-core").BrowserContext | null = null;
 	let context: PlaywrightBrowserContextCompat | null = null;
 
 	const cleanup = async () => {
 		await context?.close().catch(() => null);
+		await rawBrowser?.close().catch(() => null);
 		releaseProxyLease();
 		await displayHandle?.cleanup().catch(() => null);
 	};
 
 	try {
-		logger.log("resolving proxy before browser launch");
-		const proxyAllocation = await buildProxyAllocation();
-		upstreamProxy = proxyAllocation.proxy;
-		releaseProxyLease = proxyAllocation.release;
-		if (upstreamProxy) {
-			logger.log(
-				`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
-			);
-			const reachable = await checkProxyReachable(
-				upstreamProxy.host,
-				upstreamProxy.port,
-			);
-			if (!reachable) {
-				throw new Error(
-					`proxy connect failed: ${upstreamProxy.logProxy} unreachable (TCP pre-check)`,
+		const appMode = resolveAppMode(env.ONEGLANSE_APP_MODE);
+		const runtimeHeadlessMode = resolveRuntimeHeadlessMode();
+		if (shouldUseProxyInMode(appMode)) {
+			logger.log("resolving proxy before browser launch");
+			const proxyAllocation = await buildProxyAllocation();
+			upstreamProxy = proxyAllocation.proxy;
+			releaseProxyLease = proxyAllocation.release;
+			if (upstreamProxy) {
+				logger.log(
+					`selected proxy for browser launch: ${upstreamProxy.logProxy}`,
+				);
+				const reachable = await checkProxyReachable(
+					upstreamProxy.host,
+					upstreamProxy.port,
+				);
+				if (!reachable) {
+					throw new Error(
+						`proxy connect failed: ${upstreamProxy.logProxy} unreachable (TCP pre-check)`,
+					);
+				}
+				const hostPort = `${upstreamProxy.host}:${upstreamProxy.port}`;
+				invalidateProxyHint = async () => {
+					quarantineProxy(hostPort);
+				};
+			} else {
+				logger.warn(
+					"no proxy resolved for browser launch; using direct connection",
 				);
 			}
-			const hostPort = `${upstreamProxy.host}:${upstreamProxy.port}`;
-			invalidateProxyHint = async () => {
-				quarantineProxy(hostPort);
-			};
-		} else {
-			logger.warn(
-				"no proxy resolved for browser launch; using direct connection",
-			);
 		}
 
 		displayHandle =
-			env.CAMOUFOX_HEADLESS_MODE === "headless" ? null : await ensureDisplay();
+			runtimeHeadlessMode === "headless"
+				? null
+				: await ensureDisplay({ allowExistingDisplay: false });
 		const display =
-			env.CAMOUFOX_HEADLESS_MODE === "headless"
-				? undefined
-				: (displayHandle?.display ?? detectDisplay() ?? undefined);
+			runtimeHeadlessMode === "headless" ? undefined : displayHandle?.display;
 
 		ensureAuthDirectories();
 		const runtimeSeedPlan = await getRuntimeProfileSeedPlan(provider);
-		if (runtimeSeedPlan.shouldBootstrap) {
+		const shouldUsePersistentRuntimeProfile =
+			runtimeHeadlessMode !== "headless";
+		const shouldForceLoggedOutProfile = appMode === "cloud";
+		if (
+			shouldUsePersistentRuntimeProfile &&
+			(shouldForceLoggedOutProfile || runtimeSeedPlan.shouldBootstrap)
+		) {
 			prepareRuntimeProfileBootstrap(provider);
 		}
 
@@ -331,25 +361,52 @@ export async function launchContext(provider: Provider): Promise<{
 			display,
 			provider,
 			proxy: toCamoufoxProxyConfig(upstreamProxy),
+			headlessMode: runtimeHeadlessMode,
 		});
-		const persistentOptions: FirefoxPersistentLaunchOptions = {
+		const launchOptions: FirefoxLaunchOptions = {
 			...(camoufoxOptions as FirefoxLaunchOptions),
-			...(runtimeSeedPlan.shouldBootstrap && runtimeSeedPlan.authStatePath
-				? { storageState: runtimeSeedPlan.authStatePath }
-				: {}),
+		};
+		const persistentOptions: FirefoxPersistentLaunchOptions = {
+			...launchOptions,
 		};
 
-		rawContext = await firefox.launchPersistentContext(
-			runtimeSeedPlan.userDataDir,
-			persistentOptions,
-		);
+		if (shouldUsePersistentRuntimeProfile) {
+			rawContext = await firefox.launchPersistentContext(
+				runtimeSeedPlan.userDataDir,
+				persistentOptions,
+			);
+			if (
+				!shouldForceLoggedOutProfile &&
+				runtimeSeedPlan.shouldBootstrap &&
+				runtimeSeedPlan.authState
+			) {
+				await applyStorageStateToPersistentContext(
+					rawContext,
+					runtimeSeedPlan.authState,
+				);
+			}
 
-		if (runtimeSeedPlan.shouldBootstrap && runtimeSeedPlan.authStateHash) {
-			await markRuntimeProfileSeeded(provider, runtimeSeedPlan.authStateHash);
+			if (
+				!shouldForceLoggedOutProfile &&
+				runtimeSeedPlan.shouldBootstrap &&
+				runtimeSeedPlan.authStateHash
+			) {
+				await markRuntimeProfileSeeded(provider, runtimeSeedPlan.authStateHash);
+			}
+		} else {
+			rawBrowser = await firefox.launch(launchOptions);
+			rawContext = await rawBrowser.newContext({
+				...(shouldForceLoggedOutProfile
+					? {}
+					: runtimeSeedPlan.authStatePath
+						? { storageState: runtimeSeedPlan.authStatePath }
+						: {}),
+			});
 		}
 
 		context = new PlaywrightBrowserContextCompat(rawContext);
-		const browser = context.getBrowser();
+		const browser =
+			(rawBrowser as unknown as Browser | null) ?? context.getBrowser();
 
 		return {
 			browser,

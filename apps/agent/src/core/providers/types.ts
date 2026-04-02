@@ -1,4 +1,3 @@
-import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 
 export interface SubmitSuccessContext {
@@ -67,6 +66,4 @@ export interface ProviderConfig {
 	 * Used by providers that need a fully custom per-prompt navigation flow.
 	 */
 	navigateToPrompt?: (page: Page, prompt: string) => Promise<void>;
-	/** Extracts citation sources from the page after the response is read. */
-	extractSources: (page: Page) => Promise<Source[]>;
 }

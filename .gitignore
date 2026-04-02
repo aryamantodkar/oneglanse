@@ -45,6 +45,8 @@ coverage/
 # Claude Code
 .claude/
 
+.oneglanse-storage/
+
 # Improvement reports
 improvements/
 

@@ -1,7 +1,7 @@
 import type { Provider, Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { logger } from "@oneglanse/utils";
-import { PROVIDER_CONFIGS } from "../providers/index.js";
+import { extractResolvedSources } from "../../lib/selectors/intelligence.js";
 
 export async function checkAndExtractSources(
 	page: Page,
@@ -23,10 +23,7 @@ async function extractSourcesFromPanel(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
-	// Sources are rendered as part of the response — no need to wait for networkidle.
-	// The 5s networkidle wait was adding ~5s to every prompt's critical path.
-
-	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
+	const sources = await extractResolvedSources(page, provider);
 
 	logger.debug(`extracted ${sources.length} sources`);
 

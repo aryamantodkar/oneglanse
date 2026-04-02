@@ -1,15 +1,13 @@
 import type { Provider } from "@oneglanse/types";
-import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
+import { extractResolvedResponseHtml } from "../../selectors/intelligence.js";
 import { turndown } from "./converter.js";
 
 export async function extractAssistantMarkdown(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	const html = await page.runDomOp<string>("response-html", {
-		selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
-	});
+	const html = await extractResolvedResponseHtml(page, provider);
 	if (!html) return "";
 
 	const markdown = turndown.turndown(html);

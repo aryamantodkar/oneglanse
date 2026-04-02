@@ -6,6 +6,7 @@ import {
 	PROVIDER_FORCE_EXIT_STABLE_MS,
 	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
 } from "@oneglanse/utils";
+import { waitForSelectorProfile } from "../../selectors/intelligence.js";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
 
@@ -47,13 +48,28 @@ export async function waitForAssistantToFinish(
 	let lastText = "";
 	let lastChange = Date.now();
 	let seenOutput = false;
+	let responseSelectorsReady = false;
+	const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
+
+	void waitForSelectorProfile(
+		page,
+		provider,
+		"response",
+		noOutputTimeoutMs,
+	)
+		.then(() => {
+			responseSelectorsReady = true;
+		})
+		.catch(() => {});
 
 	await pollUntilCondition(
 		async () => {
-			const [generating, text] = await Promise.all([
-				isGenerating(page, provider),
-				getText(page, provider),
-			]);
+			const [generating, text] = responseSelectorsReady
+				? await Promise.all([
+						isGenerating(page, provider),
+						getText(page, provider),
+					])
+				: [false, ""];
 
 			// Track output — require meaningful content to avoid placeholder divs
 			if (text.length >= 20) seenOutput = true;
@@ -68,7 +84,6 @@ export async function waitForAssistantToFinish(
 			const noOutputFor = Date.now() - waitStart;
 
 			// Error: No output after the grace period.
-			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
 			if (!seenOutput && noOutputFor >= noOutputTimeoutMs) {
 				throw new ExternalServiceError(
 					provider,

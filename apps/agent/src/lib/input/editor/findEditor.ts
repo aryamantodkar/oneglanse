@@ -1,7 +1,7 @@
 import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
+import { findResolvedEditorCandidate } from "../../selectors/intelligence.js";
 
 export type EditorCandidate = {
 	locator: Locator;
@@ -75,12 +75,12 @@ export async function findActiveEditorCandidate(
 	page: Page,
 	provider?: Provider,
 ): Promise<EditorCandidate> {
-	const fallbackSelectors = [
-		...new Set(Object.values(PROVIDER_EDITOR_SELECTORS).flat()),
-	];
-	const selectors = provider
-		? PROVIDER_EDITOR_SELECTORS[provider] || fallbackSelectors
-		: fallbackSelectors;
+	const resolved = provider
+		? await findResolvedEditorCandidate(page, provider)
+		: null;
+	if (resolved) {
+		return resolved;
+	}
 
-	return findActiveEditorCandidateFromSelectors(page, selectors);
+	throw new NotFoundError(`editor${provider ? ` for ${provider}` : ""}`);
 }

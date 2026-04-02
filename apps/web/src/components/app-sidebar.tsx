@@ -4,7 +4,11 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
-import { canAccessScheduleInMode, type AppMode } from "@oneglanse/types";
+import {
+	canAccessScheduleInMode,
+	isInteractiveAuthAllowedInMode,
+	type AppMode,
+} from "@oneglanse/types";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -34,6 +38,7 @@ import {
 	LayoutGrid,
 	Loader2,
 	MessageSquare,
+	Plug,
 	Plus,
 	Settings,
 	User2,
@@ -129,6 +134,15 @@ export function AppSidebar({
 	}
 
 	const settingsItems = [
+		...(isInteractiveAuthAllowedInMode(appMode)
+			? [
+					{
+						title: "Providers",
+						url: `/providers?workspace=${activeWorkspace?.id ?? ""}`,
+						icon: Plug,
+					},
+				]
+			: []),
 		{
 			title: "Settings",
 			url: `/settings?workspace=${activeWorkspace?.id ?? ""}`,

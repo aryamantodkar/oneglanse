@@ -1,15 +1,11 @@
 import { ExternalServiceError } from "@oneglanse/errors";
-import { PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
-import {
-	findActiveEditorCandidateFromSelectors,
-} from "../../../lib/input/editor/findEditor.js";
+import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
+import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
-import { turndown } from "../../../lib/input/markdown/converter.js";
-import { extractAIOverviewResponse } from "./lib/extractResponse.js";
-import { extractAIOverviewSources } from "./lib/extractSources.js";
+import { requireEditorCandidate } from "../../../lib/selectors/intelligence.js";
 import type { ProviderConfig } from "../types.js";
 
 const GOOGLE_CONSENT_SELECTOR =
@@ -96,9 +92,7 @@ export const aiOverviewConfig: ProviderConfig = {
 		assertNotBlockedPage(page);
 		await dismissConsentDialog(page);
 
-		const searchInput = await findActiveEditorCandidateFromSelectors(page, [
-			...PROVIDER_EDITOR_SELECTORS["ai-overview"],
-		]);
+		const searchInput = await requireEditorCandidate(page, "ai-overview");
 		logger.log(`[ai-overview] using search selector: ${searchInput.selector}`);
 
 		logger.debug(`[ai-overview] pasting ${prompt.length} chars…`);
@@ -121,20 +115,9 @@ export const aiOverviewConfig: ProviderConfig = {
 		assertNotBlockedPage(page);
 		logger.log(`[ai-overview] search ready: ${page.url()}`);
 	},
-	waitForResponse: async (page) => {
-		await page
-			.waitForSelector(
-				'[data-container-id="model-response-placeholder"], [data-container-id="main-col"]',
-				{ timeout: 25000 },
-			)
-			.catch(() => {});
-	},
-	extractResponse: async (page) => {
-		const html = await extractAIOverviewResponse(page);
-		return turndown.turndown(html);
-	},
+	waitForResponse: (page) => waitForAssistantToFinish(page, "ai-overview"),
+	extractResponse: (page) => extractAssistantMarkdown(page, "ai-overview"),
 	betweenPromptsHook: async (page) => {
 		await page.waitForTimeout(8000 + Math.floor(Math.random() * 12000));
 	},
-	extractSources: (page) => extractAIOverviewSources(page),
 };

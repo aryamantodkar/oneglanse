@@ -76,13 +76,15 @@ async function waitForDisplaySocket(
 	);
 }
 
-export async function ensureDisplay(): Promise<DisplayHandle | null> {
+export async function ensureDisplay(options?: {
+	allowExistingDisplay?: boolean;
+}): Promise<DisplayHandle | null> {
 	if (env.CAMOUFOX_HEADLESS_MODE === "headless") {
 		return null;
 	}
 
 	const existingDisplay = detectDisplay();
-	if (existingDisplay) {
+	if ((options?.allowExistingDisplay ?? true) && existingDisplay) {
 		return {
 			display: existingDisplay,
 			cleanup: async () => {},

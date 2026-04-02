@@ -3,6 +3,7 @@ import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider, UserPrompt } from "@oneglanse/types";
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
+import { readAuthenticatedRuntimeProviders } from "./auth.js";
 import { getProviderQueue } from "./queue.js";
 import { redis, waitForRedis } from "./redis.js";
 
@@ -59,9 +60,19 @@ export async function enqueueProviderJobs(args: {
 	prompts: UserPrompt[];
 	userId: string;
 	workspaceId: string;
+	providers?: Provider[];
 }): Promise<void> {
-	const { jobGroupId, prompts, userId, workspaceId } = args;
-	const providerJobs = buildProviderJobs();
+	const {
+		jobGroupId,
+		prompts,
+		userId,
+		workspaceId,
+		providers = PROVIDER_LIST,
+	} = args;
+	const allowedProviders = [...new Set(providers)];
+	const providerJobs = buildProviderJobs().filter(({ provider }) =>
+		allowedProviders.includes(provider),
+	);
 	await Promise.all(
 		providerJobs.map(({ provider, runProviders }) =>
 			enqueueProviderJob({
@@ -103,21 +114,30 @@ export async function submitAgentJobGroup(args: {
 	}
 
 	const jobGroupId = randomUUID();
+	const authenticatedProviders = await readAuthenticatedRuntimeProviders();
+	if (authenticatedProviders.length === 0) {
+		console.warn(
+			`[agent] submitAgentJobGroup: no authenticated providers found for workspace ${workspaceId} — skipping`,
+		);
+		return { status: "empty" };
+	}
 	await waitForRedis();
 
 	const progress = {
 		status: "pending" as const,
 		updateId: 0,
 		providers: Object.fromEntries(
-			PROVIDER_LIST.map((p) => [p, "pending"]),
+			authenticatedProviders.map((p) => [p, "pending"]),
 		) as Record<string, string>,
-		results: Object.fromEntries(PROVIDER_LIST.map((p) => [p, 0])) as Record<
+		results: Object.fromEntries(
+			authenticatedProviders.map((p) => [p, 0]),
+		) as Record<
 			string,
 			number
 		>,
 		stats: {
 			totalPrompts: prompts.length,
-			expectedResponses: prompts.length * PROVIDER_LIST.length,
+			expectedResponses: prompts.length * authenticatedProviders.length,
 			actualResponses: 0,
 		},
 	};
@@ -135,6 +155,7 @@ export async function submitAgentJobGroup(args: {
 			prompts,
 			userId,
 			workspaceId,
+			providers: authenticatedProviders,
 		});
 	} catch (err) {
 		throw new Error(`failed to queue provider jobs: ${toErrorMessage(err)}`);

@@ -2,7 +2,6 @@ import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
-import { extractSourcesFromClaude } from "./lib/extractSources.js";
 
 const CLAUDE_URL = "https://claude.ai/new";
 
@@ -19,5 +18,4 @@ export const claudeConfig: ProviderConfig = {
 	beforeRetryHook: resetClaudePage,
 	waitForResponse: (page) => waitForAssistantToFinish(page, "claude"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "claude"),
-	extractSources: (page) => extractSourcesFromClaude(page),
 };
