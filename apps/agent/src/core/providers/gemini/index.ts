@@ -2,11 +2,8 @@ import { ExternalServiceError } from "@oneglanse/errors";
 import type { Page } from "playwright";
 import { clickLocatorLikeUser } from "../../../lib/browser/humanBehavior.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
-import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
-import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import type { ProviderConfig } from "../types.js";
-import { extractSourcesFromGemini } from "./lib/extractSources.js";
 
 const GEMINI_CONSENT_SELECTOR =
 	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
@@ -85,10 +82,4 @@ export const geminiConfig: ProviderConfig = {
 	// No reset between prompts — session is reused in the same conversation.
 	// Navigating back to gemini.google.com on each prompt adds unnecessary
 	// round-trips and increases detection surface.
-	extractSources: async (page) => {
-		const btn = await findSourcesButton(page, "gemini");
-		if (!btn) return [];
-		await openSourcesPanel(page, btn);
-		return extractSourcesFromGemini(page, btn);
-	},
 };

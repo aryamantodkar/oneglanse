@@ -2,11 +2,13 @@
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
+import type { ProviderConnectionsState } from "@/lib/provider-connections/types";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
-import type { AppMode } from "@oneglanse/types";
+import { isInteractiveAuthAllowedInMode, type AppMode } from "@oneglanse/types";
 import { SidebarTrigger } from "@oneglanse/ui";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -18,15 +20,17 @@ export default function LayoutContent({
 	workspace,
 	userName,
 	userEmail,
+	initialProviderConnections,
 }: {
 	children: React.ReactNode;
 	appMode: AppMode;
 	workspace: Workspace | null;
 	userName: string;
 	userEmail: string;
+	initialProviderConnections: ProviderConnectionsState;
 }) {
-	const pathname = usePathname();
 	const router = useRouter();
+	const pathname = usePathname();
 	const searchParams = useSafeSearchParams();
 	const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
 	const capitalizedTitle =
@@ -42,43 +46,102 @@ export default function LayoutContent({
 		{ workspaceId: workspaceIdFromUrl },
 		{ enabled: shouldFetchWorkspace },
 	);
-	const authProvidersQuery = useProviderConnections();
+	const authProvidersQuery = useProviderConnections({
+		initialData: initialProviderConnections,
+	});
 
 	const resolvedWorkspace = workspaceQuery.data ?? workspace ?? null;
-	const isConnectionsPage = pathname?.startsWith("/connections");
-	const shouldBypassConnectionGate =
-		!resolvedWorkspace ||
-		isOnboardingFlow ||
-		isConnectionsPage ||
-		pathname?.startsWith("/settings") ||
-		pathname?.startsWith("/workspace");
+	const isResolvingWorkspaceFromUrl =
+		shouldFetchWorkspace && !workspaceQuery.data && workspaceQuery.isFetching;
+	const hasAtLeastOneConnection =
+		authProvidersQuery.data?.cards.some((card) => card.status.connected) ?? false;
+	const shouldShowConnectionGate = !hasAtLeastOneConnection;
+	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
+	const isProvidersPage = pathname === "/providers";
+	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
+	const providersWorkspaceId = workspaceIdFromUrl || resolvedWorkspace?.id || "";
+	const providersHref = providersWorkspaceId
+		? `/providers?workspace=${providersWorkspaceId}`
+		: "/providers";
+
+	useEffect(() => {
+		if (shouldShowConnectionGate && canLaunchProvidersLocally && !isProvidersPage) {
+			router.replace(providersHref);
+		}
+	}, [
+		canLaunchProvidersLocally,
+		isProvidersPage,
+		providersHref,
+		router,
+		shouldShowConnectionGate,
+	]);
+
+	useEffect(() => {
+		if (
+			!resolvedWorkspace &&
+			!isResolvingWorkspaceFromUrl &&
+			hasAtLeastOneConnection &&
+			!isWorkspaceSetupPage &&
+			!isProvidersPage
+		) {
+			router.replace("/workspace");
+		}
+	}, [
+		hasAtLeastOneConnection,
+		isResolvingWorkspaceFromUrl,
+		isProvidersPage,
+		isWorkspaceSetupPage,
+		resolvedWorkspace,
+		router,
+	]);
 
 	useEffect(() => {
 		shownJobsRef.current.clear();
 	}, [resolvedWorkspace?.id]);
 
-	useEffect(() => {
-		if (shouldBypassConnectionGate) {
-			return;
-		}
+	if (shouldShowConnectionGate) {
+		return (
+			<main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-6 py-14 sm:px-8">
+				<div className="mb-12 max-w-3xl">
+					<h1 className="text-[2rem] font-semibold tracking-[-0.03em] text-gray-900 dark:text-gray-100">
+						{canLaunchProvidersLocally
+							? "Connect a provider"
+							: "Providers are required"}
+					</h1>
+					<p className="mt-3 text-base leading-7 text-gray-500 dark:text-gray-400">
+						{canLaunchProvidersLocally
+							? "Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active."
+							: "Provider auth can only be captured on a local run. Open the local app, connect at least one provider at /providers, then sync the saved auth back here before continuing."}
+					</p>
+				</div>
 
-		if (!authProvidersQuery.data) {
-			return;
-		}
-
-		const hasMissingConnection = authProvidersQuery.data.cards.some(
-			(card) => !card.status.connected,
+				{canLaunchProvidersLocally ? (
+					<ProviderConnectionsPanel title={null} description={null} />
+				) : null}
+			</main>
 		);
-		if (hasMissingConnection) {
-			router.replace("/connections");
-		}
-	}, [authProvidersQuery.data, router, shouldBypassConnectionGate]);
+	}
 
 	if (!resolvedWorkspace) {
+		if (isResolvingWorkspaceFromUrl) {
+			return (
+				<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
+					<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
+						<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
+							<div className="flex items-center gap-3">
+								<h1 className="text-sm font-semibold text-gray-900">
+									Loading Workspace
+								</h1>
+							</div>
+						</div>
+					</main>
+				</div>
+			);
+		}
+
 		return (
 			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
 				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
-					{/* Header */}
 					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
 						<div className="flex items-center gap-3">
 							<h1 className="text-sm font-semibold text-gray-900">
@@ -86,8 +149,6 @@ export default function LayoutContent({
 							</h1>
 						</div>
 					</div>
-
-					{/* Page content */}
 					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden px-4 sm:px-6">
 						{children}
 					</div>

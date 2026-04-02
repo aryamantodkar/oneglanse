@@ -1,8 +1,5 @@
-import { extractSourcesFromChatgpt } from "./lib/extractSources.js";
 import { dismissChatgptAuthModal } from "./lib/dismissAuthModal.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
-import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
-import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
@@ -31,10 +28,4 @@ export const chatgptConfig: ProviderConfig = {
 	afterSubmitHook: (page) =>
 		dismissChatgptAuthModal(page, { waitForAppearanceMs: 1500 }),
 	beforeRetryHook: resetChatgptPage,
-	extractSources: async (page) => {
-		const btn = await findSourcesButton(page, "chatgpt");
-		if (!btn) return [];
-		await openSourcesPanel(page, btn);
-		return extractSourcesFromChatgpt(page, btn);
-	},
 };

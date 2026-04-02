@@ -362,6 +362,13 @@ export class PlaywrightPageCompat implements Page {
 		await this.page.goto(url, options);
 	}
 
+	async evaluate<T, Arg = unknown>(
+		pageFunction: (arg: Arg) => T | Promise<T>,
+		arg: Arg,
+	): Promise<T> {
+		return await this.page.evaluate(pageFunction as any, arg as any);
+	}
+
 	url(): string {
 		return this.page.url();
 	}

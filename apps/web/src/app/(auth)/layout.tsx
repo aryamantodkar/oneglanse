@@ -1,5 +1,6 @@
 import "../../styles/globals.css";
 import { auth } from "@/lib/auth/auth";
+import { readProviderConnectionsState } from "@/lib/provider-connections/server";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { TRPCReactProvider } from "@/trpc/react";
 import { resolveAppMode } from "@oneglanse/types";
@@ -44,6 +45,7 @@ export default async function RootLayout({
 	} catch {
 		return redirect("/workspace");
 	}
+	const initialProviderConnections = await readProviderConnectionsState();
 
 	return (
 		<>
@@ -54,6 +56,7 @@ export default async function RootLayout({
 						workspace={workspace}
 						userName={session.user.name}
 						userEmail={session.user.email}
+						initialProviderConnections={initialProviderConnections}
 					>
 						{children}
 					</LayoutContent>

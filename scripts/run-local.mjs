@@ -26,6 +26,7 @@ async function main() {
 		"up",
 		"-d",
 		"--build",
+		"--wait",
 		"db",
 		"clickhouse",
 		"redis",
@@ -47,10 +48,12 @@ async function main() {
 		],
 		{
 			env: localEnv,
+			detached: process.platform !== "win32",
 		},
 	);
 	const agentChild = spawnCommand("pnpm", ["--filter", "@oneglanse/agent", "dev"], {
 		env: localEnv,
+		detached: process.platform !== "win32",
 	});
 
 	const stopWeb = attachTerminationHandler(webChild);

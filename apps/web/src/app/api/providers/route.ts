@@ -1,9 +1,5 @@
-import {
-	getAuthModuleState,
-	getAuthProviderCards,
-	readProviderAuthStatuses,
-	spawnProviderAuthLogin,
-} from "@oneglanse/services";
+import { readProviderConnectionsState } from "@/lib/provider-connections/server";
+import { spawnProviderAuthLogin } from "@oneglanse/services";
 import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -16,29 +12,7 @@ const connectProviderSchema = z.object({
 });
 
 export async function GET() {
-	const [cards, statuses] = await Promise.all([
-		Promise.resolve(getAuthProviderCards()),
-		readProviderAuthStatuses(),
-	]);
-	const statusMap = new Map(
-		statuses.map((status) => [status.provider, status] as const),
-	);
-
-	return NextResponse.json({
-		...getAuthModuleState(),
-		cards: cards.map((card) => ({
-			...card,
-			status: statusMap.get(card.provider) ?? {
-				provider: card.provider,
-				connected: false,
-				connecting: false,
-				synced: false,
-				lastUpdatedAt: null,
-				syncedAt: null,
-				error: null,
-			},
-		})),
-	});
+	return NextResponse.json(await readProviderConnectionsState());
 }
 
 export async function POST(request: Request) {

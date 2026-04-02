@@ -11,6 +11,7 @@ import {
 	isInteractiveAuthAllowedInMode,
 	type Provider,
 	type ProviderAuthStatus,
+	PROVIDER_LIST,
 	resolveAppMode,
 } from "@oneglanse/types";
 import {
@@ -53,14 +54,43 @@ type RuntimeProfileMetadata = {
 
 type RuntimeProfileSeedPlan = {
 	authProvider: AuthProvider;
+	authState: StorageState | null;
 	authStateHash: string | null;
 	authStatePath: string | null;
 	shouldBootstrap: boolean;
 	userDataDir: string;
 };
 
+type ReusableIdentityProvider = "google" | "apple" | "facebook";
+
 const DEFAULT_LOCAL_STORAGE_ROOT = ".oneglanse-storage";
 const authLaunchInFlight = new Set<AuthProvider>();
+const REUSABLE_IDENTITY_PROVIDER_CONFIG: Record<
+	ReusableIdentityProvider,
+	{
+		domainSuffixes: string[];
+		preferredAuthProvider?: AuthProvider;
+	}
+> = {
+	google: {
+		domainSuffixes: ["google.com", "googleusercontent.com", "gstatic.com"],
+		preferredAuthProvider: "google",
+	},
+	apple: {
+		domainSuffixes: [
+			"apple.com",
+			"apple-cloudkit.com",
+			"apple-dns.net",
+			"icloud.com",
+		],
+	},
+	facebook: {
+		domainSuffixes: ["facebook.com", "facebook.net", "fb.com", "fbsbx.com"],
+	},
+};
+const REUSABLE_IDENTITY_PROVIDERS = Object.keys(
+	REUSABLE_IDENTITY_PROVIDER_CONFIG,
+) as ReusableIdentityProvider[];
 
 function resolveMonorepoRoot(startDir = process.cwd()): string {
 	let current = path.resolve(startDir);
@@ -142,9 +172,13 @@ function getStatusDir(): string {
 	return path.join(getAgentAuthRootDir(), "status");
 }
 
+function getReusableIdentityDir(): string {
+	return path.join(getAgentAuthRootDir(), "identities");
+}
+
 function matchesDomainSuffix(
 	hostOrDomain: string,
-	suffixes: string[],
+	suffixes: readonly string[],
 ): boolean {
 	const normalized = hostOrDomain.replace(/^\./, "").toLowerCase();
 	return suffixes.some(
@@ -170,11 +204,51 @@ function hashStorageState(state: StorageState): string {
 	return createHash("sha256").update(JSON.stringify(state)).digest("hex");
 }
 
-function compactStorageStateForProvider(
-	provider: AuthProvider,
+function sortStorageState(state: StorageState): StorageState {
+	return {
+		cookies: [...(state.cookies ?? [])].sort((left, right) =>
+			cookieStorageKey({
+				name: left.name ?? "",
+				domain: left.domain ?? "",
+				path: left.path ?? "/",
+			}).localeCompare(
+				cookieStorageKey({
+					name: right.name ?? "",
+					domain: right.domain ?? "",
+					path: right.path ?? "/",
+				}),
+			),
+		),
+		origins: [...(state.origins ?? [])].sort((left, right) =>
+			(left.origin ?? "").localeCompare(right.origin ?? ""),
+		),
+	};
+}
+
+function getReusableIdentityConfig(provider: ReusableIdentityProvider) {
+	return REUSABLE_IDENTITY_PROVIDER_CONFIG[provider];
+}
+
+function compactReusableIdentityState(
+	provider: ReusableIdentityProvider,
 	state: StorageState,
 ): StorageState {
-	const suffixes = AUTH_PROVIDER_CONFIG[provider].domainSuffixes;
+	return compactStorageStateByDomainSuffixes(
+		state,
+		getReusableIdentityConfig(provider).domainSuffixes,
+	);
+}
+
+async function readReusableIdentityState(
+	provider: ReusableIdentityProvider,
+): Promise<StorageState | null> {
+	return readStorageStateFile(getReusableIdentitySessionFile(provider));
+}
+
+function compactStorageStateByDomainSuffixes(
+	state: StorageState,
+	suffixes: readonly string[],
+): StorageState {
 	const cookies = new Map<
 		string,
 		NonNullable<StorageState["cookies"]>[number]
@@ -248,23 +322,94 @@ function compactStorageStateForProvider(
 	}
 
 	return {
-		cookies: [...cookies.values()].sort((left, right) =>
-			cookieStorageKey({
-				name: left.name ?? "",
-				domain: left.domain ?? "",
-				path: left.path ?? "/",
-			}).localeCompare(
-				cookieStorageKey({
-					name: right.name ?? "",
-					domain: right.domain ?? "",
-					path: right.path ?? "/",
-				}),
-			),
-		),
-		origins: [...origins.values()].sort((left, right) =>
-			(left.origin ?? "").localeCompare(right.origin ?? ""),
-		),
+		...sortStorageState({
+			cookies: [...cookies.values()],
+			origins: [...origins.values()],
+		}),
 	};
+}
+
+function compactStorageStateForProvider(
+	provider: AuthProvider,
+	state: StorageState,
+): StorageState {
+	return compactStorageStateByDomainSuffixes(
+		state,
+		AUTH_PROVIDER_CONFIG[provider].domainSuffixes,
+	);
+}
+
+function mergeStorageStates(states: StorageState[]): StorageState {
+	const cookies = new Map<
+		string,
+		NonNullable<StorageState["cookies"]>[number]
+	>();
+	const origins = new Map<
+		string,
+		NonNullable<StorageState["origins"]>[number]
+	>();
+
+	for (const state of states) {
+		for (const cookie of state.cookies ?? []) {
+			const name = cookie.name?.trim();
+			const domain = cookie.domain?.trim();
+			const cookiePath = cookie.path?.trim() || "/";
+			if (!name || !domain) {
+				continue;
+			}
+
+			const normalizedCookie = {
+				name,
+				value: cookie.value ?? "",
+				domain,
+				path: cookiePath,
+				expires:
+					typeof cookie.expires === "number" ? cookie.expires : -1,
+				httpOnly: Boolean(cookie.httpOnly),
+				secure: Boolean(cookie.secure),
+				...(isValidSameSite(cookie.sameSite)
+					? { sameSite: cookie.sameSite }
+					: {}),
+			};
+			cookies.set(cookieStorageKey(normalizedCookie), normalizedCookie);
+		}
+
+		for (const originEntry of state.origins ?? []) {
+			const origin = originEntry.origin?.trim();
+			if (!origin) {
+				continue;
+			}
+
+			const mergedLocalStorage = new Map<string, string>();
+			for (const existing of origins.get(origin)?.localStorage ?? []) {
+				const name = existing.name?.trim();
+				if (!name) continue;
+				mergedLocalStorage.set(name, existing.value ?? "");
+			}
+
+			for (const item of originEntry.localStorage ?? []) {
+				const name = item.name?.trim();
+				if (!name) continue;
+				mergedLocalStorage.set(name, item.value ?? "");
+			}
+
+			if (mergedLocalStorage.size === 0) {
+				continue;
+			}
+
+			origins.set(origin, {
+				origin,
+				localStorage: [...mergedLocalStorage.entries()]
+					.map(([name, value]) => ({ name, value }))
+					.sort((left, right) => left.name.localeCompare(right.name)),
+			});
+		}
+	}
+
+	return sortStorageState({
+		cookies: [...cookies.values()],
+		origins: [...origins.values()],
+	});
 }
 
 function hasUsableAuthState(state: StorageState | null): boolean {
@@ -359,10 +504,9 @@ async function getSpawnEnv(): Promise<NodeJS.ProcessEnv> {
 	if (!spawnEnv.CAMOUFOX_HUMANIZE) {
 		spawnEnv.CAMOUFOX_HUMANIZE = "false";
 	}
-	// Auth capture is a manual headful flow. Prefer visual stability over the
-	// more aggressive runtime fingerprinting defaults that can cause visible
-	// text/layout churn on Google/Apple OAuth pages.
-	spawnEnv.CAMOUFOX_USE_FULL_OS_FONTS = "false";
+	if (!spawnEnv.CAMOUFOX_ENABLE_CACHE) {
+		spawnEnv.CAMOUFOX_ENABLE_CACHE = "true";
+	}
 	delete spawnEnv.CAMOUFOX_WINDOW;
 
 	return spawnEnv;
@@ -444,11 +588,88 @@ export function getAuthStatusFile(provider: AuthProvider): string {
 	return path.join(getStatusDir(), `${provider}.json`);
 }
 
+function getReusableIdentitySessionFile(
+	provider: ReusableIdentityProvider,
+): string {
+	return path.join(getReusableIdentityDir(), `${provider}.json`);
+}
+
 export function ensureAuthDirectories(): void {
 	mkdirSync(getSessionsDir(), { recursive: true });
 	mkdirSync(getConnectProfilesDir(), { recursive: true });
 	mkdirSync(getStatusDir(), { recursive: true });
+	mkdirSync(getReusableIdentityDir(), { recursive: true });
 	mkdirSync(getRuntimeRootDir(), { recursive: true });
+}
+
+export function getReusableIdentityDomainSuffixes(): string[] {
+	return [...new Set(
+		REUSABLE_IDENTITY_PROVIDERS.flatMap(
+			(provider) => getReusableIdentityConfig(provider).domainSuffixes,
+		),
+	)];
+}
+
+export async function readReusableIdentitySeedState(): Promise<StorageState | null> {
+	ensureAuthDirectories();
+
+	const states = (
+		await Promise.all(
+			REUSABLE_IDENTITY_PROVIDERS.map(async (provider) => {
+				const rawState = await readReusableIdentityState(provider);
+				const preferredAuthProvider =
+					getReusableIdentityConfig(provider).preferredAuthProvider;
+				const preferredAuthState = preferredAuthProvider
+					? await readAuthSession(preferredAuthProvider)
+					: null;
+				const candidateStates = [rawState, preferredAuthState]
+					.filter((state): state is StorageState => state !== null)
+					.map((state) => compactReusableIdentityState(provider, state))
+					.filter((state) => hasUsableAuthState(state));
+
+				if (candidateStates.length === 0) {
+					return null;
+				}
+
+				const compactState = mergeStorageStates(candidateStates);
+				return hasUsableAuthState(compactState) ? compactState : null;
+			}),
+		)
+	).filter((state): state is StorageState => state !== null);
+
+	if (states.length === 0) {
+		return null;
+	}
+
+	const mergedState = mergeStorageStates(states);
+	return hasUsableAuthState(mergedState) ? mergedState : null;
+}
+
+export async function saveReusableIdentitySessions(
+	state: StorageState,
+): Promise<ReusableIdentityProvider[]> {
+	ensureAuthDirectories();
+
+	const savedProviders: ReusableIdentityProvider[] = [];
+	for (const provider of REUSABLE_IDENTITY_PROVIDERS) {
+		const incomingState = compactReusableIdentityState(provider, state);
+		if (!hasUsableAuthState(incomingState)) {
+			continue;
+		}
+
+		const existingState = await readReusableIdentityState(provider);
+		const nextState = hasUsableAuthState(existingState)
+			? mergeStorageStates([existingState as StorageState, incomingState])
+			: incomingState;
+
+		await writeFile(
+			getReusableIdentitySessionFile(provider),
+			JSON.stringify(nextState),
+		);
+		savedProviders.push(provider);
+	}
+
+	return savedProviders;
 }
 
 export async function readAuthSession(
@@ -623,6 +844,31 @@ export function getAuthProviderForRuntimeProvider(
 	return getAuthProviderForProvider(provider);
 }
 
+export async function hasRuntimeProviderAuth(
+	provider: Provider,
+): Promise<boolean> {
+	const authProvider = getAuthProviderForRuntimeProvider(provider);
+	return hasUsableAuthState(await readAuthSession(authProvider));
+}
+
+export async function readAuthenticatedRuntimeProviders(
+	providers: readonly Provider[] = PROVIDER_LIST,
+): Promise<Provider[]> {
+	const uniqueProviders = [...new Set(providers)];
+	const authStates = await Promise.all(
+		uniqueProviders.map(async (provider) => ({
+			provider,
+			hasAuth: await hasRuntimeProviderAuth(provider),
+		})),
+	);
+
+	return authStates
+		.filter(
+			(entry): entry is { provider: Provider; hasAuth: true } => entry.hasAuth,
+		)
+		.map((entry) => entry.provider);
+}
+
 export async function getRuntimeProfileSeedPlan(
 	provider: Provider,
 ): Promise<RuntimeProfileSeedPlan> {
@@ -645,6 +891,7 @@ export async function getRuntimeProfileSeedPlan(
 
 	return {
 		authProvider,
+		authState,
 		authStateHash,
 		authStatePath,
 		shouldBootstrap,
@@ -709,7 +956,7 @@ export async function spawnProviderAuthLogin(
 ): Promise<{ started: boolean }> {
 	if (!isInteractiveAuthLaunchAllowed()) {
 		throw new Error(
-			"Interactive provider login is disabled on VPS. Open the same provider-connections screen locally and configure AGENT_AUTH_UPLOAD_URL/AGENT_AUTH_UPLOAD_TOKEN to sync sessions to the VPS.",
+			"Interactive provider login is disabled in this environment. Open the local Providers screen and configure AGENT_AUTH_UPLOAD_URL/AGENT_AUTH_UPLOAD_TOKEN to sync sessions here.",
 		);
 	}
 
@@ -751,7 +998,6 @@ export async function spawnProviderAuthLogin(
 		const child = spawn(command, [...args, "--provider", provider], {
 			cwd,
 			env: await getSpawnEnv(),
-			detached: true,
 			stdio: "ignore",
 		});
 
@@ -777,7 +1023,6 @@ export async function spawnProviderAuthLogin(
 			throw new Error(errorMessage);
 		}
 
-		child.unref();
 		return { started: true };
 	} finally {
 		authLaunchInFlight.delete(provider);

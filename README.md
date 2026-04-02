@@ -35,7 +35,7 @@ This:
 - opens the app at [http://localhost:3000](http://localhost:3000)
 - forces app mode to `local`
 
-If provider auth is missing, the app routes you to `/connections`.
+If provider auth is missing, the app routes you to `/providers`.
 
 ### Local Auth Only
 
@@ -43,8 +43,8 @@ If provider auth is missing, the app routes you to `/connections`.
 pnpm auth
 ```
 
-This starts only the shared provider-connections flow at
-[http://localhost:3000/provider-connections](http://localhost:3000/provider-connections).
+This starts only the shared providers flow at
+[http://localhost:3000/providers](http://localhost:3000/providers).
 
 Use it when you want to connect providers without running the full local app
 flow. It bootstraps the same pinned local Camoufox auth runtime automatically.
@@ -111,10 +111,9 @@ web app is restarting or temporarily unavailable, that gateway serves a short
 
 ## Provider Auth
 
-Provider auth is one shared module used in two places:
+Provider auth uses one canonical route:
 
-- in-app at `/connections`
-- standalone at `/provider-connections`
+- `/providers`
 
 Supported runtime providers:
 

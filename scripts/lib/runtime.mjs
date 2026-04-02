@@ -111,6 +111,41 @@ export function spawnCommand(command, args, options = {}) {
 	});
 }
 
+function killChildProcessTree(child, signal = "SIGTERM") {
+	const pid = child.pid;
+	if (!pid || child.killed) {
+		return;
+	}
+
+	if (process.platform === "win32") {
+		const forceFlag = signal === "SIGKILL" ? ["/f"] : [];
+		void runCommandCapture("taskkill", [
+			"/pid",
+			String(pid),
+			"/t",
+			...forceFlag,
+		], {
+			stdio: ["ignore", "ignore", "ignore"],
+		}).catch(() => {});
+		return;
+	}
+
+	try {
+		if (child.spawnargs && child.spawnargs.length > 0 && child.spawnfile) {
+			process.kill(-pid, signal);
+			return;
+		}
+	} catch {
+		// Fall through to direct child kill.
+	}
+
+	try {
+		child.kill(signal);
+	} catch {
+		// Process already exited.
+	}
+}
+
 function encodeSegment(value) {
 	return encodeURIComponent(value);
 }
@@ -416,14 +451,27 @@ export function openBrowser(url) {
 }
 
 export function attachTerminationHandler(child) {
+	let forceKillTimer = null;
 	const shutdown = () => {
-		if (!child.killed) {
-			child.kill("SIGTERM");
+		killChildProcessTree(child, "SIGTERM");
+		if (forceKillTimer) {
+			return;
 		}
+		forceKillTimer = setTimeout(() => {
+			killChildProcessTree(child, "SIGKILL");
+		}, 5_000);
+		forceKillTimer.unref?.();
 	};
 
 	process.on("SIGINT", shutdown);
 	process.on("SIGTERM", shutdown);
+	process.on("SIGHUP", shutdown);
+	child.once("exit", () => {
+		if (forceKillTimer) {
+			clearTimeout(forceKillTimer);
+			forceKillTimer = null;
+		}
+	});
 
 	return shutdown;
 }

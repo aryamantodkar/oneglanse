@@ -1,6 +1,5 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import {
-	PROVIDER_MODEL_RESPONSE_SELECTORS,
 	exponentialBackoff,
 	logger,
 } from "@oneglanse/utils";
@@ -8,6 +7,10 @@ import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { env } from "../../env.js";
 import { getText } from "../../lib/input/response/getText.js";
+import {
+	extractResolvedResponseHtml,
+	getSelectorProfile,
+} from "../../lib/selectors/intelligence.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const MAX_EXTRACTION_RETRIES = env.MAX_EXTRACTION_RETRIES;
@@ -46,13 +49,13 @@ async function captureResponseHtmlForLogs(
 	page: Page,
 	provider: Provider,
 ): Promise<{ selector: string; html: string }> {
-	return await page.runDomOp<{ selector: string; html: string }>(
-		"capture-visible-html",
-		{
-			selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
-			fallbackSelectors: ["main", "body"],
-		},
-	);
+	const profile = await getSelectorProfile(page, provider, "response", {
+		allowModel: false,
+	}).catch(() => null);
+	return {
+		selector: profile?.selectors.response[0] ?? "unresolved-response-selector",
+		html: await extractResolvedResponseHtml(page, provider),
+	};
 }
 
 export async function fetchPromptResponses(page: Page, provider: Provider): Promise<string> {

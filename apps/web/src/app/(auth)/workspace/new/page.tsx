@@ -44,20 +44,6 @@ export default function NewWorkspace() {
 	const router = useRouter();
 
 	const createWorkspaceMutation = api.workspace.create.useMutation({
-		onSuccess: async (response) => {
-			try {
-				const { workspace, org } = response;
-
-				await authClient.organization.setActive({
-					organizationId: org.id,
-					organizationSlug: workspace.slug,
-				});
-			} catch (err) {
-				console.error("Error setting active organization", err);
-				toast.error("Could not set active workspace.");
-			}
-			toast.success("Workspace created successfully!");
-		},
 		onError: (error) => {
 			console.error("Workspace creation failed", error);
 			toast.error("Workspace creation failed");
@@ -102,18 +88,20 @@ export default function NewWorkspace() {
 			try {
 				await authClient.organization.setActive({
 					organizationId: org.id,
-					organizationSlug: workspace.slug,
+					organizationSlug: org.slug ?? undefined,
 				});
 			} catch (err) {
 				console.error("Error setting active organization", err);
 				toast.error("Could not set active workspace.");
+				return;
 			}
 
+			toast.success("Workspace created successfully!");
 			router.refresh();
 			if (isFirstWorkspace) {
-				return router.push(`/onboarding?workspace=${workspace.id}`);
+				return router.replace(`/onboarding?workspace=${workspace.id}`);
 			}
-			return router.push(`/dashboard?workspace=${workspace.id}`);
+			return router.replace(`/dashboard?workspace=${workspace.id}`);
 		} finally {
 			setLoading(false);
 		}

@@ -1,5 +1,9 @@
 import { ValidationError, toErrorMessage } from "@oneglanse/errors";
-import { redis, storePromptResponses } from "@oneglanse/services";
+import {
+	hasRuntimeProviderAuth,
+	redis,
+	storePromptResponses,
+} from "@oneglanse/services";
 import type {
 	AgentResult,
 	ModelResult,
@@ -151,6 +155,16 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 
 	const progressKey = `job:${jobGroupId}:result`;
 	await ensureProgressSeed(progressKey, ownedProviders, prompts.length);
+	const hasAuth = await hasRuntimeProviderAuth(provider);
+	if (!hasAuth) {
+		plog.warn("skipped (no authenticated session)");
+		await Promise.all(
+			ownedProviders.map((currentProvider) =>
+				updateProgress(progressKey, currentProvider, "failed", 0),
+			),
+		);
+		return true;
+	}
 
 	if (
 		ownedProviders.some(

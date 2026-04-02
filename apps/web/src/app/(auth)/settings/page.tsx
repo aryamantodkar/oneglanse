@@ -4,7 +4,6 @@ import { authClient } from "@/lib/auth/auth-client";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
-import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 import {
 	type AnalysisRecord,
 	type DomainStats,
@@ -297,8 +296,6 @@ export default function SettingsPage() {
 					</div>
 				</section>
 			) : null}
-
-			<ProviderConnectionsPanel />
 
 			{/* Danger Zone */}
 			<section>

@@ -1,12 +1,15 @@
 import type { Provider } from "@oneglanse/types";
-import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
+import { getSelectorProfile } from "../../selectors/intelligence.js";
 
 export async function findLastAssistantLocator(
 	page: Page,
 	provider: Provider,
 ): Promise<Locator | null> {
-	for (const selector of PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || []) {
+	const profile = await getSelectorProfile(page, provider, "response", {
+		allowModel: false,
+	}).catch(() => null);
+	for (const selector of profile?.selectors.response ?? []) {
 		const locator = page.locator(selector);
 		if ((await locator.count()) === 0) continue;
 		return locator.last();

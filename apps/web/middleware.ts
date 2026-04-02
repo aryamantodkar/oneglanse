@@ -7,7 +7,10 @@ export async function middleware(request: NextRequest){
 	});
 	
 	if (!session) {
-		return NextResponse.redirect(new URL("/login", request.url));
+		const loginUrl = new URL("/login", request.url);
+		const requestPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+		loginUrl.searchParams.set("next", requestPath);
+		return NextResponse.redirect(loginUrl);
 	}
 
 	return NextResponse.next();
