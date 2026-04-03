@@ -1,31 +1,19 @@
 import type { Provider, Source } from "@oneglanse/types";
-import type { Page } from "playwright";
 import { logger } from "@oneglanse/utils";
+import type { Page } from "playwright";
 import { extractResolvedSources } from "../../lib/selectors/intelligence.js";
 
 export async function checkAndExtractSources(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
-	let sources: Source[] = [];
-
 	try {
-		sources = await extractSourcesFromPanel(page, provider);
+		logger.log(`[${provider}] extracting sources`);
+		const sources = await extractResolvedSources(page, provider);
+		logger.log(`[${provider}] ${sources.length} sources extracted`);
+		return sources;
 	} catch (err) {
-		logger.warn("source extraction failed, continuing:", err);
-		sources = [];
+		logger.warn(`[${provider}] source extraction failed, continuing:`, err);
+		return [];
 	}
-
-	return sources;
-}
-
-async function extractSourcesFromPanel(
-	page: Page,
-	provider: Provider,
-): Promise<Source[]> {
-	const sources = await extractResolvedSources(page, provider);
-
-	logger.debug(`extracted ${sources.length} sources`);
-
-	return sources;
 }

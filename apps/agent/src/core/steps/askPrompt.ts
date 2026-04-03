@@ -2,7 +2,6 @@ import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { env } from "../../env.js";
 import {
 	moveMouseToElement,
 	preInteractionIdle,
@@ -25,9 +24,8 @@ import {
 	tryNativeClick,
 } from "./submitStrategies.js";
 
-const NETWORKIDLE_TIMEOUT_MS = 3000;
-
-const SUBMISSION_PHASE_TIMEOUT_MS = env.SUBMISSION_PHASE_TIMEOUT_MS;
+const SUBMISSION_PHASE_TIMEOUT_MS = 30_000;
+const CAMOUFOX_HUMANIZE = true;
 
 function randomBetween(min: number, max: number): number {
 	return min + Math.floor(Math.random() * (max - min + 1));
@@ -44,19 +42,18 @@ export async function askPrompt(
 	const input = await waitForEditorReady(page, provider);
 
 	await preInteractionIdle(page);
-	if (!env.CAMOUFOX_HUMANIZE && Math.random() < 0.4) await smallScroll(page);
-	if (!env.CAMOUFOX_HUMANIZE && Math.random() < 0.6) {
+	if (!CAMOUFOX_HUMANIZE && Math.random() < 0.4) await smallScroll(page);
+	if (!CAMOUFOX_HUMANIZE && Math.random() < 0.6) {
 		await moveMouseToElement(page, input);
 	}
 
-	logger.debug(`pasting ${prompt.length} chars…`);
+	logger.log(`[${provider}] typing prompt (${prompt.length} chars)`);
 	const { rawValue: insertedValue } = await insertPromptIntoEditor(
 		page,
 		input,
 		prompt,
 		provider,
 	);
-	logger.debug(`pasting ${prompt.length} chars complete`);
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);
@@ -95,8 +92,6 @@ export async function askPrompt(
 		preSubmitUrl,
 	};
 
-	// Detect bot/CAPTCHA page before attempting submission.
-	logger.debug("attempting submission…");
 	await detectBotPage(page, provider);
 
 	// Try each submission strategy exactly once — if all fail, throw immediately.
@@ -186,10 +181,11 @@ export async function askPrompt(
 	await page
 		.waitForLoadState("domcontentloaded", { timeout: 5000 })
 		.catch(() => {});
-	await page
-		.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
-		.catch(() => {});
+	// Chat providers keep long-lived connections open, so waiting for networkidle
+	// adds an avoidable fixed delay after every successful submit. A short settle
+	// is enough before provider-specific post-submit hooks run.
+	await page.waitForTimeout(150);
 	await config.afterSubmitHook?.(page);
 
-	logger.log(`post-submit URL: ${page.url()}`);
+	logger.log(`[${provider}] prompt submitted: ${page.url()}`);
 }

@@ -4,10 +4,12 @@ import {
 	classifyError,
 	toErrorMessage,
 } from "@oneglanse/errors";
-import type {
-	AskPromptResult,
-	PromptPayload,
-	Provider,
+import {
+	type AskPromptResult,
+	type PromptPayload,
+	type Provider,
+	resolveAppMode,
+	shouldUseProxyInMode,
 } from "@oneglanse/types";
 import { exponentialBackoff, logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
@@ -15,9 +17,9 @@ import { env } from "../../env.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 import { executePrompt } from "./executePrompt.js";
 
-const MAX_RETRIES = env.MAX_PROMPT_RETRIES_PER_IP;
-const INITIAL_RETRY_DELAY = env.PROMPT_RETRY_DELAY_MS;
-const MAX_RETRY_DELAY = env.MAX_PROMPT_RETRY_DELAY_MS;
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1_000;
+const MAX_RETRY_DELAY = 5_000;
 const CANARY_ROTATE_FAILURES = new Set([
 	"bot_detection",
 	"connection_error",
@@ -61,8 +63,6 @@ function shouldRotateImmediatelyOnUnprovenProxy(
  *   - Unproven proxy + local UI/extraction failure    → retry locally up to MAX_RETRIES.
  *   - Proven proxy                                    → up to MAX_RETRIES attempts.
  *
- * The provider's `beforeRetryHook` is called before each retry so providers can
- * reset their page state without any of that logic living here.
  *
  * Throws IPRefreshNeededError on terminal failure so the caller can rotate the proxy.
  */
@@ -79,6 +79,7 @@ export async function executePromptWithRetry(
 	proxyProven: boolean,
 ): Promise<{ result: AskPromptResult; proxyNowProven: boolean }> {
 	const config = PROVIDER_CONFIGS[provider];
+	const useProxy = shouldUseProxyInMode(resolveAppMode(env.ONEGLANSE_APP_MODE));
 	const maxAttempts = MAX_RETRIES;
 	let lastError: unknown = null;
 
@@ -93,7 +94,6 @@ export async function executePromptWithRetry(
 				`retry ${attempt}/${maxAttempts} for prompt ${promptIndex + 1} (backoff ${backoffDelay / 1000}s)`,
 			);
 			await page.waitForTimeout(backoffDelay);
-			await config.beforeRetryHook?.(page);
 		}
 
 		try {
@@ -116,7 +116,7 @@ export async function executePromptWithRetry(
 				sources,
 			};
 
-			const proxyNowProven = !proxyProven;
+			const proxyNowProven = useProxy && !proxyProven;
 			if (proxyNowProven) {
 				logger.log("proxy proven — full retries enabled for remaining prompts");
 			}
@@ -129,7 +129,11 @@ export async function executePromptWithRetry(
 				`attempt ${attempt}/${maxAttempts} failed for prompt ${promptIndex + 1}: ${toErrorMessage(err)}`,
 			);
 
-			if (!proxyProven && shouldRotateImmediatelyOnUnprovenProxy(failureType)) {
+			if (
+				useProxy &&
+				!proxyProven &&
+				shouldRotateImmediatelyOnUnprovenProxy(failureType)
+			) {
 				logger.warn(
 					`canary failed on unproven proxy with ${failureType} — rotating IP immediately`,
 				);
@@ -142,7 +146,7 @@ export async function executePromptWithRetry(
 				);
 			}
 
-			if (!proxyProven && attempt === 1) {
+			if (useProxy && !proxyProven && attempt === 1) {
 				logger.warn(
 					`canary failed on unproven proxy with ${failureType}, retrying locally before rotating IP`,
 				);
@@ -150,11 +154,17 @@ export async function executePromptWithRetry(
 
 			if (EXTRACTION_FAILURE_RE.test(toErrorMessage(err))) {
 				logger.warn(
-					`repeated extraction failure on current IP (prompt ${promptIndex + 1}, attempt ${attempt}/${maxAttempts})`,
+					`repeated extraction failure on current ${useProxy ? "IP" : "session"} (prompt ${promptIndex + 1}, attempt ${attempt}/${maxAttempts})`,
 				);
 			}
 
 			if (attempt === maxAttempts) {
+				if (!useProxy) {
+					logger.error(
+						`prompt ${promptIndex + 1} exhausted ${maxAttempts} attempts`,
+					);
+					throw err;
+				}
 				logger.error(
 					`prompt ${promptIndex + 1} exhausted ${maxAttempts} attempts — triggering IP refresh`,
 				);

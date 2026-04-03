@@ -1,8 +1,12 @@
 import type { Provider } from "@oneglanse/types";
 
-const DEFAULT_MIN_RESPONSE_CHARS = Number(
-	process.env["MIN_RESPONSE_CHARS"] ?? 600,
-);
+export const DEFAULT_MIN_RESPONSE_CHARS = 200;
+
+// Per-provider overrides. AI Overview returns short factual snippets by design;
+// applying the same 600-char floor as chat providers causes excessive retries.
+export const PROVIDER_MIN_RESPONSE_CHARS: Partial<Record<Provider, number>> = {
+	"ai-overview": 50,
+};
 
 /**
  * Known false/garbage response patterns across all providers.
@@ -33,7 +37,8 @@ export function validateResponse(
 	provider: Provider,
 ): ValidationResult {
 	const trimmed = response.trim();
-	const minChars = DEFAULT_MIN_RESPONSE_CHARS;
+	const minChars =
+		PROVIDER_MIN_RESPONSE_CHARS[provider] ?? DEFAULT_MIN_RESPONSE_CHARS;
 
 	if (trimmed.length < minChars) {
 		return {
