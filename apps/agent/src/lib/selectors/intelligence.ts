@@ -1,11 +1,21 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { NotFoundError, toErrorMessage } from "@oneglanse/errors";
-import { chatgpt, getAgentAuthRootDir } from "@oneglanse/services";
+import {
+	ExternalServiceError,
+	NotFoundError,
+	toErrorMessage,
+} from "@oneglanse/errors";
+import { chatgpt } from "@oneglanse/services";
 import type { Provider, Source } from "@oneglanse/types";
-import { getDomain, getFaviconUrls, logger } from "@oneglanse/utils";
+import {
+	DEFAULT_MIN_RESPONSE_CHARS,
+	PROVIDER_MIN_RESPONSE_CHARS,
+	getDomain,
+	getFaviconUrls,
+	logger,
+} from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { z } from "zod";
 
@@ -24,6 +34,9 @@ type SnapshotCandidate = {
 	tag: string;
 	role: string | null;
 	type: string | null;
+	top: number;
+	height: number;
+	depth: number;
 	text: string;
 	textLength: number;
 	name: string | null;
@@ -74,10 +87,43 @@ type RawSource = {
 	imgSrc: string | null;
 };
 
+type PageFailureCooldown = {
+	expiresAt: number;
+	stateKey: string;
+};
+
+type ModelCandidate = Pick<
+	SnapshotCandidate,
+	| "selector"
+	| "tag"
+	| "role"
+	| "type"
+	| "top"
+	| "height"
+	| "depth"
+	| "text"
+	| "textLength"
+	| "name"
+	| "ariaLabel"
+	| "placeholder"
+	| "linkCount"
+	| "buttonCount"
+	| "inputLike"
+	| "buttonLike"
+	| "contentEditable"
+	| "disabled"
+	| "groupCount"
+	| "sampleItems"
+	| "fingerprint"
+>;
+
 const SELECTOR_PROFILE_VERSION = 1;
 const SELECTOR_MODEL = "gpt-4.1";
 const MAX_SELECTORS_PER_FIELD = 5;
-const FAILED_RESOLUTION_TTL_MS = 30_000;
+const FAILED_RESOLUTION_TTL_MS = 10_000;
+const PAGE_FAILED_RESOLUTION_TTL_MS = 5 * 60_000;
+const SELECTOR_MODEL_RATE_LIMIT_TTL_MS = 15 * 60_000;
+const MAX_SELECTOR_MODEL_CALLS_PER_PROCESS = 30;
 const SNAPSHOT_STABILITY_POLL_MS = 250;
 const SNAPSHOT_STABLE_POLLS_REQUIRED = 2;
 const SNAPSHOT_STABILITY_TIMEOUT_MS: Record<SelectorStage, number> = {
@@ -103,9 +149,16 @@ const SelectorProfileSchema = z.object({
 	sourceItem: z.array(z.string()).default([]),
 });
 
-const profileCache = new Map<string, SelectorProfile>();
 const pendingResolutions = new Map<string, Promise<SelectorProfile | null>>();
+// Tracks provider:stage pairs where an LLM resolution is currently in-flight.
+// Checked before captureStableSelectorSnapshot() to skip expensive DOM work.
+const pendingByProviderStage = new Set<string>();
 const failedResolutions = new Map<string, number>();
+const failedPageResolutions = new Map<string, PageFailureCooldown>();
+let selectorModelCallsThisProcess = 0;
+let selectorModelDisabledUntil = 0;
+let selectorModelBudgetLogged = false;
+let selectorModelRateLimitLogged = false;
 
 function defaultSelectorRecord(): Record<SelectorField, string[]> {
 	return {
@@ -119,8 +172,24 @@ function defaultSelectorRecord(): Record<SelectorField, string[]> {
 	};
 }
 
+function resolveMonorepoRoot(startDir = process.cwd()): string {
+	let current = path.resolve(startDir);
+
+	while (true) {
+		if (existsSync(path.join(current, "pnpm-workspace.yaml"))) {
+			return current;
+		}
+
+		const parent = path.dirname(current);
+		if (parent === current) {
+			return path.resolve(startDir);
+		}
+		current = parent;
+	}
+}
+
 function getSelectorCacheDir(): string {
-	return path.join(getAgentAuthRootDir(), "selector-cache");
+	return path.join(resolveMonorepoRoot(), "apps/agent/selector-cache");
 }
 
 function ensureSelectorCacheDir(): void {
@@ -132,25 +201,118 @@ function hashValue(input: string): string {
 }
 
 function sanitizeFilename(input: string): string {
-	return input.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "root";
+	return (
+		input.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "root"
+	);
 }
 
-function cacheKey(provider: Provider, stage: SelectorStage, fingerprint: string): string {
+function cacheKey(
+	provider: Provider,
+	stage: SelectorStage,
+	fingerprint: string,
+): string {
 	return `${provider}:${stage}:${fingerprint}`;
 }
 
+function pageFailureKey(
+	provider: Provider,
+	stage: SelectorStage,
+	pageKey: string,
+): string {
+	return `${provider}:${stage}:${pageKey}`;
+}
+
+function getPageFailureCooldown(key: string): PageFailureCooldown | null {
+	const cooldown = failedPageResolutions.get(key);
+	if (!cooldown) {
+		return null;
+	}
+	if (Date.now() >= cooldown.expiresAt) {
+		failedPageResolutions.delete(key);
+		return null;
+	}
+	return cooldown;
+}
+
+function markPageFailureCooldown(
+	key: string,
+	stateKey: string,
+	ttlMs: number,
+): void {
+	failedPageResolutions.set(key, {
+		expiresAt: Date.now() + ttlMs,
+		stateKey,
+	});
+}
+
+function isSelectorModelRateLimited(): boolean {
+	if (Date.now() >= selectorModelDisabledUntil) {
+		selectorModelDisabledUntil = 0;
+		selectorModelRateLimitLogged = false;
+		return false;
+	}
+	return true;
+}
+
+function isSelectorModelErrorRateLimit(error: unknown): boolean {
+	const message = toErrorMessage(error).toLowerCase();
+	return /429|quota|insufficient_quota|rate.?limit|billing/.test(message);
+}
+
+function shouldSkipSelectorModelForBudget(): boolean {
+	if (selectorModelCallsThisProcess < MAX_SELECTOR_MODEL_CALLS_PER_PROCESS) {
+		return false;
+	}
+	if (!selectorModelBudgetLogged) {
+		logger.warn(
+			`selector model budget exhausted (${MAX_SELECTOR_MODEL_CALLS_PER_PROCESS} calls this process) — using cache only until restart`,
+		);
+		selectorModelBudgetLogged = true;
+	}
+	return true;
+}
+
 function getProfileCacheFile(
+	cacheDir: string,
 	provider: Provider,
 	stage: SelectorStage,
 	pageKey: string,
 	fingerprint: string,
 ): string {
 	return path.join(
-		getSelectorCacheDir(),
+		cacheDir,
 		provider,
 		stage,
 		`${sanitizeFilename(pageKey)}-${fingerprint}.json`,
 	);
+}
+
+async function readSelectorProfileFile(
+	cacheFile: string,
+	provider: Provider,
+	stage: SelectorStage,
+	pageKey?: string,
+): Promise<SelectorProfile | null> {
+	if (!existsSync(cacheFile)) {
+		return null;
+	}
+
+	try {
+		const parsed = JSON.parse(
+			await readFile(cacheFile, "utf8"),
+		) as SelectorProfile;
+		if (
+			parsed.version !== SELECTOR_PROFILE_VERSION ||
+			parsed.provider !== provider ||
+			parsed.stage !== stage ||
+			(pageKey !== undefined && parsed.pageKey !== pageKey)
+		) {
+			return null;
+		}
+		return parsed;
+	} catch {
+		return null;
+	}
 }
 
 async function readCachedProfile(
@@ -159,54 +321,101 @@ async function readCachedProfile(
 	pageKey: string,
 	fingerprint: string,
 ): Promise<SelectorProfile | null> {
-	const key = cacheKey(provider, stage, fingerprint);
-	const memoized = profileCache.get(key);
-	if (memoized) {
-		return memoized;
-	}
+	const parsed = await readSelectorProfileFile(
+		getProfileCacheFile(
+			getSelectorCacheDir(),
+			provider,
+			stage,
+			pageKey,
+			fingerprint,
+		),
+		provider,
+		stage,
+	);
+	return parsed ?? null;
+}
 
-	const cacheFile = getProfileCacheFile(provider, stage, pageKey, fingerprint);
-	if (!existsSync(cacheFile)) {
-		return null;
-	}
+async function readFallbackCachedProfiles(
+	provider: Provider,
+	stage: SelectorStage,
+	pageKey: string,
+): Promise<SelectorProfile[]> {
+	const pageKeyPrefix = `${sanitizeFilename(pageKey)}-`;
+	const results = new Map<string, SelectorProfile>();
 
-	try {
-		const parsed = JSON.parse(await readFile(cacheFile, "utf8")) as SelectorProfile;
-		if (
-			parsed.version !== SELECTOR_PROFILE_VERSION ||
-			parsed.provider !== provider ||
-			parsed.stage !== stage
-		) {
-			return null;
+	const stageDir = path.join(getSelectorCacheDir(), provider, stage);
+	if (existsSync(stageDir)) {
+		for (const file of await readdir(stageDir).catch(() => [])) {
+			if (!file.startsWith(pageKeyPrefix) || !file.endsWith(".json")) {
+				continue;
+			}
+			const parsed = await readSelectorProfileFile(
+				path.join(stageDir, file),
+				provider,
+				stage,
+				pageKey,
+			);
+			if (!parsed) {
+				continue;
+			}
+			results.set(parsed.fingerprint, parsed);
 		}
-		profileCache.set(key, parsed);
-		return parsed;
-	} catch {
-		return null;
 	}
+
+	return [...results.values()].sort((left, right) =>
+		right.createdAt.localeCompare(left.createdAt),
+	);
 }
 
 async function writeCachedProfile(profile: SelectorProfile): Promise<void> {
 	ensureSelectorCacheDir();
-	const key = cacheKey(profile.provider, profile.stage, profile.fingerprint);
+	const payload = JSON.stringify(profile, null, 2);
 	const cacheFile = getProfileCacheFile(
+		getSelectorCacheDir(),
 		profile.provider,
 		profile.stage,
 		profile.pageKey,
 		profile.fingerprint,
 	);
 	mkdirSync(path.dirname(cacheFile), { recursive: true });
-	await writeFile(cacheFile, JSON.stringify(profile, null, 2));
-	profileCache.set(key, profile);
+	await writeFile(cacheFile, payload).catch(() => {});
 }
 
-function compactSelectors(input: z.infer<typeof SelectorProfileSchema>): Record<SelectorField, string[]> {
+async function deleteCachedProfile(profile: SelectorProfile): Promise<void> {
+	const key = cacheKey(profile.provider, profile.stage, profile.fingerprint);
+	failedResolutions.delete(key);
+
+	const cacheFile = getProfileCacheFile(
+		getSelectorCacheDir(),
+		profile.provider,
+		profile.stage,
+		profile.pageKey,
+		profile.fingerprint,
+	);
+	await unlink(cacheFile).catch(() => {});
+}
+
+function compactSelectors(
+	input: z.infer<typeof SelectorProfileSchema>,
+): Record<SelectorField, string[]> {
 	const base = defaultSelectorRecord();
 	for (const field of Object.keys(base) as SelectorField[]) {
-		base[field] = [...new Set((input[field] ?? []).map((value) => value.trim()).filter(Boolean))].slice(
-			0,
-			MAX_SELECTORS_PER_FIELD,
-		);
+		let values = (input[field] ?? [])
+			.map((value) => value.trim())
+			.filter(Boolean);
+
+		// Strip :nth-of-type(N) from response selectors. The fingerprint already
+		// normalizes these numbers so the same fingerprint is reused across prompts,
+		// but keeping the ordinal in the actual selector makes it permanently point
+		// to the first response container. extractResponsePayload uses .at(-1) to
+		// get the latest match, so an unanchored selector works correctly.
+		if (field === "response") {
+			values = values.map((value) =>
+				value.replace(/:nth-of-type\(\d+\)/g, "").trim(),
+			);
+		}
+
+		base[field] = [...new Set(values)].slice(0, MAX_SELECTORS_PER_FIELD);
 	}
 	return base;
 }
@@ -219,9 +428,7 @@ function buildPageKey(rawUrl: string): string {
 			.filter(Boolean)
 			.slice(0, 2)
 			.map((segment) =>
-				segment
-					.replace(/[0-9a-f]{8,}/gi, ":id")
-					.replace(/\d+/g, ":n"),
+				segment.replace(/[0-9a-f]{8,}/gi, ":id").replace(/\d+/g, ":n"),
 			);
 		return `${url.hostname}/${segments.join("/")}`.replace(/\/$/, "");
 	} catch {
@@ -229,19 +436,66 @@ function buildPageKey(rawUrl: string): string {
 	}
 }
 
+function normalizeSelectorForState(selector: string): string {
+	return selector.replace(/:nth-of-type\(\d+\)/g, ":nth-of-type");
+}
+
+function buildSnapshotStateKey(snapshot: SelectorSnapshot): string {
+	return hashValue(
+		JSON.stringify({
+			stage: snapshot.stage,
+			pageKey: snapshot.pageKey,
+			editables: snapshot.editables.slice(0, 2).map((item) => ({
+				selector: normalizeSelectorForState(item.selector),
+				fingerprint: item.fingerprint,
+			})),
+			buttons: snapshot.buttons.slice(0, 8).map((item) => ({
+				selector: normalizeSelectorForState(item.selector),
+				ariaLabel: item.ariaLabel,
+				text: item.text.slice(0, 60),
+				fingerprint: item.fingerprint,
+			})),
+			content: snapshot.content.slice(0, 8).map((item) => ({
+				selector: normalizeSelectorForState(item.selector),
+				lengthBucket: Math.min(12, Math.floor(item.textLength / 250)),
+				linkCount: item.linkCount,
+				buttonCount: item.buttonCount,
+				fingerprint: item.fingerprint,
+			})),
+			groups: snapshot.groups.slice(0, 6).map((item) => ({
+				selector: normalizeSelectorForState(item.selector),
+				groupCount: item.groupCount ?? 0,
+				linkCount: item.linkCount,
+				buttonCount: item.buttonCount,
+				fingerprint: item.fingerprint,
+			})),
+		}),
+	);
+}
+
 function hasRequiredSelectors(
 	stage: SelectorStage,
 	selectors: Record<SelectorField, string[]>,
+	requiredFields?: readonly SelectorField[],
 ): boolean {
+	if (requiredFields && requiredFields.length > 0) {
+		return requiredFields.every((field) => selectors[field].length > 0);
+	}
+
 	if (stage === "response") {
 		return selectors.response.length > 0;
 	}
 
 	if (stage === "sources") {
-		return selectors.sourceItem.length > 0;
+		// Both sourcePanel and sourceItem are required. Without sourcePanel the
+		// extraction falls back to querying the whole document, which picks up
+		// wrong elements from anywhere on the page.
+		return selectors.sourceItem.length > 0 && selectors.sourcePanel.length > 0;
 	}
 
-	return STAGE_REQUIRED_FIELDS[stage].every((field) => selectors[field].length > 0);
+	return STAGE_REQUIRED_FIELDS[stage].every(
+		(field) => selectors[field].length > 0,
+	);
 }
 
 async function captureSelectorSnapshot(
@@ -254,6 +508,9 @@ async function captureSelectorSnapshot(
 			tag: string;
 			role: string | null;
 			type: string | null;
+			top: number;
+			height: number;
+			depth: number;
 			text: string;
 			textLength: number;
 			name: string | null;
@@ -288,9 +545,18 @@ async function captureSelectorSnapshot(
 					(token) =>
 						token &&
 						token.length <= 40 &&
-						!/^(active|selected|disabled|hover|focus|open|show|hide)$/i.test(token) &&
+						!/^(active|selected|disabled|hover|focus|open|show|hide)$/i.test(
+							token,
+						) &&
 						!/^\d+$/.test(token) &&
-						!/__[a-z0-9]{5,}$/i.test(token),
+						!/__[a-z0-9]{5,}$/i.test(token) &&
+						// Reject build-tool hash tokens: mixed case, short, no separator
+						!(
+							token.length <= 8 &&
+							/[A-Z]/.test(token) &&
+							/[a-z]/.test(token) &&
+							!/[-_]/.test(token)
+						),
 				)
 				.slice(0, 4);
 		}
@@ -320,6 +586,28 @@ async function captureSelectorSnapshot(
 			return rect.width >= 8 && rect.height >= 8;
 		}
 
+		function isOverlayLike(element: Element): boolean {
+			if (!(element instanceof HTMLElement)) return false;
+			const style = window.getComputedStyle(element);
+			if (!["fixed", "sticky"].includes(style.position)) {
+				return false;
+			}
+			const rect = element.getBoundingClientRect();
+			if (rect.height <= 24 || rect.width <= 24) {
+				return false;
+			}
+			if (
+				rect.height > window.innerHeight * 0.85 &&
+				rect.width > window.innerWidth * 0.85
+			) {
+				return true;
+			}
+			return (
+				rect.top >= window.innerHeight * 0.6 ||
+				rect.bottom <= window.innerHeight * 0.4
+			);
+		}
+
 		function isInputLike(element: Element): boolean {
 			return (
 				element instanceof HTMLTextAreaElement ||
@@ -345,7 +633,10 @@ async function captureSelectorSnapshot(
 		}
 
 		function isDisabled(element: Element): boolean {
-			if (element instanceof HTMLButtonElement || element instanceof HTMLInputElement) {
+			if (
+				element instanceof HTMLButtonElement ||
+				element instanceof HTMLInputElement
+			) {
 				return element.disabled;
 			}
 			return (
@@ -362,23 +653,32 @@ async function captureSelectorSnapshot(
 			}
 		}
 
+		// Returns true for IDs that are clearly human-authored and deployment-stable.
+		// Mixed-case short tokens like "APjFqb" are auto-generated by build tools
+		// and will break whenever the app is recompiled. Stable IDs have hyphens,
+		// underscores, or are all-lowercase and at least 4 chars.
+		function isStableId(id: string): boolean {
+			if (!id) return false;
+			if (id.includes("-") || id.includes("_")) return true;
+			if (id === id.toLowerCase() && id.length >= 4) return true;
+			return false;
+		}
+
 		function buildSelector(element: Element): string {
 			const tag = element.tagName.toLowerCase();
-			const id = element.getAttribute("id")?.trim();
-			if (id) {
-				const selector = `#${escapeCss(id)}`;
-				if (queryCount(document, selector) === 1) return selector;
-			}
 
+			// 1. Semantic attributes — stable across builds; encode meaning not layout.
+			//    Tried before #id because ids are frequently auto-generated and break
+			//    on every recompile (e.g. Closure Compiler tokens like "APjFqb").
 			for (const attr of [
+				"name",
+				"aria-label",
+				"placeholder",
 				"data-testid",
 				"data-test-id",
 				"data-test",
 				"data-qa",
 				"data-cy",
-				"name",
-				"aria-label",
-				"placeholder",
 			] as const) {
 				const value = element.getAttribute(attr)?.trim();
 				if (!value) continue;
@@ -386,12 +686,14 @@ async function captureSelectorSnapshot(
 				if (queryCount(document, selector) === 1) return selector;
 			}
 
+			// 2. role attribute
 			const role = element.getAttribute("role")?.trim();
 			if (role) {
 				const selector = `${tag}[role="${role.replace(/"/g, '\\"')}"]`;
 				if (queryCount(document, selector) === 1) return selector;
 			}
 
+			// 3. contenteditable
 			if (
 				element instanceof HTMLElement &&
 				(element.isContentEditable ||
@@ -401,6 +703,14 @@ async function captureSelectorSnapshot(
 				if (queryCount(document, selector) === 1) return selector;
 			}
 
+			// 4. #id — only when the id looks human-authored, not auto-generated.
+			const id = element.getAttribute("id")?.trim();
+			if (id && isStableId(id)) {
+				const selector = `#${escapeCss(id)}`;
+				if (queryCount(document, selector) === 1) return selector;
+			}
+
+			// 5. Stable class combination
 			const classes = stableClassTokens(element);
 			if (classes.length > 0) {
 				for (let count = Math.min(2, classes.length); count >= 1; count -= 1) {
@@ -412,12 +722,14 @@ async function captureSelectorSnapshot(
 				}
 			}
 
+			// 6. Positional path (last resort). Ancestor ids (stable or not) are used
+			//    for anchoring even if fragile — the scope helps narrow the selector.
 			const segments: string[] = [];
 			let current: Element | null = element;
 			for (let depth = 0; current && depth < 5; depth += 1) {
 				const currentTag = current.tagName.toLowerCase();
 				const currentId = current.getAttribute("id")?.trim();
-				if (currentId) {
+				if (currentId && isStableId(currentId)) {
 					segments.unshift(`#${escapeCss(currentId)}`);
 					break;
 				}
@@ -445,9 +757,22 @@ async function captureSelectorSnapshot(
 			return segments.join(" > ") || tag;
 		}
 
-		function toCandidate(element: Element, extra?: Partial<Candidate>): Candidate {
+		function toCandidate(
+			element: Element,
+			extra?: Partial<Candidate>,
+		): Candidate {
 			const text = elementText(element).slice(0, 280);
 			const classes = stableClassTokens(element);
+			const rect =
+				element instanceof HTMLElement
+					? element.getBoundingClientRect()
+					: { top: 0, height: 0 };
+			let depth = 0;
+			let current: Element | null = element.parentElement;
+			while (current && depth < 30) {
+				depth += 1;
+				current = current.parentElement;
+			}
 			return {
 				selector: buildSelector(element),
 				tag: element.tagName.toLowerCase(),
@@ -456,12 +781,15 @@ async function captureSelectorSnapshot(
 					element instanceof HTMLInputElement
 						? element.type || null
 						: element.getAttribute("type"),
+				top: Math.round(rect.top),
+				height: Math.round(rect.height),
+				depth,
 				text,
 				textLength: text.length,
 				name: element.getAttribute("name"),
 				ariaLabel: element.getAttribute("aria-label"),
 				placeholder: element.getAttribute("placeholder"),
-				linkCount: element.querySelectorAll('a[href]').length,
+				linkCount: element.querySelectorAll("a[href]").length,
 				buttonCount: element.querySelectorAll('button,[role="button"]').length,
 				inputLike: isInputLike(element),
 				buttonLike: isButtonLike(element),
@@ -480,7 +808,7 @@ async function captureSelectorSnapshot(
 					classes.join("."),
 					isInputLike(element) ? "input" : "",
 					isButtonLike(element) ? "button" : "",
-					element.querySelectorAll('a[href]').length > 0 ? "links" : "",
+					element.querySelectorAll("a[href]").length > 0 ? "links" : "",
 					element.querySelectorAll("img").length > 0 ? "images" : "",
 				].join("|"),
 				...extra,
@@ -499,13 +827,18 @@ async function captureSelectorSnapshot(
 			return results;
 		}
 
-		const visibleElements = Array.from(document.querySelectorAll("*")).filter(isVisible);
+		const visibleElements = Array.from(document.querySelectorAll("*")).filter(
+			isVisible,
+		);
 
 		const editables = limitAndDedupe(
 			visibleElements
 				.filter((element) => isInputLike(element))
 				.map((element) => toCandidate(element))
-				.sort((left, right) => Number(right.contentEditable) - Number(left.contentEditable)),
+				.sort(
+					(left, right) =>
+						Number(right.contentEditable) - Number(left.contentEditable),
+				),
 			20,
 		);
 
@@ -536,7 +869,12 @@ async function captureSelectorSnapshot(
 						return false;
 					}
 					if (isInputLike(element) || isButtonLike(element)) return false;
-					if (element.querySelector('[contenteditable="true"], textarea, input, [role="textbox"]')) {
+					if (isOverlayLike(element)) return false;
+					if (
+						element.querySelector(
+							'[contenteditable="true"], textarea, input, [role="textbox"]',
+						)
+					) {
 						return false;
 					}
 					return true;
@@ -553,6 +891,7 @@ async function captureSelectorSnapshot(
 
 		const groups: Candidate[] = [];
 		for (const parent of visibleElements) {
+			if (isOverlayLike(parent)) continue;
 			const children = Array.from(parent.children).filter(isVisible);
 			if (children.length < 2 || children.length > 20) continue;
 
@@ -584,7 +923,7 @@ async function captureSelectorSnapshot(
 
 				const sampleItems = items.slice(0, 3).map((item) => ({
 					text: elementText(item).slice(0, 180),
-					linkCount: item.querySelectorAll('a[href]').length,
+					linkCount: item.querySelectorAll("a[href]").length,
 					buttonCount: item.querySelectorAll('button,[role="button"]').length,
 				}));
 
@@ -609,7 +948,9 @@ async function captureSelectorSnapshot(
 		const dedupedGroups = limitAndDedupe(
 			groups
 				.filter((group) => (group.groupCount ?? 0) >= 2)
-				.sort((left, right) => (right.groupCount ?? 0) - (left.groupCount ?? 0)),
+				.sort(
+					(left, right) => (right.groupCount ?? 0) - (left.groupCount ?? 0),
+				),
 			currentStage === "response" ? 20 : 12,
 		);
 
@@ -631,13 +972,13 @@ async function captureSelectorSnapshot(
 		editables: snapshot.editables.map((item) => item.fingerprint),
 		buttons: snapshot.buttons.map((item) => item.fingerprint),
 		content: snapshot.content.map((item) => [
-			item.selector.replace(/:nth-of-type\(\d+\)/g, ":nth-of-type"),
+			normalizeSelectorForState(item.selector),
 			item.linkCount,
 			item.buttonCount,
 			Math.min(6, Math.floor(item.textLength / 80)),
 		]),
 		groups: snapshot.groups.map((item) => [
-			item.selector.replace(/:nth-of-type\(\d+\)/g, ":nth-of-type"),
+			normalizeSelectorForState(item.selector),
 			item.groupCount ?? 0,
 			item.linkCount,
 			item.buttonCount,
@@ -674,7 +1015,10 @@ async function captureStableSelectorSnapshot(
 	let stableKey = buildSnapshotStabilityKey(latest);
 	let stablePolls = 1;
 
-	while (Date.now() < deadline && stablePolls < SNAPSHOT_STABLE_POLLS_REQUIRED) {
+	while (
+		Date.now() < deadline &&
+		stablePolls < SNAPSHOT_STABLE_POLLS_REQUIRED
+	) {
 		await page.waitForTimeout(SNAPSHOT_STABILITY_POLL_MS);
 		const next = await captureSelectorSnapshot(page, stage);
 		const nextKey = buildSnapshotStabilityKey(next);
@@ -693,50 +1037,119 @@ async function captureStableSelectorSnapshot(
 }
 
 function buildSystemPrompt(stage: SelectorStage): string {
+	// Shared rules applied to every stage.
+	// Keep this tight — every extra sentence costs tokens and dilutes strict rules.
 	const shared =
-		"You map DOM candidates to durable CSS selectors. " +
-		"Return only JSON. " +
-		"Use only selectors already present in the snapshot. " +
-		"Return empty arrays for fields that are not visible yet. " +
-		"Never invent selectors or explain your answer. " +
-		"Prefer id, data-testid, name, aria-label, role, contenteditable, or stable classes. " +
-		"Avoid positional selectors unless necessary.";
+		"You receive a DOM snapshot and output CSS selectors. Return only JSON. " +
+		"STRICT RULES: " +
+		"(1) Copy selector values EXACTLY as they appear in each candidate's selector field — never modify or synthesize one. " +
+		"(2) Return [] for any field you cannot identify with certainty — never guess. " +
+		"(3) Selector stability order (prefer the highest available): " +
+		"name/aria-label/placeholder > data-testid/data-test/data-qa > role/contenteditable > id > classes > positional. " +
+		"NEVER use an id selector where the id contains mixed upper and lower-case letters with no hyphen or underscore (e.g. #APjFqb, #jloFI) — these are build-tool auto-generated and change on every recompile. Only accept an id selector if it is all-lowercase, or contains a hyphen or underscore. " +
+		"(4) Never choose broad page wrappers, historical conversation turns, or elements that span multiple responses.";
 
 	if (stage === "compose") {
-		return (
-			shared +
-			" Return editor only. " +
-			"Choose the main chat composer, not search, sidebar, or settings controls."
-		);
+		return `${shared} Task: identify editor only. Choose the single element a real user types their prompt into. Reject: search bars, filters, sidebars, settings, hidden inputs, read-only areas.`;
 	}
 
 	if (stage === "submit") {
-		return (
-			shared +
-			" Return submitButton only. " +
-			"Assume text has already been typed. " +
-			"Choose the visible control that submits the current prompt."
-		);
+		return `${shared} Task: identify submitButton only. Text is already typed. Choose the visible button that sends the current prompt. Reject: voice, attach, model-picker, stop, regenerate, navigation buttons. If only Enter submits and no button exists, return [].`;
 	}
 
 	if (stage === "response") {
-		return (
-			shared +
-			" Return response, generationIndicator, and sourcesButton. " +
-			"response must target the latest model answer container, not page wrappers. " +
-			"generationIndicator must target the visible streaming, stop, or in-progress UI that disappears when the answer is complete. " +
-			"If no live generation UI is visible, return an empty array for generationIndicator. " +
-			"sourcesButton must target the citations or sources control for that answer, or be empty if unavailable."
-		);
+		return `${shared} Task: identify response, generationIndicator, and sourcesButton. response: the outermost container of the LATEST model answer only — not a child paragraph, code block, or whole-page wrapper. Must contain the full answer text, must be absent for prior turns, must persist after streaming ends. Reject any candidate that contains editable elements, user input, or multiple historical answers. generationIndicator: a small UI element (stop button, spinner, live-region) that is ONLY visible while the answer is streaming and disappears when complete. Must not contain the answer body. Return [] if no such element is visible. sourcesButton: the control that opens citations/sources for this latest answer only. Return [] if absent.`;
 	}
 
-	return (
-		shared +
-		" Return sourcePanel and sourceItem. " +
-		"Assume the sources UI is already open. " +
-		"sourcePanel should target the visible citations container when one exists. " +
-		"sourceItem should target the repeated source cards, rows, or anchors inside that UI."
-	);
+	return `${shared} Task: identify sourcePanel and sourceItem. The sources UI is already open. sourcePanel: the smallest stable container that holds only the source list for the latest answer — not sidebars, nav, or the full document. sourceItem: the repeating element (card, row, anchor) for each individual source inside that panel. If panel and items are nested, choose the repeated items for sourceItem and their direct container for sourcePanel.`;
+}
+
+function toModelCandidate(candidate: SnapshotCandidate): ModelCandidate {
+	return {
+		selector: candidate.selector,
+		tag: candidate.tag,
+		role: candidate.role,
+		type: candidate.type,
+		top: candidate.top,
+		height: candidate.height,
+		depth: candidate.depth,
+		text: candidate.text.slice(0, 180),
+		textLength: candidate.textLength,
+		name: candidate.name,
+		ariaLabel: candidate.ariaLabel,
+		placeholder: candidate.placeholder,
+		linkCount: candidate.linkCount,
+		buttonCount: candidate.buttonCount,
+		inputLike: candidate.inputLike,
+		buttonLike: candidate.buttonLike,
+		contentEditable: candidate.contentEditable,
+		disabled: candidate.disabled,
+		groupCount: candidate.groupCount,
+		sampleItems: candidate.sampleItems?.slice(0, 2).map((item) => ({
+			text: item.text.slice(0, 120),
+			linkCount: item.linkCount,
+			buttonCount: item.buttonCount,
+		})),
+		fingerprint: candidate.fingerprint,
+	};
+}
+
+function buildModelSnapshotPayload(
+	stage: SelectorStage,
+	snapshot: SelectorSnapshot,
+): {
+	providerUrl: string;
+	title: string;
+	editables: ModelCandidate[];
+	buttons: ModelCandidate[];
+	content: ModelCandidate[];
+	groups: ModelCandidate[];
+	requiredFields: SelectorField[];
+} {
+	const limits: Record<
+		SelectorStage,
+		{ editables: number; buttons: number; content: number; groups: number }
+	> = {
+		compose: { editables: 10, buttons: 6, content: 4, groups: 4 },
+		submit: { editables: 6, buttons: 15, content: 6, groups: 4 },
+		response: { editables: 4, buttons: 12, content: 14, groups: 10 },
+		sources: { editables: 2, buttons: 6, content: 10, groups: 10 },
+	};
+	const limit = limits[stage];
+
+	return {
+		providerUrl: snapshot.url,
+		title: snapshot.title,
+		editables: snapshot.editables
+			.slice(0, limit.editables)
+			.map(toModelCandidate),
+		buttons: snapshot.buttons.slice(0, limit.buttons).map(toModelCandidate),
+		content: snapshot.content.slice(0, limit.content).map(toModelCandidate),
+		groups: snapshot.groups.slice(0, limit.groups).map(toModelCandidate),
+		requiredFields: STAGE_REQUIRED_FIELDS[stage],
+	};
+}
+
+export async function debugCaptureSelectorSnapshot(
+	page: Page,
+	stage: SelectorStage,
+): Promise<SelectorSnapshot> {
+	return captureStableSelectorSnapshot(page, stage);
+}
+
+export function debugBuildModelSnapshotPayload(
+	stage: SelectorStage,
+	snapshot: SelectorSnapshot,
+): {
+	providerUrl: string;
+	title: string;
+	editables: ModelCandidate[];
+	buttons: ModelCandidate[];
+	content: ModelCandidate[];
+	groups: ModelCandidate[];
+	requiredFields: SelectorField[];
+} {
+	return buildModelSnapshotPayload(stage, snapshot);
 }
 
 async function resolveProfileWithModel(
@@ -744,6 +1157,7 @@ async function resolveProfileWithModel(
 	stage: SelectorStage,
 	snapshot: SelectorSnapshot,
 ): Promise<SelectorProfile | null> {
+	const modelPayload = buildModelSnapshotPayload(stage, snapshot);
 	const response = await chatgpt.responses.create({
 		model: SELECTOR_MODEL,
 		temperature: 0,
@@ -757,18 +1171,59 @@ async function resolveProfileWithModel(
 				content: JSON.stringify({
 					provider,
 					stage,
-					url: snapshot.url,
-					title: snapshot.title,
-					editables: snapshot.editables,
-					buttons: snapshot.buttons,
-					content: snapshot.content,
-					groups: snapshot.groups,
-					requiredFields: STAGE_REQUIRED_FIELDS[stage],
+					...modelPayload,
 				}),
 			},
 		],
 		text: {
-			format: { type: "json_object" },
+			format: {
+				type: "json_schema",
+				name: `selector_profile_${stage.replace(/[^a-z0-9_-]/gi, "_")}`,
+				strict: true,
+				schema: {
+					type: "object",
+					additionalProperties: false,
+					properties: {
+						editor: {
+							type: "array",
+							items: { type: "string" },
+						},
+						submitButton: {
+							type: "array",
+							items: { type: "string" },
+						},
+						response: {
+							type: "array",
+							items: { type: "string" },
+						},
+						generationIndicator: {
+							type: "array",
+							items: { type: "string" },
+						},
+						sourcesButton: {
+							type: "array",
+							items: { type: "string" },
+						},
+						sourcePanel: {
+							type: "array",
+							items: { type: "string" },
+						},
+						sourceItem: {
+							type: "array",
+							items: { type: "string" },
+						},
+					},
+					required: [
+						"editor",
+						"submitButton",
+						"response",
+						"generationIndicator",
+						"sourcesButton",
+						"sourcePanel",
+						"sourceItem",
+					],
+				},
+			},
 		},
 	});
 
@@ -798,8 +1253,13 @@ async function validateVisibleSelectors(
 	page: Page,
 	selectors: string[],
 	options?: {
+		label?: string;
 		requireEditable?: boolean;
 		requireEnabled?: boolean;
+		minTextLength?: number;
+		maxTextLength?: number;
+		minHeight?: number;
+		disallowEditableDescendant?: boolean;
 	},
 ): Promise<string[]> {
 	const valid: string[] = [];
@@ -807,14 +1267,26 @@ async function validateVisibleSelectors(
 	for (const selector of selectors) {
 		const locator = page.locator(selector);
 		const count = await locator.count().catch(() => 0);
-		if (count === 0) continue;
+		if (count === 0) {
+			continue;
+		}
 		for (let index = 0; index < count; index += 1) {
 			const candidate = locator.nth(index);
 			const visible = await candidate.isVisible().catch(() => false);
-			if (!visible) continue;
+			if (!visible) {
+				continue;
+			}
+			if (options?.minHeight && options.minHeight > 0) {
+				const box = await candidate.boundingBox().catch(() => null);
+				if (!box || box.height < options.minHeight) {
+					continue;
+				}
+			}
 			if (options?.requireEnabled) {
 				const enabled = await candidate.isEnabled().catch(() => false);
-				if (!enabled) continue;
+				if (!enabled) {
+					continue;
+				}
 			}
 			if (options?.requireEditable) {
 				const state = await candidate.getEditableState().catch(() => null);
@@ -830,6 +1302,84 @@ async function validateVisibleSelectors(
 					continue;
 				}
 			}
+			if (
+				(options?.minTextLength && options.minTextLength > 0) ||
+				(options?.maxTextLength && options.maxTextLength >= 0)
+			) {
+				const textLength = await page
+					.evaluate(
+						({
+							candidateSelector,
+							candidateIndex,
+						}: {
+							candidateSelector: string;
+							candidateIndex: number;
+						}) => {
+							try {
+								const matches = Array.from(
+									document.querySelectorAll(candidateSelector),
+								);
+								const node = matches[candidateIndex];
+								if (!(node instanceof HTMLElement)) {
+									return 0;
+								}
+								return (node.innerText || node.textContent || "")
+									.replace(/\s+/g, " ")
+									.trim().length;
+							} catch {
+								return 0;
+							}
+						},
+						{
+							candidateSelector: selector,
+							candidateIndex: index,
+						},
+					)
+					.catch(() => 0);
+				if (options?.minTextLength && textLength < options.minTextLength) {
+					continue;
+				}
+				if (options?.maxTextLength && textLength > options.maxTextLength) {
+					continue;
+				}
+			}
+			if (options?.disallowEditableDescendant) {
+				const hasEditableDescendant = await page
+					.evaluate(
+						({
+							candidateSelector,
+							candidateIndex,
+						}: {
+							candidateSelector: string;
+							candidateIndex: number;
+						}) => {
+							try {
+								const matches = Array.from(
+									document.querySelectorAll(candidateSelector),
+								);
+								const node = matches[candidateIndex];
+								if (!(node instanceof HTMLElement)) {
+									return false;
+								}
+								return Boolean(
+									node.querySelector(
+										'textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]',
+									),
+								);
+							} catch {
+								return false;
+							}
+						},
+						{
+							candidateSelector: selector,
+							candidateIndex: index,
+						},
+					)
+					.catch(() => false);
+				if (hasEditableDescendant) {
+					continue;
+				}
+			}
 			valid.push(selector);
 			break;
 		}
@@ -841,36 +1391,85 @@ async function validateVisibleSelectors(
 async function validateProfile(
 	page: Page,
 	profile: SelectorProfile,
+	requiredFields?: readonly SelectorField[],
 ): Promise<SelectorProfile | null> {
 	const selectors = defaultSelectorRecord();
 
-	selectors.editor = await validateVisibleSelectors(page, profile.selectors.editor, {
-		requireEditable: true,
-	});
+	selectors.editor = await validateVisibleSelectors(
+		page,
+		profile.selectors.editor,
+		{
+			label: `${profile.provider}/${profile.stage}/editor`,
+			requireEditable: true,
+		},
+	);
 	selectors.submitButton = await validateVisibleSelectors(
 		page,
 		profile.selectors.submitButton,
-		{ requireEnabled: true },
+		{
+			label: `${profile.provider}/${profile.stage}/submitButton`,
+			requireEnabled: true,
+		},
 	);
-	selectors.response = await validateVisibleSelectors(page, profile.selectors.response);
+	// Selector validation only confirms the element has content — response quality
+	// is enforced later by validateResponse(). Cap at 50 so partially-streamed
+	// responses are not rejected mid-generation, and derive from the same per-provider
+	// minimums used by validateResponse() so there is one source of truth.
+	const providerResponseMin =
+		PROVIDER_MIN_RESPONSE_CHARS[profile.provider] ?? DEFAULT_MIN_RESPONSE_CHARS;
+	const responseMinTextLength =
+		profile.stage === "response" ? Math.min(providerResponseMin, 50) : 0;
+	selectors.response = await validateVisibleSelectors(
+		page,
+		profile.selectors.response,
+		{
+			label: `${profile.provider}/${profile.stage}/response`,
+			minTextLength: responseMinTextLength,
+			minHeight: profile.stage === "response" ? 80 : 0,
+			disallowEditableDescendant: profile.stage === "response",
+		},
+	);
 	selectors.generationIndicator = await validateVisibleSelectors(
 		page,
 		profile.selectors.generationIndicator,
+		{
+			label: `${profile.provider}/${profile.stage}/generationIndicator`,
+			maxTextLength: 160,
+		},
 	);
 	selectors.sourcesButton = await validateVisibleSelectors(
 		page,
 		profile.selectors.sourcesButton,
+		{
+			label: `${profile.provider}/${profile.stage}/sourcesButton`,
+		},
 	);
 	selectors.sourcePanel = await validateVisibleSelectors(
 		page,
 		profile.selectors.sourcePanel,
+		{
+			label: `${profile.provider}/${profile.stage}/sourcePanel`,
+		},
 	);
 	selectors.sourceItem = await validateVisibleSelectors(
 		page,
 		profile.selectors.sourceItem,
+		{
+			label: `${profile.provider}/${profile.stage}/sourceItem`,
+		},
 	);
 
-	if (!hasRequiredSelectors(profile.stage, selectors)) {
+	if (
+		profile.stage === "response" &&
+		selectors.generationIndicator.length > 0
+	) {
+		const responseSet = new Set(selectors.response);
+		selectors.generationIndicator = selectors.generationIndicator.filter(
+			(selector) => !responseSet.has(selector),
+		);
+	}
+
+	if (!hasRequiredSelectors(profile.stage, selectors, requiredFields)) {
 		return null;
 	}
 
@@ -893,11 +1492,52 @@ function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
 		return snapshot.groups.length > 0 || snapshot.content.length > 0;
 	}
 
-	return (
-		snapshot.content.length > 0 ||
-		snapshot.groups.length > 0 ||
-		snapshot.buttons.length > 0
+	// For the response stage, require actual content elements (not just buttons).
+	// The stop-generation button appears immediately after submit and would
+	// otherwise trigger a premature LLM call before any response content exists,
+	// causing validateProfile to fail and a 30s failedResolutions cooldown block.
+	const longestContent = snapshot.content.reduce(
+		(max, item) => Math.max(max, item.textLength),
+		0,
 	);
+	const longestGroup = snapshot.groups.reduce(
+		(max, item) => Math.max(max, item.textLength),
+		0,
+	);
+	return longestContent >= 40 || longestGroup >= 40;
+}
+
+async function invalidateSelectorProfilesForPageKey(
+	provider: Provider,
+	stage: SelectorStage,
+	pageKey: string,
+): Promise<void> {
+	const pageKeyPrefix = `${sanitizeFilename(pageKey)}-`;
+	const stageDir = path.join(getSelectorCacheDir(), provider, stage);
+	for (const file of await readdir(stageDir).catch(() => [])) {
+		if (!file.startsWith(pageKeyPrefix) || !file.endsWith(".json")) {
+			continue;
+		}
+		const fingerprint = file.slice(pageKeyPrefix.length, -".json".length);
+		failedResolutions.delete(cacheKey(provider, stage, fingerprint));
+		await unlink(path.join(stageDir, file)).catch(() => {});
+	}
+}
+
+export async function invalidateSelectorProfileForPage(
+	page: Page,
+	provider: Provider,
+	stage: SelectorStage,
+): Promise<void> {
+	try {
+		const pageKey = buildPageKey(page.url());
+		await invalidateSelectorProfilesForPageKey(provider, stage, pageKey);
+		logger.debug(
+			`invalidated ${provider}/${stage} selector profiles for ${pageKey}`,
+		);
+	} catch {
+		// Best-effort — don't let invalidation errors surface to the caller
+	}
 }
 
 export async function getSelectorProfile(
@@ -907,10 +1547,20 @@ export async function getSelectorProfile(
 	options?: {
 		allowModel?: boolean;
 		forceRefresh?: boolean;
+		requiredFields?: readonly SelectorField[];
 	},
 ): Promise<SelectorProfile | null> {
+	// Skip the expensive DOM scan while an LLM call is already in-flight for
+	// this provider+stage. The caller retries on the next poll when it settles.
+	const psKey = `${provider}:${stage}`;
+	if (pendingByProviderStage.has(psKey)) {
+		return null;
+	}
+
 	const snapshot = await captureStableSelectorSnapshot(page, stage);
 	const key = cacheKey(provider, stage, snapshot.fingerprint);
+	const pageKeyCooldownKey = pageFailureKey(provider, stage, snapshot.pageKey);
+	const snapshotStateKey = buildSnapshotStateKey(snapshot);
 
 	if (!options?.forceRefresh) {
 		const cached =
@@ -921,7 +1571,52 @@ export async function getSelectorProfile(
 				snapshot.fingerprint,
 			)) ?? null;
 		if (cached) {
-			return (await validateProfile(page, cached)) ?? null;
+			const valid = await validateProfile(
+				page,
+				cached,
+				options?.requiredFields,
+			);
+			if (valid) {
+				return valid;
+			}
+			const baselineValid = options?.requiredFields?.length
+				? await validateProfile(page, cached)
+				: null;
+			if (!baselineValid) {
+				await deleteCachedProfile(cached);
+			}
+		}
+
+		const fallbackProfiles = await readFallbackCachedProfiles(
+			provider,
+			stage,
+			snapshot.pageKey,
+		);
+		for (const fallback of fallbackProfiles) {
+			if (fallback.fingerprint === snapshot.fingerprint) {
+				continue;
+			}
+			const valid = await validateProfile(
+				page,
+				fallback,
+				options?.requiredFields,
+			);
+			if (!valid) {
+				const baselineValid = options?.requiredFields?.length
+					? await validateProfile(page, fallback)
+					: null;
+				if (!baselineValid) {
+					await deleteCachedProfile(fallback);
+				}
+				continue;
+			}
+			const rebased: SelectorProfile = {
+				...valid,
+				fingerprint: snapshot.fingerprint,
+				createdAt: new Date().toISOString(),
+			};
+			await writeCachedProfile(rebased);
+			return rebased;
 		}
 	}
 
@@ -938,7 +1633,28 @@ export async function getSelectorProfile(
 		return null;
 	}
 
+	if (
+		!options?.forceRefresh &&
+		getPageFailureCooldown(pageKeyCooldownKey)?.stateKey === snapshotStateKey
+	) {
+		return null;
+	}
+
 	if (options?.allowModel === false) {
+		return null;
+	}
+
+	if (isSelectorModelRateLimited()) {
+		if (!selectorModelRateLimitLogged) {
+			logger.warn(
+				`selector model temporarily disabled after rate limit/quota response — using cache only for ${Math.ceil((selectorModelDisabledUntil - Date.now()) / 60000)} more minute(s)`,
+			);
+			selectorModelRateLimitLogged = true;
+		}
+		return null;
+	}
+
+	if (shouldSkipSelectorModelForBudget()) {
 		return null;
 	}
 
@@ -947,28 +1663,62 @@ export async function getSelectorProfile(
 		return pending;
 	}
 
+	pendingByProviderStage.add(psKey);
 	const resolution = (async () => {
 		try {
-			const generated = await resolveProfileWithModel(provider, stage, snapshot);
+			selectorModelCallsThisProcess += 1;
+			logger.debug(
+				`[selector:${provider}/${stage}] calling selector model (call ${selectorModelCallsThisProcess}/${MAX_SELECTOR_MODEL_CALLS_PER_PROCESS}) pageKey=${snapshot.pageKey} fingerprint=${snapshot.fingerprint.slice(0, 12)}`,
+			);
+			const generated = await resolveProfileWithModel(
+				provider,
+				stage,
+				snapshot,
+			);
 			if (!generated) {
+				markPageFailureCooldown(
+					pageKeyCooldownKey,
+					snapshotStateKey,
+					PAGE_FAILED_RESOLUTION_TTL_MS,
+				);
 				return null;
 			}
 
-			const validated = await validateProfile(page, generated);
+			const validated = await validateProfile(
+				page,
+				generated,
+				options?.requiredFields,
+			);
 			if (!validated) {
 				failedResolutions.set(key, Date.now());
+				markPageFailureCooldown(
+					pageKeyCooldownKey,
+					snapshotStateKey,
+					PAGE_FAILED_RESOLUTION_TTL_MS,
+				);
 				return null;
 			}
 
 			await writeCachedProfile(validated);
 			return validated;
 		} catch (error) {
+			failedResolutions.set(key, Date.now());
+			markPageFailureCooldown(
+				pageKeyCooldownKey,
+				snapshotStateKey,
+				PAGE_FAILED_RESOLUTION_TTL_MS,
+			);
+			if (isSelectorModelErrorRateLimit(error)) {
+				selectorModelDisabledUntil =
+					Date.now() + SELECTOR_MODEL_RATE_LIMIT_TTL_MS;
+				selectorModelRateLimitLogged = false;
+			}
 			logger.warn(
 				`selector resolution failed (${provider}/${stage}): ${toErrorMessage(error)}`,
 			);
-			failedResolutions.set(key, Date.now());
 			return null;
 		} finally {
+			pendingByProviderStage.delete(psKey);
 			pendingResolutions.delete(key);
 		}
 	})();
@@ -982,16 +1732,21 @@ export async function waitForSelectorProfile(
 	provider: Provider,
 	stage: SelectorStage,
 	timeoutMs: number,
+	options?: {
+		requiredFields?: readonly SelectorField[];
+	},
 ): Promise<SelectorProfile> {
 	const deadline = Date.now() + timeoutMs;
 
 	while (Date.now() < deadline) {
-		const profile = await getSelectorProfile(page, provider, stage);
+		const profile = await getSelectorProfile(page, provider, stage, {
+			requiredFields: options?.requiredFields,
+		});
 		if (profile) {
 			return profile;
 		}
 
-		await page.waitForTimeout(250);
+		await page.waitForTimeout(600);
 	}
 
 	throw new NotFoundError(`${stage} selectors for ${provider}`);
@@ -1094,12 +1849,94 @@ async function extractResponsePayload(
 					.trim();
 			}
 
+			function hasEditableDescendant(element: Element): boolean {
+				return Boolean(
+					element.querySelector(
+						'textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]',
+					),
+				);
+			}
+
+			function refineResponseRoot(root: HTMLElement): HTMLElement {
+				const rootTextLength = textOf(root).length;
+				if (rootTextLength < 80) {
+					return root;
+				}
+
+				const descendants = Array.from(root.querySelectorAll("*")).filter(
+					(node): node is HTMLElement =>
+						node instanceof HTMLElement &&
+						isVisible(node) &&
+						!hasEditableDescendant(node),
+				);
+
+				let best = root;
+				let bestScore = Number.NEGATIVE_INFINITY;
+				const rootRect = root.getBoundingClientRect();
+				const minLength = Math.max(120, Math.floor(rootTextLength * 0.18));
+
+				for (const [order, node] of descendants.entries()) {
+					const length = textOf(node).length;
+					if (length < minLength) continue;
+					if (length > rootTextLength) continue;
+					if (length >= rootTextLength * 0.95) continue;
+
+					let depth = 0;
+					let current: HTMLElement | null = node;
+					while (current && current !== root) {
+						depth += 1;
+						current = current.parentElement;
+					}
+
+					const blockCount = node.querySelectorAll(
+						"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6",
+					).length;
+					const childTextContainers = Array.from(node.children).filter(
+						(child) =>
+							child instanceof HTMLElement &&
+							isVisible(child) &&
+							!hasEditableDescendant(child) &&
+							textOf(child).length >= 60,
+					).length;
+					const structureScore = blockCount + childTextContainers;
+					if (structureScore < 2 && length < rootTextLength * 0.45) {
+						continue;
+					}
+
+					const rect = node.getBoundingClientRect();
+					const relativeTop = Math.max(0, rect.top - rootRect.top);
+					const sizePenalty = length / rootTextLength;
+					const interactiveCount = node.querySelectorAll(
+						"a,button,[role='button']",
+					).length;
+					const score =
+						depth * 120 +
+						structureScore * 60 +
+						relativeTop * 0.5 +
+						order * 4 -
+						sizePenalty * 300 -
+						interactiveCount * 35;
+
+					if (score > bestScore) {
+						best = node;
+						bestScore = score;
+					}
+				}
+
+				return best;
+			}
+
 			let target: HTMLElement | null = null;
 			for (const selector of selectors) {
 				try {
-					const matches = Array.from(document.querySelectorAll(selector)).filter(
-						isVisible,
-					) as HTMLElement[];
+					const matches = Array.from(
+						document.querySelectorAll(selector),
+					).filter(isVisible) as HTMLElement[];
+					if (matches.length === 0) {
+						continue;
+					}
+					// The page is scrolled to the bottom before extraction — the last
+					// visible match is always the latest (bottommost) response.
 					target = matches.at(-1) ?? null;
 					if (target) break;
 				} catch {}
@@ -1108,6 +1945,8 @@ async function extractResponsePayload(
 			if (!target) {
 				return { html: "", text: "" };
 			}
+
+			target = refineResponseRoot(target);
 
 			const clone = target.cloneNode(true) as HTMLElement;
 			for (const selector of [
@@ -1135,6 +1974,28 @@ async function extractResponsePayload(
 	);
 }
 
+async function getResponseExcludeSelectors(
+	page: Page,
+	provider: Provider,
+): Promise<string[]> {
+	const [responseProfile, sourcesProfile] = await Promise.all([
+		getSelectorProfile(page, provider, "response", {
+			allowModel: false,
+		}).catch(() => null),
+		getSelectorProfile(page, provider, "sources", {
+			allowModel: false,
+		}).catch(() => null),
+	]);
+
+	return [
+		...(responseProfile?.selectors.sourcesButton ?? []),
+		...(responseProfile?.selectors.sourceItem ?? []),
+		...(responseProfile?.selectors.sourcePanel ?? []),
+		...(sourcesProfile?.selectors.sourceItem ?? []),
+		...(sourcesProfile?.selectors.sourcePanel ?? []),
+	];
+}
+
 export async function getResolvedResponseText(
 	page: Page,
 	provider: Provider,
@@ -1142,10 +2003,11 @@ export async function getResolvedResponseText(
 	const profile = await getSelectorProfile(page, provider, "response", {
 		allowModel: false,
 	}).catch(() => null);
+	const excludeSelectors = await getResponseExcludeSelectors(page, provider);
 	const payload = await extractResponsePayload(
 		page,
 		profile?.selectors.response ?? [],
-		[],
+		excludeSelectors,
 	);
 	return payload.text;
 }
@@ -1157,11 +2019,7 @@ export async function extractResolvedResponseHtml(
 	const profile = await getSelectorProfile(page, provider, "response", {
 		allowModel: false,
 	}).catch(() => null);
-	const excludeSelectors = [
-		...(profile?.selectors.sourcesButton ?? []),
-		...(profile?.selectors.sourceItem ?? []),
-		...(profile?.selectors.sourcePanel ?? []),
-	];
+	const excludeSelectors = await getResponseExcludeSelectors(page, provider);
 	const payload = await extractResponsePayload(
 		page,
 		profile?.selectors.response ?? [],
@@ -1196,56 +2054,269 @@ export async function isResolvedResponseGenerating(
 
 async function findSourcesButtonLocator(
 	page: Page,
-	provider: Provider,
-): Promise<Locator | null> {
-	const profile = await getSelectorProfile(page, provider, "response", {
-		allowModel: false,
-	}).catch(() => null);
-	for (const selector of profile?.selectors.sourcesButton ?? []) {
-		const locator = page.locator(selector);
-		const count = await locator.count().catch(() => 0);
-		for (let index = count - 1; index >= 0; index -= 1) {
-			const button = locator.nth(index);
-			const visible = await button.isVisible().catch(() => false);
-			if (visible) {
-				return button;
-			}
-		}
+	responseSelectors: string[],
+	selectors: string[],
+): Promise<{ locator: Locator; selector: string; index: number } | null> {
+	const match = await page
+		.evaluate(
+			({
+				responseSelectors: responseCandidateSelectors,
+				buttonSelectors,
+			}: {
+				responseSelectors: string[];
+				buttonSelectors: string[];
+			}) => {
+				type ButtonMatch = {
+					selector: string;
+					index: number;
+					score: number;
+				};
+
+				function isVisible(element: Element | null): element is HTMLElement {
+					if (!(element instanceof HTMLElement)) return false;
+					if (!element.isConnected) return false;
+					const style = window.getComputedStyle(element);
+					if (
+						style.display === "none" ||
+						style.visibility === "hidden" ||
+						style.opacity === "0" ||
+						element.hidden
+					) {
+						return false;
+					}
+					const rect = element.getBoundingClientRect();
+					return rect.width >= 8 && rect.height >= 8;
+				}
+
+				function lastVisible<T extends Element>(elements: T[]): T | null {
+					for (let index = elements.length - 1; index >= 0; index -= 1) {
+						const element = elements[index];
+						if (element && isVisible(element)) {
+							return element;
+						}
+					}
+					return null;
+				}
+
+				function resolveLatestResponse(): HTMLElement | null {
+					for (const selector of responseCandidateSelectors) {
+						try {
+							const response = lastVisible(
+								Array.from(
+									document.querySelectorAll(selector),
+								) as HTMLElement[],
+							);
+							if (response) {
+								return response;
+							}
+						} catch {}
+					}
+					return null;
+				}
+
+				function sharedAncestorScore(
+					response: HTMLElement,
+					button: HTMLElement,
+				): number {
+					let current: HTMLElement | null = button.parentElement;
+					let depth = 1;
+					while (current && depth <= 6) {
+						if (current.contains(response)) {
+							return 4_000 - depth * 150;
+						}
+						current = current.parentElement;
+						depth += 1;
+					}
+					return 0;
+				}
+
+				const latestResponse = resolveLatestResponse();
+				if (!latestResponse) {
+					return null;
+				}
+				const responseRect = latestResponse.getBoundingClientRect();
+				let best: ButtonMatch | null = null;
+
+				for (const selector of buttonSelectors) {
+					let matches: HTMLElement[] = [];
+					try {
+						matches = Array.from(document.querySelectorAll(selector)).filter(
+							isVisible,
+						) as HTMLElement[];
+					} catch {
+						continue;
+					}
+
+					for (const [index, button] of matches.entries()) {
+						const rect = button.getBoundingClientRect();
+						const verticalDistance = Math.abs(rect.top - responseRect.bottom);
+						const insideResponse = latestResponse.contains(button);
+						const nearResponse =
+							rect.top >= responseRect.top - 120 &&
+							rect.top <= responseRect.bottom + 240;
+						let score = -verticalDistance;
+
+						if (insideResponse) {
+							score += 10_000;
+						}
+						if (nearResponse) {
+							score += 1_000;
+						}
+						score += sharedAncestorScore(latestResponse, button);
+						score += rect.top / 100;
+
+						if (!best || score > best.score) {
+							best = { selector, index, score };
+						}
+					}
+				}
+
+				return best;
+			},
+			{
+				responseSelectors,
+				buttonSelectors: selectors,
+			},
+		)
+		.catch(() => null);
+
+	if (!match) {
+		return null;
 	}
-	return null;
+
+	const locator = page.locator(match.selector).nth(match.index);
+	await locator.scrollIntoViewIfNeeded().catch(() => {});
+	const visible = await locator.isVisible().catch(() => false);
+	if (!visible) {
+		return null;
+	}
+
+	return {
+		locator,
+		selector: match.selector,
+		index: match.index,
+	};
+}
+
+function toAttributeSelector(id: string): string {
+	return `[id="${id.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
+}
+
+async function resolveControlledPanelSelector(
+	page: Page,
+	buttonMatch: { selector: string; index: number },
+): Promise<string | null> {
+	const panelId = await page
+		.evaluate(
+			({
+				selector,
+				index,
+			}: {
+				selector: string;
+				index: number;
+			}) => {
+				try {
+					const matches = Array.from(document.querySelectorAll(selector));
+					const element = matches[index];
+					if (!(element instanceof HTMLElement)) {
+						return null;
+					}
+					return (
+						(
+							element.getAttribute("aria-controls") ??
+							element.getAttribute("aria-owns")
+						)?.trim() ?? null
+					);
+				} catch {
+					return null;
+				}
+			},
+			buttonMatch,
+		)
+		.catch(() => null);
+	if (!panelId) {
+		return null;
+	}
+
+	return toAttributeSelector(panelId);
 }
 
 async function openSourcesPanelIfNeeded(
 	page: Page,
-	provider: Provider,
-): Promise<boolean> {
-	const button = await findSourcesButtonLocator(page, provider);
-	if (!button) {
-		return false;
-	}
-	await button.scrollIntoViewIfNeeded().catch(() => {});
-	const clicked = await button.click({ timeout: 3000 }).then(() => true).catch(
-		() => false,
+	responseSelectors: string[],
+	sourceButtonSelectors: string[],
+): Promise<{ opened: boolean; controlledPanelSelector: string | null }> {
+	const buttonMatch = await findSourcesButtonLocator(
+		page,
+		responseSelectors,
+		sourceButtonSelectors,
 	);
-	if (!clicked) {
-		await button.dispatchClick().catch(() => {});
+	if (!buttonMatch) {
+		return {
+			opened: false,
+			controlledPanelSelector: null,
+		};
 	}
-	await page.waitForTimeout(500);
-	return true;
+
+	await buttonMatch.locator.scrollIntoViewIfNeeded().catch(() => {});
+	const controlledPanelSelector = await resolveControlledPanelSelector(
+		page,
+		buttonMatch,
+	);
+	const clicked = await buttonMatch.locator
+		.click({ timeout: 3000 })
+		.then(() => true)
+		.catch(() => false);
+	if (!clicked) {
+		await buttonMatch.locator.dispatchClick().catch(() => {});
+	}
+	await page.waitForTimeout(1500);
+	return {
+		opened: true,
+		controlledPanelSelector,
+	};
+}
+
+async function resolveResponseProfileForSources(
+	page: Page,
+	provider: Provider,
+): Promise<SelectorProfile | null> {
+	const baseProfile = await getSelectorProfile(page, provider, "response", {
+		allowModel: false,
+		requiredFields: ["response"],
+	}).catch(() => null);
+
+	if (!baseProfile) {
+		return null;
+	}
+
+	if (baseProfile.selectors.sourcesButton.length > 0) {
+		return baseProfile;
+	}
+
+	return (
+		(await getSelectorProfile(page, provider, "response", {
+			forceRefresh: true,
+			requiredFields: ["response", "sourcesButton"],
+		}).catch(() => null)) ?? baseProfile
+	);
 }
 
 async function extractRawSourcesWithSelectors(
 	page: Page,
 	sourcePanelSelectors: string[],
 	sourceItemSelectors: string[],
+	rootSelector?: string | null,
 ): Promise<RawSource[]> {
 	return await page.evaluate(
 		({
 			panels,
 			items,
+			rootSelector,
 		}: {
 			panels: string[];
 			items: string[];
+			rootSelector?: string | null;
 		}) => {
 			type RawSource = {
 				rawHref: string;
@@ -1286,7 +2357,20 @@ async function extractRawSourcesWithSelectors(
 				return null;
 			}
 
-			function resolveRoot(): ParentNode {
+			function resolveRoot(): HTMLElement | null {
+				if (rootSelector) {
+					try {
+						const controlledPanel = lastVisible(
+							Array.from(
+								document.querySelectorAll(rootSelector),
+							) as HTMLElement[],
+						);
+						if (controlledPanel) {
+							return controlledPanel;
+						}
+					} catch {}
+				}
+
 				for (const selector of panels) {
 					try {
 						const panel = lastVisible(
@@ -1297,38 +2381,54 @@ async function extractRawSourcesWithSelectors(
 						}
 					} catch {}
 				}
-				return document;
+				// Do NOT fall back to document — querying the whole page with
+				// sourceItem selectors picks up wrong elements (nav links, footers,
+				// search result cards). Return null so the caller returns [] instead.
+				return null;
 			}
 
 			const root = resolveRoot();
-			let rawItems: Element[] = [];
+			if (!root) return [];
+			const rawItems: Element[] = [];
 			for (const selector of items) {
 				try {
 					rawItems.push(...Array.from(root.querySelectorAll(selector)));
 				} catch {}
 			}
 
-			const dedupedItems = Array.from(new Set(rawItems)).filter(isVisible);
+			let dedupedItems = Array.from(new Set(rawItems)).filter(isVisible);
+			if (dedupedItems.length <= 1) {
+				const anchorItems = Array.from(root.querySelectorAll("a[href]")).filter(
+					isVisible,
+				);
+				if (anchorItems.length > dedupedItems.length) {
+					dedupedItems = anchorItems;
+				}
+			}
 			const results: RawSource[] = [];
 
 			for (const item of dedupedItems) {
 				const anchor =
 					lastVisible(
-						Array.from(item.querySelectorAll('a[href]')) as HTMLAnchorElement[],
-					) ||
-					(item instanceof HTMLAnchorElement ? item : null);
+						Array.from(item.querySelectorAll("a[href]")) as HTMLAnchorElement[],
+					) || (item instanceof HTMLAnchorElement ? item : null);
 				if (!anchor?.href) continue;
 
 				let url = "";
 				try {
-					url = new URL(anchor.href, window.location.origin).toString().split("#")[0] || "";
+					url =
+						new URL(anchor.href, window.location.origin)
+							.toString()
+							.split("#")[0] || "";
 				} catch {
 					continue;
 				}
 				if (!url) continue;
 
 				const title =
-					item.querySelector("h1,h2,h3,h4,strong,b,[title]")?.textContent?.trim() ||
+					item
+						.querySelector("h1,h2,h3,h4,strong,b,[title]")
+						?.textContent?.trim() ||
 					anchor.getAttribute("title")?.trim() ||
 					anchor.textContent?.trim() ||
 					url;
@@ -1338,10 +2438,7 @@ async function extractRawSourcesWithSelectors(
 				)
 					.map((element) => textOf(element))
 					.filter(
-						(text) =>
-							text.length > 30 &&
-							text !== title &&
-							!text.includes(url),
+						(text) => text.length > 30 && text !== title && !text.includes(url),
 					)
 					.sort((left, right) => right.length - left.length);
 
@@ -1356,7 +2453,11 @@ async function extractRawSourcesWithSelectors(
 
 			return results;
 		},
-		{ panels: sourcePanelSelectors, items: sourceItemSelectors },
+		{
+			panels: sourcePanelSelectors,
+			items: sourceItemSelectors,
+			rootSelector,
+		},
 	);
 }
 
@@ -1364,33 +2465,48 @@ export async function extractResolvedSources(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
-	const responseProfile = await getSelectorProfile(page, provider, "response", {
-		allowModel: false,
-	}).catch(() => null);
+	const responseProfile = await resolveResponseProfileForSources(
+		page,
+		provider,
+	);
 	if (!responseProfile?.selectors.sourcesButton.length) {
 		return [];
 	}
 
-	const opened = await openSourcesPanelIfNeeded(page, provider);
-	if (!opened) {
-		return [];
-	}
-
-	const sourceProfile = await waitForSelectorProfile(
+	logger.log(`[${provider}] opening sources panel`);
+	const { opened, controlledPanelSelector } = await openSourcesPanelIfNeeded(
 		page,
-		provider,
-		"sources",
-		8_000,
-	).catch(() => null);
-	if (!sourceProfile?.selectors.sourceItem.length) {
-		return [];
+		responseProfile.selectors.response,
+		responseProfile.selectors.sourcesButton,
+	);
+	if (!opened) {
+		throw new ExternalServiceError(
+			provider,
+			"Sources button was resolved but the sources panel could not be opened",
+		);
 	}
+	logger.log(`[${provider}] sources panel opened`);
 
+	const sourceProfile =
+		(await waitForSelectorProfile(page, provider, "sources", 8_000, {
+			requiredFields: ["sourcePanel", "sourceItem"],
+		}).catch(() => null)) ??
+		(await getSelectorProfile(page, provider, "sources", {
+			allowModel: false,
+		}).catch(() => null));
 	const rawSources = await extractRawSourcesWithSelectors(
 		page,
 		sourceProfile?.selectors.sourcePanel ?? [],
 		sourceProfile?.selectors.sourceItem ?? [],
+		controlledPanelSelector,
 	);
+
+	if (rawSources.length === 0) {
+		throw new ExternalServiceError(
+			provider,
+			"Sources button was present and opened, but no sources were extracted",
+		);
+	}
 
 	const seen = new Set<string>();
 	const results: Source[] = [];

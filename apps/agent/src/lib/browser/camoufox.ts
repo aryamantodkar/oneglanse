@@ -1,14 +1,14 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import { resolveAppMode, type Provider } from "@oneglanse/types";
-import { env } from "../../env.js";
+import { type Provider, resolveAppMode } from "@oneglanse/types";
 
 const execFileAsync = promisify(execFile);
 const PYTHON_CANDIDATES = ["python3.12", "python3.11", "python3.10", "python3"];
 const PYTHON_PROBE_TIMEOUT_MS = 5_000;
 const CAMOUFOX_OPTIONS_TIMEOUT_MS = 30_000;
 const SYSTEM_FONTS_TIMEOUT_MS = 15_000;
+const DEFAULT_CAMOUFOX_HEADLESS_MODE = "virtual";
 
 const PYTHON_PROBE_SCRIPT = `
 import json
@@ -94,12 +94,6 @@ export type CamoufoxProxyConfig = {
 
 type PrimitiveEnvValue = string | number | boolean;
 type JsonRecord = Record<string, unknown>;
-type CamoufoxScreen = {
-	min_width?: number;
-	max_width?: number;
-	min_height?: number;
-	max_height?: number;
-};
 
 type CamoufoxLaunchOptions = {
 	args?: string[];
@@ -114,21 +108,31 @@ type CamoufoxLaunchOptions = {
 let cachedPythonBinary: string | null = null;
 let cachedSystemFontFamilies: string[] | null = null;
 let pendingSystemFontFamilies: Promise<string[]> | null = null;
+const CAMOUFOX_HUMANIZE = true;
+const CAMOUFOX_HUMANIZE_MAX_TIME_S = 1.5;
 
 function isLocalAppMode(): boolean {
-	return resolveAppMode(env.ONEGLANSE_APP_MODE) === "local";
+	return resolveAppMode(process.env.ONEGLANSE_APP_MODE) === "local";
 }
 
 function getHumanizeValue(): false | true | number {
-	if (!env.CAMOUFOX_HUMANIZE) return false;
-	const maxTime = env.CAMOUFOX_HUMANIZE_MAX_TIME_S;
+	if (!CAMOUFOX_HUMANIZE) return false;
+	const maxTime = CAMOUFOX_HUMANIZE_MAX_TIME_S;
 	return maxTime > 0 ? maxTime : true;
 }
 
 function resolveHeadlessMode(
 	override?: "virtual" | "headful" | "headless",
 ): "virtual" | "headful" | "headless" {
-	return override ?? env.CAMOUFOX_HEADLESS_MODE;
+	return (
+		override ??
+		(process.env.CAMOUFOX_HEADLESS_MODE as
+			| "virtual"
+			| "headful"
+			| "headless"
+			| undefined) ??
+		DEFAULT_CAMOUFOX_HEADLESS_MODE
+	);
 }
 
 function getHeadlessValue(
@@ -167,7 +171,7 @@ async function resolvePythonBinary(provider: Provider): Promise<string> {
 	if (cachedPythonBinary) return cachedPythonBinary;
 
 	const candidates = [
-		env.CAMOUFOX_PYTHON_BIN?.trim(),
+		process.env.CAMOUFOX_PYTHON_BIN?.trim(),
 		...PYTHON_CANDIDATES,
 	].filter((candidate): candidate is string => Boolean(candidate));
 
@@ -293,35 +297,6 @@ function parseStringOrList(
 	return parsed.length === 1 ? parsed[0] : parsed;
 }
 
-function parseNumberPair(
-	name: string,
-	raw: string | undefined,
-): [number, number] | undefined {
-	if (!raw) return undefined;
-
-	const trimmed = raw.trim();
-	if (!trimmed) return undefined;
-
-	if (trimmed.startsWith("[")) {
-		const parsed = parseJsonValue<unknown>(name, trimmed);
-		if (
-			!Array.isArray(parsed) ||
-			parsed.length !== 2 ||
-			parsed.some((item) => typeof item !== "number" || !Number.isFinite(item))
-		) {
-			throw new Error(`${name} must be a JSON array of two numbers.`);
-		}
-		return [parsed[0], parsed[1]];
-	}
-
-	const match = trimmed.match(/^(\d+)\s*[x,]\s*(\d+)$/i);
-	if (!match) {
-		throw new Error(`${name} must be JSON [width,height] or WIDTHxHEIGHT.`);
-	}
-
-	return [Number(match[1]), Number(match[2])];
-}
-
 function parseStringPair(
 	name: string,
 	raw: string | undefined,
@@ -352,29 +327,6 @@ function parsePositiveInteger(
 	return parsed;
 }
 
-function parseScreenConstraints(
-	raw: string | undefined,
-): CamoufoxScreen | undefined {
-	const parsed = parseJsonRecord("CAMOUFOX_SCREEN", raw);
-	if (!parsed) return undefined;
-
-	const result: CamoufoxScreen = {};
-	for (const key of [
-		"min_width",
-		"max_width",
-		"min_height",
-		"max_height",
-	] as const) {
-		const value = parsed[key];
-		if (value === undefined) continue;
-		if (typeof value !== "number" || !Number.isFinite(value)) {
-			throw new Error(`CAMOUFOX_SCREEN.${key} must be a number.`);
-		}
-		result[key] = value;
-	}
-	return result;
-}
-
 function parseFingerprintPreset(
 	raw: string | undefined,
 ): boolean | JsonRecord | undefined {
@@ -386,7 +338,7 @@ function parseFingerprintPreset(
 }
 
 function parseGeoipValue(): string | boolean | undefined {
-	const raw = env.CAMOUFOX_GEOIP?.trim();
+	const raw = process.env.CAMOUFOX_GEOIP?.trim();
 	if (!raw) {
 		return true;
 	}
@@ -418,15 +370,11 @@ function parseFontFamilyLines(raw: string): string[] {
 }
 
 async function listFontsWithFcList(): Promise<string[]> {
-	const { stdout } = await execFileAsync(
-		"fc-list",
-		["--format=%{family}\\n"],
-		{
-			encoding: "utf8",
-			timeout: SYSTEM_FONTS_TIMEOUT_MS,
-			maxBuffer: 8 * 1024 * 1024,
-		},
-	);
+	const { stdout } = await execFileAsync("fc-list", ["--format=%{family}\\n"], {
+		encoding: "utf8",
+		timeout: SYSTEM_FONTS_TIMEOUT_MS,
+		maxBuffer: 8 * 1024 * 1024,
+	});
 	return parseFontFamilyLines(stdout);
 }
 
@@ -510,10 +458,9 @@ async function discoverSystemFontFamilies(): Promise<string[]> {
 
 		cachedSystemFontFamilies = [];
 		return [];
-	})()
-		.finally(() => {
-			pendingSystemFontFamilies = null;
-		});
+	})().finally(() => {
+		pendingSystemFontFamilies = null;
+	});
 
 	return pendingSystemFontFamilies;
 }
@@ -531,7 +478,10 @@ function resolveHostOs(): "windows" | "macos" | "linux" | undefined {
 	}
 }
 
-function pickBrowserEnv(display?: string): Record<string, PrimitiveEnvValue> {
+function pickBrowserEnv(args?: {
+	display?: string;
+	headlessMode?: "virtual" | "headful" | "headless";
+}): Record<string, PrimitiveEnvValue> {
 	const baseEnv: Record<string, PrimitiveEnvValue> = {};
 
 	for (const key of [
@@ -557,13 +507,16 @@ function pickBrowserEnv(display?: string): Record<string, PrimitiveEnvValue> {
 		}
 	}
 
-	if (display) {
-		baseEnv.DISPLAY = display;
+	if (args?.display) {
+		baseEnv.DISPLAY = args.display;
 	}
 
 	return {
 		...baseEnv,
-		...(parsePrimitiveRecord("CAMOUFOX_ENV_JSON", env.CAMOUFOX_ENV_JSON) ?? {}),
+		...(parsePrimitiveRecord(
+			"CAMOUFOX_ENV_JSON",
+			process.env.CAMOUFOX_ENV_JSON,
+		) ?? {}),
 	};
 }
 
@@ -584,12 +537,17 @@ async function buildLaunchPayload(args: {
 	headlessMode?: "virtual" | "headful" | "headless";
 	humanize?: boolean;
 	disableDefaultAddons?: boolean;
+	disableFingerprinting?: boolean;
+	plainAuthMode?: boolean;
 }): Promise<Record<string, unknown>> {
-	const extraLaunch =
-		parseJsonRecord(
-			"CAMOUFOX_EXTRA_LAUNCH_JSON",
-			env.CAMOUFOX_EXTRA_LAUNCH_JSON,
-		) ?? {};
+	const extraLaunch = args.plainAuthMode
+		? {}
+		: args.disableFingerprinting
+			? {}
+			: (parseJsonRecord(
+					"CAMOUFOX_EXTRA_LAUNCH_JSON",
+					process.env.CAMOUFOX_EXTRA_LAUNCH_JSON,
+				) ?? {});
 
 	const extraArgs =
 		Array.isArray(extraLaunch.args) &&
@@ -600,29 +558,55 @@ async function buildLaunchPayload(args: {
 	const payload: Record<string, unknown> = { ...extraLaunch };
 
 	const config = {
-		...(isJsonRecord(extraLaunch.config) ? extraLaunch.config : {}),
-		...(parseJsonRecord("CAMOUFOX_CONFIG_JSON", env.CAMOUFOX_CONFIG_JSON) ??
-			{}),
+		...(args.plainAuthMode
+			? {}
+			: {
+					...(isJsonRecord(extraLaunch.config) ? extraLaunch.config : {}),
+					...(parseJsonRecord(
+						"CAMOUFOX_CONFIG_JSON",
+						process.env.CAMOUFOX_CONFIG_JSON,
+					) ?? {}),
+				}),
+		showcursor: false,
+		...(args.plainAuthMode ? { disableTheming: true } : {}),
 	};
 	if (Object.keys(config).length > 0) payload.config = config;
 
 	const firefoxUserPrefs = {
-		...(isJsonRecord(extraLaunch.firefox_user_prefs)
-			? extraLaunch.firefox_user_prefs
-			: {}),
-		...(parseJsonRecord(
-			"CAMOUFOX_FIREFOX_USER_PREFS_JSON",
-			env.CAMOUFOX_FIREFOX_USER_PREFS_JSON,
-		) ?? {}),
+		...(args.plainAuthMode
+			? {
+					// Camoufox's patched Firefox binary may override prefers-color-scheme
+					// at the pref level regardless of fingerprint settings. Setting this
+					// to 2 (System) tells Firefox to follow the OS preference, which is
+					// exactly what a real browser does. Without this, Google's sign-in
+					// iframe renders with a white background when the binary default is
+					// Light (1) but the user's OS is in dark mode.
+					// Values: 0 = Dark, 1 = Light, 2 = System (follows OS)
+					"layout.css.prefers-color-scheme.content-override": 2,
+				}
+			: {
+					...(isJsonRecord(extraLaunch.firefox_user_prefs)
+						? extraLaunch.firefox_user_prefs
+						: {}),
+					...(parseJsonRecord(
+						"CAMOUFOX_FIREFOX_USER_PREFS_JSON",
+						process.env.CAMOUFOX_FIREFOX_USER_PREFS_JSON,
+					) ?? {}),
+				}),
 	};
 	if (Object.keys(firefoxUserPrefs).length > 0) {
 		payload.firefox_user_prefs = firefoxUserPrefs;
 	}
 
 	payload.env = {
-		...(toPrimitiveRecord("CAMOUFOX_EXTRA_LAUNCH_JSON.env", extraLaunch.env) ??
-			{}),
-		...pickBrowserEnv(args.display),
+		...(args.plainAuthMode
+			? {}
+			: (toPrimitiveRecord("CAMOUFOX_EXTRA_LAUNCH_JSON.env", extraLaunch.env) ??
+				{})),
+		...pickBrowserEnv({
+			display: args.display,
+			headlessMode: args.headlessMode,
+		}),
 	};
 
 	const headlessMode = resolveHeadlessMode(args.headlessMode);
@@ -639,105 +623,137 @@ async function buildLaunchPayload(args: {
 			: typeof args.humanize === "boolean"
 				? args.humanize
 				: getHumanizeValue();
-	payload.block_images = env.CAMOUFOX_BLOCK_IMAGES;
-	payload.block_webrtc = env.CAMOUFOX_BLOCK_WEBRTC;
-	payload.block_webgl = env.CAMOUFOX_BLOCK_WEBGL;
-	payload.disable_coop = env.CAMOUFOX_DISABLE_COOP;
-	payload.custom_fonts_only = env.CAMOUFOX_CUSTOM_FONTS_ONLY;
-	payload.main_world_eval = env.CAMOUFOX_MAIN_WORLD_EVAL;
-	payload.enable_cache = env.CAMOUFOX_ENABLE_CACHE;
-	payload.i_know_what_im_doing = env.CAMOUFOX_I_KNOW_WHAT_IM_DOING;
-	payload.debug = env.CAMOUFOX_DEBUG;
+	if (!args.plainAuthMode) {
+		// Auth browser must never have these applied — they can break Google/OAuth
+		// rendering (e.g. block_webgl breaks the sign-in widget, disable_coop breaks
+		// the OAuth popup handshake). Runtime flow continues to read from env vars.
+		payload.block_images = process.env.CAMOUFOX_BLOCK_IMAGES === "true";
+		payload.block_webrtc = process.env.CAMOUFOX_BLOCK_WEBRTC === "true";
+		payload.block_webgl = process.env.CAMOUFOX_BLOCK_WEBGL === "true";
+		payload.disable_coop = process.env.CAMOUFOX_DISABLE_COOP === "true";
+		payload.custom_fonts_only =
+			process.env.CAMOUFOX_CUSTOM_FONTS_ONLY === "true";
+		payload.main_world_eval = process.env.CAMOUFOX_MAIN_WORLD_EVAL === "true";
+	}
+	payload.enable_cache = process.env.CAMOUFOX_ENABLE_CACHE === "true";
+	payload.i_know_what_im_doing =
+		process.env.CAMOUFOX_I_KNOW_WHAT_IM_DOING === "true";
+	payload.debug = process.env.CAMOUFOX_DEBUG === "true";
 
 	if (args.proxy) {
 		payload.proxy = args.proxy;
 	} else {
-		delete payload.proxy;
+		payload.proxy = undefined;
 	}
 
-	if (!isLocalAppMode()) {
+	if (args.plainAuthMode || args.disableFingerprinting) {
+		payload.geoip = false;
+	} else if (!isLocalAppMode()) {
 		const geoip = parseGeoipValue();
 		if (geoip !== undefined) {
 			payload.geoip = geoip;
 		}
-		if (env.CAMOUFOX_GEOIP_DB) payload.geoip_db = env.CAMOUFOX_GEOIP_DB;
+		if (process.env.CAMOUFOX_GEOIP_DB) {
+			payload.geoip_db = process.env.CAMOUFOX_GEOIP_DB;
+		}
 	}
 
-	const os =
-		parseStringOrList("CAMOUFOX_OS", env.CAMOUFOX_OS) ??
-		(isLocalAppMode() && resolveHeadlessMode(args.headlessMode) === "headful"
-			? resolveHostOs()
-			: undefined);
+	const os = args.plainAuthMode
+		? undefined
+		: (parseStringOrList("CAMOUFOX_OS", process.env.CAMOUFOX_OS) ??
+			(isLocalAppMode() && resolveHeadlessMode(args.headlessMode) === "headful"
+				? resolveHostOs()
+				: undefined));
 	if (os !== undefined) payload.os = os;
 
 	// GeoIP handles timezone/location fingerprint — locale is always en-US so
 	// the browser renders in English regardless of the proxy exit country.
 	// Override with CAMOUFOX_LOCALE env var if needed.
-	const locale = parseStringOrList("CAMOUFOX_LOCALE", env.CAMOUFOX_LOCALE) ?? "en-US";
+	const locale = args.plainAuthMode
+		? "en-US"
+		: (parseStringOrList("CAMOUFOX_LOCALE", process.env.CAMOUFOX_LOCALE) ??
+			"en-US");
 	payload.locale = locale;
 
-	const addons = parseStringList("CAMOUFOX_ADDONS", env.CAMOUFOX_ADDONS);
+	const addons = args.plainAuthMode
+		? undefined
+		: parseStringList("CAMOUFOX_ADDONS", process.env.CAMOUFOX_ADDONS);
 	if (addons !== undefined) payload.addons = addons;
 
-	const fonts = parseStringList("CAMOUFOX_FONTS", env.CAMOUFOX_FONTS);
-	const systemFonts = env.CAMOUFOX_USE_FULL_OS_FONTS
-		? await discoverSystemFontFamilies()
-		: [];
+	const fonts = args.plainAuthMode
+		? undefined
+		: parseStringList("CAMOUFOX_FONTS", process.env.CAMOUFOX_FONTS);
+	const systemFonts =
+		!args.plainAuthMode && process.env.CAMOUFOX_USE_FULL_OS_FONTS === "true"
+			? await discoverSystemFontFamilies()
+			: [];
 	const mergedFonts = dedupeStrings([...(fonts ?? []), ...systemFonts]);
 	if (mergedFonts.length > 0) payload.fonts = mergedFonts;
-	payload.use_full_os_fonts = env.CAMOUFOX_USE_FULL_OS_FONTS;
+	if (!args.plainAuthMode) {
+		payload.use_full_os_fonts =
+			process.env.CAMOUFOX_USE_FULL_OS_FONTS === "true";
+	}
 	if (args.disableDefaultAddons) {
 		payload.disable_default_addons = true;
 	}
 
-	const excludeAddons = parseStringList(
-		"CAMOUFOX_EXCLUDE_ADDONS",
-		env.CAMOUFOX_EXCLUDE_ADDONS,
-	)?.map((value) => value.toUpperCase());
+	const excludeAddons = args.plainAuthMode
+		? undefined
+		: parseStringList(
+				"CAMOUFOX_EXCLUDE_ADDONS",
+				process.env.CAMOUFOX_EXCLUDE_ADDONS,
+			)?.map((value) => value.toUpperCase());
 	if (excludeAddons !== undefined) payload.exclude_addons = excludeAddons;
 
-	const screen = parseScreenConstraints(env.CAMOUFOX_SCREEN);
-	if (screen !== undefined) payload.screen = screen;
-
-	const window = parseNumberPair("CAMOUFOX_WINDOW", env.CAMOUFOX_WINDOW);
-	if (window !== undefined) payload.window = window;
-
-	const webglConfig = parseStringPair(
-		"CAMOUFOX_WEBGL_CONFIG",
-		env.CAMOUFOX_WEBGL_CONFIG,
-	);
+	const webglConfig = args.plainAuthMode
+		? undefined
+		: parseStringPair(
+				"CAMOUFOX_WEBGL_CONFIG",
+				process.env.CAMOUFOX_WEBGL_CONFIG,
+			);
 	if (webglConfig !== undefined) payload.webgl_config = webglConfig;
 
-	const ffVersion = parsePositiveInteger(
-		"CAMOUFOX_FF_VERSION",
-		env.CAMOUFOX_FF_VERSION,
-	);
+	const ffVersion = args.plainAuthMode
+		? undefined
+		: parsePositiveInteger(
+				"CAMOUFOX_FF_VERSION",
+				process.env.CAMOUFOX_FF_VERSION,
+			);
 	if (ffVersion !== undefined) payload.ff_version = ffVersion;
 
-	const fingerprint =
-		parseJsonRecord(
-			"CAMOUFOX_FINGERPRINT_JSON",
-			env.CAMOUFOX_FINGERPRINT_JSON,
-		) ??
-		(isJsonRecord(extraLaunch.fingerprint)
-			? extraLaunch.fingerprint
-			: undefined);
-	if (fingerprint !== undefined) payload.fingerprint = fingerprint;
+	if (args.plainAuthMode || args.disableFingerprinting) {
+		payload.fingerprint_preset = false;
+		payload.fingerprint = undefined;
+	} else {
+		const fingerprint =
+			parseJsonRecord(
+				"CAMOUFOX_FINGERPRINT_JSON",
+				process.env.CAMOUFOX_FINGERPRINT_JSON,
+			) ??
+			(isJsonRecord(extraLaunch.fingerprint)
+				? extraLaunch.fingerprint
+				: undefined);
+		if (fingerprint !== undefined) payload.fingerprint = fingerprint;
 
-	const fingerprintPreset = parseFingerprintPreset(
-		env.CAMOUFOX_FINGERPRINT_PRESET,
-	);
-	if (fingerprintPreset !== undefined) {
-		payload.fingerprint_preset = fingerprintPreset;
+		const fingerprintPreset = parseFingerprintPreset(
+			process.env.CAMOUFOX_FINGERPRINT_PRESET,
+		);
+		if (fingerprintPreset !== undefined) {
+			payload.fingerprint_preset = fingerprintPreset;
+		}
 	}
 
-	const argsList =
-		parseStringList("CAMOUFOX_ARGS", env.CAMOUFOX_ARGS) ?? extraArgs;
+	const argsList = args.plainAuthMode
+		? undefined
+		: (parseStringList("CAMOUFOX_ARGS", process.env.CAMOUFOX_ARGS) ??
+			extraArgs);
 	if (argsList !== undefined) payload.args = argsList;
 
-	if (env.CAMOUFOX_BROWSER) payload.browser = env.CAMOUFOX_BROWSER;
-	if (env.CAMOUFOX_EXECUTABLE_PATH) {
-		payload.executable_path = env.CAMOUFOX_EXECUTABLE_PATH;
+	if (process.env.CAMOUFOX_BROWSER) {
+		payload.browser = process.env.CAMOUFOX_BROWSER;
+	}
+	if (process.env.CAMOUFOX_EXECUTABLE_PATH) {
+		payload.executable_path = process.env.CAMOUFOX_EXECUTABLE_PATH;
 	}
 
 	for (const key of Object.keys(payload)) {
@@ -761,6 +777,8 @@ export async function resolveCamoufoxLaunchOptions(args: {
 	headlessMode?: "virtual" | "headful" | "headless";
 	humanize?: boolean;
 	disableDefaultAddons?: boolean;
+	disableFingerprinting?: boolean;
+	plainAuthMode?: boolean;
 }): Promise<CamoufoxLaunchOptions> {
 	const python = await resolvePythonBinary(args.provider);
 	const payload = await buildLaunchPayload(args);

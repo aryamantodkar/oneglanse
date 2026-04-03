@@ -33,8 +33,6 @@ export interface ProviderConfig {
 	beforePromptHook?: (page: Page) => Promise<void>;
 	/** Called right after typing completes, before submit preparation. */
 	afterTypingHook?: (page: Page) => Promise<void>;
-	/** Called before each retry attempt — e.g. navigate back to a clean state. */
-	beforeRetryHook?: (page: Page) => Promise<void>;
 	/** Called immediately before the submit attempt — e.g. dismiss autocomplete dropdowns. */
 	beforeSubmitHook?: (page: Page) => Promise<void>;
 	/** Called immediately after submit and stabilization, before response waiting begins. */

@@ -1,118 +1,134 @@
-import { ExternalServiceError } from "@oneglanse/errors";
+import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import type { Page } from "playwright";
 import {
-	logger,
 	PROVIDER_FORCE_EXIT_STABLE_MS,
 	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
+	logger,
 } from "@oneglanse/utils";
-import { waitForSelectorProfile } from "../../selectors/intelligence.js";
+import type { Page } from "playwright";
+import {
+	invalidateSelectorProfileForPage,
+	waitForSelectorProfile,
+} from "../../selectors/intelligence.js";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
-
-async function sleep(ms: number): Promise<void> {
-	let timer: ReturnType<typeof setTimeout> | null = null;
-	try {
-		await new Promise<void>((resolve) => {
-			timer = setTimeout(resolve, ms);
-		});
-	} finally {
-		if (timer !== null) {
-			clearTimeout(timer);
-		}
-	}
-}
-
-// Shared polling helper - DRY principle
-async function pollUntilCondition(
-	checkFn: () => Promise<boolean>,
-	pollInterval: number,
-	maxWait: number,
-	timeoutError: ExternalServiceError,
-): Promise<void> {
-	const start = Date.now();
-	while (Date.now() - start < maxWait) {
-		if (await checkFn()) return;
-		await sleep(pollInterval);
-	}
-	throw timeoutError;
-}
 
 export async function waitForAssistantToFinish(
 	page: Page,
 	provider: Provider,
 ): Promise<void> {
 	logger.debug("⏳ Waiting for assistant to finish…");
-	// Chat models (ChatGPT, Claude, Perplexity, Gemini)
-	const waitStart = Date.now();
+
 	let lastText = "";
 	let lastChange = Date.now();
 	let seenOutput = false;
+	let seenGenerating = false;
+	let textGrowthEvents = 0;
 	let responseSelectorsReady = false;
-	const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
+	let selectorResolutionError: ExternalServiceError | null = null;
+	let waitStart: number | null = null;
 
-	void waitForSelectorProfile(
-		page,
-		provider,
-		"response",
-		noOutputTimeoutMs,
-	)
+	const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
+	const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
+
+	void waitForSelectorProfile(page, provider, "response", noOutputTimeoutMs)
 		.then(() => {
 			responseSelectorsReady = true;
+			waitStart = Date.now();
+			logger.log(`[${provider}] waiting for response...`);
 		})
-		.catch(() => {});
+		.catch((err) => {
+			selectorResolutionError = new ExternalServiceError(
+				provider,
+				`Response selector resolution failed: ${toErrorMessage(err)}`,
+			);
+		});
 
-	await pollUntilCondition(
-		async () => {
-			const [generating, text] = responseSelectorsReady
-				? await Promise.all([
-						isGenerating(page, provider),
-						getText(page, provider),
-					])
-				: [false, ""];
+	try {
+		const pollIntervalMs = 280 + Math.floor(Math.random() * 60);
+		const timeoutAt = Date.now() + 5 * 60 * 1000;
 
-			// Track output — require meaningful content to avoid placeholder divs
-			if (text.length >= 20) seenOutput = true;
+		while (Date.now() < timeoutAt) {
+			if (selectorResolutionError) {
+				throw selectorResolutionError;
+			}
 
-			// Track changes
+			if (!responseSelectorsReady) {
+				await page.waitForTimeout(pollIntervalMs);
+				continue;
+			}
+
+			const [generating, text] = await Promise.all([
+				isGenerating(page, provider),
+				getText(page, provider),
+			]);
+
+			if (generating) {
+				seenGenerating = true;
+			}
+
+			if (text.length >= 20) {
+				seenOutput = true;
+			}
+
 			if (text !== lastText) {
+				if (text.length > lastText.length) {
+					textGrowthEvents += 1;
+				}
 				lastText = text;
 				lastChange = Date.now();
 			}
 
 			const stableFor = Date.now() - lastChange;
-			const noOutputFor = Date.now() - waitStart;
+			const noOutputFor = waitStart !== null ? Date.now() - waitStart : 0;
 
-			// Error: No output after the grace period.
-			if (!seenOutput && noOutputFor >= noOutputTimeoutMs) {
+			if (
+				waitStart !== null &&
+				!seenOutput &&
+				noOutputFor >= noOutputTimeoutMs
+			) {
 				throw new ExternalServiceError(
 					provider,
 					`No response detected after ${Math.round(noOutputTimeoutMs / 1000)}s`,
 				);
 			}
 
-			// Still generating and no output yet - keep waiting
-			if (generating && !seenOutput) return false;
-
-			// Success: output seen + not generating + stable for 1.5s
-			if (seenOutput && !generating && stableFor >= 1500) {
-				logger.debug("✅ Assistant finished");
-				return true;
+			if (generating && !seenOutput) {
+				await page.waitForTimeout(pollIntervalMs);
+				continue;
 			}
 
-			// Force exit: text stable but generating indicator still stuck.
-			const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
-			if (seenOutput && stableFor >= forceExitStableMs) {
+			if (seenOutput && !generating) {
+				const requiredStableMs = seenGenerating
+					? 1500
+					: textGrowthEvents >= 4 || text.length >= 1000
+						? 3000
+						: 4500;
+				const enoughGrowthWithoutIndicator =
+					seenGenerating || textGrowthEvents >= 2 || text.length >= 300;
+				if (enoughGrowthWithoutIndicator && stableFor >= requiredStableMs) {
+					logger.log(`[${provider}] response ready`);
+					return;
+				}
+			}
+
+			const staleGeneratingThreshold = Math.min(forceExitStableMs, 12_000);
+			if (seenOutput && generating && stableFor >= staleGeneratingThreshold) {
 				logger.warn(
-					`Text stable ${Math.round(forceExitStableMs / 1000)}s but still generating — forcing exit`,
+					`[${provider}] text stable ${Math.round(staleGeneratingThreshold / 1000)}s but still generating — forcing exit`,
 				);
-				return true;
+				logger.log(`[${provider}] response ready`);
+				return;
 			}
 
-			return false;
-		},
-		280 + Math.floor(Math.random() * 60), // Poll ~300ms with ±50ms jitter
-		5 * 60 * 1000, // 5 min max — if a response hasn't arrived by then, something is wrong
-		new ExternalServiceError(provider, "Assistant wait timed out"),
-	);
+			await page.waitForTimeout(pollIntervalMs);
+		}
+
+		throw new ExternalServiceError(provider, "Assistant wait timed out");
+	} catch (error) {
+		await invalidateSelectorProfileForPage(page, provider, "response").catch(
+			() => null,
+		);
+		throw error;
+	}
 }

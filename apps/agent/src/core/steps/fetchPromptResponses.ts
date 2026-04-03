@@ -5,17 +5,17 @@ import {
 } from "@oneglanse/utils";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { env } from "../../env.js";
 import { getText } from "../../lib/input/response/getText.js";
 import {
 	extractResolvedResponseHtml,
 	getSelectorProfile,
+	invalidateSelectorProfileForPage,
 } from "../../lib/selectors/intelligence.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
-const MAX_EXTRACTION_RETRIES = env.MAX_EXTRACTION_RETRIES;
-const INITIAL_EXTRACTION_RETRY_DELAY = env.EXTRACTION_RETRY_DELAY_MS;
-const MAX_EXTRACTION_RETRY_DELAY = env.MAX_EXTRACTION_RETRY_DELAY_MS;
+const MAX_EXTRACTION_RETRIES = 2;
+const INITIAL_EXTRACTION_RETRY_DELAY = 2_000;
+const MAX_EXTRACTION_RETRY_DELAY = 5_000;
 const MAX_DIAGNOSTIC_HTML_CHARS = 12_000;
 
 function formatHtmlForLogs(html: string): string {
@@ -65,16 +65,23 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 
 	// Retry extraction — keep retries short so we can rotate IPs faster on failure.
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
-		await page.waitForTimeout(150);
+		if (attempt > 1) await page.waitForTimeout(150);
 
 		const response = await config.extractResponse(page);
 
 		if (response && response.length > 0) {
-			logger.debug(`response extracted (${response.length} chars)`);
+			logger.log(`[${provider}] response extracted (${response.length} chars)`);
 			return response;
 		}
 
 		if (attempt < MAX_EXTRACTION_RETRIES) {
+			// A wrong-but-visible cached selector can stay "valid" and keep
+			// returning empty output. Refresh it before the next extraction attempt.
+			await invalidateSelectorProfileForPage(page, provider, "response");
+			await getSelectorProfile(page, provider, "response", {
+				forceRefresh: true,
+			}).catch(() => null);
+
 			const retryDelay =
 				attempt <= 1
 					? INITIAL_EXTRACTION_RETRY_DELAY
@@ -89,6 +96,11 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 			await page.waitForTimeout(retryDelay);
 		}
 	}
+
+	// Invalidate the cached response selector profile so the next attempt forces a
+	// fresh LLM resolution. Without this, a wrong-but-valid cached selector would
+	// produce the same empty extraction on every retry cycle.
+	await invalidateSelectorProfileForPage(page, provider, "response");
 
 	// Diagnostic only. Plain text is never returned to avoid UI inconsistency.
 	const visibleText = await getText(page, provider).catch(() => "");

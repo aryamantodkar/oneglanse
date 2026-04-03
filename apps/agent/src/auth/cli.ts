@@ -1,14 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import path from "node:path";
 import {
-	firefox,
-	type BrowserContext,
-	type Frame,
-	type Page,
-	type Response,
-} from "playwright-core";
-import { AUTH_PROVIDER_LIST, type AuthProvider } from "@oneglanse/types";
-import {
 	ensureAuthDirectories,
 	getAuthProfileDir,
 	getReusableIdentityDomainSuffixes,
@@ -18,12 +10,20 @@ import {
 	uploadAuthSession,
 	writeProviderAuthStatus,
 } from "@oneglanse/services";
+import { AUTH_PROVIDER_LIST, type AuthProvider } from "@oneglanse/types";
 import {
 	AUTH_PROVIDER_CONFIG,
 	AUTH_PROVIDER_DISPLAY,
 	getProviderDisplayName,
 	logger,
 } from "@oneglanse/utils";
+import {
+	type BrowserContext,
+	type Frame,
+	type Page,
+	type Response,
+	firefox,
+} from "playwright-core";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
 import { detectDisplay } from "../lib/browser/display.js";
 import { applyCookiesToPersistentContext } from "../lib/browser/storageState.js";
@@ -62,9 +62,7 @@ function parseProviderArg(argv: string[]): AuthProvider {
 	return providerValue as AuthProvider;
 }
 
-async function getPrimaryPage(
-	context: BrowserContext,
-): Promise<Page> {
+async function getPrimaryPage(context: BrowserContext): Promise<Page> {
 	const pages = context.pages().filter((page) => !page.isClosed());
 	const existing = pages.find((page) => page.url() !== "about:blank");
 	if (existing) {
@@ -566,15 +564,53 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 		provider: browserProvider,
 		headlessMode: "headful",
 		humanize: false,
+		plainAuthMode: true,
+		disableFingerprinting: true,
+		// Disable Camoufox's default privacy addons for the auth browser.
+		// Those addons can modify CSS rendering (e.g. block external stylesheets,
+		// alter color-scheme), causing Google/OAuth pages to render incorrectly
+		// (white button backgrounds, broken layout). The auth browser should look
+		// and behave exactly like a stock Firefox.
+		disableDefaultAddons: true,
 	});
 
-	const context = await firefox.launchPersistentContext(
-		authProfileDir,
-		{
-			...(launchOptions as PersistentContextLaunchOptions),
-			headless: false,
+	const context = await firefox.launchPersistentContext(authProfileDir, {
+		...(launchOptions as PersistentContextLaunchOptions),
+		headless: false,
+		viewport: null,
+		// Re-apply auth-critical prefs HERE, after Camoufox's Python launch_options
+		// has already merged its own generated prefs into firefoxUserPrefs. We have
+		// no control over the merge order inside Python — Camoufox can override our
+		// camoufox.ts-level value with its own. Spreading them last at the Playwright
+		// level guarantees they win regardless of what Camoufox produced.
+		firefoxUserPrefs: {
+			...(launchOptions.firefoxUserPrefs as Record<string, unknown>),
+			// All prefs below are spread AFTER Camoufox's Python-merged prefs so they
+			// unconditionally win, regardless of what Camoufox generated.
+
+			// camoufox.cfg bakes in ui.use_standins_for_native_colors=true, which
+			// replaces CSS system colors (Window, ButtonFace, -moz-Dialog, etc.) with
+			// neutral white standins. Any element using system colors — including
+			// the Google sign-in container — renders white instead of the real OS
+			// color. Disabling this restores true system color rendering.
+			"ui.use_standins_for_native_colors": false,
+
+			// camoufox.cfg forces ui.systemUsesDarkTheme=1 (always dark) regardless
+			// of the actual OS. -1 tells Firefox to detect the OS theme automatically.
+			"ui.systemUsesDarkTheme": -1,
+
+			// Reset to Firefox's default theme — camoufox.cfg forces compact-dark.
+			"extensions.activeThemeID": "default-theme@mozilla.org",
+
+			// Follow the OS dark/light preference for web content (values: 0=Dark,
+			// 1=Light, 2=System). Must come after ui.systemUsesDarkTheme to take effect.
+			"layout.css.prefers-color-scheme.content-override": 2,
+
+			// RFP unconditionally forces prefers-color-scheme to light and overrides
+			// the content-override pref above. Keep disabled for auth.
+			"privacy.resistFingerprinting": false,
 		},
-	);
+	});
 	// Seed only the latest IdP cookies into the visible auth window so the
 	// provider opens directly on its own URL instead of navigating the user
 	// through intermediate OAuth origins just to restore localStorage.

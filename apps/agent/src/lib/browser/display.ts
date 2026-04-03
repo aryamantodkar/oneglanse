@@ -1,13 +1,13 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
-import { env } from "../../env.js";
 
 const XVFB_CANDIDATES = ["/usr/bin/Xvfb", "/usr/local/bin/Xvfb"];
 const XVFB_START_TIMEOUT_MS = 5_000;
 const DEFAULT_SCREEN_WIDTH = 1920;
 const DEFAULT_SCREEN_HEIGHT = 1080;
 const DEFAULT_SCREEN_DEPTH = 24;
+const DEFAULT_CAMOUFOX_HEADLESS_MODE = "virtual";
 
 export type DisplayHandle = {
 	display: string;
@@ -26,7 +26,7 @@ export function detectDisplay(): string | null {
 }
 
 function parseScreenSpec(): { width: number; height: number; depth: number } {
-	const raw = env.CAMOUFOX_XVFB_SCREEN?.trim();
+	const raw = process.env.CAMOUFOX_XVFB_SCREEN?.trim();
 	if (!raw) {
 		return {
 			width: DEFAULT_SCREEN_WIDTH,
@@ -79,7 +79,10 @@ async function waitForDisplaySocket(
 export async function ensureDisplay(options?: {
 	allowExistingDisplay?: boolean;
 }): Promise<DisplayHandle | null> {
-	if (env.CAMOUFOX_HEADLESS_MODE === "headless") {
+	if (
+		(process.env.CAMOUFOX_HEADLESS_MODE ?? DEFAULT_CAMOUFOX_HEADLESS_MODE) ===
+		"headless"
+	) {
 		return null;
 	}
 
@@ -95,7 +98,10 @@ export async function ensureDisplay(options?: {
 		return null;
 	}
 
-	if (env.CAMOUFOX_HEADLESS_MODE === "headful") {
+	if (
+		(process.env.CAMOUFOX_HEADLESS_MODE ?? DEFAULT_CAMOUFOX_HEADLESS_MODE) ===
+		"headful"
+	) {
 		throw new Error(
 			"CAMOUFOX_HEADLESS_MODE=headful requires DISPLAY to already be set.",
 		);
@@ -107,7 +113,7 @@ export async function ensureDisplay(options?: {
 	}
 
 	let lastError: unknown = null;
-	const preferredDisplay = env.CAMOUFOX_XVFB_DISPLAY?.trim() || null;
+	const preferredDisplay = process.env.CAMOUFOX_XVFB_DISPLAY?.trim() || null;
 	const screen = parseScreenSpec();
 
 	for (let attempt = 0; attempt < 5; attempt += 1) {

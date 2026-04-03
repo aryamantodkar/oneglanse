@@ -1,33 +1,33 @@
-import { firefox } from "playwright-core";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import {
-	type Provider,
-	resolveAppMode,
-	shouldUseProxyInMode,
-} from "@oneglanse/types";
 import {
 	ensureAuthDirectories,
 	getRuntimeProfileSeedPlan,
 	markRuntimeProfileSeeded,
 	prepareRuntimeProfileBootstrap,
 } from "@oneglanse/services";
+import {
+	type Provider,
+	resolveAppMode,
+	shouldUseProxyInMode,
+} from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Browser, BrowserContext } from "playwright";
+import { firefox } from "playwright-core";
 import { env } from "../../env.js";
 import {
-	resolveCamoufoxLaunchOptions,
 	type CamoufoxProxyConfig,
+	resolveCamoufoxLaunchOptions,
 } from "./camoufox.js";
 import { ensureDisplay } from "./display.js";
+import type { DisplayHandle } from "./display.js";
 import { PlaywrightBrowserContextCompat } from "./playwrightCompat.js";
-import { applyStorageStateToPersistentContext } from "./storageState.js";
 import {
-	checkProxyReachable,
 	type ProxyScheme,
 	type UpstreamProxyConfig,
+	checkProxyReachable,
 } from "./proxy/forwarder.js";
 import { applyProxyProviderStrategy } from "./proxy/provider.js";
-import type { DisplayHandle } from "./display.js";
+import { applyStorageStateToPersistentContext } from "./storageState.js";
 
 const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	http: 80,
@@ -53,13 +53,21 @@ type FirefoxPersistentLaunchOptions = NonNullable<
 	Parameters<typeof firefox.launchPersistentContext>[1]
 >;
 
-function resolveRuntimeHeadlessMode(): "virtual" | "headless" {
-	if (env.CAMOUFOX_HEADLESS_MODE === "headless") {
-		return "headless";
+function resolveRuntimeHeadlessMode(): "virtual" | "headful" | "headless" {
+	const configuredMode = process.env.CAMOUFOX_HEADLESS_MODE as
+		| "virtual"
+		| "headful"
+		| "headless"
+		| undefined;
+	if (configuredMode === "headless" || configuredMode === "headful") {
+		return configuredMode;
 	}
 
 	const appMode = resolveAppMode(env.ONEGLANSE_APP_MODE);
 	if (appMode === "local") {
+		// Local runs should stay headless by default, but they must still reuse
+		// the persistent runtime profile rather than falling back to a fresh
+		// one-off storageState context.
 		return "headless";
 	}
 
@@ -238,8 +246,8 @@ async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
 		return acquireThorDataProxyInner();
 	}
 
-	const host = env.PROXY_HOST?.trim();
-	const port = env.PROXY_PORT?.trim();
+	const host = process.env.PROXY_HOST?.trim();
+	const port = process.env.PROXY_PORT?.trim();
 	if (!host || !port) {
 		return { proxy: null, release: () => {} };
 	}
@@ -251,13 +259,15 @@ async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
 		);
 	}
 
-	const scheme = normalizeProxyScheme(env.PROXY_SCHEME?.trim() || "http");
+	const scheme = normalizeProxyScheme(
+		(process.env.PROXY_SCHEME ?? env.PROXY_SCHEME)?.trim() || "http",
+	);
 	return {
 		proxy: applyProxyProviderStrategy(
 			parseProxyConfig(
 				formatProxyServerUrl(scheme, host, Number(port)),
-				env.PROXY_USERNAME?.trim() || undefined,
-				env.PROXY_PASSWORD?.trim() || undefined,
+				process.env.PROXY_USERNAME?.trim() || undefined,
+				process.env.PROXY_PASSWORD?.trim() || undefined,
 			),
 		),
 		release: () => {},
@@ -347,8 +357,7 @@ export async function launchContext(provider: Provider): Promise<{
 
 		ensureAuthDirectories();
 		const runtimeSeedPlan = await getRuntimeProfileSeedPlan(provider);
-		const shouldUsePersistentRuntimeProfile =
-			runtimeHeadlessMode !== "headless";
+		const shouldUsePersistentRuntimeProfile = appMode !== "cloud";
 		const shouldForceLoggedOutProfile = appMode === "cloud";
 		if (
 			shouldUsePersistentRuntimeProfile &&
@@ -368,6 +377,7 @@ export async function launchContext(provider: Provider): Promise<{
 		};
 		const persistentOptions: FirefoxPersistentLaunchOptions = {
 			...launchOptions,
+			...(runtimeHeadlessMode === "headless" ? {} : { viewport: null }),
 		};
 
 		if (shouldUsePersistentRuntimeProfile) {
@@ -396,6 +406,7 @@ export async function launchContext(provider: Provider): Promise<{
 		} else {
 			rawBrowser = await firefox.launch(launchOptions);
 			rawContext = await rawBrowser.newContext({
+				...(runtimeHeadlessMode === "headless" ? {} : { viewport: null }),
 				...(shouldForceLoggedOutProfile
 					? {}
 					: runtimeSeedPlan.authStatePath
