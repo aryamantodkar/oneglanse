@@ -550,24 +550,17 @@ export async function captureSelectorSnapshot(
 	const fingerprintPayload = {
 		stage,
 		pageKey,
-		// Use selector (not fingerprint) for editables and buttons so that
-		// transient text changes — stop button appearing/disappearing during streaming,
-		// copy/retry buttons appearing after — do not churn the snapshot fingerprint
-		// and trigger redundant model calls.
-		editables: snapshot.editables.map((item) => item.selector),
-		buttons: snapshot.buttons.map((item) => item.selector),
-		content: snapshot.content.map((item) => [
-			normalizeSelectorForState(item.selector),
-			item.linkCount,
-			item.buttonCount,
-			Math.min(6, Math.floor(item.textLength / 80)),
-		]),
-		groups: snapshot.groups.map((item) => [
-			normalizeSelectorForState(item.selector),
-			item.groupCount ?? 0,
-			item.linkCount,
-			item.buttonCount,
-		]),
+		// Deduplicated sorted sets of selector strings — the fingerprint identifies
+		// WHICH selector patterns exist on this page/stage, not how many instances.
+		// This keeps the fingerprint stable across prompts: turn 2 has 2 response
+		// elements but the same selector as turn 1; button text changes during
+		// streaming but the selector stays constant. Using sets prevents any
+		// per-element or per-prompt unique value from churning the fingerprint and
+		// triggering a redundant model call.
+		editables: [...new Set(snapshot.editables.map((item) => item.selector))].sort(),
+		buttons: [...new Set(snapshot.buttons.map((item) => item.selector))].sort(),
+		content: [...new Set(snapshot.content.map((item) => normalizeSelectorForState(item.selector)))].sort(),
+		groups: [...new Set(snapshot.groups.map((item) => normalizeSelectorForState(item.selector)))].sort(),
 	};
 
 	return {
