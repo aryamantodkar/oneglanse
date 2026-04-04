@@ -1,5 +1,6 @@
+import { rm, unlink } from "node:fs/promises";
 import path from "node:path";
-import { unlink, rm } from "node:fs/promises";
+import { NotFoundError, toErrorMessage } from "@oneglanse/errors";
 import type {
 	Provider,
 	SelectorField,
@@ -7,31 +8,12 @@ import type {
 	SelectorSnapshot,
 	SelectorStage,
 } from "@oneglanse/types";
-import { NotFoundError, toErrorMessage } from "@oneglanse/errors";
 import {
 	DEFAULT_MIN_RESPONSE_CHARS,
 	PROVIDER_MIN_RESPONSE_CHARS,
 	logger,
 } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
-import {
-	FAILED_RESOLUTION_TTL_MS,
-	PAGE_FAILED_RESOLUTION_TTL_MS,
-	failedResolutions,
-	failedPageResolutions,
-	pendingByProviderStage,
-	pendingResolutions,
-	selectorModelState,
-	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
-	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
-} from "./constants.js";
-import {
-	buildPageKey,
-	buildSnapshotStateKey,
-	defaultSelectorRecord,
-	hasRequiredSelectors,
-	normalizePageKey,
-} from "./utils.js";
 import {
 	cacheKey,
 	deleteCachedProfile,
@@ -41,17 +23,36 @@ import {
 	markPageFailureCooldown,
 	pageFailureKey,
 	readCachedProfile,
+	readProviderCache,
 	writeCachedProfile,
 	writeProviderCache,
-	readProviderCache,
 } from "./cache.js";
-import { captureStableSelectorSnapshot } from "./snapshot.js";
+import {
+	FAILED_RESOLUTION_TTL_MS,
+	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
+	PAGE_FAILED_RESOLUTION_TTL_MS,
+	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
+	failedPageResolutions,
+	failedResolutions,
+	pendingByProviderStage,
+	pendingResolutions,
+	selectorModelState,
+} from "./constants.js";
 import {
 	isSelectorModelErrorRateLimit,
 	isSelectorModelRateLimited,
 	resolveProfileWithModel,
 	shouldSkipSelectorModelForBudget,
 } from "./model.js";
+import { captureStableSelectorSnapshot } from "./snapshot.js";
+import {
+	buildPageKey,
+	buildSnapshotStateKey,
+	compactSelectors,
+	defaultSelectorRecord,
+	hasRequiredSelectors,
+	normalizePageKey,
+} from "./utils.js";
 
 export async function validateVisibleSelectors(
 	page: Page,
@@ -196,20 +197,26 @@ export async function validateProfile(
 	page: Page,
 	profile: SelectorProfile,
 	requiredFields?: readonly SelectorField[],
+	options?: { relaxCompose?: boolean },
 ): Promise<SelectorProfile | null> {
+	const sanitizedSelectors = compactSelectors(profile.selectors);
 	const selectors = defaultSelectorRecord();
 
 	selectors.editor = await validateVisibleSelectors(
 		page,
-		profile.selectors.editor,
+		sanitizedSelectors.editor,
 		{
 			label: `${profile.provider}/${profile.stage}/editor`,
-			requireEditable: true,
+			// When reusing a compose profile across a URL change, the editor may be
+			// transiently non-editable (loading state right after prompt submission).
+			// Only check visibility here; the editable check is enforced later in
+			// findResolvedEditorCandidate when the selector is actually used.
+			requireEditable: options?.relaxCompose ? false : true,
 		},
 	);
 	selectors.submitButton = await validateVisibleSelectors(
 		page,
-		profile.selectors.submitButton,
+		sanitizedSelectors.submitButton,
 		{
 			label: `${profile.provider}/${profile.stage}/submitButton`,
 			requireEnabled: true,
@@ -225,7 +232,7 @@ export async function validateProfile(
 		profile.stage === "response" ? Math.min(providerResponseMin, 50) : 0;
 	selectors.response = await validateVisibleSelectors(
 		page,
-		profile.selectors.response,
+		sanitizedSelectors.response,
 		{
 			label: `${profile.provider}/${profile.stage}/response`,
 			minTextLength: responseMinTextLength,
@@ -235,7 +242,7 @@ export async function validateProfile(
 	);
 	selectors.generationIndicator = await validateVisibleSelectors(
 		page,
-		profile.selectors.generationIndicator,
+		sanitizedSelectors.generationIndicator,
 		{
 			label: `${profile.provider}/${profile.stage}/generationIndicator`,
 			maxTextLength: 160,
@@ -243,21 +250,21 @@ export async function validateProfile(
 	);
 	selectors.sourcesButton = await validateVisibleSelectors(
 		page,
-		profile.selectors.sourcesButton,
+		sanitizedSelectors.sourcesButton,
 		{
 			label: `${profile.provider}/${profile.stage}/sourcesButton`,
 		},
 	);
 	selectors.sourcePanel = await validateVisibleSelectors(
 		page,
-		profile.selectors.sourcePanel,
+		sanitizedSelectors.sourcePanel,
 		{
 			label: `${profile.provider}/${profile.stage}/sourcePanel`,
 		},
 	);
 	selectors.sourceItem = await validateVisibleSelectors(
 		page,
-		profile.selectors.sourceItem,
+		sanitizedSelectors.sourceItem,
 		{
 			label: `${profile.provider}/${profile.stage}/sourceItem`,
 		},
@@ -281,6 +288,64 @@ export async function validateProfile(
 		...profile,
 		selectors,
 	};
+}
+
+function sharedPageKeyDepth(left: string, right: string): number {
+	const leftSegments = normalizePageKey(left).split("/");
+	const rightSegments = normalizePageKey(right).split("/");
+	let depth = 0;
+	while (
+		depth < leftSegments.length &&
+		depth < rightSegments.length &&
+		leftSegments[depth] === rightSegments[depth]
+	) {
+		depth += 1;
+	}
+	return depth;
+}
+
+async function findReusableCachedProfile(
+	page: Page,
+	provider: Provider,
+	stage: SelectorStage,
+	pageKey: string,
+	requiredFields?: readonly SelectorField[],
+): Promise<SelectorProfile | null> {
+	const cache = await readProviderCache(provider);
+	if (!cache) {
+		return null;
+	}
+
+	const normalizedPageKey = normalizePageKey(pageKey);
+	const candidates = cache.profiles
+		.filter(
+			(profile) =>
+				profile.stage === stage &&
+				normalizePageKey(profile.pageKey) !== normalizedPageKey,
+		)
+		.sort((left, right) => {
+			const depthDelta =
+				sharedPageKeyDepth(normalizedPageKey, right.pageKey) -
+				sharedPageKeyDepth(normalizedPageKey, left.pageKey);
+			if (depthDelta !== 0) {
+				return depthDelta;
+			}
+			return right.createdAt.localeCompare(left.createdAt);
+		});
+
+	for (const candidate of candidates) {
+		const valid = await validateProfile(page, candidate, requiredFields, {
+			// Compose editors are transiently non-editable right after prompt
+			// submission (URL changes home→conversation). Relax the editable check
+			// here so the cached selector is reused without triggering a model call.
+			relaxCompose: stage === "compose",
+		});
+		if (valid) {
+			return valid;
+		}
+	}
+
+	return null;
 }
 
 export function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
@@ -308,7 +373,10 @@ export function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
 		(max, item) => Math.max(max, item.textLength),
 		0,
 	);
-	return longestContent >= 40 || longestGroup >= 40;
+	// 200 chars: enough substance for the model to stably identify the response
+	// container. Values below this fire during early streaming fragments, producing
+	// profiles that become invalid a few seconds later as content grows.
+	return longestContent >= 200 || longestGroup >= 200;
 }
 
 export async function invalidateSelectorProfilesForPageKey(
@@ -370,14 +438,15 @@ export async function getSelectorProfile(
 	},
 ): Promise<SelectorProfile | null> {
 	const psKey = `${provider}:${stage}`;
-	let invalidatedCachedProfile = false;
 	let initialPageKey: string | null = null;
+	let initialCachedProfile: SelectorProfile | null = null;
 
 	if (!options?.forceRefresh) {
 		const pageKey = buildPageKey(page.url());
 		initialPageKey = pageKey;
 		const cached = (await readCachedProfile(provider, stage, pageKey)) ?? null;
 		if (cached) {
+			initialCachedProfile = cached;
 			const valid = await validateProfile(
 				page,
 				cached,
@@ -385,13 +454,6 @@ export async function getSelectorProfile(
 			);
 			if (valid) {
 				return valid;
-			}
-			const baselineValid = options?.requiredFields?.length
-				? await validateProfile(page, cached)
-				: null;
-			if (!baselineValid) {
-				await deleteCachedProfile(cached);
-				invalidatedCachedProfile = true;
 			}
 		}
 	}
@@ -407,14 +469,12 @@ export async function getSelectorProfile(
 	const pageKeyCooldownKey = pageFailureKey(provider, stage, snapshot.pageKey);
 	const snapshotStateKey = buildSnapshotStateKey(snapshot);
 
-	if (invalidatedCachedProfile && initialPageKey === snapshot.pageKey) {
-		failedPageResolutions.delete(pageKeyCooldownKey);
-		failedResolutions.delete(key);
-	}
-
 	if (!options?.forceRefresh) {
 		const cached =
-			(await readCachedProfile(provider, stage, snapshot.pageKey)) ?? null;
+			initialPageKey === snapshot.pageKey
+				? initialCachedProfile
+				: ((await readCachedProfile(provider, stage, snapshot.pageKey)) ??
+					null);
 		if (cached) {
 			const valid = await validateProfile(
 				page,
@@ -433,11 +493,22 @@ export async function getSelectorProfile(
 				}
 				return valid;
 			}
-			const baselineValid = options?.requiredFields?.length
-				? await validateProfile(page, cached)
-				: null;
-			if (!baselineValid) {
-				await deleteCachedProfile(cached);
+			if (isSnapshotReady(snapshot)) {
+				// For sources stage, deleting the cached profile triggers another model
+				// call on the same fingerprint. The sources panel may have filtered-out
+				// selectors (ordinal suffixes stripped by compactSelectors), but the
+				// heuristic extraction in extractResolvedSources handles missing
+				// selectors — keep the profile so callers can fall back gracefully.
+				if (snapshot.stage !== "sources") {
+					const baselineValid = options?.requiredFields?.length
+						? await validateProfile(page, cached)
+						: null;
+					if (!baselineValid) {
+						await deleteCachedProfile(cached);
+						failedPageResolutions.delete(pageKeyCooldownKey);
+						failedResolutions.delete(key);
+					}
+				}
 			}
 		}
 	}
@@ -446,9 +517,28 @@ export async function getSelectorProfile(
 		return null;
 	}
 
+	if (!options?.forceRefresh) {
+		const reusable = await findReusableCachedProfile(
+			page,
+			provider,
+			stage,
+			snapshot.pageKey,
+			options?.requiredFields,
+		);
+		if (reusable) {
+			const rebased: SelectorProfile = {
+				...reusable,
+				pageKey: snapshot.pageKey,
+				fingerprint: snapshot.fingerprint,
+				createdAt: new Date().toISOString(),
+			};
+			await writeCachedProfile(rebased);
+			return rebased;
+		}
+	}
+
 	const lastFailure = failedResolutions.get(key);
 	if (
-		!invalidatedCachedProfile &&
 		!options?.forceRefresh &&
 		lastFailure &&
 		Date.now() - lastFailure < FAILED_RESOLUTION_TTL_MS
@@ -457,7 +547,6 @@ export async function getSelectorProfile(
 	}
 
 	if (
-		!invalidatedCachedProfile &&
 		!options?.forceRefresh &&
 		getPageFailureCooldown(pageKeyCooldownKey)?.stateKey === snapshotStateKey
 	) {
