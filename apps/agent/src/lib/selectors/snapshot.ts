@@ -2,14 +2,10 @@ import type { SelectorSnapshot, SelectorStage } from "@oneglanse/types";
 import type { Page } from "playwright";
 import {
 	SNAPSHOT_STABILITY_POLL_MS,
-	SNAPSHOT_STABLE_POLLS_REQUIRED,
 	SNAPSHOT_STABILITY_TIMEOUT_MS,
+	SNAPSHOT_STABLE_POLLS_REQUIRED,
 } from "./constants.js";
-import {
-	buildPageKey,
-	hashValue,
-	normalizeSelectorForState,
-} from "./utils.js";
+import { buildPageKey, hashValue, normalizeSelectorForState } from "./utils.js";
 
 export async function captureSelectorSnapshot(
 	page: Page,
@@ -51,23 +47,95 @@ export async function captureSelectorSnapshot(
 			return value.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 		}
 
-		function isStableSemanticToken(token: string): boolean {
+		function splitSemanticTokenSegments(token: string): string[] {
+			return token
+				.split(/[-_:]+/)
+				.map((segment) => segment.trim())
+				.filter(Boolean);
+		}
+
+		function looksLikeGeneratedSegment(segment: string): boolean {
+			if (!segment) return false;
+			if (/^\d+$/.test(segment)) return true;
+			if (/^[a-f0-9]{8,}$/i.test(segment)) return true;
 			return (
-				Boolean(token) &&
-				token.length <= 40 &&
-				!/^(active|selected|disabled|hover|focus|open|show|hide)$/i.test(
-					token,
-				) &&
-				!/^\d+$/.test(token) &&
-				!/__[a-z0-9]{5,}$/i.test(token) &&
-				// Keep in sync with module-scope isStableSemanticToken in utils.ts.
-				// Threshold ≤8: rejects build-hash tokens (APjFqb, jloFI) while keeping
-				// library class names (CodeMirror=10, ProseMirror=11).
-				!(/[A-Z]/.test(token) && /[a-z]/.test(token) && !/[-_]/.test(token) && token.length <= 8) &&
-				(token.includes("-") ||
-					token.includes("_") ||
-					(/^[a-z]+$/.test(token) && token.length >= 4))
+				segment.length >= 8 &&
+				/[a-z]/i.test(segment) &&
+				/\d/.test(segment) &&
+				!/^([a-z]+|\d+|[a-z]+\d{1,2})$/i.test(segment)
 			);
+		}
+
+		function hasGeneratedTokenShape(token: string): boolean {
+			const segments = splitSemanticTokenSegments(token);
+			if (segments.length === 0) return false;
+			if (
+				segments.length >= 4 &&
+				segments.filter((segment) => segment.length <= 2).length >= 2
+			) {
+				return true;
+			}
+			if (segments.some((segment) => looksLikeGeneratedSegment(segment))) {
+				return true;
+			}
+			const tail = segments.at(-1);
+			return Boolean(tail && segments.length > 1 && /^\d+$/.test(tail));
+		}
+
+		function isStableSemanticToken(token: string): boolean {
+			if (
+				!token ||
+				token.length > 40 ||
+				/^(active|selected|disabled|hover|focus|open|show|hide)$/i.test(
+					token,
+				) ||
+				/^\d+$/.test(token) ||
+				/__[a-z0-9]{5,}$/i.test(token) ||
+				hasGeneratedTokenShape(token)
+			) {
+				return false;
+			}
+			// Keep in sync with module-scope isStableSemanticToken in utils.ts.
+			// Threshold ≤8: rejects build-hash tokens (APjFqb, jloFI) while keeping
+			// library class names (CodeMirror=10, ProseMirror=11).
+			if (
+				/[A-Z]/.test(token) &&
+				/[a-z]/.test(token) &&
+				!/[-_]/.test(token) &&
+				token.length <= 8
+			) {
+				return false;
+			}
+			if (token.includes("-") || token.includes("_") || token.includes(":")) {
+				const segments = splitSemanticTokenSegments(token);
+				return (
+					segments.length > 0 &&
+					segments.every(
+						(segment) =>
+							/^[a-z]+$/.test(segment) || /^[a-z]+\d{1,2}$/i.test(segment),
+					)
+				);
+			}
+			return /^[a-z]+$/.test(token) && token.length >= 4;
+		}
+
+		function isSemanticAttribute(attr: string): boolean {
+			return /^(name|aria-label|placeholder|role|type|title)$/i.test(attr);
+		}
+
+		function isStableAttributeValue(attr: string, value: string): boolean {
+			if (!value) return false;
+			if (isSemanticAttribute(attr)) return true;
+			if (attr === "class") {
+				return value
+					.split(/\s+/)
+					.filter(Boolean)
+					.every((token) => isStableSemanticToken(token));
+			}
+			if (attr === "id" || attr.startsWith("data-")) {
+				return isStableSemanticToken(value);
+			}
+			return true;
 		}
 
 		function stableClassTokens(element: Element): string[] {
@@ -194,6 +262,7 @@ export async function captureSelectorSnapshot(
 			] as const) {
 				const value = element.getAttribute(attr)?.trim();
 				if (!value) continue;
+				if (!isStableAttributeValue(attr, value)) continue;
 				const selector = `${tag}[${attr}="${value.replace(/"/g, '\\"')}"]`;
 				if (queryCount(document, selector) === 1) return selector;
 			}
@@ -481,8 +550,12 @@ export async function captureSelectorSnapshot(
 	const fingerprintPayload = {
 		stage,
 		pageKey,
-		editables: snapshot.editables.map((item) => item.fingerprint),
-		buttons: snapshot.buttons.map((item) => item.fingerprint),
+		// Use selector (not fingerprint) for editables and buttons so that
+		// transient text changes — stop button appearing/disappearing during streaming,
+		// copy/retry buttons appearing after — do not churn the snapshot fingerprint
+		// and trigger redundant model calls.
+		editables: snapshot.editables.map((item) => item.selector),
+		buttons: snapshot.buttons.map((item) => item.selector),
 		content: snapshot.content.map((item) => [
 			normalizeSelectorForState(item.selector),
 			item.linkCount,

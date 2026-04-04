@@ -1,5 +1,5 @@
-import type { Provider, SelectorProfile, Source } from "@oneglanse/types";
 import { ExternalServiceError } from "@oneglanse/errors";
+import type { Provider, SelectorProfile, Source } from "@oneglanse/types";
 import { getDomain, getFaviconUrls, logger } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import type { RawSource } from "../extraction/sourceUtils.js";
@@ -198,7 +198,11 @@ async function openSourcesPanelIfNeeded(
 	page: Page,
 	responseSelectors: string[],
 	sourceButtonSelectors: string[],
-): Promise<{ opened: boolean; controlledPanelSelector: string | null }> {
+): Promise<{
+	opened: boolean;
+	controlledPanelSelector: string | null;
+	buttonMatch: { selector: string; index: number } | null;
+}> {
 	const buttonMatch = await findSourcesButtonLocator(
 		page,
 		responseSelectors,
@@ -208,6 +212,7 @@ async function openSourcesPanelIfNeeded(
 		return {
 			opened: false,
 			controlledPanelSelector: null,
+			buttonMatch: null,
 		};
 	}
 
@@ -227,6 +232,10 @@ async function openSourcesPanelIfNeeded(
 	return {
 		opened: true,
 		controlledPanelSelector,
+		buttonMatch: {
+			selector: buttonMatch.selector,
+			index: buttonMatch.index,
+		},
 	};
 }
 
@@ -260,16 +269,27 @@ async function extractRawSourcesWithSelectors(
 	sourcePanelSelectors: string[],
 	sourceItemSelectors: string[],
 	rootSelector?: string | null,
+	context?: {
+		buttonSelector?: string | null;
+		buttonIndex?: number;
+		responseSelectors?: string[];
+	},
 ): Promise<RawSource[]> {
 	return await page.evaluate(
 		({
 			panels,
 			items,
 			rootSelector,
+			buttonSelector,
+			buttonIndex,
+			responseSelectors,
 		}: {
 			panels: string[];
 			items: string[];
 			rootSelector?: string | null;
+			buttonSelector?: string | null;
+			buttonIndex?: number;
+			responseSelectors?: string[];
 		}) => {
 			type RawSource = {
 				rawHref: string;
@@ -310,6 +330,131 @@ async function extractRawSourcesWithSelectors(
 				return null;
 			}
 
+			function resolveButton(): HTMLElement | null {
+				if (!buttonSelector || typeof buttonIndex !== "number") {
+					return null;
+				}
+				try {
+					const matches = Array.from(
+						document.querySelectorAll(buttonSelector),
+					) as HTMLElement[];
+					const button = matches[buttonIndex] ?? null;
+					return isVisible(button) ? button : null;
+				} catch {
+					return null;
+				}
+			}
+
+			function resolveLatestResponse(): HTMLElement | null {
+				for (const selector of responseSelectors ?? []) {
+					try {
+						const response = lastVisible(
+							Array.from(document.querySelectorAll(selector)) as HTMLElement[],
+						);
+						if (response) {
+							return response;
+						}
+					} catch {}
+				}
+				return null;
+			}
+
+			function candidateRootScore(
+				candidate: HTMLElement,
+				button: HTMLElement | null,
+				latestResponse: HTMLElement | null,
+			): number {
+				const rect = candidate.getBoundingClientRect();
+				const anchorCount = Array.from(
+					candidate.querySelectorAll("a[href]"),
+				).filter(isVisible).length;
+				if (anchorCount === 0) {
+					return Number.NEGATIVE_INFINITY;
+				}
+
+				let score =
+					anchorCount * 280 -
+					rect.width * 0.08 -
+					rect.height * 0.05 +
+					textOf(candidate).length * 0.04;
+
+				if (
+					candidate.matches(
+						"[role='dialog'], [role='menu'], [role='listbox'], [role='region']",
+					)
+				) {
+					score += 450;
+				}
+
+				if (button) {
+					const buttonRect = button.getBoundingClientRect();
+					const horizontalDistance =
+						rect.right < buttonRect.left
+							? buttonRect.left - rect.right
+							: rect.left > buttonRect.right
+								? rect.left - buttonRect.right
+								: 0;
+					const verticalDistance =
+						rect.bottom < buttonRect.top
+							? buttonRect.top - rect.bottom
+							: rect.top > buttonRect.bottom
+								? rect.top - buttonRect.bottom
+								: 0;
+					score -= horizontalDistance * 0.6 + verticalDistance * 0.7;
+					if (
+						rect.top <= buttonRect.bottom + 320 &&
+						rect.bottom >= buttonRect.top - 120
+					) {
+						score += 320;
+					}
+					if (candidate.contains(button)) {
+						score -= 700;
+					}
+				}
+
+				if (latestResponse) {
+					if (candidate === latestResponse) {
+						score -= 900;
+					}
+					if (latestResponse.contains(candidate)) {
+						score -= 500;
+					}
+					if (candidate.contains(latestResponse)) {
+						score -= 250;
+					}
+				}
+
+				return score;
+			}
+
+			function resolveHeuristicRoot(): HTMLElement | null {
+				const button = resolveButton();
+				const latestResponse = resolveLatestResponse();
+				const candidates = Array.from(
+					document.querySelectorAll(
+						"div, section, aside, ul, ol, [role='dialog'], [role='menu'], [role='listbox'], [role='region']",
+					),
+				).filter(
+					(element): element is HTMLElement =>
+						element instanceof HTMLElement &&
+						isVisible(element) &&
+						element.getBoundingClientRect().width >= 120 &&
+						element.getBoundingClientRect().height >= 40,
+				);
+
+				let best: HTMLElement | null = null;
+				let bestScore = Number.NEGATIVE_INFINITY;
+				for (const candidate of candidates) {
+					const score = candidateRootScore(candidate, button, latestResponse);
+					if (score > bestScore) {
+						best = candidate;
+						bestScore = score;
+					}
+				}
+
+				return bestScore > Number.NEGATIVE_INFINITY ? best : null;
+			}
+
 			function resolveRoot(): HTMLElement | null {
 				if (rootSelector) {
 					try {
@@ -334,10 +479,8 @@ async function extractRawSourcesWithSelectors(
 						}
 					} catch {}
 				}
-				// Do NOT fall back to document — querying the whole page with
-				// sourceItem selectors picks up wrong elements (nav links, footers,
-				// search result cards). Return null so the caller returns [] instead.
-				return null;
+
+				return resolveHeuristicRoot();
 			}
 
 			const root = resolveRoot();
@@ -351,8 +494,21 @@ async function extractRawSourcesWithSelectors(
 
 			let dedupedItems = Array.from(new Set(rawItems)).filter(isVisible);
 			if (dedupedItems.length <= 1) {
+				// Anchors inside a scrollable panel may have zero bounding-rect height
+				// when they are below the visible scroll area — isVisible returns false
+				// for them. Use a lenient check: connected, not hidden, has an href.
+				const isConnectedAnchor = (element: Element): element is HTMLAnchorElement => {
+					if (!(element instanceof HTMLAnchorElement)) return false;
+					if (!element.isConnected || element.hidden) return false;
+					const style = window.getComputedStyle(element);
+					return (
+						style.display !== "none" &&
+						style.visibility !== "hidden" &&
+						!!element.href
+					);
+				};
 				const anchorItems = Array.from(root.querySelectorAll("a[href]")).filter(
-					isVisible,
+					isConnectedAnchor,
 				);
 				if (anchorItems.length > dedupedItems.length) {
 					dedupedItems = anchorItems;
@@ -410,6 +566,9 @@ async function extractRawSourcesWithSelectors(
 			panels: sourcePanelSelectors,
 			items: sourceItemSelectors,
 			rootSelector,
+			buttonSelector: context?.buttonSelector,
+			buttonIndex: context?.buttonIndex,
+			responseSelectors: context?.responseSelectors,
 		},
 	);
 }
@@ -427,11 +586,12 @@ export async function extractResolvedSources(
 	}
 
 	logger.log(`[${provider}] opening sources panel`);
-	const { opened, controlledPanelSelector } = await openSourcesPanelIfNeeded(
-		page,
-		responseProfile.selectors.response,
-		responseProfile.selectors.sourcesButton,
-	);
+	const { opened, controlledPanelSelector, buttonMatch } =
+		await openSourcesPanelIfNeeded(
+			page,
+			responseProfile.selectors.response,
+			responseProfile.selectors.sourcesButton,
+		);
 	if (!opened) {
 		throw new ExternalServiceError(
 			provider,
@@ -440,19 +600,41 @@ export async function extractResolvedSources(
 	}
 	logger.log(`[${provider}] sources panel opened`);
 
-	const sourceProfile =
-		(await waitForSelectorProfile(page, provider, "sources", 8_000, {
-			requiredFields: ["sourcePanel", "sourceItem"],
-		}).catch(() => null)) ??
-		(await getSelectorProfile(page, provider, "sources", {
-			allowModel: false,
-		}).catch(() => null));
-	const rawSources = await extractRawSourcesWithSelectors(
+	const directRawSources = await extractRawSourcesWithSelectors(
 		page,
-		sourceProfile?.selectors.sourcePanel ?? [],
-		sourceProfile?.selectors.sourceItem ?? [],
+		[],
+		[],
 		controlledPanelSelector,
+		{
+			buttonSelector: buttonMatch?.selector ?? null,
+			buttonIndex: buttonMatch?.index,
+			responseSelectors: responseProfile.selectors.response,
+		},
 	);
+
+	const sourceProfile =
+		directRawSources.length > 0
+			? null
+			: ((await waitForSelectorProfile(page, provider, "sources", 8_000, {
+					requiredFields: ["sourcePanel", "sourceItem"],
+				}).catch(() => null)) ??
+				(await getSelectorProfile(page, provider, "sources", {
+					allowModel: false,
+				}).catch(() => null)));
+	const rawSources =
+		directRawSources.length > 0
+			? directRawSources
+			: await extractRawSourcesWithSelectors(
+					page,
+					sourceProfile?.selectors.sourcePanel ?? [],
+					sourceProfile?.selectors.sourceItem ?? [],
+					controlledPanelSelector,
+					{
+						buttonSelector: buttonMatch?.selector ?? null,
+						buttonIndex: buttonMatch?.index,
+						responseSelectors: responseProfile.selectors.response,
+					},
+				);
 
 	if (rawSources.length === 0) {
 		throw new ExternalServiceError(
