@@ -241,7 +241,7 @@ export default function SchedulePageClient() {
 
 	if (!workspaceId) {
 		return (
-			<div className="flex min-h-[60vh] items-center justify-center px-4">
+			<div className="web-centered-state">
 				<div className="web-empty-state">
 					<p className="text-sm text-gray-500">No workspace selected.</p>
 				</div>

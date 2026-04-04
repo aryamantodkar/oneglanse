@@ -167,7 +167,7 @@ export default function SourcesPage(): React.JSX.Element {
 
 	if (!workspaceId) {
 		return (
-			<div className="flex min-h-[60vh] items-center justify-center px-4">
+			<div className="web-centered-state">
 				<div className="web-empty-state">
 					<div className="web-empty-state-icon">
 						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
@@ -201,7 +201,7 @@ export default function SourcesPage(): React.JSX.Element {
 
 	if (error) {
 		return (
-			<div className="flex min-h-[60vh] items-center justify-center px-4">
+			<div className="web-centered-state">
 				<div className="web-empty-state">
 					<div className="web-empty-state-icon border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
 						<AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -220,7 +220,7 @@ export default function SourcesPage(): React.JSX.Element {
 
 	if (!sourceStats) {
 		return (
-			<div className="flex min-h-[60vh] items-center justify-center px-4">
+			<div className="web-centered-state">
 				<div className="web-empty-state">
 					<div className="web-empty-state-icon">
 						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
@@ -240,14 +240,14 @@ export default function SourcesPage(): React.JSX.Element {
 
 	return (
 		<div className="web-page-wide">
-			<div className="web-page-wide-inner ui-stagger space-y-6">
+			<div className="web-page-wide-inner ui-stagger space-y-8">
 				<SectionHeading
 					as="h1"
 					title="Sources Intelligence"
 					description="High-signal view of where model answers are sourced from."
-					className="mb-0 flex-wrap items-center"
+					className="mb-0 flex-wrap items-center gap-y-4"
 					titleClassName="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
-					descriptionClassName="mt-1 text-sm font-normal"
+					descriptionClassName="mt-2 text-sm font-normal"
 					trailing={
 						<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
 							<ExportMenu
@@ -379,7 +379,7 @@ export default function SourcesPage(): React.JSX.Element {
 					}
 				/>
 
-				<div className="pt-3 sm:pt-4">
+				<div className="pt-4 sm:pt-5">
 					<SourcesIntelligencePanel
 						metrics={metrics}
 						domainRows={domainRows}

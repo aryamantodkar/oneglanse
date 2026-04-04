@@ -14,6 +14,44 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { WorkspaceProvider } from "./workspace-context";
 
+function getPageHeader(pathname: string | null): string | null {
+	if (!pathname) return null;
+
+	if (pathname.startsWith("/dashboard")) {
+		return "Dashboard";
+	}
+
+	if (pathname.startsWith("/prompts")) {
+		return "Prompts";
+	}
+
+	if (pathname.startsWith("/sources")) {
+		return "Sources";
+	}
+
+	if (pathname.startsWith("/schedule")) {
+		return "Schedule";
+	}
+
+	if (pathname.startsWith("/people")) {
+		return "People";
+	}
+
+	if (pathname.startsWith("/providers")) {
+		return "Providers";
+	}
+
+	if (pathname.startsWith("/settings")) {
+		return "Settings";
+	}
+
+	if (pathname.startsWith("/workspace")) {
+		return "Workspace";
+	}
+
+	return null;
+}
+
 export default function LayoutContent({
 	children,
 	appMode,
@@ -57,6 +95,7 @@ export default function LayoutContent({
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
+	const pageHeader = getPageHeader(pathname);
 	const providersWorkspaceId =
 		workspaceIdFromUrl || resolvedWorkspace?.id || "";
 	const providersHref = providersWorkspaceId
@@ -163,8 +202,14 @@ export default function LayoutContent({
 					userEmail={userEmail}
 				/>
 				<main className="web-app-main">
-					<SidebarTrigger className="fixed top-4 left-4 z-30 border border-gray-200/80 bg-white/90 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] backdrop-blur-sm md:hidden dark:border-gray-800 dark:bg-neutral-950/90 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]" />
-
+					{pageHeader ? (
+						<header className="web-app-header">
+							<SidebarTrigger className="size-8 shrink-0 rounded-none border-transparent bg-transparent p-0 shadow-none hover:bg-transparent dark:hover:bg-transparent" />
+							<h1 className="truncate text-[0.95rem] font-medium tracking-[-0.01em] text-gray-950 dark:text-gray-50">
+								{pageHeader}
+							</h1>
+						</header>
+					) : null}
 					<div className="web-app-scroll">{children}</div>
 				</main>
 			</div>
