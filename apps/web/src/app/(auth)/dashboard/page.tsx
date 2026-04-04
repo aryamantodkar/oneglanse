@@ -119,9 +119,10 @@ export default function Dashboard() {
 		!analysedPromptData ||
 		(Array.isArray(analysedPromptData) && analysedPromptData.length === 0)
 	) {
-		return <EmptyState />;
+		return <EmptyState workspaceId={workspaceId} />;
 	}
-	if (!hasAnyAnalysisInWorkspace) return <NoAnalysisState />;
+	if (!hasAnyAnalysisInWorkspace)
+		return <NoAnalysisState workspaceId={workspaceId} />;
 
 	return (
 		<div className="web-page-wide">
@@ -180,7 +181,7 @@ export default function Dashboard() {
 					<div className="space-y-4 sm:space-y-5">
 						<CompetitiveLandscape competitors={metrics.competitorData} />
 
-						<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+						<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
 							<TopSources
 								sources={metrics.sourcesIntelligence}
 								totalCitations={metrics.totalCitations}

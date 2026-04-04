@@ -2,10 +2,15 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import {
+	formDialogBodyClassName,
 	formDialogContentClassName,
+	formDialogFieldGroupClassName,
 	formDialogHeaderClassName,
 	formDialogScrollBodyClassName,
 	formDialogStickyTopClassName,
+	formDialogSupportCardClassName,
+	formHintClassName,
+	formLabelClassName,
 	formPanelClassName,
 	formPrimaryButtonClassName,
 	formResponseMetricsPanelClassName,
@@ -21,6 +26,7 @@ import {
 } from "@/components/forms/auth-form-chrome";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { api } from "@/trpc/react";
 import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
 import {
 	Button,
@@ -31,6 +37,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	EmptyStatePanel,
 	ProviderModelSelect,
 	Separator,
 	Skeleton,
@@ -42,8 +49,10 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	TemporaryIssueState,
 	Textarea,
 	TimeRangeSelect,
+	WorkspaceRequiredState,
 	toast,
 	useSortState,
 } from "@oneglanse/ui";
@@ -59,6 +68,7 @@ import {
 } from "@oneglanse/utils";
 import { cn } from "@oneglanse/utils";
 import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import {
@@ -76,6 +86,10 @@ type SortColumn =
 export default function Prompts() {
 	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
+	const { data: workspace } = api.workspace.getById.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
 
 	const [initialPrompts, setInitialPrompts] = useState<UserPrompt[]>([]);
 	const [modelFilter, setModelFilter] = useState("All Models");
@@ -115,6 +129,10 @@ export default function Prompts() {
 		isLoading: isAnalysedPromptsLoading,
 		error: analysedPromptError,
 	} = useFetchAnalysedPrompts(workspaceId);
+
+	const promptExampleBrand =
+		workspace?.name?.trim() ||
+		"What's the best project management software for a small remote team?";
 
 	const storePromptMutation = useStorePrompt();
 
@@ -436,39 +454,32 @@ export default function Prompts() {
 	};
 
 	const LoadingState = () => (
-		<div className="web-centered-state">
-			<div className="web-empty-state">
-				<div className="web-empty-state-icon animate-pulse">
-					<Bot className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-				</div>
-				<p className="text-gray-500 text-sm dark:text-gray-400">
-					Loading your prompts…
-				</p>
-			</div>
-		</div>
+		<EmptyStatePanel
+			icon={Bot}
+			eyebrow="Loading"
+			title="Loading Prompts"
+			description="Pulling your prompt library into place."
+			contentClassName="max-w-sm px-6 py-7"
+		/>
 	);
 
 	if (!workspaceId) {
 		return (
-			<div className="web-centered-state">
-				<div className="web-empty-state">
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						No workspace selected.
-					</p>
-				</div>
-			</div>
+			<WorkspaceRequiredState
+				icon={Bot}
+				title="Pick a Workspace"
+				description="Open a workspace to add and track prompts."
+			/>
 		);
 	}
 
 	if (userPromptsError || analysedPromptError) {
 		return (
-			<div className="web-centered-state">
-				<div className="web-empty-state">
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						We couldn&apos;t load your prompts right now.
-					</p>
-				</div>
-			</div>
+			<TemporaryIssueState
+				icon={FilterX}
+				title="Prompts Are Unavailable"
+				description="We couldn’t load your prompts right now."
+			/>
 		);
 	}
 
@@ -522,21 +533,45 @@ export default function Prompts() {
 											{editIndex !== null ? "Edit Prompt" : "Add New Prompt"}
 										</DialogTitle>
 									</DialogHeader>
-									<Textarea
-										placeholder="Type your prompt..."
-										rows={4}
-										value={editIndex !== null ? editPromptValue : currentPrompt}
-										onChange={(e) =>
-											editIndex !== null
-												? setEditPromptValue(e.target.value)
-												: setCurrentPrompt(e.target.value)
-										}
-										className={cn(
-											formTextareaClassName,
-											"mx-6 mt-2 w-auto resize-none sm:mx-7",
-										)}
-									/>
-									<div className="mt-5 flex flex-col gap-3 px-6 pb-6 sm:flex-row sm:justify-end sm:px-7 sm:pb-7">
+									<div className={formDialogBodyClassName}>
+										<div className={formDialogFieldGroupClassName}>
+											<div className="space-y-1">
+												<p className={formLabelClassName}>Prompt</p>
+												<p className={formHintClassName}>
+													Write the exact search-style question you want AI
+													providers to answer.
+												</p>
+											</div>
+											<Textarea
+												placeholder={promptExampleBrand}
+												rows={5}
+												value={
+													editIndex !== null ? editPromptValue : currentPrompt
+												}
+												onChange={(e) =>
+													editIndex !== null
+														? setEditPromptValue(e.target.value)
+														: setCurrentPrompt(e.target.value)
+												}
+												className={cn(
+													formTextareaClassName,
+													"resize-none shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
+												)}
+											/>
+										</div>
+
+										<div className={formDialogSupportCardClassName}>
+											<p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+												Strong Prompts Usually
+											</p>
+											<p className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300">
+												name the target audience, the use case, and the decision
+												they are making, such as choosing alternatives,
+												comparing tools, or finding the best fit.
+											</p>
+										</div>
+									</div>
+									<div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:justify-end sm:px-6 sm:pb-6">
 										<Button
 											variant="outline"
 											className={cn(
@@ -1250,26 +1285,23 @@ export default function Prompts() {
 					</div>
 				</div>
 			) : (
-				<div className="flex h-[60vh] items-center justify-center px-6">
-					<div className="web-empty-state">
-						<button
-							type="button"
-							onClick={() => setDialogOpen(true)}
-							className="web-empty-state-icon"
-						>
-							<Plus className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-						</button>
-
-						<h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-							No prompts yet
-						</h3>
-
-						<p className="mt-2 max-w-sm text-gray-500 text-sm dark:text-gray-400">
-							You haven’t added any prompts yet. Start by adding your first
-							prompt to analyze model responses and brand metrics.
-						</p>
-					</div>
-				</div>
+				<EmptyStatePanel
+					title="Start With Audience Questions"
+					description="Add the questions your target audience already searches for."
+					examplesLabel="Prompt ideas"
+					examples={[
+						"What's the best project management software for a small remote team?",
+						"Which accounting tools are easiest for freelancers who hate bookkeeping?",
+						"What help desk software is best for a fast-growing ecommerce brand?",
+					]}
+					action={
+						<Button onClick={() => setDialogOpen(true)} className="gap-2">
+							<Plus className="h-4 w-4" />
+							Add first prompt
+						</Button>
+					}
+					className="min-h-[60vh] px-6"
+				/>
 			)}
 		</div>
 	);

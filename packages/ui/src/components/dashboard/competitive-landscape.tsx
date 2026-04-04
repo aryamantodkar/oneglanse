@@ -106,8 +106,8 @@ export function CompetitiveLandscape({
 			{rows.length === 0 ? (
 				<DashboardEmptyState
 					icon={Users}
-					title="No competitor data"
-					description="No analysis data is available for the selected filters."
+					title="Competitor pressure will appear here"
+					description="After analysis runs, this table shows which brands keep getting mentioned beside you and how strongly they overlap."
 				/>
 			) : (
 				<div className="min-w-0 px-1.5 py-2">

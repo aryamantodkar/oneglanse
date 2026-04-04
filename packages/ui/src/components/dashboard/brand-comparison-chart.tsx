@@ -159,7 +159,7 @@ export function BrandComparisonChart({
 
 	if (series.length <= 1 || totalResponses === 0) {
 		return (
-			<Card className="flex min-h-[360px] flex-col p-5">
+			<Card className="flex min-h-[280px] flex-col p-5">
 				<div>
 					<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 						Brand Comparison

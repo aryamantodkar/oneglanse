@@ -13,6 +13,9 @@ export * from "./dialog.js";
 // Dropdown Menu
 export * from "./dropdown-menu.js";
 
+// Empty state
+export * from "./empty-state.js";
+
 // Form
 export * from "./form.js";
 

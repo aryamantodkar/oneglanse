@@ -67,6 +67,11 @@ export const formDialogHeaderClassName =
 
 export const formDialogBodyClassName = "grid gap-3.5 px-5 py-5 sm:px-6 sm:py-6";
 
+export const formDialogFieldGroupClassName = "grid gap-2.5";
+
+export const formDialogSupportCardClassName =
+	"rounded-[20px] bg-stone-50/90 px-4 py-3 text-left shadow-[0_14px_30px_-28px_rgba(15,23,42,0.18)] dark:bg-neutral-900/80 dark:shadow-[0_14px_30px_-28px_rgba(0,0,0,0.4)]";
+
 export const formDialogStickyTopClassName =
 	"sticky top-0 z-10 border-b border-gray-100/80 bg-white/95 px-5 pt-5 pb-4 backdrop-blur-sm shadow-[0_14px_30px_-28px_rgba(15,23,42,0.18)] sm:px-6 sm:pt-6 dark:border-gray-800/80 dark:bg-neutral-950/95 dark:shadow-[0_14px_30px_-28px_rgba(0,0,0,0.45)]";
 
