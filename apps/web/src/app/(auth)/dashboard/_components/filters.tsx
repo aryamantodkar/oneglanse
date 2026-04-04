@@ -1,3 +1,4 @@
+import { formToolbarSelectClassName } from "@/components/forms/auth-form-chrome";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import {
 	Button,
@@ -5,7 +6,7 @@ import {
 	Separator,
 	TimeRangeSelect,
 } from "@oneglanse/ui";
-import { getFaviconUrls } from "@oneglanse/utils";
+import { cn, getFaviconUrls } from "@oneglanse/utils";
 import { FilterX } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -41,17 +42,22 @@ export function DashboardFilters({
 	};
 
 	return (
-		<div className="flex w-full flex-wrap items-center gap-2 sm:gap-3">
+		<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
 			{/* Brand pill */}
-			<div className="flex h-11 min-w-0 max-w-full items-center gap-2 rounded-2xl border border-gray-200/80 bg-white px-3.5 text-sm shadow-sm transition-[border-color,box-shadow,background-color] duration-200 ease-out hover:bg-stone-50 dark:border-gray-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:max-w-[240px]">
+			<div
+				className={cn(
+					formToolbarSelectClassName,
+					"flex min-w-0 w-full max-w-full items-center gap-2 px-3.5 sm:w-auto sm:max-w-[240px]",
+				)}
+			>
 				{faviconUrls[0] && (
 					<img
 						src={faviconUrls[0]}
 						alt=""
 						className="h-4 w-4 rounded-sm"
-						onError={(e) =>
-							((e.target as HTMLImageElement).style.display = "none")
-						}
+						onError={(e) => {
+							(e.target as HTMLImageElement).style.display = "none";
+						}}
 					/>
 				)}
 				<span className="truncate font-medium text-gray-900 dark:text-gray-100">
@@ -62,14 +68,14 @@ export function DashboardFilters({
 			<ProviderModelSelect
 				value={modelFilter}
 				onValueChange={setModelFilter}
-				triggerClassName="w-full text-sm sm:w-44"
+				triggerClassName={`${formToolbarSelectClassName} w-full text-sm sm:w-auto`}
 				contentClassName="z-[9999]"
 			/>
 
 			<TimeRangeSelect
 				value={timeFilter}
 				onValueChange={setTimeFilter}
-				triggerClassName="w-full text-sm sm:w-40"
+				triggerClassName={`${formToolbarSelectClassName} w-full text-sm sm:w-auto`}
 			/>
 
 			{(modelFilter !== "All Models" || timeFilter !== "all") && (

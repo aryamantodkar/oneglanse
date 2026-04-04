@@ -1,6 +1,69 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "",
-  "profiles": []
+  "updatedAt": "2026-04-04T11:45:17.741Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "compose",
+      "pageKey": "chatgpt.com",
+      "fingerprint": "8f8e1b32ffc18ae21169636c6e4f8126a652fba70e742ab449ebf754a68dd02e",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:44:29.048Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Chat with ChatGPT\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "compose",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "bae63e12741834c4cf27fc0c028f74f19f45ef8cb47df349a620352c3ba58d41",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:45:05.056Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Chat with ChatGPT\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "response",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "6e66e6dfd752bfe5d7276f53160bfafcfeddc8a1ebc842f7fa093f4ceb4e3fa3",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:44:58.763Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "section[data-testid=\"conversation-turn-2\"]"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [
+          "button[aria-label=\"Sources\"]"
+        ],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
 }

@@ -126,7 +126,7 @@ export default function Dashboard() {
 	return (
 		<div className="web-page-wide">
 			<div className="web-page-wide-inner">
-				<div className="ui-stagger space-y-6">
+				<div className="ui-stagger space-y-5 sm:space-y-6">
 					{/* Filters */}
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 						<DashboardFilters
@@ -177,22 +177,22 @@ export default function Dashboard() {
 						</div>
 					)}
 
-					{/* 3-Column Grid */}
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+					<div className="space-y-4 sm:space-y-5">
 						<CompetitiveLandscape competitors={metrics.competitorData} />
-						<TopSources
-							sources={metrics.sourcesIntelligence}
-							totalCitations={metrics.totalCitations}
-						/>
-						<BrandPerceptionCard
-							bestKnownFor={metrics.brandPerception.bestKnownFor}
-							pricingPerception={metrics.brandPerception.pricingPerception}
-							coreClaims={metrics.brandPerception.coreClaims}
-							differentiators={metrics.brandPerception.differentiators}
-						/>
-					</div>
 
-					<div className="space-y-4">
+						<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+							<TopSources
+								sources={metrics.sourcesIntelligence}
+								totalCitations={metrics.totalCitations}
+							/>
+							<BrandPerceptionCard
+								bestKnownFor={metrics.brandPerception.bestKnownFor}
+								pricingPerception={metrics.brandPerception.pricingPerception}
+								coreClaims={metrics.brandPerception.coreClaims}
+								differentiators={metrics.brandPerception.differentiators}
+							/>
+						</div>
+
 						<BrandComparisonChart
 							competitors={metrics.competitorData}
 							brandName={metrics.brandName}

@@ -389,7 +389,7 @@ export default function PeoplePage() {
 										variant="outline"
 										className={cn(
 											formSecondaryButtonClassName,
-											"w-full sm:w-28",
+											"w-full sm:w-auto",
 										)}
 										onClick={() => {
 											setWorkspaceName(workspace?.name ?? "");
@@ -408,7 +408,10 @@ export default function PeoplePage() {
 											!workspaceDomain.trim() ||
 											!workspaceDetailsChanged
 										}
-										className={cn(formPrimaryButtonClassName, "w-full sm:w-28")}
+										className={cn(
+											formPrimaryButtonClassName,
+											"w-full sm:w-auto",
+										)}
 									>
 										{savingWorkspace ? (
 											<Loader2 className="h-4 w-4 animate-spin" />
@@ -478,7 +481,7 @@ export default function PeoplePage() {
 										variant="outline"
 										className={cn(
 											formSecondaryButtonClassName,
-											"w-full sm:w-28",
+											"w-full sm:w-auto",
 										)}
 										onClick={() => {
 											setOrganizationName(organization?.name ?? "");
@@ -495,7 +498,10 @@ export default function PeoplePage() {
 											!organizationName.trim() ||
 											!organizationNameChanged
 										}
-										className={cn(formPrimaryButtonClassName, "w-full sm:w-28")}
+										className={cn(
+											formPrimaryButtonClassName,
+											"w-full sm:w-auto",
+										)}
 									>
 										{savingOrg ? (
 											<Loader2 className="h-4 w-4 animate-spin" />
@@ -594,7 +600,7 @@ export default function PeoplePage() {
 				<div
 					className={cn(
 						formPanelClassName,
-						"mb-4 grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_10rem_10rem] sm:items-end sm:p-6",
+						"mb-4 grid gap-3 p-5 md:grid-cols-[minmax(0,1fr)_10rem_10rem] md:items-end sm:p-6",
 					)}
 				>
 					<Input
@@ -650,7 +656,7 @@ export default function PeoplePage() {
 					</div>
 				) : (
 					<div className="overflow-x-auto">
-						<Table className="min-w-[680px]">
+						<Table className="min-w-[620px] lg:min-w-[680px]">
 							<TableHeader>
 								<TableRow className="bg-gray-50/70 dark:bg-gray-900/40">
 									<TableHead className="px-4 py-3">Name</TableHead>

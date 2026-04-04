@@ -5,34 +5,49 @@ import { useState } from "react";
 export type SortDirection = "asc" | "desc";
 
 export function useSortState<C extends string>(
-  initialColumn: C,
-  initialDirection: SortDirection = "desc",
-  options?: {
-    nextDirectionForNewColumn?: (column: C) => SortDirection;
-  },
+	initialColumn: C,
+	initialDirection: SortDirection = "asc",
+	options?: {
+		nextDirectionForNewColumn?: (column: C) => SortDirection;
+	},
 ): {
-  sortColumn: C;
-  sortDirection: SortDirection;
-  toggleSort: (column: C) => void;
+	sortColumn: C | null;
+	sortDirection: SortDirection;
+	toggleSort: (column: C) => void;
+	resetSort: () => void;
 } {
-  const [sortColumn, setSortColumn] = useState<C>(initialColumn);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(initialDirection);
+	const [sortColumn, setSortColumn] = useState<C | null>(null);
+	const [sortDirection, setSortDirection] =
+		useState<SortDirection>(initialDirection);
 
-  const toggleSort = (column: C) => {
-    setSortColumn((currentColumn) => {
-      if (currentColumn === column) {
-        setSortDirection((currentDirection) => (currentDirection === "asc" ? "desc" : "asc"));
-        return currentColumn;
-      }
+	const toggleSort = (column: C) => {
+		setSortColumn((currentColumn) => {
+			if (currentColumn === null) {
+				setSortDirection(options?.nextDirectionForNewColumn?.(column) ?? "asc");
+				return column;
+			}
 
-      setSortDirection(options?.nextDirectionForNewColumn?.(column) ?? "desc");
-      return column;
-    });
-  };
+			if (currentColumn === column) {
+				setSortDirection((currentDirection) =>
+					currentDirection === "asc" ? "desc" : "asc",
+				);
+				return currentColumn;
+			}
 
-  return {
-    sortColumn,
-    sortDirection,
-    toggleSort,
-  };
+			setSortDirection(options?.nextDirectionForNewColumn?.(column) ?? "asc");
+			return column;
+		});
+	};
+
+	const resetSort = () => {
+		setSortColumn(null);
+		setSortDirection(initialDirection);
+	};
+
+	return {
+		sortColumn,
+		sortDirection,
+		toggleSort,
+		resetSort,
+	};
 }

@@ -1,6 +1,89 @@
 {
   "version": 1,
   "provider": "perplexity",
-  "updatedAt": "",
-  "profiles": []
+  "updatedAt": "2026-04-04T16:30:30.704Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "perplexity",
+      "stage": "compose",
+      "pageKey": "www.perplexity.ai",
+      "fingerprint": "6421bd8b426e439cdbd0f1d290f3ec45bef2c58c9a610837e69bd544673a2ca3",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:41:58.576Z",
+      "selectors": {
+        "editor": [
+          "div[role=\"textbox\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "perplexity",
+      "stage": "compose",
+      "pageKey": "www.perplexity.ai/search/:id",
+      "fingerprint": "8e8674396152dfd2eca54ca356d53a9a8a639b9b9d296441953e2101e856b4bf",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T16:30:30.704Z",
+      "selectors": {
+        "editor": [
+          "div[role=\"textbox\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "perplexity",
+      "stage": "response",
+      "pageKey": "www.perplexity.ai/search/:id",
+      "fingerprint": "e14a655563b3acde2c3890cacf83b192b47931f289a6e40d9582f2a7f450754b",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T16:26:59.706Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.gap-y-sm > div > div.relative"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [
+          "div.rounded-full > button.reset"
+        ],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "perplexity",
+      "stage": "response",
+      "pageKey": "www.perplexity.ai/search/new",
+      "fingerprint": "568083d0e656221f8171fed27cdb2dbb122dec05c9a270e860ad1fcc44c99e69",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T16:26:31.212Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.mx-auto > div.isolate"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
 }

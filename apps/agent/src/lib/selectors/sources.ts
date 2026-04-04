@@ -3,6 +3,7 @@ import type { Provider, SelectorProfile, Source } from "@oneglanse/types";
 import { getDomain, getFaviconUrls, logger } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import type { RawSource } from "../extraction/sourceUtils.js";
+import { buildSources } from "../extraction/sourceUtils.js";
 import { getSelectorProfile, waitForSelectorProfile } from "./profile.js";
 
 async function findSourcesButtonLocator(
@@ -503,7 +504,9 @@ async function extractRawSourcesWithSelectors(
 			// are off-screen within the panel have height=0 from getBoundingClientRect
 			// but are still reachable. Do NOT use isVisible here — only check that the
 			// element is connected and not explicitly hidden. Never scroll window.
-			function isConnectedAnchor(element: Element): element is HTMLAnchorElement {
+			function isConnectedAnchor(
+				element: Element,
+			): element is HTMLAnchorElement {
 				if (!(element instanceof HTMLAnchorElement)) return false;
 				if (!element.isConnected || element.hidden) return false;
 				const style = window.getComputedStyle(element);
@@ -606,6 +609,245 @@ async function extractRawSourcesWithSelectors(
 	);
 }
 
+async function extractInlineRawSourcesFromResponse(
+	page: Page,
+	responseSelectors: string[],
+): Promise<RawSource[]> {
+	return await page.evaluate(
+		({ selectors }: { selectors: string[] }) => {
+			type RawSource = {
+				rawHref: string;
+				title: string;
+				citedText: string;
+				imgSrc: string | null;
+			};
+
+			function isVisible(element: Element | null): element is HTMLElement {
+				if (!(element instanceof HTMLElement)) return false;
+				if (!element.isConnected) return false;
+				const style = window.getComputedStyle(element);
+				if (
+					style.display === "none" ||
+					style.visibility === "hidden" ||
+					style.opacity === "0" ||
+					element.hidden
+				) {
+					return false;
+				}
+				const rect = element.getBoundingClientRect();
+				return rect.width >= 4 && rect.height >= 4;
+			}
+
+			function textOf(element: Element): string {
+				return ((element as HTMLElement).innerText || element.textContent || "")
+					.replace(/\s+/g, " ")
+					.trim();
+			}
+
+			function lastVisible<T extends Element>(elements: T[]): T | null {
+				for (let index = elements.length - 1; index >= 0; index -= 1) {
+					const element = elements[index];
+					if (element && isVisible(element)) {
+						return element;
+					}
+				}
+				return null;
+			}
+
+			function resolveLatestResponse(): HTMLElement | null {
+				for (const selector of selectors) {
+					try {
+						const response = lastVisible(
+							Array.from(document.querySelectorAll(selector)) as HTMLElement[],
+						);
+						if (response) {
+							return response;
+						}
+					} catch {}
+				}
+				return null;
+			}
+
+			function normalizeUrl(href: string): string {
+				try {
+					return (
+						new URL(href, window.location.origin).toString().split("#")[0] ?? ""
+					);
+				} catch {
+					return "";
+				}
+			}
+
+			function findCitationBlock(
+				anchor: HTMLAnchorElement,
+				response: HTMLElement,
+			): HTMLElement {
+				const semanticBlock = anchor.closest(
+					"p, li, blockquote, td, th, figcaption",
+				);
+				if (
+					semanticBlock instanceof HTMLElement &&
+					response.contains(semanticBlock)
+				) {
+					return semanticBlock;
+				}
+
+				let current: HTMLElement | null = anchor.parentElement;
+				while (current && current !== response) {
+					if (
+						["DIV", "SECTION", "ARTICLE"].includes(current.tagName) &&
+						textOf(current).length >= 30
+					) {
+						return current;
+					}
+					current = current.parentElement;
+				}
+
+				return response;
+			}
+
+			function sentenceFromCitation(
+				anchor: HTMLAnchorElement,
+				response: HTMLElement,
+			): string {
+				const block = findCitationBlock(anchor, response);
+				const originalAnchors = Array.from(block.querySelectorAll("a[href]"));
+				const targetIndex = originalAnchors.indexOf(anchor);
+				if (targetIndex < 0) {
+					return textOf(block);
+				}
+
+				const clone = block.cloneNode(true) as HTMLElement;
+				const cloneAnchors = Array.from(clone.querySelectorAll("a[href]"));
+				cloneAnchors.forEach((element, index) => {
+					element.replaceWith(
+						document.createTextNode(index === targetIndex ? " [[CITE]] " : " "),
+					);
+				});
+
+				const serialized = textOf(clone);
+				if (!serialized.includes("[[CITE]]")) {
+					return serialized;
+				}
+
+				const [beforeRaw = "", afterRaw = ""] = serialized.split("[[CITE]]");
+				const sentenceDelimiter = /(?<=[.!?])\s+/;
+				const before = beforeRaw.trim();
+				const after = afterRaw.trim();
+				const beforeSentence = before
+					? (before.split(sentenceDelimiter).filter(Boolean).at(-1)?.trim() ??
+						"")
+					: "";
+				if (beforeSentence.length >= 24) {
+					return beforeSentence;
+				}
+
+				const afterSentence = after
+					? (after.split(sentenceDelimiter).filter(Boolean)[0]?.trim() ?? "")
+					: "";
+				const combined = [beforeSentence, afterSentence]
+					.filter(Boolean)
+					.join(" ")
+					.trim();
+				if (combined.length >= 24) {
+					return combined;
+				}
+
+				return serialized.replace("[[CITE]]", "").trim();
+			}
+
+			const response = resolveLatestResponse();
+			if (!response) {
+				return [];
+			}
+
+			const rawSources: RawSource[] = [];
+			const seen = new Set<string>();
+			const anchors = Array.from(response.querySelectorAll("a[href]")).filter(
+				(element): element is HTMLAnchorElement =>
+					element instanceof HTMLAnchorElement &&
+					element.isConnected &&
+					!!element.href &&
+					isVisible(element),
+			);
+
+			for (const anchor of anchors) {
+				const url = normalizeUrl(anchor.href);
+				if (!url || seen.has(url)) {
+					continue;
+				}
+
+				const title =
+					anchor.getAttribute("title")?.trim() || textOf(anchor) || url;
+				const citedText = sentenceFromCitation(anchor, response) || title;
+				rawSources.push({
+					rawHref: url,
+					title,
+					citedText,
+					imgSrc:
+						(anchor.querySelector("img") as HTMLImageElement | null)?.src ??
+						null,
+				});
+				seen.add(url);
+			}
+
+			return rawSources;
+		},
+		{ selectors: responseSelectors },
+	);
+}
+
+function mergeRawSources(
+	primary: RawSource[],
+	inline: RawSource[],
+): RawSource[] {
+	const inlineByUrl = new Map<string, RawSource>();
+	for (const source of inline) {
+		const url = source.rawHref.replace(/#.*$/, "");
+		if (url) {
+			inlineByUrl.set(url, source);
+		}
+	}
+
+	const merged: RawSource[] = primary.map((source) => {
+		const inlineMatch = inlineByUrl.get(source.rawHref.replace(/#.*$/, ""));
+		if (!inlineMatch) {
+			return source;
+		}
+
+		const citedText =
+			source.citedText &&
+			source.citedText !== source.title &&
+			source.citedText.length >= 24
+				? source.citedText
+				: inlineMatch.citedText;
+		const title =
+			source.title && source.title !== source.rawHref
+				? source.title
+				: inlineMatch.title;
+
+		return {
+			...source,
+			title,
+			citedText,
+			imgSrc: source.imgSrc ?? inlineMatch.imgSrc,
+		};
+	});
+
+	for (const source of inline) {
+		const url = source.rawHref.replace(/#.*$/, "");
+		if (
+			!url ||
+			merged.some((item) => item.rawHref.replace(/#.*$/, "") === url)
+		) {
+			continue;
+		}
+		merged.push(source);
+	}
+
+	return merged;
+}
+
 export async function extractResolvedSources(
 	page: Page,
 	provider: Provider,
@@ -614,8 +856,19 @@ export async function extractResolvedSources(
 		page,
 		provider,
 	);
-	if (!responseProfile?.selectors.sourcesButton.length) {
+	if (!responseProfile) {
 		return [];
+	}
+
+	const inlineRawSources = await extractInlineRawSourcesFromResponse(
+		page,
+		responseProfile.selectors.response,
+	);
+	if (!responseProfile.selectors.sourcesButton.length) {
+		return buildSources(
+			inlineRawSources,
+			(url, title, citedText) => `${url}|${title}|${citedText}`,
+		);
 	}
 
 	logger.log(`[${provider}] opening sources panel`);
@@ -669,33 +922,17 @@ export async function extractResolvedSources(
 					},
 				);
 
-	if (rawSources.length === 0) {
+	const mergedRawSources = mergeRawSources(rawSources, inlineRawSources);
+
+	if (mergedRawSources.length === 0) {
 		throw new ExternalServiceError(
 			provider,
 			"Sources button was present and opened, but no sources were extracted",
 		);
 	}
 
-	const seen = new Set<string>();
-	const results: Source[] = [];
-	for (const { rawHref, title: rawTitle, citedText, imgSrc } of rawSources) {
-		const url = rawHref.replace(/#.*$/, "");
-		if (!url) continue;
-		const key = `${url}|${rawTitle}|${citedText}`;
-		if (seen.has(key)) continue;
-		seen.add(key);
-
-		const domain = getDomain(url) || null;
-		const title = rawTitle || domain || url;
-		const favicon = imgSrc ?? getFaviconUrls(domain ?? "")?.[0] ?? null;
-		results.push({
-			title,
-			cited_text: citedText,
-			url,
-			domain,
-			favicon,
-		});
-	}
-
-	return results;
+	return buildSources(
+		mergedRawSources,
+		(url, title, citedText) => `${url}|${title}|${citedText}`,
+	);
 }

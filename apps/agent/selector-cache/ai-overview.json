@@ -1,6 +1,47 @@
 {
   "version": 1,
   "provider": "ai-overview",
-  "updatedAt": "",
-  "profiles": []
+  "updatedAt": "2026-04-04T16:26:25.929Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "ai-overview",
+      "stage": "compose",
+      "pageKey": "www.google.com",
+      "fingerprint": "dbe4ceb797429d4602b0ee6131640d88c764f85ed9955ceae3d27df75230ae35",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:45:32.821Z",
+      "selectors": {
+        "editor": [
+          "textarea[name=\"q\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "ai-overview",
+      "stage": "response",
+      "pageKey": "www.google.com/search",
+      "fingerprint": "e2911d293b8ac6ac72805e5673210a10fb7da440e455ba0c131a33bbc9c32f86",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T16:26:23.570Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div > div > div > div > div > div"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
 }

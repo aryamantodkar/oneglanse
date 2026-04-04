@@ -240,7 +240,7 @@ export default function SourcesPage(): React.JSX.Element {
 
 	return (
 		<div className="web-page-wide">
-			<div className="web-page-wide-inner ui-stagger space-y-8">
+			<div className="web-page-wide-inner ui-stagger space-y-6 sm:space-y-8">
 				<SectionHeading
 					as="h1"
 					title="Sources Intelligence"
@@ -249,7 +249,7 @@ export default function SourcesPage(): React.JSX.Element {
 					titleClassName="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100"
 					descriptionClassName="mt-2 text-sm font-normal"
 					trailing={
-						<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
+						<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
 							<ExportMenu
 								className="w-full sm:w-auto"
 								disabled={!hasExportableData}
@@ -373,7 +373,7 @@ export default function SourcesPage(): React.JSX.Element {
 							<ProviderModelSelect
 								value={selectedProvider}
 								onValueChange={setSelectedProvider}
-								triggerClassName="w-full sm:w-[220px]"
+								triggerClassName="w-full sm:w-auto"
 							/>
 						</div>
 					}
