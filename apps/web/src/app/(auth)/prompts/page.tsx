@@ -69,7 +69,7 @@ import {
 import { cn } from "@oneglanse/utils";
 import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
 import {
 	useFetchAnalysedPrompts,
@@ -117,6 +117,18 @@ export default function Prompts() {
 	);
 	const [promptResponsesScrolled, setPromptResponsesScrolled] = useState(false);
 	const [analysisRecords, setAnalysisRecords] = useState<AnalysisRecord[]>([]);
+	const promptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const activePromptValue =
+		editIndex !== null ? editPromptValue : currentPrompt;
+	const syncPromptTextareaHeight = useCallback(() => {
+		const textarea = promptTextareaRef.current;
+		if (!textarea) return;
+
+		textarea.style.height = "auto";
+		const nextHeight = Math.min(textarea.scrollHeight, 220);
+		textarea.style.height = `${nextHeight}px`;
+		textarea.style.overflowY = textarea.scrollHeight > 220 ? "auto" : "hidden";
+	}, []);
 
 	const {
 		data: userPrompts,
@@ -130,8 +142,7 @@ export default function Prompts() {
 		error: analysedPromptError,
 	} = useFetchAnalysedPrompts(workspaceId);
 
-	const promptExampleBrand =
-		workspace?.name?.trim() ||
+	const promptExample =
 		"What's the best project management software for a small remote team?";
 
 	const storePromptMutation = useStorePrompt();
@@ -150,6 +161,12 @@ export default function Prompts() {
 
 		setAnalysisRecords(records);
 	}, [analysedPromptData]);
+
+	useEffect(() => {
+		if (!dialogOpen) return;
+		void activePromptValue;
+		syncPromptTextareaHeight();
+	}, [activePromptValue, dialogOpen, syncPromptTextareaHeight]);
 
 	const filteredRecords = useMemo(() => {
 		return filterAnalysisRecords(analysisRecords, {
@@ -526,36 +543,39 @@ export default function Prompts() {
 									</Button>
 								</DialogTrigger>
 								<DialogContent
-									className={cn(formDialogContentClassName, "max-w-xl")}
+									className={cn(formDialogContentClassName, "max-w-lg")}
 								>
 									<DialogHeader className={formDialogHeaderClassName}>
-										<DialogTitle>
+										<DialogTitle className="font-medium">
 											{editIndex !== null ? "Edit Prompt" : "Add New Prompt"}
 										</DialogTitle>
 									</DialogHeader>
-									<div className={formDialogBodyClassName}>
-										<div className={formDialogFieldGroupClassName}>
-											<div className="space-y-1">
-												<p className={formLabelClassName}>Prompt</p>
-												<p className={formHintClassName}>
-													Write the exact search-style question you want AI
-													providers to answer.
-												</p>
-											</div>
+									<div
+										className={cn(
+											formDialogBodyClassName,
+											"gap-5 pt-4 sm:gap-6 sm:pt-5",
+										)}
+									>
+										<div className="grid gap-2">
 											<Textarea
-												placeholder={promptExampleBrand}
-												rows={5}
+												ref={promptTextareaRef}
+												placeholder={promptExample}
+												rows={2}
 												value={
 													editIndex !== null ? editPromptValue : currentPrompt
 												}
-												onChange={(e) =>
-													editIndex !== null
-														? setEditPromptValue(e.target.value)
-														: setCurrentPrompt(e.target.value)
-												}
+												onChange={(e) => {
+													if (editIndex !== null) {
+														setEditPromptValue(e.target.value);
+													} else {
+														setCurrentPrompt(e.target.value);
+													}
+
+													requestAnimationFrame(syncPromptTextareaHeight);
+												}}
 												className={cn(
 													formTextareaClassName,
-													"resize-none shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
+													"min-h-[76px] max-h-[220px] resize-none overflow-hidden py-3 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
 												)}
 											/>
 										</div>
@@ -565,9 +585,9 @@ export default function Prompts() {
 												Strong Prompts Usually
 											</p>
 											<p className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300">
-												name the target audience, the use case, and the decision
-												they are making, such as choosing alternatives,
-												comparing tools, or finding the best fit.
+												focus on what the target audience is searching for:
+												comparing options, finding alternatives, evaluating
+												pricing, or choosing the best fit for a use case.
 											</p>
 										</div>
 									</div>
