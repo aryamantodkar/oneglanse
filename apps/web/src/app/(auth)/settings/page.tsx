@@ -1,15 +1,27 @@
 "use client";
 
+import {
+	formDialogBodyClassName,
+	formDialogContentClassName,
+	formDialogFooterClassName,
+	formDialogHeaderClassName,
+	formFieldClassName,
+	formHintClassName,
+	formLabelClassName,
+	formPanelClassName,
+	formPrimaryButtonClassName,
+	formSecondaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
 import { authClient } from "@/lib/auth/auth-client";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
-import {
-	type AnalysisRecord,
-	type DomainStats,
-	type GroupedSource,
-	type Source,
-	type SourceExcerpt,
+import type {
+	AnalysisRecord,
+	DomainStats,
+	GroupedSource,
+	Source,
+	SourceExcerpt,
 } from "@oneglanse/types";
 import {
 	Button,
@@ -28,6 +40,7 @@ import {
 	getUniqueModelProviders,
 	joinCitedTexts,
 } from "@oneglanse/utils";
+import { cn } from "@oneglanse/utils";
 import { Download, Loader2, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -251,13 +264,13 @@ export default function SettingsPage() {
 							Export Data
 						</h2>
 					</div>
-					<div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+					<div className={cn(formPanelClassName, "mt-4 p-5 sm:p-6")}>
 						<div className="flex flex-wrap items-center justify-between gap-3">
 							<div>
 								<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 									Export All Data
 								</p>
-								<p className="text-xs text-gray-500">
+								<p className={formHintClassName}>
 									Export Dashboard, Prompts, and Sources data together in one
 									file.
 								</p>
@@ -265,7 +278,10 @@ export default function SettingsPage() {
 							<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 								<Button
 									variant="outline"
-									className="w-full gap-2 sm:w-auto"
+									className={cn(
+										formSecondaryButtonClassName,
+										"w-full gap-2 sm:w-auto",
+									)}
 									onClick={handleExportAllJson}
 									disabled={
 										userPromptsQuery.isLoading ||
@@ -279,7 +295,10 @@ export default function SettingsPage() {
 								</Button>
 								<Button
 									variant="outline"
-									className="w-full gap-2 sm:w-auto"
+									className={cn(
+										formSecondaryButtonClassName,
+										"w-full gap-2 sm:w-auto",
+									)}
 									onClick={handleExportAllCsv}
 									disabled={
 										userPromptsQuery.isLoading ||
@@ -304,20 +323,28 @@ export default function SettingsPage() {
 						Account
 					</h2>
 				</div>
-				<div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
+				<div
+					className={cn(
+						formPanelClassName,
+						"border border-red-200/80 p-5 sm:p-6 dark:border-red-900/50",
+					)}
+				>
 					<div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
 						<div>
 							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 								Delete Account
 							</p>
-							<p className="mt-1 text-xs text-gray-500">
+							<p className={cn(formHintClassName, "mt-1")}>
 								Permanently delete your account, all your workspaces, and all
 								associated data. This cannot be undone.
 							</p>
 						</div>
 						<Button
 							variant="outline"
-							className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-500 dark:hover:bg-red-950/30"
+							className={cn(
+								formSecondaryButtonClassName,
+								"border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-500 dark:hover:bg-red-950/30",
+							)}
 							onClick={() => {
 								setDeleteConfirmEmail("");
 								setShowDeleteDialog(true);
@@ -331,26 +358,29 @@ export default function SettingsPage() {
 
 			{/* Delete Account Confirmation Dialog */}
 			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-				<DialogContent>
-					<DialogHeader>
+				<DialogContent className={formDialogContentClassName}>
+					<DialogHeader className={formDialogHeaderClassName}>
 						<DialogTitle className="text-red-600 dark:text-red-500">
 							Delete Account
 						</DialogTitle>
-						<DialogDescription>
+						<DialogDescription className="max-w-md text-sm leading-6 text-gray-500 dark:text-gray-400">
 							This action is permanent and cannot be undone. All your
 							workspaces, prompts, and data will be permanently deleted.
 						</DialogDescription>
 					</DialogHeader>
-					<div className="space-y-4 py-2">
-						<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/60 dark:bg-amber-950/20">
+					<div className={formDialogBodyClassName}>
+						<div className="rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
 							<p className="text-xs text-amber-800 dark:text-amber-300">
 								If you are the sole owner of any organization, that organization
 								and all its workspaces will be permanently deleted along with
 								your account.
 							</p>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="delete-confirm-email">
+						<div className="space-y-2.5">
+							<Label
+								htmlFor="delete-confirm-email"
+								className={formLabelClassName}
+							>
 								Type your email{" "}
 								<span className="font-mono text-xs text-gray-500">
 									({userEmail})
@@ -364,12 +394,14 @@ export default function SettingsPage() {
 								value={deleteConfirmEmail}
 								onChange={(e) => setDeleteConfirmEmail(e.target.value)}
 								onKeyDown={(e) => e.key === "Enter" && handleDeleteAccount()}
+								className={formFieldClassName}
 							/>
 						</div>
 					</div>
-					<DialogFooter>
+					<DialogFooter className={formDialogFooterClassName}>
 						<Button
 							variant="outline"
+							className={cn(formSecondaryButtonClassName, "w-full sm:w-auto")}
 							onClick={() => setShowDeleteDialog(false)}
 							disabled={isDeletingAccount}
 						>
@@ -377,7 +409,10 @@ export default function SettingsPage() {
 						</Button>
 						<Button
 							variant="outline"
-							className="border-red-300 bg-red-600 text-white hover:bg-red-700 dark:border-red-800"
+							className={cn(
+								formPrimaryButtonClassName,
+								"w-full border-red-300 bg-red-600 hover:bg-red-700 dark:border-red-800 dark:bg-red-600 dark:text-white dark:hover:bg-red-500 sm:w-auto",
+							)}
 							onClick={handleDeleteAccount}
 							disabled={
 								isDeletingAccount ||

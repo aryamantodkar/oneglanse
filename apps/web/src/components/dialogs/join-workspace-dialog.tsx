@@ -1,9 +1,17 @@
 "use client";
 
 import { WorkspaceDialogShell } from "@/components/dialogs/workspace-dialog-shell";
+import {
+	formFieldClassName,
+	formHintClassName,
+	formLabelClassName,
+	formPrimaryButtonClassName,
+	formSecondaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
 import { authClient } from "@/lib/auth/auth-client";
 import { api } from "@/trpc/react";
 import { Button, Input, Label, toast } from "@oneglanse/ui";
+import { cn } from "@oneglanse/utils";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -89,7 +97,7 @@ export function JoinWorkspaceDialog({
 				<Button
 					onClick={() => handleJoin(code)}
 					disabled={joinMutation.isPending || !code.trim()}
-					className="gap-2"
+					className={cn(formPrimaryButtonClassName, "w-full gap-2 sm:w-auto")}
 				>
 					{joinMutation.isPending ? (
 						<Loader2 className="h-4 w-4 animate-spin" />
@@ -102,21 +110,27 @@ export function JoinWorkspaceDialog({
 				</Button>
 			}
 		>
-			<div className="space-y-4 py-2">
-				<div className="space-y-2">
-					<Label htmlFor="join-code">Workspace Code</Label>
+			<div className="space-y-5">
+				<div className="space-y-2.5">
+					<Label htmlFor="join-code" className={formLabelClassName}>
+						Workspace Code
+					</Label>
 					<Input
 						id="join-code"
 						placeholder="acme/marketing"
 						value={code}
 						onChange={(e) => setCode(e.target.value)}
 						onKeyDown={(e) => e.key === "Enter" && handleJoin(code)}
+						className={formFieldClassName}
 					/>
+					<p className={formHintClassName}>
+						Use the code shared by your team to join the right workspace.
+					</p>
 				</div>
 
 				{selection && (
-					<div className="space-y-2 rounded-md border border-gray-200 border-dashed p-3">
-						<p className="text-gray-600 text-sm">
+					<div className="space-y-3 rounded-[24px] border border-dashed border-gray-200/80 bg-stone-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/60">
+						<p className="text-sm text-gray-600 dark:text-gray-300">
 							Select a workspace in{" "}
 							<strong>{selection.organization.name}</strong>
 						</p>
@@ -127,6 +141,10 @@ export function JoinWorkspaceDialog({
 									variant="outline"
 									size="sm"
 									onClick={() => handleSelectWorkspace(ws.slug)}
+									className={cn(
+										formSecondaryButtonClassName,
+										"h-9 rounded-xl px-3",
+									)}
 								>
 									{ws.name}
 								</Button>

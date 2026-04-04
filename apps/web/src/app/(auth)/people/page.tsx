@@ -1,8 +1,15 @@
 "use client";
 
-import { api } from "@/trpc/react";
+import {
+	formFieldClassName,
+	formHintClassName,
+	formLabelClassName,
+	formPanelClassName,
+	formPrimaryButtonClassName,
+	formSecondaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
-import { useLayoutWorkspace } from "../workspace-context";
+import { api } from "@/trpc/react";
 import {
 	Button,
 	Input,
@@ -21,6 +28,7 @@ import {
 	TableRow,
 	toast,
 } from "@oneglanse/ui";
+import { cn } from "@oneglanse/utils";
 import {
 	Building2,
 	Loader2,
@@ -31,6 +39,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLayoutWorkspace } from "../workspace-context";
 
 interface WorkspaceMember {
 	memberId: string;
@@ -41,6 +50,13 @@ interface WorkspaceMember {
 	userEmail: string;
 	userImage: string | null;
 }
+
+const WORKSPACE_MEMBER_SKELETON_KEYS = [
+	"workspace-member-a",
+	"workspace-member-b",
+	"workspace-member-c",
+	"workspace-member-d",
+] as const;
 
 export default function PeoplePage() {
 	const searchParams = useSafeSearchParams();
@@ -284,7 +300,12 @@ export default function PeoplePage() {
 				</div>
 				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{/* Brand Workspace */}
-					<div className="flex h-full flex-col rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+					<div
+						className={cn(
+							formPanelClassName,
+							"flex h-full flex-col p-5 sm:p-6",
+						)}
+					>
 						<div className="mb-3 flex items-center justify-between gap-2">
 							<div className="flex items-center gap-2">
 								<Users className="h-4 w-4 text-gray-500" />
@@ -318,31 +339,43 @@ export default function PeoplePage() {
 								)}
 							</Button>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="people-workspace-name">Brand Name</Label>
+						<div className="space-y-2.5">
+							<Label
+								htmlFor="people-workspace-name"
+								className={formLabelClassName}
+							>
+								Brand Name
+							</Label>
 							<Input
 								id="people-workspace-name"
 								value={workspaceName}
 								onChange={(e) => setWorkspaceName(e.target.value)}
 								placeholder="e.g. Pipedrive"
 								disabled={!isEditingWorkspace}
+								className={formFieldClassName}
 							/>
 						</div>
-						<div className="mt-3 space-y-2">
-							<Label htmlFor="people-workspace-domain">Brand Domain</Label>
+						<div className="mt-4 space-y-2.5">
+							<Label
+								htmlFor="people-workspace-domain"
+								className={formLabelClassName}
+							>
+								Brand Domain
+							</Label>
 							<Input
 								id="people-workspace-domain"
 								value={workspaceDomain}
 								onChange={(e) => setWorkspaceDomain(e.target.value)}
 								placeholder="e.g. pipedrive.com"
 								disabled={!isEditingWorkspace}
+								className={formFieldClassName}
 							/>
-							<p className="text-xs text-gray-500">
+							<p className={formHintClassName}>
 								Used to track your brand visibility and citations in AI
 								responses.
 							</p>
 							{isEditingWorkspace && (
-								<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/60 dark:bg-amber-950/20">
+								<div className="rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
 									<p className="text-xs text-amber-800 dark:text-amber-300">
 										Warning: Changing brand details clears all analyzed data in
 										this workspace. Raw prompt responses are not deleted.
@@ -355,7 +388,10 @@ export default function PeoplePage() {
 								<>
 									<Button
 										variant="outline"
-										className="w-full sm:w-28"
+										className={cn(
+											formSecondaryButtonClassName,
+											"w-full sm:w-28",
+										)}
 										onClick={() => {
 											setWorkspaceName(workspace?.name ?? "");
 											setWorkspaceDomain(workspace?.domain ?? "");
@@ -373,7 +409,7 @@ export default function PeoplePage() {
 											!workspaceDomain.trim() ||
 											!workspaceDetailsChanged
 										}
-										className="w-full sm:w-28"
+										className={cn(formPrimaryButtonClassName, "w-full sm:w-28")}
 									>
 										{savingWorkspace ? (
 											<Loader2 className="h-4 w-4 animate-spin" />
@@ -387,7 +423,12 @@ export default function PeoplePage() {
 					</div>
 
 					{/* Organization */}
-					<div className="flex h-full flex-col rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+					<div
+						className={cn(
+							formPanelClassName,
+							"flex h-full flex-col p-5 sm:p-6",
+						)}
+					>
 						<div className="mb-3 flex items-center justify-between gap-2">
 							<div className="flex items-center gap-2">
 								<Building2 className="h-4 w-4 text-gray-500" />
@@ -420,16 +461,19 @@ export default function PeoplePage() {
 								)}
 							</Button>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="people-org-name">Organization Name</Label>
+						<div className="space-y-2.5">
+							<Label htmlFor="people-org-name" className={formLabelClassName}>
+								Organization Name
+							</Label>
 							<Input
 								id="people-org-name"
 								value={organizationName}
 								onChange={(e) => setOrganizationName(e.target.value)}
 								placeholder="Enter organization name"
 								disabled={!isEditingOrg}
+								className={formFieldClassName}
 							/>
-							<p className="text-xs text-gray-500">
+							<p className={formHintClassName}>
 								Only workspace owners can rename the organization.
 							</p>
 						</div>
@@ -438,7 +482,10 @@ export default function PeoplePage() {
 								<>
 									<Button
 										variant="outline"
-										className="w-full sm:w-28"
+										className={cn(
+											formSecondaryButtonClassName,
+											"w-full sm:w-28",
+										)}
 										onClick={() => {
 											setOrganizationName(organization?.name ?? "");
 											setIsEditingOrg(false);
@@ -454,7 +501,7 @@ export default function PeoplePage() {
 											!organizationName.trim() ||
 											!organizationNameChanged
 										}
-										className="w-full sm:w-28"
+										className={cn(formPrimaryButtonClassName, "w-full sm:w-28")}
 									>
 										{savingOrg ? (
 											<Loader2 className="h-4 w-4 animate-spin" />
@@ -476,12 +523,12 @@ export default function PeoplePage() {
 						Invite with a Code
 					</h2>
 				</div>
-				<div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800 space-y-3">
+				<div className={cn(formPanelClassName, "space-y-4 p-5 sm:p-6")}>
 					<div>
 						<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 							Workspace Join Code
 						</p>
-						<p className="text-xs text-gray-500 mt-1">
+						<p className={cn(formHintClassName, "mt-1")}>
 							Share this code with teammates to let them join instantly. Each
 							workspace has a globally unique code.
 						</p>
@@ -516,7 +563,10 @@ export default function PeoplePage() {
 									readOnly
 									value={joinInfo?.workspaceCode ?? ""}
 									placeholder="Workspace code"
-									className="w-full max-w-md font-mono text-xs"
+									className={cn(
+										formFieldClassName,
+										"w-full max-w-md font-mono text-xs",
+									)}
 								/>
 								<Button
 									variant="outline"
@@ -525,7 +575,10 @@ export default function PeoplePage() {
 										handleCopy(joinInfo?.workspaceCode ?? "", "Workspace code")
 									}
 									disabled={!joinInfo?.workspaceCode}
-									className="w-full sm:w-auto"
+									className={cn(
+										formSecondaryButtonClassName,
+										"w-full sm:w-auto",
+									)}
 								>
 									Copy
 								</Button>
@@ -544,16 +597,21 @@ export default function PeoplePage() {
 				</div>
 
 				{/* Add member form */}
-				<div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+				<div
+					className={cn(
+						formPanelClassName,
+						"mb-4 flex flex-col gap-3 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:p-6",
+					)}
+				>
 					<Input
 						placeholder="Email address (we'll invite if needed)"
 						value={wsInviteEmail}
 						onChange={(e) => setWsInviteEmail(e.target.value)}
-						className="w-full sm:max-w-xs"
+						className={cn(formFieldClassName, "w-full sm:max-w-xs")}
 						onKeyDown={(e) => e.key === "Enter" && handleWsAddMember()}
 					/>
 					<Select value={wsInviteRole} onValueChange={setWsInviteRole}>
-						<SelectTrigger className="w-full sm:w-32">
+						<SelectTrigger className={cn(formFieldClassName, "w-full sm:w-32")}>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -565,7 +623,7 @@ export default function PeoplePage() {
 						onClick={handleWsAddMember}
 						disabled={wsAdding || !wsInviteEmail.trim()}
 						size="sm"
-						className="gap-2 sm:w-auto"
+						className={cn(formPrimaryButtonClassName, "gap-2 sm:w-auto")}
 					>
 						{wsAdding ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
@@ -581,9 +639,9 @@ export default function PeoplePage() {
 				{/* Members table */}
 				{wsMembersQuery.isLoading ? (
 					<div className="space-y-3 py-6">
-						{Array.from({ length: 4 }).map((_, idx) => (
+						{WORKSPACE_MEMBER_SKELETON_KEYS.map((key) => (
 							<div
-								key={`ws-member-skeleton-${idx}`}
+								key={key}
 								className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
 							>
 								<div className="space-y-2">

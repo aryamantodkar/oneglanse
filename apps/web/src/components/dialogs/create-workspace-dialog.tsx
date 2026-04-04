@@ -1,6 +1,12 @@
 "use client";
 
 import { WorkspaceDialogShell } from "@/components/dialogs/workspace-dialog-shell";
+import {
+	formFieldClassName,
+	formHintClassName,
+	formLabelClassName,
+	formPrimaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
 import { api } from "@/trpc/react";
 import { Button, Input, Label, toast } from "@oneglanse/ui";
 import { Loader2 } from "lucide-react";
@@ -92,35 +98,47 @@ export function CreateWorkspaceDialog({
 			title="Create Workspace"
 			description="Add a new brand workspace to this organization."
 			footerActions={
-				<Button onClick={handleSubmit} disabled={loading}>
+				<Button
+					onClick={handleSubmit}
+					disabled={loading}
+					className={formPrimaryButtonClassName}
+				>
 					{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
 				</Button>
 			}
 		>
-			<div className="space-y-4 py-2">
-				<div className="space-y-2">
-					<Label htmlFor="ws-name">Brand Name</Label>
+			<div className="space-y-5">
+				<div className="space-y-2.5">
+					<Label htmlFor="ws-name" className={formLabelClassName}>
+						Brand Name
+					</Label>
 					<Input
 						id="ws-name"
 						placeholder="e.g. Pipedrive"
 						value={formData.name}
 						onChange={(e) => handleNameChange(e.target.value)}
+						className={formFieldClassName}
 					/>
-					<p className="text-gray-500 text-xs">
+					<p className={formHintClassName}>
 						Used as the tracked brand name in analysis.
 					</p>
 				</div>
-				<div className="space-y-2">
-					<Label htmlFor="ws-slug">Slug</Label>
+				<div className="space-y-2.5">
+					<Label htmlFor="ws-slug" className={formLabelClassName}>
+						Slug
+					</Label>
 					<Input
 						id="ws-slug"
 						placeholder="my-workspace"
 						value={formData.slug}
 						onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+						className={formFieldClassName}
 					/>
 				</div>
-				<div className="space-y-2">
-					<Label htmlFor="ws-domain">Brand Domain</Label>
+				<div className="space-y-2.5">
+					<Label htmlFor="ws-domain" className={formLabelClassName}>
+						Brand Domain
+					</Label>
 					<Input
 						id="ws-domain"
 						placeholder="e.g. pipedrive.com"
@@ -128,8 +146,9 @@ export function CreateWorkspaceDialog({
 						onChange={(e) =>
 							setFormData({ ...formData, domain: e.target.value })
 						}
+						className={formFieldClassName}
 					/>
-					<p className="text-gray-500 text-xs">
+					<p className={formHintClassName}>
 						Used for source matching and brand visibility tracking.
 					</p>
 				</div>

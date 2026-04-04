@@ -1,7 +1,17 @@
 "use client";
 
-import { api } from "@/trpc/react";
+import {
+	formChipClassName,
+	formHintClassName,
+	formPanelClassName,
+	formPrimaryButtonClassName,
+	formSecondaryButtonClassName,
+	formSurfaceClassName,
+	formTextareaClassName,
+} from "@/components/forms/auth-form-chrome";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { api } from "@/trpc/react";
+import { PROVIDER_LIST } from "@oneglanse/types";
 import {
 	Button,
 	Card,
@@ -12,8 +22,8 @@ import {
 	Textarea,
 	toast,
 } from "@oneglanse/ui";
-import { PROVIDER_LIST } from "@oneglanse/types";
 import { getProviderDisplayName } from "@oneglanse/utils";
+import { cn } from "@oneglanse/utils";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -176,22 +186,22 @@ export default function FirstWorkspaceOnboardingPage() {
 	}
 
 	return (
-		<div className="ui-page-enter min-h-screen bg-gradient-to-b from-gray-50 to-white px-4 py-10 dark:from-gray-950 dark:to-gray-950">
+		<div className="ui-page-enter min-h-screen bg-stone-50 px-4 py-8 dark:bg-neutral-950 sm:px-6 sm:py-10">
 			<div className="ui-stagger mx-auto w-full min-w-0 max-w-5xl">
-				<Card className="overflow-hidden border-gray-200/80 shadow-xl dark:border-gray-800">
-					<CardHeader className="border-b border-gray-100 bg-white/90 pb-5 dark:border-gray-800 dark:bg-gray-900/50">
-						<div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+				<Card className={formSurfaceClassName}>
+					<CardHeader className="border-b border-gray-100 bg-white pb-6 dark:border-gray-900 dark:bg-neutral-950">
+						<div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-stone-100 dark:bg-gray-900">
 							<Sparkles className="h-5 w-5 text-gray-700 dark:text-gray-200" />
 						</div>
-						<CardTitle className="text-2xl">
+						<CardTitle className="text-[1.85rem] tracking-[-0.05em]">
 							Set up your first GEO visibility run
 						</CardTitle>
-						<CardDescription className="max-w-3xl text-sm">
+						<CardDescription className="max-w-3xl text-sm leading-6">
 							Add prompts that matter for buyers in your category. We will run
 							and analyze them once now, then move you to your dashboard as soon
 							as first insights are ready.
 						</CardDescription>
-						<p className="text-xs text-muted-foreground">
+						<p className={formHintClassName}>
 							Brand:{" "}
 							<span className="font-medium text-gray-900 dark:text-gray-100">
 								{brandName}
@@ -200,10 +210,10 @@ export default function FirstWorkspaceOnboardingPage() {
 						</p>
 					</CardHeader>
 
-					<CardContent className="space-y-6 bg-white p-4 sm:p-6 dark:bg-gray-950">
+					<CardContent className="space-y-7 bg-white px-5 py-6 sm:px-7 sm:py-8 dark:bg-neutral-950">
 						{!started ? (
 							<>
-								<div className="space-y-2">
+								<div className="space-y-2.5">
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 										Prompt inputs
 									</p>
@@ -212,9 +222,9 @@ export default function FirstWorkspaceOnboardingPage() {
 										value={promptInput}
 										onChange={(e) => setPromptInput(e.target.value)}
 										placeholder="Enter one prompt per line..."
-										className="resize-none"
+										className={cn(formTextareaClassName, "resize-none")}
 									/>
-									<p className="text-xs text-muted-foreground">
+									<p className={formHintClassName}>
 										Add one prompt per line. We recommend starting with 6-10
 										prompts.
 									</p>
@@ -230,7 +240,7 @@ export default function FirstWorkspaceOnboardingPage() {
 												key={prompt}
 												type="button"
 												onClick={() => appendPrompt(prompt)}
-												className="max-w-full rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-left text-xs text-gray-700 transition hover:border-gray-300 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-800"
+												className={formChipClassName}
 											>
 												+ {prompt}
 											</button>
@@ -244,14 +254,20 @@ export default function FirstWorkspaceOnboardingPage() {
 										onClick={() =>
 											router.replace(`/dashboard?workspace=${workspaceId}`)
 										}
-										className="w-full sm:w-auto"
+										className={cn(
+											formSecondaryButtonClassName,
+											"w-full sm:w-auto",
+										)}
 									>
 										Skip for now
 									</Button>
 									<Button
 										onClick={handleStart}
 										disabled={storePrompts.isPending || runAgent.isPending}
-										className="w-full sm:w-auto sm:min-w-[220px]"
+										className={cn(
+											formPrimaryButtonClassName,
+											"w-full sm:w-auto sm:min-w-[220px]",
+										)}
 									>
 										{storePrompts.isPending || runAgent.isPending ? (
 											<Loader2 className="h-4 w-4 animate-spin" />
@@ -263,7 +279,7 @@ export default function FirstWorkspaceOnboardingPage() {
 							</>
 						) : (
 							<div className="space-y-6">
-								<div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-gray-800 dark:bg-gray-900/50">
+								<div className="rounded-[24px] border border-gray-200/80 bg-stone-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/60">
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 										We are running your prompts in the background.
 									</p>
@@ -298,7 +314,10 @@ export default function FirstWorkspaceOnboardingPage() {
 										return (
 											<div
 												key={provider}
-												className="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900"
+												className={cn(
+													formPanelClassName,
+													"rounded-[22px] px-4 py-3",
+												)}
 											>
 												<div className="flex items-center justify-between">
 													<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -327,6 +346,7 @@ export default function FirstWorkspaceOnboardingPage() {
 										onClick={() =>
 											router.replace(`/dashboard?workspace=${workspaceId}`)
 										}
+										className={formSecondaryButtonClassName}
 									>
 										Go to dashboard
 									</Button>
