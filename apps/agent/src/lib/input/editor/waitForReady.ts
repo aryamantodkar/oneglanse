@@ -3,7 +3,7 @@ import { resolveAppMode, type Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { env } from "../../../env.js";
-import { primeSelectorProfile } from "../../selectors/intelligence.js";
+import { primeSelectorProfile } from "../../selectors/index.js";
 import { detectBotPage } from "../response/detectBotPage.js";
 import {
 	type EditorCandidate,

@@ -13,7 +13,7 @@ import {
 	normalizePromptValue,
 } from "../../lib/input/editor/promptInput.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
-import { primeSelectorProfile } from "../../lib/selectors/intelligence.js";
+import { primeSelectorProfile } from "../../lib/selectors/index.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 import {
