@@ -1,10 +1,9 @@
 import { ExternalServiceError } from "@oneglanse/errors";
-import type { Page } from "playwright";
-import { env } from "../../env.js";
 import { logger, withTimeout } from "@oneglanse/utils";
+import type { Page } from "playwright";
 
 type StepFn = () => Promise<void>;
-const STEP_EXECUTION_TIMEOUT_MS = env.STEP_EXECUTION_TIMEOUT_MS;
+const STEP_EXECUTION_TIMEOUT_MS = 180_000;
 
 export async function runStep(
 	name: string,

@@ -1,5 +1,6 @@
 import type { BrowserContext, Locator, Page } from "playwright";
-import { env } from "../../env.js";
+
+const CAMOUFOX_HUMANIZE = true;
 
 export function bindContextDisplay(
 	_context: BrowserContext,
@@ -111,7 +112,7 @@ export async function moveMouseToElement(
 	page: Page,
 	target: Locator,
 ): Promise<void> {
-	if (env.CAMOUFOX_HUMANIZE) return;
+	if (CAMOUFOX_HUMANIZE) return;
 
 	const box = await target.boundingBox().catch(() => null);
 	if (!box) return;
@@ -140,19 +141,19 @@ export async function moveMouseToElement(
 
 export async function preInteractionIdle(page: Page): Promise<void> {
 	await page.waitForTimeout(
-		env.CAMOUFOX_HUMANIZE ? randomBetween(80, 180) : randomBetween(300, 700),
+		CAMOUFOX_HUMANIZE ? randomBetween(80, 180) : randomBetween(300, 700),
 	);
 }
 
 export async function smallScroll(page: Page): Promise<void> {
-	if (env.CAMOUFOX_HUMANIZE) return;
+	if (CAMOUFOX_HUMANIZE) return;
 	const amount = randomBetween(50, 200);
 	await page.mouse.wheel(0, amount);
 	await page.waitForTimeout(randomBetween(200, 600));
 }
 
 export async function randomMouseJitter(page: Page): Promise<void> {
-	if (env.CAMOUFOX_HUMANIZE) return;
+	if (CAMOUFOX_HUMANIZE) return;
 	const viewport = page.viewportSize() ?? { width: 1920, height: 1080 };
 	const x = randomBetween(100, viewport.width - 100);
 	const y = randomBetween(100, viewport.height - 100);

@@ -2,7 +2,6 @@ import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
-import { env } from "../../env.js";
 import {
 	clickLocatorLikeUser,
 	pressKeyLikeUser,
@@ -10,7 +9,8 @@ import {
 import { normalizePromptValue } from "../../lib/input/editor/promptInput.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
-const SUBMIT_METHOD_TIMEOUT_MS = env.SUBMIT_METHOD_TIMEOUT_MS;
+const SUBMIT_METHOD_TIMEOUT_MS = 5_000;
+const CAMOUFOX_HUMANIZE = true;
 const EMPTY_INPUT_SUBMIT_ERROR = "Input has no content before submit";
 
 export type SubmitContext = {
@@ -41,7 +41,7 @@ async function humanPause(
 }
 
 async function humanizeFocus(page: Page, input: Locator): Promise<void> {
-	if (env.CAMOUFOX_HUMANIZE) {
+	if (CAMOUFOX_HUMANIZE) {
 		await clickLocatorLikeUser(page, input, {
 			delay: randomBetween(40, 120),
 			timeout: 3000,
@@ -111,43 +111,54 @@ async function ensureInputHasWords(
 
 async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
-	// 500ms gives the page time to react before we sample state.
-	// 300ms was too short — some providers briefly hide the input during a
-	// React state transition, causing Check 3 to fire as a false positive.
+	const config = PROVIDER_CONFIGS[provider];
+	const normalizedPreSubmitContent = normalizePromptValue(preSubmitContent);
+	const deadline = Date.now() + 3_000;
+
+	// Some providers acknowledge submit asynchronously even after Enter lands on
+	// the editor. Poll briefly instead of sampling once, otherwise successful
+	// submits get misclassified as failures and we fall through to button paths.
 	await page.waitForTimeout(500);
 
-	// Ask provider config for a custom success signal first.
-	// undefined = no opinion, fall through to generic checks below.
-	const config = PROVIDER_CONFIGS[provider];
-	const customResult = await config.checkSubmitSuccess?.(page, {
-		preSubmitUrl,
-	});
-	if (customResult !== undefined) return customResult;
+	while (Date.now() < deadline) {
+		// Ask provider config for a custom success signal first.
+		// undefined = no opinion, fall through to generic checks below.
+		const customResult = await config.checkSubmitSuccess?.(page, {
+			preSubmitUrl,
+		});
+		if (customResult !== undefined) {
+			return customResult;
+		}
 
-	// Check 1: Input cleared (most reliable signal)
-	const currentContent = await input
-		.readInputValue()
-		.catch(() => preSubmitContent);
-	if (
-		normalizePromptValue(currentContent).length === 0 &&
-		normalizePromptValue(preSubmitContent).length > 0
-	) {
-		return true;
-	}
+		// Check 1: Input cleared (most reliable signal)
+		const currentContent = await input
+			.readInputValue()
+			.catch(() => preSubmitContent);
+		if (
+			normalizePromptValue(currentContent).length === 0 &&
+			normalizedPreSubmitContent.length > 0
+		) {
+			return true;
+		}
 
-	// Check 2: URL changed (navigation-based submission)
-	if ((await page.getUrl().catch(() => page.url())) !== preSubmitUrl) {
-		return true;
-	}
+		// Check 2: URL changed (navigation-based submission)
+		if ((await page.getUrl().catch(() => page.url())) !== preSubmitUrl) {
+			return true;
+		}
 
-	// Check 3: Input field is gone — double-check to rule out transient DOM hides.
-	// isVisible() returns false if the element is hidden/removed. On error, assume
-	// visible (conservative) so we don't falsely report success on a page crash.
-	const inputVisible = await input.isVisible().catch(() => true);
-	if (!inputVisible) {
-		await page.waitForTimeout(200);
-		const stillGone = !(await input.isVisible().catch(() => true));
-		return stillGone;
+		// Check 3: Input field is gone — double-check to rule out transient DOM hides.
+		// isVisible() returns false if the element is hidden/removed. On error, assume
+		// visible (conservative) so we don't falsely report success on a page crash.
+		const inputVisible = await input.isVisible().catch(() => true);
+		if (!inputVisible) {
+			await page.waitForTimeout(200);
+			const stillGone = !(await input.isVisible().catch(() => true));
+			if (stillGone) {
+				return true;
+			}
+		}
+
+		await page.waitForTimeout(150);
 	}
 
 	return false;

@@ -1,10 +1,13 @@
 import { timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import { gunzipSync } from "node:zlib";
-import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
 import { readProviderAuthStatuses, saveAuthSession } from "@oneglanse/services";
+import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import { env } from "./env.js";
+
+const AGENT_API_HOST = "0.0.0.0";
+const AGENT_API_PORT = 3333;
 
 function safeTokenCompare(expected: string, actual: string): boolean {
 	if (expected.length === 0 || expected.length !== actual.length) {
@@ -81,7 +84,9 @@ const server = createServer((req, res) => {
 					};
 					if (
 						!parsed.provider ||
-						!AUTH_PROVIDER_LIST.includes(parsed.provider as (typeof AUTH_PROVIDER_LIST)[number]) ||
+						!AUTH_PROVIDER_LIST.includes(
+							parsed.provider as (typeof AUTH_PROVIDER_LIST)[number],
+						) ||
 						!parsed.session ||
 						typeof parsed.session !== "object"
 					) {
@@ -116,8 +121,8 @@ const server = createServer((req, res) => {
 	res.end("Not Found");
 });
 
-server.listen(env.AGENT_API_PORT, env.AGENT_API_HOST, () => {
+server.listen(AGENT_API_PORT, AGENT_API_HOST, () => {
 	logger.log(
-		`[agent] auth API listening on http://${env.AGENT_API_HOST}:${env.AGENT_API_PORT}`,
+		`[agent] auth API listening on http://${AGENT_API_HOST}:${AGENT_API_PORT}`,
 	);
 });
