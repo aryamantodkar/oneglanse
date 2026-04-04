@@ -1,6 +1,91 @@
 {
   "version": 1,
   "provider": "claude",
-  "updatedAt": "",
-  "profiles": []
+  "updatedAt": "2026-04-04T11:44:21.460Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "compose",
+      "pageKey": "claude.ai/chat/:id",
+      "fingerprint": "d5a7397d2e0ab5cbc015e3566971f2d6ec54fe993a67383ba4aee418984031e0",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:43:36.611Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Write your prompt to Claude\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "compose",
+      "pageKey": "claude.ai/new",
+      "fingerprint": "2a656d6d10316161e5da90e7ffb50811085ff0d53e8b50e3bd2574f1d98de35c",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:43:00.813Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Write your prompt to Claude\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "response",
+      "pageKey": "claude.ai/chat/:id",
+      "fingerprint": "06c4b072374595c1804b105d8c7c06ebb4354c025451a6232a47eda6e996adbd",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:44:17.553Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.grid > div.row-start-2 > div.row-start-1"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [
+          "div.grid > div.row-start-1:nth-of-type(1) > div.min-w-0 > div.flex:nth-of-type(1) > button.flex"
+        ],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "sources",
+      "pageKey": "claude.ai/chat/:id",
+      "fingerprint": "62389c37218abdbc6d152f305ae1a21d051ccc88f4c938a7a519088debfccc24",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:44:21.453Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [
+          "div.grid"
+        ],
+        "sourceItem": [
+          "a.flex.flex-row"
+        ]
+      }
+    }
+  ]
 }

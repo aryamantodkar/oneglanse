@@ -1,17 +1,24 @@
 "use client";
 
+import { ExportMenu } from "@/components/export-menu";
 import {
 	formDialogContentClassName,
 	formDialogHeaderClassName,
+	formDialogScrollBodyClassName,
+	formDialogStickyTopClassName,
 	formPanelClassName,
 	formPrimaryButtonClassName,
+	formResponseMetricsPanelClassName,
+	formResponsePreviewCardClassName,
 	formSecondaryButtonClassName,
+	formSectionDescriptionClassName,
+	formSectionTitleClassName,
+	formSubtleActionClassName,
 	formTextareaClassName,
 	formToolbarButtonClassName,
 	formToolbarGhostButtonClassName,
 	formToolbarSelectClassName,
 } from "@/components/forms/auth-form-chrome";
-import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
@@ -28,6 +35,7 @@ import {
 	Separator,
 	Skeleton,
 	SortableHeader,
+	SourcesHoverLinks,
 	Table,
 	TableBody,
 	TableCell,
@@ -36,7 +44,6 @@ import {
 	TableRow,
 	Textarea,
 	TimeRangeSelect,
-	SourcesHoverLinks,
 	toast,
 	useSortState,
 } from "@oneglanse/ui";
@@ -79,10 +86,8 @@ export default function Prompts() {
 		sortColumn: sortBy,
 		sortDirection,
 		toggleSort: handleColumnSort,
-	} = useSortState<SortColumn>("prompt", "asc", {
-		nextDirectionForNewColumn: (column) =>
-			column === "prompt" ? "asc" : "desc",
-	});
+		resetSort: resetColumnSort,
+	} = useSortState<SortColumn>("prompt", "asc");
 	const [currentPrompt, setCurrentPrompt] = useState("");
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -96,6 +101,7 @@ export default function Prompts() {
 	const [expandedResponses, setExpandedResponses] = useState<Set<number>>(
 		new Set(),
 	);
+	const [promptResponsesScrolled, setPromptResponsesScrolled] = useState(false);
 	const [analysisRecords, setAnalysisRecords] = useState<AnalysisRecord[]>([]);
 
 	const {
@@ -303,6 +309,7 @@ export default function Prompts() {
 
 	const sortedPromptsWithMetrics = useMemo(() => {
 		const rows = [...promptsWithMetrics];
+		if (sortBy === null) return rows;
 		const direction = sortDirection === "asc" ? 1 : -1;
 
 		rows.sort((a, b) => {
@@ -605,14 +612,14 @@ export default function Prompts() {
 					</div>
 
 					{/* Middle: Filters */}
-					<div className="flex w-full flex-wrap items-center gap-2 sm:gap-3 lg:w-auto">
+					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 lg:w-auto">
 						{/* Model filter */}
 						<ProviderModelSelect
 							value={modelFilter}
 							onValueChange={setModelFilter}
 							triggerClassName={cn(
 								formToolbarSelectClassName,
-								"w-full sm:w-44",
+								"w-full sm:w-auto",
 							)}
 							contentClassName="z-[9999]"
 						/>
@@ -623,7 +630,7 @@ export default function Prompts() {
 							onValueChange={setTimeFilter}
 							triggerClassName={cn(
 								formToolbarSelectClassName,
-								"w-full sm:w-40",
+								"w-full sm:w-auto",
 							)}
 						/>
 
@@ -650,7 +657,7 @@ export default function Prompts() {
 					</div>
 
 					{/* Right: Save action */}
-					<div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
 						<ExportMenu
 							className="w-full sm:w-auto"
 							disabled={!hasExportableData}
@@ -797,7 +804,7 @@ export default function Prompts() {
 						Tip: Click a prompt row to view its responses.
 					</p>
 					<div className="overflow-x-auto">
-						<Table className="min-w-[920px] w-full">
+						<Table className="w-full min-w-[760px] lg:min-w-[920px]">
 							<TableHeader>
 								<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
 									<TableHead className="w-12 pl-4">
@@ -821,6 +828,7 @@ export default function Prompts() {
 											currentSort={sortBy}
 											currentDirection={sortDirection}
 											onSort={handleColumnSort}
+											onResetSort={resetColumnSort}
 										>
 											Prompt
 										</SortableHeader>
@@ -832,6 +840,7 @@ export default function Prompts() {
 												currentSort={sortBy}
 												currentDirection={sortDirection}
 												onSort={handleColumnSort}
+												onResetSort={resetColumnSort}
 											>
 												GEO Score
 											</SortableHeader>
@@ -844,6 +853,7 @@ export default function Prompts() {
 												currentSort={sortBy}
 												currentDirection={sortDirection}
 												onSort={handleColumnSort}
+												onResetSort={resetColumnSort}
 											>
 												Sentiment
 											</SortableHeader>
@@ -856,6 +866,7 @@ export default function Prompts() {
 												currentSort={sortBy}
 												currentDirection={sortDirection}
 												onSort={handleColumnSort}
+												onResetSort={resetColumnSort}
 											>
 												Visibility
 											</SortableHeader>
@@ -868,6 +879,7 @@ export default function Prompts() {
 												currentSort={sortBy}
 												currentDirection={sortDirection}
 												onSort={handleColumnSort}
+												onResetSort={resetColumnSort}
 											>
 												Position
 											</SortableHeader>
@@ -881,7 +893,10 @@ export default function Prompts() {
 									({ prompt, metrics, modelProvider, reason, sourceIndex }) => (
 										<TableRow
 											key={prompt.id}
-											onClick={() => setOpenPrompt(prompt)}
+											onClick={() => {
+												setPromptResponsesScrolled(false);
+												setOpenPrompt(prompt);
+											}}
 											className="cursor-pointer border-gray-100/50 border-b transition-colors last:border-none hover:bg-gray-50 dark:border-gray-800/40 dark:hover:bg-gray-900/60"
 										>
 											<TableCell className="pl-4">
@@ -959,53 +974,87 @@ export default function Prompts() {
 						</Table>
 						<Dialog
 							open={!!openPrompt}
-							onOpenChange={() => setOpenPrompt(null)}
+							onOpenChange={() => {
+								setOpenPrompt(null);
+								setPromptResponsesScrolled(false);
+							}}
 						>
 							<DialogContent
 								className={cn(
 									formDialogContentClassName,
-									"!flex h-[90vh] !w-[90vw] !max-w-[90vw] flex-col px-4 pb-6 sm:!w-[80vw] sm:!max-w-[80vw] sm:px-10 sm:pt-12 sm:pb-10",
+									"!flex h-[90vh] !w-[94vw] !max-w-[94vw] flex-col bg-stone-50 pb-5 sm:!w-[88vw] sm:!max-w-[88vw] lg:!w-[80vw] lg:!max-w-[80vw] sm:pb-6 dark:bg-neutral-950",
 								)}
 							>
-								<DialogHeader className="pb-6">
-									<DialogTitle className="font-semibold text-xl">
-										{openPrompt?.prompt}
-									</DialogTitle>
-									<span className="text-gray-500 text-sm">
-										{openPromptRecords.length} response
-										{openPromptRecords.length !== 1 ? "s" : ""}
-									</span>
-								</DialogHeader>
-
-								{/* Filter bar */}
-								<div className="flex flex-col gap-3 pb-6 sm:flex-row sm:flex-wrap sm:items-center">
-									{/* Model filter */}
-									<ProviderModelSelect
-										value={modelFilter}
-										onValueChange={setModelFilter}
-										triggerClassName={cn(
-											formToolbarSelectClassName,
-											"w-full sm:w-44",
+								<div
+									className={cn(
+										formDialogStickyTopClassName,
+										"relative border-0 bg-stone-50/82 px-5 pt-5 pb-3 shadow-none sm:px-6 sm:pt-6 dark:bg-neutral-950/78",
+										promptResponsesScrolled &&
+											"shadow-[0_14px_30px_-28px_rgba(15,23,42,0.18)] dark:shadow-[0_14px_30px_-28px_rgba(0,0,0,0.45)]",
+									)}
+								>
+									<DialogHeader
+										className={cn(
+											formDialogHeaderClassName,
+											"relative z-[2] space-y-0.5 px-0 pt-1 pb-3 sm:px-0 sm:pt-1",
 										)}
-										contentClassName="z-[9999]"
-									/>
+									>
+										<DialogTitle
+											className={cn(
+												formSectionTitleClassName,
+												"text-base leading-6 sm:text-[1.0625rem]",
+											)}
+										>
+											{openPrompt?.prompt}
+										</DialogTitle>
+										<span
+											className={cn(
+												formSectionDescriptionClassName,
+												"text-[13px] leading-5",
+											)}
+										>
+											{openPromptRecords.length} response
+											{openPromptRecords.length !== 1 ? "s" : ""}
+										</span>
+									</DialogHeader>
 
-									{/* Time filter */}
-									<TimeRangeSelect
-										value={timeFilter}
-										onValueChange={setTimeFilter}
-										triggerClassName={cn(
-											formToolbarSelectClassName,
-											"w-full sm:w-40",
-										)}
-									/>
+									<div className="relative z-[2] flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+										<ProviderModelSelect
+											value={modelFilter}
+											onValueChange={setModelFilter}
+											triggerClassName={cn(
+												formToolbarSelectClassName,
+												"w-full border-transparent sm:w-auto",
+											)}
+											contentClassName="z-[9999]"
+										/>
+
+										<TimeRangeSelect
+											value={timeFilter}
+											onValueChange={setTimeFilter}
+											triggerClassName={cn(
+												formToolbarSelectClassName,
+												"w-full border-transparent sm:w-auto",
+											)}
+										/>
+									</div>
 								</div>
 
 								<DialogDescription className="sr-only">
 									This dialog shows AI model responses for the selected prompt.
 								</DialogDescription>
 
-								<div className="flex-1 space-y-6 overflow-y-auto pr-2">
+								<div
+									className={cn(
+										formDialogScrollBodyClassName,
+										"bg-stone-50 pt-0 pr-2 pb-5 dark:bg-neutral-950",
+									)}
+									onScroll={(event) => {
+										setPromptResponsesScrolled(
+											event.currentTarget.scrollTop > 0,
+										);
+									}}
+								>
 									{openPromptRecords.length > 0 ? (
 										openPromptRecords.map(
 											(record: AnalysisRecord, index: number) => {
@@ -1015,20 +1064,30 @@ export default function Prompts() {
 													<div
 														key={record.id}
 														onClick={() => toggleResponse(index)}
+														onKeyDown={(event) => {
+															if (event.key === "Enter" || event.key === " ") {
+																event.preventDefault();
+																toggleResponse(index);
+															}
+														}}
 														data-expanded={isExpanded}
-														className={`group cursor-pointer px-4 py-5 transition-all duration-200 ease-out sm:px-6 ${formPanelClassName} ${isExpanded ? "ring-1 ring-gray-200 dark:ring-gray-700" : ""}
-                          `}
+														className={cn(
+															formResponsePreviewCardClassName,
+															"group cursor-pointer",
+															isExpanded &&
+																"border-gray-200 shadow-[0_24px_70px_-34px_rgba(15,23,42,0.22)] dark:border-gray-700",
+														)}
 													>
-														<div className="mb-4 flex items-start justify-between">
-															<div className="flex items-center gap-4">
+														<div className="mb-4 flex items-start justify-between gap-4">
+															<div className="flex items-center gap-3.5">
 																<img
 																	src={getModelFavicon(record.model_provider)}
 																	alt={record.model_provider}
-																	className="h-7 w-7 rounded-md"
+																	className="h-7 w-7 rounded-[12px]"
 																/>
 
 																<div className="flex flex-col">
-																	<span className="font-semibold text-gray-900 text-md dark:text-gray-100">
+																	<span className="text-sm font-medium text-gray-950 dark:text-gray-50">
 																		{modelSelectors.find(
 																			(m) => m.value === record.model_provider,
 																		)?.label || record.model_provider}
@@ -1041,14 +1100,22 @@ export default function Prompts() {
 															</div>
 
 															<ChevronDown
-																className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : "rotate-0"}group-hover:text-gray-600 dark:group-hover:text-gray-300 `}
+																className={cn(
+																	"h-5 w-5 text-gray-400 transition-transform duration-200 group-hover:text-gray-600 dark:group-hover:text-gray-300",
+																	isExpanded ? "rotate-180" : "rotate-0",
+																)}
 															/>
 														</div>
 
 														{/* Metrics Display - Always visible at top */}
 														{record.is_analysed && record.brand_analysis && (
-															<div className="mb-4 border-gray-100 border-b pb-3 dark:border-gray-800">
-																<div className="flex flex-wrap items-center gap-4">
+															<div
+																className={cn(
+																	formResponseMetricsPanelClassName,
+																	"mb-4",
+																)}
+															>
+																<div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
 																	<div className="flex items-center gap-1.5">
 																		<span className="text-[10px] text-gray-400 uppercase tracking-wide dark:text-gray-500">
 																			GEO Score
@@ -1119,7 +1186,12 @@ export default function Prompts() {
 
 														{/* Analysis Status for Unanalyzed Responses */}
 														{!record.is_analysed && (
-															<div className="mb-4 border-gray-100 border-b pb-3 dark:border-gray-800">
+															<div
+																className={cn(
+																	formResponseMetricsPanelClassName,
+																	"mb-4",
+																)}
+															>
 																<div className="flex items-center gap-2">
 																	<div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
 																	<span className="text-xs text-gray-500 dark:text-gray-400">
@@ -1130,8 +1202,11 @@ export default function Prompts() {
 														)}
 
 														<div
-															className={`prose prose-sm dark:prose-invert prose-hr:my-6 prose-li:my-1 prose-ol:my-4 prose-p:my-4 prose-ul:my-4 prose-headings:mt-6 prose-headings:mb-3 max-w-none transition-all duration-200 ease-in-out ${isExpanded ? "" : "line-clamp-3 overflow-hidden"}
-                            `}
+															className={cn(
+																"prose prose-sm prose-headings:mt-4 prose-headings:mb-2 prose-hr:my-4 prose-li:my-0.5 prose-ol:my-3 prose-p:my-3 prose-ul:my-3 max-w-none px-1 pt-1 text-[0.9375rem] leading-7 text-gray-700 transition-all duration-200 ease-in-out dark:prose-invert dark:text-gray-300",
+																!isExpanded && "line-clamp-3 overflow-hidden",
+															)}
+															// biome-ignore lint/security/noDangerouslySetInnerHtml: markdown is sanitized by shared formatter before rendering
 															dangerouslySetInnerHTML={{
 																__html: formatMarkdown(record.response),
 															}}
@@ -1143,7 +1218,7 @@ export default function Prompts() {
 																e.stopPropagation();
 																toggleResponse(index);
 															}}
-															className="mt-3 font-medium text-gray-500 text-xs opacity-70 transition-colors hover:text-gray-800 group-hover:opacity-100 dark:hover:text-gray-200 "
+															className={cn(formSubtleActionClassName, "mt-4")}
 														>
 															{isExpanded ? "Show less" : "View full response"}
 														</button>

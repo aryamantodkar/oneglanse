@@ -8,6 +8,7 @@ export function SortableHeader<C extends string>({
 	currentSort,
 	currentDirection,
 	onSort,
+	onResetSort,
 	className = "",
 }: {
 	children: React.ReactNode;
@@ -15,6 +16,7 @@ export function SortableHeader<C extends string>({
 	currentSort: C | null;
 	currentDirection: "asc" | "desc";
 	onSort: (column: C) => void;
+	onResetSort?: () => void;
 	className?: string;
 }): React.JSX.Element {
 	const isActive = currentSort === column;
@@ -25,6 +27,11 @@ export function SortableHeader<C extends string>({
 			onClick={(event) => {
 				event.stopPropagation();
 				onSort(column);
+			}}
+			onDoubleClick={(event) => {
+				if (!isActive || !onResetSort) return;
+				event.stopPropagation();
+				onResetSort();
 			}}
 			className={`inline-flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100 ${className}`}
 		>

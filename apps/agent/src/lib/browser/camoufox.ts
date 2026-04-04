@@ -511,6 +511,16 @@ function pickBrowserEnv(args?: {
 		baseEnv.DISPLAY = args.display;
 	}
 
+	if (
+		isLocalAppMode() &&
+		resolveHeadlessMode(args?.headlessMode) === "headless"
+	) {
+		// Firefox reads MOZ_HEADLESS at process bootstrap. Passing it through the
+		// actual browser child env avoids the brief Dock activation seen on macOS
+		// when only the parent runtime process exports it.
+		baseEnv.MOZ_HEADLESS = "1";
+	}
+
 	return {
 		...baseEnv,
 		...(parsePrimitiveRecord(

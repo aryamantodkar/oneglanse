@@ -2,10 +2,13 @@ import { ExternalServiceError } from "@oneglanse/errors";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
+import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
-import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
-import { requireEditorCandidate, waitForSelectorProfile } from "../../../lib/selectors/index.js";
+import {
+	requireEditorCandidate,
+	waitForSelectorProfile,
+} from "../../../lib/selectors/index.js";
 import type { ProviderConfig } from "../types.js";
 
 const GOOGLE_CONSENT_SELECTOR =
@@ -19,7 +22,9 @@ const warmedPages = new WeakSet<Page>();
 
 async function dismissConsentDialog(page: Page): Promise<void> {
 	const consentBtn = page.locator(GOOGLE_CONSENT_SELECTOR).first();
-	const visible = await consentBtn.isVisible({ timeout: 2500 }).catch(() => false);
+	const visible = await consentBtn
+		.isVisible({ timeout: 2500 })
+		.catch(() => false);
 	if (!visible) return;
 
 	await consentBtn.click({ timeout: 4000 }).catch(() => {});
@@ -75,7 +80,9 @@ async function waitForSearchResults(
 			const url = new URL(rawUrl);
 			const isGoogleSearchResults =
 				url.hostname.endsWith("google.com") && url.pathname === "/search";
-			const currentQuery = normalizeGoogleQuery(url.searchParams.get("q") ?? "");
+			const currentQuery = normalizeGoogleQuery(
+				url.searchParams.get("q") ?? "",
+			);
 			if (
 				isGoogleSearchResults &&
 				currentQuery.length > 0 &&
@@ -95,11 +102,25 @@ async function waitForSearchResults(
 	);
 }
 
+function isGoogleHomePage(rawUrl: string): boolean {
+	try {
+		const url = new URL(rawUrl);
+		return url.hostname === "www.google.com" && url.pathname === "/";
+	} catch {
+		return false;
+	}
+}
+
 async function assertAiOverviewPresent(page: Page): Promise<void> {
 	// Ask the selector profile to resolve a response element. If the LLM finds
 	// no response container within the probe window, there is no AI Overview block
 	// and we fail fast rather than waiting 45s for a response that never arrives.
-	const profile = await waitForSelectorProfile(page, "ai-overview", "response", AI_OVERVIEW_PROBE_TIMEOUT_MS).catch(() => null);
+	const profile = await waitForSelectorProfile(
+		page,
+		"ai-overview",
+		"response",
+		AI_OVERVIEW_PROBE_TIMEOUT_MS,
+	).catch(() => null);
 	if (!profile?.selectors.response.length) {
 		throw new ExternalServiceError(
 			"ai-overview",
@@ -117,7 +138,7 @@ export const aiOverviewConfig: ProviderConfig = {
 	navigateToPrompt: async (page, prompt) => {
 		await ensureGoogleCookies(page);
 
-		if (!page.url().startsWith("https://www.google.com/")) {
+		if (!isGoogleHomePage(page.url())) {
 			await navigateWithRetry(page, "https://www.google.com/", {
 				waitUntil: "domcontentloaded",
 				timeout: 30000,
@@ -142,9 +163,9 @@ export const aiOverviewConfig: ProviderConfig = {
 
 		logger.debug("attempting submission…");
 		await page.keyboard.press("Enter");
-		await page.waitForLoadState("domcontentloaded", { timeout: 5000 }).catch(
-			() => {},
-		);
+		await page
+			.waitForLoadState("domcontentloaded", { timeout: 5000 })
+			.catch(() => {});
 		await waitForSearchResults(page, prompt);
 		await dismissConsentDialog(page);
 		assertNotBlockedPage(page);

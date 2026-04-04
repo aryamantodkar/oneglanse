@@ -1,7 +1,7 @@
 "use client";
-import { Card } from "../card.js";
 import { LineChart } from "lucide-react";
 import { useRef, useState } from "react";
+import { Card } from "../card.js";
 import type { DashboardCompetitorData } from "./types.js";
 
 type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
@@ -23,6 +23,12 @@ const METRIC_CONFIG: { key: MetricKey; label: string }[] = [
 
 const SERIES_COLORS = ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"];
 
+function getSeriesColor(index: number): string {
+	return (
+		SERIES_COLORS[index % SERIES_COLORS.length] ?? SERIES_COLORS[0] ?? "#4E79A7"
+	);
+}
+
 function clampScore(value: number): number {
 	if (Number.isNaN(value)) return 0;
 	return Math.max(0, Math.min(100, Math.round(value)));
@@ -43,8 +49,9 @@ function rankToStrength(rank: number | null): number {
 	];
 
 	for (let i = 0; i < points.length - 1; i++) {
-		const start = points[i]!;
-		const end = points[i + 1]!;
+		const start = points[i];
+		const end = points[i + 1];
+		if (!start || !end) continue;
 		if (rank >= start.x && rank <= end.x) {
 			const t = (rank - start.x) / (end.x - start.x);
 			return clampScore(start.y + t * (end.y - start.y));
@@ -229,7 +236,7 @@ export function BrandComparisonChart({
 						in one view.
 					</p>
 				</div>
-				<span className="max-w-full self-start rounded-full border border-gray-200/70 bg-stone-100 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-800 dark:bg-neutral-900">
+				<span className="max-w-full self-start rounded-full border border-transparent bg-stone-50 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.18)] dark:bg-neutral-900/80 dark:text-gray-300 dark:shadow-[0_14px_36px_-28px_rgba(0,0,0,0.44)]">
 					Leader: {leader?.name ?? "N/A"}
 				</span>
 			</div>
@@ -245,6 +252,8 @@ export function BrandComparisonChart({
 							ref={svgRef}
 							viewBox={`0 0 ${width} ${height}`}
 							className="h-[280px] w-full min-w-[480px] sm:min-w-[620px] lg:min-w-[680px]"
+							role="img"
+							aria-label="Brand comparison chart"
 						>
 							{[0, 25, 50, 75, 100].map((tick) => {
 								const y = yFor(tick);
@@ -272,7 +281,7 @@ export function BrandComparisonChart({
 							})}
 
 							{series.map((s, idx) => {
-								const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
+								const color = getSeriesColor(idx);
 								const points = METRIC_CONFIG.map((metric, metricIndex) => ({
 									x: xFor(metricIndex),
 									y: yFor(s.values[metric.key]),
@@ -303,14 +312,16 @@ export function BrandComparisonChart({
 												className="cursor-pointer"
 												opacity={isFaded ? 0.2 : 1}
 												onMouseEnter={() => {
+													const metric = METRIC_CONFIG[pointIdx];
+													if (!metric) return;
 													const { leftPx, topPx } = getTooltipPosition(
 														p.x,
 														p.y,
 													);
 													setHoveredPoint({
 														name: s.name,
-														metric: METRIC_CONFIG[pointIdx]!.label,
-														value: s.values[METRIC_CONFIG[pointIdx]!.key],
+														metric: metric.label,
+														value: s.values[metric.key],
 														leftPx,
 														topPx,
 														color,
@@ -338,7 +349,7 @@ export function BrandComparisonChart({
 
 					{hoveredPoint && !hoveredBrand && (
 						<div
-							className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-2xl border border-gray-200/80 bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
+							className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-2xl border border-transparent bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
 							style={{
 								left: `${hoveredPoint.leftPx}px`,
 								top: `${hoveredPoint.topPx}px`,
@@ -368,7 +379,7 @@ export function BrandComparisonChart({
 							const brandIndex = series.findIndex(
 								(s) => s.name === hoveredBrand,
 							);
-							const color = SERIES_COLORS[brandIndex % SERIES_COLORS.length]!;
+							const color = getSeriesColor(brandIndex);
 
 							if (!brandData) return null;
 
@@ -381,7 +392,7 @@ export function BrandComparisonChart({
 								return (
 									<div
 										key={`${hoveredBrand}-${metric.key}`}
-										className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-2xl border border-gray-200/80 bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
+										className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-2xl border border-transparent bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
 										style={{
 											left: `${leftPx}px`,
 											top: `${topPx}px`,
@@ -410,13 +421,13 @@ export function BrandComparisonChart({
 
 				<div className="min-w-0 space-y-2">
 					{series.map((s, idx) => {
-						const color = SERIES_COLORS[idx % SERIES_COLORS.length]!;
+						const color = getSeriesColor(idx);
 						return (
 							<div
 								key={`legend-${s.name}`}
 								className={`ui-list-item cursor-pointer rounded-[22px] border px-3 py-2 transition-all ${
 									s.isBrand
-										? "border-gray-200 bg-stone-100 dark:border-gray-700 dark:bg-neutral-900"
+										? "border-transparent bg-stone-50 dark:border-transparent dark:bg-neutral-900/80"
 										: "border-gray-100/80 bg-white dark:border-gray-800 dark:bg-neutral-950"
 								} ${hoveredBrand === s.name ? "ring-2 ring-gray-300 dark:ring-gray-600" : ""}`}
 								onMouseEnter={() => setHoveredBrand(s.name)}

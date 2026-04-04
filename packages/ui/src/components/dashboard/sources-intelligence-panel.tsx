@@ -30,7 +30,7 @@ import {
 import { SortableHeader } from "./sortable-header.js";
 
 type SourcesTab = "domains" | "citations";
-type SortColumn = "share" | "citations" | "urls";
+type SortColumn = "share" | "citations" | "urls" | "providers";
 
 export type SourcePanelMetrics = {
 	totalDomains: number;
@@ -158,35 +158,63 @@ export function SourcesIntelligencePanel({
 	const [activeTab, setActiveTab] = useState<SourcesTab>("domains");
 	const [openDomain, setOpenDomain] = useState<string | null>(null);
 	const [openUrl, setOpenUrl] = useState<string | null>(null);
-	const { sortColumn, sortDirection, toggleSort } = useSortState<SortColumn>(
-		"citations",
-		"desc",
-	);
+	const { sortColumn, sortDirection, toggleSort, resetSort } =
+		useSortState<SortColumn>("citations", "desc");
 
 	const hasData = domainRows.length > 0 || citationDomains.length > 0;
 
 	const sortedDomainRows = useMemo(() => {
-		if (!enableDomainSorting) return domainRows;
+		if (!enableDomainSorting || sortColumn === null) return domainRows;
 
 		const rows = [...domainRows];
 		rows.sort((a, b) => {
 			const aValue =
 				sortColumn === "share"
 					? a.share
-					: sortColumn === "urls"
-						? a.urlCount
-						: a.totalCitations;
+					: sortColumn === "providers"
+						? a.providers.length
+						: sortColumn === "urls"
+							? a.urlCount
+							: a.totalCitations;
 			const bValue =
 				sortColumn === "share"
 					? b.share
-					: sortColumn === "urls"
-						? b.urlCount
-						: b.totalCitations;
+					: sortColumn === "providers"
+						? b.providers.length
+						: sortColumn === "urls"
+							? b.urlCount
+							: b.totalCitations;
 			const diff = aValue - bValue;
 			return sortDirection === "asc" ? diff : -diff;
 		});
 		return rows;
 	}, [domainRows, enableDomainSorting, sortColumn, sortDirection]);
+
+	const sortedCitationDomains = useMemo(() => {
+		if (sortColumn === null) return citationDomains;
+
+		const rows = [...citationDomains];
+		rows.sort((a, b) => {
+			const aValue =
+				sortColumn === "providers"
+					? a.providers.length
+					: sortColumn === "urls"
+						? a.urlCount
+						: a.totalCitations;
+			const bValue =
+				sortColumn === "providers"
+					? b.providers.length
+					: sortColumn === "urls"
+						? b.urlCount
+						: b.totalCitations;
+			const diff = aValue - bValue;
+			if (diff !== 0) {
+				return sortDirection === "asc" ? diff : -diff;
+			}
+			return a.domain.localeCompare(b.domain);
+		});
+		return rows;
+	}, [citationDomains, sortColumn, sortDirection]);
 
 	const panelBody = (
 		<div className="flex flex-col gap-6 sm:gap-7">
@@ -273,6 +301,7 @@ export function SourcesIntelligencePanel({
 											currentSort={sortColumn}
 											currentDirection={sortDirection}
 											onSort={toggleSort}
+											onResetSort={resetSort}
 										>
 											Share of Citations
 										</SortableHeader>
@@ -287,6 +316,7 @@ export function SourcesIntelligencePanel({
 											currentSort={sortColumn}
 											currentDirection={sortDirection}
 											onSort={toggleSort}
+											onResetSort={resetSort}
 										>
 											Total Citations
 										</SortableHeader>
@@ -301,6 +331,7 @@ export function SourcesIntelligencePanel({
 											currentSort={sortColumn}
 											currentDirection={sortDirection}
 											onSort={toggleSort}
+											onResetSort={resetSort}
 										>
 											Unique URLs
 										</SortableHeader>
@@ -364,19 +395,50 @@ export function SourcesIntelligencePanel({
 				</div>
 			) : (
 				<div className="overflow-x-auto rounded-[24px]">
-					<Table className="w-full table-fixed">
+					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
 								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Source Reference
 								</TableHead>
-								<TableHead className="w-[300px] px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									Citations & Providers
+								<TableHead className="w-[140px] px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									<SortableHeader
+										column="citations"
+										currentSort={sortColumn}
+										currentDirection={sortDirection}
+										onSort={toggleSort}
+										onResetSort={resetSort}
+										className="ml-auto"
+									>
+										Citations
+									</SortableHeader>
+								</TableHead>
+								<TableHead className="w-[180px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									<SortableHeader
+										column="urls"
+										currentSort={sortColumn}
+										currentDirection={sortDirection}
+										onSort={toggleSort}
+										onResetSort={resetSort}
+									>
+										URLs
+									</SortableHeader>
+								</TableHead>
+								<TableHead className="w-[160px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									<SortableHeader
+										column="providers"
+										currentSort={sortColumn}
+										currentDirection={sortDirection}
+										onSort={toggleSort}
+										onResetSort={resetSort}
+									>
+										Providers
+									</SortableHeader>
 								</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{citationDomains.map((group) => {
+							{sortedCitationDomains.map((group) => {
 								const domainOpen = openDomain === group.domain;
 								return (
 									<Fragment key={group.domain}>
@@ -397,14 +459,14 @@ export function SourcesIntelligencePanel({
 													</span>
 												</div>
 											</TableCell>
-											<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
-												<span className="font-semibold">
-													{formatCitationLabel(group.totalCitations)}
-												</span>
-												<span className="mx-2 text-gray-300">•</span>
+											<TableCell className="px-4 py-5 text-right text-sm font-semibold text-gray-700 dark:text-gray-200">
+												{formatCitationLabel(group.totalCitations)}
+											</TableCell>
+											<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
 												{group.urlCount} URLs
-												<span className="mx-2 text-gray-300">•</span>
-												<span className="inline-flex items-center gap-1.5 align-middle">
+											</TableCell>
+											<TableCell className="px-4 py-5">
+												<div className="flex flex-wrap items-center gap-1.5">
 													{group.providers.map((provider) => (
 														<img
 															key={`${group.domain}-${provider}`}
@@ -414,7 +476,7 @@ export function SourcesIntelligencePanel({
 															className="h-4 w-4 rounded-sm"
 														/>
 													))}
-												</span>
+												</div>
 											</TableCell>
 										</TableRow>
 
@@ -461,12 +523,25 @@ export function SourcesIntelligencePanel({
 																	</div>
 																</div>
 															</TableCell>
-															<TableCell className="px-4 py-5 text-right text-sm text-gray-700 dark:text-gray-200">
-																<span className="font-semibold">
-																	{formatCitationLabel(source.totalCitations)}
-																</span>
-																<span className="mx-2 text-gray-300">•</span>
-																<span className="inline-flex items-center gap-1.5 align-middle">
+															<TableCell className="px-4 py-5 text-right text-sm font-semibold text-gray-700 dark:text-gray-200">
+																{formatCitationLabel(source.totalCitations)}
+															</TableCell>
+															<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
+																<a
+																	href={source.url}
+																	target="_blank"
+																	rel="noreferrer noopener"
+																	onClick={(e) => e.stopPropagation()}
+																	className="inline-flex max-w-full items-center gap-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+																>
+																	<span className="truncate">
+																		{getUrlPath(source.url)}
+																	</span>
+																	<ExternalLink className="h-3.5 w-3.5 shrink-0" />
+																</a>
+															</TableCell>
+															<TableCell className="px-4 py-5">
+																<div className="flex flex-wrap items-center gap-1.5">
 																	{source.providers.map((provider) => (
 																		<img
 																			key={`${source.url}-${provider}`}
@@ -476,7 +551,7 @@ export function SourcesIntelligencePanel({
 																			className="h-4 w-4 rounded-sm"
 																		/>
 																	))}
-																</span>
+																</div>
 															</TableCell>
 														</TableRow>
 
@@ -486,7 +561,10 @@ export function SourcesIntelligencePanel({
 																	key={`${source.url}-${idx}`}
 																	className="bg-white dark:bg-neutral-950"
 																>
-																	<TableCell className="px-4 py-5 pl-20">
+																	<TableCell
+																		className="px-4 py-5 pl-20"
+																		colSpan={3}
+																	>
 																		<div className="max-w-full rounded-[22px] border border-gray-100/80 bg-stone-50 p-4 dark:border-gray-800 dark:bg-neutral-900">
 																			<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
 																				{excerpt.citedText?.trim()
@@ -495,7 +573,7 @@ export function SourcesIntelligencePanel({
 																			</p>
 																		</div>
 																	</TableCell>
-																	<TableCell className="px-4 py-5 text-right">
+																	<TableCell className="px-4 py-5">
 																		{excerpt.modelProvider ? (
 																			<div className="inline-flex items-center gap-1 rounded-full border border-gray-200/70 bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
 																				<img

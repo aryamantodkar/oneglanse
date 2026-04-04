@@ -65,14 +65,14 @@ function getConnectionStatusLabel(
 
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
 	if (card.status.connected) {
-		return `${formPanelClassName} border border-gray-200/80 bg-white/95 dark:border-gray-800 dark:bg-neutral-950/95`;
+		return `${formPanelClassName} bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:shadow-[0_20px_60px_-28px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:shadow-[0_20px_60px_-28px_rgba(0,0,0,0.62)]`;
 	}
 
 	if (card.status.connecting) {
-		return `${formPanelClassName} border border-gray-300/80 bg-stone-50 dark:border-gray-700 dark:bg-gray-900`;
+		return `${formPanelClassName} bg-stone-50 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:shadow-[0_20px_60px_-28px_rgba(15,23,42,0.22)] dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:shadow-[0_20px_60px_-28px_rgba(0,0,0,0.62)]`;
 	}
 
-	return `${formPanelClassName} border border-gray-200/80 bg-white/95 dark:border-gray-800 dark:bg-neutral-950/95`;
+	return `${formPanelClassName} bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:shadow-[0_20px_60px_-28px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:shadow-[0_20px_60px_-28px_rgba(0,0,0,0.62)]`;
 }
 
 function getConnectionBadgeClasses(card: ProviderConnectionCard): string {
@@ -174,7 +174,7 @@ export function ProviderConnectionsPanel(props: {
 				</p>
 			) : null}
 
-			<div className="flex flex-col gap-6">
+			<div className="flex flex-col gap-4">
 				{cards.map((card) => {
 					const status = card.status;
 					const { isPendingForProvider, isPendingConnect, isPendingRefresh } =
@@ -198,7 +198,7 @@ export function ProviderConnectionsPanel(props: {
 						<div
 							key={card.provider}
 							className={cn(
-								"group overflow-hidden px-5 py-5 transition-[border-color,background-color,box-shadow] duration-200 ease-out hover:border-gray-300 dark:hover:border-gray-700 sm:px-6 sm:py-5",
+								"group overflow-hidden px-5 py-5 transition-[background-color,box-shadow] duration-200 ease-out sm:px-6 sm:py-5",
 								getConnectionCardClasses(card),
 							)}
 						>
@@ -229,7 +229,7 @@ export function ProviderConnectionsPanel(props: {
 									</div>
 								</div>
 
-								<div className="flex items-center gap-2 sm:shrink-0">
+								<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
 									{statusLabel ? (
 										<span
 											className={cn(
@@ -245,7 +245,7 @@ export function ProviderConnectionsPanel(props: {
 											variant="default"
 											className={cn(
 												formPrimaryButtonClassName,
-												"h-11 w-auto shrink-0 px-5",
+												"h-11 w-full shrink-0 px-5 sm:w-auto",
 											)}
 											onClick={() =>
 												providerActionMutation.mutate({

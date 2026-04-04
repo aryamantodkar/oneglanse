@@ -8,7 +8,9 @@ import { Geist } from "next/font/google";
 export const metadata: Metadata = {
 	title: "OneGlanse",
 	description: "The open-source alternative to PeecAI",
-	icons: [{ rel: "icon", url: "/favicon.ico" }],
+	icons: {
+		icon: "/icon.svg",
+	},
 };
 
 const geist = Geist({

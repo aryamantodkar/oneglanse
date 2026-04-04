@@ -2,8 +2,11 @@
 
 import { getFaviconUrls } from "@oneglanse/utils";
 import { Users } from "lucide-react";
-import { useMemo, type JSX } from "react";
-import { Card } from "../card.js";
+import { type JSX, useMemo } from "react";
+import {
+	type SortDirection,
+	useSortState,
+} from "../../hooks/use-sort-state.js";
 import { SentimentMetricCell } from "../cell.js";
 import {
 	Table,
@@ -13,10 +16,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "../table.js";
-import {
-	useSortState,
-	type SortDirection,
-} from "../../hooks/use-sort-state.js";
 import { DashboardEmptyState } from "./empty-state.js";
 import { SortableHeader } from "./sortable-header.js";
 import type { DashboardCompetitorData } from "./types.js";
@@ -69,7 +68,7 @@ function displayCompetitors(
 	sortColumn: SortColumn,
 	sortDirection: SortDirection,
 ): DashboardCompetitorData[] {
-	const MAX_VISIBLE_ROWS = 8;
+	const MAX_VISIBLE_ROWS = 5;
 	const sorted = [...competitors].sort((a, b) =>
 		compareByColumn(a, b, sortColumn, sortDirection),
 	);
@@ -91,27 +90,19 @@ export function CompetitiveLandscape({
 }: {
 	competitors: DashboardCompetitorData[];
 }): JSX.Element {
-	const { sortColumn, sortDirection, toggleSort } = useSortState<SortColumn>(
-		"visibility",
-		"desc",
-	);
+	const { sortColumn, sortDirection, toggleSort, resetSort } =
+		useSortState<SortColumn>("visibility", "desc");
 
 	const rows = useMemo(
-		() => displayCompetitors(competitors, sortColumn, sortDirection),
+		() =>
+			sortColumn === null
+				? displayCompetitors(competitors, "visibility", "desc")
+				: displayCompetitors(competitors, sortColumn, sortDirection),
 		[competitors, sortColumn, sortDirection],
 	);
 
 	return (
-		<Card className="flex h-full min-h-[460px] min-w-0 flex-col p-4">
-			<div className="mb-4">
-				<h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-					Competitors
-				</h1>
-				<p className="mt-1 text-xs text-muted-foreground">
-					Visibility, mentions, and sentiment across analyzed responses.
-				</p>
-			</div>
-
+		<div className="flex min-w-0 flex-col">
 			{rows.length === 0 ? (
 				<DashboardEmptyState
 					icon={Users}
@@ -119,41 +110,48 @@ export function CompetitiveLandscape({
 					description="No analysis data is available for the selected filters."
 				/>
 			) : (
-				<div className="min-w-0 overflow-x-auto">
-					<Table className="w-full min-w-[34rem] table-fixed">
+				<div className="min-w-0 px-1.5 py-2">
+					<Table
+						className="w-full"
+						surface="plain"
+						containerClassName="rounded-[24px] bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
+					>
 						<TableHeader>
-							<TableRow className="border-b border-gray-200 dark:border-gray-800">
-								<TableHead className="w-[46%] min-w-[13rem] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+							<TableRow className="border-b border-gray-200/80 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
+								<TableHead className="px-5 py-4.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Competitor
 								</TableHead>
-								<TableHead className="w-20 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:w-24">
+								<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									<SortableHeader
 										column="visibility"
 										currentSort={sortColumn}
 										currentDirection={sortDirection}
 										onSort={toggleSort}
+										onResetSort={resetSort}
 										className="ml-auto"
 									>
 										Visibility
 									</SortableHeader>
 								</TableHead>
-								<TableHead className="w-20 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:w-24">
+								<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									<SortableHeader
 										column="mentions"
 										currentSort={sortColumn}
 										currentDirection={sortDirection}
 										onSort={toggleSort}
+										onResetSort={resetSort}
 										className="ml-auto"
 									>
 										Mentions
 									</SortableHeader>
 								</TableHead>
-								<TableHead className="w-24 px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									<SortableHeader
 										column="sentiment"
 										currentSort={sortColumn}
 										currentDirection={sortDirection}
 										onSort={toggleSort}
+										onResetSort={resetSort}
 										className="ml-auto"
 									>
 										Sentiment
@@ -167,8 +165,11 @@ export function CompetitiveLandscape({
 								const visibility = getVisibility(row);
 
 								return (
-									<TableRow key={row.name} className="last:border-0">
-										<TableCell className="px-3 py-3.5 align-top">
+									<TableRow
+										key={row.name}
+										className="last:border-0 hover:bg-stone-50/70 dark:hover:bg-neutral-900/50"
+									>
+										<TableCell className="px-5 py-4.5 align-top">
 											<div className="flex min-w-0 items-start gap-2.5">
 												{favicon ? (
 													<img
@@ -195,13 +196,13 @@ export function CompetitiveLandscape({
 												</div>
 											</div>
 										</TableCell>
-										<TableCell className="px-3 py-3.5 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+										<TableCell className="px-5 py-4.5 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
 											{visibility}%
 										</TableCell>
-										<TableCell className="px-3 py-3.5 text-right text-sm text-gray-700 dark:text-gray-200">
+										<TableCell className="px-5 py-4.5 text-right text-sm text-gray-700 dark:text-gray-200">
 											{row.appearances}
 										</TableCell>
-										<TableCell className="px-3 py-3.5 text-right">
+										<TableCell className="px-5 py-4.5 text-right">
 											<span className="inline-flex justify-end">
 												<SentimentMetricCell sentiment={row.avgSentiment} />
 											</span>
@@ -213,6 +214,6 @@ export function CompetitiveLandscape({
 					</Table>
 				</div>
 			)}
-		</Card>
+		</div>
 	);
 }

@@ -4,11 +4,24 @@ import type * as React from "react";
 
 import { cn } from "@oneglanse/utils";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+	className,
+	containerClassName,
+	surface = "card",
+	...props
+}: React.ComponentProps<"table"> & {
+	containerClassName?: string;
+	surface?: "card" | "plain";
+}) {
 	return (
 		<div
 			data-slot="table-container"
-			className="relative w-full overflow-x-auto rounded-[24px] border border-gray-100/80 bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
+			className={cn(
+				"relative w-full overflow-x-auto overscroll-x-contain [touch-action:pan-x_pinch-zoom]",
+				surface === "card" &&
+					"rounded-[24px] border border-transparent bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]",
+				containerClassName,
+			)}
 		>
 			<table
 				data-slot="table"
@@ -70,7 +83,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 		<th
 			data-slot="table-head"
 			className={cn(
-				"text-foreground h-11 px-4 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+				"text-foreground h-11 px-4 text-left align-middle font-medium whitespace-normal sm:whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 				className,
 			)}
 			{...props}
@@ -83,7 +96,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 		<td
 			data-slot="table-cell"
 			className={cn(
-				"px-4 py-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+				"px-4 py-3 align-middle whitespace-normal sm:whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 				className,
 			)}
 			{...props}

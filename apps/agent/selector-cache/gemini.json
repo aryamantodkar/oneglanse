@@ -1,6 +1,69 @@
 {
   "version": 1,
   "provider": "gemini",
-  "updatedAt": "",
-  "profiles": []
+  "updatedAt": "2026-04-04T11:42:43.690Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "gemini",
+      "stage": "compose",
+      "pageKey": "gemini.google.com/app",
+      "fingerprint": "36deb136e7a1a826b110d580786fc88412afa917cafa17d9c4c379c0f9e10bba",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:41:58.604Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Enter a prompt for Gemini\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "gemini",
+      "stage": "compose",
+      "pageKey": "gemini.google.com/app/:id",
+      "fingerprint": "597035c41665d9736eec1f27eef4e48f29133dc43b811301d2cc91a8ea79d5af",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:42:32.197Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Enter a prompt for Gemini\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "gemini",
+      "stage": "response",
+      "pageKey": "gemini.google.com/app/:id",
+      "fingerprint": "2a3e5f3a8bd2506bf30c570f793efc4681f006fdcb2b796307cb47ac67adb327",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-04T11:42:41.955Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "#message-content-id-r_c1b53022d6d0075d"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [
+          "sources-sidebar-button.ng-star-inserted > button.mdc-button"
+        ],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
 }

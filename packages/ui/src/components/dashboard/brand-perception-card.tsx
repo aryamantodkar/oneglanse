@@ -25,7 +25,7 @@ export function BrandPerceptionCard({
 		bestKnownFor || coreClaims.length > 0 || differentiators.length > 0;
 
 	return (
-		<Card className="flex h-full min-h-[460px] min-w-0 flex-col p-5">
+		<Card className="flex h-full min-w-0 flex-col p-5 lg:p-6">
 			<div>
 				<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 					AI Perception
@@ -42,7 +42,7 @@ export function BrandPerceptionCard({
 					description="No brand perception signals are available for the selected filters."
 				/>
 			) : (
-				<div className="flex min-w-0 flex-1 flex-col gap-4">
+				<div className="flex min-w-0 flex-1 flex-col gap-3.5">
 					{pricingPerception !== "not_mentioned" && (
 						<div className="ui-list-item rounded-[22px] border border-amber-200/70 bg-amber-50/70 px-3.5 py-3 dark:border-amber-900/60 dark:bg-amber-950/25">
 							<p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300">
@@ -77,10 +77,10 @@ export function BrandPerceptionCard({
 								{coreClaims.slice(0, 4).map((claim) => (
 									<li
 										key={claim}
-										className="ui-list-item grid min-w-0 grid-cols-[auto,1fr] items-start gap-x-2 gap-y-1 rounded-[20px] border border-gray-100/80 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-neutral-950"
+										className="ui-list-item flex min-w-0 items-start gap-2 rounded-[20px] border border-gray-100/80 bg-white px-3 py-2 text-xs leading-relaxed dark:border-gray-800 dark:bg-neutral-950"
 									>
-										<span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-										<span className="min-w-0 break-words [overflow-wrap:anywhere]">
+										<span className="mt-[0.38rem] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+										<span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
 											{claim.charAt(0).toUpperCase() + claim.slice(1)}
 										</span>
 									</li>
@@ -98,7 +98,7 @@ export function BrandPerceptionCard({
 								{differentiators.slice(0, 5).map((diff) => (
 									<span
 										key={diff}
-										className="ui-list-item min-w-0 max-w-full rounded-full border border-gray-200/70 bg-stone-100 px-3 py-1 text-[11px] font-semibold text-muted-foreground dark:border-gray-800 dark:bg-neutral-900"
+										className="ui-list-item min-w-0 max-w-full rounded-full border border-transparent bg-stone-50 px-3 py-1 text-[11px] font-semibold text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400"
 									>
 										{diff.charAt(0).toUpperCase() + diff.slice(1)}
 									</span>

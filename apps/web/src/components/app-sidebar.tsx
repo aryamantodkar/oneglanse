@@ -1,5 +1,6 @@
 "use client";
 
+import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
 import { authClient } from "@/lib/auth/auth-client";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
@@ -28,7 +29,7 @@ import {
 	SidebarMenuItem,
 	toast,
 } from "@oneglanse/ui";
-import { getFaviconUrls } from "@oneglanse/utils";
+import { cn, getFaviconUrls } from "@oneglanse/utils";
 import {
 	Check,
 	ChevronDown,
@@ -189,7 +190,12 @@ export function AppSidebar({
 						<SidebarMenuItem>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-white px-4 shadow-none hover:bg-stone-100 dark:border-white/10 dark:bg-neutral-950 dark:hover:bg-neutral-900">
+									<SidebarMenuButton
+										className={cn(
+											formToolbarButtonClassName,
+											"h-11 px-4 hover:bg-stone-100 dark:hover:bg-neutral-900",
+										)}
+									>
 										<div className="flex items-center gap-2 min-w-0">
 											<img
 												src={activeWorkspaceFavicon}
@@ -206,7 +212,7 @@ export function AppSidebar({
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
-									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
+									className={cn(formToolbarButtonClassName, "min-w-0 p-1.5")}
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
@@ -331,7 +337,12 @@ export function AppSidebar({
 						<SidebarMenuItem>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-white px-4 shadow-none hover:bg-stone-100 dark:border-white/10 dark:bg-neutral-950 dark:hover:bg-neutral-900">
+									<SidebarMenuButton
+										className={cn(
+											formToolbarButtonClassName,
+											"h-11 px-4 hover:bg-stone-100 dark:hover:bg-neutral-900",
+										)}
+									>
 										<User2 />
 										<span className="truncate">
 											{userName || userEmail || "Account"}
@@ -342,7 +353,7 @@ export function AppSidebar({
 								<DropdownMenuContent
 									side="top"
 									sideOffset={8}
-									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
+									className={cn(formToolbarButtonClassName, "min-w-0 p-1.5")}
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
