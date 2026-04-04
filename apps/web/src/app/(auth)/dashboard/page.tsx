@@ -125,7 +125,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="web-page-wide dark:bg-black">
-			<div className="web-page-wide-inner pt-4 pb-12">
+			<div className="web-page-wide-inner">
 				<div className="ui-stagger space-y-6">
 					{/* Filters */}
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

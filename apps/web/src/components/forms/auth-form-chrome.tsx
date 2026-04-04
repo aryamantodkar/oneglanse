@@ -48,18 +48,18 @@ export const formHintClassName =
 	"text-xs leading-5 text-gray-500 dark:text-gray-400";
 
 export const formChipClassName =
-	"max-w-full rounded-2xl border border-gray-200/80 bg-stone-50 px-3.5 py-2 text-left text-xs text-gray-700 transition hover:border-gray-300 hover:bg-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-950";
+	"max-w-full rounded-2xl border border-gray-200/80 bg-stone-50 px-3.5 py-1.5 text-left text-xs text-gray-700 transition hover:border-gray-300 hover:bg-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-950";
 
 export const formDialogContentClassName =
 	"overflow-hidden rounded-[32px] border-0 bg-white p-0 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.65)]";
 
 export const formDialogHeaderClassName =
-	"space-y-3 px-6 pt-6 pb-0 text-left sm:px-7 sm:space-y-4 sm:pt-8";
+	"space-y-1.5 px-5 pt-5 pb-0 text-left sm:px-6 sm:pt-6";
 
-export const formDialogBodyClassName = "grid gap-5 px-6 py-6 sm:px-7 sm:py-7";
+export const formDialogBodyClassName = "grid gap-3.5 px-5 py-5 sm:px-6 sm:py-6";
 
 export const formDialogFooterClassName =
-	"flex-col-reverse gap-3 border-t border-gray-100 px-6 py-5 sm:flex-row sm:justify-end sm:px-7 dark:border-gray-900";
+	"flex-col-reverse gap-2.5 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end sm:px-6 dark:border-gray-900";
 
 export const authFieldClassName = formFieldClassName;
 export const authLabelClassName = formLabelClassName;
@@ -81,7 +81,7 @@ export function AuthFormChrome({
 		<div className={cn("flex flex-col gap-4", className)} {...props}>
 			<Card className={formSurfaceClassName}>
 				{title || description ? (
-					<CardHeader className="space-y-3 px-6 pt-6 pb-0 text-left sm:px-7 sm:space-y-4 sm:pt-8">
+					<CardHeader className="space-y-1.5 px-5 pt-5 pb-0 text-left sm:px-6 sm:pt-6">
 						<div className="space-y-1.5">
 							{title ? (
 								<CardTitle className="text-[1.75rem] tracking-[-0.04em]">
@@ -96,8 +96,8 @@ export function AuthFormChrome({
 						</div>
 					</CardHeader>
 				) : null}
-				<CardContent className="px-6 py-6 sm:px-7 sm:py-8">
-					<div className="grid min-w-0 gap-6 sm:gap-7">
+				<CardContent className="px-5 py-5 sm:px-6 sm:py-6">
+					<div className="grid min-w-0 gap-4 sm:gap-5">
 						<Button
 							variant="outline"
 							className={cn(

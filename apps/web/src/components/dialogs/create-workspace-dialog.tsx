@@ -107,8 +107,8 @@ export function CreateWorkspaceDialog({
 				</Button>
 			}
 		>
-			<div className="space-y-5">
-				<div className="space-y-2.5">
+			<div className="space-y-4">
+				<div className="space-y-2">
 					<Label htmlFor="ws-name" className={formLabelClassName}>
 						Brand Name
 					</Label>
@@ -123,7 +123,7 @@ export function CreateWorkspaceDialog({
 						Used as the tracked brand name in analysis.
 					</p>
 				</div>
-				<div className="space-y-2.5">
+				<div className="space-y-2">
 					<Label htmlFor="ws-slug" className={formLabelClassName}>
 						Slug
 					</Label>
@@ -135,7 +135,7 @@ export function CreateWorkspaceDialog({
 						className={formFieldClassName}
 					/>
 				</div>
-				<div className="space-y-2.5">
+				<div className="space-y-2">
 					<Label htmlFor="ws-domain" className={formLabelClassName}>
 						Brand Domain
 					</Label>

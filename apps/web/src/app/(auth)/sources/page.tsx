@@ -8,10 +8,10 @@ import {
 	ProviderModelSelect,
 	SectionHeading,
 	Skeleton,
-	SourcesIntelligencePanel,
 	type SourcePanelCitationDomain,
 	type SourcePanelDomainRow,
 	type SourcePanelMetrics,
+	SourcesIntelligencePanel,
 } from "@oneglanse/ui";
 import {
 	cleanCitedText,
@@ -31,6 +31,13 @@ type DomainGroup = {
 	providers: Set<string>;
 	urls: GroupedSource[];
 };
+
+const SOURCES_METRIC_SKELETON_KEYS = [
+	"sources-metric-a",
+	"sources-metric-b",
+	"sources-metric-c",
+	"sources-metric-d",
+] as const;
 
 export default function SourcesPage(): React.JSX.Element {
 	const [selectedProvider, setSelectedProvider] =
@@ -182,11 +189,8 @@ export default function SourcesPage(): React.JSX.Element {
 				<div className="space-y-4">
 					<Skeleton className="h-10 w-56" />
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-						{Array.from({ length: 4 }).map((_, i) => (
-							<Skeleton
-								key={`sources-metric-${i}`}
-								className="h-28 rounded-2xl"
-							/>
+						{SOURCES_METRIC_SKELETON_KEYS.map((key) => (
+							<Skeleton key={key} className="h-28 rounded-2xl" />
 						))}
 					</div>
 					<Skeleton className="h-[480px] rounded-2xl" />
@@ -236,7 +240,7 @@ export default function SourcesPage(): React.JSX.Element {
 
 	return (
 		<div className="web-page-wide">
-			<div className="web-page-wide-inner ui-stagger space-y-6 py-4 sm:py-6 lg:py-8">
+			<div className="web-page-wide-inner ui-stagger space-y-6">
 				<SectionHeading
 					as="h1"
 					title="Sources Intelligence"

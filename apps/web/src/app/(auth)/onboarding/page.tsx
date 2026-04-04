@@ -210,10 +210,10 @@ export default function FirstWorkspaceOnboardingPage() {
 						</p>
 					</CardHeader>
 
-					<CardContent className="space-y-7 bg-white px-5 py-6 sm:px-7 sm:py-8 dark:bg-neutral-950">
+					<CardContent className="space-y-5 bg-white px-5 py-5 sm:px-6 sm:py-6 dark:bg-neutral-950">
 						{!started ? (
 							<>
-								<div className="space-y-2.5">
+								<div className="space-y-2">
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 										Prompt inputs
 									</p>
@@ -230,7 +230,7 @@ export default function FirstWorkspaceOnboardingPage() {
 									</p>
 								</div>
 
-								<div className="space-y-3">
+								<div className="space-y-2">
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 										Suggested prompts for AI visibility
 									</p>
@@ -278,7 +278,7 @@ export default function FirstWorkspaceOnboardingPage() {
 								</div>
 							</>
 						) : (
-							<div className="space-y-6">
+							<div className="space-y-5">
 								<div className="rounded-[24px] border border-gray-200/80 bg-stone-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/60">
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 										We are running your prompts in the background.
