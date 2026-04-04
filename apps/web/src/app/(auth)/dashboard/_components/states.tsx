@@ -2,6 +2,13 @@ import { Skeleton } from "@oneglanse/ui";
 import { BarChart3, Building2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+const DASHBOARD_SKELETON_KEYS = [
+	"dashboard-skeleton-a",
+	"dashboard-skeleton-b",
+	"dashboard-skeleton-c",
+	"dashboard-skeleton-d",
+] as const;
+
 function CenterState({
 	icon: Icon,
 	title,
@@ -13,8 +20,8 @@ function CenterState({
 }) {
 	return (
 		<div className="flex min-h-[60vh] items-center justify-center px-4">
-			<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
-				<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+			<div className="web-empty-state">
+				<div className="web-empty-state-icon">
 					<Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 				</div>
 				<h2 className="mt-5 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -28,9 +35,9 @@ function CenterState({
 	);
 }
 
-export function DashboardSkeleton(){
+export function DashboardSkeleton() {
 	return (
-		<div className="web-page-wide dark:bg-black">
+		<div className="web-page-wide">
 			<div className="web-page-wide-inner py-4">
 				<div className="space-y-6">
 					<div className="flex items-center gap-3">
@@ -40,10 +47,10 @@ export function DashboardSkeleton(){
 					</div>
 
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-						{Array.from({ length: 4 }).map((_, i) => (
+						{DASHBOARD_SKELETON_KEYS.map((key) => (
 							<div
-								key={`stats-${i}`}
-								className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+								key={key}
+								className="rounded-[24px] border border-gray-100/80 bg-white p-4 dark:border-gray-800 dark:bg-neutral-950"
 							>
 								<Skeleton className="h-3 w-20 rounded" />
 								<Skeleton className="mt-4 h-8 w-24 rounded" />
@@ -65,7 +72,7 @@ export function DashboardSkeleton(){
 	);
 }
 
-export function NoWorkspaceState(){
+export function NoWorkspaceState() {
 	return (
 		<CenterState
 			icon={Building2}
@@ -75,7 +82,7 @@ export function NoWorkspaceState(){
 	);
 }
 
-export function EmptyState(){
+export function EmptyState() {
 	return (
 		<CenterState
 			icon={BarChart3}
@@ -85,7 +92,7 @@ export function EmptyState(){
 	);
 }
 
-export function NoAnalysisState(){
+export function NoAnalysisState() {
 	return (
 		<CenterState
 			icon={Sparkles}

@@ -1,5 +1,6 @@
 "use client";
 
+import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
 import {
 	Button,
 	DropdownMenu,
@@ -25,8 +26,11 @@ export function ExportMenu({
 			<DropdownMenuTrigger asChild>
 				<Button
 					variant="outline"
-					size="sm"
-					className={className ? `gap-2 ${className}` : "gap-2"}
+					className={
+						className
+							? `${formToolbarButtonClassName} gap-2 ${className}`
+							: `${formToolbarButtonClassName} gap-2`
+					}
 					disabled={disabled}
 				>
 					<Download className="h-4 w-4" />

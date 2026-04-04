@@ -102,7 +102,7 @@ export function CompetitiveLandscape({
 	);
 
 	return (
-		<Card className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-black">
+		<Card className="flex h-full min-h-[460px] min-w-0 flex-col p-4">
 			<div className="mb-4">
 				<h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
 					Competitors
@@ -119,7 +119,7 @@ export function CompetitiveLandscape({
 					description="No analysis data is available for the selected filters."
 				/>
 			) : (
-				<div className="min-w-0 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+				<div className="min-w-0 overflow-x-auto">
 					<Table className="w-full min-w-[34rem] table-fixed">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
@@ -167,10 +167,7 @@ export function CompetitiveLandscape({
 								const visibility = getVisibility(row);
 
 								return (
-									<TableRow
-										key={row.name}
-										className="border-b border-gray-100 last:border-0 dark:border-gray-800"
-									>
+									<TableRow key={row.name} className="last:border-0">
 										<TableCell className="px-3 py-3.5 align-top">
 											<div className="flex min-w-0 items-start gap-2.5">
 												{favicon ? (
@@ -190,7 +187,7 @@ export function CompetitiveLandscape({
 															{row.name}
 														</span>
 														{row.isBrand ? (
-															<span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:bg-neutral-800 dark:text-gray-200">
+															<span className="shrink-0 rounded-full border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-200">
 																You
 															</span>
 														) : null}

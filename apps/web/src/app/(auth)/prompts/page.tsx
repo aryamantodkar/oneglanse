@@ -7,6 +7,9 @@ import {
 	formPrimaryButtonClassName,
 	formSecondaryButtonClassName,
 	formTextareaClassName,
+	formToolbarButtonClassName,
+	formToolbarGhostButtonClassName,
+	formToolbarSelectClassName,
 } from "@/components/forms/auth-form-chrome";
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
@@ -468,7 +471,7 @@ export default function Prompts() {
 	}
 
 	return (
-		<div className="ui-page-enter ui-stagger flex min-h-svh flex-col">
+		<div className="ui-page-enter ui-stagger flex min-h-full flex-col">
 			<div className="px-4 py-4 sm:px-6 sm:py-6">
 				{/* Single Row: Actions + Filters */}
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -488,7 +491,10 @@ export default function Prompts() {
 								}}
 							>
 								<DialogTrigger asChild>
-									<Button variant="outline" size="sm" className="gap-2">
+									<Button
+										variant="outline"
+										className={cn(formToolbarButtonClassName, "gap-2")}
+									>
 										<Plus size={16} />
 										<span>Add Prompt</span>
 									</Button>
@@ -547,7 +553,6 @@ export default function Prompts() {
 							<>
 								<Button
 									variant="outline"
-									size="sm"
 									disabled={selectedRows.size !== 1}
 									onClick={() => {
 										const idx = Array.from(selectedRows)[0];
@@ -566,15 +571,17 @@ export default function Prompts() {
 
 										setDialogOpen(true);
 									}}
-									className="gap-2"
+									className={cn(formToolbarButtonClassName, "gap-2")}
 								>
 									<Pencil size={16} />
 									<span>Edit</span>
 								</Button>
 								<Button
 									variant="outline"
-									size="sm"
-									className="gap-2 text-red-600 hover:bg-red-50"
+									className={cn(
+										formToolbarButtonClassName,
+										"gap-2 border-red-200/80 bg-red-50/80 text-red-700 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50",
+									)}
 									onClick={() => {
 										setPromptData((prev) =>
 											prev.filter((_, i) => !selectedRows.has(i)),
@@ -595,7 +602,10 @@ export default function Prompts() {
 						<ProviderModelSelect
 							value={modelFilter}
 							onValueChange={setModelFilter}
-							triggerClassName="h-9 w-full rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 sm:w-44"
+							triggerClassName={cn(
+								formToolbarSelectClassName,
+								"w-full sm:w-44",
+							)}
 							contentClassName="z-[9999]"
 						/>
 
@@ -603,7 +613,10 @@ export default function Prompts() {
 						<TimeRangeSelect
 							value={timeFilter}
 							onValueChange={setTimeFilter}
-							triggerClassName="h-9 w-full text-sm sm:w-40"
+							triggerClassName={cn(
+								formToolbarSelectClassName,
+								"w-full sm:w-40",
+							)}
 						/>
 
 						{/* Clear filters button */}
@@ -615,12 +628,11 @@ export default function Prompts() {
 								/>
 								<Button
 									variant="ghost"
-									size="sm"
 									onClick={() => {
 										setModelFilter("All Models");
 										setTimeFilter("all");
 									}}
-									className="gap-2 text-gray-500 hover:text-gray-700"
+									className={cn(formToolbarGhostButtonClassName, "gap-2")}
 								>
 									<FilterX size={14} />
 									Clear
@@ -760,7 +772,10 @@ export default function Prompts() {
 							variant="outline"
 							onClick={handleSave}
 							disabled={loading || !isModified || editIndex !== null}
-							className="w-full gap-2 sm:w-auto"
+							className={cn(
+								formToolbarButtonClassName,
+								"w-full gap-2 sm:w-auto",
+							)}
 						>
 							{loading ? "Saving..." : "Save Changes"}
 						</Button>
@@ -769,11 +784,11 @@ export default function Prompts() {
 			</div>
 
 			{promptData.length > 0 ? (
-				<div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6">
+				<div className="flex-1 px-4 pb-10 sm:px-6">
 					<p className="mb-3 text-xs text-muted-foreground">
 						Tip: Click a prompt row to view its responses.
 					</p>
-					<div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+					<div className="overflow-x-auto">
 						<Table className="min-w-[920px] w-full">
 							<TableHeader>
 								<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
@@ -960,7 +975,10 @@ export default function Prompts() {
 									<ProviderModelSelect
 										value={modelFilter}
 										onValueChange={setModelFilter}
-										triggerClassName="h-9 w-full rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-950 sm:w-44"
+										triggerClassName={cn(
+											formToolbarSelectClassName,
+											"w-full sm:w-44",
+										)}
 										contentClassName="z-[9999]"
 									/>
 
@@ -968,7 +986,10 @@ export default function Prompts() {
 									<TimeRangeSelect
 										value={timeFilter}
 										onValueChange={setTimeFilter}
-										triggerClassName="h-9 w-full text-sm sm:w-40"
+										triggerClassName={cn(
+											formToolbarSelectClassName,
+											"w-full sm:w-40",
+										)}
 									/>
 								</div>
 
@@ -1092,7 +1113,7 @@ export default function Prompts() {
 														{!record.is_analysed && (
 															<div className="mb-4 border-gray-100 border-b pb-3 dark:border-gray-800">
 																<div className="flex items-center gap-2">
-																	<div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+																	<div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
 																	<span className="text-xs text-gray-500 dark:text-gray-400">
 																		Analysis in progress...
 																	</span>
@@ -1109,6 +1130,7 @@ export default function Prompts() {
 														/>
 
 														<button
+															type="button"
 															onClick={(e) => {
 																e.stopPropagation();
 																toggleResponse(index);
@@ -1124,8 +1146,8 @@ export default function Prompts() {
 											},
 										)
 									) : (
-										<div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
-											<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+										<div className="web-empty-state py-12">
+											<div className="web-empty-state-icon">
 												<FilterX className="h-5 w-5 text-gray-400" />
 											</div>
 
@@ -1145,22 +1167,25 @@ export default function Prompts() {
 					</div>
 				</div>
 			) : (
-				<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
-					<button
-						onClick={() => setDialogOpen(true)}
-						className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-					>
-						<Plus className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-					</button>
+				<div className="flex h-[60vh] items-center justify-center px-6">
+					<div className="web-empty-state">
+						<button
+							type="button"
+							onClick={() => setDialogOpen(true)}
+							className="web-empty-state-icon"
+						>
+							<Plus className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						</button>
 
-					<h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-						No prompts yet
-					</h3>
+						<h3 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
+							No prompts yet
+						</h3>
 
-					<p className="mt-2 max-w-sm text-gray-500 text-sm dark:text-gray-400">
-						You haven’t added any prompts yet. Start by adding your first prompt
-						to analyze model responses and brand metrics.
-					</p>
+						<p className="mt-2 max-w-sm text-gray-500 text-sm dark:text-gray-400">
+							You haven’t added any prompts yet. Start by adding your first
+							prompt to analyze model responses and brand metrics.
+						</p>
+					</div>
 				</div>
 			)}
 		</div>

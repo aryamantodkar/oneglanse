@@ -129,16 +129,7 @@ export default function NewWorkspace() {
 
 	return (
 		<div className="flex min-h-full min-w-0 items-center justify-center bg-stone-50 px-4 py-3 dark:bg-neutral-950 sm:px-6 sm:py-5">
-			<div className="ui-stagger w-full max-w-md space-y-3.5">
-				<div className="space-y-1.5 text-center">
-					<h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-gray-950 dark:text-gray-50">
-						Create your workspace
-					</h1>
-					<p className="text-sm text-gray-600 dark:text-gray-300">
-						Set up your organization and brand tracking workspace in one clean
-						step.
-					</p>
-				</div>
+			<div className="ui-stagger w-full max-w-md">
 				<Card className={formSurfaceClassName}>
 					<CardHeader className="space-y-1.5 px-5 pt-5 pb-0 sm:px-6 sm:pt-6">
 						<CardTitle className="text-[1.55rem] tracking-[-0.04em]">

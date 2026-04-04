@@ -590,18 +590,18 @@ export default function PeoplePage() {
 				<div
 					className={cn(
 						formPanelClassName,
-						"mb-4 flex flex-col gap-3 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:p-6",
+						"mb-4 grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_10rem_10rem] sm:items-end sm:p-6",
 					)}
 				>
 					<Input
 						placeholder="Email address (we'll invite if needed)"
 						value={wsInviteEmail}
 						onChange={(e) => setWsInviteEmail(e.target.value)}
-						className={cn(formFieldClassName, "w-full sm:max-w-xs")}
+						className={cn(formFieldClassName, "w-full")}
 						onKeyDown={(e) => e.key === "Enter" && handleWsAddMember()}
 					/>
 					<Select value={wsInviteRole} onValueChange={setWsInviteRole}>
-						<SelectTrigger className={cn(formFieldClassName, "w-full sm:w-32")}>
+						<SelectTrigger className={cn(formFieldClassName, "w-full")}>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
@@ -612,8 +612,7 @@ export default function PeoplePage() {
 					<Button
 						onClick={handleWsAddMember}
 						disabled={wsAdding || !wsInviteEmail.trim()}
-						size="sm"
-						className={cn(formPrimaryButtonClassName, "gap-2 sm:w-auto")}
+						className={cn(formPrimaryButtonClassName, "w-full gap-2")}
 					>
 						{wsAdding ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
@@ -632,7 +631,10 @@ export default function PeoplePage() {
 						{WORKSPACE_MEMBER_SKELETON_KEYS.map((key) => (
 							<div
 								key={key}
-								className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+								className={cn(
+									formPanelClassName,
+									"flex items-center justify-between px-4 py-3",
+								)}
 							>
 								<div className="space-y-2">
 									<Skeleton className="h-4 w-32" />
@@ -643,7 +645,7 @@ export default function PeoplePage() {
 						))}
 					</div>
 				) : (
-					<div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+					<div className="overflow-x-auto">
 						<Table className="min-w-[680px]">
 							<TableHeader>
 								<TableRow className="bg-gray-50/70 dark:bg-gray-900/40">

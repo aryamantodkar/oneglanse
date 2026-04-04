@@ -168,8 +168,8 @@ export default function SourcesPage(): React.JSX.Element {
 	if (!workspaceId) {
 		return (
 			<div className="flex min-h-[60vh] items-center justify-center px-4">
-				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
-					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+				<div className="web-empty-state">
+					<div className="web-empty-state-icon">
 						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 					</div>
 					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -185,8 +185,8 @@ export default function SourcesPage(): React.JSX.Element {
 
 	if (isLoading && !promptSources) {
 		return (
-			<div className="web-page-wide p-4 sm:p-6">
-				<div className="space-y-4">
+			<div className="web-page-wide">
+				<div className="web-page-wide-inner space-y-4">
 					<Skeleton className="h-10 w-56" />
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 						{SOURCES_METRIC_SKELETON_KEYS.map((key) => (
@@ -202,8 +202,8 @@ export default function SourcesPage(): React.JSX.Element {
 	if (error) {
 		return (
 			<div className="flex min-h-[60vh] items-center justify-center px-4">
-				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
-					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
+				<div className="web-empty-state">
+					<div className="web-empty-state-icon border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
 						<AlertTriangle className="h-5 w-5 text-amber-500" />
 					</div>
 					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -221,8 +221,8 @@ export default function SourcesPage(): React.JSX.Element {
 	if (!sourceStats) {
 		return (
 			<div className="flex min-h-[60vh] items-center justify-center px-4">
-				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
-					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+				<div className="web-empty-state">
+					<div className="web-empty-state-icon">
 						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 					</div>
 					<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -373,7 +373,7 @@ export default function SourcesPage(): React.JSX.Element {
 							<ProviderModelSelect
 								value={selectedProvider}
 								onValueChange={setSelectedProvider}
-								triggerClassName="h-10 w-full rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 sm:w-[220px]"
+								triggerClassName="w-full sm:w-[220px]"
 							/>
 						</div>
 					}
