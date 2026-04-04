@@ -98,7 +98,7 @@ export default function Dashboard() {
 	if (!workspaceId) return <NoWorkspaceState />;
 	if (analysedPromptError || promptSourcesError) {
 		return (
-			<div className="flex min-h-[60vh] items-center justify-center px-4">
+			<div className="web-centered-state">
 				<div className="web-empty-state">
 					<div className="web-empty-state-icon border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
 						<AlertTriangle className="h-5 w-5 text-amber-500" />

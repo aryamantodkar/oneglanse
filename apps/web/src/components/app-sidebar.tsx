@@ -189,7 +189,7 @@ export function AppSidebar({
 						<SidebarMenuItem>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-stone-50 px-4 shadow-none hover:bg-stone-100 dark:border-gray-800 dark:bg-neutral-900 dark:hover:bg-neutral-800">
+									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-white px-4 shadow-none hover:bg-stone-100 dark:border-white/10 dark:bg-neutral-950 dark:hover:bg-neutral-900">
 										<div className="flex items-center gap-2 min-w-0">
 											<img
 												src={activeWorkspaceFavicon}
@@ -206,7 +206,7 @@ export function AppSidebar({
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
-									className="min-w-0 rounded-[24px] border-gray-200/80 p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
+									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
@@ -331,7 +331,7 @@ export function AppSidebar({
 						<SidebarMenuItem>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-stone-50 px-4 shadow-none hover:bg-stone-100 dark:border-gray-800 dark:bg-neutral-900 dark:hover:bg-neutral-800">
+									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-white px-4 shadow-none hover:bg-stone-100 dark:border-white/10 dark:bg-neutral-950 dark:hover:bg-neutral-900">
 										<User2 />
 										<span className="truncate">
 											{userName || userEmail || "Account"}
@@ -342,7 +342,7 @@ export function AppSidebar({
 								<DropdownMenuContent
 									side="top"
 									sideOffset={8}
-									className="min-w-0 rounded-[24px] border-gray-200/80 p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
+									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",

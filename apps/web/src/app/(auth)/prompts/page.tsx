@@ -429,30 +429,38 @@ export default function Prompts() {
 	};
 
 	const LoadingState = () => (
-		<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
-			<div className="mb-4 flex h-12 w-12 animate-pulse items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-				<Bot className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+		<div className="web-centered-state">
+			<div className="web-empty-state">
+				<div className="web-empty-state-icon animate-pulse">
+					<Bot className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+				</div>
+				<p className="text-gray-500 text-sm dark:text-gray-400">
+					Loading your prompts…
+				</p>
 			</div>
-			<p className="text-gray-500 text-sm dark:text-gray-400">
-				Loading your prompts…
-			</p>
 		</div>
 	);
 
 	if (!workspaceId) {
 		return (
-			<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
-				<p className="text-sm text-gray-500">No workspace selected.</p>
+			<div className="web-centered-state">
+				<div className="web-empty-state">
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						No workspace selected.
+					</p>
+				</div>
 			</div>
 		);
 	}
 
 	if (userPromptsError || analysedPromptError) {
 		return (
-			<div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
-				<p className="text-sm text-gray-500">
-					We couldn&apos;t load your prompts right now.
-				</p>
+			<div className="web-centered-state">
+				<div className="web-empty-state">
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						We couldn&apos;t load your prompts right now.
+					</p>
+				</div>
 			</div>
 		);
 	}

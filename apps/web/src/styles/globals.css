@@ -124,7 +124,7 @@
 
 @layer base {
 	* {
-		@apply border-border outline-ring/50;
+		@apply border-border;
 	}
 	html {
 		font-family: var(--font-sans);
@@ -137,6 +137,11 @@
 		line-height: 1.5;
 		min-height: 100svh;
 		overflow-x: clip;
+	}
+
+	*:focus,
+	*:focus-visible {
+		outline: none;
 	}
 }
 
@@ -173,6 +178,10 @@
 		@apply relative flex min-h-svh min-w-0 flex-1 flex-col overflow-hidden bg-stone-50/80 dark:bg-neutral-950;
 	}
 
+	.web-app-header {
+		@apply sticky top-0 z-20 flex items-center gap-2 border-b border-gray-200/60 bg-stone-50/95 px-3 py-2.5 backdrop-blur-sm dark:border-white/8 dark:bg-neutral-950/95 sm:px-4 sm:py-3 lg:px-5;
+	}
+
 	.web-app-scroll {
 		@apply flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-stone-50 dark:bg-neutral-950;
 		overscroll-behavior-y: auto;
@@ -197,6 +206,10 @@
 
 	.web-centered-page {
 		@apply flex min-h-full min-w-0 items-center justify-center overflow-x-hidden bg-stone-50 px-4 pt-4 pb-8 dark:bg-neutral-950 sm:px-6 sm:pt-5 sm:pb-10;
+	}
+
+	.web-centered-state {
+		@apply flex min-h-full w-full items-center justify-center px-4 py-8 sm:px-6 sm:py-10;
 	}
 
 	.web-empty-state {

@@ -19,7 +19,7 @@ function CenterState({
 	description: string;
 }) {
 	return (
-		<div className="flex min-h-[60vh] items-center justify-center px-4">
+		<div className="web-centered-state">
 			<div className="web-empty-state">
 				<div className="web-empty-state-icon">
 					<Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />

@@ -31,7 +31,7 @@ export const formPanelClassName =
 	"rounded-[24px] border-0 bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]";
 
 export const formFieldClassName =
-	"h-11 rounded-[24px] border-gray-200/80 bg-white px-4.5 text-gray-900 shadow-none placeholder:text-gray-400 focus-visible:border-gray-400 focus-visible:ring-gray-950/8 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus-visible:border-gray-700 dark:focus-visible:ring-white/10";
+	"h-11 rounded-[24px] border-gray-200/80 bg-white px-4.5 text-gray-900 shadow-none placeholder:text-gray-400 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500";
 
 export const formTextareaClassName = `${formFieldClassName} min-h-[136px] py-3`;
 

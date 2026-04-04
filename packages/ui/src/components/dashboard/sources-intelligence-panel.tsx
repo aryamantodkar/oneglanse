@@ -118,7 +118,7 @@ function MetricCard({
 	badgeFavicon?: string | null;
 }): React.JSX.Element {
 	return (
-		<div className="rounded-[24px] border border-gray-100/80 bg-white p-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
+		<div className="rounded-[24px] border border-gray-100/80 bg-white p-5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
 			<div className="flex items-center gap-2">
 				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
 				<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -189,7 +189,7 @@ export function SourcesIntelligencePanel({
 	}, [domainRows, enableDomainSorting, sortColumn, sortDirection]);
 
 	const panelBody = (
-		<>
+		<div className="flex flex-col gap-6 sm:gap-7">
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				<MetricCard
 					icon={Globe2}
@@ -218,7 +218,7 @@ export function SourcesIntelligencePanel({
 				/>
 			</div>
 
-			<div className="mt-5 flex flex-wrap gap-2 border-b border-gray-200/80 dark:border-gray-800 sm:gap-3">
+			<div className="flex flex-wrap gap-2 border-b border-gray-200/80 pb-1 dark:border-gray-800 sm:gap-3">
 				<button
 					className={cn(
 						"px-3 py-2 text-sm font-semibold transition-colors",
@@ -246,7 +246,7 @@ export function SourcesIntelligencePanel({
 			</div>
 
 			{!hasData ? (
-				<div className="web-empty-state mt-4 max-w-none py-16">
+				<div className="web-empty-state max-w-none py-16">
 					<div className="web-empty-state-icon">
 						<SearchX className="h-5 w-5 text-gray-400" />
 					</div>
@@ -256,7 +256,7 @@ export function SourcesIntelligencePanel({
 					<p className="mt-1 text-xs text-muted-foreground">{emptySubtitle}</p>
 				</div>
 			) : activeTab === "domains" ? (
-				<div className="mt-4 overflow-x-auto">
+				<div className="overflow-x-auto rounded-[24px]">
 					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
@@ -363,7 +363,7 @@ export function SourcesIntelligencePanel({
 					</Table>
 				</div>
 			) : (
-				<div className="mt-4 overflow-x-auto">
+				<div className="overflow-x-auto rounded-[24px]">
 					<Table className="w-full table-fixed">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
@@ -525,7 +525,7 @@ export function SourcesIntelligencePanel({
 					</Table>
 				</div>
 			)}
-		</>
+		</div>
 	);
 
 	if (containerVariant === "plain") {

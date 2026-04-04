@@ -275,8 +275,12 @@ export default function PeoplePage() {
 
 	if (!workspaceId) {
 		return (
-			<div className="flex h-[60vh] items-center justify-center">
-				<p className="text-sm text-gray-500">No workspace selected.</p>
+			<div className="web-centered-state">
+				<div className="web-empty-state">
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						No workspace selected.
+					</p>
+				</div>
 			</div>
 		);
 	}
