@@ -6,14 +6,13 @@ import {
 import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
-import { env } from "../env.js";
 import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
 
-const DEFAULT_PAGE_TIMEOUT_MS = env.PAGE_DEFAULT_TIMEOUT_MS;
-const DEFAULT_NAV_TIMEOUT_MS = env.PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS;
-const HOOK_TIMEOUT_MS = env.PROVIDER_HOOK_TIMEOUT_MS;
+const DEFAULT_PAGE_TIMEOUT_MS = 30_000;
+const DEFAULT_NAV_TIMEOUT_MS = 60_000;
+const HOOK_TIMEOUT_MS = 20_000;
 
 export async function createAgent(
 	provider: Provider,
