@@ -1,6 +1,11 @@
 "use client";
 
 import {
+	formPanelClassName,
+	formPrimaryButtonClassName,
+	formSecondaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
+import {
 	useProviderConnectionAction,
 	useProviderConnections,
 } from "@/lib/provider-connections/client";
@@ -60,26 +65,26 @@ function getConnectionStatusLabel(
 
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
 	if (card.status.connected) {
-		return "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950";
+		return `${formPanelClassName} border border-gray-200/80 bg-white/95 dark:border-gray-800 dark:bg-neutral-950/95`;
 	}
 
 	if (card.status.connecting) {
-		return "border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900";
+		return `${formPanelClassName} border border-gray-300/80 bg-stone-50 dark:border-gray-700 dark:bg-gray-900`;
 	}
 
-	return "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950";
+	return `${formPanelClassName} border border-gray-200/80 bg-white/95 dark:border-gray-800 dark:bg-neutral-950/95`;
 }
 
 function getConnectionBadgeClasses(card: ProviderConnectionCard): string {
 	if (card.status.connected) {
-		return "border border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
+		return "border border-gray-200/80 bg-stone-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
 	}
 
 	if (card.status.connecting) {
-		return "border border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200";
+		return "border border-gray-200/80 bg-stone-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200";
 	}
 
-	return "border border-gray-200 bg-white text-gray-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400";
+	return "border border-gray-200/80 bg-white text-gray-500 dark:border-gray-800 dark:bg-neutral-950 dark:text-gray-400";
 }
 
 function getCardMutationState(args: {
@@ -134,14 +139,14 @@ export function ProviderConnectionsPanel(props: {
 	return (
 		<section>
 			{title || description ? (
-				<div className="mb-8 max-w-2xl">
+				<div className="mb-6 max-w-2xl space-y-1.5">
 					{title ? (
-						<h2 className="text-xl font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
+						<h2 className="text-xl font-semibold tracking-[-0.025em] text-gray-900 dark:text-gray-100">
 							{title}
 						</h2>
 					) : null}
 					{description ? (
-						<p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+						<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
 							{description}
 						</p>
 					) : null}
@@ -172,15 +177,12 @@ export function ProviderConnectionsPanel(props: {
 			<div className="flex flex-col gap-6">
 				{cards.map((card) => {
 					const status = card.status;
-					const {
-						isPendingForProvider,
-						isPendingConnect,
-						isPendingRefresh,
-					} = getCardMutationState({
-						card,
-						isMutationPending: providerActionMutation.isPending,
-						variables: providerActionMutation.variables,
-					});
+					const { isPendingForProvider, isPendingConnect, isPendingRefresh } =
+						getCardMutationState({
+							card,
+							isMutationPending: providerActionMutation.isPending,
+							variables: providerActionMutation.variables,
+						});
 					const isConnected = status.connected;
 					const primaryProvider = card.providers[0] ?? card.provider;
 					const cardTitle = getConnectionCardTitle(card);
@@ -188,13 +190,15 @@ export function ProviderConnectionsPanel(props: {
 						card,
 						authProvidersQuery.data?.remoteSyncConfigured,
 					);
-					const primaryButtonLabel = status.connecting ? "Connecting" : "Connect";
+					const primaryButtonLabel = status.connecting
+						? "Connecting"
+						: "Connect";
 
 					return (
 						<div
 							key={card.provider}
 							className={cn(
-								"group overflow-hidden rounded-2xl border px-4 py-4 transition-[border-color,background-color,box-shadow] duration-200 ease-out hover:border-gray-300 dark:hover:border-gray-700 sm:px-5 sm:py-4.5",
+								"group overflow-hidden px-5 py-5 transition-[border-color,background-color,box-shadow] duration-200 ease-out hover:border-gray-300 dark:hover:border-gray-700 sm:px-6 sm:py-5",
 								getConnectionCardClasses(card),
 							)}
 						>
@@ -229,7 +233,7 @@ export function ProviderConnectionsPanel(props: {
 									{statusLabel ? (
 										<span
 											className={cn(
-												"inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[0.02em]",
+												"inline-flex items-center rounded-[24px] px-3 py-1 text-[10px] font-medium tracking-[0.02em]",
 												getConnectionBadgeClasses(card),
 											)}
 										>
@@ -239,8 +243,10 @@ export function ProviderConnectionsPanel(props: {
 									{!isConnected ? (
 										<Button
 											variant="default"
-											size="default"
-											className="h-9 rounded-full px-4 text-sm shadow-none"
+											className={cn(
+												formPrimaryButtonClassName,
+												"h-11 w-auto shrink-0 px-5",
+											)}
 											onClick={() =>
 												providerActionMutation.mutate({
 													provider: card.provider,
@@ -264,7 +270,10 @@ export function ProviderConnectionsPanel(props: {
 										<Button
 											variant="ghost"
 											size="icon"
-											className="size-9 rounded-full border border-gray-200 bg-white text-gray-500 shadow-none hover:border-gray-300 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900"
+											className={cn(
+												formSecondaryButtonClassName,
+												"size-11 rounded-[24px] p-0 text-gray-500 dark:text-gray-300",
+											)}
 											onClick={() =>
 												providerActionMutation.mutate({
 													provider: card.provider,
@@ -297,8 +306,7 @@ export function ProviderConnectionsPanel(props: {
 				<div className="mt-6 flex justify-end">
 					<Button
 						variant="default"
-						size="default"
-						className="h-10 rounded-full px-5 text-sm shadow-none"
+						className={cn(formPrimaryButtonClassName, "h-11 w-auto px-5")}
 						onClick={() => router.push(nextHref)}
 						disabled={isAnyConnectionPending}
 					>

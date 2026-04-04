@@ -32,9 +32,6 @@ export default function LayoutContent({
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSafeSearchParams();
-	const pageTitle = pathname?.split("/").filter(Boolean).pop() || "Home";
-	const capitalizedTitle =
-		pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
 	const isOnboardingFlow = pathname?.startsWith("/onboarding");
 	const shownJobsRef = useRef<Set<string>>(new Set());
 
@@ -132,15 +129,7 @@ export default function LayoutContent({
 		if (isResolvingWorkspaceFromUrl) {
 			return (
 				<div className="web-app-shell">
-					<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
-						<div className="flex items-center justify-between border-b border-gray-200/70 bg-white/80 px-4 py-3 backdrop-blur-sm transition-[background-color,border-color] duration-200 dark:border-gray-800 dark:bg-neutral-950/80">
-							<div className="flex items-center gap-3">
-								<h1 className="text-base font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
-									Loading Workspace
-								</h1>
-							</div>
-						</div>
-					</main>
+					<main className="web-app-main bg-stone-50 dark:bg-neutral-950" />
 				</div>
 			);
 		}
@@ -174,18 +163,8 @@ export default function LayoutContent({
 					userEmail={userEmail}
 				/>
 				<main className="web-app-main">
-					<div className="border-b border-gray-200/70 bg-white/80 px-4 py-3 backdrop-blur-sm transition-[background-color,border-color] duration-200 dark:border-gray-800 dark:bg-neutral-950/80">
-						<div className="mx-auto flex w-full max-w-[1380px] items-center justify-between gap-4">
-							<div className="flex min-w-0 items-center gap-3">
-								<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
-								<h1 className="truncate text-base font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
-									{capitalizedTitle}
-								</h1>
-							</div>
-						</div>
-					</div>
+					<SidebarTrigger className="fixed top-4 left-4 z-30 border border-gray-200/80 bg-white/90 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] backdrop-blur-sm md:hidden dark:border-gray-800 dark:bg-neutral-950/90 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]" />
 
-					{/* Page content */}
 					<div className="web-app-scroll">{children}</div>
 				</main>
 			</div>

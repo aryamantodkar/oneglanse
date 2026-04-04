@@ -27,7 +27,7 @@ function StatCard({
 		: [];
 
 	return (
-		<div className="ui-list-item group flex min-h-[120px] min-w-0 flex-col justify-between rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 dark:border-gray-800 dark:bg-black">
+		<div className="ui-list-item group flex min-h-[120px] min-w-0 flex-col justify-between rounded-[24px] border border-gray-100/80 bg-white p-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] transition hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:bg-neutral-900">
 			<div className="flex items-center gap-2">
 				<Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:scale-110" />
 				<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">

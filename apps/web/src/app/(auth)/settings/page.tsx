@@ -323,12 +323,7 @@ export default function SettingsPage() {
 						Account
 					</h2>
 				</div>
-				<div
-					className={cn(
-						formPanelClassName,
-						"border border-red-200/80 p-5 sm:p-6 dark:border-red-900/50",
-					)}
-				>
+				<div className={cn(formPanelClassName, "p-5 sm:p-6")}>
 					<div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
 						<div>
 							<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -340,10 +335,10 @@ export default function SettingsPage() {
 							</p>
 						</div>
 						<Button
-							variant="outline"
+							variant="destructive"
 							className={cn(
-								formSecondaryButtonClassName,
-								"border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-500 dark:hover:bg-red-950/30",
+								formPrimaryButtonClassName,
+								"h-10 w-auto shrink-0 self-start px-4 bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:text-white dark:hover:bg-red-500 sm:self-auto",
 							)}
 							onClick={() => {
 								setDeleteConfirmEmail("");

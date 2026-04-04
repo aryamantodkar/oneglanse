@@ -14,7 +14,7 @@ export function TopSources({
 	totalCitations?: number;
 }) {
 	return (
-		<Card className="flex h-full min-h-[500px] min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+		<Card className="flex h-full min-h-[500px] min-w-0 flex-col p-5">
 			<div>
 				<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 					Top Sources
@@ -44,7 +44,7 @@ export function TopSources({
 						return (
 							<div
 								key={source.domain}
-								className="ui-list-item group flex min-w-0 flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300 sm:flex-row sm:items-start sm:justify-between dark:border-gray-800 dark:bg-gray-900"
+								className="ui-list-item group flex min-w-0 flex-col gap-3 rounded-[22px] border border-gray-100/80 bg-white px-4 py-3 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:border-gray-200 hover:bg-stone-50 sm:flex-row sm:items-start sm:justify-between dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:bg-neutral-900"
 							>
 								<div className="flex min-w-0 flex-1 items-start gap-3">
 									<div className="flex min-w-0 flex-1 items-start gap-3">
@@ -66,16 +66,16 @@ export function TopSources({
 											</p>
 
 											<div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-												<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:bg-neutral-800">
+												<span className="rounded-full border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:border-gray-800 dark:bg-neutral-900">
 													{formatCitationLabel(source.citationCount)}
 												</span>
-												<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:bg-neutral-800">
+												<span className="rounded-full border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:border-gray-800 dark:bg-neutral-900">
 													{source.models.size} models
 												</span>
-												<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:bg-neutral-800">
+												<span className="rounded-full border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:border-gray-800 dark:bg-neutral-900">
 													{source.uniqueRecords.size} responses
 												</span>
-												<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:bg-neutral-800">
+												<span className="rounded-full border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:border-gray-800 dark:bg-neutral-900">
 													#{idx + 1}
 												</span>
 											</div>

@@ -5,9 +5,9 @@ import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
 import {
+	type AppMode,
 	canAccessScheduleInMode,
 	isInteractiveAuthAllowedInMode,
-	type AppMode,
 } from "@oneglanse/types";
 import {
 	DropdownMenu,
@@ -183,13 +183,13 @@ export function AppSidebar({
 
 	return (
 		<>
-			<Sidebar className="flex h-full min-h-full flex-col self-stretch border-r border-gray-200/70 bg-white dark:border-gray-800 dark:bg-gray-950">
+			<Sidebar className="flex h-full min-h-full flex-col self-stretch bg-white dark:bg-neutral-950">
 				<SidebarHeader className="p-3">
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<SidebarMenuButton className="h-10 rounded-xl border border-gray-200/80 bg-gray-50/60 px-3 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/80 dark:hover:bg-gray-900">
+									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-stone-50 px-4 shadow-none hover:bg-stone-100 dark:border-gray-800 dark:bg-neutral-900 dark:hover:bg-neutral-800">
 										<div className="flex items-center gap-2 min-w-0">
 											<img
 												src={activeWorkspaceFavicon}
@@ -206,7 +206,7 @@ export function AppSidebar({
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
-									className="min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+									className="min-w-0 rounded-[24px] border-gray-200/80 p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
@@ -289,7 +289,7 @@ export function AppSidebar({
 										<SidebarMenuButton
 											asChild
 											isActive={pathname === item.url.split("?")[0]}
-											className="h-10 rounded-xl px-3 text-[13px] font-medium"
+											className="h-11 rounded-[24px] px-4 text-[13px] font-medium"
 										>
 											<Link href={item.url}>
 												<item.icon />
@@ -312,7 +312,7 @@ export function AppSidebar({
 										<SidebarMenuButton
 											asChild
 											isActive={pathname === item.url.split("?")[0]}
-											className="h-10 rounded-xl px-3 text-[13px] font-medium"
+											className="h-11 rounded-[24px] px-4 text-[13px] font-medium"
 										>
 											<Link href={item.url}>
 												<item.icon />
@@ -331,7 +331,7 @@ export function AppSidebar({
 						<SidebarMenuItem>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<SidebarMenuButton className="h-10 rounded-xl border border-gray-200/80 bg-gray-50/60 px-3 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/80 dark:hover:bg-gray-900">
+									<SidebarMenuButton className="h-11 rounded-[24px] border border-gray-200/80 bg-stone-50 px-4 shadow-none hover:bg-stone-100 dark:border-gray-800 dark:bg-neutral-900 dark:hover:bg-neutral-800">
 										<User2 />
 										<span className="truncate">
 											{userName || userEmail || "Account"}
@@ -342,7 +342,7 @@ export function AppSidebar({
 								<DropdownMenuContent
 									side="top"
 									sideOffset={8}
-									className="min-w-0 rounded-xl border-gray-200 p-1.5 shadow-xl dark:border-gray-800"
+									className="min-w-0 rounded-[24px] border-gray-200/80 p-1.5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",

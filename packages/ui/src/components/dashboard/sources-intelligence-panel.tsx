@@ -95,7 +95,7 @@ function FaviconWithFallback({
 
 	return (
 		<div
-			className={`${sizeClasses} flex items-center justify-center rounded-sm bg-gray-100 dark:bg-gray-800`}
+			className={`${sizeClasses} flex items-center justify-center rounded-sm border border-gray-200/70 bg-stone-100 dark:border-gray-800 dark:bg-neutral-900`}
 		>
 			<Globe2
 				className={`${iconSizeClasses} text-gray-500 dark:text-gray-400`}
@@ -118,7 +118,7 @@ function MetricCard({
 	badgeFavicon?: string | null;
 }): React.JSX.Element {
 	return (
-		<div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-black">
+		<div className="rounded-[24px] border border-gray-100/80 bg-white p-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
 			<div className="flex items-center gap-2">
 				<Icon className="h-3.5 w-3.5 text-muted-foreground" />
 				<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -218,7 +218,7 @@ export function SourcesIntelligencePanel({
 				/>
 			</div>
 
-			<div className="mt-5 flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800 sm:gap-3">
+			<div className="mt-5 flex flex-wrap gap-2 border-b border-gray-200/80 dark:border-gray-800 sm:gap-3">
 				<button
 					className={cn(
 						"px-3 py-2 text-sm font-semibold transition-colors",
@@ -246,8 +246,8 @@ export function SourcesIntelligencePanel({
 			</div>
 
 			{!hasData ? (
-				<div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center dark:border-gray-800 dark:bg-black">
-					<div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+				<div className="web-empty-state mt-4 max-w-none py-16">
+					<div className="web-empty-state-icon">
 						<SearchX className="h-5 w-5 text-gray-400" />
 					</div>
 					<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -256,7 +256,7 @@ export function SourcesIntelligencePanel({
 					<p className="mt-1 text-xs text-muted-foreground">{emptySubtitle}</p>
 				</div>
 			) : activeTab === "domains" ? (
-				<div className="mt-4 overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-black">
+				<div className="mt-4 overflow-x-auto">
 					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
@@ -317,7 +317,7 @@ export function SourcesIntelligencePanel({
 							{sortedDomainRows.map((domain, idx) => (
 								<TableRow
 									key={domain.domain}
-									className="border-b border-gray-100 last:border-0 hover:bg-gray-50/80 dark:border-gray-800 dark:hover:bg-neutral-900/60"
+									className="last:border-0 hover:bg-gray-50/80 dark:hover:bg-neutral-900/60"
 								>
 									<TableCell className="px-4 py-5 text-xs text-muted-foreground">
 										{idx + 1}
@@ -363,7 +363,7 @@ export function SourcesIntelligencePanel({
 					</Table>
 				</div>
 			) : (
-				<div className="mt-4 overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-black">
+				<div className="mt-4 overflow-x-auto">
 					<Table className="w-full table-fixed">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
@@ -381,7 +381,7 @@ export function SourcesIntelligencePanel({
 								return (
 									<Fragment key={group.domain}>
 										<TableRow
-											className="cursor-pointer border-b border-gray-100 bg-white hover:bg-gray-50/60 dark:border-gray-800 dark:bg-black dark:hover:bg-neutral-900/60"
+											className="cursor-pointer bg-white hover:bg-gray-50/60 dark:bg-neutral-950 dark:hover:bg-neutral-900/60"
 											onClick={() =>
 												setOpenDomain(domainOpen ? null : group.domain)
 											}
@@ -424,7 +424,7 @@ export function SourcesIntelligencePanel({
 												return (
 													<Fragment key={source.url}>
 														<TableRow
-															className="cursor-pointer border-b border-gray-100 bg-white hover:bg-gray-50/60 dark:border-gray-800 dark:bg-black dark:hover:bg-neutral-900/60"
+															className="cursor-pointer bg-white hover:bg-gray-50/60 dark:bg-neutral-950 dark:hover:bg-neutral-900/60"
 															onClick={() =>
 																setOpenUrl(urlOpen ? null : source.url)
 															}
@@ -445,7 +445,7 @@ export function SourcesIntelligencePanel({
 																			{source.title || "Untitled source"}
 																		</p>
 																		<div className="mt-1.5 flex items-center gap-2">
-																			<span className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-700 dark:bg-black dark:text-gray-300">
+																			<span className="rounded-xl border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-300">
 																				{getUrlPath(source.url)}
 																			</span>
 																			<a
@@ -484,10 +484,10 @@ export function SourcesIntelligencePanel({
 															source.excerpts.map((excerpt, idx) => (
 																<TableRow
 																	key={`${source.url}-${idx}`}
-																	className="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black"
+																	className="bg-white dark:bg-neutral-950"
 																>
 																	<TableCell className="px-4 py-5 pl-20">
-																		<div className="max-w-full rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50/60 p-4 dark:border-gray-800 dark:from-black dark:to-neutral-950">
+																		<div className="max-w-full rounded-[22px] border border-gray-100/80 bg-stone-50 p-4 dark:border-gray-800 dark:bg-neutral-900">
 																			<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
 																				{excerpt.citedText?.trim()
 																					? cleanCitedText(excerpt.citedText)
@@ -497,7 +497,7 @@ export function SourcesIntelligencePanel({
 																	</TableCell>
 																	<TableCell className="px-4 py-5 text-right">
 																		{excerpt.modelProvider ? (
-																			<div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground dark:border-gray-700 dark:bg-black">
+																			<div className="inline-flex items-center gap-1 rounded-full border border-gray-200/70 bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground dark:border-gray-800 dark:bg-neutral-950">
 																				<img
 																					src={getModelFavicon(
 																						excerpt.modelProvider,

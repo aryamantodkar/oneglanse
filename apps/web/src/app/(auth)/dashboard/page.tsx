@@ -99,8 +99,8 @@ export default function Dashboard() {
 	if (analysedPromptError || promptSourcesError) {
 		return (
 			<div className="flex min-h-[60vh] items-center justify-center px-4">
-				<div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center dark:border-gray-800 dark:bg-gray-900">
-					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
+				<div className="web-empty-state">
+					<div className="web-empty-state-icon border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
 						<AlertTriangle className="h-5 w-5 text-amber-500" />
 					</div>
 					<h2 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
@@ -124,7 +124,7 @@ export default function Dashboard() {
 	if (!hasAnyAnalysisInWorkspace) return <NoAnalysisState />;
 
 	return (
-		<div className="web-page-wide dark:bg-black">
+		<div className="web-page-wide">
 			<div className="web-page-wide-inner">
 				<div className="ui-stagger space-y-6">
 					{/* Filters */}
@@ -168,7 +168,7 @@ export default function Dashboard() {
 					/>
 
 					{!hasFilteredAnalysis && (
-						<div className="flex items-start gap-2 rounded-xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-4 py-3 text-sm text-muted-foreground dark:border-gray-800 dark:from-gray-900/70 dark:to-gray-900">
+						<div className="flex items-start gap-2 rounded-[24px] border border-gray-100/80 bg-white px-4 py-4 text-sm text-muted-foreground shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
 							<Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 							<span>
 								No analysis data for this filter selection. Try another model or

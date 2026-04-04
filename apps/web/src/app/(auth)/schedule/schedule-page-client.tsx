@@ -1,8 +1,13 @@
 "use client";
 
-import { api } from "@/trpc/react";
+import {
+	formPanelClassName,
+	formSecondaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { api } from "@/trpc/react";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
+import { cn } from "@oneglanse/utils";
 import { Calendar, Check, Clock, Loader2, PlayCircle, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -91,6 +96,13 @@ function getScheduleOptions() {
 }
 
 const SCHEDULE_OPTIONS = getScheduleOptions();
+const TIMING_SKELETON_KEYS = ["timing-a", "timing-b"] as const;
+const SCHEDULE_SKELETON_KEYS = [
+	"schedule-a",
+	"schedule-b",
+	"schedule-c",
+	"schedule-d",
+] as const;
 
 function getScheduleLabel(cron: string | null): string {
 	if (!cron) return "Not scheduled";
@@ -146,7 +158,7 @@ export default function SchedulePageClient() {
 			cronTimingQuery.refetch().catch(() => {});
 			toast.success("Run completed successfully.");
 		}
-	}, [jobStatusQuery.data?.status, isRunning, runJobId]);
+	}, [cronTimingQuery, isRunning, jobStatusQuery.data?.status, runJobId]);
 
 	// Cleanup on unmount
 	useEffect(() => {
@@ -229,8 +241,10 @@ export default function SchedulePageClient() {
 
 	if (!workspaceId) {
 		return (
-			<div className="flex h-[60vh] items-center justify-center">
-				<p className="text-sm text-gray-500">No workspace selected.</p>
+			<div className="flex min-h-[60vh] items-center justify-center px-4">
+				<div className="web-empty-state">
+					<p className="text-sm text-gray-500">No workspace selected.</p>
+				</div>
 			</div>
 		);
 	}
@@ -252,11 +266,8 @@ export default function SchedulePageClient() {
 
 			{cronTimingQuery.isLoading ? (
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-					{Array.from({ length: 2 }).map((_, idx) => (
-						<div
-							key={`timing-skeleton-${idx}`}
-							className="rounded-lg border border-gray-200 px-4 py-3"
-						>
+					{TIMING_SKELETON_KEYS.map((key) => (
+						<div key={key} className={cn(formPanelClassName, "px-4 py-4")}>
 							<Skeleton className="mb-2 h-4 w-24" />
 							<Skeleton className="h-6 w-32" />
 						</div>
@@ -264,7 +275,7 @@ export default function SchedulePageClient() {
 				</div>
 			) : (
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<div className="rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-800">
+					<div className={cn(formPanelClassName, "px-4 py-4")}>
 						<div className="mb-1 flex items-center gap-2">
 							<Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
 							<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -278,7 +289,7 @@ export default function SchedulePageClient() {
 						</p>
 					</div>
 
-					<div className="rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-800">
+					<div className={cn(formPanelClassName, "px-4 py-4")}>
 						<div className="mb-1 flex items-center gap-2">
 							<PlayCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
 							<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -297,10 +308,13 @@ export default function SchedulePageClient() {
 			{scheduleQuery.isLoading ? (
 				<div className="space-y-3">
 					<Skeleton className="h-8 w-48" />
-					{Array.from({ length: 4 }).map((_, idx) => (
+					{SCHEDULE_SKELETON_KEYS.map((key) => (
 						<div
-							key={`schedule-skeleton-${idx}`}
-							className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
+							key={key}
+							className={cn(
+								formPanelClassName,
+								"flex items-center justify-between px-4 py-4",
+							)}
 						>
 							<div className="space-y-2">
 								<Skeleton className="h-4 w-36" />
@@ -313,7 +327,7 @@ export default function SchedulePageClient() {
 			) : (
 				<>
 					{currentSchedule && (
-						<div className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/20 sm:flex-row sm:items-center sm:justify-between">
+						<div className="flex flex-col gap-3 rounded-[24px] border border-blue-200/70 bg-white px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-blue-900/60 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
 							<div className="flex min-w-0 items-center gap-2">
 								<Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
 								<span className="break-words text-sm font-medium text-blue-900 dark:text-blue-100">
@@ -325,7 +339,10 @@ export default function SchedulePageClient() {
 								size="sm"
 								onClick={handleDisable}
 								disabled={saving}
-								className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/20"
+								className={cn(
+									formSecondaryButtonClassName,
+									"h-10 w-auto border-red-200/80 bg-red-50/80 px-4 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50",
+								)}
 							>
 								{saving ? (
 									<Loader2 className="h-4 w-4 animate-spin" />
@@ -344,11 +361,12 @@ export default function SchedulePageClient() {
 							{SCHEDULE_OPTIONS.map((option) => (
 								<button
 									key={option.value}
+									type="button"
 									onClick={() => setSelected(option.value)}
-									className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors ${
+									className={`flex w-full items-center justify-between ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
 										selected === option.value
 											? "border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/20"
-											: "border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700"
+											: "border-gray-100/80 hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-neutral-900"
 									}`}
 								>
 									<div>
@@ -381,7 +399,12 @@ export default function SchedulePageClient() {
 						</div>
 					)}
 
-					<div className="relative overflow-hidden rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-4 shadow-sm ring-1 ring-gray-200/70 dark:border-gray-700 dark:bg-gray-900/70 dark:ring-gray-800/80">
+					<div
+						className={cn(
+							formPanelClassName,
+							"relative overflow-hidden px-4 py-4",
+						)}
+					>
 						<div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-400/70 to-transparent dark:via-gray-500/60" />
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="min-w-0">
