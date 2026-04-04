@@ -300,12 +300,7 @@ export default function PeoplePage() {
 				</div>
 				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{/* Brand Workspace */}
-					<div
-						className={cn(
-							formPanelClassName,
-							"flex h-full flex-col p-5 sm:p-6",
-						)}
-					>
+					<div className={cn(formPanelClassName, "flex h-full flex-col p-5")}>
 						<div className="mb-3 flex items-center justify-between gap-2">
 							<div className="flex items-center gap-2">
 								<Users className="h-4 w-4 text-gray-500" />
@@ -339,7 +334,7 @@ export default function PeoplePage() {
 								)}
 							</Button>
 						</div>
-						<div className="space-y-2.5">
+						<div className="space-y-2">
 							<Label
 								htmlFor="people-workspace-name"
 								className={formLabelClassName}
@@ -355,7 +350,7 @@ export default function PeoplePage() {
 								className={formFieldClassName}
 							/>
 						</div>
-						<div className="mt-4 space-y-2.5">
+						<div className="mt-3 space-y-2">
 							<Label
 								htmlFor="people-workspace-domain"
 								className={formLabelClassName}
@@ -383,7 +378,7 @@ export default function PeoplePage() {
 								</div>
 							)}
 						</div>
-						<div className="mt-auto flex flex-col gap-2 pt-4 sm:flex-row sm:items-center sm:justify-end">
+						<div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-end">
 							{isEditingWorkspace && (
 								<>
 									<Button
@@ -423,12 +418,7 @@ export default function PeoplePage() {
 					</div>
 
 					{/* Organization */}
-					<div
-						className={cn(
-							formPanelClassName,
-							"flex h-full flex-col p-5 sm:p-6",
-						)}
-					>
+					<div className={cn(formPanelClassName, "flex h-full flex-col p-5")}>
 						<div className="mb-3 flex items-center justify-between gap-2">
 							<div className="flex items-center gap-2">
 								<Building2 className="h-4 w-4 text-gray-500" />
@@ -461,7 +451,7 @@ export default function PeoplePage() {
 								)}
 							</Button>
 						</div>
-						<div className="space-y-2.5">
+						<div className="space-y-2">
 							<Label htmlFor="people-org-name" className={formLabelClassName}>
 								Organization Name
 							</Label>
@@ -477,7 +467,7 @@ export default function PeoplePage() {
 								Only workspace owners can rename the organization.
 							</p>
 						</div>
-						<div className="mt-auto flex flex-col gap-2 pt-4 sm:flex-row sm:items-center sm:justify-end">
+						<div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-end">
 							{isEditingOrg && (
 								<>
 									<Button
@@ -523,7 +513,7 @@ export default function PeoplePage() {
 						Invite with a Code
 					</h2>
 				</div>
-				<div className={cn(formPanelClassName, "space-y-4 p-5 sm:p-6")}>
+				<div className={cn(formPanelClassName, "space-y-3 p-5")}>
 					<div>
 						<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 							Workspace Join Code

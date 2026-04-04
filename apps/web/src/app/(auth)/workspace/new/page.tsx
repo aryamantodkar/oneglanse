@@ -128,9 +128,9 @@ export default function NewWorkspace() {
 	};
 
 	return (
-		<div className="flex min-h-svh min-w-0 items-center justify-center bg-stone-50 px-4 py-6 dark:bg-neutral-950 sm:px-6 sm:py-8">
-			<div className="ui-stagger w-full max-w-md space-y-6">
-				<div className="space-y-3 text-center">
+		<div className="flex min-h-full min-w-0 items-center justify-center bg-stone-50 px-4 py-3 dark:bg-neutral-950 sm:px-6 sm:py-5">
+			<div className="ui-stagger w-full max-w-md space-y-3.5">
+				<div className="space-y-1.5 text-center">
 					<h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-gray-950 dark:text-gray-50">
 						Create your workspace
 					</h1>
@@ -140,7 +140,7 @@ export default function NewWorkspace() {
 					</p>
 				</div>
 				<Card className={formSurfaceClassName}>
-					<CardHeader className="space-y-2 px-6 pt-6 pb-0 sm:px-7 sm:pt-8">
+					<CardHeader className="space-y-1.5 px-5 pt-5 pb-0 sm:px-6 sm:pt-6">
 						<CardTitle className="text-[1.55rem] tracking-[-0.04em]">
 							Brand Workspace Setup
 						</CardTitle>
@@ -148,8 +148,8 @@ export default function NewWorkspace() {
 							Set up your organization and brand tracking workspace.
 						</CardDescription>
 					</CardHeader>
-					<CardContent className="space-y-5 px-6 py-6 sm:px-7 sm:py-7">
-						<div className="space-y-2.5">
+					<CardContent className="space-y-3.5 px-5 py-5 sm:px-6 sm:py-6">
+						<div className="space-y-1.5">
 							<Label htmlFor="organization-name" className={formLabelClassName}>
 								Organization Name
 							</Label>
@@ -167,7 +167,7 @@ export default function NewWorkspace() {
 							/>
 						</div>
 
-						<div className="space-y-2.5">
+						<div className="space-y-1.5">
 							<Label htmlFor="workspace-name" className={formLabelClassName}>
 								Brand Name
 							</Label>
@@ -184,7 +184,7 @@ export default function NewWorkspace() {
 							</p>
 						</div>
 
-						<div className="space-y-2.5">
+						<div className="space-y-1.5">
 							<Label htmlFor="workspace-slug" className={formLabelClassName}>
 								Workspace Slug
 							</Label>
@@ -203,7 +203,7 @@ export default function NewWorkspace() {
 							/>
 						</div>
 
-						<div className="space-y-2.5">
+						<div className="space-y-1.5">
 							<Label htmlFor="workspace-domain" className={formLabelClassName}>
 								Brand Domain
 							</Label>
@@ -227,8 +227,8 @@ export default function NewWorkspace() {
 						</div>
 					</CardContent>
 
-					<CardFooter className="px-6 pb-6 sm:px-7 sm:pb-8">
-						<div className="w-full space-y-3">
+					<CardFooter className="px-5 pb-5 sm:px-6 sm:pb-6">
+						<div className="w-full space-y-2">
 							<Button
 								onClick={handleComplete}
 								disabled={

@@ -107,8 +107,8 @@ export default function LayoutContent({
 
 	if (shouldShowConnectionGate) {
 		return (
-			<main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-6 py-14 sm:px-8">
-				<div className="mb-12 max-w-3xl">
+			<main className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+				<div className="mb-10 max-w-3xl">
 					<h1 className="text-[2rem] font-semibold tracking-[-0.03em] text-gray-900 dark:text-gray-100">
 						{canLaunchProvidersLocally
 							? "Connect a provider"
@@ -132,10 +132,10 @@ export default function LayoutContent({
 		if (isResolvingWorkspaceFromUrl) {
 			return (
 				<div className="web-app-shell">
-					<main className="web-app-main">
-						<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
+					<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
+						<div className="flex items-center justify-between border-b border-gray-200/70 bg-white/80 px-4 py-3 backdrop-blur-sm transition-[background-color,border-color] duration-200 dark:border-gray-800 dark:bg-neutral-950/80">
 							<div className="flex items-center gap-3">
-								<h1 className="text-sm font-semibold text-gray-900">
+								<h1 className="text-base font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
 									Loading Workspace
 								</h1>
 							</div>
@@ -147,15 +147,8 @@ export default function LayoutContent({
 
 		return (
 			<div className="web-app-shell">
-				<main className="web-app-main">
-					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
-						<div className="flex items-center gap-3">
-							<h1 className="text-sm font-semibold text-gray-900">
-								Workspace Setup
-							</h1>
-						</div>
-					</div>
-					<div className="web-app-scroll px-4 sm:px-6">{children}</div>
+				<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
+					<div className="web-app-scroll">{children}</div>
 				</main>
 			</div>
 		);
@@ -181,17 +174,19 @@ export default function LayoutContent({
 					userEmail={userEmail}
 				/>
 				<main className="web-app-main">
-					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
-						<div className="flex items-center gap-3">
-							<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
-							<h1 className="text-sm font-semibold text-gray-900">
-								{capitalizedTitle}
-							</h1>
+					<div className="border-b border-gray-200/70 bg-white/80 px-4 py-3 backdrop-blur-sm transition-[background-color,border-color] duration-200 dark:border-gray-800 dark:bg-neutral-950/80">
+						<div className="mx-auto flex w-full max-w-[1380px] items-center justify-between gap-4">
+							<div className="flex min-w-0 items-center gap-3">
+								<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
+								<h1 className="truncate text-base font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
+									{capitalizedTitle}
+								</h1>
+							</div>
 						</div>
 					</div>
 
 					{/* Page content */}
-					<div className="web-app-scroll px-4 sm:px-6">{children}</div>
+					<div className="web-app-scroll">{children}</div>
 				</main>
 			</div>
 		</WorkspaceProvider>

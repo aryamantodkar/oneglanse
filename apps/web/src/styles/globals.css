@@ -167,29 +167,29 @@
 
 @layer components {
 	.web-app-shell {
-		@apply flex min-h-svh w-full min-w-0 overflow-hidden bg-background;
+		@apply flex min-h-svh w-full min-w-0 overflow-hidden bg-stone-50 dark:bg-neutral-950;
 	}
 
 	.web-app-main {
-		@apply flex min-h-svh min-w-0 flex-1 flex-col overflow-hidden bg-background;
+		@apply flex min-h-svh min-w-0 flex-1 flex-col overflow-hidden bg-stone-50 dark:bg-neutral-950;
 	}
 
 	.web-app-scroll {
-		@apply flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden;
+		@apply flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-stone-50 dark:bg-neutral-950;
 		overscroll-behavior-y: contain;
 		scrollbar-gutter: stable both-edges;
 	}
 
 	.web-page-wide {
-		@apply min-h-full min-w-0 overflow-x-hidden;
+		@apply min-h-full min-w-0 overflow-x-hidden bg-stone-50 dark:bg-neutral-950;
 	}
 
 	.web-page-wide-inner {
-		@apply mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 xl:max-w-[1600px];
+		@apply mx-auto w-full min-w-0 max-w-[1380px] px-4 py-3 sm:px-6 sm:py-5 lg:px-8;
 	}
 
 	.web-page-panel {
-		@apply mx-auto min-h-full w-full min-w-0 max-w-full space-y-8 py-6;
+		@apply mx-auto min-h-full w-full min-w-0 max-w-[1100px] space-y-4 px-4 py-3 sm:px-6 sm:py-5;
 	}
 
 	.web-page-panel > * {
@@ -198,6 +198,6 @@
 	}
 
 	.web-centered-page {
-		@apply flex min-h-full min-w-0 items-center justify-center overflow-x-hidden bg-background p-4;
+		@apply flex min-h-full min-w-0 items-center justify-center overflow-x-hidden bg-stone-50 px-4 py-3 dark:bg-neutral-950 sm:px-6 sm:py-5;
 	}
 }

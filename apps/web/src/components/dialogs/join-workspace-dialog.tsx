@@ -110,8 +110,8 @@ export function JoinWorkspaceDialog({
 				</Button>
 			}
 		>
-			<div className="space-y-5">
-				<div className="space-y-2.5">
+			<div className="space-y-4">
+				<div className="space-y-2">
 					<Label htmlFor="join-code" className={formLabelClassName}>
 						Workspace Code
 					</Label>

@@ -28,8 +28,8 @@ export function PasswordField<T extends FieldValues>({
 	autoComplete = "current-password",
 }: PasswordFieldProps<T>): React.JSX.Element {
 	return (
-		<div className="grid gap-3">
-			<div className="flex flex-col gap-2">
+		<div className="grid gap-2.5">
+			<div className="flex flex-col gap-1.5">
 				<FormField
 					control={control}
 					name={name}
