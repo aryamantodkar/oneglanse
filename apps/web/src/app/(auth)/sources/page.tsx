@@ -5,6 +5,8 @@ import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import type { GroupedSource, SourceGroupResult } from "@oneglanse/types";
 import {
+	Button,
+	EmptyStatePanel,
 	ProviderModelSelect,
 	SectionHeading,
 	Skeleton,
@@ -12,6 +14,8 @@ import {
 	type SourcePanelDomainRow,
 	type SourcePanelMetrics,
 	SourcesIntelligencePanel,
+	TemporaryIssueState,
+	WorkspaceRequiredState,
 } from "@oneglanse/ui";
 import {
 	cleanCitedText,
@@ -21,6 +25,7 @@ import {
 	joinCitedTexts,
 } from "@oneglanse/utils";
 import { AlertTriangle, SearchX } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
 
@@ -167,19 +172,11 @@ export default function SourcesPage(): React.JSX.Element {
 
 	if (!workspaceId) {
 		return (
-			<div className="web-centered-state">
-				<div className="web-empty-state">
-					<div className="web-empty-state-icon">
-						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-					</div>
-					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-						Select a workspace
-					</h2>
-					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-						Choose a workspace from the sidebar to view source intelligence.
-					</p>
-				</div>
-			</div>
+			<WorkspaceRequiredState
+				icon={SearchX}
+				title="Pick a Workspace"
+				description="Open a workspace to inspect source influence."
+			/>
 		);
 	}
 
@@ -201,38 +198,42 @@ export default function SourcesPage(): React.JSX.Element {
 
 	if (error) {
 		return (
-			<div className="web-centered-state">
-				<div className="web-empty-state">
-					<div className="web-empty-state-icon border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20">
-						<AlertTriangle className="h-5 w-5 text-amber-500" />
-					</div>
-					<h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-						Unable to load sources
-					</h2>
-					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-						We ran into an issue loading your source data. Please try again in a
-						moment.
-					</p>
-				</div>
-			</div>
+			<TemporaryIssueState
+				icon={AlertTriangle}
+				title="Sources Are Unavailable"
+				description="We couldn’t load citation data right now."
+			/>
 		);
 	}
 
 	if (!sourceStats) {
 		return (
-			<div className="web-centered-state">
-				<div className="web-empty-state">
-					<div className="web-empty-state-icon">
-						<SearchX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-					</div>
-					<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-						No prompt responses yet
-					</p>
-					<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-						Run prompts first, then source intelligence will appear here.
-					</p>
-				</div>
-			</div>
+			<EmptyStatePanel
+				title="See Who Shapes the Answer"
+				description="Run prompts to reveal which domains and URLs AI models keep citing."
+				examplesLabel="Source signals you'll uncover"
+				examples={["techradar.com", "g2.com", "hubspot.com"]}
+				action={
+					<Button asChild>
+						<Link href={`/prompts?workspace=${workspaceId}`}>Run prompts</Link>
+					</Button>
+				}
+			/>
+		);
+	}
+
+	if (displayedSources.length === 0) {
+		return (
+			<EmptyStatePanel
+				title="Source Patterns Appear Here"
+				description="When source data is available, this page shows the domains, URLs, and cited text shaping model answers."
+				examplesLabel="What you'll see here"
+				examples={[
+					"Top cited domains",
+					"Most referenced URLs",
+					"Cited text by provider",
+				]}
+			/>
 		);
 	}
 

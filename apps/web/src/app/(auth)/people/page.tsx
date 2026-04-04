@@ -12,6 +12,7 @@ import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import {
 	Button,
+	EmptyStatePanel,
 	Input,
 	Label,
 	Select,
@@ -598,6 +599,7 @@ export default function PeoplePage() {
 
 				{/* Add member form */}
 				<div
+					id="invite-member-form"
 					className={cn(
 						formPanelClassName,
 						"mb-4 grid gap-3 p-5 md:grid-cols-[minmax(0,1fr)_10rem_10rem] md:items-end sm:p-6",
@@ -654,6 +656,29 @@ export default function PeoplePage() {
 							</div>
 						))}
 					</div>
+				) : wsMembers.length === 0 ? (
+					<div className={cn(formPanelClassName, "px-5 py-5 sm:px-6 sm:py-6")}>
+						<EmptyStatePanel
+							icon={Users}
+							eyebrow="First Teammate"
+							title="Invite Your First Teammate"
+							description="Share prompts, schedules, and analysis in one workspace."
+							action={
+								<Button
+									variant="outline"
+									onClick={() =>
+										document
+											.getElementById("invite-member-form")
+											?.scrollIntoView({ behavior: "smooth", block: "start" })
+									}
+								>
+									Invite teammate
+								</Button>
+							}
+							className="min-h-0"
+							contentClassName="max-w-none px-0 py-0 text-left shadow-none"
+						/>
+					</div>
 				) : (
 					<div className="overflow-x-auto">
 						<Table className="min-w-[620px] lg:min-w-[680px]">
@@ -666,48 +691,37 @@ export default function PeoplePage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{wsMembers.length === 0 ? (
-									<TableRow>
-										<TableCell
-											colSpan={4}
-											className="py-8 text-center text-sm text-gray-500"
-										>
-											No workspace members yet.
+								{wsMembers.map((member) => (
+									<TableRow key={member.memberId}>
+										<TableCell className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+											{member.userName}
+										</TableCell>
+										<TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+											{member.userEmail}
+										</TableCell>
+										<TableCell className="px-4 py-3">
+											<span
+												className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(member.role)}`}
+											>
+												{member.role}
+											</span>
+										</TableCell>
+										<TableCell className="px-4 py-3">
+											{member.role !== "owner" && (
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={() =>
+														handleWsRemoveMember(member.userId, member.role)
+													}
+													className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											)}
 										</TableCell>
 									</TableRow>
-								) : (
-									wsMembers.map((member) => (
-										<TableRow key={member.memberId}>
-											<TableCell className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-												{member.userName}
-											</TableCell>
-											<TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-												{member.userEmail}
-											</TableCell>
-											<TableCell className="px-4 py-3">
-												<span
-													className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(member.role)}`}
-												>
-													{member.role}
-												</span>
-											</TableCell>
-											<TableCell className="px-4 py-3">
-												{member.role !== "owner" && (
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={() =>
-															handleWsRemoveMember(member.userId, member.role)
-														}
-														className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												)}
-											</TableCell>
-										</TableRow>
-									))
-								)}
+								))}
 							</TableBody>
 						</Table>
 					</div>

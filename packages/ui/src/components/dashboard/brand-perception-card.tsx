@@ -38,8 +38,9 @@ export function BrandPerceptionCard({
 			{!hasData ? (
 				<DashboardEmptyState
 					icon={Info}
-					title="No perception data"
-					description="No brand perception signals are available for the selected filters."
+					title="Model perception will take shape here"
+					description="Once provider responses are analyzed, this card reveals the themes, pricing signals, and differentiators attached to your brand."
+					className="min-h-[220px]"
 				/>
 			) : (
 				<div className="flex min-w-0 flex-1 flex-col gap-3.5">

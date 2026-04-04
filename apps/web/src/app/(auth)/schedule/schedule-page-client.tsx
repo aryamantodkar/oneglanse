@@ -265,7 +265,7 @@ export default function SchedulePageClient() {
 			</div>
 
 			{cronTimingQuery.isLoading ? (
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{TIMING_SKELETON_KEYS.map((key) => (
 						<div key={key} className={cn(formPanelClassName, "px-4 py-4")}>
 							<Skeleton className="mb-2 h-4 w-24" />
@@ -274,7 +274,7 @@ export default function SchedulePageClient() {
 					))}
 				</div>
 			) : (
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					<div className={cn(formPanelClassName, "px-4 py-4")}>
 						<div className="mb-1 flex items-center gap-2">
 							<Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />

@@ -212,7 +212,7 @@ export function AppSidebar({
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
-									className={cn(formToolbarButtonClassName, "min-w-0 p-1.5")}
+									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
@@ -353,7 +353,7 @@ export function AppSidebar({
 								<DropdownMenuContent
 									side="top"
 									sideOffset={8}
-									className={cn(formToolbarButtonClassName, "min-w-0 p-1.5")}
+									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",

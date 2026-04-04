@@ -1,6 +1,11 @@
-import { Skeleton } from "@oneglanse/ui";
-import { BarChart3, Building2, Sparkles } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import {
+	Button,
+	EmptyStatePanel,
+	Skeleton,
+	WorkspaceRequiredState,
+} from "@oneglanse/ui";
+import { Building2 } from "lucide-react";
+import Link from "next/link";
 
 const DASHBOARD_SKELETON_KEYS = [
 	"dashboard-skeleton-a",
@@ -8,32 +13,6 @@ const DASHBOARD_SKELETON_KEYS = [
 	"dashboard-skeleton-c",
 	"dashboard-skeleton-d",
 ] as const;
-
-function CenterState({
-	icon: Icon,
-	title,
-	description,
-}: {
-	icon: LucideIcon;
-	title: string;
-	description: string;
-}) {
-	return (
-		<div className="web-centered-state">
-			<div className="web-empty-state">
-				<div className="web-empty-state-icon">
-					<Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-				</div>
-				<h2 className="mt-5 text-lg font-semibold text-gray-900 dark:text-gray-100">
-					{title}
-				</h2>
-				<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-					{description}
-				</p>
-			</div>
-		</div>
-	);
-}
 
 export function DashboardSkeleton() {
 	return (
@@ -74,30 +53,44 @@ export function DashboardSkeleton() {
 
 export function NoWorkspaceState() {
 	return (
-		<CenterState
+		<WorkspaceRequiredState
 			icon={Building2}
-			title="Select a workspace"
-			description="Choose a workspace from the sidebar to view your AI visibility dashboard."
+			title="Pick a Workspace"
+			description="Open a workspace to see your brand dashboard."
 		/>
 	);
 }
 
-export function EmptyState() {
+export function EmptyState({ workspaceId }: { workspaceId: string }) {
 	return (
-		<CenterState
-			icon={BarChart3}
-			title="No data yet"
-			description="Start tracking your brand's AI visibility by adding prompts and running agents from the Prompts page."
+		<EmptyStatePanel
+			title="Your Visibility Dashboard Starts Here"
+			description="Run your first prompts to unlock rank, presence, sources, and competitor signals."
+			examplesLabel="What this dashboard unlocks"
+			examples={[
+				"Presence rate across prompts",
+				"Average rank across providers",
+				"Top source and top competitor signals",
+			]}
+			action={
+				<Button asChild>
+					<Link href={`/prompts?workspace=${workspaceId}`}>Open Prompts</Link>
+				</Button>
+			}
 		/>
 	);
 }
 
-export function NoAnalysisState() {
+export function NoAnalysisState({ workspaceId }: { workspaceId: string }) {
 	return (
-		<CenterState
-			icon={Sparkles}
-			title="Analysis pending"
-			description="Your responses haven't been analyzed yet. Run analysis from the Prompts page to populate your dashboard."
+		<EmptyStatePanel
+			title="Responses Ready. Insights Next."
+			description="Run analysis to turn responses into dashboard signals."
+			action={
+				<Button asChild>
+					<Link href={`/prompts?workspace=${workspaceId}`}>Go to Prompts</Link>
+				</Button>
+			}
 		/>
 	);
 }

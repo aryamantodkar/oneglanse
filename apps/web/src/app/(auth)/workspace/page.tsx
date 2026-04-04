@@ -78,7 +78,7 @@ export default function WorkspaceGateway() {
 	return (
 		<div className="flex min-h-full min-w-0 items-center justify-center bg-stone-50 px-4 py-3 dark:bg-neutral-950 sm:px-6 sm:py-5">
 			<div className="ui-stagger w-full max-w-4xl space-y-4">
-				<div className="space-y-1.5 text-center">
+				<div className="space-y-1.5 pb-3 text-center sm:pb-4">
 					<h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-gray-950 dark:text-gray-50">
 						Workspace setup
 					</h1>
