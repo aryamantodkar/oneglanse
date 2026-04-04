@@ -60,26 +60,26 @@ function getConnectionStatusLabel(
 
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
 	if (card.status.connected) {
-		return "border-emerald-200/80 bg-[linear-gradient(135deg,rgba(236,253,245,0.96),rgba(255,255,255,0.97))] shadow-[0_22px_48px_-34px_rgba(16,185,129,0.45)] dark:border-emerald-900/50 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.34),rgba(3,7,18,0.94))]";
+		return "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950";
 	}
 
 	if (card.status.connecting) {
-		return "border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.98),rgba(255,255,255,0.97))] shadow-[0_22px_48px_-34px_rgba(245,158,11,0.4)] dark:border-amber-900/50 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.3),rgba(3,7,18,0.94))]";
+		return "border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900";
 	}
 
-	return "border-gray-200/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(248,250,252,0.96))] shadow-[0_22px_48px_-38px_rgba(15,23,42,0.26)] dark:border-gray-800 dark:bg-[linear-gradient(135deg,rgba(17,24,39,0.98),rgba(3,7,18,0.95))]";
+	return "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950";
 }
 
 function getConnectionBadgeClasses(card: ProviderConnectionCard): string {
 	if (card.status.connected) {
-		return "border border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300";
+		return "border border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
 	}
 
 	if (card.status.connecting) {
-		return "border border-amber-200/80 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300";
+		return "border border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200";
 	}
 
-	return "border border-gray-200/80 bg-white/85 text-gray-600 dark:border-gray-800 dark:bg-white/5 dark:text-gray-300";
+	return "border border-gray-200 bg-white text-gray-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400";
 }
 
 function getCardMutationState(args: {
@@ -194,30 +194,30 @@ export function ProviderConnectionsPanel(props: {
 						<div
 							key={card.provider}
 							className={cn(
-								"group overflow-hidden rounded-[30px] border px-6 py-6 transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 sm:px-8 sm:py-7",
+								"group overflow-hidden rounded-2xl border px-4 py-4 transition-[border-color,background-color,box-shadow] duration-200 ease-out hover:border-gray-300 dark:hover:border-gray-700 sm:px-5 sm:py-4.5",
 								getConnectionCardClasses(card),
 							)}
 						>
-							<div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+							<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 								<div className="min-w-0 flex-1">
-									<div className="flex items-center gap-4">
+									<div className="flex items-center gap-3">
 										<img
 											src={getModelFavicon(primaryProvider)}
 											alt={cardTitle}
-											className="h-8 w-8 shrink-0 rounded-md sm:h-9 sm:w-9"
+											className="h-7 w-7 shrink-0 rounded-md sm:h-8 sm:w-8"
 										/>
 
 										<div className="min-w-0">
-											<div className="flex flex-col gap-2">
-												<span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
+											<div className="flex flex-col gap-1">
+												<span className="text-[10px] font-medium uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
 													Provider
 												</span>
-												<p className="truncate text-xl font-semibold tracking-[-0.03em] text-gray-900 dark:text-gray-100">
+												<p className="truncate text-base font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
 													{cardTitle}
 												</p>
 											</div>
 											{status.error ? (
-												<p className="mt-2 text-sm leading-6 text-red-500 dark:text-red-300">
+												<p className="mt-1.5 text-sm leading-5 text-red-500 dark:text-red-300">
 													{status.error}
 												</p>
 											) : null}
@@ -225,11 +225,11 @@ export function ProviderConnectionsPanel(props: {
 									</div>
 								</div>
 
-								<div className="flex items-center gap-2.5 sm:shrink-0">
+								<div className="flex items-center gap-2 sm:shrink-0">
 									{statusLabel ? (
 										<span
 											className={cn(
-												"inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium tracking-[0.03em]",
+												"inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[0.02em]",
 												getConnectionBadgeClasses(card),
 											)}
 										>
@@ -240,7 +240,7 @@ export function ProviderConnectionsPanel(props: {
 										<Button
 											variant="default"
 											size="default"
-											className="h-11 rounded-full px-5 text-sm shadow-none"
+											className="h-9 rounded-full px-4 text-sm shadow-none"
 											onClick={() =>
 												providerActionMutation.mutate({
 													provider: card.provider,
@@ -264,7 +264,7 @@ export function ProviderConnectionsPanel(props: {
 										<Button
 											variant="ghost"
 											size="icon"
-											className="size-11 rounded-full border border-gray-200/80 bg-white/70 text-gray-500 shadow-none hover:border-gray-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+											className="size-9 rounded-full border border-gray-200 bg-white text-gray-500 shadow-none hover:border-gray-300 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900"
 											onClick={() =>
 												providerActionMutation.mutate({
 													provider: card.provider,
@@ -294,11 +294,11 @@ export function ProviderConnectionsPanel(props: {
 			</div>
 
 			{nextHref && hasAtLeastOneConnection ? (
-				<div className="mt-8 flex justify-end">
+				<div className="mt-6 flex justify-end">
 					<Button
 						variant="default"
 						size="default"
-						className="h-12 rounded-full px-6 text-sm shadow-none"
+						className="h-10 rounded-full px-5 text-sm shadow-none"
 						onClick={() => router.push(nextHref)}
 						disabled={isAnyConnectionPending}
 					>

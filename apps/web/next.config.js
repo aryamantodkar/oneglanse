@@ -2,8 +2,8 @@
  * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially useful
  * for Docker builds.
  */
+import path from "node:path";
 import bundleAnalyzer from "@next/bundle-analyzer";
-import path from "path";
 
 const withBundleAnalyzer = bundleAnalyzer({
 	enabled: process.env.ANALYZE === "true",
@@ -25,6 +25,11 @@ const config = {
 		"@oneglanse/services",
 		"@oneglanse/types",
 	],
+	logging: {
+		incomingRequests: {
+			ignore: [/^\/api\//],
+		},
+	},
 	webpack: (config) => {
 		// Ensure webpack follows symlinks for workspace packages
 		config.resolve.symlinks = true;

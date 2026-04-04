@@ -1,12 +1,12 @@
 ---
 title: Environment Variables
-description: Minimal environment reference for local use, self-hosting, auth sync, and optional proxy configuration.
+description: Minimal environment reference for required app settings, auth sync, and proxy configuration.
 ---
 
 # Environment Variables
 
-Most variables already have defaults. The repo is designed so local setup and
-self-hosting work with very little manual configuration.
+The env surface is intentionally small. Runtime tuning is hardcoded in the app,
+not exposed as environment variables.
 
 ## `.env`
 
@@ -16,9 +16,11 @@ These are the variables most users will care about.
 
 - `DATABASE_URL`
 - `CLICKHOUSE_URL`
+- `ONEGLANSE_APP_MODE`
 - `REDIS_HOST`
 - `REDIS_PORT`
 - `REDIS_PASSWORD`
+- `DEBUG_ENABLED`
 
 These already have good local defaults in `.env.example`.
 
@@ -55,20 +57,8 @@ Proxy settings are only used on the VPS runtime path.
 
 ## `apps/agent/.env`
 
-This file is intentionally small.
-
-Most users only need it for browser/runtime overrides:
-
-- `CAMOUFOX_HEADLESS_MODE`
-- `CAMOUFOX_PYTHON_BIN` if automatic local detection picks the wrong interpreter
-- `CAMOUFOX_PIP_SPEC` if you need to override the pinned Python package version
-- `CAMOUFOX_BROWSER_CHANNEL` if you need to override the pinned browser spec
-- `DEBUG_ENABLED`
-
-Local bootstrap defaults are pinned to:
-
-- `CAMOUFOX_PIP_SPEC=cloverlabs-camoufox==0.5.5`
-- `CAMOUFOX_BROWSER_CHANNEL=official/stable/135.0.1-beta.24`
+This file should usually contain only Redis connectivity and any proxy values
+your runtime actually needs.
 
 ## Local Auth Upload
 
@@ -83,7 +73,7 @@ That is cleaner than editing env files just for a one-off auth sync.
 
 ## Variables You Usually Do Not Need to Touch
 
-These are already handled by defaults or Docker wiring:
+These are already handled by defaults, code-level constants, or Docker wiring:
 
 - `AGENT_AUTH_ROOT_DIR`
 - `AGENT_API_HOST`
@@ -95,7 +85,7 @@ These are already handled by defaults or Docker wiring:
 
 ### Local
 
-Edit only when needed:
+Set only:
 
 - `OPENAI_API_KEY`
 - `BETTER_AUTH_SECRET`

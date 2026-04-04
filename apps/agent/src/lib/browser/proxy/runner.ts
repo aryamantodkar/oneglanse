@@ -4,10 +4,12 @@ import {
 	classifyError,
 	toErrorMessage,
 } from "@oneglanse/errors";
-import type {
-	AskPromptResult,
-	PromptPayload,
-	Provider,
+import {
+	type AskPromptResult,
+	type PromptPayload,
+	type Provider,
+	resolveAppMode,
+	shouldUseProxyInMode,
 } from "@oneglanse/types";
 import {
 	createProviderLogger,
@@ -184,6 +186,7 @@ async function runRetryCycle(
 	executor: AttemptExecutor,
 	timeoutMs?: number,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
+	const useProxy = shouldUseProxyInMode(resolveAppMode(process.env.ONEGLANSE_APP_MODE));
 	let nextPayload = currentPayload;
 
 	for (let attempt = 0; attempt < ATTEMPTS_PER_CYCLE; attempt++) {
@@ -232,7 +235,9 @@ async function runRetryCycle(
 
 				if (failureType === "rate_limited") {
 					plog.warn(
-						`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
+						useProxy
+							? `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`
+							: `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early before a fresh browser attempt`,
 					);
 					await invalidateAndEvict(refs, provider);
 					break;
@@ -240,7 +245,9 @@ async function runRetryCycle(
 
 				if (failureType === "connection_error") {
 					plog.warn(
-						`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
+						useProxy
+							? `proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`
+							: `connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early before a fresh browser attempt`,
 					);
 					await invalidateAndEvict(refs, provider);
 					break;
@@ -270,7 +277,9 @@ async function runRetryCycle(
 
 			if (failureType === "rate_limited") {
 				plog.warn(
-					`rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`,
+					useProxy
+						? `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`
+						: `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early before a fresh browser attempt`,
 				);
 				await invalidateAndEvict(refs, provider);
 				break;
@@ -278,7 +287,9 @@ async function runRetryCycle(
 
 			if (failureType === "connection_error") {
 				plog.warn(
-					`proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`,
+					useProxy
+						? `proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`
+						: `connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early before a fresh browser attempt`,
 				);
 				await invalidateAndEvict(refs, provider);
 				break;

@@ -5,13 +5,13 @@ import { readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 import {
-	type AppMode,
 	AUTH_PROVIDER_LIST,
+	type AppMode,
 	type AuthProvider,
-	isInteractiveAuthAllowedInMode,
+	PROVIDER_LIST,
 	type Provider,
 	type ProviderAuthStatus,
-	PROVIDER_LIST,
+	isInteractiveAuthAllowedInMode,
 	resolveAppMode,
 } from "@oneglanse/types";
 import {
@@ -363,8 +363,7 @@ function mergeStorageStates(states: StorageState[]): StorageState {
 				value: cookie.value ?? "",
 				domain,
 				path: cookiePath,
-				expires:
-					typeof cookie.expires === "number" ? cookie.expires : -1,
+				expires: typeof cookie.expires === "number" ? cookie.expires : -1,
 				httpOnly: Boolean(cookie.httpOnly),
 				secure: Boolean(cookie.secure),
 				...(isValidSameSite(cookie.sameSite)
@@ -501,13 +500,24 @@ async function getSpawnEnv(): Promise<NodeJS.ProcessEnv> {
 		AGENT_AUTH_ROOT_DIR: getAgentAuthRootDir(),
 	};
 
-	if (!spawnEnv.CAMOUFOX_HUMANIZE) {
-		spawnEnv.CAMOUFOX_HUMANIZE = "false";
-	}
 	if (!spawnEnv.CAMOUFOX_ENABLE_CACHE) {
 		spawnEnv.CAMOUFOX_ENABLE_CACHE = "true";
 	}
-	delete spawnEnv.CAMOUFOX_WINDOW;
+	spawnEnv.CAMOUFOX_CONFIG_JSON = undefined;
+	spawnEnv.CAMOUFOX_EXTRA_LAUNCH_JSON = undefined;
+	spawnEnv.CAMOUFOX_FIREFOX_USER_PREFS_JSON = undefined;
+	spawnEnv.CAMOUFOX_FINGERPRINT_JSON = undefined;
+	spawnEnv.CAMOUFOX_FINGERPRINT_PRESET = undefined;
+	spawnEnv.CAMOUFOX_ADDONS = undefined;
+	spawnEnv.CAMOUFOX_EXCLUDE_ADDONS = undefined;
+	spawnEnv.CAMOUFOX_FONTS = undefined;
+	spawnEnv.CAMOUFOX_GEOIP = undefined;
+	spawnEnv.CAMOUFOX_GEOIP_DB = undefined;
+	spawnEnv.CAMOUFOX_LOCALE = undefined;
+	spawnEnv.CAMOUFOX_OS = undefined;
+	spawnEnv.CAMOUFOX_WEBGL_CONFIG = undefined;
+	spawnEnv.CAMOUFOX_ARGS = undefined;
+	spawnEnv.CAMOUFOX_ENV_JSON = undefined;
 
 	return spawnEnv;
 }
@@ -522,13 +532,7 @@ async function resolveBuiltAuthCli(repoRoot: string): Promise<{
 	if (getAppMode() === "local") {
 		return {
 			command: "pnpm",
-			args: [
-				"exec",
-				"node",
-				"--loader",
-				"ts-node/esm",
-				"src/auth/cli.ts",
-			],
+			args: ["exec", "node", "--loader", "ts-node/esm", "src/auth/cli.ts"],
 			cwd: agentAppDir,
 		};
 	}
@@ -544,13 +548,7 @@ async function resolveBuiltAuthCli(repoRoot: string): Promise<{
 
 	return {
 		command: "pnpm",
-		args: [
-			"exec",
-			"node",
-			"--loader",
-			"ts-node/esm",
-			"src/auth/cli.ts",
-		],
+		args: ["exec", "node", "--loader", "ts-node/esm", "src/auth/cli.ts"],
 		cwd: agentAppDir,
 	};
 }
@@ -603,11 +601,13 @@ export function ensureAuthDirectories(): void {
 }
 
 export function getReusableIdentityDomainSuffixes(): string[] {
-	return [...new Set(
-		REUSABLE_IDENTITY_PROVIDERS.flatMap(
-			(provider) => getReusableIdentityConfig(provider).domainSuffixes,
+	return [
+		...new Set(
+			REUSABLE_IDENTITY_PROVIDERS.flatMap(
+				(provider) => getReusableIdentityConfig(provider).domainSuffixes,
+			),
 		),
-	)];
+	];
 }
 
 export async function readReusableIdentitySeedState(): Promise<StorageState | null> {
@@ -988,7 +988,7 @@ export async function spawnProviderAuthLogin(
 		await writeProviderAuthStatus(provider, {
 			connecting: true,
 			lastUpdatedAt: new Date().toISOString(),
-			syncedAt: options?.resetExisting ? null : existing?.syncedAt ?? null,
+			syncedAt: options?.resetExisting ? null : (existing?.syncedAt ?? null),
 			error: null,
 			launcherPid: null,
 		});
@@ -1004,7 +1004,7 @@ export async function spawnProviderAuthLogin(
 		await writeProviderAuthStatus(provider, {
 			connecting: true,
 			lastUpdatedAt: new Date().toISOString(),
-			syncedAt: options?.resetExisting ? null : existing?.syncedAt ?? null,
+			syncedAt: options?.resetExisting ? null : (existing?.syncedAt ?? null),
 			error: null,
 			launcherPid: child.pid ?? null,
 		});
@@ -1016,7 +1016,7 @@ export async function spawnProviderAuthLogin(
 			await writeProviderAuthStatus(provider, {
 				connecting: false,
 				lastUpdatedAt: new Date().toISOString(),
-				syncedAt: options?.resetExisting ? null : existing?.syncedAt ?? null,
+				syncedAt: options?.resetExisting ? null : (existing?.syncedAt ?? null),
 				error: errorMessage,
 				launcherPid: null,
 			});

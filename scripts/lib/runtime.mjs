@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
-import { copyFile, mkdir } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(scriptDir, "..", "..");
@@ -11,7 +11,12 @@ export const edgeNetworkName = "oneglanse-edge";
 const rootEnvFile = path.join(repoRoot, ".env");
 const rootEnvExampleFile = path.join(repoRoot, ".env.example");
 const agentEnvFile = path.join(repoRoot, "apps", "agent", ".env");
-const agentEnvExampleFile = path.join(repoRoot, "apps", "agent", ".env.example");
+const agentEnvExampleFile = path.join(
+	repoRoot,
+	"apps",
+	"agent",
+	".env.example",
+);
 const CAMOUFOX_PYTHON_CANDIDATES = [
 	"python3.12",
 	"python3.11",
@@ -45,7 +50,9 @@ async function ensureFile(targetFile, sourceFile) {
 
 	await mkdir(path.dirname(targetFile), { recursive: true });
 	await copyFile(sourceFile, targetFile);
-	console.log(`Created ${path.relative(repoRoot, targetFile)} from ${path.relative(repoRoot, sourceFile)}.`);
+	console.log(
+		`Created ${path.relative(repoRoot, targetFile)} from ${path.relative(repoRoot, sourceFile)}.`,
+	);
 }
 
 function stripWrappingQuotes(value) {
@@ -119,14 +126,13 @@ function killChildProcessTree(child, signal = "SIGTERM") {
 
 	if (process.platform === "win32") {
 		const forceFlag = signal === "SIGKILL" ? ["/f"] : [];
-		void runCommandCapture("taskkill", [
-			"/pid",
-			String(pid),
-			"/t",
-			...forceFlag,
-		], {
-			stdio: ["ignore", "ignore", "ignore"],
-		}).catch(() => {});
+		void runCommandCapture(
+			"taskkill",
+			["/pid", String(pid), "/t", ...forceFlag],
+			{
+				stdio: ["ignore", "ignore", "ignore"],
+			},
+		).catch(() => {});
 		return;
 	}
 
@@ -170,11 +176,15 @@ export function buildLocalRuntimeEnv(localAppUrl) {
 		CLICKHOUSE_URL: "http://localhost:8123",
 		REDIS_HOST: "localhost",
 		REDIS_PORT: redisPort,
+		CAMOUFOX_HEADLESS_MODE: "headless",
 		CAMOUFOX_LOCALE: localLocale,
+		// Firefox reads MOZ_HEADLESS during process bootstrap. Keep this scoped
+		// to the local desktop runtime so cloud/Xvfb sessions are unaffected.
+		MOZ_HEADLESS: "1",
 	};
 
-	delete localEnv.AGENT_AUTH_UPLOAD_URL;
-	delete localEnv.AGENT_AUTH_UPLOAD_TOKEN;
+	localEnv.AGENT_AUTH_UPLOAD_URL = undefined;
+	localEnv.AGENT_AUTH_UPLOAD_TOKEN = undefined;
 
 	return localEnv;
 }
@@ -280,16 +290,14 @@ async function installCompatiblePython() {
 	) {
 		console.log("Installing Python 3 for local Camoufox support...");
 		await runCommand("apt-get", ["update"]);
-		await runCommand("apt-get", [
-			"install",
-			"-y",
-			"python3",
-			"python3-pip",
-		]);
+		await runCommand("apt-get", ["install", "-y", "python3", "python3-pip"]);
 		return "python3";
 	}
 
-	if (process.platform === "win32" && (await canRunCommand("winget", ["--info"]))) {
+	if (
+		process.platform === "win32" &&
+		(await canRunCommand("winget", ["--info"]))
+	) {
 		console.log("Installing Python 3.11 for local Camoufox support...");
 		await runCommand("winget", [
 			"install",
@@ -345,10 +353,7 @@ async function resolveLocalCamoufoxPython() {
 
 async function ensureCamoufoxPackage(pythonBin) {
 	try {
-		await runCommandCapture(pythonBin, [
-			"-c",
-			"import camoufox, browserforge",
-		]);
+		await runCommandCapture(pythonBin, ["-c", "import camoufox, browserforge"]);
 		return;
 	} catch {}
 
@@ -435,13 +440,8 @@ export async function waitForHttp(url, timeoutMs = 60_000) {
 export function openBrowser(url) {
 	const platform = process.platform;
 	const command =
-		platform === "darwin"
-			? "open"
-			: platform === "win32"
-				? "cmd"
-				: "xdg-open";
-	const args =
-		platform === "win32" ? ["/c", "start", "", url] : [url];
+		platform === "darwin" ? "open" : platform === "win32" ? "cmd" : "xdg-open";
+	const args = platform === "win32" ? ["/c", "start", "", url] : [url];
 	const child = spawn(command, args, {
 		cwd: repoRoot,
 		detached: true,

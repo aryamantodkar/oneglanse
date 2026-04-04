@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { env } from "../../../env.js";
 import type { UpstreamProxyConfig } from "./forwarder.js";
 
 // Provider-specific session rotation rules. The goal is one stable upstream
@@ -325,18 +324,17 @@ function applyThorFamilyStrategy(
 ): UpstreamProxyConfig {
 	const username = proxy.username ?? "";
 	const normalizedHost = normalizeHostKey(proxy.host);
-	const explicitScheme = env.PROXY_SCHEME?.trim();
-	const inferredScheme =
-		explicitScheme
-			? proxy.scheme
-			: /\.thordata\.online$/i.test(normalizedHost) ||
-					  normalizedHost === "thordata.online"
-				? "https"
-				: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
-						  normalizedHost === "pr.thordata.net" ||
-						  normalizedHost === "t.pr.thordata.net"
-					? "http"
-					: proxy.scheme;
+	const explicitScheme = process.env.PROXY_SCHEME?.trim();
+	const inferredScheme = explicitScheme
+		? proxy.scheme
+		: /\.thordata\.online$/i.test(normalizedHost) ||
+				normalizedHost === "thordata.online"
+			? "https"
+			: /\.pr\.thordata\.net$/i.test(normalizedHost) ||
+					normalizedHost === "pr.thordata.net" ||
+					normalizedHost === "t.pr.thordata.net"
+				? "http"
+				: proxy.scheme;
 
 	if (!username) {
 		return inferredScheme === proxy.scheme
@@ -470,11 +468,11 @@ function applyWebshareStrategy(
 }
 
 export function resolveProxyProviderKind(): ProxyProviderKind {
-	switch (env.PROXY_PROVIDER ?? "generic") {
+	switch (process.env.PROXY_PROVIDER ?? "generic") {
 		case "smartproxy":
 			return "decodo";
 		default:
-			return (env.PROXY_PROVIDER ?? "generic") as ProxyProviderKind;
+			return (process.env.PROXY_PROVIDER ?? "generic") as ProxyProviderKind;
 	}
 }
 

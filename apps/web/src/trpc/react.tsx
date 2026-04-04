@@ -38,7 +38,7 @@ type RouterInputs = inferRouterInputs<AppRouter>;
  */
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export function TRPCReactProvider(props: { children: React.ReactNode }){
+export function TRPCReactProvider(props: { children: React.ReactNode }) {
 	const queryClient = getQueryClient();
 
 	const [trpcClient] = useState(() =>
@@ -46,8 +46,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }){
 			links: [
 				loggerLink({
 					enabled: (op) =>
-						process.env.NODE_ENV === "development" ||
-						(op.direction === "down" && op.result instanceof Error),
+						op.direction === "down" && op.result instanceof Error,
 				}),
 				httpBatchStreamLink({
 					transformer: SuperJSON,
