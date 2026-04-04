@@ -20,10 +20,6 @@ export function normalizePromptValue(text: string): string {
 		.trim();
 }
 
-export function getPromptInsertionStrategy(): "pacedPaste" {
-	return "pacedPaste";
-}
-
 async function focusEditorTarget(page: Page, input: Locator): Promise<void> {
 	await input.scrollIntoViewIfNeeded().catch(() => null);
 	await clickLocatorLikeUser(page, input, {
@@ -93,7 +89,18 @@ export async function prepareEditorForPrompt(
 	await focusEditorTarget(page, input);
 }
 
-async function insertPromptOnce(page: Page, prompt: string): Promise<void> {
+async function insertPromptOnce(
+	page: Page,
+	input: Locator,
+	prompt: string,
+	strategy: "directSet" | "pacedPaste",
+): Promise<void> {
+	if (strategy === "directSet") {
+		await input.setInputValue(prompt);
+		await page.waitForTimeout(randomBetween(40, 120));
+		return;
+	}
+
 	await pastePrompt(page, prompt);
 }
 
@@ -123,27 +130,38 @@ export async function insertPromptIntoEditor(
 	input: Locator,
 	prompt: string,
 	provider: Provider,
-): Promise<{ rawValue: string; strategy: "pacedPaste" }> {
-	const strategy = getPromptInsertionStrategy();
+): Promise<{ rawValue: string; strategy: "directSet" | "pacedPaste" }> {
 	const expectedValue = normalizePromptValue(prompt);
+	const strategies: Array<"directSet" | "pacedPaste"> = [
+		"directSet",
+		"pacedPaste",
+	];
 
-	for (let attempt = 1; attempt <= 2; attempt++) {
-		await prepareEditorForPrompt(page, input, provider);
-		await insertPromptOnce(page, prompt);
-		const rawValue = await waitForPromptValue(
-			page,
-			input,
-			expectedValue,
-			attempt === 1 ? 1_800 : 2_500,
-		);
-		if (normalizePromptValue(rawValue) === expectedValue) {
-			return { rawValue, strategy };
-		}
-
-		if (attempt === 1) {
-			logger.warn(
-				`[${provider}] prompt verification mismatch after pasting — retrying local overwrite once`,
+	for (const strategy of strategies) {
+		for (let attempt = 1; attempt <= 2; attempt++) {
+			await prepareEditorForPrompt(page, input, provider);
+			await insertPromptOnce(page, input, prompt, strategy);
+			const rawValue = await waitForPromptValue(
+				page,
+				input,
+				expectedValue,
+				strategy === "directSet"
+					? attempt === 1
+						? 800
+						: 1_400
+					: attempt === 1
+						? 1_800
+						: 2_500,
 			);
+			if (normalizePromptValue(rawValue) === expectedValue) {
+				return { rawValue, strategy };
+			}
+
+			if (attempt === 1) {
+				logger.warn(
+					`[${provider}] prompt verification mismatch after ${strategy} — retrying once`,
+				);
+			}
 		}
 	}
 

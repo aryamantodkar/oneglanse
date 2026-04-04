@@ -1,22 +1,29 @@
-import { GalleryVerticalEnd } from "lucide-react";
 import type { ReactNode } from "react";
 
 type AuthPageShellProps = {
 	children: ReactNode;
+	subtitle?: string;
 };
 
 export function AuthPageShell({
 	children,
+	subtitle,
 }: AuthPageShellProps): React.JSX.Element {
 	return (
-		<div className="flex min-h-svh min-w-0 flex-col items-center justify-center gap-6 overflow-x-hidden bg-muted p-4 sm:p-6 md:p-10">
-			<div className="flex w-full min-w-0 max-w-sm flex-col gap-6">
-				<a href="/" className="flex items-center gap-2 self-center font-medium">
-					<div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-						<GalleryVerticalEnd className="size-4" />
+		<div className="flex min-h-svh min-w-0 items-center justify-center overflow-hidden bg-stone-50 px-4 py-6 dark:bg-neutral-950 sm:px-6 sm:py-8 md:px-8">
+			<div className="flex w-full min-w-0 max-w-md flex-col gap-6 sm:gap-8">
+				<div className="space-y-2.5 text-center sm:space-y-3">
+					<div className="text-[1.9rem] font-semibold tracking-[-0.06em] text-gray-950 sm:text-[2.4rem] dark:text-gray-50">
+						OneGlanse
 					</div>
-					OneGlanse
-				</a>
+					{subtitle ? (
+						<div className="flex justify-center">
+							<p className="text-center text-sm text-gray-600 dark:text-gray-300">
+								{subtitle}
+							</p>
+						</div>
+					) : null}
+				</div>
 				{children}
 			</div>
 		</div>

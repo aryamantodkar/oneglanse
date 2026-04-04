@@ -1,25 +1,13 @@
 :root {
-	--motion-duration-fast: 160ms;
-	--motion-duration-base: 240ms;
-	--motion-duration-slow: 420ms;
+	--motion-duration-fast: 140ms;
+	--motion-duration-base: 180ms;
+	--motion-duration-slow: 260ms;
 	--motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
-	--motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
 	--elevation-soft: 0 12px 30px oklch(0 0 0 / 8%);
 }
 
 .dark {
 	--elevation-soft: 0 14px 36px oklch(0 0 0 / 30%);
-}
-
-@keyframes ui-fade-up {
-	from {
-		opacity: 0;
-		transform: translate3d(0, 12px, 0);
-	}
-	to {
-		opacity: 1;
-		transform: translate3d(0, 0, 0);
-	}
 }
 
 @layer base {
@@ -46,38 +34,16 @@
 
 @layer components {
 	.ui-page-enter {
-		animation: ui-fade-up var(--motion-duration-slow)
-			var(--motion-ease-emphasized) both;
+		animation: none;
 	}
 
 	.ui-stagger > * {
-		opacity: 0;
-		animation: ui-fade-up var(--motion-duration-slow)
-			var(--motion-ease-emphasized) both;
-	}
-
-	.ui-stagger > *:nth-child(1) {
-		animation-delay: 30ms;
-	}
-	.ui-stagger > *:nth-child(2) {
-		animation-delay: 80ms;
-	}
-	.ui-stagger > *:nth-child(3) {
-		animation-delay: 130ms;
-	}
-	.ui-stagger > *:nth-child(4) {
-		animation-delay: 180ms;
-	}
-	.ui-stagger > *:nth-child(5) {
-		animation-delay: 230ms;
-	}
-	.ui-stagger > *:nth-child(6) {
-		animation-delay: 280ms;
+		opacity: 1;
+		animation: none;
 	}
 
 	.ui-list-item {
-		transition: transform var(--motion-duration-base)
-			var(--motion-ease-standard), box-shadow var(--motion-duration-base)
+		transition: box-shadow var(--motion-duration-base)
 			var(--motion-ease-standard), border-color var(--motion-duration-fast)
 			var(--motion-ease-standard), background-color var(--motion-duration-fast)
 			var(--motion-ease-standard);
@@ -86,12 +52,7 @@
 
 @media (hover: hover) and (pointer: fine) {
 	[data-slot="card"]:hover {
-		transform: translateY(-2px);
 		box-shadow: var(--elevation-soft);
-	}
-
-	[data-slot="button"]:not(:disabled):hover {
-		transform: translateY(-1px);
 	}
 
 	[data-slot="input"]:not(:disabled):hover,
@@ -101,7 +62,6 @@
 	}
 
 	.ui-list-item:hover {
-		transform: translateY(-2px);
 		box-shadow: var(--elevation-soft);
 	}
 }

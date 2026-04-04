@@ -1,6 +1,10 @@
 "use client";
 
 import {
+	authFieldClassName,
+	authLabelClassName,
+} from "@/components/forms/auth-form-chrome";
+import {
 	FormControl,
 	FormField,
 	FormItem,
@@ -14,12 +18,14 @@ type PasswordFieldProps<T extends FieldValues> = {
 	control: Control<T>;
 	name: Path<T>;
 	forgotHref?: string;
+	autoComplete?: string;
 };
 
 export function PasswordField<T extends FieldValues>({
 	control,
 	name,
 	forgotHref = "/forgot-password",
+	autoComplete = "current-password",
 }: PasswordFieldProps<T>): React.JSX.Element {
 	return (
 		<div className="grid gap-3">
@@ -29,9 +35,15 @@ export function PasswordField<T extends FieldValues>({
 					name={name}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Password</FormLabel>
+							<FormLabel className={authLabelClassName}>Password</FormLabel>
 							<FormControl>
-								<Input placeholder="*******" {...field} type="password" />
+								<Input
+									type="password"
+									autoComplete={autoComplete}
+									placeholder="Enter your password"
+									className={authFieldClassName}
+									{...field}
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -39,7 +51,7 @@ export function PasswordField<T extends FieldValues>({
 				/>
 				<a
 					href={forgotHref}
-					className="ml-auto text-sm underline-offset-4 hover:underline"
+					className="ml-auto text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
 					Forgot your password?
 				</a>

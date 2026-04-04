@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
+import { readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
 	ExternalServiceError,
@@ -80,6 +80,13 @@ type SelectorProfile = {
 	selectors: Record<SelectorField, string[]>;
 };
 
+type ProviderSelectorCache = {
+	version: number;
+	provider: Provider;
+	updatedAt: string;
+	profiles: SelectorProfile[];
+};
+
 type RawSource = {
 	rawHref: string;
 	title: string;
@@ -120,8 +127,8 @@ type ModelCandidate = Pick<
 const SELECTOR_PROFILE_VERSION = 1;
 const SELECTOR_MODEL = "gpt-4.1";
 const MAX_SELECTORS_PER_FIELD = 5;
-const FAILED_RESOLUTION_TTL_MS = 10_000;
-const PAGE_FAILED_RESOLUTION_TTL_MS = 5 * 60_000;
+const FAILED_RESOLUTION_TTL_MS = 2_000;
+const PAGE_FAILED_RESOLUTION_TTL_MS = 5_000;
 const SELECTOR_MODEL_RATE_LIMIT_TTL_MS = 15 * 60_000;
 const MAX_SELECTOR_MODEL_CALLS_PER_PROCESS = 30;
 const SNAPSHOT_STABILITY_POLL_MS = 250;
@@ -206,6 +213,41 @@ function sanitizeFilename(input: string): string {
 	);
 }
 
+function normalizePageKeySegment(segment: string): string {
+	if (/^[0-9a-f-]{16,}$/i.test(segment)) {
+		return ":id";
+	}
+
+	if (segment.length >= 24) {
+		const parts = segment.split(/[-_.]+/).filter(Boolean);
+		const hasDynamicShape = parts.some(
+			(part) =>
+				part.includes(":") ||
+				/\d/.test(part) ||
+				/[A-Z]/.test(part) ||
+				/^[0-9a-f]{6,}$/i.test(part),
+		);
+		if (parts.length >= 3 && hasDynamicShape) {
+			return ":id";
+		}
+	}
+
+	return segment.replace(/\d+/g, ":n");
+}
+
+function normalizePageKey(pageKey: string): string {
+	const [host, ...segments] = pageKey.split("/").filter(Boolean);
+	if (!host) {
+		return "unknown";
+	}
+
+	const normalizedSegments = segments
+		.slice(0, 2)
+		.map((segment) => normalizePageKeySegment(segment));
+
+	return [host, ...normalizedSegments].join("/");
+}
+
 function cacheKey(
 	provider: Provider,
 	stage: SelectorStage,
@@ -272,19 +314,64 @@ function shouldSkipSelectorModelForBudget(): boolean {
 	return true;
 }
 
-function getProfileCacheFile(
-	cacheDir: string,
-	provider: Provider,
-	stage: SelectorStage,
-	pageKey: string,
-	fingerprint: string,
-): string {
-	return path.join(
-		cacheDir,
-		provider,
-		stage,
-		`${sanitizeFilename(pageKey)}-${fingerprint}.json`,
+function getProfileCacheFile(cacheDir: string, provider: Provider): string {
+	return path.join(cacheDir, `${provider}.json`);
+}
+
+function dedupeProfiles(profiles: SelectorProfile[]): SelectorProfile[] {
+	const latestByStagePageKey = new Map<string, SelectorProfile>();
+
+	for (const profile of profiles) {
+		const normalizedPageKey = normalizePageKey(profile.pageKey);
+		const normalizedProfile = {
+			...profile,
+			pageKey: normalizedPageKey,
+		};
+		const key = `${normalizedProfile.stage}:${normalizedPageKey}`;
+		const existing = latestByStagePageKey.get(key);
+		if (
+			!existing ||
+			normalizedProfile.createdAt.localeCompare(existing.createdAt) > 0
+		) {
+			latestByStagePageKey.set(key, normalizedProfile);
+		}
+	}
+
+	return [...latestByStagePageKey.values()].sort((left, right) =>
+		left.stage === right.stage
+			? left.pageKey.localeCompare(right.pageKey)
+			: left.stage.localeCompare(right.stage),
 	);
+}
+
+async function readLegacyProviderProfiles(
+	provider: Provider,
+): Promise<SelectorProfile[]> {
+	const providerDir = path.join(getSelectorCacheDir(), provider);
+	const profiles: SelectorProfile[] = [];
+
+	if (!existsSync(providerDir)) {
+		return [];
+	}
+
+	for (const stage of await readdir(providerDir).catch(() => [])) {
+		const stageDir = path.join(providerDir, stage);
+		for (const file of await readdir(stageDir).catch(() => [])) {
+			if (!file.endsWith(".json")) {
+				continue;
+			}
+			const parsed = await readSelectorProfileFile(
+				path.join(stageDir, file),
+				provider,
+				stage as SelectorStage,
+			);
+			if (parsed) {
+				profiles.push(parsed);
+			}
+		}
+	}
+
+	return dedupeProfiles(profiles);
 }
 
 async function readSelectorProfileFile(
@@ -301,98 +388,157 @@ async function readSelectorProfileFile(
 		const parsed = JSON.parse(
 			await readFile(cacheFile, "utf8"),
 		) as SelectorProfile;
+		const normalizedPageKey = normalizePageKey(parsed.pageKey);
 		if (
 			parsed.version !== SELECTOR_PROFILE_VERSION ||
 			parsed.provider !== provider ||
 			parsed.stage !== stage ||
-			(pageKey !== undefined && parsed.pageKey !== pageKey)
+			(pageKey !== undefined && normalizedPageKey !== normalizePageKey(pageKey))
 		) {
 			return null;
 		}
-		return parsed;
+		return {
+			...parsed,
+			pageKey: normalizedPageKey,
+		};
 	} catch {
 		return null;
 	}
+}
+
+async function readProviderCache(
+	provider: Provider,
+): Promise<ProviderSelectorCache | null> {
+	const cacheFile = getProfileCacheFile(getSelectorCacheDir(), provider);
+	if (existsSync(cacheFile)) {
+		try {
+			const parsed = JSON.parse(
+				await readFile(cacheFile, "utf8"),
+			) as ProviderSelectorCache;
+			if (
+				parsed.version !== SELECTOR_PROFILE_VERSION ||
+				parsed.provider !== provider ||
+				!Array.isArray(parsed.profiles)
+			) {
+				return null;
+			}
+			return {
+				...parsed,
+				profiles: dedupeProfiles(parsed.profiles),
+			};
+		} catch {
+			return null;
+		}
+	}
+
+	const legacyProfiles = await readLegacyProviderProfiles(provider);
+	if (legacyProfiles.length === 0) {
+		return null;
+	}
+
+	return {
+		version: SELECTOR_PROFILE_VERSION,
+		provider,
+		updatedAt:
+			legacyProfiles
+				.map((profile) => profile.createdAt)
+				.sort()
+				.at(-1) ?? new Date().toISOString(),
+		profiles: legacyProfiles,
+	};
+}
+
+async function writeProviderCache(cache: ProviderSelectorCache): Promise<void> {
+	ensureSelectorCacheDir();
+	const normalizedCache: ProviderSelectorCache = {
+		...cache,
+		profiles: dedupeProfiles(cache.profiles),
+		updatedAt: new Date().toISOString(),
+	};
+	const cacheFile = getProfileCacheFile(
+		getSelectorCacheDir(),
+		normalizedCache.provider,
+	);
+	await writeFile(
+		`${cacheFile}`,
+		`${JSON.stringify(normalizedCache, null, 2)}\n`,
+	).catch(() => {});
+	await rm(path.join(getSelectorCacheDir(), normalizedCache.provider), {
+		force: true,
+		recursive: true,
+	}).catch(() => {});
 }
 
 async function readCachedProfile(
 	provider: Provider,
 	stage: SelectorStage,
 	pageKey: string,
-	fingerprint: string,
 ): Promise<SelectorProfile | null> {
-	const parsed = await readSelectorProfileFile(
-		getProfileCacheFile(
-			getSelectorCacheDir(),
-			provider,
-			stage,
-			pageKey,
-			fingerprint,
-		),
-		provider,
-		stage,
-	);
-	return parsed ?? null;
-}
-
-async function readFallbackCachedProfiles(
-	provider: Provider,
-	stage: SelectorStage,
-	pageKey: string,
-): Promise<SelectorProfile[]> {
-	const pageKeyPrefix = `${sanitizeFilename(pageKey)}-`;
-	const results = new Map<string, SelectorProfile>();
-
-	const stageDir = path.join(getSelectorCacheDir(), provider, stage);
-	if (existsSync(stageDir)) {
-		for (const file of await readdir(stageDir).catch(() => [])) {
-			if (!file.startsWith(pageKeyPrefix) || !file.endsWith(".json")) {
-				continue;
-			}
-			const parsed = await readSelectorProfileFile(
-				path.join(stageDir, file),
-				provider,
-				stage,
-				pageKey,
-			);
-			if (!parsed) {
-				continue;
-			}
-			results.set(parsed.fingerprint, parsed);
-		}
+	const cache = await readProviderCache(provider);
+	if (!cache) {
+		return null;
 	}
 
-	return [...results.values()].sort((left, right) =>
-		right.createdAt.localeCompare(left.createdAt),
+	const normalizedPageKey = normalizePageKey(pageKey);
+	return (
+		cache.profiles.find(
+			(profile) =>
+				profile.stage === stage &&
+				normalizePageKey(profile.pageKey) === normalizedPageKey,
+		) ?? null
 	);
 }
 
 async function writeCachedProfile(profile: SelectorProfile): Promise<void> {
-	ensureSelectorCacheDir();
-	const payload = JSON.stringify(profile, null, 2);
-	const cacheFile = getProfileCacheFile(
-		getSelectorCacheDir(),
-		profile.provider,
-		profile.stage,
-		profile.pageKey,
-		profile.fingerprint,
-	);
-	mkdirSync(path.dirname(cacheFile), { recursive: true });
-	await writeFile(cacheFile, payload).catch(() => {});
+	const normalizedProfile = {
+		...profile,
+		pageKey: normalizePageKey(profile.pageKey),
+	};
+	const cache = (await readProviderCache(normalizedProfile.provider)) ?? {
+		version: SELECTOR_PROFILE_VERSION,
+		provider: normalizedProfile.provider,
+		updatedAt: new Date().toISOString(),
+		profiles: [],
+	};
+	cache.profiles = [
+		...cache.profiles.filter(
+			(entry) =>
+				!(
+					entry.stage === normalizedProfile.stage &&
+					normalizePageKey(entry.pageKey) === normalizedProfile.pageKey
+				),
+		),
+		normalizedProfile,
+	];
+	await writeProviderCache(cache);
 }
 
 async function deleteCachedProfile(profile: SelectorProfile): Promise<void> {
 	const key = cacheKey(profile.provider, profile.stage, profile.fingerprint);
 	failedResolutions.delete(key);
-
-	const cacheFile = getProfileCacheFile(
-		getSelectorCacheDir(),
-		profile.provider,
-		profile.stage,
-		profile.pageKey,
-		profile.fingerprint,
+	const normalizedPageKey = normalizePageKey(profile.pageKey);
+	const cache = await readProviderCache(profile.provider);
+	if (!cache) {
+		return;
+	}
+	cache.profiles = cache.profiles.filter(
+		(entry) =>
+			!(
+				entry.stage === profile.stage &&
+				normalizePageKey(entry.pageKey) === normalizedPageKey
+			),
 	);
-	await unlink(cacheFile).catch(() => {});
+	if (cache.profiles.length === 0) {
+		await unlink(
+			getProfileCacheFile(getSelectorCacheDir(), profile.provider),
+		).catch(() => {});
+		await rm(path.join(getSelectorCacheDir(), profile.provider), {
+			force: true,
+			recursive: true,
+		}).catch(() => {});
+		return;
+	}
+	await writeProviderCache(cache);
 }
 
 function compactSelectors(
@@ -423,14 +569,8 @@ function compactSelectors(
 function buildPageKey(rawUrl: string): string {
 	try {
 		const url = new URL(rawUrl);
-		const segments = url.pathname
-			.split("/")
-			.filter(Boolean)
-			.slice(0, 2)
-			.map((segment) =>
-				segment.replace(/[0-9a-f]{8,}/gi, ":id").replace(/\d+/g, ":n"),
-			);
-		return `${url.hostname}/${segments.join("/")}`.replace(/\/$/, "");
+		const segments = url.pathname.split("/").filter(Boolean).slice(0, 2);
+		return normalizePageKey(`${url.hostname}/${segments.join("/")}`);
 	} catch {
 		return "unknown";
 	}
@@ -1512,16 +1652,31 @@ async function invalidateSelectorProfilesForPageKey(
 	stage: SelectorStage,
 	pageKey: string,
 ): Promise<void> {
-	const pageKeyPrefix = `${sanitizeFilename(pageKey)}-`;
-	const stageDir = path.join(getSelectorCacheDir(), provider, stage);
-	for (const file of await readdir(stageDir).catch(() => [])) {
-		if (!file.startsWith(pageKeyPrefix) || !file.endsWith(".json")) {
-			continue;
-		}
-		const fingerprint = file.slice(pageKeyPrefix.length, -".json".length);
-		failedResolutions.delete(cacheKey(provider, stage, fingerprint));
-		await unlink(path.join(stageDir, file)).catch(() => {});
+	const normalizedPageKey = normalizePageKey(pageKey);
+	const cache = await readProviderCache(provider);
+	if (!cache) {
+		return;
 	}
+
+	cache.profiles = cache.profiles.filter(
+		(profile) =>
+			!(
+				profile.stage === stage &&
+				normalizePageKey(profile.pageKey) === normalizedPageKey
+			),
+	);
+	if (cache.profiles.length === 0) {
+		await unlink(getProfileCacheFile(getSelectorCacheDir(), provider)).catch(
+			() => {},
+		);
+		await rm(path.join(getSelectorCacheDir(), provider), {
+			force: true,
+			recursive: true,
+		}).catch(() => {});
+		return;
+	}
+
+	await writeProviderCache(cache);
 }
 
 export async function invalidateSelectorProfileForPage(
@@ -1550,26 +1705,14 @@ export async function getSelectorProfile(
 		requiredFields?: readonly SelectorField[];
 	},
 ): Promise<SelectorProfile | null> {
-	// Skip the expensive DOM scan while an LLM call is already in-flight for
-	// this provider+stage. The caller retries on the next poll when it settles.
 	const psKey = `${provider}:${stage}`;
-	if (pendingByProviderStage.has(psKey)) {
-		return null;
-	}
-
-	const snapshot = await captureStableSelectorSnapshot(page, stage);
-	const key = cacheKey(provider, stage, snapshot.fingerprint);
-	const pageKeyCooldownKey = pageFailureKey(provider, stage, snapshot.pageKey);
-	const snapshotStateKey = buildSnapshotStateKey(snapshot);
+	let invalidatedCachedProfile = false;
+	let initialPageKey: string | null = null;
 
 	if (!options?.forceRefresh) {
-		const cached =
-			(await readCachedProfile(
-				provider,
-				stage,
-				snapshot.pageKey,
-				snapshot.fingerprint,
-			)) ?? null;
+		const pageKey = buildPageKey(page.url());
+		initialPageKey = pageKey;
+		const cached = (await readCachedProfile(provider, stage, pageKey)) ?? null;
 		if (cached) {
 			const valid = await validateProfile(
 				page,
@@ -1584,39 +1727,54 @@ export async function getSelectorProfile(
 				: null;
 			if (!baselineValid) {
 				await deleteCachedProfile(cached);
+				invalidatedCachedProfile = true;
 			}
 		}
+	}
 
-		const fallbackProfiles = await readFallbackCachedProfiles(
-			provider,
-			stage,
-			snapshot.pageKey,
-		);
-		for (const fallback of fallbackProfiles) {
-			if (fallback.fingerprint === snapshot.fingerprint) {
-				continue;
-			}
+	// Skip the expensive DOM scan while an LLM call is already in-flight for
+	// this provider+stage. The caller retries on the next poll when it settles.
+	if (pendingByProviderStage.has(psKey)) {
+		return null;
+	}
+
+	const snapshot = await captureStableSelectorSnapshot(page, stage);
+	const key = cacheKey(provider, stage, snapshot.fingerprint);
+	const pageKeyCooldownKey = pageFailureKey(provider, stage, snapshot.pageKey);
+	const snapshotStateKey = buildSnapshotStateKey(snapshot);
+
+	if (invalidatedCachedProfile && initialPageKey === snapshot.pageKey) {
+		failedPageResolutions.delete(pageKeyCooldownKey);
+		failedResolutions.delete(key);
+	}
+
+	if (!options?.forceRefresh) {
+		const cached =
+			(await readCachedProfile(provider, stage, snapshot.pageKey)) ?? null;
+		if (cached) {
 			const valid = await validateProfile(
 				page,
-				fallback,
+				cached,
 				options?.requiredFields,
 			);
-			if (!valid) {
-				const baselineValid = options?.requiredFields?.length
-					? await validateProfile(page, fallback)
-					: null;
-				if (!baselineValid) {
-					await deleteCachedProfile(fallback);
+			if (valid) {
+				if (valid.fingerprint !== snapshot.fingerprint) {
+					const rebased: SelectorProfile = {
+						...valid,
+						fingerprint: snapshot.fingerprint,
+						createdAt: new Date().toISOString(),
+					};
+					await writeCachedProfile(rebased);
+					return rebased;
 				}
-				continue;
+				return valid;
 			}
-			const rebased: SelectorProfile = {
-				...valid,
-				fingerprint: snapshot.fingerprint,
-				createdAt: new Date().toISOString(),
-			};
-			await writeCachedProfile(rebased);
-			return rebased;
+			const baselineValid = options?.requiredFields?.length
+				? await validateProfile(page, cached)
+				: null;
+			if (!baselineValid) {
+				await deleteCachedProfile(cached);
+			}
 		}
 	}
 
@@ -1626,6 +1784,7 @@ export async function getSelectorProfile(
 
 	const lastFailure = failedResolutions.get(key);
 	if (
+		!invalidatedCachedProfile &&
 		!options?.forceRefresh &&
 		lastFailure &&
 		Date.now() - lastFailure < FAILED_RESOLUTION_TTL_MS
@@ -1634,6 +1793,7 @@ export async function getSelectorProfile(
 	}
 
 	if (
+		!invalidatedCachedProfile &&
 		!options?.forceRefresh &&
 		getPageFailureCooldown(pageKeyCooldownKey)?.stateKey === snapshotStateKey
 	) {

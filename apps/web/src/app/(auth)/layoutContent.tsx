@@ -8,7 +8,7 @@ import { useProviderConnections } from "@/lib/provider-connections/client";
 import type { ProviderConnectionsState } from "@/lib/provider-connections/types";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
-import { isInteractiveAuthAllowedInMode, type AppMode } from "@oneglanse/types";
+import { type AppMode, isInteractiveAuthAllowedInMode } from "@oneglanse/types";
 import { SidebarTrigger } from "@oneglanse/ui";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -54,18 +54,24 @@ export default function LayoutContent({
 	const isResolvingWorkspaceFromUrl =
 		shouldFetchWorkspace && !workspaceQuery.data && workspaceQuery.isFetching;
 	const hasAtLeastOneConnection =
-		authProvidersQuery.data?.cards.some((card) => card.status.connected) ?? false;
+		authProvidersQuery.data?.cards.some((card) => card.status.connected) ??
+		false;
 	const shouldShowConnectionGate = !hasAtLeastOneConnection;
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
-	const providersWorkspaceId = workspaceIdFromUrl || resolvedWorkspace?.id || "";
+	const providersWorkspaceId =
+		workspaceIdFromUrl || resolvedWorkspace?.id || "";
 	const providersHref = providersWorkspaceId
 		? `/providers?workspace=${providersWorkspaceId}`
 		: "/providers";
 
 	useEffect(() => {
-		if (shouldShowConnectionGate && canLaunchProvidersLocally && !isProvidersPage) {
+		if (
+			shouldShowConnectionGate &&
+			canLaunchProvidersLocally &&
+			!isProvidersPage
+		) {
 			router.replace(providersHref);
 		}
 	}, [
@@ -97,7 +103,7 @@ export default function LayoutContent({
 
 	useEffect(() => {
 		shownJobsRef.current.clear();
-	}, [resolvedWorkspace?.id]);
+	});
 
 	if (shouldShowConnectionGate) {
 		return (
@@ -125,8 +131,8 @@ export default function LayoutContent({
 	if (!resolvedWorkspace) {
 		if (isResolvingWorkspaceFromUrl) {
 			return (
-				<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
-					<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
+				<div className="web-app-shell">
+					<main className="web-app-main">
 						<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
 							<div className="flex items-center gap-3">
 								<h1 className="text-sm font-semibold text-gray-900">
@@ -140,8 +146,8 @@ export default function LayoutContent({
 		}
 
 		return (
-			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
-				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
+			<div className="web-app-shell">
+				<main className="web-app-main">
 					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
 						<div className="flex items-center gap-3">
 							<h1 className="text-sm font-semibold text-gray-900">
@@ -149,9 +155,7 @@ export default function LayoutContent({
 							</h1>
 						</div>
 					</div>
-					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden px-4 sm:px-6">
-						{children}
-					</div>
+					<div className="web-app-scroll px-4 sm:px-6">{children}</div>
 				</main>
 			</div>
 		);
@@ -159,11 +163,9 @@ export default function LayoutContent({
 
 	if (isOnboardingFlow) {
 		return (
-			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
-				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
-					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden">
-						{children}
-					</div>
+			<div className="web-app-shell">
+				<main className="web-app-main">
+					<div className="web-app-scroll">{children}</div>
 				</main>
 			</div>
 		);
@@ -171,14 +173,14 @@ export default function LayoutContent({
 
 	return (
 		<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
-			<div className="ui-page-enter flex min-h-svh w-full min-w-0 overflow-x-hidden">
+			<div className="web-app-shell">
 				<AppSidebar
 					appMode={appMode}
 					workspace={resolvedWorkspace}
 					userName={userName}
 					userEmail={userEmail}
 				/>
-				<main className="flex min-w-0 flex-1 flex-col min-h-0 overflow-x-hidden">
+				<main className="web-app-main">
 					<div className="flex items-center justify-between border-b border-gray-200 p-2 transition-[background-color,border-color] duration-200">
 						<div className="flex items-center gap-3">
 							<SidebarTrigger className="text-gray-700 transition-colors duration-200 hover:text-gray-900" />
@@ -189,9 +191,7 @@ export default function LayoutContent({
 					</div>
 
 					{/* Page content */}
-					<div className="ui-page-enter flex-1 min-h-0 min-w-0 overflow-auto overflow-x-hidden px-4 sm:px-6">
-						{children}
-					</div>
+					<div className="web-app-scroll px-4 sm:px-6">{children}</div>
 				</main>
 			</div>
 		</WorkspaceProvider>

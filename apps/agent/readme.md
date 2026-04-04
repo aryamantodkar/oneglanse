@@ -38,24 +38,20 @@ Camoufox-backed browser worker + BullMQ worker responsible for executing provide
 
 Defined in `src/env.ts` (Zod validated):
 
-- Core runtime:
-  - `NODE_ENV`
-  - `DEBUG_ENABLED`
-- Redis:
+- Required runtime:
+  - `ONEGLANSE_APP_MODE`
   - `REDIS_HOST`
   - `REDIS_PORT`
   - `REDIS_PASSWORD`
-- Timeouts/retries:
-  - `STEP_EXECUTION_TIMEOUT_MS`
-  - `PAGE_DEFAULT_TIMEOUT_MS`
-  - `PAGE_DEFAULT_NAVIGATION_TIMEOUT_MS`
-  - `MAX_PROMPT_RETRIES_PER_IP`
-  - `PROMPT_RETRY_DELAY_MS`
-  - `MAX_PROMPT_RETRY_DELAY_MS`
-  - `MAX_EXTRACTION_RETRIES`
-  - `EXTRACTION_RETRY_DELAY_MS`
-  - `MAX_EXTRACTION_RETRY_DELAY_MS`
-- Proxy system:
+  - `DEBUG_ENABLED`
+- App/runtime wiring:
+  - `NODE_ENV`
+  - `AGENT_API_HOST`
+  - `AGENT_API_PORT`
+  - `AGENT_AUTH_ROOT_DIR`
+  - `AGENT_AUTH_UPLOAD_URL`
+  - `AGENT_AUTH_UPLOAD_TOKEN`
+- Proxy config:
   - `PROXY_PROVIDER` (`generic`, `decodo`, `smartproxy`, `brightdata`, `oxylabs`, `thordata`, `lunaproxy`, `netnut`, `soax`, `scrapeops`, `proxyempire`, `iproyal`, `webshare`)
   - `PROXY_SCHEME` (optional with split fields; defaults to `http`)
   - `PROXY_HOST`
@@ -63,13 +59,11 @@ Defined in `src/env.ts` (Zod validated):
   - `PROXY_USERNAME` (optional; requires `PROXY_PASSWORD`)
   - `PROXY_PASSWORD` (optional; requires `PROXY_USERNAME`)
   - Supported schemes: `http`, `https`, `socks4`, `socks5`
-- Camoufox runtime:
+- Browser/runtime config:
   - `CAMOUFOX_PYTHON_BIN` (optional)
   - `CAMOUFOX_HEADLESS_MODE` (`virtual`, `headful`, `headless`)
   - `CAMOUFOX_XVFB_DISPLAY`
   - `CAMOUFOX_XVFB_SCREEN`
-  - `CAMOUFOX_HUMANIZE`
-  - `CAMOUFOX_HUMANIZE_MAX_TIME_S`
   - `CAMOUFOX_GEOIP`
   - `CAMOUFOX_GEOIP_DB`
   - `CAMOUFOX_OS`
@@ -77,8 +71,6 @@ Defined in `src/env.ts` (Zod validated):
   - `CAMOUFOX_FONTS`
   - `CAMOUFOX_ADDONS`
   - `CAMOUFOX_EXCLUDE_ADDONS`
-  - `CAMOUFOX_SCREEN`
-  - `CAMOUFOX_WINDOW`
   - `CAMOUFOX_WEBGL_CONFIG`
   - `CAMOUFOX_BROWSER`
   - `CAMOUFOX_FF_VERSION`
@@ -99,12 +91,8 @@ Defined in `src/env.ts` (Zod validated):
   - `CAMOUFOX_I_KNOW_WHAT_IM_DOING`
   - `CAMOUFOX_DEBUG`
   - `CAMOUFOX_EXTRA_LAUNCH_JSON`
-- Provider tuning:
-  - `MIN_RESPONSE_CHARS`
-  - `PROVIDER_HOOK_TIMEOUT_MS`
-  - `AI_OVERVIEW_WAIT_TIMEOUT_MS`
-  - `SUBMIT_METHOD_TIMEOUT_MS`
-  - `SUBMISSION_PHASE_TIMEOUT_MS`
+
+Timeouts, retries, submission cadence, response minimums, and similar tuning are hardcoded in the agent and are no longer part of the env surface.
 
 ## Local Development
 

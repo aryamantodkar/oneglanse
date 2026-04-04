@@ -1,5 +1,10 @@
 "use client";
 import { AuthFormChrome } from "@/components/forms/auth-form-chrome";
+import {
+	authFieldClassName,
+	authLabelClassName,
+	authSubmitButtonClassName,
+} from "@/components/forms/auth-form-chrome";
 import { PasswordField } from "@/components/forms/password-field";
 import { authClient } from "@/lib/auth/auth-client";
 import {
@@ -82,28 +87,33 @@ export function SignupForm({
 
 	return (
 		<AuthFormChrome
-			title="Welcome back"
-			description="Signup with your Google account"
-			googleLabel="Signup with Google"
+			googleLabel="Continue with Google"
 			switchText="Already have an account?"
-			switchLabel="Login"
+			switchLabel="Log in"
 			switchHref={loginHref}
 			onGoogleClick={signInWithGoogle}
 			className={className}
 			{...props}
 		>
 			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-					<div className="grid gap-6">
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					<div className="grid gap-5">
 						<div className="grid gap-3">
 							<FormField
 								control={form.control}
 								name="username"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Username</FormLabel>
+										<FormLabel className={authLabelClassName}>
+											Full name
+										</FormLabel>
 										<FormControl>
-											<Input placeholder="John Doe" {...field} />
+											<Input
+												autoComplete="name"
+												placeholder="Ava Patel"
+												className={authFieldClassName}
+												{...field}
+											/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -116,21 +126,35 @@ export function SignupForm({
 								name="email"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Email</FormLabel>
+										<FormLabel className={authLabelClassName}>Email</FormLabel>
 										<FormControl>
-											<Input placeholder="john@gmail.com" {...field} />
+											<Input
+												type="email"
+												autoComplete="email"
+												placeholder="name@company.com"
+												className={authFieldClassName}
+												{...field}
+											/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
 								)}
 							/>
 						</div>
-						<PasswordField control={form.control} name="password" />
-						<Button type="submit" className="w-full" disabled={isLoading}>
+						<PasswordField
+							control={form.control}
+							name="password"
+							autoComplete="new-password"
+						/>
+						<Button
+							type="submit"
+							className={authSubmitButtonClassName}
+							disabled={isLoading}
+						>
 							{isLoading ? (
 								<Loader2 className="size-4 animate-spin" />
 							) : (
-								"Sign Up"
+								"Create account"
 							)}
 						</Button>
 					</div>

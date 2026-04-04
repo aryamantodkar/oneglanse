@@ -107,14 +107,5 @@ Most users only need these in `.env`:
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 
-And these in `apps/agent/.env` only if needed:
-
-- `CAMOUFOX_HEADLESS_MODE`
-- `CAMOUFOX_PYTHON_BIN`
-- `CAMOUFOX_PIP_SPEC`
-- `CAMOUFOX_BROWSER_CHANNEL`
-- `DEBUG_ENABLED`
-
-By default, local bootstrap pins `cloverlabs-camoufox==0.5.5` and
-`official/stable/135.0.1-beta.24` so fresh machines do not drift to a newer
-Camoufox/browser combination automatically.
+And in `apps/agent/.env`, only the values your local worker actually needs,
+typically Redis and any proxy credentials.

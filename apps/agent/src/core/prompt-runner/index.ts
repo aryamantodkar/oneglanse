@@ -1,15 +1,19 @@
-import type { AskPromptResult, PromptPayload, Provider } from "@oneglanse/types";
+import {
+	type AskPromptResult,
+	type PromptPayload,
+	type Provider,
+	resolveAppMode,
+	shouldUseProxyInMode,
+} from "@oneglanse/types";
 import type { Page } from "playwright";
 import { logger } from "@oneglanse/utils";
+import { env } from "../../env.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 import { executePromptWithRetry } from "./retryPolicy.js";
 
 /**
  * Loops over all prompts in the payload and runs each through the retry policy.
  * Propagates IPRefreshNeededError immediately so the outer job handler can rotate the proxy.
- *
- * Between-prompt page resets are handled by the provider's betweenPromptsHook —
- * this loop has no knowledge of what "reset" means for any given provider.
  */
 export async function runPrompts(
 	payload: PromptPayload,
@@ -22,7 +26,8 @@ export async function runPrompts(
 
 	const config = PROVIDER_CONFIGS[provider];
 	const results: AskPromptResult[] = [];
-	let proxyProven = false;
+	const useProxy = shouldUseProxyInMode(resolveAppMode(env.ONEGLANSE_APP_MODE));
+	let proxyProven = !useProxy;
 
 	for (let i = 0; i < promptsArray.length; i++) {
 		const promptEntry = promptsArray[i];
