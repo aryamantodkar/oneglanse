@@ -1,6 +1,6 @@
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
-import { getSelectorProfile } from "../../selectors/intelligence.js";
+import { getSelectorProfile } from "../../selectors/index.js";
 
 export async function findLastAssistantLocator(
 	page: Page,

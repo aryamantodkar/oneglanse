@@ -10,7 +10,7 @@ import {
 	extractResolvedResponseHtml,
 	getSelectorProfile,
 	invalidateSelectorProfileForPage,
-} from "../../lib/selectors/intelligence.js";
+} from "../../lib/selectors/index.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const MAX_EXTRACTION_RETRIES = 2;

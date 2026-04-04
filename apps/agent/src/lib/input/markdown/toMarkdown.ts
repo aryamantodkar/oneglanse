@@ -1,6 +1,6 @@
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { extractResolvedResponseHtml } from "../../selectors/intelligence.js";
+import { extractResolvedResponseHtml } from "../../selectors/index.js";
 import { turndown } from "./converter.js";
 
 export async function extractAssistantMarkdown(

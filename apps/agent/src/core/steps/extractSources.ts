@@ -1,7 +1,7 @@
 import type { Provider, Source } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { extractResolvedSources } from "../../lib/selectors/intelligence.js";
+import { extractResolvedSources } from "../../lib/selectors/index.js";
 
 export async function checkAndExtractSources(
 	page: Page,

@@ -9,7 +9,7 @@ import type { Page } from "playwright";
 import {
 	invalidateSelectorProfileForPage,
 	waitForSelectorProfile,
-} from "../../selectors/intelligence.js";
+} from "../../selectors/index.js";
 import { getText } from "./getText.js";
 import { isGenerating } from "./isGenerating.js";
 

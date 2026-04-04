@@ -5,7 +5,7 @@ import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
-import { requireEditorCandidate, waitForSelectorProfile } from "../../../lib/selectors/intelligence.js";
+import { requireEditorCandidate, waitForSelectorProfile } from "../../../lib/selectors/index.js";
 import type { ProviderConfig } from "../types.js";
 
 const GOOGLE_CONSENT_SELECTOR =

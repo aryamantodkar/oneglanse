@@ -1,7 +1,7 @@
 import { NotFoundError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import type { Locator, Page } from "playwright";
-import { findResolvedEditorCandidate } from "../../selectors/intelligence.js";
+import { findResolvedEditorCandidate } from "../../selectors/index.js";
 
 export type EditorCandidate = {
 	locator: Locator;
