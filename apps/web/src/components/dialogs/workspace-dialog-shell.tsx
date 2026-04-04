@@ -1,6 +1,13 @@
 "use client";
 
 import {
+	formDialogBodyClassName,
+	formDialogContentClassName,
+	formDialogFooterClassName,
+	formDialogHeaderClassName,
+	formSecondaryButtonClassName,
+} from "@/components/forms/auth-form-chrome";
+import {
 	Button,
 	Dialog,
 	DialogContent,
@@ -9,6 +16,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@oneglanse/ui";
+import { cn } from "@oneglanse/utils";
 import type { ReactNode } from "react";
 
 type WorkspaceDialogShellProps = {
@@ -38,14 +46,22 @@ export function WorkspaceDialogShell({
 				onOpenChange(isOpen);
 			}}
 		>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-					<DialogDescription>{description}</DialogDescription>
+			<DialogContent className={formDialogContentClassName}>
+				<DialogHeader className={formDialogHeaderClassName}>
+					<DialogTitle className="text-[1.45rem] tracking-[-0.04em] text-gray-950 dark:text-gray-50">
+						{title}
+					</DialogTitle>
+					<DialogDescription className="max-w-md text-sm leading-6 text-gray-500 dark:text-gray-400">
+						{description}
+					</DialogDescription>
 				</DialogHeader>
-				{children}
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
+				<div className={formDialogBodyClassName}>{children}</div>
+				<DialogFooter className={formDialogFooterClassName}>
+					<Button
+						variant="outline"
+						className={cn(formSecondaryButtonClassName, "w-full sm:w-auto")}
+						onClick={() => onOpenChange(false)}
+					>
 						Cancel
 					</Button>
 					{footerActions}

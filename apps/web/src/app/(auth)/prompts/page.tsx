@@ -1,5 +1,13 @@
 "use client";
 
+import {
+	formDialogContentClassName,
+	formDialogHeaderClassName,
+	formPanelClassName,
+	formPrimaryButtonClassName,
+	formSecondaryButtonClassName,
+	formTextareaClassName,
+} from "@/components/forms/auth-form-chrome";
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
@@ -39,6 +47,7 @@ import {
 	joinSourceUrls,
 	modelSelectors,
 } from "@oneglanse/utils";
+import { cn } from "@oneglanse/utils";
 import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
@@ -484,8 +493,10 @@ export default function Prompts() {
 										<span>Add Prompt</span>
 									</Button>
 								</DialogTrigger>
-								<DialogContent>
-									<DialogHeader>
+								<DialogContent
+									className={cn(formDialogContentClassName, "max-w-xl")}
+								>
+									<DialogHeader className={formDialogHeaderClassName}>
 										<DialogTitle>
 											{editIndex !== null ? "Edit Prompt" : "Add New Prompt"}
 										</DialogTitle>
@@ -499,11 +510,18 @@ export default function Prompts() {
 												? setEditPromptValue(e.target.value)
 												: setCurrentPrompt(e.target.value)
 										}
-										className="mt-2 w-full"
+										className={cn(
+											formTextareaClassName,
+											"mx-6 mt-2 w-auto resize-none sm:mx-7",
+										)}
 									/>
-									<div className="mt-4 flex justify-end gap-2">
+									<div className="mt-5 flex flex-col gap-3 px-6 pb-6 sm:flex-row sm:justify-end sm:px-7 sm:pb-7">
 										<Button
 											variant="outline"
+											className={cn(
+												formSecondaryButtonClassName,
+												"w-full sm:w-auto",
+											)}
 											onClick={() => setDialogOpen(false)}
 										>
 											Cancel
@@ -515,6 +533,10 @@ export default function Prompts() {
 													? !isEditPromptChanged
 													: !currentPrompt.trim()
 											}
+											className={cn(
+												formPrimaryButtonClassName,
+												"w-full sm:w-auto",
+											)}
 										>
 											{editIndex !== null ? "Update" : "Add"}
 										</Button>
@@ -916,7 +938,12 @@ export default function Prompts() {
 							open={!!openPrompt}
 							onOpenChange={() => setOpenPrompt(null)}
 						>
-							<DialogContent className="!max-w-[90vw] !w-[90vw] sm:!max-w-[80vw] sm:!w-[80vw] flex h-[90vh] flex-col rounded-2xl px-4 pb-6 sm:px-10 sm:pt-12 sm:pb-10 ">
+							<DialogContent
+								className={cn(
+									formDialogContentClassName,
+									"!flex h-[90vh] !w-[90vw] !max-w-[90vw] flex-col px-4 pb-6 sm:!w-[80vw] sm:!max-w-[80vw] sm:px-10 sm:pt-12 sm:pb-10",
+								)}
+							>
 								<DialogHeader className="pb-6">
 									<DialogTitle className="font-semibold text-xl">
 										{openPrompt?.prompt}
@@ -960,7 +987,7 @@ export default function Prompts() {
 														key={record.id}
 														onClick={() => toggleResponse(index)}
 														data-expanded={isExpanded}
-														className={`group cursor-pointer rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-sm transition-all duration-200 ease-out hover:shadow-md sm:px-6 dark:border-gray-800 dark:bg-gray-950 dark:shadow-black/20 ${isExpanded ? "shadow-lg ring-1 ring-gray-200 dark:ring-gray-700" : ""}
+														className={`group cursor-pointer px-4 py-5 transition-all duration-200 ease-out sm:px-6 ${formPanelClassName} ${isExpanded ? "ring-1 ring-gray-200 dark:ring-gray-700" : ""}
                           `}
 													>
 														<div className="mb-4 flex items-start justify-between">

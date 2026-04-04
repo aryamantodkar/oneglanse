@@ -1,5 +1,12 @@
 "use client";
 
+import {
+	formFieldClassName,
+	formHintClassName,
+	formLabelClassName,
+	formPrimaryButtonClassName,
+	formSurfaceClassName,
+} from "@/components/forms/auth-form-chrome";
 import { authClient } from "@/lib/auth/auth-client";
 import { api } from "@/trpc/react";
 import {
@@ -14,6 +21,7 @@ import {
 	Label,
 	toast,
 } from "@oneglanse/ui";
+import { cn } from "@oneglanse/utils";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -120,20 +128,33 @@ export default function NewWorkspace() {
 	};
 
 	return (
-		<div className="web-centered-page">
-			<div className="ui-stagger w-full max-w-md">
-				<Card>
-					<CardHeader>
-						<CardTitle>Brand Workspace Setup</CardTitle>
+		<div className="flex min-h-svh min-w-0 items-center justify-center bg-stone-50 px-4 py-6 dark:bg-neutral-950 sm:px-6 sm:py-8">
+			<div className="ui-stagger w-full max-w-md space-y-6">
+				<div className="space-y-3 text-center">
+					<h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-gray-950 dark:text-gray-50">
+						Create your workspace
+					</h1>
+					<p className="text-sm text-gray-600 dark:text-gray-300">
+						Set up your organization and brand tracking workspace in one clean
+						step.
+					</p>
+				</div>
+				<Card className={formSurfaceClassName}>
+					<CardHeader className="space-y-2 px-6 pt-6 pb-0 sm:px-7 sm:pt-8">
+						<CardTitle className="text-[1.55rem] tracking-[-0.04em]">
+							Brand Workspace Setup
+						</CardTitle>
 						<CardDescription>
 							Set up your organization and brand tracking workspace.
 						</CardDescription>
 					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="organization-name">Organization Name</Label>
+					<CardContent className="space-y-5 px-6 py-6 sm:px-7 sm:py-7">
+						<div className="space-y-2.5">
+							<Label htmlFor="organization-name" className={formLabelClassName}>
+								Organization Name
+							</Label>
 							<Input
-								className="outline-none"
+								className={formFieldClassName}
 								id="organization-name"
 								placeholder="Enter your organization name"
 								value={formData.organizationName}
@@ -146,27 +167,32 @@ export default function NewWorkspace() {
 							/>
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="workspace-name">Brand Name</Label>
+						<div className="space-y-2.5">
+							<Label htmlFor="workspace-name" className={formLabelClassName}>
+								Brand Name
+							</Label>
 							<Input
-								className="outline-none"
+								className={formFieldClassName}
 								id="workspace-name"
 								placeholder="e.g. Pipedrive"
 								value={formData.workspaceName}
 								onChange={(e) => handleWorkspaceNameChange(e.target.value)}
 							/>
-							<p className="text-xs text-gray-500">
+							<p className={formHintClassName}>
 								This is used as your tracked brand name in AI visibility
 								analysis.
 							</p>
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="workspace-slug">Workspace Slug</Label>
+						<div className="space-y-2.5">
+							<Label htmlFor="workspace-slug" className={formLabelClassName}>
+								Workspace Slug
+							</Label>
 							<Input
 								id="workspace-slug"
 								placeholder="brand-workspace-slug"
 								value={formData.workspaceSlug}
+								className={formFieldClassName}
 								onChange={(e) => {
 									setSlugTouched(true);
 									setFormData((prev) => ({
@@ -177,12 +203,15 @@ export default function NewWorkspace() {
 							/>
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="workspace-domain">Brand Domain</Label>
+						<div className="space-y-2.5">
+							<Label htmlFor="workspace-domain" className={formLabelClassName}>
+								Brand Domain
+							</Label>
 							<Input
 								id="workspace-domain"
 								placeholder="e.g. www.pipedrive.com"
 								value={formData.domain}
+								className={formFieldClassName}
 								onChange={(e) => {
 									setDomainTouched(true);
 									setFormData((prev) => ({
@@ -191,14 +220,14 @@ export default function NewWorkspace() {
 									}));
 								}}
 							/>
-							<p className="text-xs text-gray-500">
+							<p className={formHintClassName}>
 								Use your primary brand domain. We use this for source matching
 								and brand tracking.
 							</p>
 						</div>
 					</CardContent>
 
-					<CardFooter>
+					<CardFooter className="px-6 pb-6 sm:px-7 sm:pb-8">
 						<div className="w-full space-y-3">
 							<Button
 								onClick={handleComplete}
@@ -209,7 +238,10 @@ export default function NewWorkspace() {
 									!formData.workspaceSlug.trim() ||
 									!formData.domain.trim()
 								}
-								className="w-full flex items-center gap-2 cursor-pointer"
+								className={cn(
+									formPrimaryButtonClassName,
+									"flex items-center gap-2",
+								)}
 							>
 								{loading ? (
 									<Loader2 className="h-4 w-4 animate-spin" />
