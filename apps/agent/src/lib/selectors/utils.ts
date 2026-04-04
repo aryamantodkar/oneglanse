@@ -44,6 +44,54 @@ export function normalizeSelectorToken(token: string): string {
 	return token.replace(/\\/g, "").trim();
 }
 
+function splitSemanticTokenSegments(token: string): string[] {
+	return token
+		.split(/[-_:]+/)
+		.map((segment) => segment.trim())
+		.filter(Boolean);
+}
+
+function looksLikeGeneratedSegment(segment: string): boolean {
+	if (!segment) {
+		return false;
+	}
+
+	if (/^\d+$/.test(segment)) {
+		return true;
+	}
+
+	if (/^[a-f0-9]{8,}$/i.test(segment)) {
+		return true;
+	}
+
+	return (
+		segment.length >= 8 &&
+		/[a-z]/i.test(segment) &&
+		/\d/.test(segment) &&
+		!/^([a-z]+|\d+|[a-z]+\d{1,2})$/i.test(segment)
+	);
+}
+
+function hasGeneratedTokenShape(token: string): boolean {
+	const segments = splitSemanticTokenSegments(token);
+	if (segments.length === 0) {
+		return false;
+	}
+	if (
+		segments.length >= 4 &&
+		segments.filter((segment) => segment.length <= 2).length >= 2
+	) {
+		return true;
+	}
+
+	if (segments.some((segment) => looksLikeGeneratedSegment(segment))) {
+		return true;
+	}
+
+	const tail = segments.at(-1);
+	return Boolean(tail && segments.length > 1 && /^\d+$/.test(tail));
+}
+
 export function isStableSemanticToken(token: string): boolean {
 	if (!token || token.length > 40) {
 		return false;
@@ -53,6 +101,9 @@ export function isStableSemanticToken(token: string): boolean {
 		/^\d+$/.test(token) ||
 		/__[a-z0-9]{5,}$/i.test(token)
 	) {
+		return false;
+	}
+	if (hasGeneratedTokenShape(token)) {
 		return false;
 	}
 	// Reject build-tool hash tokens: mixed case, short (≤8 chars), no separator.
@@ -66,13 +117,56 @@ export function isStableSemanticToken(token: string): boolean {
 	) {
 		return false;
 	}
-	if (token.includes("-") || token.includes("_")) {
-		return true;
+	if (token.includes("-") || token.includes("_") || token.includes(":")) {
+		const segments = splitSemanticTokenSegments(token);
+		return (
+			segments.length > 0 &&
+			segments.every(
+				(segment) =>
+					/^[a-z]+$/.test(segment) || /^[a-z]+\d{1,2}$/i.test(segment),
+			)
+		);
 	}
 	if (!/^[a-z]+$/.test(token)) {
 		return false;
 	}
 	return token.length >= 4;
+}
+
+function isSemanticAttributeSelector(attrName: string): boolean {
+	return /^(name|aria-label|placeholder|role|type|title)$/i.test(attrName);
+}
+
+function isStabilityCheckedAttributeSelector(attrName: string): boolean {
+	return (
+		attrName === "id" || attrName === "class" || attrName.startsWith("data-")
+	);
+}
+
+function isStableSelectorAttributeValue(
+	attrName: string,
+	value: string,
+): boolean {
+	if (!value) {
+		return false;
+	}
+
+	if (isSemanticAttributeSelector(attrName)) {
+		return true;
+	}
+
+	if (attrName === "class") {
+		return value
+			.split(/\s+/)
+			.filter(Boolean)
+			.every((token) => isStableSemanticToken(normalizeSelectorToken(token)));
+	}
+
+	if (isStabilityCheckedAttributeSelector(attrName)) {
+		return isStableSemanticToken(normalizeSelectorToken(value));
+	}
+
+	return true;
 }
 
 export function isStableSelectorValue(selector: string): boolean {
@@ -90,6 +184,22 @@ export function isStableSelectorValue(selector: string): boolean {
 			return false;
 		}
 	}
+
+	const attributePattern = /\[([a-zA-Z0-9_-]+)(?:[*^$|~]?=)(["'])(.*?)\2\]/g;
+	for (const match of selector.matchAll(attributePattern)) {
+		const attrName = (match[1] ?? "").trim().toLowerCase();
+		const attrValue = normalizeSelectorToken(
+			(match[3] ?? "").replace(/\\"/g, '"').replace(/\\'/g, "'"),
+		);
+		if (
+			attrName &&
+			attrValue &&
+			!isStableSelectorAttributeValue(attrName, attrValue)
+		) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -107,7 +217,11 @@ export function compactSelectors(
 		// but keeping the ordinal in the actual selector makes it permanently point
 		// to the first response container. extractResponsePayload uses .at(-1) to
 		// get the latest match, so an unanchored selector works correctly.
-		if (field === "response") {
+		if (
+			field === "response" ||
+			field === "sourcePanel" ||
+			field === "sourceItem"
+		) {
 			values = values.map((value) =>
 				value.replace(/:nth-of-type\(\d+\)/g, "").trim(),
 			);
@@ -171,34 +285,18 @@ export function normalizeSelectorForState(selector: string): string {
 }
 
 export function buildSnapshotStateKey(snapshot: SelectorSnapshot): string {
+	// Same invariant as the snapshot fingerprint: deduplicated sorted selector
+	// sets. Per-element text, ariaLabel, and fingerprint values change between
+	// prompts even when the page structure is identical — excluding them prevents
+	// the state key from falsely detecting a "new" page state on every prompt.
 	return hashValue(
 		JSON.stringify({
 			stage: snapshot.stage,
 			pageKey: snapshot.pageKey,
-			editables: snapshot.editables.slice(0, 2).map((item) => ({
-				selector: normalizeSelectorForState(item.selector),
-				fingerprint: item.fingerprint,
-			})),
-			buttons: snapshot.buttons.slice(0, 8).map((item) => ({
-				selector: normalizeSelectorForState(item.selector),
-				ariaLabel: item.ariaLabel,
-				text: item.text.slice(0, 60),
-				fingerprint: item.fingerprint,
-			})),
-			content: snapshot.content.slice(0, 8).map((item) => ({
-				selector: normalizeSelectorForState(item.selector),
-				lengthBucket: Math.min(12, Math.floor(item.textLength / 250)),
-				linkCount: item.linkCount,
-				buttonCount: item.buttonCount,
-				fingerprint: item.fingerprint,
-			})),
-			groups: snapshot.groups.slice(0, 6).map((item) => ({
-				selector: normalizeSelectorForState(item.selector),
-				groupCount: item.groupCount ?? 0,
-				linkCount: item.linkCount,
-				buttonCount: item.buttonCount,
-				fingerprint: item.fingerprint,
-			})),
+			editables: [...new Set(snapshot.editables.map((item) => normalizeSelectorForState(item.selector)))].sort(),
+			buttons: [...new Set(snapshot.buttons.map((item) => normalizeSelectorForState(item.selector)))].sort(),
+			content: [...new Set(snapshot.content.map((item) => normalizeSelectorForState(item.selector)))].sort(),
+			groups: [...new Set(snapshot.groups.map((item) => normalizeSelectorForState(item.selector)))].sort(),
 		}),
 	);
 }

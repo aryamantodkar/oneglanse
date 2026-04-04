@@ -1,3 +1,5 @@
+import { toErrorMessage } from "@oneglanse/errors";
+import { chatgpt } from "@oneglanse/services";
 import type {
 	ModelCandidate,
 	Provider,
@@ -7,17 +9,19 @@ import type {
 	SelectorStage,
 	SnapshotCandidate,
 } from "@oneglanse/types";
-import { toErrorMessage } from "@oneglanse/errors";
-import { chatgpt } from "@oneglanse/services";
 import { logger } from "@oneglanse/utils";
 import {
+	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
 	SELECTOR_MODEL,
 	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
 	SELECTOR_PROFILE_VERSION,
-	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
 	selectorModelState,
 } from "./constants.js";
-import { STAGE_REQUIRED_FIELDS, SelectorProfileSchema, compactSelectors } from "./utils.js";
+import {
+	STAGE_REQUIRED_FIELDS,
+	SelectorProfileSchema,
+	compactSelectors,
+} from "./utils.js";
 
 export function isSelectorModelRateLimited(): boolean {
 	if (Date.now() >= selectorModelState.disabledUntil) {
@@ -34,7 +38,9 @@ export function isSelectorModelErrorRateLimit(error: unknown): boolean {
 }
 
 export function shouldSkipSelectorModelForBudget(): boolean {
-	if (selectorModelState.callsThisProcess < MAX_SELECTOR_MODEL_CALLS_PER_PROCESS) {
+	if (
+		selectorModelState.callsThisProcess < MAX_SELECTOR_MODEL_CALLS_PER_PROCESS
+	) {
 		return false;
 	}
 	if (!selectorModelState.budgetLogged) {
@@ -57,10 +63,10 @@ export function buildSystemPrompt(stage: SelectorStage): string {
 		"(3) Selector stability order (prefer the highest available): " +
 		"name/aria-label/placeholder > data-testid/data-test/data-qa > role/contenteditable > id > classes > positional. " +
 		"When multiple selectors are available, ALWAYS prefer the highest-priority type even if a lower-priority one also matches. " +
-		"NEVER use id or class tokens that are build-tool generated: 8 chars or fewer, mixed upper and lower case, no hyphen or underscore (e.g. #APjFqb, .jloFI, .xPaR2). " +
+		"NEVER use id, class, or data-* attribute values that are build-tool generated, per-instance, or turn-specific. Reject short mixed-case hash tokens, generated suffixes, hex/alphanumeric blobs, and ordinal tokens like *-2 or *_9c31ab12. " +
 		"Recognisable camelCase library names are stable and allowed (e.g. .ProseMirror, .CodeMirror, .DraftEditor). " +
 		"All-lowercase tokens with hyphens or underscores are always stable (e.g. .chat-message, #send-button). " +
-		"If the only available selectors are build-tool hash tokens, return []. " +
+		"If the only available selectors are build-tool hash tokens, generated suffix tokens, or per-turn/test-instance selectors, return []. " +
 		"(4) Never choose broad page wrappers, historical conversation turns, or elements that span multiple responses. " +
 		"(5) Prefer attribute selectors ([data-testid=...], [aria-label=...], [role=...]) over class or id selectors whenever the attribute is semantic and not auto-generated.";
 
@@ -73,10 +79,10 @@ export function buildSystemPrompt(stage: SelectorStage): string {
 	}
 
 	if (stage === "response") {
-		return `${shared} Task: identify response, generationIndicator, and sourcesButton. response: the outermost container of the LATEST model answer only — not a child paragraph, code block, or whole-page wrapper. Must contain the full answer text, must be absent for prior turns, must persist after streaming ends. Reject any candidate that contains editable elements, user input, or multiple historical answers. generationIndicator: a small UI element (stop button, spinner, live-region) that is ONLY visible while the answer is streaming and disappears when complete. Must not contain the answer body. Return [] if no such element is visible. sourcesButton: the control that opens citations/sources for this latest answer only. Return [] if absent.`;
+		return `${shared} Task: identify response, generationIndicator, and sourcesButton. response: the outermost container of the LATEST model answer body only — not a child paragraph, code block, whole-page wrapper, research/status header, tool-use summary, reasoning/thinking panel, citation tray, or metadata badge. Must contain the full final answer text, must be absent for prior turns, and must persist after streaming ends. Reject any candidate that contains editable elements, user input, multiple historical answers, or short status/label rows that describe the answer instead of being the answer itself. generationIndicator: a small UI element (stop button, spinner, live-region) that is ONLY visible while the answer is streaming and disappears when complete. Must not contain the answer body. Return [] if no such element is visible. sourcesButton: the control that opens citations/sources for this latest answer only. Return [] if absent.`;
 	}
 
-	return `${shared} Task: identify sourcePanel and sourceItem. The sources UI is already open. sourcePanel: the smallest stable container that holds only the source list for the latest answer — not sidebars, nav, or the full document. sourceItem: the repeating element (card, row, anchor) for each individual source inside that panel. If panel and items are nested, choose the repeated items for sourceItem and their direct container for sourcePanel.`;
+	return `${shared} Task: identify sourcePanel and sourceItem. The sources UI is already open. sourcePanel: return a selector for EVERY distinct container that holds a source list for the latest answer — some providers render citations in multiple locations (e.g. an inline citations tray AND a side panel); include a selector for each one. Do not include the full document, page root, or top-level layout wrappers. sourceItem: the repeating element (card, row, anchor) for each individual source — use the most generic selector that matches all source items across all panels. If panel and items are nested, choose the repeated items for sourceItem and their direct parent containers for sourcePanel.`;
 }
 
 export function toModelCandidate(candidate: SnapshotCandidate): ModelCandidate {

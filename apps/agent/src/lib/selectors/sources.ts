@@ -455,109 +455,142 @@ async function extractRawSourcesWithSelectors(
 				return bestScore > Number.NEGATIVE_INFINITY ? best : null;
 			}
 
-			function resolveRoot(): HTMLElement | null {
+			// Resolve ALL source panel roots — providers sometimes render citations in
+			// multiple containers (e.g. an inline tray + a side panel). Collect from
+			// every distinct root and merge results.
+			function resolveRoots(): HTMLElement[] {
+				const roots: HTMLElement[] = [];
+				const seen = new Set<Element>();
+
+				// 1. aria-controls/aria-owns panel (highest confidence)
 				if (rootSelector) {
 					try {
-						const controlledPanel = lastVisible(
-							Array.from(
-								document.querySelectorAll(rootSelector),
-							) as HTMLElement[],
-						);
-						if (controlledPanel) {
-							return controlledPanel;
+						for (const el of Array.from(
+							document.querySelectorAll(rootSelector),
+						) as HTMLElement[]) {
+							if (isVisible(el) && !seen.has(el)) {
+								roots.push(el);
+								seen.add(el);
+							}
 						}
 					} catch {}
 				}
 
+				// 2. Each sourcePanel selector — may point to different containers
 				for (const selector of panels) {
 					try {
-						const panel = lastVisible(
-							Array.from(document.querySelectorAll(selector)) as HTMLElement[],
-						);
-						if (panel) {
-							return panel;
+						for (const el of Array.from(
+							document.querySelectorAll(selector),
+						) as HTMLElement[]) {
+							if (isVisible(el) && !seen.has(el)) {
+								roots.push(el);
+								seen.add(el);
+							}
 						}
 					} catch {}
 				}
 
-				return resolveHeuristicRoot();
-			}
-
-			const root = resolveRoot();
-			if (!root) return [];
-			const rawItems: Element[] = [];
-			for (const selector of items) {
-				try {
-					rawItems.push(...Array.from(root.querySelectorAll(selector)));
-				} catch {}
-			}
-
-			let dedupedItems = Array.from(new Set(rawItems)).filter(isVisible);
-			if (dedupedItems.length <= 1) {
-				// Anchors inside a scrollable panel may have zero bounding-rect height
-				// when they are below the visible scroll area — isVisible returns false
-				// for them. Use a lenient check: connected, not hidden, has an href.
-				const isConnectedAnchor = (element: Element): element is HTMLAnchorElement => {
-					if (!(element instanceof HTMLAnchorElement)) return false;
-					if (!element.isConnected || element.hidden) return false;
-					const style = window.getComputedStyle(element);
-					return (
-						style.display !== "none" &&
-						style.visibility !== "hidden" &&
-						!!element.href
-					);
-				};
-				const anchorItems = Array.from(root.querySelectorAll("a[href]")).filter(
-					isConnectedAnchor,
-				);
-				if (anchorItems.length > dedupedItems.length) {
-					dedupedItems = anchorItems;
+				// 3. Heuristic fallback when no structured panels found
+				if (roots.length === 0) {
+					const heuristic = resolveHeuristicRoot();
+					if (heuristic) roots.push(heuristic);
 				}
+
+				return roots;
 			}
+
+			// Lenient anchor check for items inside a scrollable panel: anchors that
+			// are off-screen within the panel have height=0 from getBoundingClientRect
+			// but are still reachable. Do NOT use isVisible here — only check that the
+			// element is connected and not explicitly hidden. Never scroll window.
+			function isConnectedAnchor(element: Element): element is HTMLAnchorElement {
+				if (!(element instanceof HTMLAnchorElement)) return false;
+				if (!element.isConnected || element.hidden) return false;
+				const style = window.getComputedStyle(element);
+				return (
+					style.display !== "none" &&
+					style.visibility !== "hidden" &&
+					!!element.href
+				);
+			}
+
+			const roots = resolveRoots();
+			if (roots.length === 0) return [];
+
+			const seenUrls = new Set<string>();
 			const results: RawSource[] = [];
 
-			for (const item of dedupedItems) {
-				const anchor =
-					lastVisible(
-						Array.from(item.querySelectorAll("a[href]")) as HTMLAnchorElement[],
-					) || (item instanceof HTMLAnchorElement ? item : null);
-				if (!anchor?.href) continue;
+			for (const root of roots) {
+				// Scroll the panel itself to the bottom to reveal any lazily-rendered
+				// or off-screen items. This touches only the panel element's scrollTop —
+				// it never calls window.scrollTo and does not move the main page.
+				root.scrollTop = root.scrollHeight;
 
-				let url = "";
-				try {
-					url =
-						new URL(anchor.href, window.location.origin)
-							.toString()
-							.split("#")[0] || "";
-				} catch {
-					continue;
+				const rawItems: Element[] = [];
+				for (const selector of items) {
+					try {
+						rawItems.push(...Array.from(root.querySelectorAll(selector)));
+					} catch {}
 				}
-				if (!url) continue;
 
-				const title =
-					item
-						.querySelector("h1,h2,h3,h4,strong,b,[title]")
-						?.textContent?.trim() ||
-					anchor.getAttribute("title")?.trim() ||
-					anchor.textContent?.trim() ||
-					url;
+				let dedupedItems = Array.from(new Set(rawItems)).filter(isVisible);
+				if (dedupedItems.length <= 1) {
+					const anchorItems = Array.from(
+						root.querySelectorAll("a[href]"),
+					).filter(isConnectedAnchor);
+					if (anchorItems.length > dedupedItems.length) {
+						dedupedItems = anchorItems;
+					}
+				}
 
-				const snippetCandidates = Array.from(
-					item.querySelectorAll("p, span, div, small"),
-				)
-					.map((element) => textOf(element))
-					.filter(
-						(text) => text.length > 30 && text !== title && !text.includes(url),
+				for (const item of dedupedItems) {
+					const anchor =
+						lastVisible(
+							Array.from(
+								item.querySelectorAll("a[href]"),
+							) as HTMLAnchorElement[],
+						) || (item instanceof HTMLAnchorElement ? item : null);
+					if (!anchor?.href) continue;
+
+					let url = "";
+					try {
+						url =
+							new URL(anchor.href, window.location.origin)
+								.toString()
+								.split("#")[0] || "";
+					} catch {
+						continue;
+					}
+					if (!url || seenUrls.has(url)) continue;
+					seenUrls.add(url);
+
+					const title =
+						item
+							.querySelector("h1,h2,h3,h4,strong,b,[title]")
+							?.textContent?.trim() ||
+						anchor.getAttribute("title")?.trim() ||
+						anchor.textContent?.trim() ||
+						url;
+
+					const snippetCandidates = Array.from(
+						item.querySelectorAll("p, span, div, small"),
 					)
-					.sort((left, right) => right.length - left.length);
+						.map((element) => textOf(element))
+						.filter(
+							(text) =>
+								text.length > 30 && text !== title && !text.includes(url),
+						)
+						.sort((left, right) => right.length - left.length);
 
-				results.push({
-					rawHref: url,
-					title,
-					citedText: snippetCandidates[0] ?? title,
-					imgSrc:
-						(item.querySelector("img") as HTMLImageElement | null)?.src ?? null,
-				});
+					results.push({
+						rawHref: url,
+						title,
+						citedText: snippetCandidates[0] ?? title,
+						imgSrc:
+							(item.querySelector("img") as HTMLImageElement | null)?.src ??
+							null,
+					});
+				}
 			}
 
 			return results;
