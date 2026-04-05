@@ -1,0 +1,85 @@
+---
+title: API Reference
+description: Operational reference for app modes, provider auth, supported providers, and key runtime behavior.
+---
+
+# API Reference
+
+This document is the operational reference for how OneGlanse behaves across app modes.
+
+## App Modes
+
+OneGlanse supports three app modes:
+
+- `cloud`
+- `local`
+- `self-hosted`
+
+## Mode Capabilities
+
+| Capability | Cloud | Local | Self-Hosted |
+| --- | --- | --- | --- |
+| Use hosted product | Yes | No | No |
+| Interactive provider auth | No | Yes | No |
+| Manual `Run Prompts Now` | No | Yes | No |
+| Recurring scheduling | Yes | No | Yes |
+
+## Supported Runtime Providers
+
+- ChatGPT
+- Perplexity
+- Gemini
+- Claude
+- AI Overview
+
+## Auth Groups
+
+- ChatGPT
+- Perplexity
+- Google
+- Claude
+
+Gemini and Google Search auth are stored separately.
+
+## Key Routes
+
+- `/dashboard`
+- `/prompts`
+- `/sources`
+- `/people`
+- `/schedule`
+- `/providers`
+
+### Route Behavior by Mode
+
+- `/providers` is local-only
+- `/schedule` becomes a manual run page in local mode
+- `/schedule` becomes a recurring schedule page in cloud and self-hosted mode
+
+## Useful Commands
+
+```bash
+pnpm local
+pnpm auth
+pnpm self-host
+pnpm self-host:app
+pnpm self-host:public
+pnpm typecheck
+```
+
+## Provider Auth Upload
+
+For self-hosted environments, capture auth locally and upload it:
+
+```bash
+pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
+```
+
+## Storage Model
+
+OneGlanse uses:
+
+- Portable auth bundles
+- Persistent runtime browser profiles
+
+Auth bundles are the portable source of truth. Runtime profiles are the machine-local execution state used during runs.

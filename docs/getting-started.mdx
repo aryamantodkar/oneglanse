@@ -1,0 +1,99 @@
+---
+title: Getting Started
+description: Use OneGlanse in the cloud app, run it locally, or self-host the full stack.
+---
+
+# Getting Started
+
+OneGlanse supports three setup paths.
+
+## 1. Use the Cloud App
+
+Use the hosted app if you want the fastest setup:
+
+- App: `https://app.oneglanse.com`
+- Landing: `https://oneglanse.com`
+- Docs: `https://oneglanse.com/docs`
+
+Recommended flow:
+
+1. Sign in
+2. Create or select a workspace
+3. Add prompts
+4. Review responses, sources, and dashboard metrics
+
+## 2. Run It Locally
+
+Use local mode when you want to run the web app and agent on your own machine.
+
+### Requirements
+
+- Node.js 20+
+- pnpm 10+
+- Docker + Docker Compose
+
+### Install
+
+```bash
+pnpm install
+```
+
+### Start
+
+```bash
+pnpm local
+```
+
+This:
+
+- Creates `.env` and `apps/agent/.env` if missing
+- Starts Postgres, ClickHouse, and Redis
+- Runs migrations
+- Starts the web app and the agent
+- Opens the app at `http://localhost:3000`
+
+### Local Notes
+
+- Local mode supports interactive provider auth
+- Local mode supports manual prompt runs
+- Local mode does not support recurring scheduling
+
+## 3. Self-Host It
+
+Use self-hosted mode when you want the full product in your own infrastructure.
+
+### Install
+
+```bash
+pnpm install
+```
+
+### Start
+
+```bash
+pnpm self-host
+```
+
+This starts:
+
+- The main app stack
+- The public stack
+
+Default ports:
+
+- Landing: `3000`
+- App: `3001`
+- Docs: `3002`
+- Auth upload API: `3333`
+
+### Self-Hosted Notes
+
+- Interactive provider login does not run on the server
+- Capture provider auth locally, then sync it to the server
+- Recurring scheduling is supported
+
+## Choosing the Right Mode
+
+- Use Cloud for the fastest product access
+- Use Local for development and manual runs
+- Use Self-Hosted for production control and private infrastructure

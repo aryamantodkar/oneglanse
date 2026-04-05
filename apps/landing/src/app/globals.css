@@ -10,8 +10,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-	--font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-		"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	--font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 @theme inline {
@@ -41,20 +41,20 @@
 
 :root {
 	--radius: 0.625rem;
-	--background: #ffffff;
-	--foreground: #171717;
+	--background: #f5f5f7;
+	--foreground: #1d1d1f;
 	--card: #ffffff;
-	--card-foreground: #171717;
+	--card-foreground: #1d1d1f;
 	--popover: #ffffff;
-	--popover-foreground: #171717;
-	--primary: oklch(0.216 0.006 56.043);
-	--primary-foreground: oklch(0.985 0.001 106.423);
-	--secondary: oklch(0.97 0.001 106.424);
-	--secondary-foreground: oklch(0.216 0.006 56.043);
-	--muted: oklch(0.97 0.001 106.424);
-	--muted-foreground: oklch(0.553 0.013 58.071);
-	--accent: oklch(0.97 0.001 106.424);
-	--accent-foreground: oklch(0.216 0.006 56.043);
+	--popover-foreground: #1d1d1f;
+	--primary: #0071e3;
+	--primary-foreground: #ffffff;
+	--secondary: #1d1d1f;
+	--secondary-foreground: #ffffff;
+	--muted: #f5f5f7;
+	--muted-foreground: rgba(0, 0, 0, 0.8);
+	--accent: #f5f5f7;
+	--accent-foreground: #1d1d1f;
 	--destructive: oklch(0.577 0.245 27.325);
 	--border: oklch(0.923 0.003 48.717);
 	--input: oklch(0.923 0.003 48.717);
@@ -62,14 +62,14 @@
 }
 
 .dark {
-	--background: #111111;
+	--background: #000000;
 	--foreground: #f5f5f5;
-	--card: #171717;
+	--card: #272729;
 	--card-foreground: #f5f5f5;
-	--popover: #171717;
+	--popover: #272729;
 	--popover-foreground: #f5f5f5;
-	--primary: #f0f0f0;
-	--primary-foreground: #141414;
+	--primary: #0071e3;
+	--primary-foreground: #ffffff;
 	--secondary: #262626;
 	--secondary-foreground: #f5f5f5;
 	--muted: #262626;
@@ -96,19 +96,11 @@
 	body {
 		@apply bg-background text-foreground;
 		margin: 0;
-		background: radial-gradient(
-				circle at top,
-				rgba(241, 245, 249, 0.9),
-				transparent 42%
-			), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+		background-color: #f5f5f7;
 	}
 
 	.dark body {
-		background: radial-gradient(
-				circle at top,
-				rgba(38, 38, 38, 0.65),
-				transparent 34%
-			), linear-gradient(180deg, #111111 0%, #0a0a0a 100%);
+		background-color: #000000;
 	}
 }
 
@@ -122,14 +114,14 @@
 	}
 
 	.landing-surface {
-		@apply rounded-[28px] border border-black/5 bg-white/92 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.24),0_10px_18px_-14px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-white/8 dark:bg-neutral-950/88 dark:shadow-[0_24px_54px_-32px_rgba(0,0,0,0.72)];
+		@apply rounded-[16px] border border-transparent bg-white/96 shadow-[0_12px_34px_-24px_rgba(0,0,0,0.2)] backdrop-blur-sm dark:bg-[#272729]/96 dark:shadow-[0_14px_36px_-24px_rgba(0,0,0,0.56)];
 	}
 
 	.landing-soft-card {
-		@apply rounded-2xl border border-black/5 bg-white/90 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.24),0_8px_16px_-12px_rgba(15,23,42,0.12)] dark:border-white/8 dark:bg-neutral-950/84 dark:shadow-[0_20px_42px_-26px_rgba(0,0,0,0.72)];
+		@apply rounded-[14px] border border-transparent bg-white/96 shadow-[0_12px_30px_-22px_rgba(0,0,0,0.16)] dark:bg-[#272729]/92 dark:shadow-[0_14px_34px_-22px_rgba(0,0,0,0.5)];
 	}
 
 	.landing-muted-card {
-		@apply rounded-2xl bg-slate-50/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-white/6;
+		@apply rounded-[12px] bg-[#f5f5f7] shadow-none dark:bg-[#1d1d1f];
 	}
 }

@@ -19,7 +19,7 @@ function Table({
 			className={cn(
 				"relative w-full overflow-x-auto overscroll-x-contain [touch-action:pan-x_pinch-zoom]",
 				surface === "card" &&
-					"rounded-[24px] border border-transparent bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]",
+					"rounded-[16px] border border-transparent bg-white shadow-[0_12px_34px_-24px_rgba(0,0,0,0.2)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_14px_36px_-24px_rgba(0,0,0,0.5)]",
 				containerClassName,
 			)}
 		>
