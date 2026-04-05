@@ -240,6 +240,12 @@ export async function validateProfile(
 			disallowEditableDescendant: profile.stage === "response",
 		},
 	);
+	if (profile.stage === "response" && selectors.response.length > 0) {
+		selectors.response = await filterAnswerLikeResponseSelectors(
+			page,
+			selectors.response,
+		);
+	}
 	selectors.generationIndicator = await validateVisibleSelectors(
 		page,
 		sanitizedSelectors.generationIndicator,
@@ -288,6 +294,134 @@ export async function validateProfile(
 		...profile,
 		selectors,
 	};
+}
+
+async function filterAnswerLikeResponseSelectors(
+	page: Page,
+	selectors: string[],
+): Promise<string[]> {
+	const accepted: string[] = [];
+
+	for (const selector of selectors) {
+		const looksAnswerLike = await page
+			.evaluate(({ candidateSelector }) => {
+				function isVisible(element: Element | null): element is HTMLElement {
+					if (!(element instanceof HTMLElement)) return false;
+					if (!element.isConnected) return false;
+					const style = window.getComputedStyle(element);
+					if (
+						style.display === "none" ||
+						style.visibility === "hidden" ||
+						style.opacity === "0" ||
+						element.hidden
+					) {
+						return false;
+					}
+					const rect = element.getBoundingClientRect();
+					return rect.width >= 8 && rect.height >= 8;
+				}
+
+				function textOf(element: Element | null): string {
+					if (!(element instanceof HTMLElement)) return "";
+					return (element.innerText || element.textContent || "")
+						.replace(/\s+/g, " ")
+						.trim();
+				}
+
+				function lastVisibleMatch(): HTMLElement | null {
+					try {
+						const matches = Array.from(
+							document.querySelectorAll(candidateSelector),
+						).filter(isVisible) as HTMLElement[];
+						return matches.at(-1) ?? null;
+					} catch {
+						return null;
+					}
+				}
+
+				function isInternalAnchor(anchor: HTMLAnchorElement): boolean {
+					try {
+						const url = new URL(anchor.href, window.location.origin);
+						return url.hostname === window.location.hostname;
+					} catch {
+						return false;
+					}
+				}
+
+				const candidate = lastVisibleMatch();
+				if (!candidate) {
+					return false;
+				}
+
+				const text = textOf(candidate);
+				if (text.length < 120) {
+					return false;
+				}
+
+				const anchors = Array.from(
+					candidate.querySelectorAll("a[href]"),
+				).filter(
+					(element): element is HTMLAnchorElement =>
+						element instanceof HTMLAnchorElement && isVisible(element),
+				);
+				const blockCount = candidate.querySelectorAll(
+					"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6",
+				).length;
+				const codeLikeCount = candidate.querySelectorAll(
+					"pre,code,table,blockquote,ul,ol",
+				).length;
+				const buttons = Array.from(
+					candidate.querySelectorAll("button,[role='button']"),
+				).filter(isVisible).length;
+				const internalAnchorCount = anchors.filter(isInternalAnchor).length;
+				const lines = text
+					.split(/\n+/)
+					.map((line) => line.trim())
+					.filter(Boolean);
+				const shortLines = lines.filter((line) => line.length <= 120).length;
+				const shortLineRatio =
+					lines.length > 0 ? shortLines / lines.length : 0;
+				const sentenceCount = text
+					.split(/(?<=[.!?])\s+/)
+					.map((part) => part.trim())
+					.filter((part) => part.length >= 20).length;
+
+				if (
+					internalAnchorCount >= 4 &&
+					internalAnchorCount >= Math.ceil(anchors.length * 0.5) &&
+					blockCount <= 1 &&
+					codeLikeCount === 0
+				) {
+					return false;
+				}
+
+				if (anchors.length >= 10 && blockCount <= 1 && codeLikeCount === 0) {
+					return false;
+				}
+
+				if (
+					lines.length >= 6 &&
+					shortLineRatio >= 0.75 &&
+					sentenceCount <= 2 &&
+					codeLikeCount === 0
+				) {
+					return false;
+				}
+
+				if (buttons >= 8 && anchors.length >= 8 && codeLikeCount === 0) {
+					return false;
+				}
+
+				return true;
+			}, { candidateSelector: selector })
+			.catch(() => false);
+
+		if (looksAnswerLike) {
+			accepted.push(selector);
+		}
+	}
+
+	return accepted;
 }
 
 function sharedPageKeyDepth(left: string, right: string): number {

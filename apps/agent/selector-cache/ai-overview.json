@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "ai-overview",
-  "updatedAt": "2026-04-05T07:51:06.186Z",
+  "updatedAt": "2026-04-05T10:27:44.145Z",
   "profiles": [
     {
       "version": 1,
@@ -28,14 +28,14 @@
       "provider": "ai-overview",
       "stage": "response",
       "pageKey": "www.google.com/search",
-      "fingerprint": "30650b847abe64547d5df1af5ed71363961a069c908fef49f08a9190198897f8",
+      "fingerprint": "1592bc1be07bcb7c2f1c056e3bcd12479c977a849b43ce10733bd22151b0f986",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-05T07:51:06.186Z",
+      "createdAt": "2026-04-05T10:27:41.744Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "div > div > div > div > div > div"
+          "div > div > div > div > div"
         ],
         "generationIndicator": [],
         "sourcesButton": [],

@@ -441,7 +441,8 @@ export async function captureSelectorSnapshot(
 			40,
 		);
 
-		const minContentTextLength = currentStage === "compose" ? 40 : 12;
+		const minContentTextLength =
+			currentStage === "compose" ? 40 : currentStage === "sources" ? 3 : 12;
 		const content = limitAndDedupe(
 			visibleElements
 				.filter((element) => {
@@ -449,7 +450,8 @@ export async function captureSelectorSnapshot(
 					if (text.length < minContentTextLength || text.length > 8000) {
 						return false;
 					}
-					if (isInputLike(element) || isButtonLike(element)) return false;
+					if (isInputLike(element)) return false;
+					if (currentStage !== "sources" && isButtonLike(element)) return false;
 					if (isOverlayLike(element)) return false;
 					if (
 						element.querySelector(
@@ -467,7 +469,7 @@ export async function captureSelectorSnapshot(
 					}),
 				)
 				.sort((left, right) => right.textLength - left.textLength),
-			currentStage === "compose" ? 12 : 30,
+			currentStage === "compose" ? 12 : currentStage === "sources" ? 50 : 30,
 		);
 
 		const groups: Candidate[] = [];
@@ -532,7 +534,7 @@ export async function captureSelectorSnapshot(
 				.sort(
 					(left, right) => (right.groupCount ?? 0) - (left.groupCount ?? 0),
 				),
-			currentStage === "response" ? 20 : 12,
+			currentStage === "response" ? 20 : currentStage === "sources" ? 20 : 12,
 		);
 
 		return {
