@@ -57,7 +57,15 @@ export function resolveAppMode(rawMode?: string | null): AppMode {
 }
 
 export function canAccessScheduleInMode(appMode: AppMode): boolean {
-	return appMode !== "cloud";
+	return true;
+}
+
+export function canConfigureRecurringScheduleInMode(appMode: AppMode): boolean {
+	return appMode !== "local";
+}
+
+export function canRunPromptsNowInMode(appMode: AppMode): boolean {
+	return appMode === "local";
 }
 
 export function shouldUseProxyInMode(appMode: AppMode): boolean {

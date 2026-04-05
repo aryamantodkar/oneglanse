@@ -67,7 +67,17 @@ import {
 	modelSelectors,
 } from "@oneglanse/utils";
 import { cn } from "@oneglanse/utils";
-import { Bot, ChevronDown, FilterX, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	Bot,
+	BriefcaseBusiness,
+	ChevronDown,
+	FilterX,
+	FolderKanban,
+	Pencil,
+	Plus,
+	ReceiptText,
+	Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStorePrompt } from "./_lib/mutations/prompt.mutations";
@@ -858,8 +868,8 @@ export default function Prompts() {
 					<p className="mb-3 text-xs text-muted-foreground">
 						Tip: Click a prompt row to view its responses.
 					</p>
-					<div className="overflow-x-auto">
-						<Table className="w-full min-w-[760px] lg:min-w-[920px]">
+					<div className="web-touch-scroll">
+						<Table className="w-full min-w-[680px] lg:min-w-[920px]">
 							<TableHeader>
 								<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
 									<TableHead className="w-12 pl-4">
@@ -1037,7 +1047,7 @@ export default function Prompts() {
 							<DialogContent
 								className={cn(
 									formDialogContentClassName,
-									"!flex h-[90vh] !w-[94vw] !max-w-[94vw] flex-col bg-stone-50 pb-5 sm:!w-[88vw] sm:!max-w-[88vw] lg:!w-[80vw] lg:!max-w-[80vw] sm:pb-6 dark:bg-neutral-950",
+									"!flex h-[92vh] !w-[96vw] !max-w-[96vw] flex-col bg-stone-50 pb-5 sm:!h-[90vh] sm:!w-[88vw] sm:!max-w-[88vw] lg:!w-[80vw] lg:!max-w-[80vw] sm:pb-6 dark:bg-neutral-950",
 								)}
 							>
 								<div
@@ -1306,13 +1316,26 @@ export default function Prompts() {
 				</div>
 			) : (
 				<EmptyStatePanel
+					icon={Plus}
 					title="Start With Audience Questions"
 					description="Add the questions your target audience already searches for."
 					examplesLabel="Prompt ideas"
 					examples={[
-						"What's the best project management software for a small remote team?",
-						"Which accounting tools are easiest for freelancers who hate bookkeeping?",
-						"What help desk software is best for a fast-growing ecommerce brand?",
+						{
+							icon: FolderKanban,
+							label:
+								"What's the best project management software for a small remote team?",
+						},
+						{
+							icon: ReceiptText,
+							label:
+								"Which accounting tools are easiest for freelancers who hate bookkeeping?",
+						},
+						{
+							icon: BriefcaseBusiness,
+							label:
+								"What help desk software is best for a fast-growing ecommerce brand?",
+						},
 					]}
 					action={
 						<Button onClick={() => setDialogOpen(true)} className="gap-2">

@@ -6,6 +6,7 @@ import {
 	shouldUseProxyInMode,
 } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { IPRefreshNeededError, toErrorMessage } from "@oneglanse/errors";
 import { logger } from "@oneglanse/utils";
 import { env } from "../../env.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
@@ -39,19 +40,30 @@ export async function runPrompts(
 		const preview = promptEntry.prompt.slice(0, 60) + (promptEntry.prompt.length > 60 ? "..." : "");
 		logger.log(`prompt ${i + 1}/${promptsArray.length} — "${preview}"`);
 
-		// Throws IPRefreshNeededError on terminal failure — propagates to job handler.
-		const { result, proxyNowProven } = await executePromptWithRetry(
-			page,
-			promptEntry,
-			provider,
-			userId,
-			workspaceId,
-			i,
-			promptsArray.length,
-			results,
-			promptsArray.slice(i),
-			proxyProven,
-		);
+		// IPRefreshNeededError propagates immediately for proxy rotation.
+		// Any other terminal failure skips this prompt and preserves accumulated results.
+		let executeResult: { result: AskPromptResult; proxyNowProven: boolean };
+		try {
+			executeResult = await executePromptWithRetry(
+				page,
+				promptEntry,
+				provider,
+				userId,
+				workspaceId,
+				i,
+				promptsArray.length,
+				results,
+				promptsArray.slice(i),
+				proxyProven,
+			);
+		} catch (err) {
+			if (err instanceof IPRefreshNeededError) throw err;
+			logger.error(
+				`prompt ${i + 1}/${promptsArray.length} failed permanently — skipping: ${toErrorMessage(err)}`,
+			);
+			continue;
+		}
+		const { result, proxyNowProven } = executeResult;
 
 		results.push(result);
 		if (proxyNowProven) proxyProven = true;

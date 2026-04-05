@@ -96,11 +96,19 @@
 	body {
 		@apply bg-background text-foreground;
 		margin: 0;
-		background-color: #ffffff;
+		background: radial-gradient(
+				circle at top,
+				rgba(241, 245, 249, 0.9),
+				transparent 42%
+			), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 	}
 
 	.dark body {
-		background-color: #111111;
+		background: radial-gradient(
+				circle at top,
+				rgba(38, 38, 38, 0.65),
+				transparent 34%
+			), linear-gradient(180deg, #111111 0%, #0a0a0a 100%);
 	}
 }
 
@@ -111,5 +119,17 @@
 
 	.section-title {
 		@apply text-2xl font-semibold tracking-tight sm:text-3xl;
+	}
+
+	.landing-surface {
+		@apply rounded-[28px] border border-black/5 bg-white/92 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.24),0_10px_18px_-14px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-white/8 dark:bg-neutral-950/88 dark:shadow-[0_24px_54px_-32px_rgba(0,0,0,0.72)];
+	}
+
+	.landing-soft-card {
+		@apply rounded-2xl border border-black/5 bg-white/90 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.24),0_8px_16px_-12px_rgba(15,23,42,0.12)] dark:border-white/8 dark:bg-neutral-950/84 dark:shadow-[0_20px_42px_-26px_rgba(0,0,0,0.72)];
+	}
+
+	.landing-muted-card {
+		@apply rounded-2xl bg-slate-50/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-white/6;
 	}
 }

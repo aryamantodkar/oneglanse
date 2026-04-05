@@ -9,7 +9,7 @@ export function OpenSourceSection(): React.JSX.Element {
 			id="open-source"
 			aria-labelledby="open-source-title"
 		>
-			<Card className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-black">
+			<Card className="landing-surface p-6">
 				<div className="grid items-stretch gap-7 lg:grid-cols-[1.1fr_1fr]">
 					<div className="flex flex-col">
 						<h2
@@ -49,7 +49,7 @@ export function OpenSourceSection(): React.JSX.Element {
 						{OPEN_SOURCE_POINTS.map(({ text, icon: Icon }) => (
 							<li
 								key={text}
-								className="rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:bg-black dark:text-gray-100"
+								className="landing-muted-card px-3.5 py-3 text-sm text-gray-900 dark:text-gray-100"
 							>
 								<span className="inline-flex items-center gap-2.5">
 									<Icon

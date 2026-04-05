@@ -6,7 +6,7 @@ import { ArrowRight, Github, Rocket, Server } from "lucide-react";
 export function SiteHeader(): React.JSX.Element {
 	return (
 		<header className="section-shell sticky top-0 z-40 pt-4 sm:pt-5">
-			<div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-black">
+			<div className="landing-surface flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
 				<a
 					href={SITE_URLS.homepage}
 					className="inline-flex items-center text-base font-semibold tracking-tight sm:text-lg"
@@ -16,7 +16,7 @@ export function SiteHeader(): React.JSX.Element {
 					OneGlanse
 				</a>
 
-				<div className="flex items-center gap-2">
+				<div className="flex shrink-0 items-center gap-2">
 					<Button asChild className="hidden sm:inline-flex">
 						<a href={SITE_URLS.app} target="_blank" rel="noreferrer noopener">
 							<Rocket className="h-4 w-4" aria-hidden="true" />

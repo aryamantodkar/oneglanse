@@ -247,11 +247,11 @@ export function BrandComparisonChart({
 					className="relative"
 					onMouseLeave={() => setHoveredPoint(null)}
 				>
-					<div className="overflow-x-auto">
+					<div className="overflow-x-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
 						<svg
 							ref={svgRef}
 							viewBox={`0 0 ${width} ${height}`}
-							className="h-[280px] w-full min-w-[480px] sm:min-w-[620px] lg:min-w-[680px]"
+							className="h-[280px] w-full min-w-[360px] sm:min-w-[560px] lg:min-w-[680px]"
 							role="img"
 							aria-label="Brand comparison chart"
 						>

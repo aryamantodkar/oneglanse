@@ -4,7 +4,14 @@ import {
 	Skeleton,
 	WorkspaceRequiredState,
 } from "@oneglanse/ui";
-import { Building2 } from "lucide-react";
+import {
+	BarChart3,
+	Building2,
+	Link2,
+	Sparkles,
+	Trophy,
+	Users,
+} from "lucide-react";
 import Link from "next/link";
 
 const DASHBOARD_SKELETON_KEYS = [
@@ -64,13 +71,14 @@ export function NoWorkspaceState() {
 export function EmptyState({ workspaceId }: { workspaceId: string }) {
 	return (
 		<EmptyStatePanel
+			icon={BarChart3}
 			title="Your Visibility Dashboard Starts Here"
 			description="Run your first prompts to unlock rank, presence, sources, and competitor signals."
 			examplesLabel="What this dashboard unlocks"
 			examples={[
-				"Presence rate across prompts",
-				"Average rank across providers",
-				"Top source and top competitor signals",
+				{ icon: Trophy, label: "Average rank across providers" },
+				{ icon: Link2, label: "Top source signals" },
+				{ icon: Users, label: "Top competitor signals" },
 			]}
 			action={
 				<Button asChild>
@@ -84,6 +92,7 @@ export function EmptyState({ workspaceId }: { workspaceId: string }) {
 export function NoAnalysisState({ workspaceId }: { workspaceId: string }) {
 	return (
 		<EmptyStatePanel
+			icon={Sparkles}
 			title="Responses Ready. Insights Next."
 			description="Run analysis to turn responses into dashboard signals."
 			action={

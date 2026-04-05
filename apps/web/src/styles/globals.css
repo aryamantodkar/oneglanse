@@ -190,6 +190,7 @@
 	.web-app-scroll {
 		@apply flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-stone-50 dark:bg-neutral-950;
 		overscroll-behavior-y: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.web-page-wide {
@@ -197,11 +198,11 @@
 	}
 
 	.web-page-wide-inner {
-		@apply mx-auto w-full min-w-0 max-w-[1380px] px-3 pt-4 pb-8 sm:px-6 sm:pt-5 sm:pb-10 lg:px-8;
+		@apply mx-auto w-full min-w-0 max-w-[1380px] px-3 pt-3 pb-7 sm:px-6 sm:pt-5 sm:pb-10 lg:px-8;
 	}
 
 	.web-page-panel {
-		@apply mx-auto min-h-full w-full min-w-0 max-w-[1100px] space-y-3 px-3 pt-4 pb-8 sm:px-6 sm:pt-5 sm:pb-10;
+		@apply mx-auto min-h-full w-full min-w-0 max-w-[1100px] space-y-3 px-3 pt-3 pb-7 sm:px-6 sm:pt-5 sm:pb-10;
 	}
 
 	.web-page-panel > * {
@@ -223,5 +224,11 @@
 
 	.web-empty-state-icon {
 		@apply mb-4 flex h-12 w-12 items-center justify-center rounded-[24px] border border-gray-200/70 bg-stone-100 text-gray-400 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-500;
+	}
+
+	.web-touch-scroll {
+		@apply overflow-x-auto;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-x: contain;
 	}
 }

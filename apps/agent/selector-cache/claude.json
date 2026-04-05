@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "claude",
-  "updatedAt": "2026-04-04T21:18:42.273Z",
+  "updatedAt": "2026-04-05T07:50:15.989Z",
   "profiles": [
     {
       "version": 1,
@@ -48,9 +48,9 @@
       "provider": "claude",
       "stage": "response",
       "pageKey": "claude.ai/chat/:id",
-      "fingerprint": "c2b211c590e4de0a26ed344a48e303e9e1fb2927f1d82c899ed5282d9b530549",
+      "fingerprint": "e38343039a77b12b836c6306f356f46292711b863d04ec6d5d70ddc6b01a27e0",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T21:18:42.262Z",
+      "createdAt": "2026-04-05T07:50:15.972Z",
       "selectors": {
         "editor": [],
         "submitButton": [],

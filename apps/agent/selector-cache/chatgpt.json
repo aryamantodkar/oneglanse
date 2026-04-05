@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "2026-04-04T21:19:30.491Z",
+  "updatedAt": "2026-04-05T07:49:01.266Z",
   "profiles": [
     {
       "version": 1,
@@ -48,9 +48,9 @@
       "provider": "chatgpt",
       "stage": "response",
       "pageKey": "chatgpt.com/c/:id",
-      "fingerprint": "7e2c37a834d420cf200aae77e6847fdbb86a7b110a70a3feeb6a8eb0c6b320f2",
+      "fingerprint": "14bb43260b449fa806d803550b48850e2b9b57774da95989db6d3218d5962538",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T21:19:30.474Z",
+      "createdAt": "2026-04-05T07:49:01.246Z",
       "selectors": {
         "editor": [],
         "submitButton": [],

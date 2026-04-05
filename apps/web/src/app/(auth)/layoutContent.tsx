@@ -8,13 +8,20 @@ import { useProviderConnections } from "@/lib/provider-connections/client";
 import type { ProviderConnectionsState } from "@/lib/provider-connections/types";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
-import { type AppMode, isInteractiveAuthAllowedInMode } from "@oneglanse/types";
+import {
+	type AppMode,
+	canRunPromptsNowInMode,
+	isInteractiveAuthAllowedInMode,
+} from "@oneglanse/types";
 import { SidebarTrigger } from "@oneglanse/ui";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { WorkspaceProvider } from "./workspace-context";
 
-function getPageHeader(pathname: string | null): string | null {
+function getPageHeader(
+	pathname: string | null,
+	appMode: AppMode,
+): string | null {
 	if (!pathname) return null;
 
 	if (pathname.startsWith("/dashboard")) {
@@ -30,7 +37,7 @@ function getPageHeader(pathname: string | null): string | null {
 	}
 
 	if (pathname.startsWith("/schedule")) {
-		return "Schedule";
+		return canRunPromptsNowInMode(appMode) ? "Run Prompts" : "Schedule";
 	}
 
 	if (pathname.startsWith("/people")) {
@@ -95,7 +102,7 @@ export default function LayoutContent({
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
-	const pageHeader = getPageHeader(pathname);
+	const pageHeader = getPageHeader(pathname, appMode);
 	const providersWorkspaceId =
 		workspaceIdFromUrl || resolvedWorkspace?.id || "";
 	const providersHref = providersWorkspaceId

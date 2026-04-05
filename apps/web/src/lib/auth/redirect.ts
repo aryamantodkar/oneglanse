@@ -1,3 +1,9 @@
+import { env } from "@/env";
+import {
+	isInteractiveAuthAllowedInMode,
+	resolveAppMode,
+} from "@oneglanse/types";
+
 export function getSafeAuthRedirectPath(
 	rawNext: string | null | undefined,
 ): string {
@@ -21,6 +27,14 @@ export function getPostAuthProvidersPath(
 	rawNext: string | null | undefined,
 ): string {
 	const nextPath = getSafeAuthRedirectPath(rawNext);
+	const appMode = resolveAppMode(env.ONEGLANSE_APP_MODE);
+
+	if (!isInteractiveAuthAllowedInMode(appMode)) {
+		return nextPath === "/" || nextPath === "/providers"
+			? "/workspace"
+			: nextPath;
+	}
+
 	if (nextPath === "/" || nextPath === "/providers") {
 		return "/providers";
 	}

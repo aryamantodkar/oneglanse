@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: OneGlanse measures how your brand appears across real AI chat interfaces and lets you self-host the full stack.
+description: OneGlanse tracks brand visibility across real AI chat interfaces and supports cloud, local, and self-hosted workflows.
 ---
 
 # Introduction
@@ -32,9 +32,33 @@ Perplexity, Claude, and Google AI Overview.
 - split app and public Docker stacks for safer VPS redeploys
 - separate operational and analytical data stores
 
+## Choose Your Setup
+
+### Use The Cloud App
+
+Go straight to the hosted product:
+
+- app: `https://app.oneglanse.com`
+- landing: `https://oneglanse.com`
+- docs: `https://oneglanse.com/docs`
+
+### Run It Locally
+
+Use local mode when you want the full product and worker on your machine:
+
+- `pnpm install`
+- `pnpm local`
+
+### Self-Host It
+
+Use the Docker stack when you want OneGlanse in your own infrastructure:
+
+- `pnpm install`
+- `pnpm self-host`
+
 ## Start Here
 
-- [Getting Started](/getting-started) for local setup
+- [Getting Started](/getting-started) for cloud, local, and self-hosted entrypoints
 - [Self Hosting](/self-hosting) for the one-command self-hosted stack
 - [VPS Deployment](/vps-deployment) for the production deployment model
 - [Environment Variables](/environment-variables) for the minimal env surface

@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Start OneGlanse locally in one command, connect providers, and understand the default runtime behavior.
+description: Start OneGlanse in the cloud app, run it locally, or self-host the full stack.
 ---
 
 # Getting Started
@@ -11,13 +11,33 @@ description: Start OneGlanse locally in one command, connect providers, and unde
 - pnpm 10+
 - Docker + Docker Compose
 
-## Install
+## Choose Your Flow
+
+## 1. Use The Cloud App
+
+The fastest path is the hosted app:
+
+- app: `https://app.oneglanse.com`
+- landing: `https://oneglanse.com`
+- docs: `https://oneglanse.com/docs`
+
+Recommended flow:
+
+1. Sign in
+2. Create or select a workspace
+3. Connect providers on `/providers`
+4. Add prompts your target audience would actually search for
+5. Review dashboard, prompts, and sources once responses are collected
+
+## 2. Run It Locally
+
+### Install
 
 ```bash
 pnpm install
 ```
 
-## Start the Full Local App
+### Start the Full Local App
 
 ```bash
 pnpm local
@@ -32,7 +52,7 @@ pnpm local
 - starts the web app and the agent locally
 - opens the app at `http://localhost:3000`
 
-## Connect Providers
+### Connect Providers
 
 If auth is missing, the app redirects to `/providers`.
 
@@ -53,7 +73,37 @@ Connect flow:
 4. Close the browser when finished
 5. The UI shows a checkmark when the auth session is saved
 
-## Self-Hosted Deploys
+### Local Defaults
+
+Local mode is designed to work with minimal configuration.
+
+- proxies are not used
+- auth bundles are stored under `.oneglanse-storage/auth`
+- persistent runtime profiles are stored under `.oneglanse-storage/runtime`
+- runtime profiles are bootstrapped from saved auth bundles when needed
+
+### Most Common Local Variables
+
+Most users only need these in `.env`:
+
+- `OPENAI_API_KEY`
+- `BETTER_AUTH_SECRET`
+- `APP_URL`
+- `API_BASE_URL`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
+And in `apps/agent/.env`, only the values your local worker actually needs,
+typically Redis and any proxy credentials.
+
+## 3. Self-Host It
+
+### Start the Stack
+
+```bash
+pnpm install
+pnpm self-host
+```
 
 For VPS use, `pnpm self-host` starts both:
 
@@ -86,26 +136,3 @@ Auth groups:
 - Claude
 
 Gemini and Google Search auth are stored separately.
-
-## Local Defaults
-
-Local mode is designed to work with minimal configuration.
-
-- proxies are not used
-- auth bundles are stored under `.oneglanse-storage/auth`
-- persistent runtime profiles are stored under `.oneglanse-storage/runtime`
-- runtime profiles are bootstrapped from saved auth bundles when needed
-
-## Most Common Local Variables
-
-Most users only need these in `.env`:
-
-- `OPENAI_API_KEY`
-- `BETTER_AUTH_SECRET`
-- `APP_URL`
-- `API_BASE_URL`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-
-And in `apps/agent/.env`, only the values your local worker actually needs,
-typically Redis and any proxy credentials.

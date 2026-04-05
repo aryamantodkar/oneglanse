@@ -451,6 +451,7 @@ export async function getSelectorProfile(
 				page,
 				cached,
 				options?.requiredFields,
+				{ relaxCompose: stage === "compose" },
 			);
 			if (valid) {
 				return valid;
@@ -480,6 +481,7 @@ export async function getSelectorProfile(
 				page,
 				cached,
 				options?.requiredFields,
+				{ relaxCompose: stage === "compose" },
 			);
 			if (valid) {
 				if (valid.fingerprint !== snapshot.fingerprint) {
