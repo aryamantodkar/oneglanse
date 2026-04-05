@@ -61,6 +61,17 @@
 		border-color: color-mix(in oklch, var(--ring) 45%, var(--border));
 	}
 
+	[data-slot="dropdown-menu-item"]:not([data-disabled]):hover,
+	[data-slot="dropdown-menu-checkbox-item"]:not([data-disabled]):hover,
+	[data-slot="dropdown-menu-radio-item"]:not([data-disabled]):hover,
+	[data-slot="dropdown-menu-sub-trigger"]:not([data-disabled]):hover,
+	[data-slot="select-item"]:not([data-disabled]):hover,
+	[data-slot="tabs-trigger"]:not(:disabled):hover,
+	[data-slot="sidebar-menu-button"]:not(:disabled):hover,
+	[data-slot="sidebar-menu-sub-button"]:not(:disabled):hover {
+		box-shadow: 0 8px 20px -18px oklch(0 0 0 / 18%);
+	}
+
 	.ui-list-item:hover {
 		box-shadow: var(--elevation-soft);
 	}

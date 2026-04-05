@@ -10,6 +10,7 @@ import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
 import {
 	type AppMode,
+	canAccessPeopleInMode,
 	canRunPromptsNowInMode,
 	isInteractiveAuthAllowedInMode,
 } from "@oneglanse/types";
@@ -102,12 +103,22 @@ export default function LayoutContent({
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
+	const isPeoplePage = pathname?.startsWith("/people") ?? false;
 	const pageHeader = getPageHeader(pathname, appMode);
 	const providersWorkspaceId =
 		workspaceIdFromUrl || resolvedWorkspace?.id || "";
 	const providersHref = providersWorkspaceId
 		? `/providers?workspace=${providersWorkspaceId}`
 		: "/providers";
+	const workspaceHref = providersWorkspaceId
+		? `/workspace?workspace=${providersWorkspaceId}`
+		: "/workspace";
+
+	useEffect(() => {
+		if (!canAccessPeopleInMode(appMode) && isPeoplePage) {
+			router.replace(workspaceHref);
+		}
+	}, [appMode, isPeoplePage, router, workspaceHref]);
 
 	useEffect(() => {
 		if (

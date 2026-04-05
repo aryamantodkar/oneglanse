@@ -300,171 +300,191 @@ export default function SchedulePageClient({
 		);
 	}
 
+	if (canRunNow) {
+		return (
+			<div className="web-page-panel max-w-2xl">
+				<div>
+					<div className="mb-1 flex items-center gap-2">
+						<Clock className="h-5 w-5 text-gray-500" />
+						<h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+							Run Prompts
+						</h1>
+					</div>
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						Local mode supports on-demand runs while your machine is active.
+					</p>
+					<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						Scheduling is available in the cloud and self-hosted versions.
+					</p>
+				</div>
+				<div className="flex justify-center pt-3 sm:pt-4">
+					<div className="w-full">
+						<ManualRunView
+							isRunning={isRunning || runNowMutation.isPending}
+							onRunNow={handleRunNow}
+						/>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="web-page-panel max-w-2xl">
 			<div>
 				<div className="mb-1 flex items-center gap-2">
 					<Clock className="h-5 w-5 text-gray-500" />
 					<h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-						{canRunNow ? "Run Prompts" : "Prompt Schedule"}
+						Prompt Schedule
 					</h1>
 				</div>
 				<p className="text-sm text-gray-500 dark:text-gray-400">
-					{canRunNow
-						? "Local mode supports on-demand runs while your machine is active."
-						: "Configure recurring prompt runs across your connected AI providers."}
+					Configure recurring prompt runs across your connected AI providers.
 				</p>
 			</div>
 
-			{canRunNow ? (
-				<ManualRunView
-					isRunning={isRunning || runNowMutation.isPending}
-					onRunNow={handleRunNow}
-				/>
-			) : (
-				<>
-					{cronTimingQuery.isLoading ? (
-						<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-							{TIMING_SKELETON_KEYS.map((key) => (
-								<div key={key} className={cn(formPanelClassName, "px-4 py-4")}>
-									<Skeleton className="mb-2 h-4 w-24" />
-									<Skeleton className="h-6 w-32" />
-								</div>
-							))}
+			<>
+				{cronTimingQuery.isLoading ? (
+					<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+						{TIMING_SKELETON_KEYS.map((key) => (
+							<div key={key} className={cn(formPanelClassName, "px-4 py-4")}>
+								<Skeleton className="mb-2 h-4 w-24" />
+								<Skeleton className="h-6 w-32" />
+							</div>
+						))}
+					</div>
+				) : (
+					<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+						<div className={cn(formPanelClassName, "px-4 py-4")}>
+							<div className="mb-1 flex items-center gap-2">
+								<Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+									Next Scheduled Run
+								</span>
+							</div>
+							<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+								{currentSchedule && cronTimingQuery.data?.nextRun
+									? formatRelativeTime(cronTimingQuery.data.nextRun)
+									: "Not scheduled"}
+							</p>
 						</div>
-					) : (
-						<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-							<div className={cn(formPanelClassName, "px-4 py-4")}>
-								<div className="mb-1 flex items-center gap-2">
-									<Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-									<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-										Next Scheduled Run
+
+						<div className={cn(formPanelClassName, "px-4 py-4")}>
+							<div className="mb-1 flex items-center gap-2">
+								<PlayCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+									Last Prompt Run
+								</span>
+							</div>
+							<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+								{cronTimingQuery.data?.lastPromptRun
+									? formatAbsoluteTime(cronTimingQuery.data.lastPromptRun)
+									: "Never"}
+							</p>
+						</div>
+					</div>
+				)}
+
+				{scheduleQuery.isLoading ? (
+					<div className="space-y-3">
+						<Skeleton className="h-8 w-48" />
+						{SCHEDULE_SKELETON_KEYS.map((key) => (
+							<div
+								key={key}
+								className={cn(
+									formPanelClassName,
+									"flex items-center justify-between px-4 py-4",
+								)}
+							>
+								<div className="space-y-2">
+									<Skeleton className="h-4 w-36" />
+									<Skeleton className="h-3 w-56" />
+								</div>
+								<Skeleton className="h-4 w-4 rounded-full" />
+							</div>
+						))}
+					</div>
+				) : (
+					<>
+						{currentSchedule ? (
+							<div className="flex flex-col gap-3 rounded-[24px] border border-blue-200/70 bg-white px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-blue-900/60 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
+								<div className="flex min-w-0 items-center gap-2">
+									<Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+									<span className="break-words text-sm font-medium text-blue-900 dark:text-blue-100">
+										Active: {getScheduleLabel(currentSchedule)}
 									</span>
 								</div>
-								<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-									{currentSchedule && cronTimingQuery.data?.nextRun
-										? formatRelativeTime(cronTimingQuery.data.nextRun)
-										: "Not scheduled"}
-								</p>
-							</div>
-
-							<div className={cn(formPanelClassName, "px-4 py-4")}>
-								<div className="mb-1 flex items-center gap-2">
-									<PlayCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-									<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-										Last Prompt Run
-									</span>
-								</div>
-								<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-									{cronTimingQuery.data?.lastPromptRun
-										? formatAbsoluteTime(cronTimingQuery.data.lastPromptRun)
-										: "Never"}
-								</p>
-							</div>
-						</div>
-					)}
-
-					{scheduleQuery.isLoading ? (
-						<div className="space-y-3">
-							<Skeleton className="h-8 w-48" />
-							{SCHEDULE_SKELETON_KEYS.map((key) => (
-								<div
-									key={key}
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={handleDisable}
+									disabled={saving}
 									className={cn(
-										formPanelClassName,
-										"flex items-center justify-between px-4 py-4",
+										formSecondaryButtonClassName,
+										"h-10 w-auto border-red-200/80 bg-red-50/80 px-4 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50",
 									)}
 								>
-									<div className="space-y-2">
-										<Skeleton className="h-4 w-36" />
-										<Skeleton className="h-3 w-56" />
-									</div>
-									<Skeleton className="h-4 w-4 rounded-full" />
-								</div>
-							))}
-						</div>
-					) : (
-						<>
-							{currentSchedule ? (
-								<div className="flex flex-col gap-3 rounded-[24px] border border-blue-200/70 bg-white px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-blue-900/60 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
-									<div className="flex min-w-0 items-center gap-2">
-										<Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-										<span className="break-words text-sm font-medium text-blue-900 dark:text-blue-100">
-											Active: {getScheduleLabel(currentSchedule)}
-										</span>
-									</div>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleDisable}
-										disabled={saving}
-										className={cn(
-											formSecondaryButtonClassName,
-											"h-10 w-auto border-red-200/80 bg-red-50/80 px-4 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50",
-										)}
-									>
-										{saving ? (
-											<Loader2 className="h-4 w-4 animate-spin" />
-										) : (
-											"Disable"
-										)}
-									</Button>
-								</div>
-							) : null}
-
-							<div className="space-y-2">
-								<h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-									Run Prompts
-								</h2>
-								<div className="space-y-2">
-									{SCHEDULE_OPTIONS.map((option) => (
-										<button
-											key={option.value}
-											type="button"
-											onClick={() => setSelected(option.value)}
-											className={`flex w-full items-center justify-between ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
-												selected === option.value
-													? "border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/20"
-													: "border-gray-100/80 hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-neutral-900"
-											}`}
-										>
-											<div>
-												<span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-													{option.label}
-												</span>
-												<p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-													{option.description}
-												</p>
-											</div>
-											{selected === option.value ? (
-												<div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-600">
-													<Check className="h-3 w-3 text-white" />
-												</div>
-											) : null}
-										</button>
-									))}
-								</div>
+									{saving ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										"Disable"
+									)}
+								</Button>
 							</div>
+						) : null}
 
-							{hasChanges ? (
-								<div className="flex justify-stretch sm:justify-end">
-									<Button
-										onClick={handleSave}
-										disabled={saving}
-										className="gap-2"
+						<div className="space-y-2">
+							<h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+								Run Prompts
+							</h2>
+							<div className="space-y-2">
+								{SCHEDULE_OPTIONS.map((option) => (
+									<button
+										key={option.value}
+										type="button"
+										onClick={() => setSelected(option.value)}
+										className={`flex w-full items-center justify-between ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
+											selected === option.value
+												? "border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/20"
+												: "border-gray-100/80 hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-neutral-900"
+										}`}
 									>
-										{saving ? (
-											<Loader2 className="h-4 w-4 animate-spin" />
-										) : (
-											"Save Schedule"
-										)}
-									</Button>
-								</div>
-							) : null}
-						</>
-					)}
-				</>
-			)}
+										<div>
+											<span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+												{option.label}
+											</span>
+											<p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+												{option.description}
+											</p>
+										</div>
+										{selected === option.value ? (
+											<div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-600">
+												<Check className="h-3 w-3 text-white" />
+											</div>
+										) : null}
+									</button>
+								))}
+							</div>
+						</div>
+
+						{hasChanges ? (
+							<div className="flex justify-stretch sm:justify-end">
+								<Button
+									onClick={handleSave}
+									disabled={saving}
+									className="gap-2"
+								>
+									{saving ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										"Save Schedule"
+									)}
+								</Button>
+							</div>
+						) : null}
+					</>
+				)}
+			</>
 		</div>
 	);
 }
