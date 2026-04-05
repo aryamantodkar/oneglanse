@@ -1,5 +1,11 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Geist } from "next/font/google";
+
+const geist = Geist({
+	subsets: ["latin"],
+	variable: "--font-geist-sans",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oneglanse.com"),
@@ -35,7 +41,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={geist.variable} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

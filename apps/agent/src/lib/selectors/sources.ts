@@ -229,7 +229,10 @@ async function openSourcesPanelIfNeeded(
 	if (!clicked) {
 		await buttonMatch.locator.dispatchClick().catch(() => {});
 	}
-	await page.waitForTimeout(1500);
+	// Increased from 1500 ms: fixed-position source panels (e.g. Perplexity's
+	// right-side drawer) animate in and may have lazy-loaded items. Give them
+	// more time so heuristic root-finding and link extraction see the full list.
+	await page.waitForTimeout(2800);
 	return {
 		opened: true,
 		controlledPanelSelector,
@@ -437,6 +440,13 @@ async function extractRawSourcesWithSelectors(
 					score += 450;
 				}
 
+				// Fixed-position panels (e.g. Perplexity's right-side source drawer)
+				// are high-confidence source containers — boost them strongly so they
+				// beat all normal-flow candidates in the heuristic scorer.
+				if (window.getComputedStyle(candidate).position === "fixed") {
+					score += 1_200;
+				}
+
 				if (button) {
 					const buttonRect = button.getBoundingClientRect();
 					const horizontalDistance =
@@ -481,17 +491,25 @@ async function extractRawSourcesWithSelectors(
 			function resolveHeuristicRoot(): HTMLElement | null {
 				const button = resolveButton();
 				const latestResponse = resolveLatestResponse();
+				// Include fixed-positioned elements: providers like Perplexity render
+				// the sources panel as a fixed right-side drawer that sits outside
+				// the normal document flow and is not found by position-agnostic queries.
 				const candidates = Array.from(
 					document.querySelectorAll(
 						"div, section, aside, ul, ol, [role='dialog'], [role='menu'], [role='listbox'], [role='region']",
 					),
-				).filter(
-					(element): element is HTMLElement =>
-						element instanceof HTMLElement &&
-						isVisible(element) &&
-						element.getBoundingClientRect().width >= 120 &&
-						element.getBoundingClientRect().height >= 40,
-				);
+				).filter((element): element is HTMLElement => {
+					if (!(element instanceof HTMLElement)) return false;
+					const rect = element.getBoundingClientRect();
+					// Fixed-position panels may have rect.top = 0 (full viewport height);
+					// still accept them if they're within the viewport and have some size.
+					const pos = window.getComputedStyle(element).position;
+					if (pos === "fixed") {
+						return rect.width >= 120 && rect.height >= 40 &&
+							rect.right > 0 && rect.bottom > 0;
+					}
+					return isVisible(element) && rect.width >= 120 && rect.height >= 40;
+				});
 
 				let best: HTMLElement | null = null;
 				let bestScore = Number.NEGATIVE_INFINITY;

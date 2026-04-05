@@ -64,28 +64,6 @@
         "sourcePanel": [],
         "sourceItem": []
       }
-    },
-    {
-      "version": 1,
-      "provider": "perplexity",
-      "stage": "sources",
-      "pageKey": "www.perplexity.ai/search/:id",
-      "fingerprint": "a4bff906d74aff96d57f21df5d79490b1cc1e4e16e7faad4c087e092c09764bc",
-      "model": "gpt-4.1",
-      "createdAt": "2026-04-05T12:55:35.380Z",
-      "selectors": {
-        "editor": [],
-        "submitButton": [],
-        "response": [],
-        "generationIndicator": [],
-        "sourcesButton": [],
-        "sourcePanel": [
-          "div.gap-y-sm.flex"
-        ],
-        "sourceItem": [
-          "a.reset.interactable-alt"
-        ]
-      }
     }
   ]
 }

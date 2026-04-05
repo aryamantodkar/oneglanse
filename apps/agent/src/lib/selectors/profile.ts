@@ -413,6 +413,19 @@ async function filterAnswerLikeResponseSelectors(
 					return false;
 				}
 
+				// Reject elements that look like a user query rather than an answer:
+				// short text ending with "?" and no structured content (no headings,
+				// lists, code, or multiple sentences). This prevents caching a selector
+				// that happens to match the user-message div instead of the response.
+				if (
+					text.endsWith("?") &&
+					blockCount === 0 &&
+					codeLikeCount === 0 &&
+					sentenceCount <= 1
+				) {
+					return false;
+				}
+
 				return true;
 			}, { candidateSelector: selector })
 			.catch(() => false);
