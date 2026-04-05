@@ -60,6 +60,14 @@ export function canAccessScheduleInMode(appMode: AppMode): boolean {
 	return true;
 }
 
+export function canAccessPeopleInMode(appMode: AppMode): boolean {
+	return appMode !== "local";
+}
+
+export function canAccessProvidersInMode(appMode: AppMode): boolean {
+	return isInteractiveAuthAllowedInMode(appMode);
+}
+
 export function canConfigureRecurringScheduleInMode(appMode: AppMode): boolean {
 	return appMode !== "local";
 }

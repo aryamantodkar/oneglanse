@@ -43,31 +43,6 @@ services:
           cpus: '0.1'
           memory: 128M
 
-  docs:
-    build:
-      context: .
-      dockerfile: ./apps/docs/Dockerfile
-      args:
-        PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
-    image: oneglanse-docs:local
-    container_name: oneglanse-docs
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3002:3002"
-    environment:
-      HOSTNAME: 0.0.0.0
-      PORT: "3002"
-    networks:
-      - edge
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
 networks:
   edge:
     external: true

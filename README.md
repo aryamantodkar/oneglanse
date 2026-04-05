@@ -8,7 +8,7 @@ This monorepo contains:
 - `apps/web` - the main product app
 - `apps/agent` - the Camoufox-based worker
 - `apps/landing` - the marketing site
-- `apps/docs` - the documentation site
+- `docs` - the Mintlify documentation source
 
 ## Requirements
 
@@ -82,7 +82,6 @@ Default ports:
 
 - landing: `http://<host>:3000`
 - app: `http://<host>:3001`
-- docs: `http://<host>:3002`
 - auth upload API: `http://<host>:3333`
 
 Persistent VPS state is stored under `/opt/oneglanse/storage` and mounted into
@@ -103,11 +102,11 @@ pnpm self-host:app
 ```
 
 Because `docker-compose.yml` is app-only, `docker compose down` no longer takes
-down landing or docs.
+down landing.
 
 ### Public-Site Redeploys
 
-Only redeploy landing/docs when you actually change them:
+Only redeploy the public landing surface when you actually change it:
 
 ```bash
 docker compose -f docker-compose.public.yml up -d --build
@@ -220,7 +219,8 @@ Behavior:
 - `docker-compose.yml` forces `self-hosted`
 - anything else defaults to `cloud`
 
-Schedule is only available in `local` and `self-hosted` mode.
+Recurring schedule is only available in `self-hosted` mode. `local` mode
+supports manual prompt runs only.
 
 For VPS auth capture, prefer passing `--upload-url` and `--upload-token`
 directly to `pnpm auth`.
@@ -238,8 +238,5 @@ directly to `pnpm auth`.
 
 ## Docs
 
-For detailed local setup, VPS deployment, env reference, and proxy guidance,
-open:
-
-- the local docs app with `pnpm dev:docs`, or
-- the self-hosted docs app at `http://<host>:3002`
+Mintlify reads the root `docs/` directory directly. That folder is now the
+single docs source for deploys and external documentation hosting.

@@ -27,7 +27,7 @@ export function getPostAuthProvidersPath(
 	rawNext: string | null | undefined,
 ): string {
 	const nextPath = getSafeAuthRedirectPath(rawNext);
-	const appMode = resolveAppMode(env.ONEGLANSE_APP_MODE);
+	const appMode = resolveAppMode(env.NEXT_PUBLIC_ONEGLANSE_APP_MODE);
 
 	if (!isInteractiveAuthAllowedInMode(appMode)) {
 		return nextPath === "/" || nextPath === "/providers"

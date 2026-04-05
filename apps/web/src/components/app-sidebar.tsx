@@ -7,6 +7,7 @@ import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
 import {
 	type AppMode,
+	canAccessPeopleInMode,
 	canAccessScheduleInMode,
 	canRunPromptsNowInMode,
 	isInteractiveAuthAllowedInMode,
@@ -120,12 +121,15 @@ export function AppSidebar({
 			url: `/sources?workspace=${activeWorkspace?.id ?? ""}`,
 			icon: Globe,
 		},
-		{
+	];
+
+	if (canAccessPeopleInMode(appMode)) {
+		generalItems.push({
 			title: "People",
 			url: `/people?workspace=${activeWorkspace?.id ?? ""}`,
 			icon: Users,
-		},
-	];
+		});
+	}
 
 	if (canAccessScheduleInMode(appMode)) {
 		generalItems.splice(3, 0, {

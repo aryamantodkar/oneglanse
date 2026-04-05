@@ -14,11 +14,18 @@ export const env = createEnv({
 			.enum(["development", "test", "production"])
 			.default("development"),
 	},
-	client: {},
+	client: {
+		NEXT_PUBLIC_ONEGLANSE_APP_MODE: z
+			.enum(["cloud", "self-hosted", "local"])
+			.optional(),
+	},
 	runtimeEnv: {
 		APP_URL: process.env.APP_URL,
 		API_BASE_URL: process.env.API_BASE_URL,
 		ONEGLANSE_APP_MODE: process.env.ONEGLANSE_APP_MODE,
+		NEXT_PUBLIC_ONEGLANSE_APP_MODE:
+			process.env.NEXT_PUBLIC_ONEGLANSE_APP_MODE ??
+			process.env.ONEGLANSE_APP_MODE,
 		INTERNAL_CRON_SECRET: process.env.INTERNAL_CRON_SECRET,
 		BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
 		GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
