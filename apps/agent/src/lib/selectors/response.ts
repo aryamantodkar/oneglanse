@@ -313,121 +313,6 @@ async function extractResponsePayload(
 				}
 			}
 
-			function refineResponseRoot(root: HTMLElement): HTMLElement {
-				const rootTextLength = textOf(root).length;
-				if (rootTextLength < 80) {
-					return root;
-				}
-
-				const descendants = Array.from(root.querySelectorAll("*")).filter(
-					(node): node is HTMLElement =>
-						node instanceof HTMLElement &&
-						isVisible(node) &&
-						!hasEditableDescendant(node),
-				);
-
-				let best = root;
-				const rootRect = root.getBoundingClientRect();
-				const rootBlockCount = blockCountOf(root);
-				const rootInteractiveCount = root.querySelectorAll(
-					"a,button,[role='button']",
-				).length;
-				const rootHasChrome =
-					rootInteractiveCount >= 8 && rootBlockCount <= 2;
-				let bestScore = answerScoreOf(root, 0, rootRect.top || 1);
-				const minLength = Math.max(
-					160,
-					Math.floor(rootTextLength * (rootHasChrome ? 0.35 : 0.55)),
-				);
-
-				for (const [order, node] of descendants.entries()) {
-					const length = textOf(node).length;
-					if (length < minLength) continue;
-					if (length > rootTextLength) continue;
-					if (length >= rootTextLength * 0.95) continue;
-					if (isAuxiliaryNode(node)) continue;
-
-					let depth = 0;
-					let current: HTMLElement | null = node;
-					while (current && current !== root) {
-						depth += 1;
-						current = current.parentElement;
-					}
-
-					const blockCount = node.querySelectorAll(
-						"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6",
-					).length;
-					const childTextContainers = Array.from(node.children).filter(
-						(child) =>
-							child instanceof HTMLElement &&
-							isVisible(child) &&
-							!hasEditableDescendant(child) &&
-							textOf(child).length >= 60,
-					).length;
-					const structureScore = blockCount + childTextContainers;
-					if (structureScore < 2 && length < rootTextLength * 0.45) {
-						continue;
-					}
-
-					const rect = node.getBoundingClientRect();
-					const relativeTop = Math.max(0, rect.top - rootRect.top);
-					// For very long responses (>8000 chars), Math.min(length, 8000) caps
-					// both root and descendant at the same text score, making depth and
-					// structure bonuses dominate and causing mid-answer subtrees to win.
-					// Apply a stricter coverage requirement: descendant must keep ≥88%
-					// of root text so we don't lose intro paragraphs or opening sections.
-					if (rootTextLength > 8_000 && length < rootTextLength * 0.88) {
-						continue;
-					}
-
-					const score =
-						answerScoreOf(node, order, Math.max(rootRect.bottom, rect.top, 1)) +
-						// Small depth tiebreaker only — large bonus caused mid-answer
-						// subtrees to outscore the root on long structured responses.
-						depth * 10 +
-						structureScore * 50 -
-						// Penalise candidates that start below the root's top — they cut
-						// off leading content (headings, intro paragraphs) from long
-						// multi-section answers. Increased from 0.15 to 0.5 to make the
-						// penalty meaningful relative to the depth/structure bonuses.
-						relativeTop * 0.5;
-
-					if (score > bestScore) {
-						best = node;
-						bestScore = score;
-					}
-				}
-
-				if (best !== root) {
-					const bestTextLength = textOf(best).length;
-					const rootStructuredBlockCount = root.querySelectorAll(
-						"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6,ul,ol",
-					).length;
-					const bestStructuredBlockCount = best.querySelectorAll(
-						"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6,ul,ol",
-					).length;
-					const rootHeadingCount = root.querySelectorAll("h1,h2,h3,h4,h5,h6").length;
-					const bestHeadingCount = best.querySelectorAll("h1,h2,h3,h4,h5,h6").length;
-					const rootLooksStructured =
-						rootBlockCount >= 3 || rootTextLength >= 600;
-					if (
-						rootLooksStructured &&
-						(bestTextLength < rootTextLength * (rootHasChrome ? 0.45 : 0.75) ||
-							bestStructuredBlockCount <
-								rootStructuredBlockCount * (rootHasChrome ? 0.35 : 0.65) ||
-							// Require the chosen subtree to retain at least 75% of the
-					// root's headings. Gemini/Claude long answers often have multiple
-					// H2/H3 section headings — a subtree missing more than 25% of
-					// them is dropping whole sections and should be rejected.
-					bestHeadingCount < rootHeadingCount * 0.75)
-					) {
-						return root;
-					}
-				}
-
-				return best;
-			}
-
 			let target: HTMLElement | null = null;
 			let bestTargetScore = Number.NEGATIVE_INFINITY;
 			for (const selector of selectors) {
@@ -455,8 +340,6 @@ async function extractResponsePayload(
 			if (!target) {
 				return { html: "", text: "" };
 			}
-
-			target = refineResponseRoot(target);
 
 			const clone = target.cloneNode(true) as HTMLElement;
 			for (const selector of [
