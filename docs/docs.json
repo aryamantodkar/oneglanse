@@ -1,0 +1,11 @@
+{
+	"$schema": "https://mintlify.com/docs.json",
+	"theme": "mint",
+	"name": "OneGlanse",
+	"colors": {
+		"primary": "#111827"
+	},
+	"navigation": {
+		"pages": ["introduction", "getting-started", "api-reference"]
+	}
+}
