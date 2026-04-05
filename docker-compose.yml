@@ -12,8 +12,7 @@ services:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
         CAMOUFOX_PIP_SPEC: "${CAMOUFOX_PIP_SPEC:-cloverlabs-camoufox[geoip]}"
         CAMOUFOX_BROWSER_CHANNEL: "${CAMOUFOX_BROWSER_CHANNEL:-official/stable}"
-    pull_policy: build
-    image: oneglanse-agent:local
+    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-agent:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: oneglanse-agent-worker
     restart: unless-stopped
     stop_grace_period: 16m
@@ -99,8 +98,7 @@ services:
     build:
       context: .
       dockerfile: ./packages/db/Dockerfile
-    pull_policy: build
-    image: oneglanse-postgres:local
+    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-postgres:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: postgres_db
     restart: always
     command:
@@ -176,8 +174,7 @@ services:
       dockerfile: ./apps/web/Dockerfile
       args:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
-    pull_policy: build
-    image: oneglanse-web:local
+    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-web:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: oneglanse-web
     restart: unless-stopped
     environment:
@@ -231,8 +228,7 @@ services:
       dockerfile: ./apps/web/Dockerfile
       args:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
-    pull_policy: build
-    image: oneglanse-web:local
+    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-web:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: oneglanse-migrate
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
