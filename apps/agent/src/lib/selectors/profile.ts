@@ -32,6 +32,7 @@ import {
 	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
 	PAGE_FAILED_RESOLUTION_TTL_MS,
 	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
+	SELECTOR_PROFILE_MAX_AGE_MS,
 	failedPageResolutions,
 	failedResolutions,
 	pendingByProviderStage,
@@ -580,15 +581,27 @@ export async function getSelectorProfile(
 		initialPageKey = pageKey;
 		const cached = (await readCachedProfile(provider, stage, pageKey)) ?? null;
 		if (cached) {
-			initialCachedProfile = cached;
-			const valid = await validateProfile(
-				page,
-				cached,
-				options?.requiredFields,
-				{ relaxCompose: stage === "compose" },
-			);
-			if (valid) {
-				return valid;
+			// Expire profiles older than the TTL even when selectors still resolve —
+			// this guarantees stale-but-valid selectors are refreshed after a UI change
+			// is deployed, rather than silently serving degraded results indefinitely.
+			const profileAge = Date.now() - new Date(cached.createdAt).getTime();
+			if (profileAge > SELECTOR_PROFILE_MAX_AGE_MS) {
+				logger.debug(
+					`[selector:${provider}/${stage}] profile TTL expired (${Math.round(profileAge / 86_400_000)}d old) — forcing model refresh`,
+				);
+				await deleteCachedProfile(cached);
+				// initialCachedProfile remains null; the model will re-resolve below
+			} else {
+				initialCachedProfile = cached;
+				const valid = await validateProfile(
+					page,
+					cached,
+					options?.requiredFields,
+					{ relaxCompose: stage === "compose" },
+				);
+				if (valid) {
+					return valid;
+				}
 			}
 		}
 	}
