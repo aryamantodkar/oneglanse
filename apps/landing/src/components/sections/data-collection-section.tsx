@@ -1,49 +1,89 @@
-import { Card } from "@oneglanse/ui";
 import { METHOD_POINTS } from "@/lib/landing-content";
-import { Bot, ExternalLink, Eye, Fingerprint, ShieldCheck, Wifi } from "lucide-react";
+import { Card } from "@oneglanse/ui";
+import {
+	Bot,
+	ExternalLink,
+	Eye,
+	Fingerprint,
+	ShieldCheck,
+	Wifi,
+} from "lucide-react";
 
 export function DataCollectionSection(): React.JSX.Element {
-  return (
-    <section className="section-shell py-10 sm:py-12" id="data-methodology" aria-labelledby="data-methodology-title">
-      <Card className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-black">
-        <h2 id="data-methodology-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Data collection methodology
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-          We disclose exactly how AI visibility data is collected and why UI-first monitoring matters.
-        </p>
+	return (
+		<section
+			className="section-shell py-10 sm:py-12"
+			id="data-methodology"
+			aria-labelledby="data-methodology-title"
+		>
+			<Card className="landing-surface p-5 sm:p-6">
+				<h2
+					id="data-methodology-title"
+					className="text-2xl font-semibold tracking-tight sm:text-3xl"
+				>
+					Data collection methodology
+				</h2>
+				<p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
+					We disclose exactly how AI visibility data is collected and why
+					UI-first monitoring matters.
+				</p>
 
-        <ul className="mt-4 grid gap-2">
-          {METHOD_POINTS.map((point, index) => (
-            <li
-              key={point}
-              className="rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 dark:border-gray-800 dark:text-gray-100"
-            >
-              <span className="inline-flex items-center gap-2.5">
-                {index === 0 ? <Eye className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 1 ? <Wifi className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 2 ? <Bot className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 3 ? <Fingerprint className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
-                {index === 4 ? <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
-                <span className="leading-6">{point}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+				<ul className="mt-4 grid gap-2">
+					{METHOD_POINTS.map((point, index) => (
+						<li
+							key={point}
+							className="landing-muted-card px-3.5 py-3 text-sm text-gray-900 dark:text-gray-100"
+						>
+							<span className="inline-flex items-center gap-2.5">
+								{index === 0 ? (
+									<Eye
+										className="h-4 w-4 shrink-0 text-muted-foreground"
+										aria-hidden="true"
+									/>
+								) : null}
+								{index === 1 ? (
+									<Wifi
+										className="h-4 w-4 shrink-0 text-muted-foreground"
+										aria-hidden="true"
+									/>
+								) : null}
+								{index === 2 ? (
+									<Bot
+										className="h-4 w-4 shrink-0 text-muted-foreground"
+										aria-hidden="true"
+									/>
+								) : null}
+								{index === 3 ? (
+									<Fingerprint
+										className="h-4 w-4 shrink-0 text-muted-foreground"
+										aria-hidden="true"
+									/>
+								) : null}
+								{index === 4 ? (
+									<ShieldCheck
+										className="h-4 w-4 shrink-0 text-muted-foreground"
+										aria-hidden="true"
+									/>
+								) : null}
+								<span className="leading-6">{point}</span>
+							</span>
+						</li>
+					))}
+				</ul>
 
-        <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          You can read more here on how UI responses differ from API responses:{" "}
-          <a
-            href="https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-1 text-foreground underline underline-offset-4"
-          >
-            LLM scraped AI answers vs API results
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-          </a>
-        </p>
-      </Card>
-    </section>
-  );
+				<p className="mt-4 text-sm leading-6 text-muted-foreground">
+					You can read more here on how UI responses differ from API responses:{" "}
+					<a
+						href="https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/"
+						target="_blank"
+						rel="noreferrer noopener"
+						className="inline-flex items-center gap-1 text-foreground underline underline-offset-4"
+					>
+						LLM scraped AI answers vs API results
+						<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+					</a>
+				</p>
+			</Card>
+		</section>
+	);
 }

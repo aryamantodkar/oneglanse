@@ -3,12 +3,19 @@ import type * as React from "react";
 
 import { cn } from "@oneglanse/utils";
 
+export type EmptyStateExample =
+	| string
+	| {
+			label: string;
+			icon?: LucideIcon;
+	  };
+
 export type EmptyStatePanelProps = {
 	icon?: LucideIcon;
 	eyebrow?: string;
 	title: string;
 	description: string;
-	examples?: string[];
+	examples?: EmptyStateExample[];
 	examplesLabel?: string;
 	highlights?: string[];
 	action?: React.ReactNode;
@@ -75,10 +82,15 @@ export function EmptyStatePanel({
 						<div className="mt-3 grid gap-3">
 							{examples.map((example) => (
 								<div
-									key={example}
-									className="rounded-[16px] bg-white/90 px-3 py-2.5 text-sm font-medium leading-5 text-gray-700 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:text-gray-200 dark:shadow-[0_8px_24px_-20px_rgba(0,0,0,0.5)]"
+									key={typeof example === "string" ? example : example.label}
+									className="flex items-start gap-2.5 rounded-[16px] bg-white/90 px-3 py-2.5 text-sm font-medium leading-5 text-gray-700 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:text-gray-200 dark:shadow-[0_8px_24px_-20px_rgba(0,0,0,0.5)]"
 								>
-									{example}
+									{typeof example !== "string" && example.icon ? (
+										<example.icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" />
+									) : null}
+									<span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
+										{typeof example === "string" ? example : example.label}
+									</span>
 								</div>
 							))}
 						</div>

@@ -860,11 +860,11 @@ export async function extractResolvedSources(
 		return [];
 	}
 
-	const inlineRawSources = await extractInlineRawSourcesFromResponse(
-		page,
-		responseProfile.selectors.response,
-	);
 	if (!responseProfile.selectors.sourcesButton.length) {
+		const inlineRawSources = await extractInlineRawSourcesFromResponse(
+			page,
+			responseProfile.selectors.response,
+		);
 		return buildSources(
 			inlineRawSources,
 			(url, title, citedText) => `${url}|${title}|${citedText}`,
@@ -922,7 +922,7 @@ export async function extractResolvedSources(
 					},
 				);
 
-	const mergedRawSources = mergeRawSources(rawSources, inlineRawSources);
+	const mergedRawSources = rawSources;
 
 	if (mergedRawSources.length === 0) {
 		throw new ExternalServiceError(

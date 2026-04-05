@@ -284,7 +284,7 @@ export function SourcesIntelligencePanel({
 					<p className="mt-1 text-xs text-muted-foreground">{emptySubtitle}</p>
 				</div>
 			) : activeTab === "domains" ? (
-				<div className="overflow-x-auto rounded-[24px]">
+				<div className="overflow-x-auto rounded-[24px] [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
 					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
@@ -394,7 +394,7 @@ export function SourcesIntelligencePanel({
 					</Table>
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-[24px]">
+				<div className="overflow-x-auto rounded-[24px] [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
 					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">

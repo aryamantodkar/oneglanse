@@ -100,12 +100,12 @@ export async function waitForAssistantToFinish(
 
 			if (seenOutput && !generating) {
 				const requiredStableMs = seenGenerating
-					? 1500
+					? 3000
 					: textGrowthEvents >= 4 || text.length >= 1000
 						? 3000
 						: 4500;
 				const enoughGrowthWithoutIndicator =
-					seenGenerating || textGrowthEvents >= 2 || text.length >= 300;
+					seenGenerating || textGrowthEvents >= 2 || text.length >= 50;
 				if (enoughGrowthWithoutIndicator && stableFor >= requiredStableMs) {
 					logger.log(`[${provider}] response ready`);
 					return;

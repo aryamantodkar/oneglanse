@@ -680,8 +680,8 @@ export default function PeoplePage() {
 						/>
 					</div>
 				) : (
-					<div className="overflow-x-auto">
-						<Table className="min-w-[620px] lg:min-w-[680px]">
+					<div className="web-touch-scroll">
+						<Table className="min-w-[560px] lg:min-w-[680px]">
 							<TableHeader>
 								<TableRow className="bg-gray-50/70 dark:bg-gray-900/40">
 									<TableHead className="px-4 py-3">Name</TableHead>

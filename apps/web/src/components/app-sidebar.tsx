@@ -8,6 +8,7 @@ import type { Workspace } from "@oneglanse/db";
 import {
 	type AppMode,
 	canAccessScheduleInMode,
+	canRunPromptsNowInMode,
 	isInteractiveAuthAllowedInMode,
 } from "@oneglanse/types";
 import {
@@ -128,7 +129,7 @@ export function AppSidebar({
 
 	if (canAccessScheduleInMode(appMode)) {
 		generalItems.splice(3, 0, {
-			title: "Schedule",
+			title: canRunPromptsNowInMode(appMode) ? "Run Prompts" : "Schedule",
 			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
 			icon: Clock,
 		});

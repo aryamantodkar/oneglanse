@@ -18,7 +18,25 @@ This monorepo contains:
 
 ## Quick Start
 
-### Local
+OneGlanse supports three setup paths depending on how you want to run it.
+
+### 1. Use The Cloud App
+
+Open the hosted app directly:
+
+- app: [https://app.oneglanse.com](https://app.oneglanse.com)
+- landing: [https://oneglanse.com](https://oneglanse.com)
+- docs: [https://oneglanse.com/docs](https://oneglanse.com/docs)
+
+Recommended flow:
+
+1. Sign in
+2. Create or pick a workspace
+3. Connect providers on `/providers`
+4. Add prompts your target audience would actually search for
+5. Review dashboard, prompt responses, and sources once runs complete
+
+### 2. Run It Locally
 
 ```bash
 pnpm install
@@ -37,19 +55,17 @@ This:
 
 If provider auth is missing, the app routes you to `/providers`.
 
-### Local Auth Only
+Local-first auth only:
 
 ```bash
 pnpm auth
 ```
 
-This starts only the shared providers flow at
-[http://localhost:3000/providers](http://localhost:3000/providers).
+That starts the shared providers flow at
+[http://localhost:3000/providers](http://localhost:3000/providers) without
+running the full app stack.
 
-Use it when you want to connect providers without running the full local app
-flow. It bootstraps the same pinned local Camoufox auth runtime automatically.
-
-### Self-Host / VPS
+### 3. Self-Host It
 
 ```bash
 pnpm install

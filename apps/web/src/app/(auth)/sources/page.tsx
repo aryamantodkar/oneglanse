@@ -24,7 +24,7 @@ import {
 	getUrlPath,
 	joinCitedTexts,
 } from "@oneglanse/utils";
-import { AlertTriangle, SearchX } from "lucide-react";
+import { AlertTriangle, FileText, Globe2, Link2, SearchX } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePromptSources } from "../prompts/_lib/queries/prompt.queries";
@@ -209,10 +209,15 @@ export default function SourcesPage(): React.JSX.Element {
 	if (!sourceStats) {
 		return (
 			<EmptyStatePanel
+				icon={Globe2}
 				title="See Who Shapes the Answer"
 				description="Run prompts to reveal which domains and URLs AI models keep citing."
 				examplesLabel="Source signals you'll uncover"
-				examples={["techradar.com", "g2.com", "hubspot.com"]}
+				examples={[
+					{ icon: Globe2, label: "Top cited domains" },
+					{ icon: Link2, label: "Most referenced URLs" },
+					{ icon: FileText, label: "Cited text by provider" },
+				]}
 				action={
 					<Button asChild>
 						<Link href={`/prompts?workspace=${workspaceId}`}>Run prompts</Link>
@@ -225,13 +230,14 @@ export default function SourcesPage(): React.JSX.Element {
 	if (displayedSources.length === 0) {
 		return (
 			<EmptyStatePanel
+				icon={Globe2}
 				title="Source Patterns Appear Here"
 				description="When source data is available, this page shows the domains, URLs, and cited text shaping model answers."
 				examplesLabel="What you'll see here"
 				examples={[
-					"Top cited domains",
-					"Most referenced URLs",
-					"Cited text by provider",
+					{ icon: Globe2, label: "Top cited domains" },
+					{ icon: Link2, label: "Most referenced URLs" },
+					{ icon: FileText, label: "Cited text by provider" },
 				]}
 			/>
 		);

@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { canAccessScheduleInMode, resolveAppMode } from "@oneglanse/types";
+import { resolveAppMode } from "@oneglanse/types";
 import SchedulePageClient from "./schedule-page-client";
 
 export default async function SchedulePage({
@@ -8,13 +7,9 @@ export default async function SchedulePage({
 	searchParams?: Promise<{ workspace?: string }>;
 }) {
 	const appMode = resolveAppMode(process.env.ONEGLANSE_APP_MODE);
-	if (!canAccessScheduleInMode(appMode)) {
-		const params = await searchParams;
-		const workspaceQuery = params?.workspace
-			? `?workspace=${encodeURIComponent(params.workspace)}`
-			: "";
-		redirect(`/dashboard${workspaceQuery}`);
-	}
+	const params = await searchParams;
 
-	return <SchedulePageClient />;
+	return (
+		<SchedulePageClient appMode={appMode} workspaceId={params?.workspace} />
+	);
 }
