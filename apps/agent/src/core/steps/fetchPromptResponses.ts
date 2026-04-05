@@ -86,6 +86,13 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 			logger.warn(
 				`extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})`,
 			);
+			// A selector can validate during streaming and become stale by the time the
+			// final answer settles. Force one fresh selector resolution before the next
+			// retry instead of repeating the same empty extraction.
+			await invalidateSelectorProfileForPage(page, provider, "response");
+			await getSelectorProfile(page, provider, "response", {
+				forceRefresh: true,
+			}).catch(() => null);
 			await page.waitForTimeout(retryDelay);
 		}
 	}

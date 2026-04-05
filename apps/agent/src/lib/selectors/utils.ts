@@ -240,8 +240,9 @@ export function normalizePageKeySegment(segment: string): string {
 		return ":id";
 	}
 
+	const parts = segment.split(/[-_.]+/).filter(Boolean);
+
 	if (segment.length >= 24) {
-		const parts = segment.split(/[-_.]+/).filter(Boolean);
 		const hasDynamicShape = parts.some(
 			(part) =>
 				part.includes(":") ||
@@ -250,6 +251,20 @@ export function normalizePageKeySegment(segment: string): string {
 				/^[0-9a-f]{6,}$/i.test(part),
 		);
 		if (parts.length >= 3 && hasDynamicShape) {
+			return ":id";
+		}
+	}
+
+	// Short slugs with a hash suffix: "word-word-AbCd1234" — the last part
+	// contains both letters and digits, indicating a random ID appended to a
+	// human-readable slug (e.g. Perplexity search URLs).
+	if (parts.length >= 3) {
+		const lastPart = parts[parts.length - 1] ?? "";
+		if (
+			lastPart.length >= 6 &&
+			/[a-zA-Z]/.test(lastPart) &&
+			/\d/.test(lastPart)
+		) {
 			return ":id";
 		}
 	}

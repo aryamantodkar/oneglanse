@@ -5,9 +5,9 @@ export function useUserPrompts(workspaceId: string) {
 		{ workspaceId },
 		{
 			enabled: !!workspaceId,
-			staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
-			gcTime: 10 * 60 * 1000, // Cache for 10 minutes
-			refetchOnWindowFocus: false,
+			staleTime: 0,
+			gcTime: 10 * 60 * 1000,
+			refetchOnWindowFocus: true,
 		},
 	);
 }
@@ -18,9 +18,9 @@ export function usePromptSources(workspaceId: string) {
 		{
 			retry: 2,
 			enabled: !!workspaceId,
-			staleTime: 5 * 60 * 1000,
+			staleTime: 0,
 			gcTime: 10 * 60 * 1000,
-			refetchOnWindowFocus: false,
+			refetchOnWindowFocus: true,
 		},
 	);
 }

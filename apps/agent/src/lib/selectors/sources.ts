@@ -257,12 +257,7 @@ async function resolveResponseProfileForSources(
 		return baseProfile;
 	}
 
-	return (
-		(await getSelectorProfile(page, provider, "response", {
-			forceRefresh: true,
-			requiredFields: ["response", "sourcesButton"],
-		}).catch(() => null)) ?? baseProfile
-	);
+	return baseProfile;
 }
 
 async function extractRawSourcesWithSelectors(
@@ -319,6 +314,33 @@ async function extractRawSourcesWithSelectors(
 				return ((element as HTMLElement).innerText || element.textContent || "")
 					.replace(/\s+/g, " ")
 					.trim();
+			}
+
+			function normalizeUrl(href: string): string {
+				try {
+					return (
+						new URL(href, window.location.origin).toString().split("#")[0] ?? ""
+					);
+				} catch {
+					return "";
+				}
+			}
+
+			function domainOf(url: string): string {
+				try {
+					return new URL(url).hostname.replace(/^www\./, "");
+				} catch {
+					return url;
+				}
+			}
+
+			function isSameOriginAppUrl(url: string): boolean {
+				try {
+					const parsed = new URL(url, window.location.origin);
+					return parsed.hostname === window.location.hostname;
+				} catch {
+					return false;
+				}
 			}
 
 			function lastVisible<T extends Element>(elements: T[]): T | null {
@@ -540,9 +562,22 @@ async function extractRawSourcesWithSelectors(
 				if (dedupedItems.length <= 1) {
 					const anchorItems = Array.from(
 						root.querySelectorAll("a[href]"),
-					).filter(isConnectedAnchor);
+					)
+						.filter(isConnectedAnchor)
+						.map(
+							(anchor) =>
+								anchor.closest(
+									"article, li, [role='listitem'], div, section",
+								) ?? anchor,
+						)
+						.filter(
+							(element): element is HTMLElement =>
+								element instanceof HTMLElement &&
+								isVisible(element) &&
+								textOf(element).length >= 24,
+						);
 					if (anchorItems.length > dedupedItems.length) {
-						dedupedItems = anchorItems;
+						dedupedItems = Array.from(new Set(anchorItems));
 					}
 				}
 
@@ -555,16 +590,8 @@ async function extractRawSourcesWithSelectors(
 						) || (item instanceof HTMLAnchorElement ? item : null);
 					if (!anchor?.href) continue;
 
-					let url = "";
-					try {
-						url =
-							new URL(anchor.href, window.location.origin)
-								.toString()
-								.split("#")[0] || "";
-					} catch {
-						continue;
-					}
-					if (!url || seenUrls.has(url)) continue;
+					const url = normalizeUrl(anchor.href);
+					if (!url || seenUrls.has(url) || isSameOriginAppUrl(url)) continue;
 					seenUrls.add(url);
 
 					const title =
@@ -678,11 +705,19 @@ async function extractInlineRawSourcesFromResponse(
 				}
 			}
 
+			function domainOf(url: string): string {
+				try {
+					return new URL(url).hostname.replace(/^www\./, "");
+				} catch {
+					return url;
+				}
+			}
+
 			function findCitationBlock(
-				anchor: HTMLAnchorElement,
+				target: HTMLElement,
 				response: HTMLElement,
 			): HTMLElement {
-				const semanticBlock = anchor.closest(
+				const semanticBlock = target.closest(
 					"p, li, blockquote, td, th, figcaption",
 				);
 				if (
@@ -692,7 +727,7 @@ async function extractInlineRawSourcesFromResponse(
 					return semanticBlock;
 				}
 
-				let current: HTMLElement | null = anchor.parentElement;
+				let current: HTMLElement | null = target.parentElement;
 				while (current && current !== response) {
 					if (
 						["DIV", "SECTION", "ARTICLE"].includes(current.tagName) &&
@@ -707,17 +742,16 @@ async function extractInlineRawSourcesFromResponse(
 			}
 
 			function sentenceFromCitation(
-				anchor: HTMLAnchorElement,
+				target: HTMLAnchorElement,
 				response: HTMLElement,
 			): string {
-				const block = findCitationBlock(anchor, response);
+				const block = findCitationBlock(target, response);
+				const clone = block.cloneNode(true) as HTMLElement;
 				const originalAnchors = Array.from(block.querySelectorAll("a[href]"));
-				const targetIndex = originalAnchors.indexOf(anchor);
+				const targetIndex = originalAnchors.indexOf(target);
 				if (targetIndex < 0) {
 					return textOf(block);
 				}
-
-				const clone = block.cloneNode(true) as HTMLElement;
 				const cloneAnchors = Array.from(clone.querySelectorAll("a[href]"));
 				cloneAnchors.forEach((element, index) => {
 					element.replaceWith(
@@ -770,15 +804,19 @@ async function extractInlineRawSourcesFromResponse(
 					!!element.href &&
 					isVisible(element),
 			);
-
 			for (const anchor of anchors) {
+				const rawLabel = textOf(anchor).replace(/\+\d+\s*$/, "").trim();
 				const url = normalizeUrl(anchor.href);
 				if (!url || seen.has(url)) {
 					continue;
 				}
 
+				const rawTitle =
+					anchor.getAttribute("title")?.trim() || rawLabel || "";
 				const title =
-					anchor.getAttribute("title")?.trim() || textOf(anchor) || url;
+					rawTitle.length >= 4 && !/^\[?\d+\]?$/.test(rawTitle)
+						? rawTitle
+						: domainOf(url);
 				const citedText = sentenceFromCitation(anchor, response) || title;
 				rawSources.push({
 					rawHref: url,
@@ -861,6 +899,33 @@ export async function extractResolvedSources(
 	}
 
 	if (!responseProfile.selectors.sourcesButton.length) {
+		const sourceProfile =
+			(await waitForSelectorProfile(page, provider, "sources", 8_000).catch(
+				() => null,
+			)) ??
+			(await getSelectorProfile(page, provider, "sources", {
+				allowModel: false,
+			}).catch(() => null));
+		const modeledInlineSources =
+			sourceProfile &&
+			sourceProfile.selectors.sourcePanel.length > 0 &&
+			sourceProfile.selectors.sourceItem.length > 0
+				? await extractRawSourcesWithSelectors(
+						page,
+						sourceProfile.selectors.sourcePanel,
+						sourceProfile.selectors.sourceItem,
+						null,
+						{
+							responseSelectors: responseProfile.selectors.response,
+						},
+					).catch(() => [])
+				: [];
+		if (modeledInlineSources.length > 0) {
+			return buildSources(
+				modeledInlineSources,
+				(url, title, citedText) => `${url}|${title}|${citedText}`,
+			);
+		}
 		const inlineRawSources = await extractInlineRawSourcesFromResponse(
 			page,
 			responseProfile.selectors.response,
