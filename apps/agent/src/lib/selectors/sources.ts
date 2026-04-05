@@ -4,7 +4,11 @@ import { getDomain, getFaviconUrls, logger } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import type { RawSource } from "../extraction/sourceUtils.js";
 import { buildSources } from "../extraction/sourceUtils.js";
-import { getSelectorProfile, waitForSelectorProfile } from "./profile.js";
+import {
+	getSelectorProfile,
+	invalidateSelectorProfileForPage,
+	waitForSelectorProfile,
+} from "./profile.js";
 
 async function findSourcesButtonLocator(
 	page: Page,
@@ -431,17 +435,41 @@ async function extractRawSourcesWithSelectors(
 			function resolveHeuristicRoot(): HTMLElement | null {
 				const button = resolveButton();
 				const latestResponse = resolveLatestResponse();
-				const candidates = Array.from(
+
+				// Collect candidates from two passes so we don't miss custom elements
+				// (e.g. <context-sidebar>, <chat-sources>, web-component tags) that
+				// contain anchor lists but don't match any standard HTML element name.
+				//
+				// Pass 1 — standard semantic elements (fast path)
+				const semanticCandidates = Array.from(
 					document.querySelectorAll(
 						"div, section, aside, ul, ol, [role='dialog'], [role='menu'], [role='listbox'], [role='region']",
 					),
-				).filter(
-					(element): element is HTMLElement =>
-						element instanceof HTMLElement &&
-						isVisible(element) &&
-						element.getBoundingClientRect().width >= 120 &&
-						element.getBoundingClientRect().height >= 40,
+				) as HTMLElement[];
+
+				// Pass 2 — any visible element with ≥2 anchor descendants that was not
+				// already covered by pass 1 (catches custom elements / web components)
+				const allWithAnchors = Array.from(document.querySelectorAll("*")).filter(
+					(el): el is HTMLElement =>
+						el instanceof HTMLElement &&
+						!semanticCandidates.includes(el) &&
+						el.querySelectorAll("a[href]").length >= 2,
 				);
+
+				const seen = new Set<HTMLElement>();
+				const candidates: HTMLElement[] = [];
+				for (const el of [...semanticCandidates, ...allWithAnchors]) {
+					if (
+						!(el instanceof HTMLElement) ||
+						seen.has(el) ||
+						!isVisible(el) ||
+						el.getBoundingClientRect().width < 120 ||
+						el.getBoundingClientRect().height < 40
+					)
+						continue;
+					seen.add(el);
+					candidates.push(el);
+				}
 
 				let best: HTMLElement | null = null;
 				let bestScore = Number.NEGATIVE_INFINITY;
@@ -517,6 +545,77 @@ async function extractRawSourcesWithSelectors(
 				);
 			}
 
+			// Extract the best title from a source item element. Tries progressively
+			// looser heuristics so that any card structure — heading-based, plain
+			// div/span, or anchor-only — is handled correctly.
+			function extractBestTitle(
+				item: Element,
+				anchor: HTMLAnchorElement,
+				itemUrl: string,
+			): string {
+				// 1. Semantic heading / strong / bold
+				const semantic = item.querySelector("h1,h2,h3,h4,h5,h6,strong,b");
+				const semanticText = semantic?.textContent?.trim();
+				if (semanticText && semanticText.length >= 3) return semanticText;
+
+				// 2. [title] attribute on any descendant
+				const withTitle = item.querySelector("[title]");
+				const titleAttr = withTitle?.getAttribute("title")?.trim();
+				if (titleAttr && titleAttr.length >= 3) return titleAttr;
+
+				// 3. Anchor title attribute
+				const anchorTitleAttr = anchor.getAttribute("title")?.trim();
+				if (anchorTitleAttr && anchorTitleAttr.length >= 3)
+					return anchorTitleAttr;
+
+				// 4. Best leaf text node: short-ish, has at least one space (i.e. words,
+				//    not a bare domain), not a URL, not the item's own hostname.
+				let domain = "";
+				try {
+					domain = new URL(itemUrl).hostname
+						.replace(/^www\./, "")
+						.toLowerCase();
+				} catch {}
+
+				let bestText = "";
+				let bestScore = -1;
+				const leafCandidates = Array.from(
+					item.querySelectorAll("span, div, p, cite, li"),
+				);
+				for (const el of leafCandidates) {
+					if (!isVisible(el)) continue;
+					// Skip elements that contain block-level descendants (not leaf-ish)
+					const hasBlockChild = Array.from(el.children).some((child) =>
+						["DIV", "P", "UL", "OL", "TABLE", "SECTION", "ARTICLE"].includes(
+							child.tagName,
+						),
+					);
+					if (hasBlockChild) continue;
+
+					const text = textOf(el);
+					if (text.length < 8 || text.length > 200) continue;
+					if (text.includes("://") || /^https?:/i.test(text)) continue;
+					if (domain && text.toLowerCase().includes(domain)) continue;
+
+					// Prefer texts with spaces (multiple words) and moderate length
+					const hasSpaces = /\s/.test(text);
+					const score =
+						(hasSpaces ? 100 : 0) + (text.length <= 100 ? 40 : 0) - text.length * 0.1;
+
+					if (score > bestScore) {
+						bestScore = score;
+						bestText = text;
+					}
+				}
+				if (bestText) return bestText;
+
+				// 5. Fallback: anchor text (if not too long), else URL
+				const anchorText = anchor.textContent?.trim() ?? "";
+				return anchorText.length > 0 && anchorText.length <= 200
+					? anchorText
+					: itemUrl;
+			}
+
 			const roots = resolveRoots();
 			if (roots.length === 0) return [];
 
@@ -567,13 +666,7 @@ async function extractRawSourcesWithSelectors(
 					if (!url || seenUrls.has(url)) continue;
 					seenUrls.add(url);
 
-					const title =
-						item
-							.querySelector("h1,h2,h3,h4,strong,b,[title]")
-							?.textContent?.trim() ||
-						anchor.getAttribute("title")?.trim() ||
-						anchor.textContent?.trim() ||
-						url;
+					const title = extractBestTitle(item, anchor, url);
 
 					const snippetCandidates = Array.from(
 						item.querySelectorAll("p, span, div, small"),
@@ -848,6 +941,64 @@ function mergeRawSources(
 	return merged;
 }
 
+// After a sources panel is opened, click any "show more / view more / see all"
+// button that appears inside or near the panel to reveal hidden items.
+// This is completely generic — it matches any button/link whose accessible
+// text contains a well-known "expand" phrase, regardless of provider.
+async function expandSourcesPanel(page: Page): Promise<void> {
+	await page
+		.evaluate(() => {
+			const expandPattern =
+				/show\s+more|view\s+more|see\s+more|load\s+more|show\s+all|see\s+all|view\s+all|\+\s*\d+\s+more/i;
+
+			// Candidate interactive elements — buttons and same-origin links only.
+			// Exclude anchor elements whose href navigates to a different page (e.g.
+			// "Show all results" links on search-result pages) to avoid leaving the
+			// current page unexpectedly.
+			const candidates = Array.from(
+				document.querySelectorAll("button, a[role='button'], [role='button']"),
+			) as HTMLElement[];
+
+			for (const el of candidates) {
+				if (el.hidden) continue;
+				const style = window.getComputedStyle(el);
+				if (
+					style.display === "none" ||
+					style.visibility === "hidden" ||
+					style.opacity === "0"
+				)
+					continue;
+				const rect = el.getBoundingClientRect();
+				if (rect.width < 8 || rect.height < 8) continue;
+
+				// Skip anchor elements that navigate away from the current page
+				if (el.tagName === "A") {
+					const href = (el as HTMLAnchorElement).href;
+					if (
+						href &&
+						href !== window.location.href &&
+						!href.startsWith(window.location.origin + window.location.pathname)
+					)
+						continue;
+				}
+
+				const label = (
+					el.getAttribute("aria-label") ||
+					el.textContent ||
+					""
+				).trim();
+				if (expandPattern.test(label)) {
+					el.click();
+					break; // click at most one expand button per call
+				}
+			}
+		}, undefined)
+		.catch(() => {});
+
+	// Brief pause for any newly-loaded items to render
+	await page.waitForTimeout(1200);
+}
+
 export async function extractResolvedSources(
 	page: Page,
 	provider: Provider,
@@ -860,7 +1011,144 @@ export async function extractResolvedSources(
 		return [];
 	}
 
+	// ── Path A: No sources button ────────────────────────────────────────────
+	// The sources panel may be permanently visible (e.g. a side-column that
+	// requires no click) OR citations may be purely inline.
+	// Try panel extraction first; fall back to inline only if that yields nothing.
 	if (!responseProfile.selectors.sourcesButton.length) {
+		// Expand any "show more" controls that may be visible even without a button
+		// click (e.g. AI Overview's "Show all related links" that expands in-place).
+		await expandSourcesPanel(page);
+
+		// Check for a cached sources profile — covers providers where the panel is
+		// always visible and was identified in a previous agent run.
+		const cachedSourcesProfile = await getSelectorProfile(
+			page,
+			provider,
+			"sources",
+			{ allowModel: false },
+		).catch(() => null);
+
+		if (cachedSourcesProfile?.selectors.sourcePanel.length) {
+			const panelRawSources = await extractRawSourcesWithSelectors(
+				page,
+				cachedSourcesProfile.selectors.sourcePanel,
+				cachedSourcesProfile.selectors.sourceItem,
+				null,
+				{ responseSelectors: responseProfile.selectors.response },
+			);
+			if (panelRawSources.length > 0) {
+				logger.log(
+					`[${provider}] extracted ${panelRawSources.length} sources from always-visible panel`,
+				);
+				return buildSources(
+					panelRawSources,
+					(url, title, citedText) => `${url}|${title}|${citedText}`,
+				);
+			}
+		}
+
+		// No cached panel profile — try the sources stage model to detect an
+		// always-visible panel (e.g. first encounter with a provider like AI Overview).
+		const freshSourcesProfile = await waitForSelectorProfile(
+			page,
+			provider,
+			"sources",
+			6_000,
+			{ requiredFields: ["sourcePanel"] },
+		).catch(() => null);
+
+		if (freshSourcesProfile?.selectors.sourcePanel.length) {
+			const panelRawSources = await extractRawSourcesWithSelectors(
+				page,
+				freshSourcesProfile.selectors.sourcePanel,
+				freshSourcesProfile.selectors.sourceItem,
+				null,
+				{ responseSelectors: responseProfile.selectors.response },
+			);
+			if (panelRawSources.length > 0) {
+				logger.log(
+					`[${provider}] extracted ${panelRawSources.length} sources from always-visible panel (fresh profile)`,
+				);
+				return buildSources(
+					panelRawSources,
+					(url, title, citedText) => `${url}|${title}|${citedText}`,
+				);
+			}
+		}
+
+		// No panel found via cached or fresh sources profile. The LLM may have
+		// missed a sourcesButton when the response profile was first built — e.g. a
+		// tab-switcher, toggle, or button that only becomes visible after streaming
+		// ends. Force-refresh the response profile so the LLM re-examines the
+		// current DOM. If it detects a sourcesButton this time, open the panel and
+		// extract sources (same as Path B). This approach is fully generic — the LLM
+		// decides what the button is; no DOM structure is assumed in code.
+		const retryResponseProfile = await getSelectorProfile(
+			page,
+			provider,
+			"response",
+			{ forceRefresh: true },
+		).catch(() => null);
+
+		if (retryResponseProfile?.selectors.sourcesButton.length) {
+			logger.log(
+				`[${provider}] LLM re-resolution detected sourcesButton — retrying via panel extraction`,
+			);
+			const retryOpen = await openSourcesPanelIfNeeded(
+				page,
+				retryResponseProfile.selectors.response,
+				retryResponseProfile.selectors.sourcesButton,
+			);
+			if (retryOpen.opened) {
+				await expandSourcesPanel(page);
+				const retryDirectRaw = await extractRawSourcesWithSelectors(
+					page,
+					[],
+					[],
+					retryOpen.controlledPanelSelector,
+					{
+						buttonSelector: retryOpen.buttonMatch?.selector ?? null,
+						buttonIndex: retryOpen.buttonMatch?.index,
+						responseSelectors: retryResponseProfile.selectors.response,
+					},
+				);
+				const retrySourceProfile =
+					retryDirectRaw.length > 0
+						? null
+						: ((await waitForSelectorProfile(page, provider, "sources", 8_000, {
+								requiredFields: ["sourcePanel", "sourceItem"],
+							}).catch(() => null)) ??
+							(await getSelectorProfile(page, provider, "sources", {
+								allowModel: false,
+							}).catch(() => null)));
+				const retryRaw =
+					retryDirectRaw.length > 0
+						? retryDirectRaw
+						: await extractRawSourcesWithSelectors(
+								page,
+								retrySourceProfile?.selectors.sourcePanel ?? [],
+								retrySourceProfile?.selectors.sourceItem ?? [],
+								retryOpen.controlledPanelSelector,
+								{
+									buttonSelector: retryOpen.buttonMatch?.selector ?? null,
+									buttonIndex: retryOpen.buttonMatch?.index,
+									responseSelectors: retryResponseProfile.selectors.response,
+								},
+							);
+				if (retryRaw.length > 0) {
+					logger.log(
+						`[${provider}] extracted ${retryRaw.length} sources via LLM re-resolution`,
+					);
+					return buildSources(
+						retryRaw,
+						(url, title, citedText) => `${url}|${title}|${citedText}`,
+					);
+				}
+			}
+		}
+
+		// Final fallback: inline extraction (providers like Claude.ai with no sources)
 		const inlineRawSources = await extractInlineRawSourcesFromResponse(
 			page,
 			responseProfile.selectors.response,
@@ -871,6 +1159,7 @@ export async function extractResolvedSources(
 		);
 	}
 
+	// ── Path B: Has sources button — click it, then extract ──────────────────
 	logger.log(`[${provider}] opening sources panel`);
 	const { opened, controlledPanelSelector, buttonMatch } =
 		await openSourcesPanelIfNeeded(
@@ -885,6 +1174,9 @@ export async function extractResolvedSources(
 		);
 	}
 	logger.log(`[${provider}] sources panel opened`);
+
+	// Expand any "show more / view more" button inside the panel before extracting
+	await expandSourcesPanel(page);
 
 	const directRawSources = await extractRawSourcesWithSelectors(
 		page,
@@ -922,9 +1214,36 @@ export async function extractResolvedSources(
 					},
 				);
 
-	const mergedRawSources = rawSources;
-
-	if (mergedRawSources.length === 0) {
+	if (rawSources.length === 0) {
+		// The button opened but yielded no sources — the cached response profile is
+		// likely stale (UI changed after the profile was stored). Invalidate it so
+		// the next run triggers a fresh LLM re-detection. Also attempt one recovery
+		// scan with a fresh sources-stage profile before giving up.
+		await invalidateSelectorProfileForPage(page, provider, "response");
+		const recoveryProfile = await getSelectorProfile(page, provider, "sources", {
+			forceRefresh: true,
+			requiredFields: ["sourcePanel"],
+		}).catch(() => null);
+		const recoveryRaw = await extractRawSourcesWithSelectors(
+			page,
+			recoveryProfile?.selectors.sourcePanel ?? [],
+			recoveryProfile?.selectors.sourceItem ?? [],
+			controlledPanelSelector,
+			{
+				buttonSelector: buttonMatch?.selector ?? null,
+				buttonIndex: buttonMatch?.index,
+				responseSelectors: responseProfile.selectors.response,
+			},
+		);
+		if (recoveryRaw.length > 0) {
+			logger.log(
+				`[${provider}] recovered ${recoveryRaw.length} sources after profile invalidation`,
+			);
+			return buildSources(
+				recoveryRaw,
+				(url, title, citedText) => `${url}|${title}|${citedText}`,
+			);
+		}
 		throw new ExternalServiceError(
 			provider,
 			"Sources button was present and opened, but no sources were extracted",
@@ -932,7 +1251,7 @@ export async function extractResolvedSources(
 	}
 
 	return buildSources(
-		mergedRawSources,
+		rawSources,
 		(url, title, citedText) => `${url}|${title}|${citedText}`,
 	);
 }

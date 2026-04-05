@@ -5,7 +5,7 @@ import {
 } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
-import type { Browser, BrowserContext, ConsoleMessage, Page } from "playwright";
+import type { Browser, BrowserContext, Page } from "playwright";
 import { launchContext } from "../lib/browser/launch.js";
 import { navigateWithRetry } from "../lib/browser/navigate.js";
 import { PROVIDER_CONFIGS } from "./providers/index.js";
@@ -68,10 +68,6 @@ export async function createAgent(
 		// Long-running response generation is handled separately via explicit waits.
 		page.setDefaultTimeout(DEFAULT_PAGE_TIMEOUT_MS);
 		page.setDefaultNavigationTimeout(DEFAULT_NAV_TIMEOUT_MS);
-
-		page.on("console", (_msg: ConsoleMessage) => {
-			// console.log(`[${provider.toUpperCase()} PAGE]`, _msg.text())
-		});
 
 		return { browser, context, page, proxy, cleanup, invalidateProxyHint };
 	} catch (err) {

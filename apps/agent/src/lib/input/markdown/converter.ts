@@ -75,9 +75,17 @@ turndown.addRule("table", {
 
 // Strip link hrefs — keep anchor text only. Citation URLs are captured in
 // extractSources; embedding raw URLs in the response text is noise.
+// Exception: strip purely numeric footnote-style refs entirely ("1", "[2]").
+// Domain-name citation badges (e.g. "site.com") are stripped earlier in
+// response.ts before the HTML reaches Turndown, using a more precise
+// structural check (sole content of parent element).
 turndown.addRule("link", {
 	filter: "a",
 	replacement(content) {
+		const trimmed = content.trim();
+		if (!trimmed) return "";
+		// Purely numeric footnote refs: "1", "[1]", "12", etc.
+		if (/^\[?\d+\]?$/.test(trimmed)) return "";
 		return content;
 	},
 });
