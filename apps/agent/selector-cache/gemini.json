@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "gemini",
-  "updatedAt": "2026-04-04T11:42:43.690Z",
+  "updatedAt": "2026-04-04T21:17:50.890Z",
   "profiles": [
     {
       "version": 1,
@@ -48,18 +48,19 @@
       "provider": "gemini",
       "stage": "response",
       "pageKey": "gemini.google.com/app/:id",
-      "fingerprint": "2a3e5f3a8bd2506bf30c570f793efc4681f006fdcb2b796307cb47ac67adb327",
+      "fingerprint": "9e9cd5551f644e8aa20097540ebab4ee61f33aaeeecbfccd63df8440c5de472d",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:42:41.955Z",
+      "createdAt": "2026-04-04T21:17:50.879Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "#message-content-id-r_c1b53022d6d0075d"
+          "div.markdown.markdown-main-panel"
         ],
         "generationIndicator": [],
         "sourcesButton": [
-          "sources-sidebar-button.ng-star-inserted > button.mdc-button"
+          "button[aria-label=\"View source details for citations from Cometly and SuperOffice CRM. Opens side panel.\"]",
+          "button[aria-label=\"View source details for citations from SuperOffice CRM and Cometly. Opens side panel.\"]"
         ],
         "sourcePanel": [],
         "sourceItem": []

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "claude",
-  "updatedAt": "2026-04-04T11:44:21.460Z",
+  "updatedAt": "2026-04-04T21:18:42.273Z",
   "profiles": [
     {
       "version": 1,
@@ -48,19 +48,17 @@
       "provider": "claude",
       "stage": "response",
       "pageKey": "claude.ai/chat/:id",
-      "fingerprint": "06c4b072374595c1804b105d8c7c06ebb4354c025451a6232a47eda6e996adbd",
+      "fingerprint": "c2b211c590e4de0a26ed344a48e303e9e1fb2927f1d82c899ed5282d9b530549",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:44:17.553Z",
+      "createdAt": "2026-04-04T21:18:42.262Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "div.grid > div.row-start-2 > div.row-start-1"
+          "div.standard-markdown.grid"
         ],
         "generationIndicator": [],
-        "sourcesButton": [
-          "div.grid > div.row-start-1:nth-of-type(1) > div.min-w-0 > div.flex:nth-of-type(1) > button.flex"
-        ],
+        "sourcesButton": [],
         "sourcePanel": [],
         "sourceItem": []
       }

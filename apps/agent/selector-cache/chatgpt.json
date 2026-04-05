@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "2026-04-04T11:45:17.741Z",
+  "updatedAt": "2026-04-04T21:19:30.491Z",
   "profiles": [
     {
       "version": 1,
@@ -48,14 +48,14 @@
       "provider": "chatgpt",
       "stage": "response",
       "pageKey": "chatgpt.com/c/:id",
-      "fingerprint": "6e66e6dfd752bfe5d7276f53160bfafcfeddc8a1ebc842f7fa093f4ceb4e3fa3",
+      "fingerprint": "7e2c37a834d420cf200aae77e6847fdbb86a7b110a70a3feeb6a8eb0c6b320f2",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:44:58.763Z",
+      "createdAt": "2026-04-04T21:19:30.474Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "section[data-testid=\"conversation-turn-2\"]"
+          "div.markdown.prose"
         ],
         "generationIndicator": [],
         "sourcesButton": [

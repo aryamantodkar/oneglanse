@@ -379,9 +379,13 @@ export function useDashboardData(
 				const domain = getDomain(cleanUrl);
 				if (!domain) continue;
 
+				// Use URL as the canonical deduplication key — matching the
+				// groupSourcesByUrl logic on the sources page. Deduping by title
+				// collapses distinct URLs that share article titles, which causes
+				// inaccurate citation counts on the dashboard.
 				const dedupeKey = s.cited_text?.trim()
-					? `${s.title}::${r.model_provider}::${s.cited_text}`
-					: `${s.title}::${r.model_provider}::${cleanUrl}`;
+					? `${cleanUrl}::${r.model_provider}::${s.cited_text}`
+					: `${cleanUrl}::${r.model_provider}`;
 				if (seenCitations.has(dedupeKey)) continue;
 				seenCitations.add(dedupeKey);
 
@@ -415,7 +419,7 @@ export function useDashboardData(
 			(sum, d) => sum + d.citationCount,
 			0,
 		);
-		return { sources: allDomains.slice(0, 15), totalCitations };
+		return { sources: allDomains, totalCitations };
 	}, [filteredRecords]);
 
 	return {
