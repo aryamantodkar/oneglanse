@@ -24,8 +24,7 @@ services:
       dockerfile: ./apps/landing/Dockerfile
       args:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
-    pull_policy: build
-    image: oneglanse-landing:local
+    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-landing:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: oneglanse-landing
     restart: unless-stopped
     ports:
