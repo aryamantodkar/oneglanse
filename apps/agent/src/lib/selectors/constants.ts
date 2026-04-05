@@ -11,6 +11,12 @@ export const FAILED_RESOLUTION_TTL_MS = 2_000;
 export const PAGE_FAILED_RESOLUTION_TTL_MS = 5_000;
 export const SELECTOR_MODEL_RATE_LIMIT_TTL_MS = 15 * 60_000;
 export const MAX_SELECTOR_MODEL_CALLS_PER_PROCESS = 30;
+// Profiles older than this trigger a fresh LLM resolution even when the cached
+// selectors still match — this ensures UI changes are picked up automatically
+// within a bounded time window rather than only when selectors break entirely.
+// AI provider UIs typically update on a weekly-to-monthly cadence, so 7 days
+// gives a good balance between stability and recovery speed.
+export const SELECTOR_PROFILE_MAX_AGE_MS = 7 * 24 * 60 * 60_000; // 7 days
 export const SNAPSHOT_STABILITY_POLL_MS = 250;
 export const SNAPSHOT_STABLE_POLLS_REQUIRED = 2;
 export const SNAPSHOT_STABILITY_TIMEOUT_MS: Record<SelectorStage, number> = {

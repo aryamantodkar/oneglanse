@@ -321,6 +321,9 @@ async function extractResponsePayload(
 				"button",
 				"noscript",
 				"iframe",
+				// Strip superscript citation refs (e.g. [1], [2]) — they are captured
+				// in source extraction and should not appear in the response prose.
+				"sup",
 			]) {
 				try {
 					for (const element of Array.from(clone.querySelectorAll(selector))) {
@@ -328,6 +331,33 @@ async function extractResponsePayload(
 					}
 				} catch {}
 			}
+
+			// Strip standalone citation-badge anchors: an <a> whose parent's full
+			// text equals the anchor's own text (the anchor IS the only content),
+			// AND the text has no whitespace (not a multi-word phrase).
+			// This removes domain-name citation badges like "site.com" that bleed
+			// into response prose without stripping legitimate inline product-name
+			// links like "Next.js" that are embedded within surrounding text.
+			for (const anchor of Array.from(
+				clone.querySelectorAll("a[href]"),
+			) as HTMLAnchorElement[]) {
+				const parent = anchor.parentElement;
+				if (!parent) continue;
+				const parentText = (
+					(parent as HTMLElement).innerText || parent.textContent || ""
+				).trim();
+				const anchorText = (
+					(anchor as HTMLElement).innerText || anchor.textContent || ""
+				).trim();
+				if (
+					parentText === anchorText &&
+					anchorText.length > 0 &&
+					!/\s/.test(anchorText)
+				) {
+					anchor.remove();
+				}
+			}
+
 			prunePeripheralChildren(clone);
 			pruneLeadingPreambleBlocks(clone);
 
