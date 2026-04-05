@@ -75,13 +75,6 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 		}
 
 		if (attempt < MAX_EXTRACTION_RETRIES) {
-			// A wrong-but-visible cached selector can stay "valid" and keep
-			// returning empty output. Refresh it before the next extraction attempt.
-			await invalidateSelectorProfileForPage(page, provider, "response");
-			await getSelectorProfile(page, provider, "response", {
-				forceRefresh: true,
-			}).catch(() => null);
-
 			const retryDelay =
 				attempt <= 1
 					? INITIAL_EXTRACTION_RETRY_DELAY

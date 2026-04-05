@@ -557,8 +557,8 @@ export async function captureSelectorSnapshot(
 		// streaming but the selector stays constant. Using sets prevents any
 		// per-element or per-prompt unique value from churning the fingerprint and
 		// triggering a redundant model call.
-		editables: [...new Set(snapshot.editables.map((item) => item.selector))].sort(),
-		buttons: [...new Set(snapshot.buttons.map((item) => item.selector))].sort(),
+		editables: [...new Set(snapshot.editables.map((item) => normalizeSelectorForState(item.selector)))].sort(),
+		buttons: [...new Set(snapshot.buttons.map((item) => normalizeSelectorForState(item.selector)))].sort(),
 		content: [...new Set(snapshot.content.map((item) => normalizeSelectorForState(item.selector)))].sort(),
 		groups: [...new Set(snapshot.groups.map((item) => normalizeSelectorForState(item.selector)))].sort(),
 	};

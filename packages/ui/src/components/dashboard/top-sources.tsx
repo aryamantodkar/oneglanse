@@ -14,7 +14,6 @@ export function TopSources({
 	totalCitations?: number;
 }) {
 	const visibleSources = sources.slice(0, 5);
-	const shouldFillCard = visibleSources.length >= 4;
 
 	return (
 		<Card className="flex h-full min-w-0 flex-col p-5 lg:p-6">
@@ -48,9 +47,7 @@ export function TopSources({
 						return (
 							<div
 								key={source.domain}
-								className={`ui-list-item group grid min-w-0 grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-gray-100/80 bg-white px-4 py-3 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:bg-neutral-900 ${
-									shouldFillCard ? "flex-1" : ""
-								}`}
+								className="ui-list-item group grid min-w-0 grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-gray-100/80 bg-white px-4 py-3 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:bg-neutral-900"
 							>
 								<div className="flex min-w-0 items-center gap-3">
 									{faviconUrl && (

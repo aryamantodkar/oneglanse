@@ -169,7 +169,7 @@ export function PromptResponsesPreview({
 							) : null}
 
 							<div
-								className={`prose prose-sm max-w-none text-gray-700 transition-all duration-200 dark:prose-invert dark:text-gray-300 ${
+								className={`prose max-w-none text-gray-700 transition-all duration-200 dark:prose-invert dark:text-gray-300 ${
 									isExpanded
 										? "overflow-visible"
 										: "line-clamp-3 overflow-hidden"

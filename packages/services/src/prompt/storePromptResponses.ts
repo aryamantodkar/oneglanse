@@ -58,7 +58,7 @@ export async function storePromptResponses(
 	if (values.length === 0) return;
 
 	await insertClickHouseWithFallback("analytics.prompt_responses", values, {
-		throwOnAllFailed: false,
+		throwOnAllFailed: true,
 		onRecordFailed: (value, err) => {
 			console.error(
 				`Failed to insert record (prompt: "${value.prompt.slice(0, 50)}..."):`,

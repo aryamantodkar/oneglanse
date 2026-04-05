@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "perplexity",
-  "updatedAt": "2026-04-04T16:30:30.704Z",
+  "updatedAt": "2026-04-04T21:24:58.065Z",
   "profiles": [
     {
       "version": 1,
@@ -28,9 +28,9 @@
       "provider": "perplexity",
       "stage": "compose",
       "pageKey": "www.perplexity.ai/search/:id",
-      "fingerprint": "8e8674396152dfd2eca54ca356d53a9a8a639b9b9d296441953e2101e856b4bf",
+      "fingerprint": "4d0d7711a9826d8a7bf32b62640055060859168587bc8d13f53e43c86edc21b7",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T16:30:30.704Z",
+      "createdAt": "2026-04-04T21:24:58.064Z",
       "selectors": {
         "editor": [
           "div[role=\"textbox\"]"
@@ -48,14 +48,14 @@
       "provider": "perplexity",
       "stage": "response",
       "pageKey": "www.perplexity.ai/search/:id",
-      "fingerprint": "e14a655563b3acde2c3890cacf83b192b47931f289a6e40d9582f2a7f450754b",
+      "fingerprint": "e3b088147fc7f995d4228faeabf6c6c6d6110e7cd9dc4abac21c9f2576e8898a",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T16:26:59.706Z",
+      "createdAt": "2026-04-04T21:18:00.357Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "div.gap-y-sm > div > div.relative"
+          "div.gap-y-sm > div"
         ],
         "generationIndicator": [],
         "sourcesButton": [

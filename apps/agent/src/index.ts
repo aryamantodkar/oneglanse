@@ -51,7 +51,13 @@ process.on("uncaughtException", (err) => {
 	process.exit(1);
 });
 
+let isExiting = false;
 process.on("unhandledRejection", (reason) => {
 	logger.error("[agent] Unhandled rejection:", reason);
-	process.exit(1);
+	if (!isExiting) {
+		isExiting = true;
+		// Delay exit to allow BullMQ to acknowledge in-flight job failures
+		// before the process terminates, so jobs are not left in a stale state.
+		setTimeout(() => process.exit(1), 3000).unref();
+	}
 });

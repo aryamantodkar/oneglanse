@@ -547,7 +547,7 @@ export default function Prompts() {
 								>
 									<DialogHeader className={formDialogHeaderClassName}>
 										<DialogTitle className="font-medium">
-											{editIndex !== null ? "Edit Prompt" : "Add New Prompt"}
+											{editIndex !== null ? "Edit Prompt" : "Add Prompt"}
 										</DialogTitle>
 									</DialogHeader>
 									<div
