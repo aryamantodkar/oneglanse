@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "2026-04-05T10:25:58.393Z",
+  "updatedAt": "2026-04-05T15:46:00.778Z",
   "profiles": [
     {
       "version": 1,
@@ -41,6 +41,48 @@
         "sourcesButton": [],
         "sourcePanel": [],
         "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "response",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "65c9c605ab59d5c59cd4f004bbfc50b18a0b2d4e33bdccdb3717f057505e929f",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-05T15:46:00.764Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.composer-parent > div.relative > div.flex"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "sources",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "2889b0589100d833f24c49df0400b887362e2c73d8210a2a2e04702c7265d257",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-05T12:57:53.175Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [
+          "div.markdown.prose"
+        ],
+        "sourceItem": [
+          "a"
+        ]
       }
     }
   ]

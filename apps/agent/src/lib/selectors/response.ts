@@ -45,6 +45,15 @@ async function extractResponsePayload(
 				);
 			}
 
+			function isInternalAnchor(anchor: HTMLAnchorElement): boolean {
+				try {
+					const url = new URL(anchor.href, window.location.origin);
+					return url.hostname === window.location.hostname;
+				} catch {
+					return false;
+				}
+			}
+
 			function blockCountOf(element: Element): number {
 				return element.querySelectorAll(
 					"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6,ul,ol",
@@ -112,6 +121,87 @@ async function extractResponsePayload(
 				const wordCount = textOf(element).split(/\s+/).filter(Boolean).length;
 
 				return wordCount <= 12 && childElements.length <= 4;
+			}
+
+			function answerScoreOf(
+				element: HTMLElement,
+				order: number,
+				maxTop: number,
+			): number {
+				const text = textOf(element);
+				const length = text.length;
+				if (length < 60) {
+					return Number.NEGATIVE_INFINITY;
+				}
+
+				const anchors = Array.from(
+					element.querySelectorAll("a[href]"),
+				).filter(
+					(node): node is HTMLAnchorElement =>
+						node instanceof HTMLAnchorElement && isVisible(node),
+				);
+				const internalAnchorCount = anchors.filter(isInternalAnchor).length;
+				const externalAnchorCount = anchors.length - internalAnchorCount;
+				const buttons = Array.from(
+					element.querySelectorAll("button,[role='button']"),
+				).filter(isVisible).length;
+				const blockCount = blockCountOf(element);
+				const codeLikeCount = element.querySelectorAll(
+					"pre,code,table,blockquote,ul,ol",
+				).length;
+				const lines = text
+					.split(/\n+/)
+					.map((line) => line.trim())
+					.filter(Boolean);
+				const shortLineRatio =
+					lines.length > 0
+						? lines.filter((line) => line.length <= 120).length / lines.length
+						: 0;
+				const sentenceCount = text
+					.split(/(?<=[.!?])\s+/)
+					.map((part) => part.trim())
+					.filter((part) => part.length >= 20).length;
+				const rect = element.getBoundingClientRect();
+				const topWeight = maxTop > 0 ? rect.top / maxTop : 0;
+
+				let score =
+					Math.min(length, 8_000) * 0.55 +
+					blockCount * 130 +
+					codeLikeCount * 70 +
+					sentenceCount * 40 +
+					topWeight * 320 +
+					order * 6 -
+					internalAnchorCount * 70 -
+					externalAnchorCount * 30 -
+					buttons * 55;
+
+				if (
+					internalAnchorCount >= 4 &&
+					internalAnchorCount >= Math.ceil(anchors.length * 0.5) &&
+					blockCount <= 1 &&
+					codeLikeCount === 0
+				) {
+					score -= 700;
+				}
+
+				if (anchors.length >= 10 && blockCount <= 1 && codeLikeCount === 0) {
+					score -= 650;
+				}
+
+				if (
+					lines.length >= 6 &&
+					shortLineRatio >= 0.75 &&
+					sentenceCount <= 2 &&
+					codeLikeCount === 0
+				) {
+					score -= 420;
+				}
+
+				if (buttons >= 8 && anchors.length >= 8 && codeLikeCount === 0) {
+					score -= 750;
+				}
+
+				return score;
 			}
 
 			function prunePeripheralChildren(root: HTMLElement): void {
@@ -234,9 +324,18 @@ async function extractResponsePayload(
 				);
 
 				let best = root;
-				let bestScore = Number.NEGATIVE_INFINITY;
 				const rootRect = root.getBoundingClientRect();
-				const minLength = Math.max(120, Math.floor(rootTextLength * 0.18));
+				const rootBlockCount = blockCountOf(root);
+				const rootInteractiveCount = root.querySelectorAll(
+					"a,button,[role='button']",
+				).length;
+				const rootHasChrome =
+					rootInteractiveCount >= 8 && rootBlockCount <= 2;
+				let bestScore = answerScoreOf(root, 0, rootRect.top || 1);
+				const minLength = Math.max(
+					160,
+					Math.floor(rootTextLength * (rootHasChrome ? 0.35 : 0.55)),
+				);
 
 				for (const [order, node] of descendants.entries()) {
 					const length = textOf(node).length;
@@ -269,17 +368,15 @@ async function extractResponsePayload(
 
 					const rect = node.getBoundingClientRect();
 					const relativeTop = Math.max(0, rect.top - rootRect.top);
-					const sizePenalty = length / rootTextLength;
-					const interactiveCount = node.querySelectorAll(
-						"a,button,[role='button']",
-					).length;
 					const score =
-						depth * 120 +
-						structureScore * 60 +
-						relativeTop * 0.5 +
-						order * 4 -
-						sizePenalty * 300 -
-						interactiveCount * 35;
+						answerScoreOf(node, order, Math.max(rootRect.bottom, rect.top, 1)) +
+						depth * 60 +
+						structureScore * 50 -
+						// Penalise candidates that start below the root's top — they cut
+						// off leading content (headings, intro paragraphs) from long
+						// multi-section answers. Previously this was a bonus, which caused
+						// the scorer to prefer a mid-answer subtree over the full root.
+						relativeTop * 0.15;
 
 					if (score > bestScore) {
 						best = node;
@@ -287,10 +384,38 @@ async function extractResponsePayload(
 					}
 				}
 
+				if (best !== root) {
+					const bestTextLength = textOf(best).length;
+					const rootStructuredBlockCount = root.querySelectorAll(
+						"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6,ul,ol",
+					).length;
+					const bestStructuredBlockCount = best.querySelectorAll(
+						"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6,ul,ol",
+					).length;
+					const rootHeadingCount = root.querySelectorAll("h1,h2,h3,h4,h5,h6").length;
+					const bestHeadingCount = best.querySelectorAll("h1,h2,h3,h4,h5,h6").length;
+					const rootLooksStructured =
+						rootBlockCount >= 3 || rootTextLength >= 600;
+					if (
+						rootLooksStructured &&
+						(bestTextLength < rootTextLength * (rootHasChrome ? 0.45 : 0.75) ||
+							bestStructuredBlockCount <
+								rootStructuredBlockCount * (rootHasChrome ? 0.35 : 0.65) ||
+							// Require the chosen subtree to retain at least 75% of the
+					// root's headings. Gemini/Claude long answers often have multiple
+					// H2/H3 section headings — a subtree missing more than 25% of
+					// them is dropping whole sections and should be rejected.
+					bestHeadingCount < rootHeadingCount * 0.75)
+					) {
+						return root;
+					}
+				}
+
 				return best;
 			}
 
 			let target: HTMLElement | null = null;
+			let bestTargetScore = Number.NEGATIVE_INFINITY;
 			for (const selector of selectors) {
 				try {
 					const matches = Array.from(
@@ -299,10 +424,17 @@ async function extractResponsePayload(
 					if (matches.length === 0) {
 						continue;
 					}
-					// The page is scrolled to the bottom before extraction — the last
-					// visible match is always the latest (bottommost) response.
-					target = matches.at(-1) ?? null;
-					if (target) break;
+					const maxTop = matches.reduce(
+						(max, match) => Math.max(max, match.getBoundingClientRect().top),
+						1,
+					);
+					for (const [order, match] of matches.entries()) {
+						const score = answerScoreOf(match, order, maxTop);
+						if (score > bestTargetScore) {
+							target = match;
+							bestTargetScore = score;
+						}
+					}
 				} catch {}
 			}
 

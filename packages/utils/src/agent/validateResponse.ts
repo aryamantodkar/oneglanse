@@ -1,6 +1,9 @@
 import type { Provider } from "@oneglanse/types";
 
-export const DEFAULT_MIN_RESPONSE_CHARS = 200;
+// Floor that rejects pure garbage fragments (wrong element, partial capture)
+// while passing genuine short factual answers. 200 was too blunt — it was
+// rejecting correct extractions of concise answers under ~200 chars.
+export const DEFAULT_MIN_RESPONSE_CHARS = 40;
 
 // Per-provider overrides. AI Overview returns short factual snippets by design;
 // applying the same 600-char floor as chat providers causes excessive retries.

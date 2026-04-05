@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "perplexity",
-  "updatedAt": "2026-04-05T10:26:21.996Z",
+  "updatedAt": "2026-04-05T15:46:38.262Z",
   "profiles": [
     {
       "version": 1,
@@ -48,19 +48,43 @@
       "provider": "perplexity",
       "stage": "response",
       "pageKey": "www.perplexity.ai/search/:id",
-      "fingerprint": "228823e184ca11c9cd747bcee7e504a4cd68c3c970b6893ff74684d15bd4a402",
+      "fingerprint": "f9ad6907cd63f1f091aacd31fe336ad8d808c6d430183e61fd716f65aa2030bf",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-05T10:26:21.814Z",
+      "createdAt": "2026-04-05T15:46:38.226Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "div.mb-md.mt-xs"
+          "div.mx-auto > div.isolate"
         ],
         "generationIndicator": [],
-        "sourcesButton": [],
+        "sourcesButton": [
+          "div.rounded-full > button.reset"
+        ],
         "sourcePanel": [],
         "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "perplexity",
+      "stage": "sources",
+      "pageKey": "www.perplexity.ai/search/:id",
+      "fingerprint": "a4bff906d74aff96d57f21df5d79490b1cc1e4e16e7faad4c087e092c09764bc",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-05T12:55:35.380Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [
+          "div.gap-y-sm.flex"
+        ],
+        "sourceItem": [
+          "a.reset.interactable-alt"
+        ]
       }
     }
   ]
