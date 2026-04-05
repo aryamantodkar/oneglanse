@@ -355,7 +355,7 @@ async function filterAnswerLikeResponseSelectors(
 				}
 
 				const text = textOf(candidate);
-				if (text.length < 120) {
+				if (text.length < 60) {
 					return false;
 				}
 
@@ -508,10 +508,10 @@ export function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
 		(max, item) => Math.max(max, item.textLength),
 		0,
 	);
-	// 200 chars: enough substance for the model to stably identify the response
-	// container. Values below this fire during early streaming fragments, producing
-	// profiles that become invalid a few seconds later as content grows.
-	return longestContent >= 200 || longestGroup >= 200;
+	// Short factual answers can legitimately finish below 200 chars. Keep the
+	// threshold high enough to avoid early streaming fragments, but low enough to
+	// allow selector resolution for concise final answers.
+	return longestContent >= 80 || longestGroup >= 80;
 }
 
 export async function invalidateSelectorProfilesForPageKey(

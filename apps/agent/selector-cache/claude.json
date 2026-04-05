@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "claude",
-  "updatedAt": "2026-04-05T10:27:27.436Z",
+  "updatedAt": "2026-04-05T15:58:52.448Z",
   "profiles": [
     {
       "version": 1,
@@ -41,6 +41,50 @@
         "sourcesButton": [],
         "sourcePanel": [],
         "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "response",
+      "pageKey": "claude.ai/chat/:id",
+      "fingerprint": "93a191e0e183ed7d3ba888ebbe77734bbc811ad4ee2382b5c3b826f98cfe7798",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-05T15:58:52.429Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.group > div.flex > div.group"
+        ],
+        "generationIndicator": [
+          "button[aria-label=\"Stop response\"]"
+        ],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "sources",
+      "pageKey": "claude.ai/chat/:id",
+      "fingerprint": "b7a29c8cc06c98e1123827e2505facdec73085dc60fd3ff9879395db6e2f92db",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-05T15:40:43.504Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [
+          "div.font-claude-response.relative"
+        ],
+        "sourceItem": [
+          "a"
+        ]
       }
     }
   ]

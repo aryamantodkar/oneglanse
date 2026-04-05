@@ -318,9 +318,37 @@ async function extractRawSourcesWithSelectors(
 
 			function normalizeUrl(href: string): string {
 				try {
-					return (
-						new URL(href, window.location.origin).toString().split("#")[0] ?? ""
-					);
+					const abs =
+						new URL(href, window.location.origin).toString().split("#")[0] ?? "";
+					if (!abs) return "";
+					// Unwrap same-origin redirect/proxy URLs so external source links are
+					// not dropped by isSameOriginAppUrl. Providers sometimes route outbound
+					// links through their own redirect endpoint (e.g. /redirect?url=…).
+					// When the destination is on a different host, return it directly.
+					try {
+						const parsed = new URL(abs);
+						if (parsed.hostname === window.location.hostname) {
+							for (const key of [
+								"url",
+								"u",
+								"href",
+								"target",
+								"redirect_url",
+								"link",
+								"next",
+							]) {
+								const val = parsed.searchParams.get(key);
+								if (!val) continue;
+								try {
+									const dest = new URL(val);
+									if (dest.hostname !== window.location.hostname) {
+										return dest.toString().split("#")[0] ?? "";
+									}
+								} catch {}
+							}
+						}
+					} catch {}
+					return abs;
 				} catch {
 					return "";
 				}
@@ -546,11 +574,6 @@ async function extractRawSourcesWithSelectors(
 			const results: RawSource[] = [];
 
 			for (const root of roots) {
-				// Scroll the panel itself to the bottom to reveal any lazily-rendered
-				// or off-screen items. This touches only the panel element's scrollTop —
-				// it never calls window.scrollTo and does not move the main page.
-				root.scrollTop = root.scrollHeight;
-
 				const rawItems: Element[] = [];
 				for (const selector of items) {
 					try {
@@ -558,36 +581,36 @@ async function extractRawSourcesWithSelectors(
 					} catch {}
 				}
 
-				let dedupedItems = Array.from(new Set(rawItems)).filter(isVisible);
-				if (dedupedItems.length <= 1) {
-					const anchorItems = Array.from(
-						root.querySelectorAll("a[href]"),
+				const anchorItems = Array.from(root.querySelectorAll("a[href]"))
+					.filter(isConnectedAnchor)
+					.map(
+						(anchor) =>
+							anchor.closest("article, li, [role='listitem'], div, section") ??
+							anchor,
 					)
-						.filter(isConnectedAnchor)
-						.map(
-							(anchor) =>
-								anchor.closest(
-									"article, li, [role='listitem'], div, section",
-								) ?? anchor,
-						)
-						.filter(
+					.filter(
+						(element): element is HTMLElement =>
+							element instanceof HTMLElement &&
+							isVisible(element) &&
+							textOf(element).length >= 12,
+					);
+				const dedupedItems = Array.from(
+					new Set(
+						[...rawItems, ...anchorItems].filter(
 							(element): element is HTMLElement =>
-								element instanceof HTMLElement &&
-								isVisible(element) &&
-								textOf(element).length >= 24,
-						);
-					if (anchorItems.length > dedupedItems.length) {
-						dedupedItems = Array.from(new Set(anchorItems));
-					}
-				}
+								element instanceof HTMLElement && isVisible(element),
+						),
+					),
+				);
 
 				for (const item of dedupedItems) {
+					const anchors = Array.from(
+						item.querySelectorAll("a[href]"),
+					).filter(isConnectedAnchor);
 					const anchor =
-						lastVisible(
-							Array.from(
-								item.querySelectorAll("a[href]"),
-							) as HTMLAnchorElement[],
-						) || (item instanceof HTMLAnchorElement ? item : null);
+						anchors
+							.sort((left, right) => textOf(right).length - textOf(left).length)
+							.at(0) ?? (item instanceof HTMLAnchorElement ? item : null);
 					if (!anchor?.href) continue;
 
 					const url = normalizeUrl(anchor.href);
@@ -634,6 +657,126 @@ async function extractRawSourcesWithSelectors(
 			responseSelectors: context?.responseSelectors,
 		},
 	);
+}
+
+async function setSourceRootsScrollFraction(
+	page: Page,
+	sourcePanelSelectors: string[],
+	rootSelector?: string | null,
+	fraction = 0,
+): Promise<void> {
+	await page
+		.evaluate(
+			({
+				panels,
+				rootSelector: controlledRootSelector,
+				scrollFraction,
+			}: {
+				panels: string[];
+				rootSelector?: string | null;
+				scrollFraction: number;
+			}) => {
+				function isVisible(element: Element | null): element is HTMLElement {
+					if (!(element instanceof HTMLElement)) return false;
+					if (!element.isConnected) return false;
+					const style = window.getComputedStyle(element);
+					if (
+						style.display === "none" ||
+						style.visibility === "hidden" ||
+						style.opacity === "0" ||
+						element.hidden
+					) {
+						return false;
+					}
+					const rect = element.getBoundingClientRect();
+					return rect.width >= 8 && rect.height >= 8;
+				}
+
+				const roots: HTMLElement[] = [];
+				const seen = new Set<Element>();
+				for (const selector of [controlledRootSelector ?? "", ...panels]) {
+					if (!selector) continue;
+					try {
+						for (const match of Array.from(
+							document.querySelectorAll(selector),
+						) as HTMLElement[]) {
+							if (!isVisible(match) || seen.has(match)) continue;
+							roots.push(match);
+							seen.add(match);
+						}
+					} catch {}
+				}
+
+				for (const root of roots) {
+					// Vertical scroll — reveals items in vertically overflowing panels
+					if (root.scrollHeight > root.clientHeight + 8) {
+						root.scrollTop = Math.max(
+							0,
+							Math.round(
+								(root.scrollHeight - root.clientHeight) * scrollFraction,
+							),
+						);
+					}
+					// Horizontal scroll — reveals items in carousels and horizontally
+					// laid-out source grids that overflow the container to the right
+					if (root.scrollWidth > root.clientWidth + 8) {
+						root.scrollLeft = Math.max(
+							0,
+							Math.round(
+								(root.scrollWidth - root.clientWidth) * scrollFraction,
+							),
+						);
+					}
+				}
+			},
+			{
+				panels: sourcePanelSelectors,
+				rootSelector,
+				scrollFraction: fraction,
+			},
+		)
+		.catch(() => {});
+}
+
+async function collectRawSourcesAcrossScrollPositions(
+	page: Page,
+	sourcePanelSelectors: string[],
+	sourceItemSelectors: string[],
+	rootSelector?: string | null,
+	context?: {
+		buttonSelector?: string | null;
+		buttonIndex?: number;
+		responseSelectors?: string[];
+	},
+): Promise<RawSource[]> {
+	const fractions = [0, 0.5, 1];
+	const merged: RawSource[] = [];
+	const seen = new Set<string>();
+
+	for (const fraction of fractions) {
+		await setSourceRootsScrollFraction(
+			page,
+			sourcePanelSelectors,
+			rootSelector,
+			fraction,
+		);
+		await page.waitForTimeout(120);
+		const batch = await extractRawSourcesWithSelectors(
+			page,
+			sourcePanelSelectors,
+			sourceItemSelectors,
+			rootSelector,
+			context,
+		).catch(() => []);
+		for (const source of batch) {
+			const key = `${source.rawHref}|${source.title}|${source.citedText}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			merged.push(source);
+		}
+	}
+
+	return merged;
 }
 
 async function extractInlineRawSourcesFromResponse(
@@ -697,9 +840,37 @@ async function extractInlineRawSourcesFromResponse(
 
 			function normalizeUrl(href: string): string {
 				try {
-					return (
-						new URL(href, window.location.origin).toString().split("#")[0] ?? ""
-					);
+					const abs =
+						new URL(href, window.location.origin).toString().split("#")[0] ?? "";
+					if (!abs) return "";
+					// Unwrap same-origin redirect/proxy URLs so external source links are
+					// not dropped by isSameOriginAppUrl. Providers sometimes route outbound
+					// links through their own redirect endpoint (e.g. /redirect?url=…).
+					// When the destination is on a different host, return it directly.
+					try {
+						const parsed = new URL(abs);
+						if (parsed.hostname === window.location.hostname) {
+							for (const key of [
+								"url",
+								"u",
+								"href",
+								"target",
+								"redirect_url",
+								"link",
+								"next",
+							]) {
+								const val = parsed.searchParams.get(key);
+								if (!val) continue;
+								try {
+									const dest = new URL(val);
+									if (dest.hostname !== window.location.hostname) {
+										return dest.toString().split("#")[0] ?? "";
+									}
+								} catch {}
+							}
+						}
+					} catch {}
+					return abs;
 				} catch {
 					return "";
 				}
@@ -835,6 +1006,159 @@ async function extractInlineRawSourcesFromResponse(
 	);
 }
 
+async function extractNearbyVisibleRawSources(
+	page: Page,
+	context?: {
+		buttonSelector?: string | null;
+		buttonIndex?: number;
+		responseSelectors?: string[];
+	},
+): Promise<RawSource[]> {
+	return await page.evaluate(
+		({
+			buttonSelector,
+			buttonIndex,
+			responseSelectors,
+		}: {
+			buttonSelector?: string | null;
+			buttonIndex?: number;
+			responseSelectors?: string[];
+		}) => {
+			type RawSource = {
+				rawHref: string;
+				title: string;
+				citedText: string;
+				imgSrc: string | null;
+			};
+
+			function isVisible(element: Element | null): element is HTMLElement {
+				if (!(element instanceof HTMLElement)) return false;
+				if (!element.isConnected) return false;
+				const style = window.getComputedStyle(element);
+				if (
+					style.display === "none" ||
+					style.visibility === "hidden" ||
+					style.opacity === "0" ||
+					element.hidden
+				) {
+					return false;
+				}
+				const rect = element.getBoundingClientRect();
+				return rect.width >= 4 && rect.height >= 4;
+			}
+
+			function textOf(element: Element | null): string {
+				if (!(element instanceof HTMLElement)) return "";
+				return (element.innerText || element.textContent || "")
+					.replace(/\s+/g, " ")
+					.trim();
+			}
+
+			function normalizeUrl(href: string): string {
+				try {
+					return new URL(href, window.location.origin).toString().split("#")[0] ?? "";
+				} catch {
+					return "";
+				}
+			}
+
+			function isExternal(anchor: HTMLAnchorElement): boolean {
+				try {
+					return (
+						new URL(anchor.href, window.location.origin).hostname !==
+						window.location.hostname
+					);
+				} catch {
+					return false;
+				}
+			}
+
+			function lastVisible<T extends Element>(elements: T[]): T | null {
+				for (let index = elements.length - 1; index >= 0; index -= 1) {
+					const element = elements[index];
+					if (element && isVisible(element)) return element;
+				}
+				return null;
+			}
+
+			const button = (() => {
+				if (!buttonSelector || typeof buttonIndex !== "number") return null;
+				try {
+					const matches = Array.from(document.querySelectorAll(buttonSelector));
+					const match = matches[buttonIndex];
+					return match instanceof HTMLElement && isVisible(match) ? match : null;
+				} catch {
+					return null;
+				}
+			})();
+
+			const response = (() => {
+				for (const selector of responseSelectors ?? []) {
+					try {
+						const match = lastVisible(
+							Array.from(document.querySelectorAll(selector)) as HTMLElement[],
+						);
+						if (match) return match;
+					} catch {}
+				}
+				return null;
+			})();
+
+			const buttonRect = button?.getBoundingClientRect() ?? null;
+			const responseRect = response?.getBoundingClientRect() ?? null;
+			const seen = new Set<string>();
+			const results: RawSource[] = [];
+
+			for (const anchor of Array.from(document.querySelectorAll("a[href]"))) {
+				if (!(anchor instanceof HTMLAnchorElement) || !isVisible(anchor)) continue;
+				if (!isExternal(anchor)) continue;
+				const rect = anchor.getBoundingClientRect();
+				const nearButton =
+					buttonRect &&
+					rect.top >= buttonRect.top - 160 &&
+					rect.bottom <= buttonRect.bottom + 720;
+				const nearResponse =
+					responseRect &&
+					rect.top >= responseRect.top - 80 &&
+					rect.bottom <= responseRect.bottom + 720;
+				const inViewport =
+					rect.top >= -20 && rect.bottom <= window.innerHeight + 80;
+				if (!nearButton && !nearResponse && !inViewport) {
+					continue;
+				}
+
+				const url = normalizeUrl(anchor.href);
+				if (!url || seen.has(url)) continue;
+				seen.add(url);
+
+				const item =
+					anchor.closest("article, li, [role='listitem'], div, section") ??
+					anchor;
+				const title =
+					item.querySelector("h1,h2,h3,h4,strong,b,[title]")?.textContent?.trim() ||
+					anchor.getAttribute("title")?.trim() ||
+					anchor.textContent?.trim() ||
+					url;
+				const citedText = textOf(item) || title;
+				results.push({
+					rawHref: url,
+					title,
+					citedText,
+					imgSrc:
+						(item.querySelector("img") as HTMLImageElement | null)?.src ?? null,
+				});
+			}
+
+			return results;
+		},
+		{
+			buttonSelector: context?.buttonSelector,
+			buttonIndex: context?.buttonIndex,
+			responseSelectors: context?.responseSelectors,
+		},
+	);
+}
+
 function mergeRawSources(
 	primary: RawSource[],
 	inline: RawSource[],
@@ -910,7 +1234,7 @@ export async function extractResolvedSources(
 			sourceProfile &&
 			sourceProfile.selectors.sourcePanel.length > 0 &&
 			sourceProfile.selectors.sourceItem.length > 0
-				? await extractRawSourcesWithSelectors(
+				? await collectRawSourcesAcrossScrollPositions(
 						page,
 						sourceProfile.selectors.sourcePanel,
 						sourceProfile.selectors.sourceItem,
@@ -951,7 +1275,7 @@ export async function extractResolvedSources(
 	}
 	logger.log(`[${provider}] sources panel opened`);
 
-	const directRawSources = await extractRawSourcesWithSelectors(
+	const directRawSources = await collectRawSourcesAcrossScrollPositions(
 		page,
 		[],
 		[],
@@ -975,7 +1299,7 @@ export async function extractResolvedSources(
 	const rawSources =
 		directRawSources.length > 0
 			? directRawSources
-			: await extractRawSourcesWithSelectors(
+			: await collectRawSourcesAcrossScrollPositions(
 					page,
 					sourceProfile?.selectors.sourcePanel ?? [],
 					sourceProfile?.selectors.sourceItem ?? [],
@@ -987,7 +1311,19 @@ export async function extractResolvedSources(
 					},
 				);
 
-	const mergedRawSources = rawSources;
+	const inlineRawSources = await extractInlineRawSourcesFromResponse(
+		page,
+		responseProfile.selectors.response,
+	).catch(() => []);
+	const nearbyVisibleRawSources = await extractNearbyVisibleRawSources(page, {
+		buttonSelector: buttonMatch?.selector ?? null,
+		buttonIndex: buttonMatch?.index,
+		responseSelectors: responseProfile.selectors.response,
+	}).catch(() => []);
+	const mergedRawSources = mergeRawSources(rawSources, [
+		...inlineRawSources,
+		...nearbyVisibleRawSources,
+	]);
 
 	if (mergedRawSources.length === 0) {
 		throw new ExternalServiceError(

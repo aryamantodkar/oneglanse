@@ -112,8 +112,13 @@ export async function waitForAssistantToFinish(
 				}
 			}
 
-			const staleGeneratingThreshold = Math.min(forceExitStableMs, 12_000);
-			if (seenOutput && generating && stableFor >= staleGeneratingThreshold) {
+			const staleGeneratingThreshold = forceExitStableMs;
+			if (
+				seenOutput &&
+				generating &&
+				(textGrowthEvents >= 2 || text.length >= 400) &&
+				stableFor >= staleGeneratingThreshold
+			) {
 				logger.warn(
 					`[${provider}] text stable ${Math.round(staleGeneratingThreshold / 1000)}s but still generating — forcing exit`,
 				);
