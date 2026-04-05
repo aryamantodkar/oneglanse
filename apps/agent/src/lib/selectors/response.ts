@@ -296,7 +296,10 @@ async function extractResponsePayload(
 					const candidateLooksLikePreamble =
 						["P", "DIV"].includes(candidate.tagName) &&
 						candidateText.length >= 24 &&
-						candidateText.length <= 220 &&
+						// Keep threshold low so only genuine meta-phrases are stripped
+						// ("Here's a breakdown:", "Let me explain:"). A 220-char cap was
+						// removing real intro paragraphs from long Claude/Gemini answers.
+						candidateText.length <= 80 &&
 						!candidate.querySelector("ul, ol, table, pre, blockquote") &&
 						remainingTextLength >= candidateText.length * 2 &&
 						(/[.:]$/.test(candidateText) ||
@@ -368,15 +371,26 @@ async function extractResponsePayload(
 
 					const rect = node.getBoundingClientRect();
 					const relativeTop = Math.max(0, rect.top - rootRect.top);
+					// For very long responses (>8000 chars), Math.min(length, 8000) caps
+					// both root and descendant at the same text score, making depth and
+					// structure bonuses dominate and causing mid-answer subtrees to win.
+					// Apply a stricter coverage requirement: descendant must keep ≥88%
+					// of root text so we don't lose intro paragraphs or opening sections.
+					if (rootTextLength > 8_000 && length < rootTextLength * 0.88) {
+						continue;
+					}
+
 					const score =
 						answerScoreOf(node, order, Math.max(rootRect.bottom, rect.top, 1)) +
-						depth * 60 +
+						// Small depth tiebreaker only — large bonus caused mid-answer
+						// subtrees to outscore the root on long structured responses.
+						depth * 10 +
 						structureScore * 50 -
 						// Penalise candidates that start below the root's top — they cut
 						// off leading content (headings, intro paragraphs) from long
-						// multi-section answers. Previously this was a bonus, which caused
-						// the scorer to prefer a mid-answer subtree over the full root.
-						relativeTop * 0.15;
+						// multi-section answers. Increased from 0.15 to 0.5 to make the
+						// penalty meaningful relative to the depth/structure bonuses.
+						relativeTop * 0.5;
 
 					if (score > bestScore) {
 						best = node;
