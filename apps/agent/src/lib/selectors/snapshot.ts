@@ -445,10 +445,6 @@ export async function captureSelectorSnapshot(
 		const content = limitAndDedupe(
 			visibleElements
 				.filter((element) => {
-					const text = elementText(element);
-					if (text.length < minContentTextLength || text.length > 8000) {
-						return false;
-					}
 					if (isInputLike(element) || isButtonLike(element)) return false;
 					if (isOverlayLike(element)) return false;
 					if (
@@ -458,6 +454,19 @@ export async function captureSelectorSnapshot(
 					) {
 						return false;
 					}
+					const text = elementText(element);
+					if (text.length < minContentTextLength) return false;
+					// For the sources stage, include anchor-rich containers even when
+					// their total text exceeds the normal 8000-char limit. Source panels
+					// (including custom elements like <context-sidebar>) aggregate all
+					// source titles and snippets, which can easily exceed 8000 chars.
+					// Cap at 30000 to keep the LLM payload manageable.
+					const maxTextLength =
+						currentStage === "sources" &&
+						element.querySelectorAll("a[href]").length >= 2
+							? 30_000
+							: 8_000;
+					if (text.length > maxTextLength) return false;
 					return true;
 				})
 				.map((element) =>
