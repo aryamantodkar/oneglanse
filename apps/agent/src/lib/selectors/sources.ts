@@ -601,16 +601,30 @@ async function extractRawSourcesWithSelectors(
 
 				const anchorItems = Array.from(root.querySelectorAll("a[href]"))
 					.filter(isConnectedAnchor)
-					.map(
-						(anchor) =>
-							anchor.closest("article, li, [role='listitem'], div, section") ??
-							anchor,
-					)
+					.map((anchor) => {
+						// Only use semantic list-item containers (li, article,
+						// role=listitem). Generic divs/sections are often shared
+						// parent containers that hold ALL items — e.g. a flat panel
+						// where 45 anchors share one parent div — which collapses the
+						// whole list into a single deduplicated item and drops 44 sources.
+						const container = anchor.closest(
+							"article, li, [role='listitem']",
+						);
+						if (
+							container instanceof HTMLElement &&
+							container.querySelectorAll("a[href]").length <= 2
+						) {
+							return container;
+						}
+						// Container has too many anchors (shared parent) or none found:
+						// use the anchor itself so every link becomes its own item.
+						return anchor;
+					})
 					.filter(
 						(element): element is HTMLElement =>
 							element instanceof HTMLElement &&
 							isVisible(element) &&
-							textOf(element).length >= 12,
+							textOf(element).length >= 4,
 					);
 				const dedupedItems = Array.from(
 					new Set(
@@ -622,6 +636,8 @@ async function extractRawSourcesWithSelectors(
 				);
 
 				for (const item of dedupedItems) {
+					// When item IS the anchor itself, querySelectorAll finds only
+					// its descendants — the anchor itself is picked via the fallback.
 					const anchors = Array.from(
 						item.querySelectorAll("a[href]"),
 					).filter(isConnectedAnchor);
@@ -635,21 +651,42 @@ async function extractRawSourcesWithSelectors(
 					if (!url || seenUrls.has(url) || isSameOriginAppUrl(url)) continue;
 					seenUrls.add(url);
 
+					// Use innerText (not textContent) for the anchor — innerText
+					// preserves CSS-driven newlines, which providers use to separate a
+					// short domain-label prefix from the article title on distinct lines
+					// (e.g. "quera\nRoadmap for Advanced Error-Corrected Quantum Computers").
+					// textContent concatenates all child text into one run with no breaks.
+					const anchorInnerText =
+						(anchor as HTMLElement).innerText ?? anchor.textContent ?? "";
+					const anchorTitle = anchorInnerText.includes("\n")
+						? (anchorInnerText
+								.split("\n")
+								.map((l) => l.trim())
+								.find((l) => l.length > 20) ?? textOf(anchor))
+						: textOf(anchor);
+
 					const title =
 						item
 							.querySelector("h1,h2,h3,h4,strong,b,[title]")
 							?.textContent?.trim() ||
 						anchor.getAttribute("title")?.trim() ||
-						anchor.textContent?.trim() ||
+						anchorTitle ||
 						url;
 
+					const itemTextLength = textOf(item).length;
 					const snippetCandidates = Array.from(
 						item.querySelectorAll("p, span, div, small"),
 					)
 						.map((element) => textOf(element))
 						.filter(
 							(text) =>
-								text.length > 30 && text !== title && !text.includes(url),
+								text.length > 30 &&
+								text !== title &&
+								!text.includes(url) &&
+								// Exclude wrapper/container elements whose text spans nearly
+								// the whole item — they concatenate domain label + title +
+								// snippet into one string. The real snippet is a shorter child.
+								text.length < itemTextLength * 0.85,
 						)
 						.sort((left, right) => right.length - left.length);
 
