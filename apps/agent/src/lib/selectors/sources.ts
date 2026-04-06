@@ -1214,56 +1214,6 @@ async function extractNearbyVisibleRawSources(
 	);
 }
 
-function mergeRawSources(
-	primary: RawSource[],
-	inline: RawSource[],
-): RawSource[] {
-	const inlineByUrl = new Map<string, RawSource>();
-	for (const source of inline) {
-		const url = source.rawHref.replace(/#.*$/, "");
-		if (url) {
-			inlineByUrl.set(url, source);
-		}
-	}
-
-	const merged: RawSource[] = primary.map((source) => {
-		const inlineMatch = inlineByUrl.get(source.rawHref.replace(/#.*$/, ""));
-		if (!inlineMatch) {
-			return source;
-		}
-
-		const citedText =
-			source.citedText &&
-			source.citedText !== source.title &&
-			source.citedText.length >= 24
-				? source.citedText
-				: inlineMatch.citedText;
-		const title =
-			source.title && source.title !== source.rawHref
-				? source.title
-				: inlineMatch.title;
-
-		return {
-			...source,
-			title,
-			citedText,
-			imgSrc: source.imgSrc ?? inlineMatch.imgSrc,
-		};
-	});
-
-	for (const source of inline) {
-		const url = source.rawHref.replace(/#.*$/, "");
-		if (
-			!url ||
-			merged.some((item) => item.rawHref.replace(/#.*$/, "") === url)
-		) {
-			continue;
-		}
-		merged.push(source);
-	}
-
-	return merged;
-}
 
 export async function extractResolvedSources(
 	page: Page,
@@ -1366,6 +1316,19 @@ export async function extractResolvedSources(
 					},
 				);
 
+	// When a sources panel is present and yielded results, use it exclusively.
+	// Providers that have a sources panel list all inline citations inside that
+	// panel — extracting inline links from the response body too would duplicate
+	// sources and mix panel-quality snippets with inline citation fragments.
+	if (rawSources.length > 0) {
+		return buildSources(
+			rawSources,
+			(url, title, citedText) => `${url}|${title}|${citedText}`,
+		);
+	}
+
+	// Panel opened but yielded no structured sources — fall back to inline
+	// extraction so the caller still gets something rather than an error.
 	const inlineRawSources = await extractInlineRawSourcesFromResponse(
 		page,
 		responseProfile.selectors.response,
@@ -1375,12 +1338,9 @@ export async function extractResolvedSources(
 		buttonIndex: buttonMatch?.index,
 		responseSelectors: responseProfile.selectors.response,
 	}).catch(() => []);
-	const mergedRawSources = mergeRawSources(rawSources, [
-		...inlineRawSources,
-		...nearbyVisibleRawSources,
-	]);
+	const fallbackSources = [...inlineRawSources, ...nearbyVisibleRawSources];
 
-	if (mergedRawSources.length === 0) {
+	if (fallbackSources.length === 0) {
 		throw new ExternalServiceError(
 			provider,
 			"Sources button was present and opened, but no sources were extracted",
@@ -1388,7 +1348,7 @@ export async function extractResolvedSources(
 	}
 
 	return buildSources(
-		mergedRawSources,
+		fallbackSources,
 		(url, title, citedText) => `${url}|${title}|${citedText}`,
 	);
 }
