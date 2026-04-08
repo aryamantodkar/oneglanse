@@ -4,8 +4,8 @@ import type { Page } from "playwright";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
-import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import {
+	getResolvedResponseText,
 	requireEditorCandidate,
 	waitForSelectorProfile,
 } from "../../../lib/selectors/index.js";
@@ -17,6 +17,9 @@ const SEARCH_RESULTS_WAIT_MS = 8_000;
 // How long to wait for the LLM selector profile to resolve a response element.
 // If no response selector resolves in this window, there is no AI Overview.
 const AI_OVERVIEW_PROBE_TIMEOUT_MS = 8_000;
+const AI_OVERVIEW_SETTLE_TIMEOUT_MS = 5_000;
+const AI_OVERVIEW_SETTLE_POLL_MS = 250;
+const AI_OVERVIEW_STABLE_POLLS_REQUIRED = 3;
 
 const warmedPages = new WeakSet<Page>();
 
@@ -130,6 +133,36 @@ async function assertAiOverviewPresent(page: Page): Promise<void> {
 	}
 }
 
+async function waitForAiOverviewReady(page: Page): Promise<void> {
+	const deadline = Date.now() + AI_OVERVIEW_SETTLE_TIMEOUT_MS;
+	let lastText = "";
+	let stablePolls = 0;
+
+	while (Date.now() < deadline) {
+		const text = await getResolvedResponseText(page, "ai-overview").catch(
+			() => "",
+		);
+		if (text.trim().length >= 50) {
+			if (text === lastText) {
+				stablePolls += 1;
+			} else {
+				lastText = text;
+				stablePolls = 1;
+			}
+
+			if (stablePolls >= AI_OVERVIEW_STABLE_POLLS_REQUIRED) {
+				return;
+			}
+		}
+
+		await page.waitForTimeout(AI_OVERVIEW_SETTLE_POLL_MS);
+	}
+
+	// AI Overview is not a chat stream. If the block is present but still changing,
+	// do not stall the job longer than the short settle window.
+	await page.waitForTimeout(500);
+}
+
 export const aiOverviewConfig: ProviderConfig = {
 	url: "https://www.google.com/",
 	label: "AI Overview",
@@ -172,7 +205,7 @@ export const aiOverviewConfig: ProviderConfig = {
 		await assertAiOverviewPresent(page);
 		logger.log(`search ready: ${page.url()}`);
 	},
-	waitForResponse: (page) => waitForAssistantToFinish(page, "ai-overview"),
+	waitForResponse: (page) => waitForAiOverviewReady(page),
 	extractResponse: (page) => extractAssistantMarkdown(page, "ai-overview"),
 	betweenPromptsHook: async (page) => {
 		await page.waitForTimeout(8000 + Math.floor(Math.random() * 12000));

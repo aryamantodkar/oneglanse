@@ -1,17 +1,21 @@
 import type { SelectorSnapshot, SelectorStage } from "@oneglanse/types";
 import type { Page } from "playwright";
-import {
-	SNAPSHOT_STABILITY_POLL_MS,
-	SNAPSHOT_STABILITY_TIMEOUT_MS,
-	SNAPSHOT_STABLE_POLLS_REQUIRED,
-} from "./constants.js";
 import { buildPageKey, hashValue, normalizeSelectorForState } from "./utils.js";
+
+const RESPONSE_MONITOR_KEY = "__oneglanseResponseMonitor";
 
 export async function captureSelectorSnapshot(
 	page: Page,
 	stage: SelectorStage,
 ): Promise<SelectorSnapshot> {
-	const snapshot = await page.evaluate((currentStage: SelectorStage) => {
+	const snapshot = await page.evaluate(
+		({
+			currentStage,
+			responseMonitorKey,
+		}: {
+			currentStage: SelectorStage;
+			responseMonitorKey: string;
+		}) => {
 		type Candidate = {
 			selector: string;
 			tag: string;
@@ -27,6 +31,8 @@ export async function captureSelectorSnapshot(
 			placeholder: string | null;
 			linkCount: number;
 			buttonCount: number;
+			blockCount: number;
+			childCount: number;
 			inputLike: boolean;
 			buttonLike: boolean;
 			contentEditable: boolean;
@@ -367,12 +373,14 @@ export async function captureSelectorSnapshot(
 				depth,
 				text,
 				textLength: text.length,
-				name: element.getAttribute("name"),
-				ariaLabel: element.getAttribute("aria-label"),
-				placeholder: element.getAttribute("placeholder"),
-				linkCount: element.querySelectorAll("a[href]").length,
-				buttonCount: element.querySelectorAll('button,[role="button"]').length,
-				inputLike: isInputLike(element),
+					name: element.getAttribute("name"),
+					ariaLabel: element.getAttribute("aria-label"),
+					placeholder: element.getAttribute("placeholder"),
+					linkCount: element.querySelectorAll("a[href]").length,
+					buttonCount: element.querySelectorAll('button,[role="button"]').length,
+					blockCount: blockCount(element),
+					childCount: element.children.length,
+					inputLike: isInputLike(element),
 				buttonLike: isButtonLike(element),
 				contentEditable:
 					element instanceof HTMLElement &&
@@ -408,6 +416,158 @@ export async function captureSelectorSnapshot(
 			return results;
 		}
 
+		function isIgnoredRegion(element: Element): boolean {
+			return Boolean(
+				element.closest(
+					"nav,header,footer,aside,dialog,[role='navigation'],[role='banner'],[role='contentinfo'],[role='complementary']",
+				),
+			);
+		}
+
+		function blockCount(element: Element): number {
+			return element.querySelectorAll(
+				"p,li,pre,table,blockquote,ul,ol,h1,h2,h3,h4,h5,h6",
+			).length;
+		}
+
+		function hasDominantVisibleTextChild(
+			element: HTMLElement,
+			textLength: number,
+		): boolean {
+			return Array.from(element.children).some((child) => {
+				if (!(child instanceof HTMLElement) || !isVisible(child)) {
+					return false;
+				}
+				const childTextLength = elementText(child).length;
+				return childTextLength >= Math.max(140, textLength * 0.7);
+			});
+		}
+
+		function trackedResponseRoots(): HTMLElement[] {
+			if (currentStage !== "response") {
+				return [];
+			}
+
+			const globalWindow = window as typeof window & {
+				[key: string]: {
+					candidateRoots?: Set<HTMLElement>;
+					mutationMarks?: WeakMap<HTMLElement, number>;
+				} | undefined;
+			};
+			const monitor = globalWindow[responseMonitorKey];
+			const roots = Array.from(monitor?.candidateRoots ?? []).filter(
+				(element): element is HTMLElement =>
+					element instanceof HTMLElement && element.isConnected && isVisible(element),
+			);
+
+			roots.sort((left, right) => {
+				const leftMark = monitor?.mutationMarks?.get(left) ?? 0;
+				const rightMark = monitor?.mutationMarks?.get(right) ?? 0;
+				if (rightMark !== leftMark) {
+					return rightMark - leftMark;
+				}
+				return elementText(right).length - elementText(left).length;
+			});
+
+			return roots;
+		}
+
+		function responseSeedElements(
+			trackedRoots: HTMLElement[],
+			visibleElements: HTMLElement[],
+		): HTMLElement[] {
+			if (trackedRoots.length === 0) {
+				return visibleElements;
+			}
+
+			const results: HTMLElement[] = [];
+			const seen = new Set<HTMLElement>();
+			for (const root of trackedRoots) {
+				let current: HTMLElement | null = root;
+				let depth = 0;
+				while (current && depth < 3) {
+					if (!seen.has(current) && isVisible(current)) {
+						seen.add(current);
+						results.push(current);
+					}
+					current = current.parentElement;
+					depth += 1;
+				}
+			}
+
+			for (const element of visibleElements) {
+				if (!seen.has(element)) {
+					seen.add(element);
+					results.push(element);
+				}
+			}
+
+			return results;
+		}
+
+		function responseCandidateScore(
+			element: HTMLElement,
+			trackedRoots: HTMLElement[],
+		): number {
+			if (isIgnoredRegion(element) || isOverlayLike(element)) {
+				return Number.NEGATIVE_INFINITY;
+			}
+
+			const textLength = elementText(element).length;
+			if (textLength < 40 || textLength > 20_000) {
+				return Number.NEGATIVE_INFINITY;
+			}
+
+			const rect = element.getBoundingClientRect();
+			if (rect.width < 120 || rect.height < 20) {
+				return Number.NEGATIVE_INFINITY;
+			}
+
+			const links = element.querySelectorAll("a[href]").length;
+			const buttons = element.querySelectorAll(
+				'button,[role="button"]',
+			).length;
+			const editablesInside = element.querySelectorAll(
+				'[contenteditable="true"], textarea, input, [role="textbox"]',
+			).length;
+			if (editablesInside > 0) {
+				return Number.NEGATIVE_INFINITY;
+			}
+
+			const blocks = blockCount(element);
+			const dominantChild = hasDominantVisibleTextChild(element, textLength);
+			const childCount = element.children.length;
+			const trackedDirect = trackedRoots.includes(element);
+			const trackedDescendant = trackedRoots.some((root) => element.contains(root));
+
+			let score =
+				Math.min(textLength, 8_000) * 0.55 +
+				Math.min(blocks, 20) * 140 -
+				links * 32 -
+				buttons * 85 -
+				Math.max(childCount - 12, 0) * 70;
+
+			if (trackedDirect) {
+				score += 4_000;
+			} else if (trackedDescendant) {
+				score += 2_500;
+			}
+			if (dominantChild && childCount >= 2 && blocks <= 1) {
+				score -= 800;
+			}
+			if (links >= 12 && blocks <= 2) {
+				score -= 1_000;
+			}
+			if (buttons >= 6 && textLength < 800) {
+				score -= 1_000;
+			}
+			if (rect.width > window.innerWidth * 0.95 && rect.height > window.innerHeight * 0.85) {
+				score -= 1_500;
+			}
+
+			return score;
+		}
+
 		const visibleElements = Array.from(document.querySelectorAll("*")).filter(
 			isVisible,
 		);
@@ -441,13 +601,18 @@ export async function captureSelectorSnapshot(
 			40,
 		);
 
+		const trackedRoots = trackedResponseRoots();
+		const contentSeedElements = responseSeedElements(
+			trackedRoots,
+			visibleElements,
+		);
 		const minContentTextLength =
 			currentStage === "compose" ? 40 : currentStage === "sources" ? 3 : 12;
 		const content = limitAndDedupe(
-			visibleElements
+			contentSeedElements
 				.filter((element) => {
 					const text = elementText(element);
-					if (text.length < minContentTextLength || text.length > 8000) {
+					if (text.length < minContentTextLength || text.length > 20_000) {
 						return false;
 					}
 					if (isInputLike(element)) return false;
@@ -460,6 +625,9 @@ export async function captureSelectorSnapshot(
 					) {
 						return false;
 					}
+					if (currentStage === "response" && isIgnoredRegion(element)) {
+						return false;
+					}
 					return true;
 				})
 				.map((element) =>
@@ -468,8 +636,31 @@ export async function captureSelectorSnapshot(
 						textLength: elementText(element).length,
 					}),
 				)
-				.sort((left, right) => right.textLength - left.textLength),
-			currentStage === "compose" ? 12 : currentStage === "sources" ? 50 : 30,
+				.sort((left, right) => {
+					if (currentStage !== "response") {
+						return right.textLength - left.textLength;
+					}
+
+					const leftElement = document.querySelector(left.selector);
+					const rightElement = document.querySelector(right.selector);
+					const leftScore =
+						leftElement instanceof HTMLElement
+							? responseCandidateScore(leftElement, trackedRoots)
+							: Number.NEGATIVE_INFINITY;
+					const rightScore =
+						rightElement instanceof HTMLElement
+							? responseCandidateScore(rightElement, trackedRoots)
+							: Number.NEGATIVE_INFINITY;
+					if (rightScore !== leftScore) {
+						return rightScore - leftScore;
+					}
+					return right.textLength - left.textLength;
+				}),
+			currentStage === "compose"
+				? 12
+				: currentStage === "sources"
+					? 50
+					: 20,
 		);
 
 		const groups: Candidate[] = [];
@@ -546,7 +737,12 @@ export async function captureSelectorSnapshot(
 			content,
 			groups: dedupedGroups,
 		};
-	}, stage);
+	},
+		{
+			currentStage: stage,
+			responseMonitorKey: RESPONSE_MONITOR_KEY,
+		},
+	);
 
 	const pageKey = buildPageKey(snapshot.url);
 	const fingerprintPayload = {
@@ -586,32 +782,3 @@ export function buildSnapshotStabilityKey(snapshot: SelectorSnapshot): string {
 	});
 }
 
-export async function captureStableSelectorSnapshot(
-	page: Page,
-	stage: SelectorStage,
-): Promise<SelectorSnapshot> {
-	const deadline = Date.now() + SNAPSHOT_STABILITY_TIMEOUT_MS[stage];
-	let latest = await captureSelectorSnapshot(page, stage);
-	let stableKey = buildSnapshotStabilityKey(latest);
-	let stablePolls = 1;
-
-	while (
-		Date.now() < deadline &&
-		stablePolls < SNAPSHOT_STABLE_POLLS_REQUIRED
-	) {
-		await page.waitForTimeout(SNAPSHOT_STABILITY_POLL_MS);
-		const next = await captureSelectorSnapshot(page, stage);
-		const nextKey = buildSnapshotStabilityKey(next);
-		latest = next;
-
-		if (nextKey === stableKey) {
-			stablePolls += 1;
-			continue;
-		}
-
-		stableKey = nextKey;
-		stablePolls = 1;
-	}
-
-	return latest;
-}

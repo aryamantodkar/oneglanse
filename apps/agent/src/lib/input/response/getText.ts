@@ -1,10 +1,10 @@
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { getResolvedResponseText } from "../../selectors/index.js";
+import { readResponseProbe } from "./responseMonitor.js";
 
 export async function getText(
 	page: Page,
-	provider: Provider,
+	_provider: Provider,
 ): Promise<string> {
-	return await getResolvedResponseText(page, provider);
+	return (await readResponseProbe(page)).text;
 }

@@ -1,5 +1,3 @@
-import { rm, unlink } from "node:fs/promises";
-import path from "node:path";
 import { NotFoundError, toErrorMessage } from "@oneglanse/errors";
 import type {
 	Provider,
@@ -15,27 +13,14 @@ import {
 } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import {
-	cacheKey,
 	deleteCachedProfile,
-	getPageFailureCooldown,
-	getProfileCacheFile,
-	getSelectorCacheDir,
-	markPageFailureCooldown,
-	pageFailureKey,
 	readCachedProfile,
-	readProviderCache,
 	writeCachedProfile,
-	writeProviderCache,
 } from "./cache.js";
 import {
-	FAILED_RESOLUTION_TTL_MS,
 	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
-	PAGE_FAILED_RESOLUTION_TTL_MS,
 	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
 	SELECTOR_PROFILE_MAX_AGE_MS,
-	failedPageResolutions,
-	failedResolutions,
-	pendingByProviderStage,
 	pendingResolutions,
 	selectorModelState,
 } from "./constants.js";
@@ -45,10 +30,9 @@ import {
 	resolveProfileWithModel,
 	shouldSkipSelectorModelForBudget,
 } from "./model.js";
-import { captureStableSelectorSnapshot } from "./snapshot.js";
+import { captureSelectorSnapshot } from "./snapshot.js";
 import {
 	buildPageKey,
-	buildSnapshotStateKey,
 	compactSelectors,
 	defaultSelectorRecord,
 	hasRequiredSelectors,
@@ -208,10 +192,6 @@ export async function validateProfile(
 		sanitizedSelectors.editor,
 		{
 			label: `${profile.provider}/${profile.stage}/editor`,
-			// When reusing a compose profile across a URL change, the editor may be
-			// transiently non-editable (loading state right after prompt submission).
-			// Only check visibility here; the editable check is enforced later in
-			// findResolvedEditorCandidate when the selector is actually used.
 			requireEditable: options?.relaxCompose ? false : true,
 		},
 	);
@@ -223,10 +203,6 @@ export async function validateProfile(
 			requireEnabled: true,
 		},
 	);
-	// Selector validation only confirms the element has content — response quality
-	// is enforced later by validateResponse(). Cap at 50 so partially-streamed
-	// responses are not rejected mid-generation, and derive from the same per-provider
-	// minimums used by validateResponse() so there is one source of truth.
 	const providerResponseMin =
 		PROVIDER_MIN_RESPONSE_CHARS[profile.provider] ?? DEFAULT_MIN_RESPONSE_CHARS;
 	const responseMinTextLength =
@@ -340,89 +316,38 @@ async function filterAnswerLikeResponseSelectors(
 					}
 				}
 
-				function isInternalAnchor(anchor: HTMLAnchorElement): boolean {
-					try {
-						const url = new URL(anchor.href, window.location.origin);
-						return url.hostname === window.location.hostname;
-					} catch {
-						return false;
-					}
-				}
-
 				const candidate = lastVisibleMatch();
-				if (!candidate) {
-					return false;
-				}
+				if (!candidate) return false;
 
 				const text = textOf(candidate);
-				if (text.length < 60) {
+				if (text.length < 60) return false;
+
+				if (
+					candidate.querySelector(
+						'textarea, input:not([type="hidden"]), [contenteditable="true"], [role="textbox"]',
+					)
+				) {
 					return false;
 				}
 
+				const blockCount = candidate.querySelectorAll(
+					"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6",
+				).length;
+				const buttons = Array.from(
+					candidate.querySelectorAll("button,[role='button']"),
+				).filter(isVisible).length;
 				const anchors = Array.from(
 					candidate.querySelectorAll("a[href]"),
 				).filter(
 					(element): element is HTMLAnchorElement =>
 						element instanceof HTMLAnchorElement && isVisible(element),
 				);
-				const blockCount = candidate.querySelectorAll(
-					"p,li,pre,table,blockquote,h1,h2,h3,h4,h5,h6",
-				).length;
-				const codeLikeCount = candidate.querySelectorAll(
-					"pre,code,table,blockquote,ul,ol",
-				).length;
-				const buttons = Array.from(
-					candidate.querySelectorAll("button,[role='button']"),
-				).filter(isVisible).length;
-				const internalAnchorCount = anchors.filter(isInternalAnchor).length;
-				const lines = text
-					.split(/\n+/)
-					.map((line) => line.trim())
-					.filter(Boolean);
-				const shortLines = lines.filter((line) => line.length <= 120).length;
-				const shortLineRatio =
-					lines.length > 0 ? shortLines / lines.length : 0;
-				const sentenceCount = text
-					.split(/(?<=[.!?])\s+/)
-					.map((part) => part.trim())
-					.filter((part) => part.length >= 20).length;
 
-				if (
-					internalAnchorCount >= 4 &&
-					internalAnchorCount >= Math.ceil(anchors.length * 0.5) &&
-					blockCount <= 1 &&
-					codeLikeCount === 0
-				) {
+				if (text.endsWith("?") && blockCount === 0 && anchors.length <= 1) {
 					return false;
 				}
-
-				if (anchors.length >= 10 && blockCount <= 1 && codeLikeCount === 0) {
-					return false;
-				}
-
-				if (
-					lines.length >= 6 &&
-					shortLineRatio >= 0.75 &&
-					sentenceCount <= 2 &&
-					codeLikeCount === 0
-				) {
-					return false;
-				}
-
-				if (buttons >= 8 && anchors.length >= 8 && codeLikeCount === 0) {
-					return false;
-				}
-
-				// Reject elements that look like a user query rather than an answer:
-				// short text ending with "?" and no structured content (no headings,
-				// lists, code, or multiple sentences). This prevents caching a selector
-				// that happens to match the user-message div instead of the response.
-				if (
-					text.endsWith("?") &&
-					blockCount === 0 &&
-					codeLikeCount === 0 &&
-					sentenceCount <= 1
-				) {
+				if (buttons >= 8 && text.length < 600) return false;
+				if (anchors.length >= 12 && blockCount <= 1 && text.length < 800) {
 					return false;
 				}
 
@@ -438,81 +363,16 @@ async function filterAnswerLikeResponseSelectors(
 	return accepted;
 }
 
-function sharedPageKeyDepth(left: string, right: string): number {
-	const leftSegments = normalizePageKey(left).split("/");
-	const rightSegments = normalizePageKey(right).split("/");
-	let depth = 0;
-	while (
-		depth < leftSegments.length &&
-		depth < rightSegments.length &&
-		leftSegments[depth] === rightSegments[depth]
-	) {
-		depth += 1;
-	}
-	return depth;
-}
-
-async function findReusableCachedProfile(
-	page: Page,
-	provider: Provider,
-	stage: SelectorStage,
-	pageKey: string,
-	requiredFields?: readonly SelectorField[],
-): Promise<SelectorProfile | null> {
-	const cache = await readProviderCache(provider);
-	if (!cache) {
-		return null;
-	}
-
-	const normalizedPageKey = normalizePageKey(pageKey);
-	const candidates = cache.profiles
-		.filter(
-			(profile) =>
-				profile.stage === stage &&
-				normalizePageKey(profile.pageKey) !== normalizedPageKey,
-		)
-		.sort((left, right) => {
-			const depthDelta =
-				sharedPageKeyDepth(normalizedPageKey, right.pageKey) -
-				sharedPageKeyDepth(normalizedPageKey, left.pageKey);
-			if (depthDelta !== 0) {
-				return depthDelta;
-			}
-			return right.createdAt.localeCompare(left.createdAt);
-		});
-
-	for (const candidate of candidates) {
-		const valid = await validateProfile(page, candidate, requiredFields, {
-			// Compose editors are transiently non-editable right after prompt
-			// submission (URL changes home→conversation). Relax the editable check
-			// here so the cached selector is reused without triggering a model call.
-			relaxCompose: stage === "compose",
-		});
-		if (valid) {
-			return valid;
-		}
-	}
-
-	return null;
-}
-
 export function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
 	if (snapshot.stage === "compose") {
 		return snapshot.editables.length > 0;
 	}
-
 	if (snapshot.stage === "submit") {
 		return snapshot.buttons.length > 0;
 	}
-
 	if (snapshot.stage === "sources") {
 		return snapshot.groups.length > 0 || snapshot.content.length > 0;
 	}
-
-	// For the response stage, require actual content elements (not just buttons).
-	// The stop-generation button appears immediately after submit and would
-	// otherwise trigger a premature LLM call before any response content exists,
-	// causing validateProfile to fail and a 30s failedResolutions cooldown block.
 	const longestContent = snapshot.content.reduce(
 		(max, item) => Math.max(max, item.textLength),
 		0,
@@ -521,60 +381,22 @@ export function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
 		(max, item) => Math.max(max, item.textLength),
 		0,
 	);
-	// Short factual answers can legitimately finish below 200 chars. Keep the
-	// threshold high enough to avoid early streaming fragments, but low enough to
-	// allow selector resolution for concise final answers.
 	return longestContent >= 80 || longestGroup >= 80;
 }
 
-export async function invalidateSelectorProfilesForPageKey(
-	provider: Provider,
-	stage: SelectorStage,
-	pageKey: string,
-): Promise<void> {
-	const normalizedPageKey = normalizePageKey(pageKey);
-	const cache = await readProviderCache(provider);
-	if (!cache) {
-		return;
-	}
-
-	cache.profiles = cache.profiles.filter(
-		(profile) =>
-			!(
-				profile.stage === stage &&
-				normalizePageKey(profile.pageKey) === normalizedPageKey
-			),
-	);
-	if (cache.profiles.length === 0) {
-		await unlink(getProfileCacheFile(getSelectorCacheDir(), provider)).catch(
-			() => {},
-		);
-		await rm(path.join(getSelectorCacheDir(), provider), {
-			force: true,
-			recursive: true,
-		}).catch(() => {});
-		return;
-	}
-
-	await writeProviderCache(cache);
-}
-
-export async function invalidateSelectorProfileForPage(
-	page: Page,
-	provider: Provider,
-	stage: SelectorStage,
-): Promise<void> {
-	try {
-		const pageKey = buildPageKey(page.url());
-		await invalidateSelectorProfilesForPageKey(provider, stage, pageKey);
-		logger.debug(
-			`invalidated ${provider}/${stage} selector profiles for ${pageKey}`,
-		);
-	} catch {
-		// Best-effort — don't let invalidation errors surface to the caller
-	}
-}
-
+/**
+ * Resolves a selector profile for the given provider and stage.
+ *
+ * Flow:
+ *  1. Check disk cache — return immediately if valid and within TTL.
+ *  2. Capture a single DOM snapshot.
+ *  3. Call the selector model if allowed.
+ *  4. Validate the generated profile against live DOM.
+ *  5. Persist to disk cache and return.
+ *
+ * Concurrent calls for the same provider+stage+pageKey share one in-flight
+ * resolution via `pendingResolutions`.
+ */
 export async function getSelectorProfile(
 	page: Page,
 	provider: Provider,
@@ -585,134 +407,25 @@ export async function getSelectorProfile(
 		requiredFields?: readonly SelectorField[];
 	},
 ): Promise<SelectorProfile | null> {
-	const psKey = `${provider}:${stage}`;
-	let initialPageKey: string | null = null;
-	let initialCachedProfile: SelectorProfile | null = null;
+	const pageKey = buildPageKey(page.url());
 
+	// 1. Check disk cache
 	if (!options?.forceRefresh) {
-		const pageKey = buildPageKey(page.url());
-		initialPageKey = pageKey;
 		const cached = (await readCachedProfile(provider, stage, pageKey)) ?? null;
 		if (cached) {
-			// Expire profiles older than the TTL even when selectors still resolve —
-			// this guarantees stale-but-valid selectors are refreshed after a UI change
-			// is deployed, rather than silently serving degraded results indefinitely.
 			const profileAge = Date.now() - new Date(cached.createdAt).getTime();
-			if (profileAge > SELECTOR_PROFILE_MAX_AGE_MS) {
-				logger.debug(
-					`[selector:${provider}/${stage}] profile TTL expired (${Math.round(profileAge / 86_400_000)}d old) — forcing model refresh`,
-				);
-				await deleteCachedProfile(cached);
-				// initialCachedProfile remains null; the model will re-resolve below
-			} else {
-				initialCachedProfile = cached;
+			if (profileAge <= SELECTOR_PROFILE_MAX_AGE_MS) {
 				const valid = await validateProfile(
 					page,
 					cached,
 					options?.requiredFields,
 					{ relaxCompose: stage === "compose" },
 				);
-				if (valid) {
-					return valid;
-				}
+				if (valid) return valid;
 			}
+			// Cache expired or invalid — delete so it gets re-resolved
+			await deleteCachedProfile(cached).catch(() => {});
 		}
-	}
-
-	// Skip the expensive DOM scan while an LLM call is already in-flight for
-	// this provider+stage. The caller retries on the next poll when it settles.
-	if (pendingByProviderStage.has(psKey)) {
-		return null;
-	}
-
-	const snapshot = await captureStableSelectorSnapshot(page, stage);
-	const key = cacheKey(provider, stage, snapshot.fingerprint);
-	const pageKeyCooldownKey = pageFailureKey(provider, stage, snapshot.pageKey);
-	const snapshotStateKey = buildSnapshotStateKey(snapshot);
-
-	if (!options?.forceRefresh) {
-		const cached =
-			initialPageKey === snapshot.pageKey
-				? initialCachedProfile
-				: ((await readCachedProfile(provider, stage, snapshot.pageKey)) ??
-					null);
-		if (cached) {
-			const valid = await validateProfile(
-				page,
-				cached,
-				options?.requiredFields,
-				{ relaxCompose: stage === "compose" },
-			);
-			if (valid) {
-				if (valid.fingerprint !== snapshot.fingerprint) {
-					const rebased: SelectorProfile = {
-						...valid,
-						fingerprint: snapshot.fingerprint,
-						createdAt: new Date().toISOString(),
-					};
-					await writeCachedProfile(rebased);
-					return rebased;
-				}
-				return valid;
-			}
-			if (isSnapshotReady(snapshot)) {
-				// For sources stage, deleting the cached profile triggers another model
-				// call on the same fingerprint. The sources panel may have filtered-out
-				// selectors (ordinal suffixes stripped by compactSelectors), but the
-				// heuristic extraction in extractResolvedSources handles missing
-				// selectors — keep the profile so callers can fall back gracefully.
-				if (snapshot.stage !== "sources") {
-					const baselineValid = options?.requiredFields?.length
-						? await validateProfile(page, cached)
-						: null;
-					if (!baselineValid) {
-						await deleteCachedProfile(cached);
-						failedPageResolutions.delete(pageKeyCooldownKey);
-						failedResolutions.delete(key);
-					}
-				}
-			}
-		}
-	}
-
-	if (!isSnapshotReady(snapshot)) {
-		return null;
-	}
-
-	if (!options?.forceRefresh) {
-		const reusable = await findReusableCachedProfile(
-			page,
-			provider,
-			stage,
-			snapshot.pageKey,
-			options?.requiredFields,
-		);
-		if (reusable) {
-			const rebased: SelectorProfile = {
-				...reusable,
-				pageKey: snapshot.pageKey,
-				fingerprint: snapshot.fingerprint,
-				createdAt: new Date().toISOString(),
-			};
-			await writeCachedProfile(rebased);
-			return rebased;
-		}
-	}
-
-	const lastFailure = failedResolutions.get(key);
-	if (
-		!options?.forceRefresh &&
-		lastFailure &&
-		Date.now() - lastFailure < FAILED_RESOLUTION_TTL_MS
-	) {
-		return null;
-	}
-
-	if (
-		!options?.forceRefresh &&
-		getPageFailureCooldown(pageKeyCooldownKey)?.stateKey === snapshotStateKey
-	) {
-		return null;
 	}
 
 	if (options?.allowModel === false) {
@@ -722,7 +435,7 @@ export async function getSelectorProfile(
 	if (isSelectorModelRateLimited()) {
 		if (!selectorModelState.rateLimitLogged) {
 			logger.warn(
-				`selector model temporarily disabled after rate limit/quota response — using cache only for ${Math.ceil((selectorModelState.disabledUntil - Date.now()) / 60000)} more minute(s)`,
+				`selector model rate limited — using cache only for ${Math.ceil((selectorModelState.disabledUntil - Date.now()) / 60000)} more minute(s)`,
 			);
 			selectorModelState.rateLimitLogged = true;
 		}
@@ -733,56 +446,38 @@ export async function getSelectorProfile(
 		return null;
 	}
 
-	const pending = pendingResolutions.get(key);
-	if (pending) {
-		return pending;
-	}
+	// Dedup concurrent calls for the same provider+stage+pageKey
+	const psKey = `${provider}:${stage}:${normalizePageKey(pageKey)}`;
+	const pending = pendingResolutions.get(psKey);
+	if (pending) return pending;
 
-	pendingByProviderStage.add(psKey);
 	const resolution = (async () => {
 		try {
+			// 2. Single DOM snapshot — no stability polling needed for a settled page
+			const snapshot = await captureSelectorSnapshot(page, stage);
+			if (!isSnapshotReady(snapshot)) return null;
+
 			selectorModelState.callsThisProcess += 1;
 			logger.debug(
-				`[selector:${provider}/${stage}] calling selector model (call ${selectorModelState.callsThisProcess}/${MAX_SELECTOR_MODEL_CALLS_PER_PROCESS}) pageKey=${snapshot.pageKey} fingerprint=${snapshot.fingerprint.slice(0, 12)}`,
+				`[selector:${provider}/${stage}] calling model (call ${selectorModelState.callsThisProcess}/${MAX_SELECTOR_MODEL_CALLS_PER_PROCESS}) pageKey=${snapshot.pageKey}`,
 			);
-			const generated = await resolveProfileWithModel(
-				provider,
-				stage,
-				snapshot,
-			);
-			if (!generated) {
-				markPageFailureCooldown(
-					pageKeyCooldownKey,
-					snapshotStateKey,
-					PAGE_FAILED_RESOLUTION_TTL_MS,
-				);
-				return null;
-			}
 
+			// 3. Selector model
+			const generated = await resolveProfileWithModel(provider, stage, snapshot);
+			if (!generated) return null;
+
+			// 4. Validate against live DOM
 			const validated = await validateProfile(
 				page,
 				generated,
 				options?.requiredFields,
 			);
-			if (!validated) {
-				failedResolutions.set(key, Date.now());
-				markPageFailureCooldown(
-					pageKeyCooldownKey,
-					snapshotStateKey,
-					PAGE_FAILED_RESOLUTION_TTL_MS,
-				);
-				return null;
-			}
+			if (!validated) return null;
 
+			// 5. Persist
 			await writeCachedProfile(validated);
 			return validated;
 		} catch (error) {
-			failedResolutions.set(key, Date.now());
-			markPageFailureCooldown(
-				pageKeyCooldownKey,
-				snapshotStateKey,
-				PAGE_FAILED_RESOLUTION_TTL_MS,
-			);
 			if (isSelectorModelErrorRateLimit(error)) {
 				selectorModelState.disabledUntil =
 					Date.now() + SELECTOR_MODEL_RATE_LIMIT_TTL_MS;
@@ -793,12 +488,11 @@ export async function getSelectorProfile(
 			);
 			return null;
 		} finally {
-			pendingByProviderStage.delete(psKey);
-			pendingResolutions.delete(key);
+			pendingResolutions.delete(psKey);
 		}
 	})();
 
-	pendingResolutions.set(key, resolution);
+	pendingResolutions.set(psKey, resolution);
 	return resolution;
 }
 
@@ -899,4 +593,23 @@ export async function requireEditorCandidate(
 			throw new NotFoundError(`editor for ${provider}`);
 		})()
 	);
+}
+
+export async function invalidateSelectorProfileForPage(
+	page: Page,
+	provider: Provider,
+	stage: SelectorStage,
+): Promise<void> {
+	try {
+		const pageKey = buildPageKey(page.url());
+		const cached = await readCachedProfile(provider, stage, pageKey);
+		if (cached) {
+			await deleteCachedProfile(cached);
+		}
+		logger.debug(
+			`invalidated ${provider}/${stage} selector profiles for ${pageKey}`,
+		);
+	} catch {
+		// Best-effort
+	}
 }

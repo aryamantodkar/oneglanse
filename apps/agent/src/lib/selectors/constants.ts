@@ -1,37 +1,15 @@
-import type {
-	PageFailureCooldown,
-	SelectorProfile,
-	SelectorStage,
-} from "@oneglanse/types";
+import type { SelectorProfile } from "@oneglanse/types";
 
 export const SELECTOR_PROFILE_VERSION = 1;
 export const SELECTOR_MODEL = "gpt-4.1";
 export const MAX_SELECTORS_PER_FIELD = 5;
-export const FAILED_RESOLUTION_TTL_MS = 2_000;
-export const PAGE_FAILED_RESOLUTION_TTL_MS = 5_000;
 export const SELECTOR_MODEL_RATE_LIMIT_TTL_MS = 15 * 60_000;
 export const MAX_SELECTOR_MODEL_CALLS_PER_PROCESS = 30;
 // Profiles older than this trigger a fresh LLM resolution even when the cached
-// selectors still match — this ensures UI changes are picked up automatically
-// within a bounded time window rather than only when selectors break entirely.
-// AI provider UIs typically update on a weekly-to-monthly cadence, so 7 days
-// gives a good balance between stability and recovery speed.
+// selectors still match — ensures UI changes are picked up within a bounded window.
 export const SELECTOR_PROFILE_MAX_AGE_MS = 7 * 24 * 60 * 60_000; // 7 days
-export const SNAPSHOT_STABILITY_POLL_MS = 250;
-export const SNAPSHOT_STABLE_POLLS_REQUIRED = 2;
-export const SNAPSHOT_STABILITY_TIMEOUT_MS: Record<SelectorStage, number> = {
-	compose: 3_000,
-	submit: 3_000,
-	response: 8_000,
-	sources: 5_000,
-};
 
 export const pendingResolutions = new Map<string, Promise<SelectorProfile | null>>();
-// Tracks provider:stage pairs where an LLM resolution is currently in-flight.
-// Checked before captureStableSelectorSnapshot() to skip expensive DOM work.
-export const pendingByProviderStage = new Set<string>();
-export const failedResolutions = new Map<string, number>();
-export const failedPageResolutions = new Map<string, PageFailureCooldown>();
 
 export const selectorModelState = {
 	callsThisProcess: 0,
