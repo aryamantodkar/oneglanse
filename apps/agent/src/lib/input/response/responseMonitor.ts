@@ -205,7 +205,7 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 			}
 
 			const text = normalizeCandidateText(element);
-			if (text.length < 20 || text.length > 60_000) {
+			if (text.length < 8 || text.length > 60_000) {
 				return false;
 			}
 
@@ -214,7 +214,7 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 			).length;
 			const links = element.querySelectorAll("a[href]").length;
 			const blocks = blockCount(element);
-			const words = text.split(/\s+/).filter(Boolean).length;
+
 			const children = visibleChildrenOf(element);
 			// A child that holds ≥90% of the text AND the element has multiple total children.
 			// "Multiple total children" catches:
@@ -238,7 +238,6 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 
 			if (buttons >= 8 && text.length < 500) return false;
 			if (links >= 16 && blocks <= 1 && text.length < 700) return false;
-			if (words < 6 && blocks === 0 && text.length < 40) return false;
 			if (veryDominantChild) return false;
 			if (dominantChild && children.length >= 2 && blocks <= 1) return false;
 
@@ -443,7 +442,7 @@ export async function readResponseProbe(
 			if (rect.width < 80) continue;
 
 			const text = normalizeText(element.innerText || element.textContent || "");
-			if (text.length < 20 || text.length > 60_000) continue;
+			if (text.length < 8 || text.length > 60_000) continue;
 
 			const visibleChildren = Array.from(element.children).filter(
 				(child): child is HTMLElement =>
@@ -468,7 +467,7 @@ export async function readResponseProbe(
 			).length;
 			const links = element.querySelectorAll("a[href]").length;
 			const blocks = blockCount(element);
-			const words = text.split(/\s+/).filter(Boolean).length;
+
 			const childCount = visibleChildren.length;
 			const lastMutationAt = monitor?.mutationMarks.get(element) ?? 0;
 			const mutationRecencyScore =
@@ -484,7 +483,6 @@ export async function readResponseProbe(
 
 			if (buttons >= 8 && text.length < 500) continue;
 			if (links >= 16 && blocks <= 1 && text.length < 700) continue;
-			if (words < 6 && blocks === 0 && text.length < 40) continue;
 
 			const score =
 				Math.min(text.length, 5000) * 0.6 +
@@ -624,14 +622,14 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 			if (rect.width < 80) continue;
 
 			const text = normalizeText(element.innerText || element.textContent || "");
-			if (text.length < 20 || text.length > 60_000) continue;
+			if (text.length < 8 || text.length > 60_000) continue;
 
 			const buttons = element.querySelectorAll(
 				"button,input,textarea,[role='button'],[role='textbox']",
 			).length;
 			const links = element.querySelectorAll("a[href]").length;
 			const blocks = blockCount(element);
-			const words = text.split(/\s+/).filter(Boolean).length;
+
 			const visibleChildren = Array.from(element.children).filter(
 				(child): child is HTMLElement => child instanceof HTMLElement && isVisible(child),
 			);
@@ -650,7 +648,6 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 
 			if (buttons >= 8 && text.length < 500) continue;
 			if (links >= 16 && blocks <= 1 && text.length < 700) continue;
-			if (words < 6 && blocks === 0 && text.length < 40) continue;
 			if (veryDominantChild) continue;
 			if (dominantChild && childCount >= 2 && blocks <= 1) continue;
 
