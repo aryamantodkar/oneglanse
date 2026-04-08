@@ -1,36 +1,16 @@
 {
   "version": 1,
   "provider": "gemini",
-  "updatedAt": "2026-04-05T15:56:22.464Z",
+  "updatedAt": "2026-04-08T13:45:58.270Z",
   "profiles": [
     {
       "version": 1,
       "provider": "gemini",
       "stage": "compose",
       "pageKey": "gemini.google.com/app",
-      "fingerprint": "36deb136e7a1a826b110d580786fc88412afa917cafa17d9c4c379c0f9e10bba",
+      "fingerprint": "6e79b3295d143b4a6338451e2dc8d03fb8893f7e1655e78308169348e824ad1e",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:41:58.604Z",
-      "selectors": {
-        "editor": [
-          "div[aria-label=\"Enter a prompt for Gemini\"]"
-        ],
-        "submitButton": [],
-        "response": [],
-        "generationIndicator": [],
-        "sourcesButton": [],
-        "sourcePanel": [],
-        "sourceItem": []
-      }
-    },
-    {
-      "version": 1,
-      "provider": "gemini",
-      "stage": "compose",
-      "pageKey": "gemini.google.com/app/:id",
-      "fingerprint": "597035c41665d9736eec1f27eef4e48f29133dc43b811301d2cc91a8ea79d5af",
-      "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:42:32.197Z",
+      "createdAt": "2026-04-08T03:09:43.806Z",
       "selectors": {
         "editor": [
           "div[aria-label=\"Enter a prompt for Gemini\"]"
@@ -48,14 +28,14 @@
       "provider": "gemini",
       "stage": "response",
       "pageKey": "gemini.google.com/app/:id",
-      "fingerprint": "4bb314c35c0303da2010014b7c76bc01d7a1d9b8bbd7dacd182a2805d0e22fe1",
+      "fingerprint": "caec892179b85690848767b7ffa9949047e8b63dc85bd600826315bdcf2af299",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-05T15:56:16.993Z",
+      "createdAt": "2026-04-08T13:45:58.242Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "structured-content-container.model-response-text.processing-state-visible"
+          "div.markdown.markdown-main-panel"
         ],
         "generationIndicator": [],
         "sourcesButton": [],
@@ -68,9 +48,9 @@
       "provider": "gemini",
       "stage": "sources",
       "pageKey": "gemini.google.com/app/:id",
-      "fingerprint": "f3b03d002ed4c6fd12648f842ed254c1a95bf5a6d4c5ad5fd55fde7d295c335a",
+      "fingerprint": "deda037a6e318fa01bd9fbfb1faf629909910a88959a2206239401f670a9eb65",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-05T15:56:22.463Z",
+      "createdAt": "2026-04-08T03:10:06.780Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
@@ -81,28 +61,8 @@
           "div.response-content"
         ],
         "sourceItem": [
-          "ul > li"
+          "a"
         ]
-      }
-    },
-    {
-      "version": 1,
-      "provider": "gemini",
-      "stage": "submit",
-      "pageKey": "gemini.google.com/app/:id",
-      "fingerprint": "2ad0a9bee24291a97bee59602fee14c19363151dcc5806bfe76c3dbd2302222e",
-      "model": "gpt-4.1",
-      "createdAt": "2026-04-05T09:43:09.960Z",
-      "selectors": {
-        "editor": [],
-        "submitButton": [
-          "button[aria-label=\"Send message\"]"
-        ],
-        "response": [],
-        "generationIndicator": [],
-        "sourcesButton": [],
-        "sourcePanel": [],
-        "sourceItem": []
       }
     }
   ]

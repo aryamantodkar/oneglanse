@@ -2,6 +2,8 @@ import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { getSelectorProfile } from "./profile.js";
 
+const RESPONSE_MONITOR_KEY = "__oneglanseResponseMonitor";
+
 async function extractResponsePayload(
 	page: Page,
 	responseSelectors: string[],
@@ -11,10 +13,19 @@ async function extractResponsePayload(
 		({
 			selectors,
 			exclude,
+			responseMonitorKey,
 		}: {
 			selectors: string[];
 			exclude: string[];
+			responseMonitorKey: string;
 		}) => {
+			const globalWindow = window as typeof window & {
+				[key: string]: {
+					candidateRoots?: Set<HTMLElement>;
+					mutationMarks?: WeakMap<HTMLElement, number>;
+				} | undefined;
+			};
+
 			function isVisible(element: Element | null): element is HTMLElement {
 				if (!(element instanceof HTMLElement)) return false;
 				if (!element.isConnected) return false;
@@ -33,7 +44,11 @@ async function extractResponsePayload(
 
 			function textOf(element: Element): string {
 				return ((element as HTMLElement).innerText || element.textContent || "")
-					.replace(/\s+/g, " ")
+					.replace(/\r/g, "")
+					.replace(/\u200b/g, "")
+					.replace(/[ \t]+\n/g, "\n")
+					.replace(/\n{3,}/g, "\n\n")
+					.replace(/[ \t]{2,}/g, " ")
 					.trim();
 			}
 
@@ -60,80 +75,30 @@ async function extractResponsePayload(
 				).length;
 			}
 
-			function isSubstantiveNode(element: HTMLElement): boolean {
-				const textLength = textOf(element).length;
-				if (textLength >= 220) {
-					return true;
-				}
-
-				const blockCount = blockCountOf(element);
-				if (blockCount >= 2) {
-					return true;
-				}
-
-				return Boolean(
-					element.querySelector(
-						"pre,table,blockquote,ul,ol,p + p,h1,h2,h3,h4,h5,h6 + p",
-					),
+			function trackedRoots(): HTMLElement[] {
+				return Array.from(
+					globalWindow[responseMonitorKey]?.candidateRoots ?? [],
+				).filter(
+					(element): element is HTMLElement =>
+						element instanceof HTMLElement &&
+						element.isConnected &&
+						isVisible(element),
 				);
 			}
 
-			function isAuxiliaryNode(element: HTMLElement): boolean {
-				if (
-					["P", "LI", "PRE", "TABLE", "BLOCKQUOTE", "UL", "OL"].includes(
-						element.tagName,
-					) ||
-					/^H[1-6]$/.test(element.tagName)
-				) {
-					return false;
-				}
-
-				const textLength = textOf(element).length;
-				if (textLength === 0 || textLength > 120) {
-					return false;
-				}
-
-				if (
-					element.getAttribute("role") === "status" ||
-					element.hasAttribute("aria-live")
-				) {
-					return true;
-				}
-
-				if (blockCountOf(element) > 0) {
-					return false;
-				}
-
-				const interactiveCount = element.querySelectorAll(
-					"a,button,[role='button']",
-				).length;
-				if (interactiveCount > 2) {
-					return false;
-				}
-
-				const childElements = Array.from(element.children).filter(
-					(child): child is HTMLElement => child instanceof HTMLElement,
-				);
-				if (childElements.some((child) => isSubstantiveNode(child))) {
-					return false;
-				}
-
-				const wordCount = textOf(element).split(/\s+/).filter(Boolean).length;
-
-				return wordCount <= 12 && childElements.length <= 4;
-			}
-
-			function answerScoreOf(
+			function matchScore(
 				element: HTMLElement,
 				order: number,
-				maxTop: number,
+				roots: HTMLElement[],
 			): number {
-				const text = textOf(element);
-				const length = text.length;
-				if (length < 60) {
+				const textLength = textOf(element).length;
+				if (textLength < 60) {
 					return Number.NEGATIVE_INFINITY;
 				}
 
+				const buttons = Array.from(
+					element.querySelectorAll("button,[role='button']"),
+				).filter(isVisible).length;
 				const anchors = Array.from(
 					element.querySelectorAll("a[href]"),
 				).filter(
@@ -141,178 +106,65 @@ async function extractResponsePayload(
 						node instanceof HTMLAnchorElement && isVisible(node),
 				);
 				const internalAnchorCount = anchors.filter(isInternalAnchor).length;
-				const externalAnchorCount = anchors.length - internalAnchorCount;
-				const buttons = Array.from(
-					element.querySelectorAll("button,[role='button']"),
-				).filter(isVisible).length;
-				const blockCount = blockCountOf(element);
-				const codeLikeCount = element.querySelectorAll(
-					"pre,code,table,blockquote,ul,ol",
-				).length;
-				const lines = text
-					.split(/\n+/)
-					.map((line) => line.trim())
-					.filter(Boolean);
-				const shortLineRatio =
-					lines.length > 0
-						? lines.filter((line) => line.length <= 120).length / lines.length
+				const blocks = blockCountOf(element);
+				const directRoot = roots.includes(element);
+				const rootDescendant = roots.some((root) => element.contains(root));
+				const latestRoot = roots[0] ?? null;
+				const latestRootAffinity =
+					latestRoot && (element === latestRoot || element.contains(latestRoot))
+						? 3_000
 						: 0;
-				const sentenceCount = text
-					.split(/(?<=[.!?])\s+/)
-					.map((part) => part.trim())
-					.filter((part) => part.length >= 20).length;
-				const rect = element.getBoundingClientRect();
-				const topWeight = maxTop > 0 ? rect.top / maxTop : 0;
 
 				let score =
-					Math.min(length, 8_000) * 0.55 +
-					blockCount * 130 +
-					codeLikeCount * 70 +
-					sentenceCount * 40 +
-					topWeight * 320 +
-					order * 6 -
-					internalAnchorCount * 70 -
-					externalAnchorCount * 30 -
-					buttons * 55;
+					order * 1_000 +
+					Math.min(textLength, 8_000) * 0.25 +
+					Math.min(blocks, 20) * 120 -
+					buttons * 70 -
+					internalAnchorCount * 50;
 
-				if (
-					internalAnchorCount >= 4 &&
-					internalAnchorCount >= Math.ceil(anchors.length * 0.5) &&
-					blockCount <= 1 &&
-					codeLikeCount === 0
-				) {
-					score -= 700;
+				if (directRoot) {
+					score += 4_000;
+				} else if (rootDescendant) {
+					score += 2_500;
 				}
-
-				if (anchors.length >= 10 && blockCount <= 1 && codeLikeCount === 0) {
-					score -= 650;
-				}
-
-				if (
-					lines.length >= 6 &&
-					shortLineRatio >= 0.75 &&
-					sentenceCount <= 2 &&
-					codeLikeCount === 0
-				) {
-					score -= 420;
-				}
-
-				if (buttons >= 8 && anchors.length >= 8 && codeLikeCount === 0) {
-					score -= 750;
-				}
+				score += latestRootAffinity;
 
 				return score;
 			}
 
-			function prunePeripheralChildren(root: HTMLElement): void {
-				const directChildren = Array.from(root.children).filter(
+			function pruneSimplePeripheralChildren(root: HTMLElement): void {
+				const children = Array.from(root.children).filter(
 					(child): child is HTMLElement => child instanceof HTMLElement,
 				);
-				if (directChildren.length === 0) {
+				if (children.length < 2) {
 					return;
 				}
 
-				const firstSubstantiveIndex =
-					directChildren.findIndex(isSubstantiveNode);
-				if (firstSubstantiveIndex > 0) {
-					for (const child of directChildren.slice(0, firstSubstantiveIndex)) {
-						if (isAuxiliaryNode(child)) {
-							child.remove();
-						}
+				const shouldDrop = (child: HTMLElement): boolean => {
+					const textLength = textOf(child).length;
+					if (textLength === 0 || textLength > 120) {
+						return false;
 					}
-				}
+					if (blockCountOf(child) > 0) {
+						return false;
+					}
+					const interactiveCount = child.querySelectorAll(
+						"a,button,[role='button']",
+					).length;
+					return interactiveCount <= 2;
+				};
 
-				const lastSubstantiveIndex = [...directChildren]
-					.reverse()
-					.findIndex(isSubstantiveNode);
-				if (lastSubstantiveIndex >= 0) {
-					const lastIndex = directChildren.length - 1 - lastSubstantiveIndex;
-					for (const child of directChildren.slice(lastIndex + 1)) {
-						if (isAuxiliaryNode(child)) {
-							child.remove();
-						}
-					}
+				const first = children[0];
+				const last = children.at(-1);
+				if (first && shouldDrop(first)) {
+					first.remove();
 				}
-
-				for (const child of Array.from(root.querySelectorAll("*"))) {
-					if (!(child instanceof HTMLElement) || !child.isConnected) {
-						continue;
-					}
-					if (isAuxiliaryNode(child)) {
-						const parent = child.parentElement;
-						const siblings = parent
-							? Array.from(parent.children).filter(
-									(node): node is HTMLElement => node instanceof HTMLElement,
-								)
-							: [];
-						const childIndex = siblings.indexOf(child);
-						const hasNearbySubstantiveSibling = siblings.some(
-							(node, index) =>
-								index !== childIndex &&
-								Math.abs(index - childIndex) <= 1 &&
-								isSubstantiveNode(node),
-						);
-						if (hasNearbySubstantiveSibling) {
-							child.remove();
-						}
-					}
+				if (last && last !== first && shouldDrop(last)) {
+					last.remove();
 				}
 			}
 
-			function pruneLeadingPreambleBlocks(root: HTMLElement): void {
-				const containers = [
-					root,
-					...Array.from(root.querySelectorAll("div, section, article")),
-				].filter(
-					(element): element is HTMLElement => element instanceof HTMLElement,
-				);
-
-				for (const container of containers) {
-					const children = Array.from(container.children).filter(
-						(child): child is HTMLElement => child instanceof HTMLElement,
-					);
-					if (children.length < 2) {
-						continue;
-					}
-
-					const meaningfulChildren = children.filter(
-						(child) => textOf(child).length > 0,
-					);
-					if (meaningfulChildren.length < 2) {
-						continue;
-					}
-
-					const candidate = meaningfulChildren[0];
-					const next = meaningfulChildren[1];
-					if (!candidate || !next) {
-						continue;
-					}
-					const candidateText = textOf(candidate);
-					const remainingTextLength = meaningfulChildren
-						.slice(1)
-						.map((child) => textOf(child).length)
-						.reduce((sum, length) => sum + length, 0);
-
-					const candidateLooksLikePreamble =
-						["P", "DIV"].includes(candidate.tagName) &&
-						candidateText.length >= 24 &&
-						// Keep threshold low so only genuine meta-phrases are stripped
-						// ("Here's a breakdown:", "Let me explain:"). A 220-char cap was
-						// removing real intro paragraphs from long Claude/Gemini answers.
-						candidateText.length <= 80 &&
-						!candidate.querySelector("ul, ol, table, pre, blockquote") &&
-						remainingTextLength >= candidateText.length * 2 &&
-						(/[.:]$/.test(candidateText) ||
-							next.tagName === "HR" ||
-							/^H[1-6]$/.test(next.tagName) ||
-							next.querySelector("h1, h2, h3, h4, h5, h6, ul, ol, table"));
-
-					if (candidateLooksLikePreamble) {
-						candidate.remove();
-					}
-				}
-			}
-
+			const roots = trackedRoots();
 			let target: HTMLElement | null = null;
 			let bestTargetScore = Number.NEGATIVE_INFINITY;
 			for (const selector of selectors) {
@@ -323,12 +175,11 @@ async function extractResponsePayload(
 					if (matches.length === 0) {
 						continue;
 					}
-					const maxTop = matches.reduce(
-						(max, match) => Math.max(max, match.getBoundingClientRect().top),
-						1,
-					);
 					for (const [order, match] of matches.entries()) {
-						const score = answerScoreOf(match, order, maxTop);
+						if (hasEditableDescendant(match)) {
+							continue;
+						}
+						const score = matchScore(match, order, roots);
 						if (score > bestTargetScore) {
 							target = match;
 							bestTargetScore = score;
@@ -387,15 +238,18 @@ async function extractResponsePayload(
 				}
 			}
 
-			prunePeripheralChildren(clone);
-			pruneLeadingPreambleBlocks(clone);
+			pruneSimplePeripheralChildren(clone);
 
 			return {
 				html: clone.innerHTML.trim(),
 				text: textOf(clone),
 			};
 		},
-		{ selectors: responseSelectors, exclude: excludeSelectors },
+		{
+			selectors: responseSelectors,
+			exclude: excludeSelectors,
+			responseMonitorKey: RESPONSE_MONITOR_KEY,
+		},
 	);
 }
 
@@ -453,26 +307,3 @@ export async function extractResolvedResponseHtml(
 	return payload.html;
 }
 
-export async function isResolvedResponseGenerating(
-	page: Page,
-	provider: Provider,
-): Promise<boolean> {
-	const profile = await getSelectorProfile(page, provider, "response", {
-		allowModel: false,
-	}).catch(() => null);
-	const selectors = profile?.selectors.generationIndicator ?? [];
-	if (selectors.length === 0) {
-		return false;
-	}
-
-	for (const selector of selectors) {
-		const visible = await page
-			.locator(selector)
-			.isVisible()
-			.catch(() => false);
-		if (visible) {
-			return true;
-		}
-	}
-	return false;
-}

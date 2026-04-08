@@ -1,16 +1,16 @@
 {
   "version": 1,
   "provider": "ai-overview",
-  "updatedAt": "2026-04-05T10:27:44.145Z",
+  "updatedAt": "2026-04-08T13:46:47.659Z",
   "profiles": [
     {
       "version": 1,
       "provider": "ai-overview",
       "stage": "compose",
       "pageKey": "www.google.com",
-      "fingerprint": "dbe4ceb797429d4602b0ee6131640d88c764f85ed9955ceae3d27df75230ae35",
+      "fingerprint": "af6ac86465618ed3a826a9f725a39b783acb6a5f6c23b97f202f8665717d136b",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:45:32.821Z",
+      "createdAt": "2026-04-08T03:10:53.529Z",
       "selectors": {
         "editor": [
           "textarea[name=\"q\"]"
@@ -21,6 +21,48 @@
         "sourcesButton": [],
         "sourcePanel": [],
         "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "ai-overview",
+      "stage": "response",
+      "pageKey": "www.google.com/search",
+      "fingerprint": "bf7342e5a1f281531a22f62727a84ad7a1bafd508d36a51faa7c888f76103fcf",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-08T13:46:35.024Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "section > div > div > div > div"
+        ],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "ai-overview",
+      "stage": "sources",
+      "pageKey": "www.google.com/search",
+      "fingerprint": "5916cdf0a3539cb5369d77bd13041405de4be13b1d399b0a826ee2be6ef52be9",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-08T13:46:47.606Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [],
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [
+          "div > div > div > div > div"
+        ],
+        "sourceItem": [
+          "button[aria-label]"
+        ]
       }
     }
   ]

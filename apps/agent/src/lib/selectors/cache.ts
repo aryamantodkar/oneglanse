@@ -2,7 +2,6 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
-	PageFailureCooldown,
 	Provider,
 	ProviderSelectorCache,
 	SelectorProfile,
@@ -10,8 +9,6 @@ import type {
 } from "@oneglanse/types";
 import {
 	SELECTOR_PROFILE_VERSION,
-	failedResolutions,
-	failedPageResolutions,
 } from "./constants.js";
 import { normalizePageKey } from "./utils.js";
 
@@ -45,44 +42,6 @@ export function sanitizeFilename(input: string): string {
 	);
 }
 
-export function cacheKey(
-	provider: Provider,
-	stage: SelectorStage,
-	fingerprint: string,
-): string {
-	return `${provider}:${stage}:${fingerprint}`;
-}
-
-export function pageFailureKey(
-	provider: Provider,
-	stage: SelectorStage,
-	pageKey: string,
-): string {
-	return `${provider}:${stage}:${pageKey}`;
-}
-
-export function getPageFailureCooldown(key: string): PageFailureCooldown | null {
-	const cooldown = failedPageResolutions.get(key);
-	if (!cooldown) {
-		return null;
-	}
-	if (Date.now() >= cooldown.expiresAt) {
-		failedPageResolutions.delete(key);
-		return null;
-	}
-	return cooldown;
-}
-
-export function markPageFailureCooldown(
-	key: string,
-	stateKey: string,
-	ttlMs: number,
-): void {
-	failedPageResolutions.set(key, {
-		expiresAt: Date.now() + ttlMs,
-		stateKey,
-	});
-}
 
 export function getProfileCacheFile(cacheDir: string, provider: Provider): string {
 	return path.join(cacheDir, `${provider}.json`);
@@ -284,8 +243,6 @@ export async function writeCachedProfile(profile: SelectorProfile): Promise<void
 }
 
 export async function deleteCachedProfile(profile: SelectorProfile): Promise<void> {
-	const key = cacheKey(profile.provider, profile.stage, profile.fingerprint);
-	failedResolutions.delete(key);
 	const normalizedPageKey = normalizePageKey(profile.pageKey);
 	const cache = await readProviderCache(profile.provider);
 	if (!cache) {

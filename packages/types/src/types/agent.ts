@@ -138,6 +138,8 @@ export type SnapshotCandidate = {
 	placeholder: string | null;
 	linkCount: number;
 	buttonCount: number;
+	blockCount: number;
+	childCount: number;
 	inputLike: boolean;
 	buttonLike: boolean;
 	contentEditable: boolean;
@@ -202,6 +204,8 @@ export type ModelCandidate = Pick<
 	| "placeholder"
 	| "linkCount"
 	| "buttonCount"
+	| "blockCount"
+	| "childCount"
 	| "inputLike"
 	| "buttonLike"
 	| "contentEditable"

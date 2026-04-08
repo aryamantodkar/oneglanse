@@ -1,36 +1,16 @@
 {
   "version": 1,
   "provider": "perplexity",
-  "updatedAt": "2026-04-05T15:46:38.262Z",
+  "updatedAt": "2026-04-08T13:45:06.185Z",
   "profiles": [
     {
       "version": 1,
       "provider": "perplexity",
       "stage": "compose",
       "pageKey": "www.perplexity.ai",
-      "fingerprint": "6421bd8b426e439cdbd0f1d290f3ec45bef2c58c9a610837e69bd544673a2ca3",
+      "fingerprint": "eea9cac1d4bba8e5e67f20a9904c9f4bc8f9fd91a27ccf72ee65e6340dc50eb0",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:41:58.576Z",
-      "selectors": {
-        "editor": [
-          "div[role=\"textbox\"]"
-        ],
-        "submitButton": [],
-        "response": [],
-        "generationIndicator": [],
-        "sourcesButton": [],
-        "sourcePanel": [],
-        "sourceItem": []
-      }
-    },
-    {
-      "version": 1,
-      "provider": "perplexity",
-      "stage": "compose",
-      "pageKey": "www.perplexity.ai/search/:id",
-      "fingerprint": "964ef61d25287f67090799364a689af3d414aaa46230ee9c4b122e78cd8ef6a1",
-      "model": "gpt-4.1",
-      "createdAt": "2026-04-05T07:54:52.289Z",
+      "createdAt": "2026-04-08T03:10:14.993Z",
       "selectors": {
         "editor": [
           "div[role=\"textbox\"]"
@@ -48,14 +28,14 @@
       "provider": "perplexity",
       "stage": "response",
       "pageKey": "www.perplexity.ai/search/:id",
-      "fingerprint": "f9ad6907cd63f1f091aacd31fe336ad8d808c6d430183e61fd716f65aa2030bf",
+      "fingerprint": "109b93b0bec62545300e3eee6d8089f7081a8298c9e9b5a66b05680f6ca60c1f",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-05T15:46:38.226Z",
+      "createdAt": "2026-04-08T13:45:06.159Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "div.mx-auto > div.isolate"
+          "div.gap-y-md.after\\:clear-both"
         ],
         "generationIndicator": [],
         "sourcesButton": [

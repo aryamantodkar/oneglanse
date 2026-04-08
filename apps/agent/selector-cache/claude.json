@@ -1,36 +1,16 @@
 {
   "version": 1,
   "provider": "claude",
-  "updatedAt": "2026-04-05T15:58:52.448Z",
+  "updatedAt": "2026-04-08T13:47:33.914Z",
   "profiles": [
     {
       "version": 1,
       "provider": "claude",
       "stage": "compose",
-      "pageKey": "claude.ai/chat/:id",
-      "fingerprint": "d5a7397d2e0ab5cbc015e3566971f2d6ec54fe993a67383ba4aee418984031e0",
-      "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:43:36.611Z",
-      "selectors": {
-        "editor": [
-          "div[aria-label=\"Write your prompt to Claude\"]"
-        ],
-        "submitButton": [],
-        "response": [],
-        "generationIndicator": [],
-        "sourcesButton": [],
-        "sourcePanel": [],
-        "sourceItem": []
-      }
-    },
-    {
-      "version": 1,
-      "provider": "claude",
-      "stage": "compose",
       "pageKey": "claude.ai/new",
-      "fingerprint": "2a656d6d10316161e5da90e7ffb50811085ff0d53e8b50e3bd2574f1d98de35c",
+      "fingerprint": "493a9c8072e69035dd44e6ddd1615037d0a7cbab97ae8b2b0703631ba239b166",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-04T11:43:00.813Z",
+      "createdAt": "2026-04-08T03:09:04.378Z",
       "selectors": {
         "editor": [
           "div[aria-label=\"Write your prompt to Claude\"]"
@@ -46,23 +26,21 @@
     {
       "version": 1,
       "provider": "claude",
-      "stage": "sources",
+      "stage": "response",
       "pageKey": "claude.ai/chat/:id",
-      "fingerprint": "b7a29c8cc06c98e1123827e2505facdec73085dc60fd3ff9879395db6e2f92db",
+      "fingerprint": "ae06f53e26e979514b9a5f5526d703e276cc32ae10bcf47fc1c30bbfbca1af48",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-05T15:40:43.504Z",
+      "createdAt": "2026-04-08T13:47:33.898Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
-        "response": [],
-        "generationIndicator": [],
-        "sourcesButton": [],
-        "sourcePanel": [
+        "response": [
           "div.font-claude-response.relative"
         ],
-        "sourceItem": [
-          "a"
-        ]
+        "generationIndicator": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
       }
     }
   ]
