@@ -468,7 +468,6 @@ export async function readResponseProbe(
 			const links = element.querySelectorAll("a[href]").length;
 			const blocks = blockCount(element);
 
-			const childCount = visibleChildren.length;
 			const lastMutationAt = monitor?.mutationMarks.get(element) ?? 0;
 			const mutationRecencyScore =
 				lastMutationAt > 0 ? Math.max(0, 6000 - (Date.now() - lastMutationAt)) : 0;
@@ -492,7 +491,6 @@ export async function readResponseProbe(
 					0.15 -
 				buttons * 90 -
 				links * 28 -
-				Math.max(childCount - 12, 0) * 80 -
 				sourceCardPenalty;
 
 			candidates.push({ score, text, el: element });
@@ -633,7 +631,6 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 			const visibleChildren = Array.from(element.children).filter(
 				(child): child is HTMLElement => child instanceof HTMLElement && isVisible(child),
 			);
-			const childCount = visibleChildren.length;
 			const totalChildCount = element.children.length;
 			const veryDominantChild = totalChildCount > 1
 				? visibleChildren.find((child) => {
@@ -649,7 +646,7 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 			if (buttons >= 8 && text.length < 500) continue;
 			if (links >= 16 && blocks <= 1 && text.length < 700) continue;
 			if (veryDominantChild) continue;
-			if (dominantChild && childCount >= 2 && blocks <= 1) continue;
+			if (dominantChild && visibleChildren.length >= 2 && blocks <= 1) continue;
 
 			const lastMutationAt = monitor.mutationMarks.get(element) ?? 0;
 			const mutationRecencyScore =
@@ -668,7 +665,6 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 				Math.max(0, window.innerHeight - Math.abs(rect.bottom - window.innerHeight)) * 0.15 -
 				buttons * 90 -
 				links * 28 -
-				Math.max(childCount - 12, 0) * 80 -
 				sourceCardPenalty;
 
 			scored.push({ el: element, score, textLen: text.length });
@@ -691,6 +687,13 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 				for (const el of Array.from(clone.querySelectorAll(sel))) {
 					el.remove();
 				}
+			}
+			// Strip KaTeX MathML spans — katex-mathml duplicates the math expression as
+			// MathML. In a detached clone, innerText falls back to textContent and reads
+			// the raw MathML text nodes (e.g. "cc") instead of the rendered symbol ("c").
+			// Removing it leaves katex-html which has the correct plain-text fallback.
+			for (const el of Array.from(clone.querySelectorAll(".katex-mathml"))) {
+				el.remove();
 			}
 			// Strip standalone citation-badge anchors (no whitespace, sole text in parent)
 			for (const anchor of Array.from(clone.querySelectorAll("a[href]")) as HTMLAnchorElement[]) {

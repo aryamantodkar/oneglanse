@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "2026-04-08T03:08:46.098Z",
+  "updatedAt": "2026-04-08T19:04:57.704Z",
   "profiles": [
     {
       "version": 1,
@@ -19,28 +19,6 @@
         "response": [],
         "generationIndicator": [],
         "sourcesButton": [],
-        "sourcePanel": [],
-        "sourceItem": []
-      }
-    },
-    {
-      "version": 1,
-      "provider": "chatgpt",
-      "stage": "response",
-      "pageKey": "chatgpt.com/c/:id",
-      "fingerprint": "48119227900e2ee4bc4443a2915986e38c859ce0724a9a3fed5c23f010f70916",
-      "model": "gpt-4.1",
-      "createdAt": "2026-04-08T03:08:46.065Z",
-      "selectors": {
-        "editor": [],
-        "submitButton": [],
-        "response": [
-          "div.markdown"
-        ],
-        "generationIndicator": [],
-        "sourcesButton": [
-          "button[aria-label=\"Sources\"]"
-        ],
         "sourcePanel": [],
         "sourceItem": []
       }
