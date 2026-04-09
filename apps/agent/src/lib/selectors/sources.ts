@@ -243,12 +243,61 @@ async function openSourcesPanelIfNeeded(
 	};
 }
 
+async function closeSourcesPanelIfNeeded(
+	page: Page,
+	buttonMatch: { selector: string; index: number } | null,
+	controlledPanelSelector: string | null,
+): Promise<void> {
+	if (!buttonMatch) {
+		return;
+	}
+
+	const button = page.locator(buttonMatch.selector).nth(buttonMatch.index);
+	const visible = await button.isVisible().catch(() => false);
+	if (!visible) {
+		await page.keyboard.press("Escape").catch(() => null);
+		return;
+	}
+
+	const panelVisible = controlledPanelSelector
+		? await page
+				.locator(controlledPanelSelector)
+				.first()
+				.isVisible()
+				.catch(() => false)
+		: false;
+
+	if (!panelVisible && !controlledPanelSelector) {
+		await page.keyboard.press("Escape").catch(() => null);
+		return;
+	}
+
+	const clicked = await button
+		.click({ timeout: 2_000 })
+		.then(() => true)
+		.catch(() => false);
+	if (!clicked) {
+		await button.dispatchClick().catch(() => null);
+	}
+
+	if (controlledPanelSelector) {
+		await page
+			.waitForSelector(controlledPanelSelector, {
+				state: "hidden",
+				timeout: 2_500,
+			})
+			.catch(() => null);
+	}
+
+	await page.waitForTimeout(250).catch(() => null);
+	await page.keyboard.press("Escape").catch(() => null);
+}
+
 async function resolveResponseProfileForSources(
 	page: Page,
 	provider: Provider,
 ): Promise<SelectorProfile | null> {
 	const baseProfile = await getSelectorProfile(page, provider, "response", {
-		allowModel: false,
 		requiredFields: ["response"],
 	}).catch(() => null);
 
@@ -662,7 +711,21 @@ async function extractRawSourcesWithSelectors(
 						? (anchorInnerText
 								.split("\n")
 								.map((l) => l.trim())
-								.find((l) => l.length > 20) ?? textOf(anchor))
+								// Skip URL lines and bare domain/word tokens when extracting the
+								// article title from multiline anchor text. Some providers render
+								// source cards as a single <a> with newline-separated segments:
+								//   "en.wikipedia\nhttps://…\nSpeed of light - Wikipedia\nSnippet…"
+								// Require the line to contain a space (i.e. look like natural-language
+								// text) AND not start with "http" so domain labels ("en.wikipedia",
+								// "byjus") and raw URL lines are both excluded. This is a generic
+								// heuristic — it doesn't depend on any specific provider's structure.
+								.find(
+									(l) =>
+										l.length > 8 &&
+										l.includes(" ") &&
+										!l.startsWith("http"),
+								) ??
+							textOf(anchor))
 						: textOf(anchor);
 
 					const title =
@@ -690,10 +753,31 @@ async function extractRawSourcesWithSelectors(
 						)
 						.sort((left, right) => right.length - left.length);
 
+					// When the item is the anchor itself (no wrapping list container), child
+					// element snippet extraction can fail because the snippet element's text
+					// occupies ≥85 % of the anchor's full text and is filtered out above.
+					// Fall back to parsing the anchor's innerText lines directly — providers
+					// like Perplexity embed "domain\nURL\ntitle\nsnippet" all inside one <a>.
+					const anchorSnippetFallback = (() => {
+						if (!anchorInnerText.includes("\n")) return null;
+						return (
+							anchorInnerText
+								.split("\n")
+								.map((l) => l.trim())
+								.find(
+									(l) =>
+										l.length > 30 &&
+										!l.startsWith("http") &&
+										l !== anchorTitle &&
+										l !== title,
+								) ?? null
+						);
+					})();
+
 					results.push({
 						rawHref: url,
 						title,
-						citedText: snippetCandidates[0] ?? title,
+						citedText: snippetCandidates[0] ?? anchorSnippetFallback ?? title,
 						imgSrc:
 							(item.querySelector("img") as HTMLImageElement | null)?.src ??
 							null,
@@ -1223,17 +1307,17 @@ export async function extractResolvedSources(
 		page,
 		provider,
 	);
-	if (!responseProfile) {
-		return [];
-	}
+	const responseSelectors = responseProfile?.selectors.response ?? [];
+	const sourcesButtonSelectors =
+		responseProfile?.selectors.sourcesButton ?? [];
 
-	if (!responseProfile.selectors.sourcesButton.length) {
+	if (!sourcesButtonSelectors.length) {
 		const sourceProfile =
-			(await waitForSelectorProfile(page, provider, "sources", 8_000).catch(
-				() => null,
-			)) ??
+			(await waitForSelectorProfile(page, provider, "sources", 8_000, {
+				requiredFields: ["sourcePanel", "sourceItem"],
+			}).catch(() => null)) ??
 			(await getSelectorProfile(page, provider, "sources", {
-				allowModel: false,
+				requiredFields: ["sourcePanel", "sourceItem"],
 			}).catch(() => null));
 		const modeledInlineSources =
 			sourceProfile &&
@@ -1245,7 +1329,7 @@ export async function extractResolvedSources(
 						sourceProfile.selectors.sourceItem,
 						null,
 						{
-							responseSelectors: responseProfile.selectors.response,
+							responseSelectors,
 						},
 					).catch(() => [])
 				: [];
@@ -1255,12 +1339,16 @@ export async function extractResolvedSources(
 				(url, title, citedText) => `${url}|${title}|${citedText}`,
 			);
 		}
-		const inlineRawSources = await extractInlineRawSourcesFromResponse(
-			page,
-			responseProfile.selectors.response,
-		);
+		const inlineRawSources =
+			responseSelectors.length > 0
+				? await extractInlineRawSourcesFromResponse(page, responseSelectors)
+				: [];
+		const nearbyVisibleRawSources = await extractNearbyVisibleRawSources(page, {
+			responseSelectors,
+		}).catch(() => []);
+		const fallbackSources = [...inlineRawSources, ...nearbyVisibleRawSources];
 		return buildSources(
-			inlineRawSources,
+			fallbackSources,
 			(url, title, citedText) => `${url}|${title}|${citedText}`,
 		);
 	}
@@ -1269,8 +1357,8 @@ export async function extractResolvedSources(
 	const { opened, controlledPanelSelector, buttonMatch } =
 		await openSourcesPanelIfNeeded(
 			page,
-			responseProfile.selectors.response,
-			responseProfile.selectors.sourcesButton,
+			responseSelectors,
+			sourcesButtonSelectors,
 		);
 	if (!opened) {
 		throw new ExternalServiceError(
@@ -1279,76 +1367,83 @@ export async function extractResolvedSources(
 		);
 	}
 	logger.log(`[${provider}] sources panel opened`);
+	try {
+		const directRawSources = await collectRawSourcesAcrossScrollPositions(
+			page,
+			[],
+			[],
+			controlledPanelSelector,
+			{
+				buttonSelector: buttonMatch?.selector ?? null,
+				buttonIndex: buttonMatch?.index,
+				responseSelectors,
+			},
+		);
 
-	const directRawSources = await collectRawSourcesAcrossScrollPositions(
-		page,
-		[],
-		[],
-		controlledPanelSelector,
-		{
+		const sourceProfile =
+			directRawSources.length > 0
+				? null
+				: ((await waitForSelectorProfile(page, provider, "sources", 8_000, {
+						requiredFields: ["sourcePanel", "sourceItem"],
+					}).catch(() => null)) ??
+					(await getSelectorProfile(page, provider, "sources", {
+						allowModel: false,
+					}).catch(() => null)));
+		const rawSources =
+			directRawSources.length > 0
+				? directRawSources
+				: await collectRawSourcesAcrossScrollPositions(
+						page,
+						sourceProfile?.selectors.sourcePanel ?? [],
+						sourceProfile?.selectors.sourceItem ?? [],
+						controlledPanelSelector,
+						{
+							buttonSelector: buttonMatch?.selector ?? null,
+							buttonIndex: buttonMatch?.index,
+							responseSelectors,
+						},
+					);
+
+		// When a sources panel is present and yielded results, use it exclusively.
+		// Providers that have a sources panel list all inline citations inside that
+		// panel — extracting inline links from the response body too would duplicate
+		// sources and mix panel-quality snippets with inline citation fragments.
+		if (rawSources.length > 0) {
+			return buildSources(
+				rawSources,
+				(url, title, citedText) => `${url}|${title}|${citedText}`,
+			);
+		}
+
+		// Panel opened but yielded no structured sources — fall back to inline
+		// extraction so the caller still gets something rather than an error.
+		const inlineRawSources = await extractInlineRawSourcesFromResponse(
+			page,
+			responseSelectors,
+		).catch(() => []);
+		const nearbyVisibleRawSources = await extractNearbyVisibleRawSources(page, {
 			buttonSelector: buttonMatch?.selector ?? null,
 			buttonIndex: buttonMatch?.index,
-			responseSelectors: responseProfile.selectors.response,
-		},
-	);
+			responseSelectors,
+		}).catch(() => []);
+		const fallbackSources = [...inlineRawSources, ...nearbyVisibleRawSources];
 
-	const sourceProfile =
-		directRawSources.length > 0
-			? null
-			: ((await waitForSelectorProfile(page, provider, "sources", 8_000, {
-					requiredFields: ["sourcePanel", "sourceItem"],
-				}).catch(() => null)) ??
-				(await getSelectorProfile(page, provider, "sources", {
-					allowModel: false,
-				}).catch(() => null)));
-	const rawSources =
-		directRawSources.length > 0
-			? directRawSources
-			: await collectRawSourcesAcrossScrollPositions(
-					page,
-					sourceProfile?.selectors.sourcePanel ?? [],
-					sourceProfile?.selectors.sourceItem ?? [],
-					controlledPanelSelector,
-					{
-						buttonSelector: buttonMatch?.selector ?? null,
-						buttonIndex: buttonMatch?.index,
-						responseSelectors: responseProfile.selectors.response,
-					},
-				);
+		if (fallbackSources.length === 0) {
+			throw new ExternalServiceError(
+				provider,
+				"Sources button was present and opened, but no sources were extracted",
+			);
+		}
 
-	// When a sources panel is present and yielded results, use it exclusively.
-	// Providers that have a sources panel list all inline citations inside that
-	// panel — extracting inline links from the response body too would duplicate
-	// sources and mix panel-quality snippets with inline citation fragments.
-	if (rawSources.length > 0) {
 		return buildSources(
-			rawSources,
+			fallbackSources,
 			(url, title, citedText) => `${url}|${title}|${citedText}`,
 		);
+	} finally {
+		await closeSourcesPanelIfNeeded(
+			page,
+			buttonMatch,
+			controlledPanelSelector,
+		).catch(() => null);
 	}
-
-	// Panel opened but yielded no structured sources — fall back to inline
-	// extraction so the caller still gets something rather than an error.
-	const inlineRawSources = await extractInlineRawSourcesFromResponse(
-		page,
-		responseProfile.selectors.response,
-	).catch(() => []);
-	const nearbyVisibleRawSources = await extractNearbyVisibleRawSources(page, {
-		buttonSelector: buttonMatch?.selector ?? null,
-		buttonIndex: buttonMatch?.index,
-		responseSelectors: responseProfile.selectors.response,
-	}).catch(() => []);
-	const fallbackSources = [...inlineRawSources, ...nearbyVisibleRawSources];
-
-	if (fallbackSources.length === 0) {
-		throw new ExternalServiceError(
-			provider,
-			"Sources button was present and opened, but no sources were extracted",
-		);
-	}
-
-	return buildSources(
-		fallbackSources,
-		(url, title, citedText) => `${url}|${title}|${citedText}`,
-	);
 }
