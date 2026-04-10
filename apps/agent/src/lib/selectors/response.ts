@@ -96,7 +96,7 @@ async function extractResponsePayload(
 				roots: HTMLElement[],
 			): number {
 				const textLength = textOf(element).length;
-				if (textLength < 60) {
+				if (textLength < 20) {
 					return Number.NEGATIVE_INFINITY;
 				}
 

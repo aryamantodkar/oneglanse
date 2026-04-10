@@ -97,8 +97,14 @@ export function buildSystemPrompt(stage: SelectorStage): string {
 			"Your task: identify the container for the latest AI response, and optionally the button that opens the sources panel. " +
 			"Return: { \"response\": [\"css-selector\"], \"sourcesButton\": [\"css-selector\"] } " +
 			"\"response\": the stable element wrapping the most recent complete answer text. Must contain substantial prose (not just a loading spinner). " +
+			"IMPORTANT: Content candidates are ordered by relevance — the FIRST content candidates are the most likely latest AI response. Prefer selectors from earlier candidates unless the screenshot clearly shows otherwise. " +
+			"When a screenshot is provided, cross-check your selection against the visually prominent response area in the screenshot. " +
 			"Prefer the smallest stable container that still contains the whole answer. Reject wrappers for layout, navigation, history, or multiple turns. Reject candidates with editable descendants. " +
-			"\"sourcesButton\": the control (button/tab) that, when clicked, reveals source citations. Return [] if no such button exists."
+			"\"sourcesButton\": the control (button/tab) that, when clicked, reveals source citations. " +
+			"CRITICAL: choose a sourcesButton ONLY if the visible text, aria-label, or title explicitly contains the word \"sources\". " +
+			"It will always say \"sources\". Never choose controls labeled links, related links, references, citations, tabs, web, search, results, or anything else. " +
+			"If no control explicitly says \"sources\", return []. " +
+			"Inline sources/citations will always still be present in the response body."
 		);
 	}
 

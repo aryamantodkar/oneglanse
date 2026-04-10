@@ -1,16 +1,16 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "2026-04-10T13:03:28.074Z",
+  "updatedAt": "2026-04-10T13:20:20.236Z",
   "profiles": [
     {
       "version": 1,
       "provider": "chatgpt",
       "stage": "compose",
       "pageKey": "chatgpt.com",
-      "fingerprint": "f8f98971a8aabfab8e966199ea61d605ecad8884b60fecaf816bfcc4f13f9701",
+      "fingerprint": "f094a2be54f167dacd608dc35254079b3d2e1ad88b5ad1b0a1d1eb2ab8dc834c",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-10T13:02:44.532Z",
+      "createdAt": "2026-04-10T13:19:35.979Z",
       "selectors": {
         "editor": [
           "div[aria-label=\"Chat with ChatGPT\"]"
@@ -27,9 +27,9 @@
       "provider": "chatgpt",
       "stage": "compose",
       "pageKey": "chatgpt.com/c/:id",
-      "fingerprint": "bf2646da9ce7f599b00bc1c1febb405199a78c03c0d4c219364ae0e6ffff93ed",
+      "fingerprint": "4f0ccdaa37c27b4c811951404df005b76f6bbffadb3231b77e943e8b0ccc3f05",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-10T13:03:28.049Z",
+      "createdAt": "2026-04-10T13:20:20.211Z",
       "selectors": {
         "editor": [
           "div[aria-label=\"Chat with ChatGPT\"]"
@@ -46,14 +46,14 @@
       "provider": "chatgpt",
       "stage": "response",
       "pageKey": "chatgpt.com/c/:id",
-      "fingerprint": "ab86c2d169f6ca23f8d4e66af166e5ce669e5c53ddcc1e66bff32b0d056e432d",
+      "fingerprint": "a5b42779370e10d15d7e2fb12997acd78594019e6abb99fdca10207cb3fffeee",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-10T13:03:17.174Z",
+      "createdAt": "2026-04-10T13:20:08.666Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [
-          "div.markdown.prose"
+          "section.text-token-text-primary > div.text-base"
         ],
         "sourcesButton": [
           "button[aria-label=\"Sources\"]"
@@ -67,19 +67,19 @@
       "provider": "chatgpt",
       "stage": "sources",
       "pageKey": "chatgpt.com/c/:id",
-      "fingerprint": "a15aca190377f5d8ea0e5f5db1226e5a05b1b04f0499a6865b4693232b4bbc87",
+      "fingerprint": "14db8e0fde5c85df1e3d360734873236c6ab4bb0942f4505e10dd195273d5985",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-10T13:03:23.670Z",
+      "createdAt": "2026-04-10T13:20:15.206Z",
       "selectors": {
         "editor": [],
         "submitButton": [],
         "response": [],
         "sourcesButton": [],
         "sourcePanel": [
-          "section[aria-label=\"Sources\"]"
+          "div[data-testid=\"stage-thread-flyout\"]"
         ],
         "sourceItem": [
-          "section[aria-label=\"Sources\"] li"
+          "div[data-testid=\"stage-thread-flyout\"] ul.flex > li"
         ]
       }
     }
