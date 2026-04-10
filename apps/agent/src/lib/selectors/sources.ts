@@ -1298,6 +1298,7 @@ export async function extractResolvedSources(
 				requiredFields: ["sourcePanel", "sourceItem"],
 			}).catch(() => null)) ??
 			(await getSelectorProfile(page, provider, "sources", {
+				allowModel: false,
 				requiredFields: ["sourcePanel", "sourceItem"],
 			}).catch(() => null));
 		const modeledInlineSources =

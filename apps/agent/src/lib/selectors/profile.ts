@@ -51,6 +51,7 @@ export async function validateVisibleSelectors(
 		maxTextLength?: number;
 		minHeight?: number;
 		disallowEditableDescendant?: boolean;
+		requireSemanticTextIncludes?: string[];
 	},
 ): Promise<string[]> {
 	const valid: string[] = [];
@@ -95,9 +96,11 @@ export async function validateVisibleSelectors(
 			}
 			if (
 				(options?.minTextLength && options.minTextLength > 0) ||
-				(options?.maxTextLength && options.maxTextLength >= 0)
+				(options?.maxTextLength && options.maxTextLength >= 0) ||
+				(options?.requireSemanticTextIncludes &&
+					options.requireSemanticTextIncludes.length > 0)
 			) {
-				const textLength = await page
+				const textPayload = await page
 					.evaluate(
 						({
 							candidateSelector,
@@ -112,13 +115,32 @@ export async function validateVisibleSelectors(
 								);
 								const node = matches[candidateIndex];
 								if (!(node instanceof HTMLElement)) {
-									return 0;
+									return {
+										textLength: 0,
+										semanticText: "",
+									};
 								}
-								return (node.innerText || node.textContent || "")
+								const visibleText = (node.innerText || node.textContent || "")
 									.replace(/\s+/g, " ")
-									.trim().length;
+									.trim();
+								const semanticText = [
+									visibleText,
+									node.getAttribute("aria-label") || "",
+									node.getAttribute("title") || "",
+								]
+									.join(" ")
+									.replace(/\s+/g, " ")
+									.trim()
+									.toLowerCase();
+								return {
+									textLength: visibleText.length,
+									semanticText,
+								};
 							} catch {
-								return 0;
+								return {
+									textLength: 0,
+									semanticText: "",
+								};
 							}
 						},
 						{
@@ -126,11 +148,28 @@ export async function validateVisibleSelectors(
 							candidateIndex: index,
 						},
 					)
-					.catch(() => 0);
-				if (options?.minTextLength && textLength < options.minTextLength) {
+					.catch(() => ({
+						textLength: 0,
+						semanticText: "",
+					}));
+				if (
+					options?.minTextLength &&
+					textPayload.textLength < options.minTextLength
+				) {
 					continue;
 				}
-				if (options?.maxTextLength && textLength > options.maxTextLength) {
+				if (
+					options?.maxTextLength &&
+					textPayload.textLength > options.maxTextLength
+				) {
+					continue;
+				}
+				if (
+					options?.requireSemanticTextIncludes &&
+					!options.requireSemanticTextIncludes.every((token) =>
+						textPayload.semanticText.includes(token.toLowerCase()),
+					)
+				) {
 					continue;
 				}
 			}
@@ -183,7 +222,7 @@ export async function validateProfile(
 	page: Page,
 	profile: SelectorProfile,
 	requiredFields?: readonly SelectorField[],
-	options?: { relaxCompose?: boolean },
+	options?: { relaxCompose?: boolean; skipContentFilter?: boolean },
 ): Promise<SelectorProfile | null> {
 	const sanitizedSelectors = compactSelectors(profile.selectors);
 	const selectors = defaultSelectorRecord();
@@ -218,7 +257,7 @@ export async function validateProfile(
 			disallowEditableDescendant: profile.stage === "response",
 		},
 	);
-	if (profile.stage === "response" && selectors.response.length > 0) {
+	if (profile.stage === "response" && selectors.response.length > 0 && !options?.skipContentFilter) {
 		selectors.response = await filterAnswerLikeResponseSelectors(
 			page,
 			selectors.response,
@@ -229,6 +268,7 @@ export async function validateProfile(
 		sanitizedSelectors.sourcesButton,
 		{
 			label: `${profile.provider}/${profile.stage}/sourcesButton`,
+			requireSemanticTextIncludes: ["sources"],
 		},
 	);
 	selectors.sourcePanel = await validateVisibleSelectors(
@@ -413,7 +453,7 @@ export async function getSelectorProfile(
 					page,
 					cached,
 					options?.requiredFields,
-					{ relaxCompose: stage === "compose" },
+					{ relaxCompose: stage === "compose", skipContentFilter: true },
 				);
 				if (valid) return valid;
 			}

@@ -49,7 +49,7 @@ async function waitForGeminiAppUrl(
 		return undefined;
 	}
 
-	const deadline = Date.now() + 4000;
+	const deadline = Date.now() + 8000;
 	while (Date.now() < deadline) {
 		if (isGeminiAppUrl(await page.getUrl().catch(() => page.url()))) {
 			return true;
