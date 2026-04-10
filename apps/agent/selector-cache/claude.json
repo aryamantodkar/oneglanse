@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "provider": "claude",
+  "updatedAt": "2026-04-10T13:26:50.801Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "compose",
+      "pageKey": "claude.ai/new",
+      "fingerprint": "e455b478bdb60dd849ec2888ec629954dd959af4ace747634e8dac8cdd6faedd",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:26:01.059Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Write your prompt to Claude\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "claude",
+      "stage": "response",
+      "pageKey": "claude.ai/chat/:id",
+      "fingerprint": "f65b5ec6c0733319aed9214d834355e8a322eb0106ed2011a7baad1e5783c95b",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:26:50.768Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.font-claude-response > div > div.grid > div.relative > div.relative"
+        ],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
+}

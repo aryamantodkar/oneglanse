@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "provider": "ai-overview",
+  "updatedAt": "2026-04-10T13:27:13.619Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "ai-overview",
+      "stage": "compose",
+      "pageKey": "www.google.com",
+      "fingerprint": "af6ac86465618ed3a826a9f725a39b783acb6a5f6c23b97f202f8665717d136b",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:27:13.586Z",
+      "selectors": {
+        "editor": [
+          "textarea[name=\"q\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
+}
