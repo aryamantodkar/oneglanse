@@ -158,10 +158,9 @@ export default function Prompts() {
 	const storePromptMutation = useStorePrompt();
 
 	useEffect(() => {
-		if (userPrompts?.length) {
-			setPromptData(userPrompts);
-			setInitialPrompts(userPrompts);
-		}
+		if (!userPrompts) return;
+		setPromptData(userPrompts);
+		setInitialPrompts(userPrompts);
 	}, [userPrompts]);
 
 	useEffect(() => {
