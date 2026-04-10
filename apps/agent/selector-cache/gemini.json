@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "provider": "gemini",
+  "updatedAt": "2026-04-10T13:25:32.585Z",
+  "profiles": [
+    {
+      "version": 1,
+      "provider": "gemini",
+      "stage": "compose",
+      "pageKey": "gemini.google.com/app",
+      "fingerprint": "6e79b3295d143b4a6338451e2dc8d03fb8893f7e1655e78308169348e824ad1e",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:25:13.793Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Enter a prompt for Gemini\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "gemini",
+      "stage": "response",
+      "pageKey": "gemini.google.com/app/:id",
+      "fingerprint": "662086eecb13a60f78ecce291393ec0e788cb8e8b5803eb6430885bfa80416b8",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:25:32.556Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.markdown.markdown-main-panel"
+        ],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    }
+  ]
+}
