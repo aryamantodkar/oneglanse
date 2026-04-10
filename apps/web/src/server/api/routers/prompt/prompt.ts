@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createTRPCRouter } from "@/server/api/trpc";
-import { ValidationError } from "@oneglanse/errors";
 import {
 	fetchPromptSourcesForWorkspace,
 	fetchUserPromptsForWorkspace,
@@ -15,7 +14,7 @@ export const promptRouter = createTRPCRouter({
 	store: authorizedWorkspaceProcedure
 		.input(
 			z.object({
-				prompts: z.array(z.string().min(1).max(500)).min(1).max(100),
+				prompts: z.array(z.string().min(1).max(500)).max(100),
 			}),
 		)
 		.use(createRateLimiter("prompt.store", { limit: 20, windowSecs: 60 }))
@@ -26,10 +25,6 @@ export const promptRouter = createTRPCRouter({
 				user: { id: userId },
 				workspaceId,
 			} = ctx;
-
-			if (!prompts?.length) {
-				throw new ValidationError("Missing required fields: Prompts");
-			}
 
 			return storePromptsForWorkspace({
 				prompts: prompts,
