@@ -1,8 +1,12 @@
 import type { SelectorSnapshot, SelectorStage } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { buildPageKey, hashValue, normalizeSelectorForState } from "./utils.js";
+import { buildPageKey, hashValue } from "./utils.js";
 
 const RESPONSE_MONITOR_KEY = "__oneglanseResponseMonitor";
+
+function normalizeSelectorForState(selector: string): string {
+	return selector.replace(/:nth-of-type\(\d+\)/g, ":nth-of-type");
+}
 
 export async function captureSelectorSnapshot(
 	page: Page,
@@ -807,4 +811,3 @@ export function buildSnapshotStabilityKey(snapshot: SelectorSnapshot): string {
 		groups: snapshot.groups.map((item) => item.selector),
 	});
 }
-

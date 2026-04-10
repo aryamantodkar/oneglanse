@@ -21,7 +21,6 @@ import {
 	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
 	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
 	SELECTOR_PROFILE_MAX_AGE_MS,
-	SELECTOR_PROFILE_VALIDATION_GRACE_MS,
 	pendingResolutions,
 	selectorModelState,
 } from "./constants.js";
@@ -414,7 +413,7 @@ export function isSnapshotReady(snapshot: SelectorSnapshot): boolean {
  * Resolves a selector profile for the given provider and stage.
  *
  * Flow:
- *  1. Check disk cache — return immediately if valid and within TTL.
+ *  1. Check disk cache — revalidate against live DOM if still within TTL.
  *  2. Capture a single DOM snapshot.
  *  3. Call the selector model if allowed.
  *  4. Validate the generated profile against live DOM.
@@ -441,14 +440,6 @@ export async function getSelectorProfile(
 		if (cached) {
 			const profileAge = Date.now() - new Date(cached.createdAt).getTime();
 			if (profileAge <= SELECTOR_PROFILE_MAX_AGE_MS) {
-				// Grace period: skip DOM re-validation for very recently generated profiles.
-				// Prevents false negatives during page transitions and avoids redundant
-				// page.evaluate calls for profiles written seconds ago.
-				if (profileAge <= SELECTOR_PROFILE_VALIDATION_GRACE_MS) {
-					if (hasRequiredSelectors(stage, cached.selectors, options?.requiredFields)) {
-						return cached;
-					}
-				}
 				const valid = await validateProfile(
 					page,
 					cached,
