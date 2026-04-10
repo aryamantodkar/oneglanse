@@ -118,7 +118,6 @@ export type SelectorField =
 	| "editor"
 	| "submitButton"
 	| "response"
-	| "generationIndicator"
 	| "sourcesButton"
 	| "sourcePanel"
 	| "sourceItem";

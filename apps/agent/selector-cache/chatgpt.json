@@ -1,26 +1,86 @@
 {
   "version": 1,
   "provider": "chatgpt",
-  "updatedAt": "2026-04-08T19:04:57.704Z",
+  "updatedAt": "2026-04-10T13:03:28.074Z",
   "profiles": [
     {
       "version": 1,
       "provider": "chatgpt",
       "stage": "compose",
       "pageKey": "chatgpt.com",
-      "fingerprint": "6f604818983d6ab0346165d37c84b476ba01c74e808d4cabc18ddf3185f14ced",
+      "fingerprint": "f8f98971a8aabfab8e966199ea61d605ecad8884b60fecaf816bfcc4f13f9701",
       "model": "gpt-4.1",
-      "createdAt": "2026-04-08T03:08:23.701Z",
+      "createdAt": "2026-04-10T13:02:44.532Z",
       "selectors": {
         "editor": [
           "div[aria-label=\"Chat with ChatGPT\"]"
         ],
         "submitButton": [],
         "response": [],
-        "generationIndicator": [],
         "sourcesButton": [],
         "sourcePanel": [],
         "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "compose",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "bf2646da9ce7f599b00bc1c1febb405199a78c03c0d4c219364ae0e6ffff93ed",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:03:28.049Z",
+      "selectors": {
+        "editor": [
+          "div[aria-label=\"Chat with ChatGPT\"]"
+        ],
+        "submitButton": [],
+        "response": [],
+        "sourcesButton": [],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "response",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "ab86c2d169f6ca23f8d4e66af166e5ce669e5c53ddcc1e66bff32b0d056e432d",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:03:17.174Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [
+          "div.markdown.prose"
+        ],
+        "sourcesButton": [
+          "button[aria-label=\"Sources\"]"
+        ],
+        "sourcePanel": [],
+        "sourceItem": []
+      }
+    },
+    {
+      "version": 1,
+      "provider": "chatgpt",
+      "stage": "sources",
+      "pageKey": "chatgpt.com/c/:id",
+      "fingerprint": "a15aca190377f5d8ea0e5f5db1226e5a05b1b04f0499a6865b4693232b4bbc87",
+      "model": "gpt-4.1",
+      "createdAt": "2026-04-10T13:03:23.670Z",
+      "selectors": {
+        "editor": [],
+        "submitButton": [],
+        "response": [],
+        "sourcesButton": [],
+        "sourcePanel": [
+          "section[aria-label=\"Sources\"]"
+        ],
+        "sourceItem": [
+          "section[aria-label=\"Sources\"] li"
+        ]
       }
     }
   ]

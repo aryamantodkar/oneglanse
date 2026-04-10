@@ -7,6 +7,10 @@ import {
 	pressKeyLikeUser,
 } from "../../lib/browser/humanBehavior.js";
 import { normalizePromptValue } from "../../lib/input/editor/promptInput.js";
+import {
+	readResponseProbe,
+	resetResponseMonitor,
+} from "../../lib/input/response/responseMonitor.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = 5_000;
@@ -110,7 +114,7 @@ async function ensureInputHasWords(
 }
 
 async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
-	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
+	const { page, input, provider, preSubmitContent, preSubmitUrl, sendButton } = ctx;
 	const config = PROVIDER_CONFIGS[provider];
 	const normalizedPreSubmitContent = normalizePromptValue(preSubmitContent);
 	const deadline = Date.now() + 3_000;
@@ -158,6 +162,27 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 			}
 		}
 
+		// Check 4: Send button disappeared or became disabled after submit.
+		// Rich editors sometimes retain the draft content briefly while switching
+		// the action button into a stop/spinner state for the in-flight response.
+		if (sendButton) {
+			const buttonVisible = await sendButton.isVisible().catch(() => false);
+			const buttonEnabled = await sendButton.isEnabled().catch(() => false);
+			if (!buttonVisible || !buttonEnabled) {
+				return true;
+			}
+		}
+
+		// Check 5: The response monitor saw a substantive answer start outside the editor.
+		const probe = await readResponseProbe(page).catch(() => null);
+		if (
+			probe &&
+			probe.started &&
+			(probe.textLength >= 20 || probe.relevantMutationCount >= 4)
+		) {
+			return true;
+		}
+
 		await page.waitForTimeout(150);
 	}
 
@@ -169,6 +194,8 @@ async function attemptSubmit(
 	attempt: SubmitAttempt,
 ): Promise<boolean> {
 	try {
+		await resetResponseMonitor(ctx.page).catch(() => null);
+
 		// beforeSubmitHook is called once in askPrompt.ts before the submit loop.
 		// Do NOT call it again here — it was causing double modal sweeps per attempt.
 		const success = await attempt.run();

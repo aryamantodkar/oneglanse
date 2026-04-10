@@ -3,17 +3,15 @@ import type { Page } from "playwright";
 import { clickLocatorLikeUser } from "../../../lib/browser/humanBehavior.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
+import { GOOGLE_CONSENT_SELECTOR } from "../_shared/google.js";
 import type { ProviderConfig } from "../types.js";
-
-const GEMINI_CONSENT_SELECTOR =
-	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
 
 async function handleConsentPage(page: Page): Promise<void> {
 	const url = page.url();
 	if (!url.includes("consent.google.com")) return;
 
 	// Consent page detected — try to dismiss it
-	const consentBtn = page.locator(GEMINI_CONSENT_SELECTOR).first();
+	const consentBtn = page.locator(GOOGLE_CONSENT_SELECTOR).first();
 	const visible = await consentBtn.isVisible({ timeout: 3000 }).catch(() => false);
 	if (visible) {
 		await clickLocatorLikeUser(page, consentBtn, { timeout: 4000 }).catch(() => {});

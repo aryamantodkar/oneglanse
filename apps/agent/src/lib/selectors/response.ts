@@ -4,6 +4,10 @@ import { getSelectorProfile } from "./profile.js";
 
 const RESPONSE_MONITOR_KEY = "__oneglanseResponseMonitor";
 
+type ResponseResolutionOptions = {
+	allowModel?: boolean;
+};
+
 async function extractResponsePayload(
 	page: Page,
 	responseSelectors: string[],
@@ -22,7 +26,7 @@ async function extractResponsePayload(
 			const globalWindow = window as typeof window & {
 				[key: string]: {
 					candidateRoots?: Set<HTMLElement>;
-					mutationMarks?: WeakMap<HTMLElement, number>;
+					rootObservations?: WeakMap<HTMLElement, { lastMutationAt: number; minTextLength: number; mutationCount: number }>;
 				} | undefined;
 			};
 
@@ -278,9 +282,11 @@ async function getResponseExcludeSelectors(
 export async function getResolvedResponseText(
 	page: Page,
 	provider: Provider,
+	options?: ResponseResolutionOptions,
 ): Promise<string> {
 	const profile = await getSelectorProfile(page, provider, "response", {
-		allowModel: false,
+		allowModel: options?.allowModel,
+		requiredFields: ["response"],
 	}).catch(() => null);
 	const excludeSelectors = await getResponseExcludeSelectors(page, provider);
 	const payload = await extractResponsePayload(
@@ -294,9 +300,11 @@ export async function getResolvedResponseText(
 export async function extractResolvedResponseHtml(
 	page: Page,
 	provider: Provider,
+	options?: ResponseResolutionOptions,
 ): Promise<string> {
 	const profile = await getSelectorProfile(page, provider, "response", {
-		allowModel: false,
+		allowModel: options?.allowModel,
+		requiredFields: ["response"],
 	}).catch(() => null);
 	const excludeSelectors = await getResponseExcludeSelectors(page, provider);
 	const payload = await extractResponsePayload(
@@ -306,4 +314,3 @@ export async function extractResolvedResponseHtml(
 	);
 	return payload.html;
 }
-

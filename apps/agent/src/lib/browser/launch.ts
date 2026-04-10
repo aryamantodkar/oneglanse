@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import {
 	ensureAuthDirectories,
@@ -294,6 +295,84 @@ function toCamoufoxProxyConfig(
 	};
 }
 
+function findProfileScopedBrowserPids(userDataDir: string): number[] {
+	if (process.platform === "win32") {
+		return [];
+	}
+
+	const result = spawnSync("ps", ["ax", "-o", "pid=", "-o", "command="], {
+		encoding: "utf8",
+	});
+	if (result.status !== 0 || typeof result.stdout !== "string") {
+		return [];
+	}
+
+	return result.stdout
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.map((line) => {
+			const match = line.match(/^(\d+)\s+(.*)$/);
+			if (!match) return null;
+			return {
+				pid: Number(match[1]),
+				command: match[2] ?? "",
+			};
+		})
+		.filter((entry): entry is { pid: number; command: string } => {
+			if (!entry) {
+				return false;
+			}
+			return (
+				entry.pid > 0 &&
+				entry.pid !== process.pid &&
+				entry.command.includes(userDataDir) &&
+				/(camoufox|firefox|plugin-container)/i.test(entry.command)
+			);
+		})
+		.map((entry) => entry.pid);
+}
+
+function isPidAlive(pid: number): boolean {
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function ensureExclusiveProfileAccess(userDataDir: string): Promise<void> {
+	const stalePids = [...new Set(findProfileScopedBrowserPids(userDataDir))];
+	if (stalePids.length === 0) {
+		return;
+	}
+
+	logger.warn(
+		`[browser] terminating ${stalePids.length} stale browser process(es) for profile ${userDataDir}`,
+	);
+	for (const pid of stalePids) {
+		try {
+			process.kill(pid, "SIGTERM");
+		} catch {}
+	}
+
+	const deadline = Date.now() + 4_000;
+	while (Date.now() < deadline) {
+		if (stalePids.every((pid) => !isPidAlive(pid))) {
+			return;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 200));
+	}
+
+	for (const pid of stalePids) {
+		if (!isPidAlive(pid)) continue;
+		try {
+			process.kill(pid, "SIGKILL");
+		} catch {}
+	}
+}
+
 export async function launchContext(provider: Provider): Promise<{
 	browser: Browser;
 	context: BrowserContext;
@@ -381,6 +460,7 @@ export async function launchContext(provider: Provider): Promise<{
 		};
 
 		if (shouldUsePersistentRuntimeProfile) {
+			await ensureExclusiveProfileAccess(runtimeSeedPlan.userDataDir);
 			rawContext = await firefox.launchPersistentContext(
 				runtimeSeedPlan.userDataDir,
 				persistentOptions,

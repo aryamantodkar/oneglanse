@@ -44,17 +44,24 @@ export async function fetchPromptResponses(page: Page, provider: Provider): Prom
 	const config = PROVIDER_CONFIGS[provider];
 
 	await config.waitForResponse(page);
-	await page
-		.evaluate(() => {
-			const root =
-				document.scrollingElement ?? document.documentElement ?? document.body;
-			root.scrollTo(0, root.scrollHeight);
-		}, null)
-		.catch(() => null);
+	const responseScrollBehavior = config.responseScrollBehavior ?? "bottom";
+	if (responseScrollBehavior !== "none") {
+		await page
+			.evaluate(({ behavior }) => {
+				const root =
+					document.scrollingElement ?? document.documentElement ?? document.body;
+				root.scrollTo(
+					0,
+					behavior === "top" ? 0 : root.scrollHeight,
+				);
+			}, { behavior: responseScrollBehavior })
+			.catch(() => null);
+	}
 	await page.waitForTimeout(200);
 
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
 		if (attempt > 1) await page.waitForTimeout(EXTRACTION_RETRY_DELAY_MS);
+		await config.beforeResponseExtractionHook?.(page).catch(() => null);
 
 		const response = await config.extractResponse(page);
 

@@ -1,5 +1,5 @@
 import { ExternalServiceError } from "@oneglanse/errors";
-import type { Provider, SelectorProfile, Source } from "@oneglanse/types";
+import type { Provider, Source } from "@oneglanse/types";
 import { getDomain, getFaviconUrls, logger } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import type { RawSource } from "../extraction/sourceUtils.js";
@@ -291,25 +291,6 @@ async function closeSourcesPanelIfNeeded(
 
 	await page.waitForTimeout(250).catch(() => null);
 	await page.keyboard.press("Escape").catch(() => null);
-}
-
-async function resolveResponseProfileForSources(
-	page: Page,
-	provider: Provider,
-): Promise<SelectorProfile | null> {
-	const baseProfile = await getSelectorProfile(page, provider, "response", {
-		requiredFields: ["response"],
-	}).catch(() => null);
-
-	if (!baseProfile) {
-		return null;
-	}
-
-	if (baseProfile.selectors.sourcesButton.length > 0) {
-		return baseProfile;
-	}
-
-	return baseProfile;
 }
 
 async function extractRawSourcesWithSelectors(
@@ -1303,10 +1284,10 @@ export async function extractResolvedSources(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
-	const responseProfile = await resolveResponseProfileForSources(
-		page,
-		provider,
-	);
+	const responseProfile = await getSelectorProfile(page, provider, "response", {
+		allowModel: false,
+		requiredFields: ["response"],
+	}).catch(() => null);
 	const responseSelectors = responseProfile?.selectors.response ?? [];
 	const sourcesButtonSelectors =
 		responseProfile?.selectors.sourcesButton ?? [];

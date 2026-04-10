@@ -1,6 +1,5 @@
 import type { Source } from "@oneglanse/types";
 import { getDomain, getFaviconUrls } from "@oneglanse/utils";
-import type { Locator, Page } from "playwright";
 
 /**
  * Shape returned by the browser bridge before Node.js post-processing.
@@ -52,17 +51,3 @@ export function buildSources(
 	return results;
 }
 
-/**
- * Dispatches a synthetic MouseEvent click on a Playwright Locator element.
- * Used by providers that need a JS-level click instead of Playwright's .click()
- * (e.g. to close a sources flyout after reading it).
- *
- * Returns true if the click was dispatched, false if the element handle was unavailable.
- */
-export async function clickButtonViaDispatch(
-	_page: Page,
-	button: Locator,
-): Promise<boolean> {
-	await button.dispatchClick();
-	return true;
-}
