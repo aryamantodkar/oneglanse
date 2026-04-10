@@ -459,4 +459,12 @@ export class PlaywrightPageCompat implements Page {
 			return false;
 		}
 	}
+
+	async screenshot(options?: {
+		type?: "jpeg" | "png";
+		quality?: number;
+		fullPage?: boolean;
+	}): Promise<Buffer> {
+		return await this.page.screenshot(options ?? {});
+	}
 }

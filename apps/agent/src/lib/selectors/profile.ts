@@ -21,6 +21,7 @@ import {
 	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
 	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
 	SELECTOR_PROFILE_MAX_AGE_MS,
+	SELECTOR_PROFILE_VALIDATION_GRACE_MS,
 	pendingResolutions,
 	selectorModelState,
 } from "./constants.js";
@@ -223,14 +224,6 @@ export async function validateProfile(
 			selectors.response,
 		);
 	}
-	selectors.generationIndicator = await validateVisibleSelectors(
-		page,
-		sanitizedSelectors.generationIndicator,
-		{
-			label: `${profile.provider}/${profile.stage}/generationIndicator`,
-			maxTextLength: 160,
-		},
-	);
 	selectors.sourcesButton = await validateVisibleSelectors(
 		page,
 		sanitizedSelectors.sourcesButton,
@@ -252,16 +245,6 @@ export async function validateProfile(
 			label: `${profile.provider}/${profile.stage}/sourceItem`,
 		},
 	);
-
-	if (
-		profile.stage === "response" &&
-		selectors.generationIndicator.length > 0
-	) {
-		const responseSet = new Set(selectors.response);
-		selectors.generationIndicator = selectors.generationIndicator.filter(
-			(selector) => !responseSet.has(selector),
-		);
-	}
 
 	if (!hasRequiredSelectors(profile.stage, selectors, requiredFields)) {
 		return null;
@@ -320,7 +303,11 @@ async function filterAnswerLikeResponseSelectors(
 				if (!candidate) return false;
 
 				const text = textOf(candidate);
-				if (text.length < 60) return false;
+				// Only reject completely empty or near-empty containers — short factual
+				// answers ("Paris", "Yes", "42") are valid responses. The old threshold
+				// of 60 chars caused short answers to fail validation, which deleted the
+				// cached selector and re-called the LLM unnecessarily.
+				if (text.length < 20) return false;
 
 				if (
 					candidate.querySelector(
@@ -343,9 +330,8 @@ async function filterAnswerLikeResponseSelectors(
 						element instanceof HTMLAnchorElement && isVisible(element),
 				);
 
-				if (text.endsWith("?") && blockCount === 0 && anchors.length <= 1) {
-					return false;
-				}
+				// Removed: rejection of responses ending with "?" — Q&A format answers
+				// like "What would you like to know?" are valid AI responses.
 				if (buttons >= 8 && text.length < 600) return false;
 				if (anchors.length >= 12 && blockCount <= 1 && text.length < 800) {
 					return false;
@@ -415,6 +401,14 @@ export async function getSelectorProfile(
 		if (cached) {
 			const profileAge = Date.now() - new Date(cached.createdAt).getTime();
 			if (profileAge <= SELECTOR_PROFILE_MAX_AGE_MS) {
+				// Grace period: skip DOM re-validation for very recently generated profiles.
+				// Prevents false negatives during page transitions and avoids redundant
+				// page.evaluate calls for profiles written seconds ago.
+				if (profileAge <= SELECTOR_PROFILE_VALIDATION_GRACE_MS) {
+					if (hasRequiredSelectors(stage, cached.selectors, options?.requiredFields)) {
+						return cached;
+					}
+				}
 				const valid = await validateProfile(
 					page,
 					cached,
@@ -462,8 +456,19 @@ export async function getSelectorProfile(
 				`[selector:${provider}/${stage}] calling model (call ${selectorModelState.callsThisProcess}/${MAX_SELECTOR_MODEL_CALLS_PER_PROCESS}) pageKey=${snapshot.pageKey}`,
 			);
 
+			// Capture a screenshot for visual stages (response/sources). JPEG at 60%
+			// quality keeps token cost low while giving the model enough fidelity to
+			// distinguish the response container and sources panel from surrounding UI.
+			let screenshotBase64: string | undefined;
+			if (stage === "response" || stage === "sources") {
+				screenshotBase64 = await page
+					.screenshot({ type: "jpeg", quality: 60, fullPage: false })
+					.then((buf) => buf.toString("base64"))
+					.catch(() => undefined);
+			}
+
 			// 3. Selector model
-			const generated = await resolveProfileWithModel(provider, stage, snapshot);
+			const generated = await resolveProfileWithModel(provider, stage, snapshot, screenshotBase64);
 			if (!generated) return null;
 
 			// 4. Validate against live DOM

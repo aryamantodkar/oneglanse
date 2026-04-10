@@ -8,14 +8,17 @@ export async function extractAssistantMarkdown(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	// Primary: use the responseMonitor's best candidate (works for all streaming providers)
-	const monitorHtml = await extractResponseHtml(page);
-	if (monitorHtml) {
-		return turndown.turndown(monitorHtml).replace(/\n{3,}/g, "\n\n").trim();
+	// Prefer a validated selector-backed response container. This keeps extraction
+	// anchored to the latest answer and lets the selector cache self-heal via the
+	// model when the UI changes. The response monitor remains a fallback.
+	const selectorHtml = await extractResolvedResponseHtml(page, provider, {
+		allowModel: true,
+	});
+	if (selectorHtml) {
+		return turndown.turndown(selectorHtml).replace(/\n{3,}/g, "\n\n").trim();
 	}
 
-	// Fallback: selector-based for providers that don't use the responseMonitor (e.g. AI Overview)
-	const selectorHtml = await extractResolvedResponseHtml(page, provider);
-	if (!selectorHtml) return "";
-	return turndown.turndown(selectorHtml).replace(/\n{3,}/g, "\n\n").trim();
+	const monitorHtml = await extractResponseHtml(page);
+	if (!monitorHtml) return "";
+	return turndown.turndown(monitorHtml).replace(/\n{3,}/g, "\n\n").trim();
 }

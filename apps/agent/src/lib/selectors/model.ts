@@ -71,18 +71,51 @@ export function buildSystemPrompt(stage: SelectorStage): string {
 		"(5) Prefer attribute selectors ([data-testid=...], [aria-label=...], [role=...]) over class or id selectors whenever the attribute is semantic and not auto-generated.";
 
 	if (stage === "compose") {
-		return `${shared} Task: identify editor only. Choose the single element a real user types their prompt into. Reject: search bars, filters, sidebars, settings, hidden inputs, read-only areas.`;
+		return (
+			`${shared} ` +
+			"Your task: identify the SINGLE editable element where a user types their message. " +
+			"Return: { \"editor\": [\"css-selector\"] } " +
+			"Pick the primary text input/contenteditable/textarea for message composition. " +
+			"Prefer the element the user would click to start typing. Return [] if no editor found."
+		);
 	}
 
 	if (stage === "submit") {
-		return `${shared} Task: identify submitButton only. Text is already typed. Choose the visible button that sends the current prompt. Reject: voice, attach, model-picker, stop, regenerate, navigation buttons. If only Enter submits and no button exists, return [].`;
+		return (
+			`${shared} ` +
+			"Your task: identify the SINGLE visible button that sends/submits the composed message. " +
+			"Return: { \"submitButton\": [\"css-selector\"] } " +
+			"Pick the primary send/submit/enter button. It must be visible and interactive right now. " +
+			"Reject: voice, attach, model-picker, stop, regenerate, navigation buttons. " +
+			"Return [] if no submit button is visible."
+		);
 	}
 
 	if (stage === "response") {
-		return `${shared} Task: identify response, generationIndicator, and sourcesButton. response: choose the stable container for the LATEST full answer body only. Prefer the smallest stable container that still contains the whole answer. Reject wrappers that mainly exist for layout, navigation, history, citations, source cards, tabs, metadata, or multiple turns. Reject candidates with editable descendants. A leaf node is acceptable only if it visibly contains the complete latest answer by itself. generationIndicator: a small UI element shown only while the answer is still streaming. Return [] if none. sourcesButton: the control that opens sources for this latest answer only. Return [] if sources are only inline.`;
+		return (
+			`${shared} ` +
+			"Your task: identify the container for the latest AI response, and optionally the button that opens the sources panel. " +
+			"Return: { \"response\": [\"css-selector\"], \"sourcesButton\": [\"css-selector\"] } " +
+			"\"response\": the stable element wrapping the most recent complete answer text. Must contain substantial prose (not just a loading spinner). " +
+			"Prefer the smallest stable container that still contains the whole answer. Reject wrappers for layout, navigation, history, or multiple turns. Reject candidates with editable descendants. " +
+			"\"sourcesButton\": the control (button/tab) that, when clicked, reveals source citations. Return [] if no such button exists."
+		);
 	}
 
-	return `${shared} Task: identify sourcePanel and sourceItem. The sources UI is already visible, either as an opened sources region or as inline citations embedded in the latest answer. sourcePanel: return a selector for EVERY distinct container that holds a source list for the latest answer. GROUPING RULE: when multiple sibling lists (ul, ol, div) exist inside a single parent container, return the PARENT container as sourcePanel — not the individual sibling lists. Only return individual list elements as separate sourcePanel entries when they are in genuinely separate UI regions (e.g. a side panel AND an inline tray). The goal is one sourcePanel selector per distinct UI region, where each selector encompasses all source items within that region. Some providers render citations in multiple separate locations; include a selector for each distinct region. Do not include the full document, page root, or top-level layout wrappers. If citations are inline chips/badges embedded directly inside paragraphs, tables, or list items, the sourcePanel should be the narrowest answer-region container that contains those citation chips and only the latest answer content. sourceItem: the single most generic selector that matches all individual source cards, rows, anchors, or inline citation chips/badges across ALL panels — it must work inside every sourcePanel container. sourceItem does NOT need to be an anchor; it can be a clickable citation chip/span/button if that is what the UI visibly renders as the citation. If items differ by panel, prefer the selector that matches the most items.`;
+	return (
+		`${shared} ` +
+		"Your task: identify the sources panel container and individual source item selectors. " +
+		"Return: { \"sourcePanel\": [\"css-selector\"], \"sourceItem\": [\"css-selector\"] } " +
+		"\"sourcePanel\": the visible container holding source/citation cards. May be a sidebar, drawer, or inline section. " +
+		"GROUPING RULE: when multiple sibling lists exist inside a single parent, return the PARENT as sourcePanel — not the individual sibling lists. " +
+		"Only return individual list elements as separate sourcePanel entries when they are in genuinely separate UI regions. " +
+		"Do not include the full document, page root, or top-level layout wrappers. " +
+		"\"sourceItem\": the selector matching individual source cards or citation links WITHIN the sourcePanel. " +
+		"CRITICAL: sourceItem MUST be scoped to distinguish source cards from surrounding navigation and UI elements. " +
+		"Generic document-wide selectors like \"a\", \"div\", \"li\", \"span\" that would match hundreds of unrelated elements on the page are INVALID — return [] instead. " +
+		"The selector should be specific enough that querying document.querySelectorAll(sourceItem) inside the sourcePanel returns only source citation cards, not nav links, buttons, or other UI. " +
+		"If no sources panel or citations are visible in the screenshot, return [] for both fields."
+	);
 }
 
 export function toModelCandidate(candidate: SnapshotCandidate): ModelCandidate {
@@ -157,8 +190,64 @@ export async function resolveProfileWithModel(
 	provider: Provider,
 	stage: SelectorStage,
 	snapshot: SelectorSnapshot,
+	screenshotBase64?: string,
 ): Promise<SelectorProfile | null> {
 	const modelPayload = buildModelSnapshotPayload(stage, snapshot);
+
+	const stageSchemas: Record<
+		SelectorStage,
+		{ properties: Record<string, unknown>; required: string[] }
+	> = {
+		compose: {
+			properties: {
+				editor: { type: "array", items: { type: "string" } },
+			},
+			required: ["editor"],
+		},
+		submit: {
+			properties: {
+				submitButton: { type: "array", items: { type: "string" } },
+			},
+			required: ["submitButton"],
+		},
+		response: {
+			properties: {
+				response: { type: "array", items: { type: "string" } },
+				sourcesButton: { type: "array", items: { type: "string" } },
+			},
+			required: ["response", "sourcesButton"],
+		},
+		sources: {
+			properties: {
+				sourcePanel: { type: "array", items: { type: "string" } },
+				sourceItem: { type: "array", items: { type: "string" } },
+			},
+			required: ["sourcePanel", "sourceItem"],
+		},
+	};
+
+	const { properties, required } = stageSchemas[stage];
+
+	// For response and sources stages, include a page screenshot when available.
+	// Visual context lets the model distinguish the response container and sources
+	// panel from surrounding navigation/UI chrome — critical for accuracy.
+	const useScreenshot =
+		screenshotBase64 &&
+		(stage === "response" || stage === "sources");
+
+	const userMessageContent: unknown = useScreenshot
+		? [
+				{
+					type: "input_text",
+					text: JSON.stringify({ provider, stage, ...modelPayload }),
+				},
+				{
+					type: "input_image",
+					image_url: `data:image/jpeg;base64,${screenshotBase64}`,
+				},
+			]
+		: JSON.stringify({ provider, stage, ...modelPayload });
+
 	const response = await chatgpt.responses.create({
 		model: SELECTOR_MODEL,
 		temperature: 0,
@@ -169,11 +258,7 @@ export async function resolveProfileWithModel(
 			},
 			{
 				role: "user",
-				content: JSON.stringify({
-					provider,
-					stage,
-					...modelPayload,
-				}),
+				content: userMessageContent as string,
 			},
 		],
 		text: {
@@ -184,45 +269,8 @@ export async function resolveProfileWithModel(
 				schema: {
 					type: "object",
 					additionalProperties: false,
-					properties: {
-						editor: {
-							type: "array",
-							items: { type: "string" },
-						},
-						submitButton: {
-							type: "array",
-							items: { type: "string" },
-						},
-						response: {
-							type: "array",
-							items: { type: "string" },
-						},
-						generationIndicator: {
-							type: "array",
-							items: { type: "string" },
-						},
-						sourcesButton: {
-							type: "array",
-							items: { type: "string" },
-						},
-						sourcePanel: {
-							type: "array",
-							items: { type: "string" },
-						},
-						sourceItem: {
-							type: "array",
-							items: { type: "string" },
-						},
-					},
-					required: [
-						"editor",
-						"submitButton",
-						"response",
-						"generationIndicator",
-						"sourcesButton",
-						"sourcePanel",
-						"sourceItem",
-					],
+					properties,
+					required,
 				},
 			},
 		},

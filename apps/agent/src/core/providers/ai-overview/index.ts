@@ -3,20 +3,17 @@ import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
-import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
-import {
-	getResolvedResponseText,
-	requireEditorCandidate,
-	waitForSelectorProfile,
-} from "../../../lib/selectors/index.js";
+import { turndown } from "../../../lib/input/markdown/converter.js";
+import { requireEditorCandidate } from "../../../lib/selectors/index.js";
+import { GOOGLE_CONSENT_SELECTOR } from "../_shared/google.js";
 import type { ProviderConfig } from "../types.js";
-
-const GOOGLE_CONSENT_SELECTOR =
-	"button#L2AGLb, button#W0wltc, form[action*='consent.google.com'] button";
+import {
+	extractAiOverviewFallbackHtml,
+	extractAiOverviewFallbackText,
+	prepareAiOverviewViewport,
+	readAiOverviewSignals,
+} from "./dom.js";
 const SEARCH_RESULTS_WAIT_MS = 8_000;
-// How long to wait for the LLM selector profile to resolve a response element.
-// If no response selector resolves in this window, there is no AI Overview.
-const AI_OVERVIEW_PROBE_TIMEOUT_MS = 8_000;
 const AI_OVERVIEW_SETTLE_TIMEOUT_MS = 5_000;
 const AI_OVERVIEW_SETTLE_POLL_MS = 250;
 const AI_OVERVIEW_STABLE_POLLS_REQUIRED = 3;
@@ -115,33 +112,32 @@ function isGoogleHomePage(rawUrl: string): boolean {
 }
 
 async function assertAiOverviewPresent(page: Page): Promise<void> {
-	// Ask the selector profile to resolve a response element. If the LLM finds
-	// no response container within the probe window, there is no AI Overview block
-	// and we fail fast rather than waiting 45s for a response that never arrives.
-	const profile = await waitForSelectorProfile(
-		page,
-		"ai-overview",
-		"response",
-		AI_OVERVIEW_PROBE_TIMEOUT_MS,
-	).catch(() => null);
-	if (!profile?.selectors.response.length) {
-		throw new ExternalServiceError(
-			"ai-overview",
-			"AI Overview block not present in search results — query may not trigger an AI Overview for this prompt",
-			204,
-		);
+	await prepareAiOverviewViewport(page);
+	const visibleSignals = await readAiOverviewSignals(page);
+	if (visibleSignals.found) {
+		return;
 	}
+
+	throw new ExternalServiceError(
+		"ai-overview",
+		"AI Overview block not present in search results — query may not trigger an AI Overview for this prompt",
+		204,
+	);
 }
 
 async function waitForAiOverviewReady(page: Page): Promise<void> {
+	await prepareAiOverviewViewport(page);
 	const deadline = Date.now() + AI_OVERVIEW_SETTLE_TIMEOUT_MS;
 	let lastText = "";
 	let stablePolls = 0;
 
 	while (Date.now() < deadline) {
-		const text = await getResolvedResponseText(page, "ai-overview").catch(
-			() => "",
-		);
+		const text =
+			(await extractAiOverviewFallbackText(page).catch(() => "")) ||
+			turndown
+				.turndown(await extractAiOverviewFallbackHtml(page).catch(() => ""))
+				.replace(/\n{3,}/g, "\n\n")
+				.trim();
 		if (text.trim().length >= 50) {
 			if (text === lastText) {
 				stablePolls += 1;
@@ -168,6 +164,23 @@ export const aiOverviewConfig: ProviderConfig = {
 	label: "AI Overview",
 	displayName: "AI Overview",
 	skipInitialNavigation: true,
+	responseScrollBehavior: "top",
+	sanitizeSources: (sources) => {
+		const blockedDomains = new Set([
+			"accounts.google.com",
+			"support.google.com",
+			"policies.google.com",
+		]);
+		const blockedLabels = new Set(["sign in", "help", "privacy", "terms"]);
+		return sources.filter((source) => {
+			const domain = source.domain?.toLowerCase() ?? "";
+			const title = source.title.trim().toLowerCase();
+			const citedText = source.cited_text.trim().toLowerCase();
+			if (blockedDomains.has(domain)) return false;
+			if (blockedLabels.has(title) || blockedLabels.has(citedText)) return false;
+			return true;
+		});
+	},
 	navigateToPrompt: async (page, prompt) => {
 		await ensureGoogleCookies(page);
 
@@ -206,7 +219,21 @@ export const aiOverviewConfig: ProviderConfig = {
 		logger.log(`search ready: ${page.url()}`);
 	},
 	waitForResponse: (page) => waitForAiOverviewReady(page),
-	extractResponse: (page) => extractAssistantMarkdown(page, "ai-overview"),
+	beforeResponseExtractionHook: (page) => prepareAiOverviewViewport(page),
+	extractResponse: async (page) => {
+		await prepareAiOverviewViewport(page);
+		const fallbackText = await extractAiOverviewFallbackText(page);
+		if (fallbackText) {
+			return fallbackText;
+		}
+
+		const fallbackHtml = await extractAiOverviewFallbackHtml(page);
+		if (fallbackHtml) {
+			return turndown.turndown(fallbackHtml).replace(/\n{3,}/g, "\n\n").trim();
+		}
+
+		return "";
+	},
 	betweenPromptsHook: async (page) => {
 		await page.waitForTimeout(8000 + Math.floor(Math.random() * 12000));
 	},

@@ -1,3 +1,4 @@
+import type { Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 
 export interface SubmitSuccessContext {
@@ -29,6 +30,18 @@ export interface ProviderConfig {
 	waitForResponse: (page: Page) => Promise<void>;
 	/** Reads the AI response from the page and returns it as markdown. */
 	extractResponse: (page: Page) => Promise<string>;
+	/**
+	 * Runs immediately before response extraction begins.
+	 * Use this to normalize viewport state for providers whose answers are not
+	 * chat-style bottom-of-page threads.
+	 */
+	beforeResponseExtractionHook?: (page: Page) => Promise<void>;
+	/**
+	 * Controls the generic viewport adjustment before extraction.
+	 * "bottom" matches chat UIs, "top" matches search-style answer cards,
+	 * and "none" leaves scroll position untouched.
+	 */
+	responseScrollBehavior?: "bottom" | "top" | "none";
 	/** Called immediately before locating/typing into the editor. */
 	beforePromptHook?: (page: Page) => Promise<void>;
 	/** Called right after typing completes, before submit preparation. */
@@ -53,6 +66,12 @@ export interface ProviderConfig {
 		page: Page,
 		context: SubmitSuccessContext,
 	) => Promise<boolean | undefined>;
+	/**
+	 * Optional post-processing hook for extracted sources.
+	 * Called after source extraction completes — use to filter or transform
+	 * provider-specific noise (e.g. Google account/policy links in AI Overview).
+	 */
+	sanitizeSources?: (sources: Source[]) => Source[];
 	/** Runs before the browser navigates to the provider URL. */
 	preNavigationHook?: (page: Page) => Promise<void>;
 	/** Runs after the browser lands on the provider URL. */

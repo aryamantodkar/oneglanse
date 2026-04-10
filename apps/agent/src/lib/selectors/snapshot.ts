@@ -265,12 +265,38 @@ export async function captureSelectorSnapshot(
 				"data-test",
 				"data-qa",
 				"data-cy",
+				"data-state",
+				"rel",
 			] as const) {
 				const value = element.getAttribute(attr)?.trim();
 				if (!value) continue;
 				if (!isStableAttributeValue(attr, value)) continue;
 				const selector = `${tag}[${attr}="${value.replace(/"/g, '\\"')}"]`;
 				if (queryCount(document, selector) === 1) return selector;
+			}
+
+			// 1b. aria-controls — enables tab/accordion button discovery via suffix-match.
+			//     Handles Radix-style generated IDs like "radix-_r_abc_-content-sources"
+			//     by extracting the stable trailing portion as a CSS $= (ends-with) selector.
+			{
+				const ariaControls = element.getAttribute("aria-controls")?.trim();
+				if (ariaControls) {
+					const exactSel = `${tag}[aria-controls="${ariaControls.replace(/"/g, '\\"')}"]`;
+					if (queryCount(document, exactSel) === 1) return exactSel;
+					// Suffix-match fallback: try shortest stable trailing segment first
+					const parts = ariaControls.split("-");
+					for (let tail = 1; tail <= Math.min(parts.length - 1, 4); tail++) {
+						const suffix =
+							"-" + parts.slice(parts.length - tail).join("-");
+						// Only use suffix if it looks like a human-authored token
+						// (all-lowercase letters/hyphens, ≥3 chars)
+						if (/^-[a-z][a-z-]{2,}$/.test(suffix)) {
+							const suffixSel = `${tag}[aria-controls$="${suffix.replace(/"/g, '\\"')}"]`;
+							// Accept up to 2 matches (visible element + invisible measurement clone)
+							if (queryCount(document, suffixSel) <= 2) return suffixSel;
+						}
+					}
+				}
 			}
 
 			// 2. role attribute
@@ -451,7 +477,7 @@ export async function captureSelectorSnapshot(
 			const globalWindow = window as typeof window & {
 				[key: string]: {
 					candidateRoots?: Set<HTMLElement>;
-					mutationMarks?: WeakMap<HTMLElement, number>;
+					rootObservations?: WeakMap<HTMLElement, { lastMutationAt: number; minTextLength: number; mutationCount: number }>;
 				} | undefined;
 			};
 			const monitor = globalWindow[responseMonitorKey];
@@ -461,8 +487,8 @@ export async function captureSelectorSnapshot(
 			);
 
 			roots.sort((left, right) => {
-				const leftMark = monitor?.mutationMarks?.get(left) ?? 0;
-				const rightMark = monitor?.mutationMarks?.get(right) ?? 0;
+				const leftMark = monitor?.rootObservations?.get(left)?.lastMutationAt ?? 0;
+				const rightMark = monitor?.rootObservations?.get(right)?.lastMutationAt ?? 0;
 				if (rightMark !== leftMark) {
 					return rightMark - leftMark;
 				}
@@ -667,7 +693,7 @@ export async function captureSelectorSnapshot(
 		for (const parent of visibleElements) {
 			if (isOverlayLike(parent)) continue;
 			const children = Array.from(parent.children).filter(isVisible);
-			if (children.length < 2 || children.length > 20) continue;
+			if (children.length < 2 || children.length > 50) continue;
 
 			const signatures = new Map<string, Element[]>();
 			for (const child of children) {
@@ -682,7 +708,7 @@ export async function captureSelectorSnapshot(
 			}
 
 			for (const items of signatures.values()) {
-				if (items.length < 2 || items.length > 12) continue;
+				if (items.length < 2 || items.length > 50) continue;
 				const sample = items[0];
 				if (!sample) continue;
 				const selector = buildSelector(sample);

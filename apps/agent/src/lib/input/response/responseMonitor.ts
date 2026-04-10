@@ -2,6 +2,26 @@ import type { Page } from "playwright";
 
 const RESPONSE_MONITOR_KEY = "__oneglanseResponseMonitor";
 
+/**
+ * Shared browser-executable scoring computation for a single candidate element.
+ * Injected as a string into new Function() in both readResponseProbe and disposeResponseMonitor.
+ * Parameters: element, text, blocks, buttons, links, rect, monitor
+ * Returns (via "return { score }"): { score: number }
+ */
+const SCORE_ELEMENT_JS = [
+	"const observation = monitor && monitor.rootObservations ? monitor.rootObservations.get(element) : null;",
+	"const lastMutationAt = observation ? observation.lastMutationAt : 0;",
+	"const observedMinTextLength = observation ? observation.minTextLength : text.length;",
+	"const growth = Math.max(0, text.length - observedMinTextLength);",
+	"const freshnessRatio = text.length > 0 ? Math.min(1, growth / text.length) : 0;",
+	"const mutationCount = observation ? observation.mutationCount : 0;",
+	"const mutationRecencyScore = lastMutationAt > 0 ? Math.max(0, 6000 - (Date.now() - lastMutationAt)) : 0;",
+	"const sourceCardPenalty = (blocks === 0 && text.length < 400 && /^[\\w.-]+\\.(com|org|edu|gov|net|io|ai|co|uk|ca|de|fr|jp|in)\\b/i.test(text.trim())) ? 2000 : 0;",
+	"const freshnessScore = Math.min(growth, 4000) * 0.45 + freshnessRatio * 2200 + Math.min(mutationCount, 10) * 90;",
+	"const staleContainerPenalty = (mutationCount >= 2 && observedMinTextLength >= 700 && growth < Math.max(120, text.length * 0.08)) ? 2200 : 0;",
+	"const score = Math.min(text.length, 5000) * 0.6 + Math.min(blocks, 20) * 180 + mutationRecencyScore + freshnessScore + Math.max(0, window.innerHeight - Math.abs(rect.bottom - window.innerHeight)) * 0.15 - buttons * 90 - links * 28 - sourceCardPenalty - staleContainerPenalty;",
+].join("\n");
+
 export type ResponseProbeSnapshot = {
 	text: string;
 	textLength: number;
@@ -21,13 +41,19 @@ type BrowserMonitorState = {
 	relevantMutationCount: number;
 };
 
+type RootObservation = {
+	lastMutationAt: number;
+	minTextLength: number;
+	mutationCount: number;
+};
+
 type BrowserMonitor = {
 	state: BrowserMonitorState;
 	observer: MutationObserver;
 	anchorEditor: HTMLElement | null;
 	anchorForm: Element | null;
 	candidateRoots: Set<HTMLElement>;
-	mutationMarks: WeakMap<HTMLElement, number>;
+	rootObservations: WeakMap<HTMLElement, RootObservation>;
 	capturedHtml: string | null;
 };
 
@@ -307,7 +333,7 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 		const anchorEditor = findAnchorEditor();
 		const anchorForm = anchorEditor?.closest("form") ?? null;
 		const candidateRoots = new Set<HTMLElement>();
-		const mutationMarks = new WeakMap<HTMLElement, number>();
+		const rootObservations = new WeakMap<HTMLElement, RootObservation>();
 
 		const observer = new MutationObserver((mutations) => {
 			const roots = mutations.flatMap((mutation) =>
@@ -326,7 +352,21 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 			state.relevantMutationCount += roots.length;
 			for (const root of roots) {
 				candidateRoots.add(root);
-				mutationMarks.set(root, now);
+				const textLength = normalizeCandidateText(root).length;
+				const existing = rootObservations.get(root);
+				if (existing) {
+					existing.lastMutationAt = now;
+					existing.mutationCount += 1;
+					if (textLength > 0) {
+						existing.minTextLength = Math.min(existing.minTextLength, textLength);
+					}
+				} else {
+					rootObservations.set(root, {
+						lastMutationAt: now,
+						minTextLength: textLength,
+						mutationCount: 1,
+					});
+				}
 			}
 		});
 
@@ -342,7 +382,7 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 			anchorEditor,
 			anchorForm,
 			candidateRoots,
-			mutationMarks,
+			rootObservations,
 			capturedHtml: null,
 		};
 	}, RESPONSE_MONITOR_KEY);
@@ -351,10 +391,26 @@ export async function resetResponseMonitor(page: Page): Promise<void> {
 export async function readResponseProbe(
 	page: Page,
 ): Promise<ResponseProbeSnapshot> {
-	return await page.evaluate((monitorKey: string) => {
+	return await page.evaluate(([monitorKey, scoringJs]: [string, string]) => {
 		const globalWindow = window as typeof window & {
 			[key: string]: BrowserMonitor | undefined;
 		};
+
+		// Build a reusable scorer from the shared scoring JS string.
+		// Expects locals: element, text, blocks, buttons, links, rect, monitor.
+		// Returns: { score: number }.
+		const scoreElement = new Function(
+			"element", "text", "blocks", "buttons", "links", "rect", "monitor",
+			`${scoringJs}; return { score };`,
+		) as (
+			element: HTMLElement,
+			text: string,
+			blocks: number,
+			buttons: number,
+			links: number,
+			rect: DOMRect,
+			monitor: BrowserMonitor | undefined,
+		) => { score: number };
 
 		function normalizeText(value: string): string {
 			return value
@@ -468,31 +524,10 @@ export async function readResponseProbe(
 			const links = element.querySelectorAll("a[href]").length;
 			const blocks = blockCount(element);
 
-			const lastMutationAt = monitor?.mutationMarks.get(element) ?? 0;
-			const mutationRecencyScore =
-				lastMutationAt > 0 ? Math.max(0, 6000 - (Date.now() - lastMutationAt)) : 0;
-			const sourceCardPenalty =
-				blocks === 0 &&
-				text.length < 400 &&
-				/^[\w.-]+\.(com|org|edu|gov|net|io|ai|co|uk|ca|de|fr|jp|in)\b/i.test(
-					text.trim(),
-				)
-					? 2000
-					: 0;
-
 			if (buttons >= 8 && text.length < 500) continue;
 			if (links >= 16 && blocks <= 1 && text.length < 700) continue;
 
-			const score =
-				Math.min(text.length, 5000) * 0.6 +
-				Math.min(blocks, 20) * 180 +
-				mutationRecencyScore +
-				Math.max(0, window.innerHeight - Math.abs(rect.bottom - window.innerHeight)) *
-					0.15 -
-				buttons * 90 -
-				links * 28 -
-				sourceCardPenalty;
-
+			const { score } = scoreElement(element, text, blocks, buttons, links, rect, monitor);
 			candidates.push({ score, text, el: element });
 		}
 
@@ -527,16 +562,30 @@ export async function readResponseProbe(
 			quietForMs,
 			relevantMutationCount: state?.relevantMutationCount ?? 0,
 		} satisfies ResponseProbeSnapshot;
-	}, RESPONSE_MONITOR_KEY);
+	}, [RESPONSE_MONITOR_KEY, SCORE_ELEMENT_JS] as [string, string]);
 }
 
 export async function disposeResponseMonitor(page: Page): Promise<void> {
-	await page.evaluate((monitorKey: string) => {
+	await page.evaluate(([monitorKey, scoringJs]: [string, string]) => {
 		const globalWindow = window as typeof window & {
 			[key: string]: BrowserMonitor | undefined;
 		};
 		const monitor = globalWindow[monitorKey];
 		if (!monitor) return;
+
+		// Build a reusable scorer from the shared scoring JS string.
+		const scoreElement = new Function(
+			"element", "text", "blocks", "buttons", "links", "rect", "monitor",
+			`${scoringJs}; return { score };`,
+		) as (
+			element: HTMLElement,
+			text: string,
+			blocks: number,
+			buttons: number,
+			links: number,
+			rect: DOMRect,
+			monitor: BrowserMonitor,
+		) => { score: number };
 
 		// Capture the best candidate's HTML NOW — while elements are still connected
 		// and mutation timestamps are fresh. This avoids:
@@ -648,25 +697,7 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 			if (veryDominantChild) continue;
 			if (dominantChild && visibleChildren.length >= 2 && blocks <= 1) continue;
 
-			const lastMutationAt = monitor.mutationMarks.get(element) ?? 0;
-			const mutationRecencyScore =
-				lastMutationAt > 0 ? Math.max(0, 6000 - (Date.now() - lastMutationAt)) : 0;
-			const sourceCardPenalty =
-				blocks === 0 &&
-				text.length < 400 &&
-				/^[\w.-]+\.(com|org|edu|gov|net|io|ai|co|uk|ca|de|fr|jp|in)\b/i.test(text.trim())
-					? 2000
-					: 0;
-
-			const score =
-				Math.min(text.length, 5000) * 0.6 +
-				Math.min(blocks, 20) * 180 +
-				mutationRecencyScore +
-				Math.max(0, window.innerHeight - Math.abs(rect.bottom - window.innerHeight)) * 0.15 -
-				buttons * 90 -
-				links * 28 -
-				sourceCardPenalty;
-
+			const { score } = scoreElement(element, text, blocks, buttons, links, rect, monitor);
 			scored.push({ el: element, score, textLen: text.length });
 		}
 
@@ -709,7 +740,7 @@ export async function disposeResponseMonitor(page: Page): Promise<void> {
 		}
 
 		monitor.observer.disconnect();
-	}, RESPONSE_MONITOR_KEY).catch(() => null);
+	}, [RESPONSE_MONITOR_KEY, SCORE_ELEMENT_JS] as [string, string]).catch(() => null);
 }
 
 /**

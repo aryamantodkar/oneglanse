@@ -10,7 +10,7 @@ import { MAX_SELECTORS_PER_FIELD } from "./constants.js";
 export const STAGE_REQUIRED_FIELDS: Record<SelectorStage, SelectorField[]> = {
 	compose: ["editor"],
 	submit: ["submitButton"],
-	response: ["response", "generationIndicator", "sourcesButton"],
+	response: ["response"],
 	sources: ["sourcePanel", "sourceItem"],
 };
 
@@ -18,7 +18,6 @@ export const SelectorProfileSchema = z.object({
 	editor: z.array(z.string()).default([]),
 	submitButton: z.array(z.string()).default([]),
 	response: z.array(z.string()).default([]),
-	generationIndicator: z.array(z.string()).default([]),
 	sourcesButton: z.array(z.string()).default([]),
 	sourcePanel: z.array(z.string()).default([]),
 	sourceItem: z.array(z.string()).default([]),
@@ -29,7 +28,6 @@ export function defaultSelectorRecord(): Record<SelectorField, string[]> {
 		editor: [],
 		submitButton: [],
 		response: [],
-		generationIndicator: [],
 		sourcesButton: [],
 		sourcePanel: [],
 		sourceItem: [],
@@ -212,15 +210,18 @@ export function compactSelectors(
 			.map((value) => value.trim())
 			.filter(Boolean);
 
-		// Strip :nth-of-type(N) from response selectors. The fingerprint already
+		// Strip :nth-of-type(N) from response/sources selectors. The fingerprint already
 		// normalizes these numbers so the same fingerprint is reused across prompts,
 		// but keeping the ordinal in the actual selector makes it permanently point
-		// to the first response container. extractResponsePayload uses .at(-1) to
-		// get the latest match, so an unanchored selector works correctly.
+		// to the first/nth element. extractResponsePayload uses .at(-1) to get the
+		// latest response match, so an unanchored selector works correctly.
+		// sourcesButton is also stripped: toolbar button order changes frequently
+		// (e.g. ChatGPT reorders share/copy/search buttons), making nth-of-type fragile.
 		if (
 			field === "response" ||
 			field === "sourcePanel" ||
-			field === "sourceItem"
+			field === "sourceItem" ||
+			field === "sourcesButton"
 		) {
 			values = values.map((value) =>
 				value.replace(/:nth-of-type\(\d+\)/g, "").trim(),
