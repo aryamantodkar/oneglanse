@@ -398,18 +398,25 @@ export default function Prompts() {
 		);
 	}, [openPrompt, filteredRecords]);
 
-	const isModified = useMemo(() => {
-		if (promptData.length !== initialPrompts.length) return true;
-		return promptData.some((p, i) => {
-			const original = initialPrompts[i];
-			if (!original) return true;
-			return p.prompt.trim() !== original.prompt.trim();
-		});
-	}, [promptData, initialPrompts]);
-
 	const isEditPromptChanged =
 		editIndex !== null &&
 		editPromptValue.trim() !== (promptData[editIndex]?.prompt ?? "").trim();
+
+	const savePrompts = async (data: UserPrompt[]) => {
+		if (!workspaceId) return toast.error("Workspace ID is undefined.");
+		setLoading(true);
+		try {
+			const prompts = data.map((p) => p.prompt);
+			await storePromptMutation.mutateAsync({ prompts, workspaceId });
+			setInitialPrompts(data);
+			toast.success("Saved.");
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to save prompts");
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	const handleAddOrEditPrompt = () => {
 		if (editIndex !== null) {
@@ -420,18 +427,18 @@ export default function Prompts() {
 				return;
 			}
 
-			setPromptData((prev) =>
-				prev.map((p, i) =>
-					i === editIndex ? { ...p, prompt: editPromptValue.trim() } : p,
-				),
+			const updated = promptData.map((p, i) =>
+				i === editIndex ? { ...p, prompt: editPromptValue.trim() } : p,
 			);
+			setPromptData(updated);
 			setEditIndex(null);
 			setEditPromptValue("");
 			setDialogOpen(false);
+			void savePrompts(updated);
 		} else {
 			if (!currentPrompt.trim()) return;
 
-			setPromptData([
+			const added = [
 				...promptData,
 				{
 					id: crypto.randomUUID(),
@@ -440,10 +447,11 @@ export default function Prompts() {
 					workspace_id: workspaceId ?? "",
 					prompt: currentPrompt.trim(),
 				},
-			]);
-
+			];
+			setPromptData(added);
 			setCurrentPrompt("");
 			setDialogOpen(false);
+			void savePrompts(added);
 		}
 	};
 
@@ -453,23 +461,6 @@ export default function Prompts() {
 			newSet.has(idx) ? newSet.delete(idx) : newSet.add(idx);
 			return newSet;
 		});
-	};
-
-	const handleSave = async () => {
-		if (!workspaceId) return toast.error("Workspace ID is undefined.");
-
-		setLoading(true);
-		try {
-			const prompts = promptData.map((p) => p.prompt);
-			await storePromptMutation.mutateAsync({ prompts, workspaceId });
-			setInitialPrompts(promptData);
-			toast.success("Prompts saved successfully!");
-		} catch (err) {
-			console.error(err);
-			toast.error("Failed to save prompts");
-		} finally {
-			setLoading(false);
-		}
 	};
 
 	const toggleResponse = (index: number) => {
@@ -663,10 +654,12 @@ export default function Prompts() {
 										"gap-2 border-red-200/80 bg-red-50/80 text-red-700 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50",
 									)}
 									onClick={() => {
-										setPromptData((prev) =>
-											prev.filter((_, i) => !selectedRows.has(i)),
+										const remaining = promptData.filter(
+											(_, i) => !selectedRows.has(i),
 										);
+										setPromptData(remaining);
 										setSelectedRows(new Set());
+										void savePrompts(remaining);
 									}}
 								>
 									<Trash2 size={16} />
@@ -723,6 +716,9 @@ export default function Prompts() {
 
 					{/* Right: Save action */}
 					<div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
+						{loading && (
+							<span className="text-muted-foreground text-sm">Saving...</span>
+						)}
 						<ExportMenu
 							className="w-full sm:w-auto"
 							disabled={!hasExportableData}
@@ -848,17 +844,6 @@ export default function Prompts() {
 								downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
 							}}
 						/>
-						<Button
-							variant="outline"
-							onClick={handleSave}
-							disabled={loading || !isModified || editIndex !== null}
-							className={cn(
-								formToolbarButtonClassName,
-								"w-full gap-2 sm:w-auto",
-							)}
-						>
-							{loading ? "Saving..." : "Save Changes"}
-						</Button>
 					</div>
 				</div>
 			</div>

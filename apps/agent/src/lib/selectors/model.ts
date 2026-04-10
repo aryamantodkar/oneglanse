@@ -14,7 +14,6 @@ import {
 	MAX_SELECTOR_MODEL_CALLS_PER_PROCESS,
 	SELECTOR_MODEL,
 	SELECTOR_MODEL_RATE_LIMIT_TTL_MS,
-	SELECTOR_PROFILE_VERSION,
 	selectorModelState,
 } from "./constants.js";
 import {
@@ -293,12 +292,9 @@ export async function resolveProfileWithModel(
 	}
 
 	return {
-		version: SELECTOR_PROFILE_VERSION,
 		provider,
 		stage,
 		pageKey: snapshot.pageKey,
-		fingerprint: snapshot.fingerprint,
-		model: SELECTOR_MODEL,
 		createdAt: new Date().toISOString(),
 		selectors: compactSelectors(parsed.data),
 	};

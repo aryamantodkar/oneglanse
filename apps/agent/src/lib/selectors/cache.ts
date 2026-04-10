@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync } from "node:fs";
-import { readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
+import { readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
 	Provider,
@@ -36,15 +36,56 @@ export function ensureSelectorCacheDir(): void {
 	mkdirSync(getSelectorCacheDir(), { recursive: true });
 }
 
-export function sanitizeFilename(input: string): string {
-	return (
-		input.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "root"
-	);
-}
-
-
 export function getProfileCacheFile(cacheDir: string, provider: Provider): string {
 	return path.join(cacheDir, `${provider}.json`);
+}
+
+function normalizeCachedProfile(
+	input: unknown,
+	provider: Provider,
+	stage?: SelectorStage,
+	pageKey?: string,
+): SelectorProfile | null {
+	if (!input || typeof input !== "object") {
+		return null;
+	}
+
+	const candidate = input as Partial<SelectorProfile> & {
+		provider?: unknown;
+		stage?: unknown;
+		pageKey?: unknown;
+		createdAt?: unknown;
+		selectors?: unknown;
+	};
+
+	if (candidate.provider !== provider) {
+		return null;
+	}
+	if (stage !== undefined && candidate.stage !== stage) {
+		return null;
+	}
+	if (typeof candidate.stage !== "string") {
+		return null;
+	}
+	if (typeof candidate.pageKey !== "string" || typeof candidate.createdAt !== "string") {
+		return null;
+	}
+	if (!candidate.selectors || typeof candidate.selectors !== "object") {
+		return null;
+	}
+
+	const normalizedPageKey = normalizePageKey(candidate.pageKey);
+	if (pageKey !== undefined && normalizedPageKey !== normalizePageKey(pageKey)) {
+		return null;
+	}
+
+	return {
+		provider,
+		stage: candidate.stage as SelectorStage,
+		pageKey: normalizedPageKey,
+		createdAt: candidate.createdAt,
+		selectors: candidate.selectors as SelectorProfile["selectors"],
+	};
 }
 
 export function dedupeProfiles(profiles: SelectorProfile[]): SelectorProfile[] {
@@ -73,68 +114,6 @@ export function dedupeProfiles(profiles: SelectorProfile[]): SelectorProfile[] {
 	);
 }
 
-export async function readSelectorProfileFile(
-	cacheFile: string,
-	provider: Provider,
-	stage: SelectorStage,
-	pageKey?: string,
-): Promise<SelectorProfile | null> {
-	if (!existsSync(cacheFile)) {
-		return null;
-	}
-
-	try {
-		const parsed = JSON.parse(
-			await readFile(cacheFile, "utf8"),
-		) as SelectorProfile;
-		const normalizedPageKey = normalizePageKey(parsed.pageKey);
-		if (
-			parsed.version !== SELECTOR_PROFILE_VERSION ||
-			parsed.provider !== provider ||
-			parsed.stage !== stage ||
-			(pageKey !== undefined && normalizedPageKey !== normalizePageKey(pageKey))
-		) {
-			return null;
-		}
-		return {
-			...parsed,
-			pageKey: normalizedPageKey,
-		};
-	} catch {
-		return null;
-	}
-}
-
-export async function readLegacyProviderProfiles(
-	provider: Provider,
-): Promise<SelectorProfile[]> {
-	const providerDir = path.join(getSelectorCacheDir(), provider);
-	const profiles: SelectorProfile[] = [];
-
-	if (!existsSync(providerDir)) {
-		return [];
-	}
-
-	for (const stage of await readdir(providerDir).catch(() => [])) {
-		const stageDir = path.join(providerDir, stage);
-		for (const file of await readdir(stageDir).catch(() => [])) {
-			if (!file.endsWith(".json")) {
-				continue;
-			}
-			const parsed = await readSelectorProfileFile(
-				path.join(stageDir, file),
-				provider,
-				stage as SelectorStage,
-			);
-			if (parsed) {
-				profiles.push(parsed);
-			}
-		}
-	}
-
-	return dedupeProfiles(profiles);
-}
-
 export async function readProviderCache(
 	provider: Provider,
 ): Promise<ProviderSelectorCache | null> {
@@ -151,30 +130,19 @@ export async function readProviderCache(
 			) {
 				return null;
 			}
+			const normalizedProfiles = parsed.profiles
+				.map((profile) => normalizeCachedProfile(profile, provider))
+				.filter((profile): profile is SelectorProfile => Boolean(profile));
 			return {
 				...parsed,
-				profiles: dedupeProfiles(parsed.profiles),
+				profiles: dedupeProfiles(normalizedProfiles),
 			};
 		} catch {
 			return null;
 		}
 	}
 
-	const legacyProfiles = await readLegacyProviderProfiles(provider);
-	if (legacyProfiles.length === 0) {
-		return null;
-	}
-
-	return {
-		version: SELECTOR_PROFILE_VERSION,
-		provider,
-		updatedAt:
-			legacyProfiles
-				.map((profile) => profile.createdAt)
-				.sort()
-				.at(-1) ?? new Date().toISOString(),
-		profiles: legacyProfiles,
-	};
+	return null;
 }
 
 export async function writeProviderCache(cache: ProviderSelectorCache): Promise<void> {

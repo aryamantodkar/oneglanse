@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import type {
 	SelectorField,
-	SelectorSnapshot,
 	SelectorStage,
 } from "@oneglanse/types";
 import { z } from "zod";
@@ -210,9 +209,8 @@ export function compactSelectors(
 			.map((value) => value.trim())
 			.filter(Boolean);
 
-		// Strip :nth-of-type(N) from response/sources selectors. The fingerprint already
-		// normalizes these numbers so the same fingerprint is reused across prompts,
-		// but keeping the ordinal in the actual selector makes it permanently point
+		// Strip :nth-of-type(N) from response/sources selectors. Keeping the ordinal
+		// in the actual selector makes it permanently point
 		// to the first/nth element. extractResponsePayload uses .at(-1) to get the
 		// latest response match, so an unanchored selector works correctly.
 		// sourcesButton is also stripped: toolbar button order changes frequently
@@ -294,27 +292,6 @@ export function buildPageKey(rawUrl: string): string {
 	} catch {
 		return "unknown";
 	}
-}
-
-export function normalizeSelectorForState(selector: string): string {
-	return selector.replace(/:nth-of-type\(\d+\)/g, ":nth-of-type");
-}
-
-export function buildSnapshotStateKey(snapshot: SelectorSnapshot): string {
-	// Same invariant as the snapshot fingerprint: deduplicated sorted selector
-	// sets. Per-element text, ariaLabel, and fingerprint values change between
-	// prompts even when the page structure is identical — excluding them prevents
-	// the state key from falsely detecting a "new" page state on every prompt.
-	return hashValue(
-		JSON.stringify({
-			stage: snapshot.stage,
-			pageKey: snapshot.pageKey,
-			editables: [...new Set(snapshot.editables.map((item) => normalizeSelectorForState(item.selector)))].sort(),
-			buttons: [...new Set(snapshot.buttons.map((item) => normalizeSelectorForState(item.selector)))].sort(),
-			content: [...new Set(snapshot.content.map((item) => normalizeSelectorForState(item.selector)))].sort(),
-			groups: [...new Set(snapshot.groups.map((item) => normalizeSelectorForState(item.selector)))].sort(),
-		}),
-	);
 }
 
 export function hasRequiredSelectors(

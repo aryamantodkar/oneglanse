@@ -165,12 +165,9 @@ export type SelectorSnapshot = {
 };
 
 export type SelectorProfile = {
-	version: number;
 	provider: Provider;
 	stage: SelectorStage;
 	pageKey: string;
-	fingerprint: string;
-	model: string;
 	createdAt: string;
 	selectors: Record<SelectorField, string[]>;
 };
