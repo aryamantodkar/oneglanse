@@ -8,6 +8,7 @@ import {
 } from "../../../lib/input/editor/findEditor.js";
 import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
 import { turndown } from "../../../lib/input/markdown/converter.js";
+import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { extractAIOverviewResponse } from "./lib/extractResponse.js";
 import { extractAIOverviewSources } from "./lib/extractSources.js";
 import type { ProviderConfig } from "../types.js";
@@ -121,14 +122,7 @@ export const aiOverviewConfig: ProviderConfig = {
 		assertNotBlockedPage(page);
 		logger.log(`[ai-overview] search ready: ${page.url()}`);
 	},
-	waitForResponse: async (page) => {
-		await page
-			.waitForSelector(
-				'[data-container-id="model-response-placeholder"], [data-container-id="main-col"]',
-				{ timeout: 25000 },
-			)
-			.catch(() => {});
-	},
+	waitForResponse: (page) => waitForAssistantToFinish(page, "ai-overview"),
 	extractResponse: async (page) => {
 		const html = await extractAIOverviewResponse(page);
 		return turndown.turndown(html);

@@ -36,19 +36,24 @@ async function waitForInitialDomSettle(page: Page): Promise<void> {
 	await page.waitForTimeout(150);
 }
 
-async function isEditorReady(input: Locator): Promise<boolean> {
+async function isEditorReady(
+	input: Locator,
+	provider: Provider,
+): Promise<boolean> {
 	const state = await input.getEditableState().catch(() => null);
 	return Boolean(
 		state?.connected &&
 			state.visible &&
 			state.editable &&
 			state.enabled &&
-			state.acceptsTextInput,
+			(state.acceptsTextInput ||
+				provider === "perplexity"),
 	);
 }
 
 async function waitForStableEditorCandidate(
 	page: Page,
+	provider: Provider,
 	resolveCandidate: () => Promise<EditorCandidate | null>,
 ): Promise<EditorCandidate | null> {
 	let stablePolls = 0;
@@ -62,7 +67,9 @@ async function waitForStableEditorCandidate(
 			return null;
 		}
 
-		const ready = await isEditorReady(candidate.locator);
+		await candidate.locator.scrollIntoViewIfNeeded().catch(() => {});
+		await candidate.locator.focus().catch(() => {});
+		const ready = await isEditorReady(candidate.locator, provider);
 		if (!ready) {
 			stablePolls = 0;
 			lastCandidate = null;
@@ -100,12 +107,12 @@ export async function waitForEditorReady(
 		const elapsedMs = Date.now() - start;
 		const input =
 			primarySelector && elapsedMs < primaryGraceMs
-				? await waitForStableEditorCandidate(page, () =>
+				? await waitForStableEditorCandidate(page, provider, () =>
 						findActiveEditorCandidateFromSelectors(page, [
 							primarySelector,
 						]).catch(() => null),
 					)
-				: await waitForStableEditorCandidate(page, () =>
+				: await waitForStableEditorCandidate(page, provider, () =>
 						findActiveEditorCandidate(page, provider).catch(() => null),
 					);
 

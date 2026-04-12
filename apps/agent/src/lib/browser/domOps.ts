@@ -185,25 +185,46 @@ export async function runPageDomOp<T>(
 			}
 
 			function extractClaudeRawSourcesFromResponseElement(responseEl: HTMLElement) {
+				const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
+
+				const getTextBeforeAnchor = (anchor: HTMLElement) => {
+					let text = "";
+					let node: Node | null = anchor;
+
+					while (node) {
+						if (node.previousSibling) {
+							node = node.previousSibling;
+
+							while (node && node.lastChild) {
+								node = node.lastChild;
+							}
+						} else {
+							node = node.parentNode;
+						}
+
+						if (!node) break;
+
+						if (node.nodeType === Node.TEXT_NODE) {
+							const content = node.textContent || "";
+							text = `${content} ${text}`;
+
+							if (/[.!?]\s*$/.test(content)) break;
+						}
+					}
+
+					return normalize(text);
+				};
+
 				return Array.from(responseEl.querySelectorAll('a[href^="http"]'))
 					.map((anchor) => {
 						const link = anchor as HTMLAnchorElement;
-						const anchorText = (anchor.textContent || "").trim();
-						const paragraph = anchor.closest("p");
-						const fullText = paragraph?.textContent || "";
-						const index = fullText.indexOf(anchorText);
-
-						let citedText = "";
-						if (index > 0) {
-							const before = fullText.slice(0, index);
-							citedText =
-								before.split(/(?<=[.!?])\s+/).pop()?.trim() || before.trim();
-						}
+						const anchorElement =
+							anchor instanceof HTMLElement ? anchor : null;
 
 						return {
 							rawHref: link.href,
-							title: anchorText || link.href,
-							citedText,
+							title: (anchor.textContent || "").trim() || link.href,
+							citedText: anchorElement ? getTextBeforeAnchor(anchorElement) : "",
 						};
 					})
 					.filter((source) => source.rawHref);

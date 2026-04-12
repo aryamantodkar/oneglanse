@@ -29,7 +29,7 @@ export function classifyError(err: unknown): FailureType {
 	)
 		return "submission_failed";
 	if (
-		/no.*editor|editor for .* not found|editor.*not.*ready|no_editor|search box not found/i.test(
+		/no.*editor|editor for .* not found|editor.*not.*ready|editor blocked by overlay|no_editor|search box not found/i.test(
 			msg,
 		)
 	)

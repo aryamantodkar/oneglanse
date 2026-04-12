@@ -1,5 +1,4 @@
 import { extractSourcesFromPerplexity } from "./lib/extractSources.js";
-import { dismissPerplexityModal } from "./lib/dismissModal.js";
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
 import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
@@ -52,27 +51,19 @@ async function resetPerplexityPage(
 	await resetProviderPage(page, "perplexity", PERPLEXITY_URL, {
 		postNavigationHook: perplexityPostNavigationHook,
 	});
-	await dismissPerplexityModal(page, { waitForAppearanceMs: 1000 });
 }
 
 export const perplexityConfig: ProviderConfig = {
 	url: PERPLEXITY_URL,
 	label: "Perplexity",
 	displayName: "Perplexity",
-	beforePromptHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
-	afterTypingHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
-	beforeSubmitHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
-	afterSubmitHook: (page) =>
-		dismissPerplexityModal(page, { waitForAppearanceMs: 200 }),
 	beforeRetryHook: resetPerplexityPage,
 	checkSubmitSuccess: async (page, { preSubmitUrl }) =>
 		waitForPerplexitySearchUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
 	postNavigationHook: perplexityPostNavigationHook,
+	betweenPromptsHook: resetPerplexityPage,
 	extractSources: async (page) => {
 		const btn = await findSourcesButton(page);
 		if (!btn) return [];

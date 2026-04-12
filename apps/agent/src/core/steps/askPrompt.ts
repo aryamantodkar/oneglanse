@@ -9,6 +9,7 @@ import {
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
+import { ensureEditorNotBlocked } from "../../lib/input/editor/assertNotBlocked.js";
 import {
 	insertPromptIntoEditor,
 	normalizePromptValue,
@@ -45,11 +46,29 @@ export async function askPrompt(
 		HOOK_TIMEOUT_MS,
 	);
 
-	const input = await withTimeout(
+	let input = await withTimeout(
 		`[${provider}] waitForEditorReady`,
 		async () => await waitForEditorReady(page, provider),
 		TYPE_PHASE_TIMEOUT_MS,
 	);
+
+	try {
+		await ensureEditorNotBlocked(page, input, provider);
+	} catch (err) {
+		if (config.beforeRetryHook) {
+			logger.warn(`editor blocked for ${provider} — refreshing page immediately`);
+			await config.beforeRetryHook(page);
+			const refreshedInput = await withTimeout(
+				`[${provider}] waitForEditorReady after refresh`,
+				async () => await waitForEditorReady(page, provider),
+				TYPE_PHASE_TIMEOUT_MS,
+			);
+			await ensureEditorNotBlocked(page, refreshedInput, provider);
+			input = refreshedInput;
+		} else {
+			throw err;
+		}
+	}
 
 	await preInteractionIdle(page);
 	if (!CAMOUFOX_HUMANIZE && Math.random() < 0.4) await smallScroll(page);

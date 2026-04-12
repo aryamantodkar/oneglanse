@@ -8,6 +8,7 @@ import {
 } from "@oneglanse/utils";
 import {
 	getGenerationStateSignature,
+	getResponseStateSignature,
 	hasVisibleGenerationIndicator,
 } from "./isGenerating.js";
 
@@ -45,34 +46,49 @@ export async function waitForAssistantToFinish(
 ): Promise<void> {
 	logger.debug("⏳ Waiting for assistant to finish…");
 	const waitStart = Date.now();
-	let lastState = "";
+	let lastGenerationState = "";
+	let lastResponseState = "";
 	let lastChangeAt = Date.now();
 	let initialized = false;
+	let seenResponse = false;
 
 	await pollUntilCondition(
 		async () => {
-			const [currentState, hasVisibleIndicator] = await Promise.all([
+			const [currentGenerationState, currentResponseState, hasVisibleIndicator] =
+				await Promise.all([
 				getGenerationStateSignature(page, provider),
+				getResponseStateSignature(page, provider),
 				hasVisibleGenerationIndicator(page, provider),
-			]);
+				]);
 			const waitedFor = Date.now() - waitStart;
 			const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
+			const responseStateChanged =
+				currentResponseState.signature !== lastResponseState;
+			const generationStateChanged =
+				currentGenerationState !== lastGenerationState;
 
 			if (!initialized) {
-				lastState = currentState;
+				lastGenerationState = currentGenerationState;
+				lastResponseState = currentResponseState.signature;
+				seenResponse = currentResponseState.textLength > 0;
 				lastChangeAt = Date.now();
 				initialized = true;
 				return false;
 			}
 
-			if (currentState !== lastState) {
-				lastState = currentState;
+			if (currentResponseState.textLength > 0) {
+				seenResponse = true;
+			}
+
+			if (responseStateChanged || generationStateChanged) {
+				lastGenerationState = currentGenerationState;
+				lastResponseState = currentResponseState.signature;
 				lastChangeAt = Date.now();
 				return false;
 			}
 
 			const stableFor = Date.now() - lastChangeAt;
-			if (!hasVisibleIndicator && stableFor >= 1500) {
+			if (seenResponse && !hasVisibleIndicator && stableFor >= 1500) {
 				logger.debug("✅ Assistant finished");
 				return true;
 			}

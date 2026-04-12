@@ -13,6 +13,29 @@ export type RawSource = {
 	citedText: string;
 };
 
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeSourceTitle(rawTitle: string, url: string): string {
+	const normalized = rawTitle.replace(/\s+/g, " ").trim();
+	if (!normalized) return normalized;
+
+	const domain = getDomain(url)?.replace(/^www\./i, "") || "";
+	const hostLabel = domain.split(".")[0] || "";
+	const prefixes = [domain, hostLabel].filter(Boolean);
+
+	let title = normalized;
+	for (const prefix of prefixes) {
+		title = title.replace(
+			new RegExp(`^${escapeRegExp(prefix)}(?:\\s+|(?=[A-Z]))`, "i"),
+			"",
+		);
+	}
+
+	return title.trim() || normalized;
+}
+
 /**
  * Normalizes raw browser-extracted sources into typed Source objects:
  * - strips URL fragments
@@ -38,7 +61,7 @@ export function buildSources(
 		if (!url) continue;
 
 		const domain = getDomain(url) || null;
-		const title = rawTitle || domain || url;
+		const title = normalizeSourceTitle(rawTitle || "", url) || domain || url;
 		const favicon = getFaviconUrls(domain ?? "")?.[0] ?? null;
 
 		const key = keyFn(url, title, citedText);

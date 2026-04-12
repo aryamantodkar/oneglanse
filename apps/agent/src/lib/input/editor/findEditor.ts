@@ -25,25 +25,26 @@ export async function findActiveEditorCandidateFromSelectors(
 					continue;
 				}
 
+				const box = await el.boundingBox().catch(() => null);
+				if (!box || box.width < 8 || box.height < 8) {
+					continue;
+				}
+
+				await el.scrollIntoViewIfNeeded().catch(() => {});
+				await el.focus().catch(() => {});
+
 				const state = await el.getEditableState().catch(() => null);
 				if (
 					!(
 						state?.connected &&
 						state.visible &&
 						state.editable &&
-						state.enabled &&
-						state.acceptsTextInput
+						state.enabled
 					)
 				) {
 					continue;
 				}
 
-				const box = await el.boundingBox().catch(() => null);
-				if (!box || box.width < 8 || box.height < 8) {
-					continue;
-				}
-
-				await el.focus().catch(() => {});
 				return { locator: el, selector };
 			} catch (_error) {}
 		}
