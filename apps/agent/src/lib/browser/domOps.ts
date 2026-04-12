@@ -143,6 +143,40 @@ export async function runPageDomOp<T>(
 				return element ? { selector, element } : null;
 			}
 
+			function getCachedLatestResponseElement(provider: string): HTMLElement | null {
+				const cache = (window as typeof window & {
+					__oneglanseLatestResponseElementCache?: Record<
+						string,
+						HTMLElement | undefined
+					>;
+				}).__oneglanseLatestResponseElementCache;
+				const element = cache?.[provider];
+				return element instanceof HTMLElement && element.isConnected
+					? element
+					: null;
+			}
+
+			function setCachedLatestResponseElement(
+				provider: string,
+				element: HTMLElement | null,
+			): void {
+				const state = window as typeof window & {
+					__oneglanseLatestResponseElementCache?: Record<
+						string,
+						HTMLElement | undefined
+					>;
+				};
+				state.__oneglanseLatestResponseElementCache ||= {};
+
+				if (!provider) return;
+				if (element) {
+					state.__oneglanseLatestResponseElementCache[provider] = element;
+					return;
+				}
+
+				delete state.__oneglanseLatestResponseElementCache[provider];
+			}
+
 			function getCachedRawSources(key: string): Array<{
 				rawHref: string;
 				title: string;
@@ -215,7 +249,12 @@ export async function runPageDomOp<T>(
 
 			function readResponseHtml(provider: string, selectors: string[]): string {
 				const latestResponse = findLatestResponseElement(selectors);
-				if (!latestResponse) return "";
+				if (!latestResponse) {
+					setCachedLatestResponseElement(provider, null);
+					return "";
+				}
+
+				setCachedLatestResponseElement(provider, latestResponse.element);
 
 				if (provider === "claude") {
 					setCachedRawSources(
@@ -225,6 +264,85 @@ export async function runPageDomOp<T>(
 				}
 
 				return latestResponse.element.innerHTML.trim();
+			}
+
+			function findSourcesButtonIndexNearLatestResponse(provider: string): number {
+				const normalize = (text: string | null | undefined) =>
+					text?.toLowerCase().replace(/\s+/g, " ").trim() || "";
+			
+				const isVisible = (el: HTMLElement) =>
+					!!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+			
+				const getSourceSignalScore = (text: string, aria: string) => {
+					let score = 0;
+			
+					if (/\b\d+\s*sources?\b/.test(text)) score += 120;
+					if (aria.includes("sources")) score += 90;
+					if (text === "sources") score += 80;
+					if (text.includes("sources")) score += 40;
+			
+					return score;
+				};
+			
+				const scoreButton = (el: Element | null) => {
+					if (!(el instanceof HTMLElement) || !isVisible(el)) return -1;
+			
+					const text = normalize(el.textContent);
+					const aria = normalize(el.getAttribute("aria-label"));
+			
+					return getSourceSignalScore(text, aria);
+				};
+			
+				const hasLikelySources = (el: HTMLElement) => {
+					const text = normalize(el.textContent);
+			
+					if (getSourceSignalScore(text, "") > 0) return true;
+			
+					return Array.from(el.querySelectorAll("[aria-label]")).some((child) =>
+						getSourceSignalScore("", normalize(child.getAttribute("aria-label"))) > 0
+					);
+				};
+			
+				const latestResponse = getCachedLatestResponseElement(provider);
+				if (!latestResponse) return -1;
+			
+				let root: HTMLElement = latestResponse;
+			
+				for (let i = 0; i < 8; i++) {
+					if (!root.parentElement) break;
+			
+					root = root.parentElement;
+			
+					if (hasLikelySources(root)) break;
+				}
+			
+				const searchRoot = root.parentElement || root;
+			
+				const allButtons = Array.from(
+					document.querySelectorAll("button, [role='button']")
+				);
+			
+				const candidates = Array.from(
+					searchRoot.querySelectorAll("button, [role='button']")
+				);
+			
+				const best = candidates
+					.map((el) => {
+						const score = scoreButton(el);
+						if (score <= 0) return null;
+			
+						const index = allButtons.indexOf(el);
+						if (index === -1) return null;
+			
+						return { index, score };
+					})
+					.filter(Boolean)
+					.sort(
+						(a, b) =>
+							(b!.score - a!.score) || (b!.index - a!.index)
+					)[0];
+			
+				return best?.index ?? -1;
 			}
 
 			function captureVisibleHtml(
@@ -601,6 +719,10 @@ export async function runPageDomOp<T>(
 					return captureVisibleHtml(
 						(currentParams?.selectors as string[]) || [],
 						(currentParams?.fallbackSelectors as string[]) || [],
+					);
+				case "sources-button-index":
+					return findSourcesButtonIndexNearLatestResponse(
+						String(currentParams?.provider || ""),
 					);
 				case "raw-sources":
 					switch (currentParams?.provider) {

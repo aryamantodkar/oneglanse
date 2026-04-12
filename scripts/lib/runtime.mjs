@@ -118,6 +118,37 @@ export function spawnCommand(command, args, options = {}) {
 	});
 }
 
+export async function terminateLocalProcesses(commandFragments) {
+	if (process.platform === "win32") {
+		return;
+	}
+
+	const { stdout } = await runCommandCapture(
+		"ps",
+		["ax", "-o", "pid=", "-o", "command="],
+		{ stdio: ["ignore", "pipe", "ignore"] },
+	).catch(() => ({ stdout: "" }));
+
+	for (const line of stdout.split("\n")) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+
+		const match = trimmed.match(/^(\d+)\s+(.*)$/);
+		if (!match) continue;
+
+		const pid = Number(match[1]);
+		const command = match[2] || "";
+		if (!Number.isInteger(pid) || pid <= 0 || pid === process.pid) continue;
+		if (!commandFragments.every((fragment) => command.includes(fragment))) {
+			continue;
+		}
+
+		try {
+			process.kill(pid, "SIGTERM");
+		} catch {}
+	}
+}
+
 function killChildProcessTree(child, signal = "SIGTERM") {
 	const pid = child.pid;
 	if (!pid || child.killed) {
