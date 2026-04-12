@@ -5,12 +5,9 @@ import type { Locator, Page } from "playwright";
 import {
 	clickLocatorLikeUser,
 	pastePrompt,
+	randomBetween,
 } from "../../browser/humanBehavior.js";
 import { clearEditorInput } from "./clearInput.js";
-
-function randomBetween(min: number, max: number): number {
-	return min + Math.floor(Math.random() * (max - min + 1));
-}
 
 export function normalizePromptValue(text: string): string {
 	return text

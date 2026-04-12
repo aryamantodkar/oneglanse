@@ -16,10 +16,6 @@ export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
 	"ai-overview": 30_000,
 };
 
-// Array.from(document.querySelectorAll(‘button’))
-// .filter(b => b.textContent.toLowerCase().includes(‘sources’))
-// .pop()
-
 export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
 		'#prompt-textarea',

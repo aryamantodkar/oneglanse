@@ -88,10 +88,7 @@ function getFailureType(err: unknown): ReturnType<typeof classifyError> {
 	return classifyError(err);
 }
 
-async function invalidateAndEvict(
-	refs: Refs,
-	provider: Provider,
-): Promise<void> {
+async function invalidateAndEvict(refs: Refs): Promise<void> {
 	// Catch individually so a hint invalidation failure never skips eviction.
 	await refs.invalidateProxyHint?.().catch(() => {});
 }
@@ -177,7 +174,6 @@ async function runSingleAttempt(
 
 async function runRetryCycle(
 	label: string,
-	provider: Provider,
 	agentFactory: AgentFactory,
 	accumulatedResults: AskPromptResult[],
 	currentPayload: PromptPayload,
@@ -228,7 +224,7 @@ async function runRetryCycle(
 					plog.warn(
 						`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 					);
-					await invalidateAndEvict(refs, provider);
+					await invalidateAndEvict(refs);
 					await sleep(BOT_DETECTION_COOLDOWN);
 					break;
 				}
@@ -239,7 +235,7 @@ async function runRetryCycle(
 							? `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`
 							: `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early before a fresh browser attempt`,
 					);
-					await invalidateAndEvict(refs, provider);
+					await invalidateAndEvict(refs);
 					break;
 				}
 
@@ -249,7 +245,7 @@ async function runRetryCycle(
 							? `proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`
 							: `connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early before a fresh browser attempt`,
 					);
-					await invalidateAndEvict(refs, provider);
+					await invalidateAndEvict(refs);
 					break;
 				}
 
@@ -270,7 +266,7 @@ async function runRetryCycle(
 				plog.warn(
 					`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
 				);
-				await invalidateAndEvict(refs, provider);
+				await invalidateAndEvict(refs);
 				await sleep(BOT_DETECTION_COOLDOWN);
 				break;
 			}
@@ -281,7 +277,7 @@ async function runRetryCycle(
 						? `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early to avoid burning the proxy`
 						: `rate limited on attempt ${totalAttempt}/${totalMax}; ending the cycle early before a fresh browser attempt`,
 				);
-				await invalidateAndEvict(refs, provider);
+				await invalidateAndEvict(refs);
 				break;
 			}
 
@@ -291,7 +287,7 @@ async function runRetryCycle(
 						? `proxy connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early — proxy is unreachable`
 						: `connection failed on attempt ${totalAttempt}/${totalMax}; ending cycle early before a fresh browser attempt`,
 				);
-				await invalidateAndEvict(refs, provider);
+				await invalidateAndEvict(refs);
 				break;
 			}
 
@@ -355,7 +351,6 @@ export async function runWithRetryCycles(
 
 			const outcome = await runRetryCycle(
 				label,
-				provider,
 				agentFactory,
 				accumulatedResults,
 				currentPayload,

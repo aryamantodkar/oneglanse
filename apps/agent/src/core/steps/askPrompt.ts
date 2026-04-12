@@ -5,6 +5,7 @@ import type { Page } from "playwright";
 import {
 	moveMouseToElement,
 	preInteractionIdle,
+	randomBetween,
 	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
 import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
@@ -29,10 +30,6 @@ const HOOK_TIMEOUT_MS = 10_000;
 const TYPE_PHASE_TIMEOUT_MS = 25_000;
 const POST_SUBMIT_STABILIZE_TIMEOUT_MS = 12_000;
 const CAMOUFOX_HUMANIZE = true;
-
-function randomBetween(min: number, max: number): number {
-	return min + Math.floor(Math.random() * (max - min + 1));
-}
 
 export async function askPrompt(
 	page: Page,

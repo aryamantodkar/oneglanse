@@ -8,9 +8,6 @@ if (
 	if (!env.CLICKHOUSE_PASSWORD)
 		throw new Error("CLICKHOUSE_PASSWORD is not defined");
 	if (!env.CLICKHOUSE_DB) throw new Error("CLICKHOUSE_DB is not defined");
-	// if (env.CLICKHOUSE_USER === "default") {
-	// 	throw new Error("CLICKHOUSE_USER must not be 'default' in production");
-	// }
 }
 
 export const clickhouseConfig = {

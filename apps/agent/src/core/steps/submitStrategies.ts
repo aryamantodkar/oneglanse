@@ -4,7 +4,7 @@ import { logger, withTimeout } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import {
 	clickLocatorLikeUser,
-	pressKeyLikeUser,
+	randomBetween,
 } from "../../lib/browser/humanBehavior.js";
 import { normalizePromptValue } from "../../lib/input/editor/promptInput.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
@@ -27,10 +27,6 @@ type SubmitAttempt = {
 	successMessage: string;
 	run: () => Promise<boolean>;
 };
-
-function randomBetween(min: number, max: number): number {
-	return min + Math.floor(Math.random() * (max - min + 1));
-}
 
 async function humanPause(
 	page: Page,
@@ -153,10 +149,7 @@ async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
 	return false;
 }
 
-async function attemptSubmit(
-	ctx: SubmitContext,
-	attempt: SubmitAttempt,
-): Promise<boolean> {
+async function attemptSubmit(attempt: SubmitAttempt): Promise<boolean> {
 	try {
 		// beforeSubmitHook is called once in askPrompt.ts before the submit loop.
 		// Do NOT call it again here — it was causing double modal sweeps per attempt.
@@ -180,7 +173,7 @@ async function attemptSubmit(
 
 export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 	const { page, input } = ctx;
-	return attemptSubmit(ctx, {
+	return attemptSubmit({
 		errorLabel: "Enter submit",
 		successMessage: "Submitted via Enter key",
 		run: async () => {
@@ -209,7 +202,7 @@ export async function tryEnterSubmit(ctx: SubmitContext): Promise<boolean> {
 export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
-	return attemptSubmit(ctx, {
+	return attemptSubmit({
 		errorLabel: "Native click",
 		successMessage: "Submitted via native click",
 		run: async () => {
@@ -235,7 +228,7 @@ export async function tryNativeClick(ctx: SubmitContext): Promise<boolean> {
 export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
-	return attemptSubmit(ctx, {
+	return attemptSubmit({
 		errorLabel: "Force click",
 		successMessage: "Submitted via force click",
 		run: async () => {
@@ -262,7 +255,7 @@ export async function tryForceClick(ctx: SubmitContext): Promise<boolean> {
 export async function tryDispatchClick(ctx: SubmitContext): Promise<boolean> {
 	const { sendButton } = ctx;
 	if (!sendButton) return false;
-	return attemptSubmit(ctx, {
+	return attemptSubmit({
 		errorLabel: "Dispatch click",
 		successMessage: "Submitted via dispatched click",
 		run: async () => {

@@ -1,7 +1,7 @@
 import { logger } from "@oneglanse/utils";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { clickLocatorLikeUser } from "./humanBehavior.js";
+import { clickLocatorLikeUser, randomBetween } from "./humanBehavior.js";
 
 const WARMUP_SITE_POOLS: Partial<Record<Provider, string[]>> = {
 	gemini: ["https://www.google.com/", "https://www.youtube.com/"],
@@ -11,10 +11,6 @@ const DEFAULT_WARMUP_SITES = [
 	"https://en.wikipedia.org",
 	"https://www.reddit.com",
 ];
-
-function randomBetween(min: number, max: number): number {
-	return min + Math.floor(Math.random() * (max - min + 1));
-}
 
 const WARMUP_NAV_TIMEOUT_MS = 20_000;
 const WARMUP_TOTAL_TIMEOUT_MS = 25_000;

@@ -74,7 +74,7 @@ export const perplexityConfig: ProviderConfig = {
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
 	postNavigationHook: perplexityPostNavigationHook,
 	extractSources: async (page) => {
-		const btn = await findSourcesButton(page, "perplexity");
+		const btn = await findSourcesButton(page);
 		if (!btn) return [];
 		await openSourcesPanel(page, btn);
 		return extractSourcesFromPerplexity(page, btn);

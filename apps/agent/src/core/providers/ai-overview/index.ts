@@ -99,7 +99,7 @@ export const aiOverviewConfig: ProviderConfig = {
 		const searchInput = await findActiveEditorCandidateFromSelectors(page, [
 			...PROVIDER_EDITOR_SELECTORS["ai-overview"],
 		]);
-		logger.log(`[ai-overview] using search selector: ${searchInput.selector}`);
+		logger.debug(`[ai-overview] using search selector: ${searchInput.selector}`);
 
 		logger.debug(`[ai-overview] pasting ${prompt.length} chars…`);
 		await insertPromptIntoEditor(

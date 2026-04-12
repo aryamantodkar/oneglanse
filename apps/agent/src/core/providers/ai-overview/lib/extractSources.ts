@@ -26,9 +26,7 @@ export async function extractAIOverviewSources(page: Page): Promise<Source[]> {
 			title: normalizeAIOverviewTitle(source.title ?? "") || source.rawHref,
 		}));
 
-		const sources = buildSources(normalizedSources, (url) => url);
-		logger.debug(`Extracted ${sources.length} sources from AI Overview`);
-		return sources;
+		return buildSources(normalizedSources, (url) => url);
 	} catch (err) {
 		logger.error(
 			`Failed to extract AI Overview sources: ${toErrorMessage(err)}`,

@@ -25,7 +25,9 @@ async function extractSourcesFromPanel(
 ): Promise<Source[]> {
 	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
 
-	logger.debug(`extracted ${sources.length} sources`);
+	if (sources.length > 0) {
+		logger.debug(`extracted ${sources.length} sources`);
+	}
 
 	return sources;
 }

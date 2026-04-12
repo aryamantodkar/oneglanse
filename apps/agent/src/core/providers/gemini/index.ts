@@ -86,7 +86,7 @@ export const geminiConfig: ProviderConfig = {
 	// Navigating back to gemini.google.com on each prompt adds unnecessary
 	// round-trips and increases detection surface.
 	extractSources: async (page) => {
-		const btn = await findSourcesButton(page, "gemini");
+		const btn = await findSourcesButton(page);
 		if (!btn) return [];
 		await openSourcesPanel(page, btn);
 		return extractSourcesFromGemini(page, btn);

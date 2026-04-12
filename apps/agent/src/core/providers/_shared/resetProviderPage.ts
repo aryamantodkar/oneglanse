@@ -1,17 +1,13 @@
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { preInteractionIdle } from "../../../lib/browser/humanBehavior.js";
+import { preInteractionIdle, randomBetween } from "../../../lib/browser/humanBehavior.js";
 import { navigateWithRetry } from "../../../lib/browser/navigate.js";
 import { detectBotPage } from "../../../lib/input/response/detectBotPage.js";
 
 type ResetProviderPageOptions = {
 	postNavigationHook?: (page: Page) => Promise<void>;
 };
-
-function randomBetween(min: number, max: number): number {
-	return min + Math.floor(Math.random() * (max - min + 1));
-}
 
 export async function resetProviderPage(
 	page: Page,

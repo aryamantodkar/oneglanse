@@ -20,9 +20,7 @@ export async function extractAIOverviewResponse(page: Page): Promise<string> {
 			throw new ExternalServiceError("ai-overview", message);
 		}
 
-		const html = result.html || "";
-		logger.debug(`Extracted AI Overview HTML (${html.length} chars)`);
-		return html;
+		return result.html || "";
 	} catch (error) {
 		const msg = toErrorMessage(error);
 		logger.error(`AI Overview extraction error: ${msg}`);

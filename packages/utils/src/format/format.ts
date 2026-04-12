@@ -1,5 +1,3 @@
-import { removeUrlParams } from "../url/removeUrlParams.js";
-
 export function formatDateToClickHouse(dt: Date): string {
 	// ClickHouse DateTime expects format: YYYY-MM-DD HH:MM:SS (no milliseconds, no timezone)
 	const year = dt.getUTCFullYear();
@@ -11,5 +9,3 @@ export function formatDateToClickHouse(dt: Date): string {
 
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
-
-export const getCleanUrl = removeUrlParams;
