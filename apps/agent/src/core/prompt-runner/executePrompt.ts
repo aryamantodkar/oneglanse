@@ -1,7 +1,7 @@
 import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
 import type { Provider, Source } from "@oneglanse/types";
 import type { Page } from "playwright";
-import { logger, validateResponse } from "@oneglanse/utils";
+import { logger, validateResponse, withTimeout } from "@oneglanse/utils";
 import { askPrompt } from "../steps/askPrompt.js";
 import { checkAndExtractSources } from "../steps/extractSources.js";
 import { fetchPromptResponses } from "../steps/fetchPromptResponses.js";
@@ -24,12 +24,24 @@ export async function executePrompt(
 ): Promise<{ response: string; sources: Source[] }> {
 	const config = PROVIDER_CONFIGS[provider];
 	if (config.navigateToPrompt) {
-		await config.navigateToPrompt(page, prompt);
+		await withTimeout(
+			`[${provider}] navigateToPrompt`,
+			async () => await config.navigateToPrompt?.(page, prompt),
+			45_000,
+		);
 	} else {
-		await askPrompt(page, prompt, provider);
+		await withTimeout(
+			`[${provider}] askPrompt`,
+			async () => await askPrompt(page, prompt, provider),
+			60_000,
+		);
 	}
 
-	const response = await fetchPromptResponses(page, provider);
+	const response = await withTimeout(
+		`[${provider}] fetchPromptResponses`,
+		async () => await fetchPromptResponses(page, provider),
+		6 * 60 * 1000,
+	);
 	if (!response || response.trim().length === 0) {
 		throw new ExternalServiceError(
 			provider,
@@ -48,7 +60,11 @@ export async function executePrompt(
 		});
 	}
 
-	const sources = await checkAndExtractSources(page, provider);
+	const sources = await withTimeout(
+		`[${provider}] extractSources`,
+		async () => await checkAndExtractSources(page, provider),
+		20_000,
+	);
 
 	return { response, sources };
 }

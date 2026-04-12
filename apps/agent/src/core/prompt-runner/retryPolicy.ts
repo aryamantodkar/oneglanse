@@ -28,6 +28,11 @@ const CANARY_ROTATE_FAILURES = new Set([
 	// session is unusable; submit-path failures retry locally first.
 	"no_editor",
 ]);
+const REFRESH_ON_RETRY_FAILURES = new Set([
+	"submission_failed",
+	"no_editor",
+	"timeout",
+]);
 
 // Identifies extraction and validation failures that warrant a log warning.
 const EXTRACTION_FAILURE_RE =
@@ -128,6 +133,17 @@ export async function executePromptWithRetry(
 			logger.error(
 				`attempt ${attempt}/${maxAttempts} failed for prompt ${promptIndex + 1}: ${toErrorMessage(err)}`,
 			);
+
+			if (
+				attempt < maxAttempts &&
+				config.beforeRetryHook &&
+				REFRESH_ON_RETRY_FAILURES.has(failureType)
+			) {
+				logger.warn(
+					`refreshing ${provider} page before retry due to ${failureType}`,
+				);
+				await config.beforeRetryHook(page);
+			}
 
 			if (
 				useProxy &&
