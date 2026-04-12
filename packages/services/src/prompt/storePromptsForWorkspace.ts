@@ -9,7 +9,9 @@ export async function storePromptsForWorkspace(
 ): Promise<string[]> {
 	const { prompts, workspaceId, userId } = args;
 
-	const nonEmptyPrompts = prompts.map((p) => p.trim()).filter((p) => p !== "");
+	const normalizedPrompts = Array.from(
+		new Set(prompts.map((p) => p.trim()).filter((p) => p !== "")),
+	);
 
 	const existing = await clickhouse.query({
 		query: `
@@ -24,13 +26,13 @@ export async function storePromptsForWorkspace(
 	const existingRows = (await existing.json()) as Array<{ prompt: string }>;
 	const existingPrompts = new Set(existingRows.map((r) => r.prompt));
 
-	const promptsToInsert = nonEmptyPrompts.filter(
+	const promptsToInsert = normalizedPrompts.filter(
 		(p) => !existingPrompts.has(p),
 	);
 
 	const promptsToDelete = existingRows
 		.map((r) => r.prompt)
-		.filter((p) => !nonEmptyPrompts.includes(p));
+		.filter((p) => !normalizedPrompts.includes(p));
 
 	if (promptsToInsert.length > 0) {
 		const values = promptsToInsert.map((p) => ({
@@ -65,5 +67,5 @@ export async function storePromptsForWorkspace(
 		});
 	}
 
-	return prompts;
+	return normalizedPrompts;
 }

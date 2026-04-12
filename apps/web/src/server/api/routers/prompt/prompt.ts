@@ -14,7 +14,7 @@ export const promptRouter = createTRPCRouter({
 	store: authorizedWorkspaceProcedure
 		.input(
 			z.object({
-				prompts: z.array(z.string().min(1).max(500)).max(100),
+				prompts: z.array(z.string().trim().min(1)).max(100),
 			}),
 		)
 		.use(createRateLimiter("prompt.store", { limit: 20, windowSecs: 60 }))

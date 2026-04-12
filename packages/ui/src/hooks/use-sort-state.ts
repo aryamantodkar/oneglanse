@@ -21,22 +21,12 @@ export function useSortState<C extends string>(
 		useState<SortDirection>(initialDirection);
 
 	const toggleSort = (column: C) => {
-		setSortColumn((currentColumn) => {
-			if (currentColumn === null) {
-				setSortDirection(options?.nextDirectionForNewColumn?.(column) ?? "asc");
-				return column;
-			}
-
-			if (currentColumn === column) {
-				setSortDirection((currentDirection) =>
-					currentDirection === "asc" ? "desc" : "asc",
-				);
-				return currentColumn;
-			}
-
+		if (sortColumn === column) {
+			setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+		} else {
+			setSortColumn(column);
 			setSortDirection(options?.nextDirectionForNewColumn?.(column) ?? "asc");
-			return column;
-		});
+		}
 	};
 
 	const resetSort = () => {

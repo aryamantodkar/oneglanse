@@ -284,17 +284,17 @@ export function SourcesIntelligencePanel({
 					<p className="mt-1 text-xs text-muted-foreground">{emptySubtitle}</p>
 				</div>
 			) : activeTab === "domains" ? (
-				<div className="overflow-x-auto rounded-[24px] [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
+				<div className="rounded-[24px]">
 					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
-								<TableHead className="w-[56px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="hidden w-[56px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:table-cell">
 									#
 								</TableHead>
 								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Publisher
 								</TableHead>
-								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
 									{enableDomainSorting ? (
 										<SortableHeader
 											column="share"
@@ -302,14 +302,17 @@ export function SourcesIntelligencePanel({
 											currentDirection={sortDirection}
 											onSort={toggleSort}
 											onResetSort={resetSort}
+											className="justify-center"
 										>
-											Share of Citations
+											Share
 										</SortableHeader>
 									) : (
-										"Share of Citations"
+										<>
+											Share
+										</>
 									)}
 								</TableHead>
-								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
 									{enableDomainSorting ? (
 										<SortableHeader
 											column="citations"
@@ -317,14 +320,17 @@ export function SourcesIntelligencePanel({
 											currentDirection={sortDirection}
 											onSort={toggleSort}
 											onResetSort={resetSort}
+											className="justify-center"
 										>
-											Total Citations
+											Citations
 										</SortableHeader>
 									) : (
-										"Total Citations"
+										<>
+											Citations
+										</>
 									)}
 								</TableHead>
-								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="hidden px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:table-cell sm:px-4 sm:text-xs">
 									{enableDomainSorting ? (
 										<SortableHeader
 											column="urls"
@@ -332,14 +338,17 @@ export function SourcesIntelligencePanel({
 											currentDirection={sortDirection}
 											onSort={toggleSort}
 											onResetSort={resetSort}
+											className="justify-center"
 										>
-											Unique URLs
+											URLs
 										</SortableHeader>
 									) : (
-										"Unique URLs"
+										<>
+											URLs
+										</>
 									)}
 								</TableHead>
-								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-[130px] px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
 									Providers
 								</TableHead>
 							</TableRow>
@@ -350,33 +359,33 @@ export function SourcesIntelligencePanel({
 									key={domain.domain}
 									className="last:border-0 hover:bg-gray-50/80 dark:hover:bg-neutral-900/60"
 								>
-									<TableCell className="px-4 py-5 text-xs text-muted-foreground">
+									<TableCell className="hidden px-4 py-5 text-xs text-muted-foreground sm:table-cell">
 										{idx + 1}
 									</TableCell>
-									<TableCell className="px-4 py-5">
-										<div className="flex items-center gap-2">
+									<TableCell className="whitespace-normal px-4 py-5">
+										<div className="flex min-w-0 items-center gap-2">
 											<FaviconWithFallback url={domain.domain} />
 											<a
 												href={`https://${domain.domain}`}
 												target="_blank"
 												rel="noreferrer noopener"
-												className="truncate text-sm font-semibold text-gray-900 hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-300"
+												className="min-w-0 break-words text-sm font-semibold leading-relaxed text-gray-900 hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-300 [overflow-wrap:anywhere]"
 											>
 												{domain.domain}
 											</a>
 										</div>
 									</TableCell>
-									<TableCell className="px-4 py-5 text-sm font-semibold text-gray-900 dark:text-gray-100">
+									<TableCell className="px-2 py-5 text-center text-sm font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100 sm:px-4">
 										{domain.share.toFixed(1)}%
 									</TableCell>
-									<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
+									<TableCell className="px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 										{domain.totalCitations}
 									</TableCell>
-									<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
+									<TableCell className="hidden px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4">
 										{domain.urlCount}
 									</TableCell>
-									<TableCell className="px-4 py-5">
-										<div className="flex items-center gap-1.5">
+									<TableCell className="px-2 py-5 sm:px-4">
+										<div className="flex flex-nowrap items-center justify-center gap-1">
 											{domain.providers.map((provider) => (
 												<img
 													key={`${domain.domain}-${provider}`}
@@ -394,14 +403,14 @@ export function SourcesIntelligencePanel({
 					</Table>
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-[24px] [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
+				<div className="rounded-[24px]">
 					<Table className="w-full">
 						<TableHeader>
 							<TableRow className="border-b border-gray-200 dark:border-gray-800">
 								<TableHead className="px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
 									Source Reference
 								</TableHead>
-								<TableHead className="w-[140px] px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-[1%] whitespace-nowrap px-2 py-4 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
 									<SortableHeader
 										column="citations"
 										currentSort={sortColumn}
@@ -413,24 +422,26 @@ export function SourcesIntelligencePanel({
 										Citations
 									</SortableHeader>
 								</TableHead>
-								<TableHead className="w-[180px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="hidden w-[180px] whitespace-nowrap px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:table-cell sm:px-4 sm:text-xs">
 									<SortableHeader
 										column="urls"
 										currentSort={sortColumn}
 										currentDirection={sortDirection}
 										onSort={toggleSort}
 										onResetSort={resetSort}
+										className="justify-center"
 									>
 										URLs
 									</SortableHeader>
 								</TableHead>
-								<TableHead className="w-[160px] px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<TableHead className="w-[130px] whitespace-nowrap px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
 									<SortableHeader
 										column="providers"
 										currentSort={sortColumn}
 										currentDirection={sortDirection}
 										onSort={toggleSort}
 										onResetSort={resetSort}
+										className="justify-center"
 									>
 										Providers
 									</SortableHeader>
@@ -448,25 +459,28 @@ export function SourcesIntelligencePanel({
 												setOpenDomain(domainOpen ? null : group.domain)
 											}
 										>
-											<TableCell className="px-4 py-5">
+											<TableCell className="w-px whitespace-normal px-4 py-5 sm:whitespace-normal">
 												<div className="flex items-center gap-2">
 													<ChevronRight
 														className={`h-4 w-4 text-muted-foreground transition-transform ${domainOpen ? "rotate-90" : ""}`}
 													/>
 													<FaviconWithFallback url={group.domain} />
-													<span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+													<span className="min-w-0 break-words text-sm font-semibold text-gray-900 dark:text-gray-100 [overflow-wrap:anywhere]">
 														{group.domain}
 													</span>
 												</div>
 											</TableCell>
-											<TableCell className="px-4 py-5 text-right text-sm font-semibold text-gray-700 dark:text-gray-200">
+											<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 												{formatCitationLabel(group.totalCitations)}
 											</TableCell>
-											<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
-												{group.urlCount} URLs
+											<TableCell className="hidden px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4">
+												<span className="sm:hidden">{group.urlCount}</span>
+												<span className="hidden sm:inline">
+													{group.urlCount} URLs
+												</span>
 											</TableCell>
-											<TableCell className="px-4 py-5">
-												<div className="flex flex-wrap items-center gap-1.5">
+											<TableCell className="px-2 py-5 sm:px-4">
+												<div className="flex flex-nowrap items-center justify-center gap-1">
 													{group.providers.map((provider) => (
 														<img
 															key={`${group.domain}-${provider}`}
@@ -491,57 +505,51 @@ export function SourcesIntelligencePanel({
 																setOpenUrl(urlOpen ? null : source.url)
 															}
 														>
-															<TableCell className="px-4 py-5 pl-12">
-																<div className="flex items-start gap-2">
+															<TableCell className="w-px whitespace-normal px-4 py-4 pl-12 sm:whitespace-normal">
+																<div className="flex min-w-0 items-center gap-2">
 																	<ChevronRight
-																		className={`mt-0.5 h-3.5 w-3.5 text-muted-foreground transition-transform ${urlOpen ? "rotate-90" : ""}`}
+																		className={`mt-1 h-3.5 w-3.5 shrink-0 self-start text-muted-foreground transition-transform ${urlOpen ? "rotate-90" : ""}`}
 																	/>
-																	<div className="mt-0.5">
-																		<FaviconWithFallback
-																			url={source.url}
-																			size="sm"
-																		/>
-																	</div>
+																	<FaviconWithFallback
+																		url={source.url}
+																		size="sm"
+																	/>
 																	<div className="min-w-0">
-																		<p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+																		<p className="line-clamp-2 text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] dark:text-gray-100">
 																			{source.title || "Untitled source"}
 																		</p>
-																		<div className="mt-1.5 flex items-center gap-2">
-																			<span className="rounded-xl border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-300">
-																				{getUrlPath(source.url)}
-																			</span>
-																			<a
-																				href={source.url}
-																				target="_blank"
-																				rel="noreferrer noopener"
-																				onClick={(e) => e.stopPropagation()}
-																				className="text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300"
-																			>
-																				<ExternalLink className="h-3.5 w-3.5" />
-																			</a>
-																		</div>
+																		<a
+																			href={source.url}
+																			target="_blank"
+																			rel="noreferrer noopener"
+																			onClick={(e) => e.stopPropagation()}
+																			className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300"
+																		>
+																			<ExternalLink className="h-3 w-3 shrink-0" />
+																			<span className="[overflow-wrap:anywhere]">{getUrlPath(source.url)}</span>
+																		</a>
 																	</div>
 																</div>
 															</TableCell>
-															<TableCell className="px-4 py-5 text-right text-sm font-semibold text-gray-700 dark:text-gray-200">
+															<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 																{formatCitationLabel(source.totalCitations)}
 															</TableCell>
-															<TableCell className="px-4 py-5 text-sm text-gray-700 dark:text-gray-200">
+															<TableCell className="hidden px-2 py-5 align-top text-sm whitespace-normal text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4 sm:whitespace-normal">
 																<a
 																	href={source.url}
 																	target="_blank"
 																	rel="noreferrer noopener"
 																	onClick={(e) => e.stopPropagation()}
-																	className="inline-flex max-w-full items-center gap-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+																	className="inline-flex max-w-full items-center gap-2 whitespace-normal text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 sm:whitespace-normal"
 																>
-																	<span className="truncate">
+																	<span className="min-w-0 [overflow-wrap:anywhere] break-all">
 																		{getUrlPath(source.url)}
 																	</span>
 																	<ExternalLink className="h-3.5 w-3.5 shrink-0" />
 																</a>
 															</TableCell>
-															<TableCell className="px-4 py-5">
-																<div className="flex flex-wrap items-center gap-1.5">
+															<TableCell className="px-2 py-5 sm:px-4">
+																<div className="flex flex-nowrap items-center justify-center gap-1">
 																	{source.providers.map((provider) => (
 																		<img
 																			key={`${source.url}-${provider}`}
@@ -562,11 +570,14 @@ export function SourcesIntelligencePanel({
 																	className="bg-white dark:bg-neutral-950"
 																>
 																	<TableCell
-																		className="px-4 py-5 pl-20"
+																		className="w-px whitespace-normal px-4 py-5 pl-20 align-top sm:whitespace-normal"
 																		colSpan={3}
 																	>
-																		<div className="max-w-full rounded-[22px] border border-gray-100/80 bg-stone-50 p-4 dark:border-gray-800 dark:bg-neutral-900">
-																			<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
+																		<div className="w-full border-l-2 border-gray-200/80 pl-4 dark:border-gray-800">
+																			<p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
+																				Cited text
+																			</p>
+																			<p className="text-sm leading-7 text-gray-700 [overflow-wrap:anywhere] break-words italic dark:text-gray-300">
 																				{excerpt.citedText?.trim()
 																					? cleanCitedText(excerpt.citedText)
 																					: "This citation has no extracted quoted text."}

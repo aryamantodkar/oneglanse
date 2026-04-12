@@ -159,7 +159,7 @@ export function BrandComparisonChart({
 
 	if (series.length <= 1 || totalResponses === 0) {
 		return (
-			<Card className="flex min-h-[280px] flex-col p-5">
+			<Card className="flex min-h-[280px] min-w-0 flex-col p-5">
 				<div>
 					<h1 className="mt-2 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
 						Brand Comparison
@@ -225,7 +225,7 @@ export function BrandComparisonChart({
 	const leader = [...series].sort((a, b) => b.composite - a.composite)[0];
 
 	return (
-		<Card className="p-5">
+		<Card className="min-w-0 p-5">
 			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0">
 					<h1 className="mt-1 text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100">
@@ -236,15 +236,15 @@ export function BrandComparisonChart({
 						in one view.
 					</p>
 				</div>
-				<span className="max-w-full self-start rounded-full border border-transparent bg-stone-50 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.18)] dark:bg-neutral-900/80 dark:text-gray-300 dark:shadow-[0_14px_36px_-28px_rgba(0,0,0,0.44)]">
+				<span className="max-w-full self-start whitespace-normal break-words rounded-full border border-transparent bg-stone-50 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.18)] dark:bg-neutral-900/80 dark:text-gray-300 dark:shadow-[0_14px_36px_-28px_rgba(0,0,0,0.44)]">
 					Leader: {leader?.name ?? "N/A"}
 				</span>
 			</div>
 
-			<div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_260px]">
+			<div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
 				<div
 					ref={containerRef}
-					className="relative"
+					className="relative min-w-0"
 					onMouseLeave={() => setHoveredPoint(null)}
 				>
 					<div className="overflow-x-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
@@ -433,17 +433,17 @@ export function BrandComparisonChart({
 								onMouseEnter={() => setHoveredBrand(s.name)}
 								onMouseLeave={() => setHoveredBrand(null)}
 							>
-								<div className="flex min-w-0 items-center justify-between gap-2">
-									<div className="flex min-w-0 items-center gap-2">
+								<div className="flex min-w-0 items-start justify-between gap-2">
+									<div className="flex min-w-0 flex-1 items-start gap-2">
 										<span
 											className="h-2.5 w-2.5 shrink-0 rounded-full"
 											style={{ backgroundColor: color }}
 										/>
-										<p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+										<p className="min-w-0 break-words text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100">
 											{s.name}
 										</p>
 									</div>
-									<span className="text-xs font-semibold text-muted-foreground">
+									<span className="shrink-0 text-xs font-semibold text-muted-foreground">
 										{s.composite}/100
 									</span>
 								</div>

@@ -575,7 +575,7 @@ export default function Prompts() {
 												}}
 												className={cn(
 													formTextareaClassName,
-													"min-h-[76px] max-h-[220px] resize-none overflow-hidden py-3 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
+													"min-h-[76px] max-h-[220px] resize-none overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
 												)}
 											/>
 										</div>
@@ -852,8 +852,8 @@ export default function Prompts() {
 					<p className="mb-3 text-xs text-muted-foreground">
 						Tip: Click a prompt row to view its responses.
 					</p>
-					<div className="web-touch-scroll">
-						<Table className="w-full min-w-[680px] lg:min-w-[920px]">
+					<div className="min-w-0">
+						<Table className="w-full table-auto">
 							<TableHeader>
 								<TableRow className="border-gray-100 border-b bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
 									<TableHead className="w-12 pl-4">
@@ -871,7 +871,7 @@ export default function Prompts() {
 											}}
 										/>
 									</TableHead>
-									<TableHead className="px-6 py-4 text-left font-medium text-gray-500 text-sm dark:text-gray-400">
+									<TableHead className="px-4 py-4 text-left font-medium text-gray-500 text-sm whitespace-nowrap dark:text-gray-400 sm:px-6">
 										<SortableHeader
 											column="prompt"
 											currentSort={sortBy}
@@ -882,7 +882,7 @@ export default function Prompts() {
 											Prompt
 										</SortableHeader>
 									</TableHead>
-									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
+									<TableHead className="px-2 py-4 text-center font-medium text-gray-500 text-xs whitespace-nowrap dark:text-gray-400 sm:px-4 sm:text-sm">
 										<div className="flex justify-center">
 											<SortableHeader
 												column="geoScore"
@@ -891,11 +891,12 @@ export default function Prompts() {
 												onSort={handleColumnSort}
 												onResetSort={resetColumnSort}
 											>
-												GEO Score
+												<span className="sm:hidden">GEO</span>
+												<span className="hidden sm:inline">GEO Score</span>
 											</SortableHeader>
 										</div>
 									</TableHead>
-									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
+									<TableHead className="px-2 py-4 text-center font-medium text-gray-500 text-xs whitespace-nowrap dark:text-gray-400 sm:px-4 sm:text-sm">
 										<div className="flex justify-center">
 											<SortableHeader
 												column="sentiment"
@@ -904,11 +905,12 @@ export default function Prompts() {
 												onSort={handleColumnSort}
 												onResetSort={resetColumnSort}
 											>
-												Sentiment
+												<span className="sm:hidden">Sent.</span>
+												<span className="hidden sm:inline">Sentiment</span>
 											</SortableHeader>
 										</div>
 									</TableHead>
-									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
+									<TableHead className="px-2 py-4 text-center font-medium text-gray-500 text-xs whitespace-nowrap dark:text-gray-400 sm:px-4 sm:text-sm">
 										<div className="flex justify-center">
 											<SortableHeader
 												column="visibility"
@@ -917,11 +919,12 @@ export default function Prompts() {
 												onSort={handleColumnSort}
 												onResetSort={resetColumnSort}
 											>
-												Visibility
+												<span className="sm:hidden">Vis.</span>
+												<span className="hidden sm:inline">Visibility</span>
 											</SortableHeader>
 										</div>
 									</TableHead>
-									<TableHead className="px-6 py-4 text-center font-medium text-gray-500 text-sm dark:text-gray-400">
+									<TableHead className="px-2 py-4 text-center font-medium text-gray-500 text-xs whitespace-nowrap dark:text-gray-400 sm:px-4 sm:text-sm">
 										<div className="flex justify-center">
 											<SortableHeader
 												column="position"
@@ -930,7 +933,8 @@ export default function Prompts() {
 												onSort={handleColumnSort}
 												onResetSort={resetColumnSort}
 											>
-												Position
+												<span className="sm:hidden">Pos.</span>
+												<span className="hidden sm:inline">Position</span>
 											</SortableHeader>
 										</div>
 									</TableHead>
@@ -956,13 +960,15 @@ export default function Prompts() {
 												/>
 											</TableCell>
 
-											<TableCell className="max-w-2xl px-6 py-5 text-gray-800 text-sm leading-relaxed dark:text-gray-200">
-												{prompt.prompt}
+											<TableCell className="px-4 py-5 align-top text-gray-800 text-sm leading-relaxed whitespace-normal [overflow-wrap:anywhere] break-words dark:text-gray-200 sm:px-6 sm:whitespace-normal">
+												<div className="min-w-0 whitespace-normal [overflow-wrap:anywhere] break-words">
+													{prompt.prompt}
+												</div>
 											</TableCell>
 
 											{!metrics ? (
 												<TableCell
-													className="px-6 py-5 text-center text-gray-400 text-sm dark:text-gray-500"
+													className="px-3 py-5 text-center text-gray-400 text-sm dark:text-gray-500 sm:px-6"
 													colSpan={5}
 												>
 													<span className="italic">
@@ -977,7 +983,7 @@ export default function Prompts() {
 												</TableCell>
 											) : (
 												<>
-													<TableCell className="px-6 py-5 text-center text-sm">
+													<TableCell className="px-2 py-5 text-center text-sm whitespace-normal sm:px-4 sm:whitespace-normal">
 														<span
 															className="inline-flex min-w-[2rem] items-center justify-center rounded-full px-2 py-1 font-semibold text-xs"
 															style={{
@@ -993,19 +999,19 @@ export default function Prompts() {
 														</span>
 													</TableCell>
 
-													<TableCell className="px-6 py-5 text-center">
+													<TableCell className="px-2 py-5 text-center whitespace-normal sm:px-4 sm:whitespace-normal">
 														<SentimentMetricCell
 															sentiment={metrics.sentiment}
 														/>
 													</TableCell>
 
-													<TableCell className="px-6 py-5 text-center text-gray-700 text-sm dark:text-gray-300">
+													<TableCell className="px-2 py-5 text-center text-gray-700 text-sm whitespace-normal dark:text-gray-300 sm:px-4 sm:whitespace-normal">
 														<span className="inline-block rounded-full bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs dark:bg-gray-800 dark:text-gray-300">
 															{metrics.visibility}%
 														</span>
 													</TableCell>
 
-													<TableCell className="px-6 py-5 text-center">
+													<TableCell className="px-2 py-5 text-center whitespace-normal sm:px-4 sm:whitespace-normal">
 														{metrics.position !== null ? (
 															<PositionMetricCell position={metrics.position} />
 														) : (

@@ -33,7 +33,8 @@ export const formPanelClassName =
 export const formFieldClassName =
 	"h-11 rounded-full border border-transparent bg-white px-4.5 text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_16px_-14px_rgba(15,23,42,0.1)] placeholder:text-gray-400 dark:border-transparent dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_22px_-16px_rgba(0,0,0,0.36)]";
 
-export const formTextareaClassName = `${formFieldClassName} min-h-[136px] py-3`;
+export const formTextareaClassName =
+	"min-h-[136px] rounded-[18px] border border-transparent bg-white px-4.5 py-3 text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_16px_-14px_rgba(15,23,42,0.1)] placeholder:text-gray-400 dark:border-transparent dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_22px_-16px_rgba(0,0,0,0.36)]";
 
 export const formLabelClassName =
 	"text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-700 dark:text-gray-300";

@@ -33,7 +33,7 @@ export function SortableHeader<C extends string>({
 				event.stopPropagation();
 				onResetSort();
 			}}
-			className={`inline-flex items-center gap-1 transition-colors hover:text-gray-900 dark:hover:text-gray-100 ${className}`}
+			className={`inline-flex items-center gap-1 whitespace-nowrap transition-colors hover:text-gray-900 dark:hover:text-gray-100 ${className}`}
 		>
 			{children}
 			{isActive ? (
