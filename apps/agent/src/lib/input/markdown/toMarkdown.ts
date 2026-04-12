@@ -1,24 +1,18 @@
 import type { Provider } from "@oneglanse/types";
+import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { extractResponseHtml } from "../response/responseMonitor.js";
-import { extractResolvedResponseHtml } from "../../selectors/index.js";
 import { turndown } from "./converter.js";
 
 export async function extractAssistantMarkdown(
 	page: Page,
 	provider: Provider,
 ): Promise<string> {
-	// Prefer a validated selector-backed response container. This keeps extraction
-	// anchored to the latest answer and lets the selector cache self-heal via the
-	// model when the UI changes. The response monitor remains a fallback.
-	const selectorHtml = await extractResolvedResponseHtml(page, provider, {
-		allowModel: true,
+	const html = await page.runDomOp<string>("response-html", {
+		provider,
+		selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
 	});
-	if (selectorHtml) {
-		return turndown.turndown(selectorHtml).replace(/\n{3,}/g, "\n\n").trim();
-	}
+	if (!html) return "";
 
-	const monitorHtml = await extractResponseHtml(page);
-	if (!monitorHtml) return "";
-	return turndown.turndown(monitorHtml).replace(/\n{3,}/g, "\n\n").trim();
+	const markdown = turndown.turndown(html);
+	return markdown.replace(/\n{3,}/g, "\n\n").trim();
 }

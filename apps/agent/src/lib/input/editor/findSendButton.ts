@@ -1,10 +1,26 @@
 import type { Provider } from "@oneglanse/types";
+import { PROVIDER_SUBMIT_BTN_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
-import { findResolvedSendButton } from "../../selectors/index.js";
 
 export async function findEnabledSendButton(
 	page: Page,
 	provider: Provider,
 ): Promise<Locator | null> {
-	return await findResolvedSendButton(page, provider);
+	const selectors = PROVIDER_SUBMIT_BTN_SELECTORS[provider] || [];
+
+	// First pass: visible + enabled (preferred — native click will work)
+	for (const selector of selectors) {
+		const buttons = page.locator(selector);
+		const count = await buttons.count();
+		for (let i = 0; i < count; i++) {
+			const btn = buttons.nth(i);
+			try {
+				if ((await btn.isVisible()) && (await btn.isEnabled())) {
+					return btn;
+				}
+			} catch {}
+		}
+	}
+
+	return null;
 }

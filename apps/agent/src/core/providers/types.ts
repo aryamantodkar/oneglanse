@@ -30,22 +30,12 @@ export interface ProviderConfig {
 	waitForResponse: (page: Page) => Promise<void>;
 	/** Reads the AI response from the page and returns it as markdown. */
 	extractResponse: (page: Page) => Promise<string>;
-	/**
-	 * Runs immediately before response extraction begins.
-	 * Use this to normalize viewport state for providers whose answers are not
-	 * chat-style bottom-of-page threads.
-	 */
-	beforeResponseExtractionHook?: (page: Page) => Promise<void>;
-	/**
-	 * Controls the generic viewport adjustment before extraction.
-	 * "bottom" matches chat UIs, "top" matches search-style answer cards,
-	 * and "none" leaves scroll position untouched.
-	 */
-	responseScrollBehavior?: "bottom" | "top" | "none";
 	/** Called immediately before locating/typing into the editor. */
 	beforePromptHook?: (page: Page) => Promise<void>;
 	/** Called right after typing completes, before submit preparation. */
 	afterTypingHook?: (page: Page) => Promise<void>;
+	/** Called before each retry attempt — e.g. navigate back to a clean state. */
+	beforeRetryHook?: (page: Page) => Promise<void>;
 	/** Called immediately before the submit attempt — e.g. dismiss autocomplete dropdowns. */
 	beforeSubmitHook?: (page: Page) => Promise<void>;
 	/** Called immediately after submit and stabilization, before response waiting begins. */
@@ -66,12 +56,6 @@ export interface ProviderConfig {
 		page: Page,
 		context: SubmitSuccessContext,
 	) => Promise<boolean | undefined>;
-	/**
-	 * Optional post-processing hook for extracted sources.
-	 * Called after source extraction completes — use to filter or transform
-	 * provider-specific noise (e.g. Google account/policy links in AI Overview).
-	 */
-	sanitizeSources?: (sources: Source[]) => Source[];
 	/** Runs before the browser navigates to the provider URL. */
 	preNavigationHook?: (page: Page) => Promise<void>;
 	/** Runs after the browser lands on the provider URL. */
@@ -83,4 +67,6 @@ export interface ProviderConfig {
 	 * Used by providers that need a fully custom per-prompt navigation flow.
 	 */
 	navigateToPrompt?: (page: Page, prompt: string) => Promise<void>;
+	/** Extracts citation sources from the page after the response is read. */
+	extractSources: (page: Page) => Promise<Source[]>;
 }

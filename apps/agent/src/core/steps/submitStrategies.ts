@@ -7,10 +7,6 @@ import {
 	pressKeyLikeUser,
 } from "../../lib/browser/humanBehavior.js";
 import { normalizePromptValue } from "../../lib/input/editor/promptInput.js";
-import {
-	readResponseProbe,
-	resetResponseMonitor,
-} from "../../lib/input/response/responseMonitor.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = 5_000;
@@ -114,76 +110,44 @@ async function ensureInputHasWords(
 }
 
 async function checkSubmissionSuccess(ctx: SubmitContext): Promise<boolean> {
-	const { page, input, provider, preSubmitContent, preSubmitUrl, sendButton } = ctx;
-	const config = PROVIDER_CONFIGS[provider];
-	const normalizedPreSubmitContent = normalizePromptValue(preSubmitContent);
-	const deadline = Date.now() + 3_000;
-
-	// Some providers acknowledge submit asynchronously even after Enter lands on
-	// the editor. Poll briefly instead of sampling once, otherwise successful
-	// submits get misclassified as failures and we fall through to button paths.
+	const { page, input, provider, preSubmitContent, preSubmitUrl } = ctx;
+	// 500ms gives the page time to react before we sample state.
+	// 300ms was too short — some providers briefly hide the input during a
+	// React state transition, causing Check 3 to fire as a false positive.
 	await page.waitForTimeout(500);
 
-	while (Date.now() < deadline) {
-		// Ask provider config for a custom success signal first.
-		// undefined = no opinion, fall through to generic checks below.
-		const customResult = await config.checkSubmitSuccess?.(page, {
-			preSubmitUrl,
-		});
-		if (customResult !== undefined) {
-			return customResult;
-		}
+	// Ask provider config for a custom success signal first.
+	// undefined = no opinion, fall through to generic checks below.
+	const config = PROVIDER_CONFIGS[provider];
+	const customResult = await config.checkSubmitSuccess?.(page, {
+		preSubmitUrl,
+	});
+	if (customResult !== undefined) return customResult;
 
-		// Check 1: Input cleared (most reliable signal)
-		const currentContent = await input
-			.readInputValue()
-			.catch(() => preSubmitContent);
-		if (
-			normalizePromptValue(currentContent).length === 0 &&
-			normalizedPreSubmitContent.length > 0
-		) {
-			return true;
-		}
+	// Check 1: Input cleared (most reliable signal)
+	const currentContent = await input
+		.readInputValue()
+		.catch(() => preSubmitContent);
+	if (
+		normalizePromptValue(currentContent).length === 0 &&
+		normalizePromptValue(preSubmitContent).length > 0
+	) {
+		return true;
+	}
 
-		// Check 2: URL changed (navigation-based submission)
-		if ((await page.getUrl().catch(() => page.url())) !== preSubmitUrl) {
-			return true;
-		}
+	// Check 2: URL changed (navigation-based submission)
+	if ((await page.getUrl().catch(() => page.url())) !== preSubmitUrl) {
+		return true;
+	}
 
-		// Check 3: Input field is gone — double-check to rule out transient DOM hides.
-		// isVisible() returns false if the element is hidden/removed. On error, assume
-		// visible (conservative) so we don't falsely report success on a page crash.
-		const inputVisible = await input.isVisible().catch(() => true);
-		if (!inputVisible) {
-			await page.waitForTimeout(200);
-			const stillGone = !(await input.isVisible().catch(() => true));
-			if (stillGone) {
-				return true;
-			}
-		}
-
-		// Check 4: Send button disappeared or became disabled after submit.
-		// Rich editors sometimes retain the draft content briefly while switching
-		// the action button into a stop/spinner state for the in-flight response.
-		if (sendButton) {
-			const buttonVisible = await sendButton.isVisible().catch(() => false);
-			const buttonEnabled = await sendButton.isEnabled().catch(() => false);
-			if (!buttonVisible || !buttonEnabled) {
-				return true;
-			}
-		}
-
-		// Check 5: The response monitor saw a substantive answer start outside the editor.
-		const probe = await readResponseProbe(page).catch(() => null);
-		if (
-			probe &&
-			probe.started &&
-			(probe.textLength >= 20 || probe.relevantMutationCount >= 4)
-		) {
-			return true;
-		}
-
-		await page.waitForTimeout(150);
+	// Check 3: Input field is gone — double-check to rule out transient DOM hides.
+	// isVisible() returns false if the element is hidden/removed. On error, assume
+	// visible (conservative) so we don't falsely report success on a page crash.
+	const inputVisible = await input.isVisible().catch(() => true);
+	if (!inputVisible) {
+		await page.waitForTimeout(200);
+		const stillGone = !(await input.isVisible().catch(() => true));
+		return stillGone;
 	}
 
 	return false;
@@ -194,8 +158,6 @@ async function attemptSubmit(
 	attempt: SubmitAttempt,
 ): Promise<boolean> {
 	try {
-		await resetResponseMonitor(ctx.page).catch(() => null);
-
 		// beforeSubmitHook is called once in askPrompt.ts before the submit loop.
 		// Do NOT call it again here — it was causing double modal sweeps per attempt.
 		const success = await attempt.run();

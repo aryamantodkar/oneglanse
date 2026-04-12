@@ -1,10 +1,13 @@
 import type { Provider } from "@oneglanse/types";
+import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import type { Page } from "playwright";
-import { readResponseProbe } from "./responseMonitor.js";
 
 export async function getText(
 	page: Page,
-	_provider: Provider,
+	provider: Provider,
 ): Promise<string> {
-	return (await readResponseProbe(page)).text;
+	return await page.runDomOp<string>("response-text", {
+		provider,
+		selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
+	});
 }

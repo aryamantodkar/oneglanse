@@ -1,13 +1,13 @@
 import { NotFoundError } from "@oneglanse/errors";
 import { resolveAppMode, type Provider } from "@oneglanse/types";
-import { logger } from "@oneglanse/utils";
+import { logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { env } from "../../../env.js";
-import { primeSelectorProfile } from "../../selectors/index.js";
 import { detectBotPage } from "../response/detectBotPage.js";
 import {
 	type EditorCandidate,
 	findActiveEditorCandidate,
+	findActiveEditorCandidateFromSelectors,
 } from "./findEditor.js";
 
 // Check for bot/login wall every N polls instead of every poll to avoid overhead.
@@ -16,8 +16,12 @@ const DEFAULT_EDITOR_READY_TIMEOUT_MS = 18_000;
 // In local mode the user may need to complete an OAuth login flow before the
 // editor appears. Give them up to 5 minutes rather than killing the browser.
 const LOCAL_EDITOR_READY_TIMEOUT_MS = 5 * 60 * 1_000;
+const DEFAULT_PRIMARY_SELECTOR_GRACE_MS = 5_000;
 const EDITOR_READY_TIMEOUT_MS: Partial<Record<Provider, number>> = {
 	gemini: 20_000,
+};
+const PRIMARY_SELECTOR_GRACE_MS: Partial<Record<Provider, number>> = {
+	gemini: 8_000,
 };
 
 const isLocalMode = resolveAppMode(env.ONEGLANSE_APP_MODE) === "local";
@@ -84,21 +88,26 @@ export async function waitForEditorReady(
 	await waitForInitialDomSettle(page);
 
 	const start = Date.now();
+	const primarySelector = PROVIDER_EDITOR_SELECTORS[provider]?.[0];
 	const readyTimeoutMs = isLocalMode
 		? LOCAL_EDITOR_READY_TIMEOUT_MS
 		: (EDITOR_READY_TIMEOUT_MS[provider] ?? DEFAULT_EDITOR_READY_TIMEOUT_MS);
+	const primaryGraceMs =
+		PRIMARY_SELECTOR_GRACE_MS[provider] ?? DEFAULT_PRIMARY_SELECTOR_GRACE_MS;
 	let polls = 0;
-	let primedComposeSelectors = false;
 
 	while (Date.now() - start < readyTimeoutMs) {
-		if (!primedComposeSelectors) {
-			primedComposeSelectors = true;
-			void primeSelectorProfile(page, provider, "compose");
-		}
-
-		const input = await waitForStableEditorCandidate(page, () =>
-			findActiveEditorCandidate(page, provider).catch(() => null),
-		);
+		const elapsedMs = Date.now() - start;
+		const input =
+			primarySelector && elapsedMs < primaryGraceMs
+				? await waitForStableEditorCandidate(page, () =>
+						findActiveEditorCandidateFromSelectors(page, [
+							primarySelector,
+						]).catch(() => null),
+					)
+				: await waitForStableEditorCandidate(page, () =>
+						findActiveEditorCandidate(page, provider).catch(() => null),
+					);
 
 		if (!input) {
 			polls += 1;
