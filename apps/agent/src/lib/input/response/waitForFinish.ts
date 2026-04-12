@@ -6,8 +6,10 @@ import {
 	PROVIDER_FORCE_EXIT_STABLE_MS,
 	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
 } from "@oneglanse/utils";
-import { getText } from "./getText.js";
-import { isGenerating } from "./isGenerating.js";
+import {
+	getGenerationStateSignature,
+	hasVisibleGenerationIndicator,
+} from "./isGenerating.js";
 
 async function sleep(ms: number): Promise<void> {
 	let timer: ReturnType<typeof setTimeout> | null = null;
@@ -42,54 +44,49 @@ export async function waitForAssistantToFinish(
 	provider: Provider,
 ): Promise<void> {
 	logger.debug("⏳ Waiting for assistant to finish…");
-	// Chat models (ChatGPT, Claude, Perplexity, Gemini)
 	const waitStart = Date.now();
-	let lastText = "";
-	let lastChange = Date.now();
-	let seenOutput = false;
+	let lastState = "";
+	let lastChangeAt = Date.now();
+	let initialized = false;
 
 	await pollUntilCondition(
 		async () => {
-			const [generating, text] = await Promise.all([
-				isGenerating(page, provider),
-				getText(page, provider),
+			const [currentState, hasVisibleIndicator] = await Promise.all([
+				getGenerationStateSignature(page, provider),
+				hasVisibleGenerationIndicator(page, provider),
 			]);
+			const waitedFor = Date.now() - waitStart;
+			const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
 
-			// Track output — require meaningful content to avoid placeholder divs
-			if (text.length >= 20) seenOutput = true;
-
-			// Track changes
-			if (text !== lastText) {
-				lastText = text;
-				lastChange = Date.now();
+			if (!initialized) {
+				lastState = currentState;
+				lastChangeAt = Date.now();
+				initialized = true;
+				return false;
 			}
 
-			const stableFor = Date.now() - lastChange;
-			const noOutputFor = Date.now() - waitStart;
-
-			// Error: No output after the grace period.
-			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
-			if (!seenOutput && noOutputFor >= noOutputTimeoutMs) {
-				throw new ExternalServiceError(
-					provider,
-					`No response detected after ${Math.round(noOutputTimeoutMs / 1000)}s`,
-				);
+			if (currentState !== lastState) {
+				lastState = currentState;
+				lastChangeAt = Date.now();
+				return false;
 			}
 
-			// Still generating and no output yet - keep waiting
-			if (generating && !seenOutput) return false;
-
-			// Success: output seen + not generating + stable for 1.5s
-			if (seenOutput && !generating && stableFor >= 1500) {
+			const stableFor = Date.now() - lastChangeAt;
+			if (!hasVisibleIndicator && stableFor >= 1500) {
 				logger.debug("✅ Assistant finished");
 				return true;
 			}
 
-			// Force exit: text stable but generating indicator still stuck.
-			const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
-			if (seenOutput && stableFor >= forceExitStableMs) {
+			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
+			if (waitedFor >= noOutputTimeoutMs) {
 				logger.warn(
-					`Text stable ${Math.round(forceExitStableMs / 1000)}s but still generating — forcing exit`,
+					`Generation state did not stabilize within ${Math.round(noOutputTimeoutMs / 1000)}s`,
+				);
+			}
+
+			if (stableFor >= forceExitStableMs) {
+				logger.warn(
+					`${hasVisibleIndicator ? "Generation indicator still visible and " : ""}generation state stable for ${Math.round(forceExitStableMs / 1000)}s — forcing exit`,
 				);
 				return true;
 			}

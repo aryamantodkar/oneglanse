@@ -7,8 +7,10 @@ import {
 	ensureDockerNetwork,
 	ensureEnvFiles,
 	openBrowser,
+	repoRoot,
 	runCommand,
 	spawnCommand,
+	terminateLocalProcesses,
 	waitForChildExit,
 	waitForHttp,
 } from "./lib/runtime.mjs";
@@ -32,6 +34,11 @@ async function main() {
 		"redis",
 	]);
 	await runCommand("pnpm", ["db:migrate"], { env: localEnv });
+	await terminateLocalProcesses([
+		repoRoot,
+		"@oneglanse/agent",
+		"dev",
+	]);
 
 	const webChild = spawnCommand(
 		"pnpm",
@@ -48,12 +55,10 @@ async function main() {
 		],
 		{
 			env: localEnv,
-			detached: process.platform !== "win32",
 		},
 	);
 	const agentChild = spawnCommand("pnpm", ["--filter", "@oneglanse/agent", "dev"], {
 		env: localEnv,
-		detached: process.platform !== "win32",
 	});
 
 	const stopWeb = attachTerminationHandler(webChild);

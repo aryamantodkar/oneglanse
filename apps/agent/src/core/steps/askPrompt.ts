@@ -1,6 +1,6 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import { logger } from "@oneglanse/utils";
+import { logger, withTimeout } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import {
 	moveMouseToElement,
@@ -25,6 +25,9 @@ import {
 
 const NETWORKIDLE_TIMEOUT_MS = 3000;
 const SUBMISSION_PHASE_TIMEOUT_MS = 30_000;
+const HOOK_TIMEOUT_MS = 10_000;
+const TYPE_PHASE_TIMEOUT_MS = 25_000;
+const POST_SUBMIT_STABILIZE_TIMEOUT_MS = 12_000;
 const CAMOUFOX_HUMANIZE = true;
 
 function randomBetween(min: number, max: number): number {
@@ -37,9 +40,19 @@ export async function askPrompt(
 	provider: Provider,
 ): Promise<void> {
 	const config = PROVIDER_CONFIGS[provider];
-	await config.beforePromptHook?.(page);
+	await withTimeout(
+		`[${provider}] beforePromptHook`,
+		async () => {
+			await config.beforePromptHook?.(page);
+		},
+		HOOK_TIMEOUT_MS,
+	);
 
-	const input = await waitForEditorReady(page, provider);
+	const input = await withTimeout(
+		`[${provider}] waitForEditorReady`,
+		async () => await waitForEditorReady(page, provider),
+		TYPE_PHASE_TIMEOUT_MS,
+	);
 
 	await preInteractionIdle(page);
 	if (!CAMOUFOX_HUMANIZE && Math.random() < 0.4) await smallScroll(page);
@@ -48,16 +61,27 @@ export async function askPrompt(
 	}
 
 	logger.debug(`pasting ${prompt.length} chars…`);
-	const { rawValue: insertedValue } = await insertPromptIntoEditor(
-		page,
-		input,
-		prompt,
-		provider,
+	const { rawValue: insertedValue } = await withTimeout(
+		`[${provider}] insertPromptIntoEditor`,
+		async () =>
+			await insertPromptIntoEditor(
+				page,
+				input,
+				prompt,
+				provider,
+			),
+		TYPE_PHASE_TIMEOUT_MS,
 	);
 	logger.debug(`pasting ${prompt.length} chars complete`);
 
 	await page.waitForTimeout(randomBetween(300, 700));
-	await config.afterTypingHook?.(page);
+	await withTimeout(
+		`[${provider}] afterTypingHook`,
+		async () => {
+			await config.afterTypingHook?.(page);
+		},
+		HOOK_TIMEOUT_MS,
+	);
 
 	// Store pre-submit state for success detection
 	const preSubmitContent = await input
@@ -82,7 +106,13 @@ export async function askPrompt(
 	}
 
 	// Let the provider dismiss autocomplete or do any pre-submit setup.
-	await config.beforeSubmitHook?.(page);
+	await withTimeout(
+		`[${provider}] beforeSubmitHook`,
+		async () => {
+			await config.beforeSubmitHook?.(page);
+		},
+		HOOK_TIMEOUT_MS,
+	);
 
 	// Find send button AFTER typing (appears dynamically)
 	// Wait a bit longer if needed for button to appear
@@ -176,10 +206,16 @@ export async function askPrompt(
 	await page
 		.waitForLoadState("domcontentloaded", { timeout: 5000 })
 		.catch(() => {});
-	await page
-		.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
-		.catch(() => {});
-	await config.afterSubmitHook?.(page);
+	await withTimeout(
+		`[${provider}] post-submit stabilization`,
+		async () => {
+			await page
+				.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
+				.catch(() => {});
+			await config.afterSubmitHook?.(page);
+		},
+		POST_SUBMIT_STABILIZE_TIMEOUT_MS,
+	);
 
 	logger.log(`post-submit URL: ${page.url()}`);
 }

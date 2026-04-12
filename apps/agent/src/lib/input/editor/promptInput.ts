@@ -133,7 +133,7 @@ export async function insertPromptIntoEditor(
 ): Promise<{ rawValue: string; strategy: "directSet" | "pacedPaste" }> {
 	const expectedValue = normalizePromptValue(prompt);
 	const strategies: Array<"directSet" | "pacedPaste"> = [
-		"directSet",
+		...(provider === "perplexity" ? [] : (["directSet"] as const)),
 		"pacedPaste",
 	];
 
