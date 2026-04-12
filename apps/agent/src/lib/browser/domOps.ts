@@ -270,8 +270,15 @@ export async function runPageDomOp<T>(
 				const normalize = (text: string | null | undefined) =>
 					text?.toLowerCase().replace(/\s+/g, " ").trim() || "";
 			
-				const isVisible = (el: HTMLElement) =>
-					!!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+				const isVisible = (el: HTMLElement) => {
+					const style = window.getComputedStyle(el);
+				  
+					return (
+					  style.display !== "none" &&
+					  style.visibility !== "hidden" &&
+					  style.opacity !== "0"
+					);
+				};
 			
 				const getSourceSignalScore = (text: string, aria: string) => {
 					let score = 0;
