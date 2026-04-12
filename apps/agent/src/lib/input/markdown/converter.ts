@@ -61,7 +61,7 @@ turndown.addRule("table", {
 
 		for (let i = 0; i < rows.length; i++) {
 			const cells = Array.from(rows[i]!.querySelectorAll("th, td"));
-			const line = cells.map((c) => (c.textContent ?? "").trim()).join(" | ");
+			const line = cells.map((c) => turndown.turndown((c as HTMLElement).innerHTML ?? c.textContent ?? "").replace(/\n+/g, " ").trim()).join(" | ");
 			result.push(`| ${line} |`);
 
 			if (i === 0) {
@@ -96,6 +96,9 @@ turndown.addRule("figure", { filter: "figure", replacement: () => "" });
 turndown.addRule("picture", { filter: "picture", replacement: () => "" });
 turndown.addRule("video", { filter: "video", replacement: () => "" });
 turndown.addRule("iframe", { filter: "iframe", replacement: () => "" });
+
+// Strip superscript citation markers (e.g. ChatGPT's <sup><a>1</a></sup>)
+turndown.addRule("sup", { filter: "sup", replacement: () => "" });
 turndown.addRule("carousel", {
 	filter(node) {
 		const el = node as HTMLElement;

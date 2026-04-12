@@ -263,7 +263,33 @@ export async function runPageDomOp<T>(
 					);
 				}
 
-				return latestResponse.element.innerHTML.trim();
+				// Clone before mutating so the live DOM is untouched
+				const clone = latestResponse.element.cloneNode(true) as HTMLElement;
+
+				// Strip UI chrome that leaks into text: action buttons, icons,
+				// tooltips, live regions, citation superscripts, and decorative media
+				const noiseSelectors = [
+					"button",
+					"svg",
+					"script",
+					"style",
+					"noscript",
+					"iframe",
+					"sup",
+					"[aria-live]",
+					"[aria-hidden='true']",
+					"[data-testid='copy-turn-action-button']",
+					"[data-testid='voice-play-turn-action-button']",
+					"[data-testid='thumbs-up-button']",
+					"[data-testid='thumbs-down-button']",
+				];
+				for (const sel of noiseSelectors) {
+					for (const el of Array.from(clone.querySelectorAll(sel))) {
+						el.remove();
+					}
+				}
+
+				return clone.innerHTML.trim();
 			}
 
 			function findSourcesButtonIndexNearLatestResponse(provider: string): number {
