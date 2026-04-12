@@ -1,102 +1,103 @@
 import { ExternalServiceError } from "@oneglanse/errors";
 import type { Provider } from "@oneglanse/types";
-import {
-	DEFAULT_MIN_RESPONSE_CHARS,
-	PROVIDER_FORCE_EXIT_STABLE_MS,
-	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
-	PROVIDER_MIN_RESPONSE_CHARS,
-	logger,
-} from "@oneglanse/utils";
 import type { Page } from "playwright";
 import {
-	disposeResponseMonitor,
-	readResponseProbe,
-	resetResponseMonitor,
-} from "./responseMonitor.js";
+	logger,
+	PROVIDER_FORCE_EXIT_STABLE_MS,
+	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
+} from "@oneglanse/utils";
+import { getText } from "./getText.js";
+import { isGenerating } from "./isGenerating.js";
 
-const RESPONSE_QUIESCENCE_MS = 1_500;
+async function sleep(ms: number): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	try {
+		await new Promise<void>((resolve) => {
+			timer = setTimeout(resolve, ms);
+		});
+	} finally {
+		if (timer !== null) {
+			clearTimeout(timer);
+		}
+	}
+}
+
+// Shared polling helper - DRY principle
+async function pollUntilCondition(
+	checkFn: () => Promise<boolean>,
+	pollInterval: number,
+	maxWait: number,
+	timeoutError: ExternalServiceError,
+): Promise<void> {
+	const start = Date.now();
+	while (Date.now() - start < maxWait) {
+		if (await checkFn()) return;
+		await sleep(pollInterval);
+	}
+	throw timeoutError;
+}
 
 export async function waitForAssistantToFinish(
 	page: Page,
 	provider: Provider,
 ): Promise<void> {
 	logger.debug("⏳ Waiting for assistant to finish…");
-
+	// Chat models (ChatGPT, Claude, Perplexity, Gemini)
+	const waitStart = Date.now();
 	let lastText = "";
-	let lastTextChangeAt = Date.now();
-	let seenRelevantMutation = false;
+	let lastChange = Date.now();
 	let seenOutput = false;
-	const waitStartedAt = Date.now();
-	const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
-	const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
-	const minResponseChars =
-		PROVIDER_MIN_RESPONSE_CHARS[provider] ?? DEFAULT_MIN_RESPONSE_CHARS;
-	const substantiveTextThreshold = Math.max(10, Math.min(minResponseChars, 40));
 
-	try {
-		await resetResponseMonitor(page);
+	await pollUntilCondition(
+		async () => {
+			const [generating, text] = await Promise.all([
+				isGenerating(page, provider),
+				getText(page, provider),
+			]);
 
-		const pollIntervalMs = 250;
-		const timeoutAt = Date.now() + 5 * 60 * 1000;
+			// Track output — require meaningful content to avoid placeholder divs
+			if (text.length >= 20) seenOutput = true;
 
-		while (Date.now() < timeoutAt) {
-			const probe = await readResponseProbe(page);
-			const text = probe.text;
-			if (text.length >= substantiveTextThreshold) {
-				seenOutput = true;
-			}
-			if (probe.started && !seenRelevantMutation) {
-				seenRelevantMutation = true;
-				logger.log(`[${provider}] waiting for response...`);
-			}
-
+			// Track changes
 			if (text !== lastText) {
 				lastText = text;
-				lastTextChangeAt = Date.now();
+				lastChange = Date.now();
 			}
 
-			if (
-				!probe.started &&
-				Date.now() - waitStartedAt >= noOutputTimeoutMs
-			) {
+			const stableFor = Date.now() - lastChange;
+			const noOutputFor = Date.now() - waitStart;
+
+			// Error: No output after the grace period.
+			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
+			if (!seenOutput && noOutputFor >= noOutputTimeoutMs) {
 				throw new ExternalServiceError(
 					provider,
 					`No response detected after ${Math.round(noOutputTimeoutMs / 1000)}s`,
 				);
 			}
 
-			if (!probe.started || !seenOutput) {
-				await page.waitForTimeout(pollIntervalMs);
-				continue;
+			// Still generating and no output yet - keep waiting
+			if (generating && !seenOutput) return false;
+
+			// Success: output seen + not generating + stable for 1.5s
+			if (seenOutput && !generating && stableFor >= 1500) {
+				logger.debug("✅ Assistant finished");
+				return true;
 			}
 
-			const textStableFor = Date.now() - lastTextChangeAt;
-			const quietForMs = probe.quietForMs ?? 0;
-
-			if (
-				quietForMs >= RESPONSE_QUIESCENCE_MS &&
-				textStableFor >= RESPONSE_QUIESCENCE_MS
-			) {
-				logger.log(`[${provider}] response ready`);
-				return;
-			}
-
-			if (
-				textStableFor >= forceExitStableMs &&
-				quietForMs >= Math.min(RESPONSE_QUIESCENCE_MS, 750)
-			) {
+			// Force exit: text stable but generating indicator still stuck.
+			const forceExitStableMs = PROVIDER_FORCE_EXIT_STABLE_MS[provider];
+			if (seenOutput && stableFor >= forceExitStableMs) {
 				logger.warn(
-					`[${provider}] response text stable for ${Math.round(forceExitStableMs / 1000)}s — forcing completion`,
+					`Text stable ${Math.round(forceExitStableMs / 1000)}s but still generating — forcing exit`,
 				);
-				logger.log(`[${provider}] response ready`);
-				return;
+				return true;
 			}
 
-			await page.waitForTimeout(pollIntervalMs);
-		}
-
-		throw new ExternalServiceError(provider, "Assistant wait timed out");
-	} finally {
-		await disposeResponseMonitor(page);
-	}
+			return false;
+		},
+		280 + Math.floor(Math.random() * 60), // Poll ~300ms with ±50ms jitter
+		5 * 60 * 1000, // 5 min max — if a response hasn't arrived by then, something is wrong
+		new ExternalServiceError(provider, "Assistant wait timed out"),
+	);
 }

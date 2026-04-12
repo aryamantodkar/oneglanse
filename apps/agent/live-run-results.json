@@ -1,0 +1,115 @@
+[
+  {
+    "provider": "chatgpt",
+    "runs": [
+      {
+        "prompt": "What is the capital of France? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:24:59.864Z",
+        "ok": true,
+        "response": "The capital of France is Paris (sources: _Encyclopaedia Britannica_, _CIA World Factbook_).",
+        "sources": []
+      },
+      {
+        "prompt": "What year was the first iPhone released? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:25:20.833Z",
+        "ok": false,
+        "error": "page.waitForTimeout: Target page, context or browser has been closed"
+      }
+    ]
+  },
+  {
+    "provider": "claude",
+    "runs": [
+      {
+        "prompt": "What is the capital of France? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:25:25.391Z",
+        "ok": false,
+        "error": "claude: No response detected after 60s"
+      },
+      {
+        "prompt": "What year was the first iPhone released? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:26:32.104Z",
+        "ok": false,
+        "error": "claude: All submission methods failed"
+      }
+    ]
+  },
+  {
+    "provider": "gemini",
+    "runs": [
+      {
+        "prompt": "What is the capital of France? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:26:36.506Z",
+        "ok": true,
+        "response": "## Gemini said\n\nThe capital of France is **Paris**, which serves as the nation's major financial, diplomatic, and cultural hub.\n\n**Sources:**\n\n-   French Government Official Portal\n    \n-   Insee (National Institute of Statistics and Economic Studies)",
+        "sources": []
+      },
+      {
+        "prompt": "What year was the first iPhone released? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:26:46.759Z",
+        "ok": true,
+        "response": "## Gemini said\n\nThe first iPhone was released by Apple on **June 29, 2007**, following its initial announcement earlier that year in January.\n\n**Sources:**\n\n-   Apple Newsroom Archive\n    \n-   Library of Congress - Science Reference Section",
+        "sources": []
+      }
+    ]
+  },
+  {
+    "provider": "perplexity",
+    "runs": [
+      {
+        "prompt": "What is the capital of France? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:26:58.284Z",
+        "ok": false,
+        "error": "perplexity: No response detected after 45s"
+      },
+      {
+        "prompt": "What year was the first iPhone released? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:28:00.196Z",
+        "ok": false,
+        "error": "page.waitForTimeout: Target page, context or browser has been closed"
+      }
+    ]
+  },
+  {
+    "provider": "ai-overview",
+    "runs": [
+      {
+        "prompt": "What is the capital of France? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:29:28.917Z",
+        "ok": true,
+        "response": "Paris is the capital and largest city of France, situated in the north-central part of the country along the Seine River.",
+        "sources": [
+          {
+            "title": "Paris - Wikipedia",
+            "cited_text": "For other uses, see Parisien (disambiguation). * Paris is the capital and largest city of France, with an estimated city populatio...",
+            "url": "https://en.wikipedia.org/wiki/Paris",
+            "domain": "en.wikipedia.org",
+            "favicon": "https://www.google.com/s2/favicons?sz=64&domain=en.wikipedia.org"
+          }
+        ]
+      },
+      {
+        "prompt": "What year was the first iPhone released? Answer in one sentence and cite sources.",
+        "startedAt": "2026-04-12T10:29:35.450Z",
+        "ok": true,
+        "response": "The first iPhone was released in the United States on June 29, 2007.",
+        "sources": [
+          {
+            "title": "iPhone (1st generation) - Wikipedia",
+            "cited_text": "Table_title: iPhone (1st generation) Table_content: header: | Front view | | row: | Front view: Manufacturer | : Foxconn (contract...",
+            "url": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
+            "domain": "en.wikipedia.org",
+            "favicon": "https://www.google.com/s2/favicons?sz=64&domain=en.wikipedia.org"
+          },
+          {
+            "title": "iPhone (1st generation) - Simple English Wikipedia, the free ...",
+            "cited_text": "Table_title: iPhone (1st generation) Table_content: header: | Front of the iPhone (1st generation) | | row: | Front of the iPhone ...",
+            "url": "https://simple.wikipedia.org/wiki/IPhone_(1st_generation)",
+            "domain": "simple.wikipedia.org",
+            "favicon": "https://www.google.com/s2/favicons?sz=64&domain=simple.wikipedia.org"
+          }
+        ]
+      }
+    ]
+  }
+]

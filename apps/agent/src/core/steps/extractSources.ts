@@ -1,22 +1,31 @@
 import type { Provider, Source } from "@oneglanse/types";
-import { logger } from "@oneglanse/utils";
 import type { Page } from "playwright";
+import { logger } from "@oneglanse/utils";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
-import { extractResolvedSources } from "../../lib/selectors/index.js";
 
 export async function checkAndExtractSources(
 	page: Page,
 	provider: Provider,
 ): Promise<Source[]> {
+	let sources: Source[] = [];
+
 	try {
-		logger.log(`[${provider}] extracting sources`);
-		const raw = await extractResolvedSources(page, provider);
-		const config = PROVIDER_CONFIGS[provider];
-		const sources = config.sanitizeSources ? config.sanitizeSources(raw) : raw;
-		logger.log(`[${provider}] ${sources.length} sources extracted`);
-		return sources;
+		sources = await extractSourcesFromPanel(page, provider);
 	} catch (err) {
-		logger.warn(`[${provider}] source extraction failed, continuing:`, err);
-		return [];
+		logger.warn("source extraction failed, continuing:", err);
+		sources = [];
 	}
+
+	return sources;
+}
+
+async function extractSourcesFromPanel(
+	page: Page,
+	provider: Provider,
+): Promise<Source[]> {
+	const sources = await PROVIDER_CONFIGS[provider].extractSources(page);
+
+	logger.debug(`extracted ${sources.length} sources`);
+
+	return sources;
 }

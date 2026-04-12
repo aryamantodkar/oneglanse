@@ -1,16 +1,17 @@
 import { ExternalServiceError } from "@oneglanse/errors";
-import { logger } from "@oneglanse/utils";
+import {
+	PROVIDER_MODEL_RESPONSE_SELECTORS,
+	exponentialBackoff,
+	logger,
+} from "@oneglanse/utils";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { getText } from "../../lib/input/response/getText.js";
-import {
-	extractResolvedResponseHtml,
-	invalidateSelectorProfileForPage,
-} from "../../lib/selectors/index.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const MAX_EXTRACTION_RETRIES = 2;
-const EXTRACTION_RETRY_DELAY_MS = 1_500;
+const INITIAL_EXTRACTION_RETRY_DELAY = 1_500;
+const MAX_EXTRACTION_RETRY_DELAY = 5_000;
 const MAX_DIAGNOSTIC_HTML_CHARS = 12_000;
 
 function formatHtmlForLogs(html: string): string {
@@ -40,56 +41,65 @@ function formatHtmlForLogs(html: string): string {
 		.join("\n");
 }
 
-export async function fetchPromptResponses(page: Page, provider: Provider): Promise<string> {
+async function captureResponseHtmlForLogs(
+	page: Page,
+	provider: Provider,
+): Promise<{ selector: string; html: string }> {
+	return await page.runDomOp<{ selector: string; html: string }>(
+		"capture-visible-html",
+		{
+			selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
+			fallbackSelectors: ["main", "body"],
+		},
+	);
+}
+
+export async function fetchPromptResponses(
+	page: Page,
+	provider: Provider,
+): Promise<string> {
 	const config = PROVIDER_CONFIGS[provider];
 
 	await config.waitForResponse(page);
-	const responseScrollBehavior = config.responseScrollBehavior ?? "bottom";
-	if (responseScrollBehavior !== "none") {
-		await page
-			.evaluate(({ behavior }) => {
-				const root =
-					document.scrollingElement ?? document.documentElement ?? document.body;
-				root.scrollTo(
-					0,
-					behavior === "top" ? 0 : root.scrollHeight,
-				);
-			}, { behavior: responseScrollBehavior })
-			.catch(() => null);
-	}
-	await page.waitForTimeout(200);
 
 	for (let attempt = 1; attempt <= MAX_EXTRACTION_RETRIES; attempt++) {
-		if (attempt > 1) await page.waitForTimeout(EXTRACTION_RETRY_DELAY_MS);
-		await config.beforeResponseExtractionHook?.(page).catch(() => null);
+		await page.waitForTimeout(150);
 
 		const response = await config.extractResponse(page);
 
 		if (response && response.length > 0) {
-			logger.log(`[${provider}] response extracted (${response.length} chars)`);
+			logger.debug(`response extracted (${response.length} chars)`);
 			return response;
 		}
 
-		logger.warn(
-			`extraction empty (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})`,
-		);
+		if (attempt < MAX_EXTRACTION_RETRIES) {
+			const retryDelay =
+				attempt <= 1
+					? INITIAL_EXTRACTION_RETRY_DELAY
+					: exponentialBackoff(
+							attempt - 1,
+							INITIAL_EXTRACTION_RETRY_DELAY,
+							MAX_EXTRACTION_RETRY_DELAY,
+						);
+			logger.warn(
+				`extraction empty, retrying in ${retryDelay / 1000}s (attempt ${attempt}/${MAX_EXTRACTION_RETRIES})`,
+			);
+			await page.waitForTimeout(retryDelay);
+		}
 	}
 
-	// Invalidate cached response selector so the next attempt forces fresh resolution
-	await invalidateSelectorProfileForPage(page, provider, "response");
-
-	// Diagnostic logging
 	const visibleText = await getText(page, provider).catch(() => "");
 	const visibleTextChars = visibleText?.trim().length ?? 0;
-	const diagnosticHtml = await extractResolvedResponseHtml(page, provider).catch(() => "");
-	const truncated =
-		diagnosticHtml.length > MAX_DIAGNOSTIC_HTML_CHARS
-			? `${diagnosticHtml.slice(0, MAX_DIAGNOSTIC_HTML_CHARS)}\n<!-- truncated -->`
-			: diagnosticHtml;
-	logger.warn(
-		`extraction empty HTML snapshot (${provider}, url=${await page.getUrl().catch(() => page.url())}):\n${formatHtmlForLogs(truncated || "<empty>")}`,
+	const { selector, html } = await captureResponseHtmlForLogs(page, provider).catch(
+		() => ({ selector: "capture_failed", html: "" }),
 	);
-
+	const diagnosticHtml =
+		html.length > MAX_DIAGNOSTIC_HTML_CHARS
+			? `${html.slice(0, MAX_DIAGNOSTIC_HTML_CHARS)}\n<!-- truncated -->`
+			: html;
+	logger.warn(
+		`extraction empty HTML snapshot (${provider}, selector=${selector}, url=${await page.getUrl().catch(() => page.url())}):\n${formatHtmlForLogs(diagnosticHtml || "<empty>")}`,
+	);
 	throw new ExternalServiceError(
 		provider,
 		`Markdown response extraction failed after ${MAX_EXTRACTION_RETRIES} retries`,

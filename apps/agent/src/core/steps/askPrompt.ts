@@ -13,7 +13,6 @@ import {
 	normalizePromptValue,
 } from "../../lib/input/editor/promptInput.js";
 import { waitForEditorReady } from "../../lib/input/editor/waitForReady.js";
-import { primeSelectorProfile } from "../../lib/selectors/index.js";
 import { detectBotPage } from "../../lib/input/response/detectBotPage.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 import {
@@ -24,6 +23,7 @@ import {
 	tryNativeClick,
 } from "./submitStrategies.js";
 
+const NETWORKIDLE_TIMEOUT_MS = 3000;
 const SUBMISSION_PHASE_TIMEOUT_MS = 30_000;
 const CAMOUFOX_HUMANIZE = true;
 
@@ -47,13 +47,14 @@ export async function askPrompt(
 		await moveMouseToElement(page, input);
 	}
 
-	logger.log(`[${provider}] typing prompt (${prompt.length} chars)`);
+	logger.debug(`pasting ${prompt.length} chars…`);
 	const { rawValue: insertedValue } = await insertPromptIntoEditor(
 		page,
 		input,
 		prompt,
 		provider,
 	);
+	logger.debug(`pasting ${prompt.length} chars complete`);
 
 	await page.waitForTimeout(randomBetween(300, 700));
 	await config.afterTypingHook?.(page);
@@ -83,15 +84,25 @@ export async function askPrompt(
 	// Let the provider dismiss autocomplete or do any pre-submit setup.
 	await config.beforeSubmitHook?.(page);
 
+	// Find send button AFTER typing (appears dynamically)
+	// Wait a bit longer if needed for button to appear
+	let sendButton = await findEnabledSendButton(page, provider);
+	if (!sendButton) {
+		await page.waitForTimeout(500);
+		sendButton = await findEnabledSendButton(page, provider);
+	}
+
 	const ctx: SubmitContext = {
 		page,
 		provider,
 		input,
-		sendButton: null,
+		sendButton,
 		preSubmitContent,
 		preSubmitUrl,
 	};
 
+	// Detect bot/CAPTCHA page before attempting submission.
+	logger.debug("attempting submission…");
 	await detectBotPage(page, provider);
 
 	// Try each submission strategy exactly once — if all fail, throw immediately.
@@ -103,7 +114,7 @@ export async function askPrompt(
 	let submissionAborted = false;
 
 	type SubmitStrategy = "native" | "enter" | "force" | "dispatch";
-	const configuredSubmitOrder: SubmitStrategy[] = config.submitOrder ?? [
+	const submitOrder: SubmitStrategy[] = config.submitOrder ?? [
 		"native",
 		"enter",
 		"force",
@@ -111,54 +122,38 @@ export async function askPrompt(
 	];
 	const needsButton = new Set<SubmitStrategy>(["native", "force", "dispatch"]);
 	const strategyMap: Record<SubmitStrategy, () => Promise<boolean>> = {
-		native: () => (ctx.sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
+		native: () => (sendButton ? tryNativeClick(ctx) : Promise.resolve(false)),
 		enter: () => tryEnterSubmit(ctx),
-		force: () => (ctx.sendButton ? tryForceClick(ctx) : Promise.resolve(false)),
+		force: () => (sendButton ? tryForceClick(ctx) : Promise.resolve(false)),
 		dispatch: () =>
-			ctx.sendButton ? tryDispatchClick(ctx) : Promise.resolve(false),
+			sendButton ? tryDispatchClick(ctx) : Promise.resolve(false),
 	};
-	const buttonSubmitOrder = configuredSubmitOrder.filter((strategy) =>
-		needsButton.has(strategy),
-	);
+
+	if (!sendButton) {
+		const skipped = submitOrder.filter((s) => needsButton.has(s));
+		if (skipped.length > 0) {
+			logger.debug(`  ⚠️ no send button — skipping: ${skipped.join(", ")}`);
+		}
+	}
+
+	const effectiveSubmitOrder: SubmitStrategy[] = sendButton
+		? submitOrder
+		: submitOrder.includes("enter")
+			? ["enter"]
+			: [];
 
 	const success = await Promise.race([
 		(async () => {
-			if (configuredSubmitOrder.includes("enter") && !submissionAborted) {
-				const enterSubmitted = await strategyMap.enter();
-				if (enterSubmitted) {
-					return true;
-				}
-				logger.debug("  ↩ enter: returned false");
-			}
-
-			if (buttonSubmitOrder.length === 0 || submissionAborted) {
-				return false;
-			}
-
-			void primeSelectorProfile(page, provider, "submit");
-			let sendButton = await findEnabledSendButton(page, provider);
-			if (!sendButton) {
-				await page.waitForTimeout(500);
-				sendButton = await findEnabledSendButton(page, provider);
-			}
-			ctx.sendButton = sendButton;
-
-			if (!ctx.sendButton) {
-				logger.debug(
-					`  ⚠️ no send button after typed-state scan — skipping: ${buttonSubmitOrder.join(", ")}`,
-				);
-				return false;
-			}
-
-			for (const strategy of buttonSubmitOrder) {
-				if (submissionAborted) break;
+			let submitted = false;
+			for (const strategy of effectiveSubmitOrder) {
+				if (submitted || submissionAborted) break;
 				const result = await strategyMap[strategy]();
-				if (result) {
-					return true;
+				if (!result) {
+					logger.debug(`  ↩ ${strategy}: returned false`);
 				}
-				logger.debug(`  ↩ ${strategy}: returned false`);
+				submitted = result;
 			}
-			return false;
+			return submitted;
 		})(),
 		new Promise<boolean>((_, reject) =>
 			setTimeout(() => {
@@ -181,11 +176,10 @@ export async function askPrompt(
 	await page
 		.waitForLoadState("domcontentloaded", { timeout: 5000 })
 		.catch(() => {});
-	// Chat providers keep long-lived connections open, so waiting for networkidle
-	// adds an avoidable fixed delay after every successful submit. A short settle
-	// is enough before provider-specific post-submit hooks run.
-	await page.waitForTimeout(150);
+	await page
+		.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
+		.catch(() => {});
 	await config.afterSubmitHook?.(page);
 
-	logger.log(`[${provider}] prompt submitted: ${page.url()}`);
+	logger.log(`post-submit URL: ${page.url()}`);
 }
