@@ -470,7 +470,7 @@ export function SourcesIntelligencePanel({
 													</span>
 												</div>
 											</TableCell>
-											<TableCell className="px-2 py-5 text-right text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
+											<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 												{formatCitationLabel(group.totalCitations)}
 											</TableCell>
 											<TableCell className="hidden px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4">

@@ -17,7 +17,7 @@ export const SITE_URLS = {
 	githubLicense: "https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE",
 	signup: "https://oneglanse.com/signup",
 	login: "https://oneglanse.com/login",
-	docs: "https://oneglanse.com/docs",
+	docs: "https://docs.oneglanse.com/",
 	app: "https://app.oneglanse.com",
 	homepage: "https://oneglanse.com",
 } as const;

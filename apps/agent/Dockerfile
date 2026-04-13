@@ -14,7 +14,8 @@ COPY packages/services ./packages/services
 COPY packages/types ./packages/types
 COPY packages/utils ./packages/utils
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store-agent,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 FROM deps AS builder
 RUN pnpm turbo build --filter=@oneglanse/agent...

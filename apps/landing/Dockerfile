@@ -11,17 +11,20 @@ COPY apps/landing ./apps/landing
 COPY packages/types ./packages/types
 COPY packages/ui ./packages/ui
 COPY packages/utils ./packages/utils
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store-landing,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 FROM deps AS builder
 RUN pnpm turbo build --filter=@oneglanse/landing...
 
-FROM node:20-bookworm-slim AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 COPY --from=builder /app/apps/landing/.next/standalone ./
 COPY --from=builder /app/apps/landing/.next/static ./apps/landing/.next/static
 COPY --from=builder /app/apps/landing/public ./apps/landing/public
+RUN chown -R node:node /app
+USER node
 EXPOSE 3000
 CMD ["node", "apps/landing/server.js"]

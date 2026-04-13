@@ -26,7 +26,7 @@ Open the hosted app directly:
 
 - app: [https://app.oneglanse.com](https://app.oneglanse.com)
 - landing: [https://oneglanse.com](https://oneglanse.com)
-- docs: [https://oneglanse.com/docs](https://oneglanse.com/docs)
+- docs: [https://docs.oneglanse.com/](https://docs.oneglanse.com/)
 
 Recommended flow:
 
