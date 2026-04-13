@@ -85,8 +85,24 @@ Default ports:
 - app: `http://<host>:3001`
 - auth upload API: `http://<host>:3333`
 
-Persistent VPS state is stored under `/opt/oneglanse/storage` and mounted into
-the containers as `/storage`.
+Persistent VPS state defaults to `/opt/oneglanse/storage` and is mounted into
+the containers as `/storage`. Override it with `ONEGLANSE_STORAGE_ROOT` if your
+host should store data elsewhere.
+
+By default, self-hosted compose builds and tags local images named:
+
+- `oneglanse-web:latest`
+- `oneglanse-agent:latest`
+- `oneglanse-postgres:latest`
+- `oneglanse-landing:latest`
+
+If you want to deploy prebuilt images instead, set these env vars before
+running the compose helpers:
+
+- `ONEGLANSE_WEB_IMAGE`
+- `ONEGLANSE_AGENT_IMAGE`
+- `ONEGLANSE_POSTGRES_IMAGE`
+- `ONEGLANSE_LANDING_IMAGE`
 
 ### App-Only Redeploys
 
@@ -212,6 +228,7 @@ about:
 - `.env`
   - `OPENAI_API_KEY`
   - `BETTER_AUTH_SECRET`
+  - `INTERNAL_CRON_SECRET`
   - `APP_URL`
   - `API_BASE_URL`
   - `GOOGLE_CLIENT_ID`
@@ -254,7 +271,7 @@ For VPS auth upload, prefer setting `ONEGLANSE_VPS_IP` and
 - `pnpm self-host` - start both the app and public VPS stacks
 - `pnpm self-host:app` - rebuild only the app stack
 - `pnpm self-host:public` - rebuild only the public stack
-- `pnpm self-host:pull` - pull both stacks before an update
+- `pnpm self-host:pull` - pull configured prebuilt images before an update
 - `pnpm typecheck` - typecheck the monorepo
 - `pnpm build` - build the monorepo
 

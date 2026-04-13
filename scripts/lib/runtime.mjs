@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
+import { randomBytes, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,13 +44,32 @@ const CAMOUFOX_FETCH_SCRIPT = [
 
 let cachedLocalCamoufoxPython = null;
 
-async function ensureFile(targetFile, sourceFile) {
+function buildRootEnvTemplate(rawTemplate) {
+	return rawTemplate
+		.replace(
+			/^BETTER_AUTH_SECRET=.*$/m,
+			`BETTER_AUTH_SECRET=${randomBytes(32).toString("hex")}`,
+		)
+		.replace(
+			/^INTERNAL_CRON_SECRET=.*$/m,
+			`INTERNAL_CRON_SECRET=${randomUUID()}`,
+		);
+}
+
+async function ensureFile(targetFile, sourceFile, options = {}) {
 	if (existsSync(targetFile)) {
 		return;
 	}
 
 	await mkdir(path.dirname(targetFile), { recursive: true });
-	await copyFile(sourceFile, targetFile);
+
+	if (options.transform) {
+		const source = readFileSync(sourceFile, "utf8");
+		await writeFile(targetFile, options.transform(source), "utf8");
+	} else {
+		await copyFile(sourceFile, targetFile);
+	}
+
 	console.log(
 		`Created ${path.relative(repoRoot, targetFile)} from ${path.relative(repoRoot, sourceFile)}.`,
 	);
@@ -94,7 +114,9 @@ function loadEnvFile(filePath) {
 }
 
 export async function ensureEnvFiles() {
-	await ensureFile(rootEnvFile, rootEnvExampleFile);
+	await ensureFile(rootEnvFile, rootEnvExampleFile, {
+		transform: buildRootEnvTemplate,
+	});
 	await ensureFile(agentEnvFile, agentEnvExampleFile);
 	loadEnvFile(rootEnvFile);
 	loadEnvFile(agentEnvFile);

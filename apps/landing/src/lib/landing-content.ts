@@ -12,9 +12,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+const githubRepoUrl =
+	process.env.NEXT_PUBLIC_GITHUB_REPO_URL?.trim() ||
+	"https://github.com/aryamantodkar/oneglanse";
+
 export const SITE_URLS = {
-	github: "https://github.com/aryamantodkar/oneglanse",
-	githubLicense: "https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE",
+	github: githubRepoUrl,
+	githubLicense: `${githubRepoUrl}/blob/main/LICENSE`,
 	signup: "https://oneglanse.com/signup",
 	login: "https://oneglanse.com/login",
 	docs: "https://docs.oneglanse.com/",

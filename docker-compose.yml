@@ -12,7 +12,7 @@ services:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
         CAMOUFOX_PIP_SPEC: "${CAMOUFOX_PIP_SPEC:-cloverlabs-camoufox[geoip]}"
         CAMOUFOX_BROWSER_CHANNEL: "${CAMOUFOX_BROWSER_CHANNEL:-official/stable}"
-    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-agent:${ONEGLANSE_IMAGE_TAG:-latest}
+    image: ${ONEGLANSE_AGENT_IMAGE:-oneglanse-agent:latest}
     container_name: oneglanse-agent-worker
     restart: unless-stopped
     stop_grace_period: 16m
@@ -23,7 +23,7 @@ services:
       ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
     volumes:
-      - /opt/oneglanse/storage:/storage
+      - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage
     ports:
       - "3333:3333"
     depends_on:
@@ -81,7 +81,7 @@ services:
     build:
       context: .
       dockerfile: ./packages/db/Dockerfile
-    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-postgres:${ONEGLANSE_IMAGE_TAG:-latest}
+    image: ${ONEGLANSE_POSTGRES_IMAGE:-oneglanse-postgres:latest}
     container_name: postgres_db
     restart: always
     command:
@@ -153,7 +153,7 @@ services:
       dockerfile: ./apps/web/Dockerfile
       args:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
-    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-web:${ONEGLANSE_IMAGE_TAG:-latest}
+    image: ${ONEGLANSE_WEB_IMAGE:-oneglanse-web:latest}
     container_name: oneglanse-web
     restart: unless-stopped
     env_file:
@@ -164,7 +164,7 @@ services:
       ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
     volumes:
-      - /opt/oneglanse/storage:/storage:ro
+      - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage:ro
     networks:
       - edge
       - frontend
@@ -197,7 +197,7 @@ services:
       dockerfile: ./apps/web/Dockerfile
       args:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
-    image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-web:${ONEGLANSE_IMAGE_TAG:-latest}
+    image: ${ONEGLANSE_WEB_IMAGE:-oneglanse-web:latest}
     container_name: oneglanse-migrate
     env_file:
       - .env

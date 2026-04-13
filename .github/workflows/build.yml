@@ -6,8 +6,28 @@ on:
     paths:
       - 'apps/**'
       - 'packages/**'
+      - '.npmrc'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'turbo.json'
+      - 'docker-compose.yml'
+      - 'docker-compose.public.yml'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - '.npmrc'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'turbo.json'
+      - 'docker-compose.yml'
+      - 'docker-compose.public.yml'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -51,20 +71,33 @@ jobs:
             web:
               - 'apps/web/**'
               - 'packages/**'
+              - '.npmrc'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig.json'
+              - 'turbo.json'
             landing:
               - 'apps/landing/**'
+              - '.npmrc'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig.json'
+              - 'turbo.json'
             agent:
               - 'apps/agent/**'
               - 'packages/**'
+              - '.npmrc'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig.json'
+              - 'turbo.json'
             postgres:
               - 'packages/db/Dockerfile'
               - 'packages/db/init-scripts/**'
+              - '.github/workflows/build.yml'
 
   # ── Build jobs ───────────────────────────────────────────────
   build-web:
@@ -79,6 +112,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
+        if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -95,11 +129,11 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           build-args: PNPM_VERSION=${{ env.PNPM }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-web:buildcache
-          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-web:buildcache,mode=max
+          cache-from: type=gha,scope=oneglanse-web
+          cache-to: type=gha,scope=oneglanse-web,mode=max
 
   build-landing:
     name: Landing
@@ -113,6 +147,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
+        if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -129,11 +164,11 @@ jobs:
           context: .
           file: ./apps/landing/Dockerfile
           build-args: PNPM_VERSION=${{ env.PNPM }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-landing:buildcache
-          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-landing:buildcache,mode=max
+          cache-from: type=gha,scope=oneglanse-landing
+          cache-to: type=gha,scope=oneglanse-landing,mode=max
 
   build-agent:
     name: Agent
@@ -147,6 +182,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
+        if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -166,11 +202,11 @@ jobs:
             PNPM_VERSION=${{ env.PNPM }}
             CAMOUFOX_PIP_SPEC=cloverlabs-camoufox[geoip]
             CAMOUFOX_BROWSER_CHANNEL=official/prerelease
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-agent:buildcache
-          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-agent:buildcache,mode=max
+          cache-from: type=gha,scope=oneglanse-agent
+          cache-to: type=gha,scope=oneglanse-agent,mode=max
 
   build-postgres:
     name: Postgres
@@ -184,6 +220,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
+        if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -199,8 +236,8 @@ jobs:
         with:
           context: .
           file: ./packages/db/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.PREFIX }}/oneglanse-postgres:buildcache
-          cache-to: type=registry,ref=${{ env.PREFIX }}/oneglanse-postgres:buildcache,mode=max
+          cache-from: type=gha,scope=oneglanse-postgres
+          cache-to: type=gha,scope=oneglanse-postgres,mode=max

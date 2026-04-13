@@ -7,16 +7,24 @@ import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import { getActiveOrganization } from "../workspace/getActiveOrganization";
 
+const isBuildTime =
+	process.env.SKIP_ENV_VALIDATION === "true" ||
+	process.env.npm_lifecycle_event === "build" ||
+	(process.argv.includes("next") && process.argv.includes("build"));
+
 const authSecret =
 	env.BETTER_AUTH_SECRET ??
-	(env.NODE_ENV === "production"
+	(env.NODE_ENV === "production" && !isBuildTime
 		? undefined
-		: "o1Gk9Q2mR7xL4vP8sN6dF3hT5yC1uJ0wB4eK7aM2p");
+		: "build-only-auth-secret-0123456789abcdef0123456789abcdef");
 
 const authBaseUrl =
 	env.APP_URL ??
 	env.API_BASE_URL ??
-	(env.NODE_ENV === "production" ? undefined : "http://localhost:3000");
+	process.env.BETTER_AUTH_URL?.trim() ??
+	(env.NODE_ENV === "production" && !isBuildTime
+		? undefined
+		: "http://localhost:3000");
 
 const socialProviders =
 	env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
