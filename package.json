@@ -11,6 +11,7 @@
 		"dev:agent": "turbo dev --filter=@oneglanse/agent",
 		"local": "node scripts/run-local.mjs",
 		"auth": "node scripts/run-auth.mjs",
+		"upload:vps": "node scripts/run-auth.mjs --upload-existing-only",
 		"self-host": "node scripts/run-compose.mjs --stack all up -d --build",
 		"self-host:app": "node scripts/run-compose.mjs --stack app up -d --build",
 		"self-host:public": "node scripts/run-compose.mjs --stack public up -d --build",

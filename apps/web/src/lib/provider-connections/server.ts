@@ -21,10 +21,23 @@ function getDefaultProviderAuthStatus(
 }
 
 export async function readProviderConnectionsState(): Promise<ProviderConnectionsState> {
-	const [cards, statuses] = await Promise.all([
-		Promise.resolve(getAuthProviderCards()),
-		readProviderAuthStatuses(),
-	]);
+	const cards = getAuthProviderCards();
+	let statuses: ProviderAuthStatus[];
+
+	try {
+		statuses = await readProviderAuthStatuses();
+	} catch (error) {
+		const message =
+			error instanceof Error
+				? "Auth storage is unavailable on this server. You can still use the app, but provider sessions cannot be read until auth storage is mounted."
+				: "Auth storage is unavailable on this server.";
+
+		statuses = cards.map((card) => ({
+			...getDefaultProviderAuthStatus(card.provider),
+			error: message,
+		}));
+	}
+
 	const statusMap = new Map(
 		statuses.map((status) => [status.provider, status] as const),
 	);

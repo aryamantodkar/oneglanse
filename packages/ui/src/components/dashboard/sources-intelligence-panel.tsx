@@ -554,14 +554,11 @@ export function SourcesIntelligencePanel({
 																	className="bg-white dark:bg-neutral-950"
 																>
 																	<TableCell
-																		className="w-px whitespace-normal px-4 py-5 pl-20 align-top sm:whitespace-normal"
+																		className="px-4 py-5 pl-20"
 																		colSpan={3}
 																	>
-																		<div className="w-full border-l-2 border-gray-200/80 pl-4 dark:border-gray-800">
-																			<p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-																				Cited text
-																			</p>
-																			<p className="text-sm leading-7 text-gray-700 [overflow-wrap:anywhere] break-words italic dark:text-gray-300">
+																		<div className="max-w-full rounded-[22px] border border-gray-100/80 bg-stone-50 p-4 dark:border-gray-800 dark:bg-neutral-900">
+																			<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
 																				{excerpt.citedText?.trim()
 																					? cleanCitedText(excerpt.citedText)
 																					: "This citation has no extracted quoted text."}

@@ -611,8 +611,6 @@ export function getReusableIdentityDomainSuffixes(): string[] {
 }
 
 export async function readReusableIdentitySeedState(): Promise<StorageState | null> {
-	ensureAuthDirectories();
-
 	const states = (
 		await Promise.all(
 			REUSABLE_IDENTITY_PROVIDERS.map(async (provider) => {
@@ -807,7 +805,6 @@ export async function uploadAuthSession(
 export async function readProviderAuthStatuses(): Promise<
 	ProviderAuthStatus[]
 > {
-	ensureAuthDirectories();
 	const remoteSyncConfigured = isRemoteSyncConfigured();
 
 	return Promise.all(
@@ -872,8 +869,6 @@ export async function readAuthenticatedRuntimeProviders(
 export async function getRuntimeProfileSeedPlan(
 	provider: Provider,
 ): Promise<RuntimeProfileSeedPlan> {
-	ensureAuthDirectories();
-
 	const authProvider = getAuthProviderForRuntimeProvider(provider);
 	const userDataDir = getProviderProfileDir(provider);
 	const authState = await readAuthSession(authProvider);
