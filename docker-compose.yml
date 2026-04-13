@@ -22,8 +22,6 @@ services:
     environment:
       ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
-      AGENT_API_HOST: 0.0.0.0
-      AGENT_API_PORT: 3333
       CAMOUFOX_HEADLESS_MODE: ${CAMOUFOX_HEADLESS_MODE:-virtual}
       CAMOUFOX_PYTHON_BIN: ${CAMOUFOX_PYTHON_BIN:-python3}
       DEBUG_ENABLED: ${DEBUG_ENABLED:-false}

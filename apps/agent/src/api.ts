@@ -55,12 +55,22 @@ const server = createServer((req, res) => {
 		let totalBytes = 0;
 		let aborted = false;
 
+		const readTimeout = setTimeout(() => {
+			if (!aborted) {
+				aborted = true;
+				res.statusCode = 408;
+				res.end(JSON.stringify({ error: "Request timeout" }));
+				req.destroy();
+			}
+		}, 120_000);
+
 		req.on("data", (chunk) => {
 			const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
 			chunks.push(buffer);
 			totalBytes += buffer.length;
-			if (totalBytes > 5_000_000) {
+			if (totalBytes > 20_000_000) {
 				aborted = true;
+				clearTimeout(readTimeout);
 				res.statusCode = 413;
 				res.end(JSON.stringify({ error: "Payload too large" }));
 				req.destroy();
@@ -68,6 +78,7 @@ const server = createServer((req, res) => {
 		});
 
 		req.on("end", () => {
+			clearTimeout(readTimeout);
 			void (async () => {
 				if (aborted) return;
 

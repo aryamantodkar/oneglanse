@@ -1,4 +1,8 @@
 import net from "node:net";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import zlib from "node:zlib";
 import {
 	attachTerminationHandler,
 	buildLocalWorkspacePackages,
@@ -6,10 +10,61 @@ import {
 	ensureEnvFiles,
 	ensureLocalCamoufoxRuntime,
 	openBrowser,
+	repoRoot,
 	spawnCommand,
 	waitForChildExit,
 	waitForHttp,
 } from "./lib/runtime.mjs";
+
+const PROVIDERS = ["chatgpt", "perplexity", "gemini", "google", "claude"];
+
+function getAuthRootDir() {
+	const configured = process.env.AGENT_AUTH_ROOT_DIR?.trim();
+	return configured ? path.resolve(configured) : path.join(repoRoot, ".oneglanse-storage", "auth");
+}
+
+async function uploadExistingSessionsIfPresent(uploadUrl, uploadToken) {
+	const uploaded = [];
+	for (const provider of PROVIDERS) {
+		const sessionFile = path.join(getAuthRootDir(), "sessions", provider, `${provider}-auth.json`);
+		if (!existsSync(sessionFile)) continue;
+
+		// Build wrapper without parsing the JSON — avoids a full parse/stringify
+		// cycle on large session files (e.g. ChatGPT can be 1+ MB)
+		const rawSession = await readFile(sessionFile, "utf8");
+		const wrapper = `{"provider":${JSON.stringify(provider)},"session":${rawSession}}`;
+		const body = zlib.gzipSync(wrapper);
+
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), 60_000);
+		try {
+			const response = await fetch(uploadUrl, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"Content-Encoding": "gzip",
+					"Content-Length": String(body.length),
+					Authorization: `Bearer ${uploadToken}`,
+				},
+				body,
+				signal: controller.signal,
+			});
+			if (!response.ok) {
+				throw new Error(`Upload failed for ${provider} (${response.status}): ${await response.text()}`);
+			}
+		} catch (err) {
+			if (err.name === "AbortError") {
+				throw new Error(`Upload timed out for ${provider} after 60s`);
+			}
+			throw err;
+		} finally {
+			clearTimeout(timer);
+		}
+
+		uploaded.push(provider);
+	}
+	return uploaded;
+}
 
 function readArg(flag, fallback) {
 	const index = process.argv.indexOf(flag);
@@ -88,43 +143,43 @@ async function resolveAuthPort(requestedPort, explicitPortProvided) {
 	);
 }
 
-async function uploadExistingSessionsIfPresent() {
-	const [{ AUTH_PROVIDER_LIST }, { readAuthSession, uploadAuthSession }] =
-		await Promise.all([import("@oneglanse/types"), import("@oneglanse/services")]);
-
-	const existingProviders = [];
-
-	for (const provider of AUTH_PROVIDER_LIST) {
-		const session = await readAuthSession(provider);
-		if (!session) continue;
-		await uploadAuthSession(provider, session);
-		existingProviders.push(provider);
-	}
-
-	return existingProviders;
-}
-
 async function main() {
 	await ensureEnvFiles();
+
+	const uploadOnly = hasFlag("--upload-existing-only");
+	const uploadUrl = resolveUploadUrl();
+	const uploadToken = readArg("--upload-token", process.env.AGENT_AUTH_UPLOAD_TOKEN);
+
+	if (Boolean(uploadUrl) !== Boolean(uploadToken)) {
+		throw new Error("--upload-url and --upload-token must be provided together.");
+	}
+
+	// Upload-only: just read session files and POST — no Camoufox, no package builds
+	if (uploadOnly) {
+		if (!uploadUrl || !uploadToken) {
+			throw new Error(
+				"Upload config missing. Set AGENT_AUTH_UPLOAD_TOKEN and ONEGLANSE_VPS_IP (or AGENT_AUTH_UPLOAD_URL).",
+			);
+		}
+		const uploadedProviders = await uploadExistingSessionsIfPresent(uploadUrl, uploadToken);
+		if (uploadedProviders.length > 0) {
+			console.log(`Uploaded existing local auth sessions: ${uploadedProviders.join(", ")}`);
+		} else {
+			throw new Error(
+				"No existing local auth sessions were found to upload. Run `pnpm auth` first to capture them.",
+			);
+		}
+		return;
+	}
+
 	await ensureLocalCamoufoxRuntime();
 	await buildLocalWorkspacePackages();
 
 	const explicitPortProvided = process.argv.includes("--port");
 	const requestedPort = readArg("--port", process.env.PORT ?? "3000");
 	const port = await resolveAuthPort(requestedPort, explicitPortProvided);
-	const uploadOnly = hasFlag("--upload-existing-only");
 	const localAppUrl = `http://localhost:${port}`;
 	const localEnv = buildLocalRuntimeEnv(localAppUrl);
-	const uploadUrl = resolveUploadUrl();
-	const uploadToken = readArg(
-		"--upload-token",
-		process.env.AGENT_AUTH_UPLOAD_TOKEN,
-	);
-	if (Boolean(uploadUrl) !== Boolean(uploadToken)) {
-		throw new Error(
-			"--upload-url and --upload-token must be provided together.",
-		);
-	}
 
 	process.env.ONEGLANSE_APP_MODE = "local";
 	if (uploadUrl) {
@@ -132,27 +187,6 @@ async function main() {
 	}
 	if (uploadToken) {
 		process.env.AGENT_AUTH_UPLOAD_TOKEN = uploadToken;
-	}
-
-	if (uploadUrl && uploadToken) {
-		const uploadedProviders = await uploadExistingSessionsIfPresent();
-		if (uploadedProviders.length > 0) {
-			console.log(
-				`Uploaded existing local auth sessions: ${uploadedProviders.join(", ")}`,
-			);
-			return;
-		}
-	}
-
-	if (uploadOnly) {
-		if (!uploadUrl || !uploadToken) {
-			throw new Error(
-				"Upload config missing. Set AGENT_AUTH_UPLOAD_TOKEN and ONEGLANSE_VPS_IP (or AGENT_AUTH_UPLOAD_URL).",
-			);
-		}
-		throw new Error(
-			"No existing local auth sessions were found to upload. Run `pnpm auth` first to capture them.",
-		);
 	}
 
 	const authUrl = `${localAppUrl}/providers`;
