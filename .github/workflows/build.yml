@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [feat/no-auth-providers]
+    branches: [main]
     paths:
       - 'apps/**'
       - 'packages/**'
