@@ -14,8 +14,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
 		avgSentiment: 83,
 		avgRank: 1.4,
 		recCount: 291,
-		winsOver: ["Salesforce", "Marketo", "Mailchimp"],
-		losesTo: [],
 		isBrand: true,
 	},
 	{
@@ -26,8 +24,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
 		avgSentiment: 76,
 		avgRank: 2.2,
 		recCount: 206,
-		winsOver: ["Marketo", "Pardot"],
-		losesTo: ["HubSpot"],
 	},
 	{
 		name: "Adobe Marketo",
@@ -37,8 +33,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
 		avgSentiment: 68,
 		avgRank: 2.9,
 		recCount: 148,
-		winsOver: ["Mailchimp"],
-		losesTo: ["HubSpot", "Salesforce"],
 	},
 	{
 		name: "Mailchimp",
@@ -48,8 +42,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
 		avgSentiment: 65,
 		avgRank: 3.5,
 		recCount: 113,
-		winsOver: ["ActiveCampaign"],
-		losesTo: ["HubSpot", "Salesforce", "Adobe Marketo"],
 	},
 	{
 		name: "ActiveCampaign",
@@ -59,8 +51,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
 		avgSentiment: 58,
 		avgRank: 4.1,
 		recCount: 71,
-		winsOver: [],
-		losesTo: ["HubSpot", "Salesforce", "Adobe Marketo"],
 	},
 	{
 		name: "Pardot",
@@ -70,8 +60,6 @@ export const PREVIEW_COMPETITORS: DashboardCompetitorData[] = [
 		avgSentiment: 54,
 		avgRank: 4.8,
 		recCount: 52,
-		winsOver: [],
-		losesTo: ["HubSpot", "Salesforce", "Adobe Marketo"],
 	},
 ];
 

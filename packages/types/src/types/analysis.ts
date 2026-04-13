@@ -20,9 +20,6 @@ export interface BrandAnalysisResult {
 	metadata?: {
 		brandName: string;
 		brandDomain: string;
-		prompt: string | null;
-		prompt_id: string | null;
-		analyzedAt: string;
 	};
 
 	/**
@@ -31,7 +28,6 @@ export interface BrandAnalysisResult {
 	 */
 	geoScore: {
 		overall: number;
-		verdict: string;
 	};
 
 	/**
@@ -39,16 +35,7 @@ export interface BrandAnalysisResult {
 	 */
 	presence: {
 		mentioned: boolean;
-		mentionCount: number;
 		visibility: number;
-		prominence:
-			| "dominant"
-			| "significant"
-			| "moderate"
-			| "minor"
-			| "passing"
-			| "absent";
-		firstMentionPosition: "top" | "middle" | "bottom" | "absent";
 	};
 
 	/**
@@ -56,10 +43,6 @@ export interface BrandAnalysisResult {
 	 */
 	position: {
 		rankPosition: number | null;
-		totalRanked: number | null;
-		isTopPick: boolean;
-		isTopThree: boolean;
-		rankingContext: string | null;
 	};
 
 	/**
@@ -67,14 +50,6 @@ export interface BrandAnalysisResult {
 	 */
 	sentiment: {
 		score: number;
-		label:
-			| "very_negative"
-			| "negative"
-			| "neutral"
-			| "positive"
-			| "very_positive";
-		positives: string[];
-		negatives: string[];
 	};
 
 	/**
@@ -88,8 +63,6 @@ export interface BrandAnalysisResult {
 			| "mentioned_only"
 			| "discouraged"
 			| "not_mentioned";
-		bestFor: string[];
-		caveats: string[];
 	};
 
 	/**
@@ -102,8 +75,6 @@ export interface BrandAnalysisResult {
 		sentiment: number;
 		rankPosition: number | null;
 		isRecommended: boolean;
-		winsOver: string[];
-		losesTo: string[];
 	}[];
 
 	/**
@@ -125,26 +96,10 @@ export interface BrandAnalysisResult {
 	 * RISK ALERTS — Things the brand needs to fix or monitor
 	 */
 	risks: {
-		hasRisks: boolean;
 		items: {
-			type:
-				| "outdated_info"
-				| "factual_error"
-				| "brand_confusion"
-				| "negative_association"
-				| "missing_from_response";
 			severity: "critical" | "warning" | "info";
-			detail: string;
 		}[];
 	};
-
-	/**
-	 * ACTIONABLE RECOMMENDATIONS — What should the brand do next?
-	 */
-	actions: {
-		priority: "critical" | "high" | "medium" | "low";
-		recommendation: string;
-	}[];
 }
 
 export interface AnalysisModelInput {

@@ -37,25 +37,17 @@ export function useDashboardData(
 		const emptyReturn = {
 			brandName: fallbackBrandName,
 			brandDomain: fallbackBrandDomain,
-			avgRank: { position: null as number | null, total: null as number | null },
-			avgSentiment: { score: 0, label: "neutral" as const },
+			avgRank: { position: null as number | null },
+			avgSentiment: { score: 0 },
 			impactMetrics: {
 				totalResponses: 0,
-				avgGeoScore: 0,
 				avgVisibility: 0,
 				recommendationRate: 0,
 				topPickRate: 0,
-				earlyMentionRate: 0,
-				dominantPresenceRate: 0,
-				absentRate: 0,
-				riskResponseRate: 0,
 				criticalRiskCount: 0,
-				warningRiskCount: 0,
 			},
 			aggregateStats: {
 				presenceRate: 0,
-				winRate: 0,
-				recRate: 0,
 				topCompetitor: "N/A",
 			},
 			brandPerception: {
@@ -78,28 +70,18 @@ export function useDashboardData(
 		// avgRank accumulators
 		let rankSum = 0;
 		let rankCount = 0;
-		let totalRankedSum = 0;
-		let totalRankedCount = 0;
 
 		// avgSentiment
 		let sentimentSum = 0;
 
 		// impactMetrics
-		let geoScoreSum = 0;
 		let visibilitySum = 0;
 		let recommendedCount = 0;
 		let topPickCount = 0;
-		let earlyMentionCount = 0;
-		let dominantPresenceCount = 0;
-		let absentCount = 0;
-		let responsesWithRisks = 0;
 		let criticalRiskCount = 0;
-		let warningRiskCount = 0;
 
 		// aggregateStats
 		let mentionedCount = 0;
-		let isTopPickCount = 0;
-		let isRecommendedCount = 0;
 		const competitorFrequency = new Map<string, number>();
 
 		// brandPerception
@@ -121,8 +103,6 @@ export function useDashboardData(
 				rankSum: number;
 				rankCount: number;
 				recCount: number;
-				winsOver: Map<string, number>;
-				losesTo: Map<string, number>;
 			}
 		>();
 
@@ -142,16 +122,11 @@ export function useDashboardData(
 				rankSum += analysis.position.rankPosition;
 				rankCount++;
 			}
-			if (analysis.position.totalRanked !== null) {
-				totalRankedSum += analysis.position.totalRanked;
-				totalRankedCount++;
-			}
 
 			// avgSentiment
 			sentimentSum += analysis.sentiment.score;
 
 			// impactMetrics
-			geoScoreSum += analysis.geoScore.overall;
 			visibilitySum += analysis.presence.visibility;
 
 			if (
@@ -163,35 +138,12 @@ export function useDashboardData(
 			if (analysis.recommendation.type === "top_pick") {
 				topPickCount++;
 			}
-			if (analysis.presence.firstMentionPosition === "top") {
-				earlyMentionCount++;
-			}
-			if (
-				analysis.presence.prominence === "dominant" ||
-				analysis.presence.prominence === "significant"
-			) {
-				dominantPresenceCount++;
-			}
-			if (!analysis.presence.mentioned) {
-				absentCount++;
-			}
-			if (analysis.risks.hasRisks && analysis.risks.items.length > 0) {
-				responsesWithRisks++;
-				for (const risk of analysis.risks.items) {
-					if (risk.severity === "critical") criticalRiskCount++;
-					if (risk.severity === "warning") warningRiskCount++;
-				}
+			for (const risk of analysis.risks.items) {
+				if (risk.severity === "critical") criticalRiskCount++;
 			}
 
 			// aggregateStats
 			if (analysis.presence.mentioned) mentionedCount++;
-			if (analysis.position.isTopPick) isTopPickCount++;
-			if (
-				analysis.recommendation.type === "top_pick" ||
-				analysis.recommendation.type === "strong_alternative"
-			) {
-				isRecommendedCount++;
-			}
 			for (const c of analysis.competitors) {
 				competitorFrequency.set(
 					c.name,
@@ -228,8 +180,6 @@ export function useDashboardData(
 					rankSum: 0,
 					rankCount: 0,
 					recCount: 0,
-					winsOver: new Map<string, number>(),
-					losesTo: new Map<string, number>(),
 				};
 				existing.appearances++;
 				existing.visibilitySum += c.visibility;
@@ -240,12 +190,6 @@ export function useDashboardData(
 					existing.rankCount++;
 				}
 				if (c.isRecommended) existing.recCount++;
-				for (const w of c.winsOver) {
-					existing.winsOver.set(w, (existing.winsOver.get(w) ?? 0) + 1);
-				}
-				for (const l of c.losesTo) {
-					existing.losesTo.set(l, (existing.losesTo.get(l) ?? 0) + 1);
-				}
 				competitorMap.set(c.name, existing);
 			}
 		}
@@ -254,22 +198,8 @@ export function useDashboardData(
 
 		const avgRankPosition =
 			rankCount > 0 ? Math.round(rankSum / rankCount) : null;
-		const avgRankTotal =
-			totalRankedCount > 0
-				? Math.round(totalRankedSum / totalRankedCount)
-				: null;
 
 		const avgSentimentScore = Math.round(sentimentSum / total);
-		const avgSentimentLabel =
-			avgSentimentScore >= 80
-				? ("very_positive" as const)
-				: avgSentimentScore >= 60
-					? ("positive" as const)
-					: avgSentimentScore >= 40
-						? ("neutral" as const)
-						: avgSentimentScore >= 20
-							? ("negative" as const)
-							: ("very_negative" as const);
 
 		const topCompetitor =
 			[...competitorFrequency.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
@@ -288,12 +218,6 @@ export function useDashboardData(
 				avgRank:
 					c.rankCount > 0 ? Math.round(c.rankSum / c.rankCount) : null,
 				recCount: c.recCount,
-				winsOver: [...c.winsOver.entries()]
-					.sort((a, b) => b[1] - a[1])
-					.map(([k]) => k),
-				losesTo: [...c.losesTo.entries()]
-					.sort((a, b) => b[1] - a[1])
-					.map(([k]) => k),
 			}))
 			.sort((a, b) => b.appearances - a.appearances);
 
@@ -305,33 +229,23 @@ export function useDashboardData(
 			avgSentiment: avgSentimentScore,
 			avgRank: avgRankPosition,
 			recCount: 0,
-			winsOver: [],
-			losesTo: [],
 			isBrand: true,
 		};
 
 		return {
 			brandName,
 			brandDomain,
-			avgRank: { position: avgRankPosition, total: avgRankTotal },
-			avgSentiment: { score: avgSentimentScore, label: avgSentimentLabel },
+			avgRank: { position: avgRankPosition },
+			avgSentiment: { score: avgSentimentScore },
 			impactMetrics: {
 				totalResponses: total,
-				avgGeoScore: Math.round(geoScoreSum / total),
 				avgVisibility: Math.round(visibilitySum / total),
 				recommendationRate: Math.round((recommendedCount / total) * 100),
 				topPickRate: Math.round((topPickCount / total) * 100),
-				earlyMentionRate: Math.round((earlyMentionCount / total) * 100),
-				dominantPresenceRate: Math.round((dominantPresenceCount / total) * 100),
-				absentRate: Math.round((absentCount / total) * 100),
-				riskResponseRate: Math.round((responsesWithRisks / total) * 100),
 				criticalRiskCount,
-				warningRiskCount,
 			},
 			aggregateStats: {
 				presenceRate: Math.round((mentionedCount / total) * 100),
-				winRate: Math.round((isTopPickCount / total) * 100),
-				recRate: Math.round((isRecommendedCount / total) * 100),
 				topCompetitor,
 			},
 			brandPerception: {

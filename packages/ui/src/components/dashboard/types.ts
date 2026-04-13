@@ -6,8 +6,6 @@ export interface DashboardCompetitorData {
 	avgSentiment: number;
 	avgRank: number | null;
 	recCount: number;
-	winsOver: string[];
-	losesTo: string[];
 	isBrand?: boolean;
 }
 

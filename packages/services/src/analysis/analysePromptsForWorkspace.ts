@@ -29,9 +29,6 @@ async function analysePromptResponse(args: {
 	result.metadata = {
 		brandName: workspace.name,
 		brandDomain: workspace.domain,
-		prompt,
-		prompt_id: promptId || null,
-		analyzedAt: new Date().toISOString(),
 	};
 
 	return result;

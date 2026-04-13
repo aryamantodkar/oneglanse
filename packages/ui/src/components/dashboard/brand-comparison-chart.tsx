@@ -132,7 +132,7 @@ export function BrandComparisonChart({
 					totalResponses > 0 ? (r.appearances / totalResponses) * 100 : 0,
 				),
 				recommendation: clampScore(
-					r.appearances > 0 ? (r.recCount / r.appearances) * 100 : 0,
+					totalResponses > 0 ? (r.recCount / totalResponses) * 100 : 0,
 				),
 				sentiment: clampScore(r.avgSentiment),
 				rankStrength: rankToStrength(r.avgRank),

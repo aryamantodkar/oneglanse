@@ -104,7 +104,7 @@ export default function SourcesPage(): React.JSX.Element {
 			map.set(domain, existing);
 		}
 
-		return [...map.values()];
+		return [...map.values()].sort((a, b) => b.totalCitations - a.totalCitations);
 	}, [displayedSources]);
 
 	const metrics = useMemo<SourcePanelMetrics>(() => {

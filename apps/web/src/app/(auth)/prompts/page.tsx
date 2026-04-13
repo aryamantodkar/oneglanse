@@ -259,7 +259,6 @@ export default function Prompts() {
 
 				const metrics = {
 					geoScore: ba.geoScore.overall,
-					mentionCount: ba.presence.mentionCount,
 					sentiment: ba.sentiment.score,
 					visibility: ba.presence.visibility,
 					position: ba.position.rankPosition,
@@ -317,10 +316,6 @@ export default function Prompts() {
 			const avgMetrics = {
 				geoScore: Math.round(
 					validAnalyses.reduce((sum, ba) => sum + ba.geoScore.overall, 0) /
-						validAnalyses.length,
-				),
-				mentionCount: Math.round(
-					validAnalyses.reduce((sum, ba) => sum + ba.presence.mentionCount, 0) /
 						validAnalyses.length,
 				),
 				sentiment: Math.round(

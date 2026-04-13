@@ -86,10 +86,41 @@ Default ports:
 - Docs: `3002`
 - Auth upload API: `3333`
 
+### Provider Auth Setup
+
+Interactive provider login (Google, LinkedIn, etc.) cannot run on a headless server. You capture sessions locally and transfer them to the VPS.
+
+**Step 1 — Start your VPS first**
+
+```bash
+pnpm self-host
+```
+
+The auth upload API must be running on port `3333` before you transfer sessions.
+
+**Step 2 — Capture and transfer sessions from your local machine**
+
+```bash
+pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
+```
+
+Replace `YOUR_VPS_HOST` with your server's IP or hostname, and `YOUR_TOKEN` with the value of `AGENT_AUTH_UPLOAD_TOKEN` in your VPS `.env` file.
+
+This command:
+
+1. Opens a browser window for each provider
+2. Lets you log in interactively
+3. Captures the session state (cookies + localStorage)
+4. Compresses and uploads it to the VPS over HTTP
+
+**Step 3 — Verify transfer**
+
+The agent reads the transferred sessions at the start of each job run. If the session hash has changed since the last run, it reseeds the browser profile automatically before executing prompts.
+
 ### Self-Hosted Notes
 
-- Interactive provider login does not run on the server
-- Capture provider auth locally, then sync it to the server
+- Interactive provider login does not run on the server — use the auth transfer command above
+- Re-run the transfer command any time a provider session expires
 - Recurring scheduling is supported
 
 ## Choosing the Right Mode
