@@ -17,25 +17,15 @@ services:
     restart: unless-stopped
     stop_grace_period: 16m
     shm_size: "2gb"
+    env_file:
+      - .env
     environment:
       ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
       AGENT_API_HOST: 0.0.0.0
       AGENT_API_PORT: 3333
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      AGENT_AUTH_UPLOAD_TOKEN: ${AGENT_AUTH_UPLOAD_TOKEN:-oneglanse-upload-token}
-      PROXY_PROVIDER: ${PROXY_PROVIDER:-}
-      PROXY_SCHEME: ${PROXY_SCHEME:-}
-      PROXY_HOST: ${PROXY_HOST:-}
-      PROXY_PORT: ${PROXY_PORT:-}
-      PROXY_USERNAME: ${PROXY_USERNAME:-}
-      PROXY_PASSWORD: ${PROXY_PASSWORD:-}
-      THORDATA_PROXY_API_URL: ${THORDATA_PROXY_API_URL:-}
       CAMOUFOX_HEADLESS_MODE: ${CAMOUFOX_HEADLESS_MODE:-virtual}
-      CAMOUFOX_PYTHON_BIN: ${CAMOUFOX_PYTHON_BIN:-}
+      CAMOUFOX_PYTHON_BIN: ${CAMOUFOX_PYTHON_BIN:-python3}
       DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
     volumes:
       - /opt/oneglanse/storage:/storage
@@ -68,8 +58,6 @@ services:
   redis:
     image: redis:7-alpine
     command: redis-server --requirepass ${REDIS_PASSWORD:-redis}
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
     container_name: redis
     restart: unless-stopped
     volumes:
@@ -107,10 +95,8 @@ services:
       - shared_preload_libraries=pg_cron
       - -c
       - cron.database_name=${POSTGRES_DB:-oneglanse}
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-oneglanse}
+    env_file:
+      - .env
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./packages/db/init-scripts:/docker-entrypoint-initdb.d
@@ -139,10 +125,8 @@ services:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse_db
     restart: unless-stopped
-    environment:
-      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-oneglanse}
+    env_file:
+      - .env
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./packages/db/clickhouse-init:/docker-entrypoint-initdb.d
@@ -177,26 +161,13 @@ services:
     image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-web:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: oneglanse-web
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       HOSTNAME: 0.0.0.0
       PORT: "3000"
       ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
-      CLICKHOUSE_URL: http://clickhouse:8123
-      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
-      APP_URL: ${APP_URL:-http://web:3000}
-      API_BASE_URL: ${API_BASE_URL:-http://web:3000}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-o1Gk9Q2mR7xL4vP8sN6dF3hT5yC1uJ0wB4eK7aM2p}
-      INTERNAL_CRON_SECRET: ${INTERNAL_CRON_SECRET:-oneglanse-cron-secret}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     volumes:
       - /opt/oneglanse/storage:/storage:ro
     networks:
@@ -233,8 +204,8 @@ services:
         PNPM_VERSION: "${PNPM_VERSION:-10.16.0}"
     image: ${ONEGLANSE_IMAGE_PREFIX:-ghcr.io/aryamantodkar}/oneglanse-web:${ONEGLANSE_IMAGE_TAG:-latest}
     container_name: oneglanse-migrate
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
