@@ -375,7 +375,7 @@ export function SourcesIntelligencePanel({
 											</a>
 										</div>
 									</TableCell>
-									<TableCell className="px-2 py-5 text-center text-sm whitespace-nowrap text-gray-900 dark:text-gray-100 sm:px-4">
+									<TableCell className="px-2 py-5 text-center text-sm font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100 sm:px-4">
 										{domain.share.toFixed(1)}%
 									</TableCell>
 									<TableCell className="px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
@@ -527,7 +527,7 @@ export function SourcesIntelligencePanel({
 																	</div>
 																</div>
 															</TableCell>
-															<TableCell className="px-2 py-5 text-right text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
+															<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 																{formatCitationLabel(source.totalCitations)}
 															</TableCell>
 															<TableCell className="hidden px-2 py-5 align-top text-sm whitespace-normal text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4 sm:whitespace-normal">
