@@ -168,9 +168,9 @@ export function ProviderConnectionsPanel(props: {
 
 			{!authProvidersQuery.data?.interactiveConnectAllowed ? (
 				<p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-					Interactive reconnect is available only on a local run. Open this
-					Providers screen locally to capture or refresh auth, then sync it back
-					here.
+					To reconnect providers with fresh sessions, run{" "}
+					<code className="rounded px-1 font-mono text-xs">pnpm auth</code> on
+					your local machine. Sessions are uploaded to your VPS automatically.
 				</p>
 			) : null}
 
@@ -189,6 +189,9 @@ export function ProviderConnectionsPanel(props: {
 					const statusLabel = getConnectionStatusLabel(
 						card,
 						authProvidersQuery.data?.remoteSyncConfigured,
+					);
+					const canInteractivelyReconnect = Boolean(
+						authProvidersQuery.data?.interactiveConnectAllowed,
 					);
 					const primaryButtonLabel = status.connecting
 						? "Connecting"
@@ -240,7 +243,7 @@ export function ProviderConnectionsPanel(props: {
 											{statusLabel}
 										</span>
 									) : null}
-									{!isConnected ? (
+									{canInteractivelyReconnect && !isConnected ? (
 										<Button
 											variant="default"
 											className={cn(
@@ -253,11 +256,7 @@ export function ProviderConnectionsPanel(props: {
 													action: "connect",
 												})
 											}
-											disabled={
-												status.connecting ||
-												isPendingForProvider ||
-												!authProvidersQuery.data?.interactiveConnectAllowed
-											}
+											disabled={status.connecting || isPendingForProvider}
 										>
 											{status.connecting || isPendingConnect ? (
 												<Loader2 className="h-4 w-4 animate-spin" />
@@ -266,7 +265,7 @@ export function ProviderConnectionsPanel(props: {
 										</Button>
 									) : null}
 
-									{isConnected ? (
+									{canInteractivelyReconnect && isConnected ? (
 										<Button
 											variant="ghost"
 											size="icon"
@@ -280,11 +279,7 @@ export function ProviderConnectionsPanel(props: {
 													action: "refresh",
 												})
 											}
-											disabled={
-												status.connecting ||
-												isPendingForProvider ||
-												!authProvidersQuery.data?.interactiveConnectAllowed
-											}
+											disabled={status.connecting || isPendingForProvider}
 											aria-label={`Reconnect ${cardTitle}`}
 											title={`Reconnect ${cardTitle}`}
 										>

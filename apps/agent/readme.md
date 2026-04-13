@@ -46,8 +46,6 @@ Defined in `src/env.ts` (Zod validated):
   - `DEBUG_ENABLED`
 - App/runtime wiring:
   - `NODE_ENV`
-  - `AGENT_API_HOST`
-  - `AGENT_API_PORT`
   - `AGENT_AUTH_ROOT_DIR`
   - `AGENT_AUTH_UPLOAD_URL`
   - `AGENT_AUTH_UPLOAD_TOKEN`

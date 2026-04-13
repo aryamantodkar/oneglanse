@@ -1,11 +1,7 @@
 import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 import { getPostProvidersContinuePath } from "@/lib/auth/redirect";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
-import {
-	isInteractiveAuthAllowedInMode,
-	resolveAppMode,
-} from "@oneglanse/types";
-import { redirect } from "next/navigation";
+import { resolveAppMode } from "@oneglanse/types";
 
 export default async function ProvidersPage({
 	searchParams,
@@ -13,9 +9,6 @@ export default async function ProvidersPage({
 	searchParams?: Promise<{ next?: string }>;
 }) {
 	const appMode = resolveAppMode(process.env.ONEGLANSE_APP_MODE);
-	if (!isInteractiveAuthAllowedInMode(appMode)) {
-		redirect("/");
-	}
 
 	let workspace = null;
 	try {
@@ -29,6 +22,11 @@ export default async function ProvidersPage({
 		workspaceId: workspace?.id ?? null,
 	});
 
+	const description =
+		appMode === "self-hosted"
+			? "To reconnect providers with fresh sessions, run pnpm auth on your local machine. Sessions are uploaded to your VPS automatically."
+			: "Log in to any provider below, then close the browser window. Auth is saved automatically and you can reconnect here any time.";
+
 	return (
 		<div className="web-centered-page">
 			<div className="w-full max-w-5xl space-y-6">
@@ -37,9 +35,7 @@ export default async function ProvidersPage({
 						Providers
 					</h1>
 					<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-						Log in to any provider below, then close the browser window. Auth is
-						saved automatically and you can reconnect here any time on a local
-						run.
+						{description}
 					</p>
 				</div>
 

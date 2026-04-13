@@ -156,6 +156,29 @@ export function getAgentAuthRootDir(): string {
 	return path.join(getStorageRootDir(), "auth");
 }
 
+export function getAuthStorageDiagnostics(): {
+	appMode: AppMode;
+	storageRootDir: string;
+	authRootDir: string;
+	storageRootExists: boolean;
+	authRootExists: boolean;
+	sessionsDirExists: boolean;
+	statusDirExists: boolean;
+} {
+	const authRootDir = getAgentAuthRootDir();
+	const storageRootDir = path.dirname(authRootDir);
+
+	return {
+		appMode: getAppMode(),
+		storageRootDir,
+		authRootDir,
+		storageRootExists: existsSync(storageRootDir),
+		authRootExists: existsSync(authRootDir),
+		sessionsDirExists: existsSync(getSessionsDir()),
+		statusDirExists: existsSync(getStatusDir()),
+	};
+}
+
 function getRuntimeRootDir(): string {
 	return path.join(path.dirname(getAgentAuthRootDir()), "runtime");
 }

@@ -22,9 +22,6 @@ services:
     environment:
       ONEGLANSE_APP_MODE: self-hosted
       AGENT_AUTH_ROOT_DIR: /storage/auth
-      CAMOUFOX_HEADLESS_MODE: ${CAMOUFOX_HEADLESS_MODE:-virtual}
-      CAMOUFOX_PYTHON_BIN: ${CAMOUFOX_PYTHON_BIN:-python3}
-      DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
     volumes:
       - /opt/oneglanse/storage:/storage
     ports:

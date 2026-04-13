@@ -175,9 +175,7 @@ export default function LayoutContent({
 					</p>
 				</div>
 
-				{canLaunchProvidersLocally ? (
-					<ProviderConnectionsPanel title={null} description={null} />
-				) : null}
+				<ProviderConnectionsPanel title={null} description={null} />
 			</main>
 		);
 	}

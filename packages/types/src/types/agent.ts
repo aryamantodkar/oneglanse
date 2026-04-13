@@ -65,7 +65,7 @@ export function canAccessPeopleInMode(appMode: AppMode): boolean {
 }
 
 export function canAccessProvidersInMode(appMode: AppMode): boolean {
-	return isInteractiveAuthAllowedInMode(appMode);
+	return appMode !== "cloud";
 }
 
 export function canConfigureRecurringScheduleInMode(appMode: AppMode): boolean {

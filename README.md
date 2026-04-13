@@ -63,7 +63,8 @@ pnpm auth
 
 That starts the shared providers flow at
 [http://localhost:3000/providers](http://localhost:3000/providers) without
-running the full app stack.
+running the full app stack. If `3000` is already in use, it automatically picks
+the next free local port.
 
 ### 3. Self-Host It
 
@@ -159,14 +160,33 @@ Gemini and Google Search auth are stored separately.
 
 The VPS never opens an interactive login browser.
 
-Run this on your **local machine** instead:
+Set these in your local `.env`:
 
 ```bash
-pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
+ONEGLANSE_VPS_IP=YOUR_VPS_IP
+AGENT_AUTH_UPLOAD_TOKEN=YOUR_TOKEN
 ```
 
-That flow captures auth locally, stores it locally, uploads it to the VPS, and
-invalidates the matching VPS runtime profiles so the next run reseeds cleanly.
+Then run this on your **local machine**:
+
+```bash
+pnpm upload:vps
+```
+
+That uploads any existing local auth sessions directly to the VPS without
+opening the auth app again.
+
+If you do not have local sessions yet, use:
+
+```bash
+pnpm auth
+```
+
+If `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` are already set, `pnpm auth`
+will first try to upload any existing local sessions. If none exist, it opens
+the local provider auth flow, saves the sessions locally, uploads them to the
+VPS, and invalidates the matching VPS runtime profiles so the next run reseeds
+cleanly.
 
 ## Auth and Runtime State
 
@@ -196,6 +216,7 @@ about:
   - `API_BASE_URL`
   - `GOOGLE_CLIENT_ID`
   - `GOOGLE_CLIENT_SECRET`
+  - `ONEGLANSE_VPS_IP`
   - `AGENT_AUTH_UPLOAD_TOKEN`
   - `PROXY_*` / `THORDATA_PROXY_API_URL` for VPS proxying
 - `apps/agent/.env`
@@ -222,13 +243,14 @@ Behavior:
 Recurring schedule is only available in `self-hosted` mode. `local` mode
 supports manual prompt runs only.
 
-For VPS auth capture, prefer passing `--upload-url` and `--upload-token`
-directly to `pnpm auth`.
+For VPS auth upload, prefer setting `ONEGLANSE_VPS_IP` and
+`AGENT_AUTH_UPLOAD_TOKEN` in `.env`, then running `pnpm upload:vps`.
 
 ## Useful Commands
 
 - `pnpm local` - full local app + worker
 - `pnpm auth` - shared local auth flow only
+- `pnpm upload:vps` - upload existing local auth sessions to the configured VPS
 - `pnpm self-host` - start both the app and public VPS stacks
 - `pnpm self-host:app` - rebuild only the app stack
 - `pnpm self-host:public` - rebuild only the public stack

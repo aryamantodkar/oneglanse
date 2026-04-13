@@ -3,8 +3,6 @@
 	"private": true,
 	"scripts": {
 		"build": "turbo build",
-		"deploy:web": "pnpm deploy --filter @oneglanse/web --prod /app/out",
-		"deploy:landing": "pnpm deploy --filter @oneglanse/landing --prod /app/out",
 		"dev": "turbo dev",
 		"dev:web": "turbo dev --filter=@oneglanse/web",
 		"dev:landing": "turbo dev --filter=@oneglanse/landing",
@@ -23,7 +21,6 @@
 		"db:migrate": "pnpm --filter @oneglanse/db db:migrate",
 		"db:push": "pnpm --filter @oneglanse/db db:push",
 		"db:studio": "pnpm --filter @oneglanse/db db:studio",
-		"start:agent": "pnpm --filter=@oneglanse/agent start:worker",
 		"start:worker": "pnpm --filter=@oneglanse/agent start:worker",
 		"lint:fix": "biome check . --fix"
 	},

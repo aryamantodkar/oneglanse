@@ -1,6 +1,7 @@
 import {
 	getAuthModuleState,
 	getAuthProviderCards,
+	getAuthStorageDiagnostics,
 	readProviderAuthStatuses,
 } from "@oneglanse/services";
 import type { AuthProvider, ProviderAuthStatus } from "@oneglanse/types";
@@ -22,14 +23,21 @@ function getDefaultProviderAuthStatus(
 
 export async function readProviderConnectionsState(): Promise<ProviderConnectionsState> {
 	const cards = getAuthProviderCards();
+	const storage = getAuthStorageDiagnostics();
 	let statuses: ProviderAuthStatus[];
 
 	try {
+		if (storage.appMode === "self-hosted" && !storage.storageRootExists) {
+			throw new Error(
+				`Auth storage is unavailable on this server. Expected mounted storage at ${storage.storageRootDir} and auth files under ${storage.authRootDir}.`,
+			);
+		}
+
 		statuses = await readProviderAuthStatuses();
 	} catch (error) {
 		const message =
 			error instanceof Error
-				? "Auth storage is unavailable on this server. You can still use the app, but provider sessions cannot be read until auth storage is mounted."
+				? error.message
 				: "Auth storage is unavailable on this server.";
 
 		statuses = cards.map((card) => ({
@@ -46,7 +54,9 @@ export async function readProviderConnectionsState(): Promise<ProviderConnection
 		...getAuthModuleState(),
 		cards: cards.map((card) => ({
 			...card,
-			status: statusMap.get(card.provider) ?? getDefaultProviderAuthStatus(card.provider),
+			status:
+				statusMap.get(card.provider) ??
+				getDefaultProviderAuthStatus(card.provider),
 		})),
 	};
 }
