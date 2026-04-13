@@ -375,7 +375,7 @@ export function SourcesIntelligencePanel({
 											</a>
 										</div>
 									</TableCell>
-									<TableCell className="px-2 py-5 text-center text-sm font-semibold whitespace-nowrap text-gray-900 dark:text-gray-100 sm:px-4">
+									<TableCell className="px-2 py-5 text-center text-sm whitespace-nowrap text-gray-900 dark:text-gray-100 sm:px-4">
 										{domain.share.toFixed(1)}%
 									</TableCell>
 									<TableCell className="px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
@@ -470,7 +470,7 @@ export function SourcesIntelligencePanel({
 													</span>
 												</div>
 											</TableCell>
-											<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
+											<TableCell className="px-2 py-5 text-right text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 												{formatCitationLabel(group.totalCitations)}
 											</TableCell>
 											<TableCell className="hidden px-2 py-5 text-center text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4">
@@ -510,10 +510,6 @@ export function SourcesIntelligencePanel({
 																	<ChevronRight
 																		className={`mt-1 h-3.5 w-3.5 shrink-0 self-start text-muted-foreground transition-transform ${urlOpen ? "rotate-90" : ""}`}
 																	/>
-																	<FaviconWithFallback
-																		url={source.url}
-																		size="sm"
-																	/>
 																	<div className="min-w-0">
 																		<p className="line-clamp-2 text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] dark:text-gray-100">
 																			{source.title || "Untitled source"}
@@ -525,28 +521,16 @@ export function SourcesIntelligencePanel({
 																			onClick={(e) => e.stopPropagation()}
 																			className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300"
 																		>
-																			<ExternalLink className="h-3 w-3 shrink-0" />
 																			<span className="[overflow-wrap:anywhere]">{getUrlPath(source.url)}</span>
+																			<ExternalLink className="h-3 w-3 shrink-0" />
 																		</a>
 																	</div>
 																</div>
 															</TableCell>
-															<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
+															<TableCell className="px-2 py-5 text-right text-sm whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 																{formatCitationLabel(source.totalCitations)}
 															</TableCell>
 															<TableCell className="hidden px-2 py-5 align-top text-sm whitespace-normal text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4 sm:whitespace-normal">
-																<a
-																	href={source.url}
-																	target="_blank"
-																	rel="noreferrer noopener"
-																	onClick={(e) => e.stopPropagation()}
-																	className="inline-flex max-w-full items-center gap-2 whitespace-normal text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 sm:whitespace-normal"
-																>
-																	<span className="min-w-0 [overflow-wrap:anywhere] break-all">
-																		{getUrlPath(source.url)}
-																	</span>
-																	<ExternalLink className="h-3.5 w-3.5 shrink-0" />
-																</a>
 															</TableCell>
 															<TableCell className="px-2 py-5 sm:px-4">
 																<div className="flex flex-nowrap items-center justify-center gap-1">

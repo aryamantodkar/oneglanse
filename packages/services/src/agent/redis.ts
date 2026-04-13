@@ -10,6 +10,10 @@ export const redis = new Redis({
 	commandTimeout: 10_000,
 	maxRetriesPerRequest: 2,
 	enableOfflineQueue: false,
+	// Detect dead connections quickly after sleep/network change
+	keepAlive: 10_000,
+	// Re-queue commands that were in-flight when the connection dropped
+	autoResendUnfulfilledCommands: true,
 	retryStrategy: (times) => {
 		if (times > 10) return null;
 		return Math.min(times * 200, 2_000);
