@@ -1,10 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import {
 	ensureAuthDirectories,
-	getAuthProfileDir,
 	getReusableIdentityDomainSuffixes,
-	readReusableIdentitySeedState,
+	readAuthLaunchSeedState,
 	saveAuthSession,
 	saveReusableIdentitySessions,
 	uploadAuthSession,
@@ -26,14 +25,13 @@ import {
 } from "playwright-core";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
 import { detectDisplay } from "../lib/browser/display.js";
-import { applyCookiesToPersistentContext } from "../lib/browser/storageState.js";
 
 const AUTH_SNAPSHOT_DEBOUNCE_MS = 250;
 const AUTH_SNAPSHOT_HEARTBEAT_MS = 2_000;
 const AUTH_WINDOW_CLOSE_GRACE_MS = 1_000;
-type PersistentContextLaunchOptions = NonNullable<
-	Parameters<typeof firefox.launchPersistentContext>[1]
->;
+const SYSTEM_THEME_DETECT_TIMEOUT_MS = 4_000;
+const execFileAsync = promisify(execFile);
+type BrowserLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
 type PersistedStorageState = Parameters<typeof saveAuthSession>[1];
 type PersistedCookie = NonNullable<PersistedStorageState["cookies"]>[number];
 type SnapshotOrigin = {
@@ -60,25 +58,6 @@ function parseProviderArg(argv: string[]): AuthProvider {
 	}
 
 	return providerValue as AuthProvider;
-}
-
-async function getPrimaryPage(context: BrowserContext): Promise<Page> {
-	const pages = context.pages().filter((page) => !page.isClosed());
-	const existing = pages.find((page) => page.url() !== "about:blank");
-	if (existing) {
-		return existing;
-	}
-
-	const firstPage = pages[0];
-	if (firstPage) {
-		return firstPage;
-	}
-
-	// launchPersistentContext owns the initial browser window/page. On some
-	// launches that page is not exposed via context.pages() immediately, so
-	// eagerly calling newPage() here creates a second auth tab/window. Wait for
-	// Playwright's initial page event instead of manufacturing another page.
-	return context.waitForEvent("page", { timeout: 15_000 });
 }
 
 function attachAuthDebugLogging(
@@ -135,11 +114,51 @@ function attachAuthDebugLogging(
 	});
 }
 
-function createAuthProfileDir(provider: AuthProvider): string {
-	const profileRoot = getAuthProfileDir(provider);
-	rmSync(profileRoot, { recursive: true, force: true });
-	mkdirSync(profileRoot, { recursive: true });
-	return mkdtempSync(path.join(profileRoot, "session-"));
+async function detectSystemDarkMode(): Promise<boolean | null> {
+	try {
+		if (process.platform === "darwin") {
+			await execFileAsync("defaults", ["read", "-g", "AppleInterfaceStyle"], {
+				timeout: SYSTEM_THEME_DETECT_TIMEOUT_MS,
+			});
+			return true;
+		}
+
+		if (process.platform === "win32") {
+			const { stdout } = await execFileAsync(
+				"powershell",
+				[
+					"-NoProfile",
+					"-Command",
+					"(Get-ItemPropertyValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name AppsUseLightTheme) -eq 0",
+				],
+				{
+					encoding: "utf8",
+					timeout: SYSTEM_THEME_DETECT_TIMEOUT_MS,
+				},
+			);
+			const normalized = stdout.trim().toLowerCase();
+			if (normalized === "true") return true;
+			if (normalized === "false") return false;
+			return null;
+		}
+
+		const { stdout } = await execFileAsync(
+			"gsettings",
+			["get", "org.gnome.desktop.interface", "color-scheme"],
+			{
+				encoding: "utf8",
+				timeout: SYSTEM_THEME_DETECT_TIMEOUT_MS,
+			},
+		);
+		const normalized = stdout.trim().toLowerCase();
+		if (normalized.includes("prefer-dark")) return true;
+		if (normalized.includes("default") || normalized.includes("prefer-light")) {
+			return false;
+		}
+		return null;
+	} catch {
+		return null;
+	}
 }
 
 function matchesDomainSuffix(
@@ -187,6 +206,85 @@ function cloneCookies(
 			sameSite,
 		}),
 	);
+}
+
+function toPlaywrightStorageState(
+	state: PersistedStorageState | null,
+):
+	| {
+			cookies: Array<{
+				name: string;
+				value: string;
+				domain: string;
+				path: string;
+				expires: number;
+				httpOnly: boolean;
+				secure: boolean;
+				sameSite: "Strict" | "Lax" | "None";
+			}>;
+			origins: Array<{
+				origin: string;
+				localStorage: Array<{ name: string; value: string }>;
+			}>;
+	  }
+	| undefined {
+	if (!state) {
+		return undefined;
+	}
+
+	return {
+		cookies: (state.cookies ?? [])
+			.map((cookie) => {
+				const name = cookie.name?.trim();
+				const domain = cookie.domain?.trim();
+				if (!name || !domain) {
+					return null;
+				}
+
+				return {
+					name,
+					value: cookie.value ?? "",
+					domain,
+					path: cookie.path?.trim() || "/",
+					expires:
+						typeof cookie.expires === "number" ? cookie.expires : -1,
+					httpOnly: Boolean(cookie.httpOnly),
+					secure: Boolean(cookie.secure),
+					sameSite: cookie.sameSite ?? "Lax",
+				};
+			})
+			.filter(
+				(cookie): cookie is NonNullable<typeof cookie> => cookie !== null,
+			),
+		origins: (state.origins ?? [])
+			.map((originEntry) => {
+				const origin = originEntry.origin?.trim();
+				if (!origin) {
+					return null;
+				}
+
+				return {
+					origin,
+					localStorage: (originEntry.localStorage ?? [])
+						.map((item) => {
+							const name = item.name?.trim();
+							if (!name) {
+								return null;
+							}
+
+							return {
+								name,
+								value: item.value ?? "",
+							};
+						})
+						.filter((item): item is NonNullable<typeof item> => item !== null),
+				};
+			})
+			.filter(
+				(originEntry): originEntry is NonNullable<typeof originEntry> =>
+					originEntry !== null,
+			),
+	};
 }
 
 async function collectPageLocalStorage(
@@ -556,8 +654,13 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 	}
 
 	ensureAuthDirectories();
-	const authProfileDir = createAuthProfileDir(provider);
-	const identitySeedState = await readReusableIdentitySeedState();
+	const authSeedState = await readAuthLaunchSeedState(provider);
+	const playwrightStorageState = toPlaywrightStorageState(authSeedState);
+	const systemDarkMode = await detectSystemDarkMode();
+	const prefersColorSchemeOverride =
+		systemDarkMode === true ? 0 : systemDarkMode === false ? 1 : 2;
+	const systemUsesDarkThemePref =
+		systemDarkMode === true ? 1 : systemDarkMode === false ? 0 : -1;
 
 	const launchOptions = await resolveCamoufoxLaunchOptions({
 		display: detectDisplay() ?? undefined,
@@ -574,10 +677,9 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 		disableDefaultAddons: true,
 	});
 
-	const context = await firefox.launchPersistentContext(authProfileDir, {
-		...(launchOptions as PersistentContextLaunchOptions),
+	const browser = await firefox.launch({
+		...(launchOptions as BrowserLaunchOptions),
 		headless: false,
-		viewport: null,
 		// Re-apply auth-critical prefs HERE, after Camoufox's Python launch_options
 		// has already merged its own generated prefs into firefoxUserPrefs. We have
 		// no control over the merge order inside Python — Camoufox can override our
@@ -595,30 +697,35 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 			// color. Disabling this restores true system color rendering.
 			"ui.use_standins_for_native_colors": false,
 
-			// camoufox.cfg forces ui.systemUsesDarkTheme=1 (always dark) regardless
-			// of the actual OS. -1 tells Firefox to detect the OS theme automatically.
-			"ui.systemUsesDarkTheme": -1,
+			// Use an explicit host theme value when we can detect it. Firefox's
+			// automatic system-theme detection can be unreliable in local auth
+			// environments, which leaves some sites with mixed dark/light surfaces.
+			"ui.systemUsesDarkTheme": systemUsesDarkThemePref,
 
 			// Reset to Firefox's default theme — camoufox.cfg forces compact-dark.
 			"extensions.activeThemeID": "default-theme@mozilla.org",
 
-			// Follow the OS dark/light preference for web content (values: 0=Dark,
-			// 1=Light, 2=System). Must come after ui.systemUsesDarkTheme to take effect.
-			"layout.css.prefers-color-scheme.content-override": 2,
+			// Match website appearance to the explicit host theme when available
+			// instead of relying on Firefox/Camoufox auto-detection.
+			// Values: 0 = Dark, 1 = Light, 2 = System
+			"layout.css.prefers-color-scheme.content-override":
+				prefersColorSchemeOverride,
 
 			// RFP unconditionally forces prefers-color-scheme to light and overrides
 			// the content-override pref above. Keep disabled for auth.
 			"privacy.resistFingerprinting": false,
 		},
 	});
-	// Seed only the latest IdP cookies into the visible auth window so the
-	// provider opens directly on its own URL instead of navigating the user
-	// through intermediate OAuth origins just to restore localStorage.
-	await applyCookiesToPersistentContext(context, identitySeedState);
+	const context = await browser.newContext({
+		viewport: null,
+		...(playwrightStorageState
+			? { storageState: playwrightStorageState }
+			: {}),
+	});
 	attachAuthDebugLogging(context, provider);
 
 	try {
-		const page = await getPrimaryPage(context);
+		const page = await context.newPage();
 		logger.debug(
 			`[auth:${provider}] using primary page url=${page.url() || "about:blank"}`,
 		);
@@ -635,13 +742,12 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 			error: error instanceof Error ? error.message : String(error),
 			launcherPid: null,
 		});
-		// Ensure the browser is closed on any error (e.g. page.goto timeout,
-		// saveAuthSession failure). If the context is already closed this is a no-op.
 		await context.close().catch(() => {});
+		await browser.close().catch(() => {});
 		throw error;
-	} finally {
-		rmSync(authProfileDir, { recursive: true, force: true });
 	}
+
+	await browser.close().catch(() => {});
 }
 
 const provider = parseProviderArg(process.argv.slice(2));

@@ -671,7 +671,7 @@ async function buildLaunchPayload(args: {
 	}
 
 	const os = args.plainAuthMode
-		? undefined
+		? resolveHostOs()
 		: (parseStringOrList("CAMOUFOX_OS", process.env.CAMOUFOX_OS) ??
 			(isLocalAppMode() && resolveHeadlessMode(args.headlessMode) === "headful"
 				? resolveHostOs()
@@ -695,15 +695,21 @@ async function buildLaunchPayload(args: {
 	const fonts = args.plainAuthMode
 		? undefined
 		: parseStringList("CAMOUFOX_FONTS", process.env.CAMOUFOX_FONTS);
-	const systemFonts =
-		!args.plainAuthMode && process.env.CAMOUFOX_USE_FULL_OS_FONTS === "true"
+	const systemFonts = args.plainAuthMode
+		? await discoverSystemFontFamilies()
+		: process.env.CAMOUFOX_USE_FULL_OS_FONTS === "true"
 			? await discoverSystemFontFamilies()
 			: [];
 	const mergedFonts = dedupeStrings([...(fonts ?? []), ...systemFonts]);
 	if (mergedFonts.length > 0) payload.fonts = mergedFonts;
-	if (!args.plainAuthMode) {
-		payload.use_full_os_fonts =
-			process.env.CAMOUFOX_USE_FULL_OS_FONTS === "true";
+	payload.use_full_os_fonts = args.plainAuthMode
+		? true
+		: process.env.CAMOUFOX_USE_FULL_OS_FONTS === "true";
+	if (args.plainAuthMode) {
+		// Auth should render exactly like the host browser. Restricting fallback
+		// to Camoufox's bundled font set can drop glyph coverage on login pages,
+		// which shows up as tofu boxes for some locales/scripts.
+		payload.custom_fonts_only = false;
 	}
 	if (args.disableDefaultAddons) {
 		payload.disable_default_addons = true;

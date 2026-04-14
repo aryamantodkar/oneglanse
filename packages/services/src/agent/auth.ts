@@ -666,6 +666,13 @@ export async function readReusableIdentitySeedState(): Promise<StorageState | nu
 	return hasUsableAuthState(mergedState) ? mergedState : null;
 }
 
+export async function readAuthLaunchSeedState(
+	provider: AuthProvider,
+): Promise<StorageState | null> {
+	const providerState = await readAuthSession(provider);
+	return hasUsableAuthState(providerState) ? providerState : null;
+}
+
 export async function saveReusableIdentitySessions(
 	state: StorageState,
 ): Promise<ReusableIdentityProvider[]> {
@@ -968,9 +975,6 @@ async function waitForAuthLoginStartup(
 
 export async function spawnProviderAuthLogin(
 	provider: AuthProvider,
-	options?: {
-		resetExisting?: boolean;
-	},
 ): Promise<{ started: boolean }> {
 	if (!isInteractiveAuthLaunchAllowed()) {
 		throw new Error(
@@ -998,15 +1002,11 @@ export async function spawnProviderAuthLogin(
 			});
 		}
 
-		if (options?.resetExisting) {
-			await resetProviderAuthData(provider);
-		}
-
 		ensureAuthDirectories();
 		await writeProviderAuthStatus(provider, {
 			connecting: true,
 			lastUpdatedAt: new Date().toISOString(),
-			syncedAt: options?.resetExisting ? null : (existing?.syncedAt ?? null),
+			syncedAt: existing?.syncedAt ?? null,
 			error: null,
 			launcherPid: null,
 		});
@@ -1022,7 +1022,7 @@ export async function spawnProviderAuthLogin(
 		await writeProviderAuthStatus(provider, {
 			connecting: true,
 			lastUpdatedAt: new Date().toISOString(),
-			syncedAt: options?.resetExisting ? null : (existing?.syncedAt ?? null),
+			syncedAt: existing?.syncedAt ?? null,
 			error: null,
 			launcherPid: child.pid ?? null,
 		});
@@ -1034,7 +1034,7 @@ export async function spawnProviderAuthLogin(
 			await writeProviderAuthStatus(provider, {
 				connecting: false,
 				lastUpdatedAt: new Date().toISOString(),
-				syncedAt: options?.resetExisting ? null : (existing?.syncedAt ?? null),
+				syncedAt: existing?.syncedAt ?? null,
 				error: errorMessage,
 				launcherPid: null,
 			});

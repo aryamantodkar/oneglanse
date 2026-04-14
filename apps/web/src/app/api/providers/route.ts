@@ -18,11 +18,8 @@ export async function GET() {
 export async function POST(request: Request) {
 	try {
 		const payload = connectProviderSchema.parse(await request.json());
-		return NextResponse.json(
-			await spawnProviderAuthLogin(payload.provider, {
-				resetExisting: payload.action === "refresh",
-			}),
-		);
+		void payload.action;
+		return NextResponse.json(await spawnProviderAuthLogin(payload.provider));
 	} catch (error) {
 		return NextResponse.json(
 			{

@@ -1328,7 +1328,7 @@ export default function Prompts() {
 							Add first prompt
 						</Button>
 					}
-					className="min-h-[60vh] px-6"
+					className="px-4 sm:px-6"
 				/>
 			)}
 		</div>
