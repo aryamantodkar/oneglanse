@@ -1,11 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import {
-	ensureAuthDirectories,
-	getRuntimeProfileSeedPlan,
-	markRuntimeProfileSeeded,
-	prepareRuntimeProfileBootstrap,
-} from "@oneglanse/services";
+import { ensureAuthDirectories, getRuntimeProfileSeedPlan } from "@oneglanse/services";
 import {
 	type Provider,
 	resolveAppMode,
@@ -28,7 +23,6 @@ import {
 	checkProxyReachable,
 } from "./proxy/forwarder.js";
 import { applyProxyProviderStrategy } from "./proxy/provider.js";
-import { applyStorageStateToPersistentContext } from "./storageState.js";
 
 const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	http: 80,
@@ -50,10 +44,6 @@ const QUARANTINE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const quarantinedProxies = new Map<string, number>(); // host:port → expiry
 
 type FirefoxLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
-type FirefoxPersistentLaunchOptions = NonNullable<
-	Parameters<typeof firefox.launchPersistentContext>[1]
->;
-
 function resolveRuntimeHeadlessMode(): "virtual" | "headful" | "headless" {
 	const configuredMode = process.env.CAMOUFOX_HEADLESS_MODE as
 		| "virtual"
@@ -295,84 +285,6 @@ function toCamoufoxProxyConfig(
 	};
 }
 
-function findProfileScopedBrowserPids(userDataDir: string): number[] {
-	if (process.platform === "win32") {
-		return [];
-	}
-
-	const result = spawnSync("ps", ["ax", "-o", "pid=", "-o", "command="], {
-		encoding: "utf8",
-	});
-	if (result.status !== 0 || typeof result.stdout !== "string") {
-		return [];
-	}
-
-	return result.stdout
-		.split("\n")
-		.map((line) => line.trim())
-		.filter(Boolean)
-		.map((line) => {
-			const match = line.match(/^(\d+)\s+(.*)$/);
-			if (!match) return null;
-			return {
-				pid: Number(match[1]),
-				command: match[2] ?? "",
-			};
-		})
-		.filter((entry): entry is { pid: number; command: string } => {
-			if (!entry) {
-				return false;
-			}
-			return (
-				entry.pid > 0 &&
-				entry.pid !== process.pid &&
-				entry.command.includes(userDataDir) &&
-				/(camoufox|firefox|plugin-container)/i.test(entry.command)
-			);
-		})
-		.map((entry) => entry.pid);
-}
-
-function isPidAlive(pid: number): boolean {
-	try {
-		process.kill(pid, 0);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-async function ensureExclusiveProfileAccess(userDataDir: string): Promise<void> {
-	const stalePids = [...new Set(findProfileScopedBrowserPids(userDataDir))];
-	if (stalePids.length === 0) {
-		return;
-	}
-
-	logger.warn(
-		`[browser] terminating ${stalePids.length} stale browser process(es) for profile ${userDataDir}`,
-	);
-	for (const pid of stalePids) {
-		try {
-			process.kill(pid, "SIGTERM");
-		} catch {}
-	}
-
-	const deadline = Date.now() + 4_000;
-	while (Date.now() < deadline) {
-		if (stalePids.every((pid) => !isPidAlive(pid))) {
-			return;
-		}
-		await new Promise((resolve) => setTimeout(resolve, 200));
-	}
-
-	for (const pid of stalePids) {
-		if (!isPidAlive(pid)) continue;
-		try {
-			process.kill(pid, "SIGKILL");
-		} catch {}
-	}
-}
-
 export async function launchContext(provider: Provider): Promise<{
 	browser: Browser;
 	context: BrowserContext;
@@ -436,14 +348,7 @@ export async function launchContext(provider: Provider): Promise<{
 
 		ensureAuthDirectories();
 		const runtimeSeedPlan = await getRuntimeProfileSeedPlan(provider);
-		const shouldUsePersistentRuntimeProfile = appMode !== "cloud";
 		const shouldForceLoggedOutProfile = appMode === "cloud";
-		if (
-			shouldUsePersistentRuntimeProfile &&
-			(shouldForceLoggedOutProfile || runtimeSeedPlan.shouldBootstrap)
-		) {
-			prepareRuntimeProfileBootstrap(provider);
-		}
 
 		const camoufoxOptions = await resolveCamoufoxLaunchOptions({
 			display,
@@ -454,50 +359,18 @@ export async function launchContext(provider: Provider): Promise<{
 		const launchOptions: FirefoxLaunchOptions = {
 			...(camoufoxOptions as FirefoxLaunchOptions),
 		};
-		const persistentOptions: FirefoxPersistentLaunchOptions = {
-			...launchOptions,
+		rawBrowser = await firefox.launch(launchOptions);
+		rawContext = await rawBrowser.newContext({
 			...(runtimeHeadlessMode === "headless" ? {} : { viewport: null }),
-		};
-
-		if (shouldUsePersistentRuntimeProfile) {
-			await ensureExclusiveProfileAccess(runtimeSeedPlan.userDataDir);
-			rawContext = await firefox.launchPersistentContext(
-				runtimeSeedPlan.userDataDir,
-				persistentOptions,
-			);
-			if (
-				!shouldForceLoggedOutProfile &&
-				runtimeSeedPlan.shouldBootstrap &&
-				runtimeSeedPlan.authState
-			) {
-				await applyStorageStateToPersistentContext(
-					rawContext,
-					runtimeSeedPlan.authState,
-				);
-			}
-
-			if (
-				!shouldForceLoggedOutProfile &&
-				runtimeSeedPlan.shouldBootstrap &&
-				runtimeSeedPlan.authStateHash
-			) {
-				await markRuntimeProfileSeeded(provider, runtimeSeedPlan.authStateHash);
-			}
-		} else {
-			rawBrowser = await firefox.launch(launchOptions);
-			rawContext = await rawBrowser.newContext({
-				...(runtimeHeadlessMode === "headless" ? {} : { viewport: null }),
-				...(shouldForceLoggedOutProfile
-					? {}
-					: runtimeSeedPlan.authStatePath
-						? { storageState: runtimeSeedPlan.authStatePath }
-						: {}),
-			});
-		}
+			...(shouldForceLoggedOutProfile
+				? {}
+				: runtimeSeedPlan.authStatePath
+					? { storageState: runtimeSeedPlan.authStatePath }
+					: {}),
+		});
 
 		context = new PlaywrightBrowserContextCompat(rawContext);
-		const browser =
-			(rawBrowser as unknown as Browser | null) ?? context.getBrowser();
+		const browser = (rawBrowser as unknown as Browser | null) ?? context.getBrowser();
 
 		return {
 			browser,
