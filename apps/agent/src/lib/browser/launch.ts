@@ -421,8 +421,8 @@ export async function launchContext(provider: Provider): Promise<{
 					quarantineProxy(hostPort);
 				};
 			} else {
-				logger.warn(
-					"no proxy resolved for browser launch; using direct connection",
+				throw new Error(
+					"no proxy resolved for browser launch — aborting (direct connection is not allowed)",
 				);
 			}
 		}
