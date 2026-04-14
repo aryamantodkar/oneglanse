@@ -48,7 +48,7 @@ export function canConfigureRecurringScheduleInMode(appMode: AppMode): boolean {
 }
 
 export function canRunPromptsNowInMode(appMode: AppMode): boolean {
-	return appMode === "local";
+	return appMode !== "cloud";
 }
 
 export function shouldUseProxyInMode(appMode: AppMode): boolean {
