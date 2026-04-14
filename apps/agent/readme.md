@@ -100,10 +100,10 @@ Timeouts, retries, submission cadence, response minimums, and similar tuning are
 pnpm install
 ```
 
-2. Ensure env files exist:
+2. Ensure the root env file exists:
 
 ```bash
-cp apps/agent/.env.example apps/agent/.env
+cp .env.example .env
 ```
 
 Proxy examples:

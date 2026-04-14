@@ -11,13 +11,6 @@ export const edgeNetworkName = "oneglanse-edge";
 
 const rootEnvFile = path.join(repoRoot, ".env");
 const rootEnvExampleFile = path.join(repoRoot, ".env.example");
-const agentEnvFile = path.join(repoRoot, "apps", "agent", ".env");
-const agentEnvExampleFile = path.join(
-	repoRoot,
-	"apps",
-	"agent",
-	".env.example",
-);
 const CAMOUFOX_PYTHON_CANDIDATES = [
 	"python3.12",
 	"python3.11",
@@ -120,9 +113,7 @@ export async function ensureEnvFiles() {
 	await ensureFile(rootEnvFile, rootEnvExampleFile, {
 		transform: buildRootEnvTemplate,
 	});
-	await ensureFile(agentEnvFile, agentEnvExampleFile);
 	loadEnvFile(rootEnvFile, { override: true });
-	loadEnvFile(agentEnvFile, { override: true });
 }
 
 const LOCAL_BUILD_PACKAGES = [

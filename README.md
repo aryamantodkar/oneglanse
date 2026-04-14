@@ -45,7 +45,7 @@ pnpm local
 
 This:
 
-- creates `.env` and `apps/agent/.env` if missing
+- creates `.env` if missing
 - bootstraps a pinned local Camoufox package/browser pair automatically on first run
 - starts Postgres, ClickHouse, and Redis
 - runs database migrations
@@ -236,7 +236,7 @@ about:
   - `ONEGLANSE_VPS_IP`
   - `AGENT_AUTH_UPLOAD_TOKEN`
   - `PROXY_*` / `THORDATA_PROXY_API_URL` for VPS proxying
-- `apps/agent/.env`
+- Optional agent/runtime vars in `.env`
   - `CAMOUFOX_HEADLESS_MODE`
   - `CAMOUFOX_PYTHON_BIN`
   - `CAMOUFOX_PIP_SPEC`
@@ -244,7 +244,7 @@ about:
   - `DEBUG_ENABLED`
 
 Local bootstrap defaults are pinned to `cloverlabs-camoufox==0.5.5` and
-`official/stable/135.0.1-beta.24`. Override those in `apps/agent/.env` only if
+`official/stable/135.0.1-beta.24`. Override those in `.env` only if
 you intentionally want to test a different Camoufox package/browser pair.
 
 Deployment mode is controlled by one variable:

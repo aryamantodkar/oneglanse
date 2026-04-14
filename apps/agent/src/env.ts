@@ -1,35 +1,21 @@
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { APP_MODE_LIST } from "@oneglanse/types";
 import dotenv from "dotenv";
 import { z } from "zod";
 
-const ROOT_ENV_FALLBACK_KEYS = [
-	"DATABASE_URL",
-	"OPENAI_API_KEY",
-	"AGENT_AUTH_UPLOAD_TOKEN",
-	"REDIS_HOST",
-	"REDIS_PORT",
-	"REDIS_PASSWORD",
-] as const;
-
-function loadRootEnvFallbacks(): void {
-	if (!fs.existsSync(".env")) {
-		return;
-	}
-
-	const parsed = dotenv.parse(fs.readFileSync(".env"));
-	for (const key of ROOT_ENV_FALLBACK_KEYS) {
-		const value = parsed[key];
-		if (value && !process.env[key]) {
-			process.env[key] = value;
-		}
-	}
-}
+const envFilePath = path.resolve(
+	path.dirname(fileURLToPath(import.meta.url)),
+	"..",
+	"..",
+	"..",
+	".env",
+);
 
 if (process.env.NODE_ENV !== "production") {
-	loadRootEnvFallbacks();
-	if (fs.existsSync("apps/agent/.env")) {
-		dotenv.config({ path: "apps/agent/.env", override: true });
+	if (fs.existsSync(envFilePath)) {
+		dotenv.config({ path: envFilePath });
 	}
 }
 
