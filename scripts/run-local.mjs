@@ -1,11 +1,11 @@
 import {
 	attachTerminationHandler,
-	buildLocalWorkspacePackages,
 	buildLocalRuntimeEnv,
+	buildLocalWorkspacePackages,
 	edgeNetworkName,
-	ensureLocalCamoufoxRuntime,
 	ensureDockerNetwork,
 	ensureEnvFiles,
+	ensureLocalCamoufoxRuntime,
 	openBrowser,
 	repoRoot,
 	runCommand,
@@ -28,17 +28,14 @@ async function main() {
 		"up",
 		"-d",
 		"--build",
+		"--force-recreate",
 		"--wait",
 		"db",
 		"clickhouse",
 		"redis",
 	]);
 	await runCommand("pnpm", ["db:migrate"], { env: localEnv });
-	await terminateLocalProcesses([
-		repoRoot,
-		"@oneglanse/agent",
-		"dev",
-	]);
+	await terminateLocalProcesses([repoRoot, "@oneglanse/agent", "dev"]);
 
 	const webChild = spawnCommand(
 		"pnpm",
@@ -57,9 +54,13 @@ async function main() {
 			env: localEnv,
 		},
 	);
-	const agentChild = spawnCommand("pnpm", ["--filter", "@oneglanse/agent", "dev"], {
-		env: localEnv,
-	});
+	const agentChild = spawnCommand(
+		"pnpm",
+		["--filter", "@oneglanse/agent", "dev"],
+		{
+			env: localEnv,
+		},
+	);
 
 	const stopWeb = attachTerminationHandler(webChild);
 	const stopAgent = attachTerminationHandler(agentChild);

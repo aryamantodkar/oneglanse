@@ -86,7 +86,7 @@ function stripWrappingQuotes(value) {
 	return value;
 }
 
-function loadEnvFile(filePath) {
+function loadEnvFile(filePath, options = {}) {
 	if (!existsSync(filePath)) {
 		return;
 	}
@@ -104,11 +104,14 @@ function loadEnvFile(filePath) {
 		}
 
 		const key = trimmed.slice(0, separatorIndex).trim();
-		if (!key || process.env[key] !== undefined) {
+		if (!key) {
 			continue;
 		}
 
 		const value = stripWrappingQuotes(trimmed.slice(separatorIndex + 1).trim());
+		if (!options.override && process.env[key] !== undefined) {
+			continue;
+		}
 		process.env[key] = value;
 	}
 }
@@ -118,8 +121,8 @@ export async function ensureEnvFiles() {
 		transform: buildRootEnvTemplate,
 	});
 	await ensureFile(agentEnvFile, agentEnvExampleFile);
-	loadEnvFile(rootEnvFile);
-	loadEnvFile(agentEnvFile);
+	loadEnvFile(rootEnvFile, { override: true });
+	loadEnvFile(agentEnvFile, { override: true });
 }
 
 const LOCAL_BUILD_PACKAGES = [

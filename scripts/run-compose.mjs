@@ -128,7 +128,7 @@ async function runBootstrap(stack) {
 
 	try {
 		await runSmartPull(stack);
-		await runComposeForStack(stack, ["up", "-d"]);
+		await runComposeForStack(stack, ["up", "-d", "--force-recreate"]);
 		console.log("Self-host stack started from pulled images.");
 		return;
 	} catch (pullError) {
@@ -139,7 +139,7 @@ async function runBootstrap(stack) {
 		);
 	}
 
-	await runComposeForStack(stack, ["up", "-d", "--build"]);
+	await runComposeForStack(stack, ["up", "-d", "--build", "--force-recreate"]);
 	console.log("Self-host stack started from a local source build.");
 }
 
