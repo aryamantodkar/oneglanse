@@ -23,11 +23,6 @@ export type DomainStats = {
 	avgSourcesPerDomain: number;
 };
 
-export type ModelFilterDomainStats = {
-	combined: DomainStats[];
-	byModel: ByModel<DomainStats>;
-};
-
 export type DomainResponseClient = {
 	responses: PromptResponse[];
 	domain_stats: DomainStats[];

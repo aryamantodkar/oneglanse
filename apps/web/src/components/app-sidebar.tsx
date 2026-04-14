@@ -8,9 +8,9 @@ import type { Workspace } from "@oneglanse/db";
 import {
 	type AppMode,
 	canAccessPeopleInMode,
+	canAccessProvidersInMode,
 	canAccessScheduleInMode,
 	canRunPromptsNowInMode,
-	isInteractiveAuthAllowedInMode,
 } from "@oneglanse/types";
 import {
 	DropdownMenu,
@@ -140,7 +140,7 @@ export function AppSidebar({
 	}
 
 	const settingsItems = [
-		...(isInteractiveAuthAllowedInMode(appMode)
+		...(canAccessProvidersInMode(appMode)
 			? [
 					{
 						title: "Providers",

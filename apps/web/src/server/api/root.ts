@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
+import { createTRPCRouter } from "@/server/api/trpc";
 import { agentRouter } from "./routers/agent";
 import { analysisRouter } from "./routers/analysis";
 import { internalRouter } from "./routers/internal";
@@ -16,5 +16,3 @@ export const appRouter = createTRPCRouter({
 });
 
 export type AppRouter = typeof appRouter;
-
-const createCaller = createCallerFactory(appRouter);

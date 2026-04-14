@@ -1,29 +1,4 @@
-import type { UserPrompt } from "./prompts.js";
 import type { Source } from "./sources.js";
-
-// Agent-specific types shared between web and agent apps
-export interface AgentCitation {
-	text: string;
-	href?: string | null;
-	title?: string | null;
-	ariaLabel?: string | null;
-	type?: "link" | "superscript" | "button";
-}
-
-export interface ContentBlock {
-	text: string;
-	tag: string;
-	citations?: AgentCitation[];
-}
-
-export interface ExtractionResult {
-	response: string;
-	contentBlocks: ContentBlock[];
-	inlineCitations: AgentCitation[];
-	sources: Source[];
-	hasSourcesButton: boolean;
-	extractionErrors: string[];
-}
 
 export interface AskPromptResult {
 	userId: string;

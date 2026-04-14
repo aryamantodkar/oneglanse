@@ -433,17 +433,17 @@ export function BrandComparisonChart({
 								onMouseEnter={() => setHoveredBrand(s.name)}
 								onMouseLeave={() => setHoveredBrand(null)}
 							>
-								<div className="flex min-w-0 items-start justify-between gap-2">
-									<div className="flex min-w-0 flex-1 items-start gap-2">
+								<div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+									<div className="flex min-w-0 items-center gap-2">
 										<span
 											className="h-2.5 w-2.5 shrink-0 rounded-full"
 											style={{ backgroundColor: color }}
 										/>
-										<p className="min-w-0 break-words text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100">
+										<p className="min-w-0 break-words text-sm font-semibold leading-5 text-gray-900 dark:text-gray-100">
 											{s.name}
 										</p>
 									</div>
-									<span className="shrink-0 text-xs font-semibold text-muted-foreground">
+									<span className="shrink-0 self-center text-xs font-semibold text-muted-foreground">
 										{s.composite}/100
 									</span>
 								</div>
