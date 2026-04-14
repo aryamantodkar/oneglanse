@@ -1,19 +1,17 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import net from "node:net";
 import path from "node:path";
+import { createInterface } from "node:readline";
 import zlib from "node:zlib";
 import {
 	attachTerminationHandler,
-	buildLocalRuntimeEnv,
 	buildLocalWorkspacePackages,
 	ensureEnvFiles,
 	ensureLocalCamoufoxRuntime,
-	openBrowser,
 	repoRoot,
+	runCommand,
 	spawnCommand,
 	waitForChildExit,
-	waitForHttp,
 } from "./lib/runtime.mjs";
 
 const PROVIDERS = ["chatgpt", "perplexity", "gemini", "google", "claude"];
@@ -154,43 +152,39 @@ function resolveUploadUrl() {
 	return `${baseUrl}:3333/auth/sessions`;
 }
 
-async function isPortAvailable(port) {
-	return new Promise((resolve) => {
-		const server = net.createServer();
-		server.unref();
-		server.on("error", () => resolve(false));
-		server.listen({ host: "127.0.0.1", port }, () => {
-			server.close(() => resolve(true));
+async function selectProvider() {
+	const providerArg = readArg("--provider", null);
+	if (providerArg) {
+		if (!PROVIDERS.includes(providerArg)) {
+			throw new Error(
+				`Unknown provider: "${providerArg}". Must be one of: ${PROVIDERS.join(", ")}`,
+			);
+		}
+		return providerArg;
+	}
+
+	const rl = createInterface({ input: process.stdin, output: process.stdout });
+	console.log("\nWhich provider do you want to authenticate?");
+	PROVIDERS.forEach((p, i) => console.log(`  ${i + 1}. ${p}`));
+
+	return new Promise((resolve, reject) => {
+		rl.question("\nEnter number or name: ", (answer) => {
+			rl.close();
+			const trimmed = answer.trim().toLowerCase();
+			const num = Number.parseInt(trimmed, 10);
+			if (Number.isInteger(num) && num >= 1 && num <= PROVIDERS.length) {
+				resolve(PROVIDERS[num - 1]);
+			} else if (PROVIDERS.includes(trimmed)) {
+				resolve(trimmed);
+			} else {
+				reject(
+					new Error(
+						`Invalid selection "${answer}". Choose a number 1–${PROVIDERS.length} or a name from: ${PROVIDERS.join(", ")}`,
+					),
+				);
+			}
 		});
 	});
-}
-
-async function resolveAuthPort(requestedPort, explicitPortProvided) {
-	const basePort = Number.parseInt(String(requestedPort), 10);
-	if (!Number.isInteger(basePort) || basePort <= 0) {
-		throw new Error(`Invalid auth port: ${requestedPort}`);
-	}
-
-	if (await isPortAvailable(basePort)) {
-		return basePort;
-	}
-
-	if (explicitPortProvided) {
-		throw new Error(
-			`Auth server port ${basePort} is already in use. Pass a different --port value.`,
-		);
-	}
-
-	for (let port = basePort + 1; port < basePort + 50; port += 1) {
-		if (await isPortAvailable(port)) {
-			console.log(`Port ${basePort} is busy. Using auth port ${port} instead.`);
-			return port;
-		}
-	}
-
-	throw new Error(
-		`Could not find a free auth server port starting from ${basePort}.`,
-	);
 }
 
 async function main() {
@@ -234,49 +228,30 @@ async function main() {
 
 	await ensureLocalCamoufoxRuntime();
 	await buildLocalWorkspacePackages();
+	await runCommand("pnpm", ["--filter", "@oneglanse/agent", "build"]);
 
-	const explicitPortProvided = process.argv.includes("--port");
-	const requestedPort = readArg("--port", process.env.PORT ?? "3000");
-	const port = await resolveAuthPort(requestedPort, explicitPortProvided);
-	const localAppUrl = `http://localhost:${port}`;
-	const localEnv = buildLocalRuntimeEnv(localAppUrl);
+	const provider = await selectProvider();
 
-	const authUrl = `${localAppUrl}/providers`;
-
-	const child = spawnCommand(
-		"pnpm",
-		[
-			"--filter",
-			"@oneglanse/web",
-			"exec",
-			"next",
-			"dev",
-			"--hostname",
-			"localhost",
-			"--port",
-			String(port),
-		],
-		{
-			env: {
-				...localEnv,
-				...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
-				...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
-			},
-			detached: process.platform !== "win32",
-		},
+	const agentCliPath = path.join(
+		repoRoot,
+		"apps",
+		"agent",
+		"dist",
+		"auth",
+		"cli.js",
 	);
 
-	const shutdown = attachTerminationHandler(child);
+	const child = spawnCommand("node", [agentCliPath, "--provider", provider], {
+		env: {
+			...process.env,
+			ONEGLANSE_APP_MODE: "local",
+			...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
+			...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
+		},
+	});
 
-	try {
-		await waitForHttp(authUrl);
-		openBrowser(authUrl);
-	} catch (error) {
-		shutdown();
-		throw error;
-	}
-
-	await waitForChildExit(child, "Auth server");
+	attachTerminationHandler(child);
+	await waitForChildExit(child, `${provider} auth`);
 }
 
 main().catch((error) => {
