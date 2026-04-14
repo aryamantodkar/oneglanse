@@ -645,7 +645,7 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 }
 
 const provider = parseProviderArg(process.argv.slice(2));
-runAuthLogin(provider).catch((error) => {
+runAuthLogin(provider).then(() => process.exit(0)).catch((error) => {
 	const runtimeProvider = AUTH_PROVIDER_CONFIG[provider].providers[0];
 	const providerName = runtimeProvider
 		? getProviderDisplayName(runtimeProvider)

@@ -1,8 +1,9 @@
-import { ValidationError, toErrorMessage } from "@oneglanse/errors";
+import { ValidationError, classifyError, toErrorMessage } from "@oneglanse/errors";
 import {
 	hasRuntimeProviderAuth,
 	redis,
 	storePromptResponses,
+	writeProviderAuthStatus,
 } from "@oneglanse/services";
 import type {
 	AgentResult,
@@ -208,6 +209,15 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		};
 	} catch (err) {
 		plog.error("failed:", toErrorMessage(err));
+		if (classifyError(err) === "logged_out") {
+			await writeProviderAuthStatus(provider, {
+				connecting: false,
+				lastUpdatedAt: new Date().toISOString(),
+				syncedAt: null,
+				error: "Session expired — please re-authenticate",
+				launcherPid: null,
+			}).catch(() => {});
+		}
 	}
 
 	const fulfilledProviders = ownedProviders.filter(
