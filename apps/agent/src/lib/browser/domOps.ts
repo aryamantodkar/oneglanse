@@ -328,7 +328,7 @@ export async function runPageDomOp<T>(
 					},
 					{
 						matched:
-							/accounts\.google\.com|auth\.openai\.com|perplexity\.ai\/login/.test(
+							/\/login|\/log-in|\/signin|\/sign-in|\/sign-up|\/signup|\/auth(?:\/|$)|accounts\.google\.com|auth\.openai\.com/.test(
 								url,
 							),
 						reason: "session expired: redirected to login page",

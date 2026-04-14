@@ -130,6 +130,14 @@ export async function executePromptWithRetry(
 		} catch (err) {
 			lastError = err;
 			const failureType = classifyError(err);
+
+			if (failureType === "logged_out") {
+				logger.warn(
+					`session expired for prompt ${promptIndex + 1} — aborting provider run (not a proxy issue)`,
+				);
+				throw err;
+			}
+
 			logger.error(
 				`attempt ${attempt}/${maxAttempts} failed for prompt ${promptIndex + 1}: ${toErrorMessage(err)}`,
 			);

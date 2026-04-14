@@ -4,7 +4,7 @@ import { logger } from "@oneglanse/utils";
 import { env } from "../env.js";
 
 export const MAX_PARALLEL_PROVIDER_JOBS =
-	resolveAppMode(env.ONEGLANSE_APP_MODE) === "local" ? 1 : 2;
+	resolveAppMode(env.ONEGLANSE_APP_MODE) === "local" ? 1 : 5;
 
 // Bounded random jitter applied before each provider starts so that concurrent
 // jobs do not all spin up browsers simultaneously and spike CPU/memory.

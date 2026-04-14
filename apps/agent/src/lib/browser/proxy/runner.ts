@@ -262,6 +262,14 @@ async function runRetryCycle(
 				toErrorMessage(err),
 			);
 
+			if (failureType === "logged_out") {
+				plog.warn(
+					`session expired on attempt ${totalAttempt}/${totalMax} — stopping all cycles (not a proxy issue)`,
+				);
+				await invalidateAndEvict(refs);
+				return { done: true };
+			}
+
 			if (failureType === "bot_detection") {
 				plog.warn(
 					`bot detection on attempt ${totalAttempt}/${totalMax}; cooling down ${BOT_DETECTION_COOLDOWN / 1000}s and ending the cycle early`,
