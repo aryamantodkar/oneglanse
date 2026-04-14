@@ -1,11 +1,9 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createInterface } from "node:readline";
 import zlib from "node:zlib";
 import {
 	attachTerminationHandler,
-	buildLocalWorkspacePackages,
 	ensureEnvFiles,
 	ensureLocalCamoufoxRuntime,
 	repoRoot,
@@ -13,6 +11,22 @@ import {
 	spawnCommand,
 	waitForChildExit,
 } from "./lib/runtime.mjs";
+
+// Only the packages the agent auth CLI actually depends on — no web/UI packages needed.
+const AUTH_BUILD_PACKAGES = [
+	"@oneglanse/types",
+	"@oneglanse/errors",
+	"@oneglanse/db",
+	"@oneglanse/utils",
+	"@oneglanse/services",
+	"@oneglanse/agent",
+];
+
+async function buildAuthPackages() {
+	for (const pkg of AUTH_BUILD_PACKAGES) {
+		await runCommand("pnpm", ["--filter", pkg, "build"]);
+	}
+}
 
 const PROVIDERS = ["chatgpt", "perplexity", "gemini", "google", "claude"];
 
@@ -152,7 +166,7 @@ function resolveUploadUrl() {
 	return `${baseUrl}:3333/auth/sessions`;
 }
 
-async function selectProvider() {
+function resolveTargetProviders() {
 	const providerArg = readArg("--provider", null);
 	if (providerArg) {
 		if (!PROVIDERS.includes(providerArg)) {
@@ -160,31 +174,31 @@ async function selectProvider() {
 				`Unknown provider: "${providerArg}". Must be one of: ${PROVIDERS.join(", ")}`,
 			);
 		}
-		return providerArg;
+		return [providerArg];
 	}
+	return PROVIDERS;
+}
 
-	const rl = createInterface({ input: process.stdin, output: process.stdout });
-	console.log("\nWhich provider do you want to authenticate?");
-	PROVIDERS.forEach((p, i) => console.log(`  ${i + 1}. ${p}`));
-
-	return new Promise((resolve, reject) => {
-		rl.question("\nEnter number or name: ", (answer) => {
-			rl.close();
-			const trimmed = answer.trim().toLowerCase();
-			const num = Number.parseInt(trimmed, 10);
-			if (Number.isInteger(num) && num >= 1 && num <= PROVIDERS.length) {
-				resolve(PROVIDERS[num - 1]);
-			} else if (PROVIDERS.includes(trimmed)) {
-				resolve(trimmed);
-			} else {
-				reject(
-					new Error(
-						`Invalid selection "${answer}". Choose a number 1–${PROVIDERS.length} or a name from: ${PROVIDERS.join(", ")}`,
-					),
-				);
-			}
-		});
+function launchProviderAuth(provider, uploadUrl, uploadToken) {
+	const agentCliPath = path.join(
+		repoRoot,
+		"apps",
+		"agent",
+		"dist",
+		"auth",
+		"cli.js",
+	);
+	console.log(`Launching ${provider} auth browser...`);
+	const child = spawnCommand("node", [agentCliPath, "--provider", provider], {
+		env: {
+			...process.env,
+			ONEGLANSE_APP_MODE: "local",
+			...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
+			...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
+		},
 	});
+	attachTerminationHandler(child);
+	return waitForChildExit(child, `${provider} auth`);
 }
 
 async function main() {
@@ -227,31 +241,15 @@ async function main() {
 	}
 
 	await ensureLocalCamoufoxRuntime();
-	await buildLocalWorkspacePackages();
-	await runCommand("pnpm", ["--filter", "@oneglanse/agent", "build"]);
+	await buildAuthPackages();
 
-	const provider = await selectProvider();
+	const providers = resolveTargetProviders();
+	console.log(`\nOpening auth browser${providers.length > 1 ? "s" : ""} for: ${providers.join(", ")}`);
+	console.log("Log in and close each browser window when done.\n");
 
-	const agentCliPath = path.join(
-		repoRoot,
-		"apps",
-		"agent",
-		"dist",
-		"auth",
-		"cli.js",
+	await Promise.all(
+		providers.map((provider) => launchProviderAuth(provider, uploadUrl, uploadToken)),
 	);
-
-	const child = spawnCommand("node", [agentCliPath, "--provider", provider], {
-		env: {
-			...process.env,
-			ONEGLANSE_APP_MODE: "local",
-			...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
-			...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
-		},
-	});
-
-	attachTerminationHandler(child);
-	await waitForChildExit(child, `${provider} auth`);
 }
 
 main().catch((error) => {
