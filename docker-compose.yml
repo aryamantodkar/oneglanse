@@ -19,6 +19,9 @@ services:
     shm_size: "2gb"
     env_file:
       - .env
+    environment:
+      ONEGLANSE_APP_MODE: self-host
+      AGENT_AUTH_ROOT_DIR: /storage/auth
     volumes:
       - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage
     ports:
@@ -158,6 +161,8 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       PORT: "3000"
+      ONEGLANSE_APP_MODE: self-host
+      AGENT_AUTH_ROOT_DIR: /storage/auth
     volumes:
       - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage:ro
     networks:
