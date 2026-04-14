@@ -30,8 +30,17 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const appMode = resolveAppMode(process.env.ONEGLANSE_APP_MODE);
+	const requestHeaders = await headers();
+	const isPublicLocalProvidersPage =
+		appMode === "local" &&
+		requestHeaders.get("x-oneglanse-public-providers") === "1";
+
+	if (isPublicLocalProvidersPage) {
+		return children;
+	}
+
 	const session = await auth.api.getSession({
-		headers: await headers(),
+		headers: requestHeaders,
 	});
 
 	if (!session) {

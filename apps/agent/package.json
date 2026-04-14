@@ -7,7 +7,6 @@
 	"scripts": {
 		"dev": "node --loader ts-node/esm src/index.ts",
 		"start:worker": "node dist/index.js",
-		"auth:login": "node dist/auth/cli.js",
 		"build": "tsc",
 		"typecheck": "tsc --noEmit"
 	},

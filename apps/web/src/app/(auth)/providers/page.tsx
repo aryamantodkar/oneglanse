@@ -26,7 +26,7 @@ export default async function ProvidersPage({
 
 	const description =
 		appMode === "self-host"
-			? "To reconnect providers with fresh sessions, run pnpm auth on your local machine. Sessions are uploaded to your VPS automatically."
+			? "To reconnect providers with fresh sessions, run pnpm auth on your local machine and finish sign-in on the local /providers page. Sessions are uploaded to your VPS automatically."
 			: "Log in to any provider below, then close the browser window. Auth is saved automatically and you can reconnect here any time.";
 
 	return (

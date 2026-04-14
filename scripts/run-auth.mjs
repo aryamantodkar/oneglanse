@@ -4,31 +4,24 @@ import path from "node:path";
 import zlib from "node:zlib";
 import {
 	attachTerminationHandler,
+	buildLocalRuntimeEnv,
+	buildLocalWorkspacePackages,
+	edgeNetworkName,
 	ensureEnvFiles,
 	ensureLocalCamoufoxRuntime,
+	ensureDockerNetwork,
+	openBrowser,
 	repoRoot,
 	runCommand,
 	spawnCommand,
 	waitForChildExit,
+	waitForHttp,
+	terminateLocalProcesses,
 } from "./lib/runtime.mjs";
 
-// Only the packages the agent auth CLI actually depends on — no web/UI packages needed.
-const AUTH_BUILD_PACKAGES = [
-	"@oneglanse/types",
-	"@oneglanse/errors",
-	"@oneglanse/db",
-	"@oneglanse/utils",
-	"@oneglanse/services",
-	"@oneglanse/agent",
-];
-
-async function buildAuthPackages() {
-	for (const pkg of AUTH_BUILD_PACKAGES) {
-		await runCommand("pnpm", ["--filter", pkg, "build"]);
-	}
-}
-
 const PROVIDERS = ["chatgpt", "perplexity", "gemini", "google", "claude"];
+const localAppUrl = "http://localhost:3000";
+const localProvidersUrl = `${localAppUrl}/providers`;
 
 function getAuthRootDir() {
 	const configured = process.env.AGENT_AUTH_ROOT_DIR?.trim();
@@ -166,41 +159,6 @@ function resolveUploadUrl() {
 	return `${baseUrl}:3333/auth/sessions`;
 }
 
-function resolveTargetProviders() {
-	const providerArg = readArg("--provider", null);
-	if (providerArg) {
-		if (!PROVIDERS.includes(providerArg)) {
-			throw new Error(
-				`Unknown provider: "${providerArg}". Must be one of: ${PROVIDERS.join(", ")}`,
-			);
-		}
-		return [providerArg];
-	}
-	return PROVIDERS;
-}
-
-function launchProviderAuth(provider, uploadUrl, uploadToken) {
-	const agentCliPath = path.join(
-		repoRoot,
-		"apps",
-		"agent",
-		"dist",
-		"auth",
-		"cli.js",
-	);
-	console.log(`Launching ${provider} auth browser...`);
-	const child = spawnCommand("node", [agentCliPath, "--provider", provider], {
-		env: {
-			...process.env,
-			ONEGLANSE_APP_MODE: "local",
-			...(uploadUrl ? { AGENT_AUTH_UPLOAD_URL: uploadUrl } : {}),
-			...(uploadToken ? { AGENT_AUTH_UPLOAD_TOKEN: uploadToken } : {}),
-		},
-	});
-	attachTerminationHandler(child);
-	return waitForChildExit(child, `${provider} auth`);
-}
-
 async function main() {
 	await ensureEnvFiles();
 
@@ -241,15 +199,67 @@ async function main() {
 	}
 
 	await ensureLocalCamoufoxRuntime();
-	await buildAuthPackages();
+	await buildLocalWorkspacePackages();
+	const localEnv = buildLocalRuntimeEnv(localAppUrl);
+	if (uploadUrl && uploadToken) {
+		localEnv.AGENT_AUTH_UPLOAD_URL = uploadUrl;
+		localEnv.AGENT_AUTH_UPLOAD_TOKEN = uploadToken;
+	}
 
-	const providers = resolveTargetProviders();
-	console.log(`\nOpening auth browser${providers.length > 1 ? "s" : ""} for: ${providers.join(", ")}`);
-	console.log("Log in and close each browser window when done.\n");
+	await ensureDockerNetwork(edgeNetworkName);
+	await runCommand("docker", [
+		"compose",
+		"up",
+		"-d",
+		"--build",
+		"--force-recreate",
+		"--wait",
+		"db",
+		"clickhouse",
+		"redis",
+	]);
+	await runCommand("pnpm", ["db:migrate"], { env: localEnv });
+	await terminateLocalProcesses([repoRoot, "@oneglanse/web", "next dev"]);
+	await terminateLocalProcesses([repoRoot, "@oneglanse/agent", "dev"]);
 
-	await Promise.all(
-		providers.map((provider) => launchProviderAuth(provider, uploadUrl, uploadToken)),
+	const webChild = spawnCommand(
+		"pnpm",
+		[
+			"--filter",
+			"@oneglanse/web",
+			"exec",
+			"next",
+			"dev",
+			"--hostname",
+			"localhost",
+			"--port",
+			"3000",
+		],
+		{
+			env: localEnv,
+		},
 	);
+	const agentChild = spawnCommand("pnpm", ["--filter", "@oneglanse/agent", "dev"], {
+		env: localEnv,
+	});
+
+	const stopWeb = attachTerminationHandler(webChild);
+	const stopAgent = attachTerminationHandler(agentChild);
+
+	try {
+		await waitForHttp(localAppUrl);
+		console.log(`Opening ${localProvidersUrl}`);
+		openBrowser(localProvidersUrl);
+	} catch (error) {
+		stopWeb();
+		stopAgent();
+		throw error;
+	}
+
+	await Promise.all([
+		waitForChildExit(webChild, "Web dev"),
+		waitForChildExit(agentChild, "Agent dev"),
+	]);
 }
 
 main().catch((error) => {

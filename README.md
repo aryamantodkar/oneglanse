@@ -61,10 +61,9 @@ Local-first auth only:
 pnpm auth
 ```
 
-That starts the shared providers flow at
-[http://localhost:3000/providers](http://localhost:3000/providers) without
-running the full app stack. If `3000` is already in use, it automatically picks
-the next free local port.
+That starts the local app + agent auth stack and opens
+[http://localhost:3000/providers](http://localhost:3000/providers) so you can
+connect providers from the web UI.
 
 ### 3. Self-Host It
 
@@ -166,7 +165,7 @@ Gemini and Google Search auth are stored separately.
 
 ### Local auth flow
 
-1. Open the app or run `pnpm auth`
+1. Run `pnpm local` or `pnpm auth`
 2. Click a connect button
 3. A local Camoufox sign-in browser opens
 4. Sign in and close it when done
@@ -198,11 +197,8 @@ If you do not have local sessions yet, use:
 pnpm auth
 ```
 
-If `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` are already set, `pnpm auth`
-will first try to upload any existing local sessions. If none exist, it opens
-the local provider auth flow, saves the sessions locally, uploads them to the
-VPS, and invalidates the matching VPS runtime profiles so the next run reseeds
-cleanly.
+If `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` are already set, the local
+`/providers` flow uploads freshly saved sessions to the VPS automatically.
 
 ## Auth and Runtime State
 
@@ -266,7 +262,7 @@ For VPS auth upload, prefer setting `ONEGLANSE_VPS_IP` and
 ## Useful Commands
 
 - `pnpm local` - full local app + worker
-- `pnpm auth` - shared local auth flow only
+- `pnpm auth` - start the local app + agent stack and open `/providers`
 - `pnpm upload:vps` - upload existing local auth sessions to the configured VPS
 - `pnpm self-host` - start both the app and public VPS stacks
 - `pnpm self-host:app` - pull and refresh only the app stack

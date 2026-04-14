@@ -168,9 +168,11 @@ export function ProviderConnectionsPanel(props: {
 
 			{!authProvidersQuery.data?.interactiveConnectAllowed ? (
 				<p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-					To reconnect providers with fresh sessions, run{" "}
+					To connect or refresh providers, run{" "}
 					<code className="rounded px-1 font-mono text-xs">pnpm auth</code> on
-					your local machine. Sessions are uploaded to your VPS automatically.
+					your local machine, then finish sign-in on the local{" "}
+					<code className="rounded px-1 font-mono text-xs">/providers</code>{" "}
+					page. Sessions are uploaded to your VPS automatically.
 				</p>
 			) : null}
 
