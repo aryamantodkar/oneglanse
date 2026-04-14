@@ -78,6 +78,8 @@ This starts:
 
 - The main app stack
 - The public stack
+- It tries to pull the latest published images before starting the services
+- If pull access is unavailable, it falls back automatically to a local Docker build
 
 Default ports:
 
@@ -87,6 +89,9 @@ Default ports:
 
 Persistent self-hosted state defaults to `/opt/oneglanse/storage`. Override it
 with `ONEGLANSE_STORAGE_ROOT` if your VPS should store data elsewhere.
+
+Use `pnpm self-host:build` only if you intentionally want to build the Docker
+images from local source instead of pulling the published images.
 
 ### Provider Auth Setup
 

@@ -78,6 +78,8 @@ This starts both self-hosted stacks:
 - the main app stack from `docker-compose.yml`
 - the always-on public stack from `docker-compose.public.yml`
 - forces app mode to `self-hosted`
+- tries to pull the latest published images first
+- automatically falls back to a local Docker build if pulling is unavailable
 
 Default ports:
 
@@ -89,12 +91,16 @@ Persistent VPS state defaults to `/opt/oneglanse/storage` and is mounted into
 the containers as `/storage`. Override it with `ONEGLANSE_STORAGE_ROOT` if your
 host should store data elsewhere.
 
-By default, self-hosted compose builds and tags local images named:
+By default, self-hosted compose pulls the published images from:
 
-- `oneglanse-web:latest`
-- `oneglanse-agent:latest`
-- `oneglanse-postgres:latest`
-- `oneglanse-landing:latest`
+- `ghcr.io/aryamantodkar/oneglanse-web:latest`
+- `ghcr.io/aryamantodkar/oneglanse-agent:latest`
+- `ghcr.io/aryamantodkar/oneglanse-postgres:latest`
+- `ghcr.io/aryamantodkar/oneglanse-landing:latest`
+
+If those images are unavailable on a target machine, `pnpm self-host` falls
+back automatically to `docker compose up -d --build`, so a clean clone on a VPS
+can still start with one command and without manual Docker login steps.
 
 If you want to deploy prebuilt images instead, set these env vars before
 running the compose helpers:
@@ -104,15 +110,15 @@ running the compose helpers:
 - `ONEGLANSE_POSTGRES_IMAGE`
 - `ONEGLANSE_LANDING_IMAGE`
 
+If you want to build from source instead of pulling published images, use:
+
+- `pnpm self-host:build`
+- `pnpm self-host:app:build`
+- `pnpm self-host:public:build`
+
 ### App-Only Redeploys
 
 Routine product updates should use the default app stack:
-
-```bash
-docker compose up -d --build
-```
-
-Or:
 
 ```bash
 pnpm self-host:app
@@ -124,12 +130,6 @@ down landing.
 ### Public-Site Redeploys
 
 Only redeploy the public landing surface when you actually change it:
-
-```bash
-docker compose -f docker-compose.public.yml up -d --build
-```
-
-Or:
 
 ```bash
 pnpm self-host:public
@@ -269,8 +269,11 @@ For VPS auth upload, prefer setting `ONEGLANSE_VPS_IP` and
 - `pnpm auth` - shared local auth flow only
 - `pnpm upload:vps` - upload existing local auth sessions to the configured VPS
 - `pnpm self-host` - start both the app and public VPS stacks
-- `pnpm self-host:app` - rebuild only the app stack
-- `pnpm self-host:public` - rebuild only the public stack
+- `pnpm self-host:app` - pull and refresh only the app stack
+- `pnpm self-host:public` - pull and refresh only the public stack
+- `pnpm self-host:build` - build and start both stacks from source
+- `pnpm self-host:app:build` - build only the app stack from source
+- `pnpm self-host:public:build` - build only the public stack from source
 - `pnpm self-host:pull` - pull configured prebuilt images before an update
 - `pnpm typecheck` - typecheck the monorepo
 - `pnpm build` - build the monorepo
