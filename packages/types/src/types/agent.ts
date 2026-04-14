@@ -44,12 +44,12 @@ export const PROVIDER_LIST = [
 
 export type Provider = (typeof PROVIDER_LIST)[number];
 
-export const APP_MODE_LIST = ["cloud", "self-hosted", "local"] as const;
+export const APP_MODE_LIST = ["cloud", "self-host", "local"] as const;
 
 export type AppMode = (typeof APP_MODE_LIST)[number];
 
 export function resolveAppMode(rawMode?: string | null): AppMode {
-	if (rawMode === "self-hosted" || rawMode === "local") {
+	if (rawMode === "self-host" || rawMode === "local") {
 		return rawMode;
 	}
 

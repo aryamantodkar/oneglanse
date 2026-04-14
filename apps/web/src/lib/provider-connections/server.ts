@@ -27,7 +27,7 @@ export async function readProviderConnectionsState(): Promise<ProviderConnection
 	let statuses: ProviderAuthStatus[];
 
 	try {
-		if (storage.appMode === "self-hosted" && !storage.storageRootExists) {
+		if (storage.appMode === "self-host" && !storage.storageRootExists) {
 			throw new Error(
 				`Auth storage is unavailable on this server. Expected mounted storage at ${storage.storageRootDir} and auth files under ${storage.authRootDir}.`,
 			);

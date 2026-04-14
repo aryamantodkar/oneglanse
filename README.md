@@ -77,7 +77,7 @@ This starts both self-hosted stacks:
 
 - the main app stack from `docker-compose.yml`
 - the always-on public stack from `docker-compose.public.yml`
-- forces app mode to `self-hosted`
+- forces app mode to `self-host`
 - tries to pull the latest published images first
 - automatically falls back to a local Docker build if pulling is unavailable
 
@@ -249,15 +249,15 @@ you intentionally want to test a different Camoufox package/browser pair.
 
 Deployment mode is controlled by one variable:
 
-- `ONEGLANSE_APP_MODE=cloud|self-hosted|local`
+- `ONEGLANSE_APP_MODE=cloud|self-host|local`
 
 Behavior:
 
 - `pnpm local` and `pnpm auth` force `local`
-- `docker-compose.yml` forces `self-hosted`
+- `docker-compose.yml` forces `self-host`
 - anything else defaults to `cloud`
 
-Recurring schedule is only available in `self-hosted` mode. `local` mode
+Recurring schedule is only available in `self-host` mode. `local` mode
 supports manual prompt runs only.
 
 For VPS auth upload, prefer setting `ONEGLANSE_VPS_IP` and
