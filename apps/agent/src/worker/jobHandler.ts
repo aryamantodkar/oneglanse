@@ -7,11 +7,12 @@ import {
 } from "@oneglanse/services";
 import type {
 	AgentResult,
+	AuthProvider,
 	ModelResult,
 	PromptPayload,
 	Provider,
 } from "@oneglanse/types";
-import { PROVIDER_LIST } from "@oneglanse/types";
+import { AUTH_PROVIDER_LIST, PROVIDER_LIST } from "@oneglanse/types";
 import { createProviderLogger, logger } from "@oneglanse/utils";
 import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
@@ -209,8 +210,8 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		};
 	} catch (err) {
 		plog.error("failed:", toErrorMessage(err));
-		if (classifyError(err) === "logged_out") {
-			await writeProviderAuthStatus(provider, {
+		if (classifyError(err) === "logged_out" && (AUTH_PROVIDER_LIST as readonly string[]).includes(provider)) {
+			await writeProviderAuthStatus(provider as AuthProvider, {
 				connecting: false,
 				lastUpdatedAt: new Date().toISOString(),
 				syncedAt: null,
