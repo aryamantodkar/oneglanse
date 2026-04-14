@@ -111,9 +111,11 @@ function getScheduleLabel(cron: string | null): string {
 function ManualRunView({
 	isRunning,
 	onRunNow,
+	mode,
 }: {
 	isRunning: boolean;
 	onRunNow: () => Promise<void>;
+	mode: "local" | "self-host";
 }) {
 	return (
 		<div
@@ -122,23 +124,28 @@ function ManualRunView({
 			<div className={cn(formDialogSupportCardClassName, "space-y-3")}>
 				<div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700 dark:bg-neutral-950/80 dark:text-gray-200">
 					<Zap className="h-3.5 w-3.5" />
-					Local Run
+					{mode === "local" ? "Local Run" : "Manual Run"}
 				</div>
 				<div className="space-y-1.5">
 					<h2 className="text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
 						Run Prompts Now
 					</h2>
 					<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-						Local mode is built for manual runs while your machine is active.
-						Start a fresh run whenever you want updated responses.
+						{mode === "local"
+							? "Local mode is built for manual runs while your machine is active. Start a fresh run whenever you want updated responses."
+							: "Trigger a run immediately outside of your scheduled cadence."}
 					</p>
 				</div>
 			</div>
 
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<p className={cn(formHintClassName, "max-w-xl text-left")}>
-					Recurring schedules are available only in cloud and self-host mode.
-				</p>
+				{mode === "local" ? (
+					<p className={cn(formHintClassName, "max-w-xl text-left")}>
+						Recurring schedules are available only in cloud and self-host mode.
+					</p>
+				) : (
+					<span />
+				)}
 				<Button
 					onClick={() => void onRunNow()}
 					disabled={isRunning}
@@ -300,7 +307,7 @@ export default function SchedulePageClient({
 		);
 	}
 
-	if (canRunNow) {
+	if (!canConfigureSchedule) {
 		return (
 			<div className="web-page-panel max-w-2xl">
 				<div>
@@ -322,6 +329,7 @@ export default function SchedulePageClient({
 						<ManualRunView
 							isRunning={isRunning || runNowMutation.isPending}
 							onRunNow={handleRunNow}
+							mode="local"
 						/>
 					</div>
 				</div>
@@ -485,6 +493,14 @@ export default function SchedulePageClient({
 					</>
 				)}
 			</>
+
+			{canRunNow && (
+				<ManualRunView
+					isRunning={isRunning || runNowMutation.isPending}
+					onRunNow={handleRunNow}
+					mode="self-host"
+				/>
+			)}
 		</div>
 	);
 }

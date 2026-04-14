@@ -17,10 +17,12 @@ export default async function ProvidersPage({
 		workspace = null;
 	}
 	const params = await searchParams;
-	const nextHref = getPostProvidersContinuePath({
-		rawNext: params?.next,
-		workspaceId: workspace?.id ?? null,
-	});
+	const nextHref = params?.next
+		? getPostProvidersContinuePath({
+				rawNext: params.next,
+				workspaceId: workspace?.id ?? null,
+			})
+		: null;
 
 	const description =
 		appMode === "self-host"
