@@ -5,7 +5,7 @@ export const env = createEnv({
 	server: {
 		APP_URL: z.string().url().optional(),
 		API_BASE_URL: z.string().url().optional(),
-		ONEGLANSE_APP_MODE: z.enum(["cloud", "self-hosted", "local"]).optional(),
+		ONEGLANSE_APP_MODE: z.enum(["cloud", "self-host", "local"]).optional(),
 		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
 		BETTER_AUTH_SECRET: z.string().min(1).optional(),
 		GOOGLE_CLIENT_ID: z.string().min(1).optional(),
@@ -16,7 +16,7 @@ export const env = createEnv({
 	},
 	client: {
 		NEXT_PUBLIC_ONEGLANSE_APP_MODE: z
-			.enum(["cloud", "self-hosted", "local"])
+			.enum(["cloud", "self-host", "local"])
 			.optional(),
 	},
 	runtimeEnv: {

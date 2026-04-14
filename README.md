@@ -73,7 +73,7 @@ pnpm install
 pnpm self-host
 ```
 
-This starts both self-hosted stacks:
+This starts both self-host stacks:
 
 - the main app stack from `docker-compose.yml`
 - the always-on public stack from `docker-compose.public.yml`
@@ -91,7 +91,7 @@ Persistent VPS state defaults to `/opt/oneglanse/storage` and is mounted into
 the containers as `/storage`. Override it with `ONEGLANSE_STORAGE_ROOT` if your
 host should store data elsewhere.
 
-By default, self-hosted compose pulls the published images from:
+By default, self-host compose pulls the published images from:
 
 - `ghcr.io/aryamantodkar/oneglanse-web:latest`
 - `ghcr.io/aryamantodkar/oneglanse-agent:latest`

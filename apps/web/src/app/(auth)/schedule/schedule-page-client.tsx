@@ -137,7 +137,7 @@ function ManualRunView({
 
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<p className={cn(formHintClassName, "max-w-xl text-left")}>
-					Recurring schedules are available only in cloud and self-hosted mode.
+					Recurring schedules are available only in cloud and self-host mode.
 				</p>
 				<Button
 					onClick={() => void onRunNow()}
@@ -314,7 +314,7 @@ export default function SchedulePageClient({
 						Local mode supports on-demand runs while your machine is active.
 					</p>
 					<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-						Scheduling is available in the cloud and self-hosted versions.
+						Scheduling is available in the cloud and self-host versions.
 					</p>
 				</div>
 				<div className="flex justify-center pt-3 sm:pt-4">
