@@ -1,10 +1,19 @@
+import type { Provider } from "@oneglanse/types";
 import type { Page as PlaywrightPage } from "playwright-core";
+import { PROVIDER_RAW_SOURCES_DOM_EXTRACTORS } from "../../core/providers/_shared/rawSourcesDom.js";
 
 export async function runPageDomOp<T>(
 	page: PlaywrightPage,
 	operation: string,
 	params?: Record<string, unknown>,
 ): Promise<T> {
+	const nextParams = { ...(params ?? {}) };
+	if (operation === "raw-sources") {
+		const provider = String(nextParams.provider || "") as Provider;
+		nextParams.providerRawSourcesExtractor =
+			PROVIDER_RAW_SOURCES_DOM_EXTRACTORS[provider] ?? "";
+	}
+
 	return (await page.evaluate(
 		({ operation: currentOperation, params: currentParams }) => {
 			function splitTopLevelSelectors(selector: string): string[] {
@@ -230,6 +239,35 @@ export async function runPageDomOp<T>(
 					.filter((source) => source.rawHref);
 			}
 
+			function runProviderRawSourcesExtractor(
+				extractorSource: string,
+				selectors: string[],
+			) {
+				if (!extractorSource.trim()) return [];
+
+				const extractor = Function(
+					`return (${extractorSource});`,
+				)() as (
+					helpers: {
+						getCachedRawSources: typeof getCachedRawSources;
+						setCachedRawSources: typeof setCachedRawSources;
+						findLatestResponseElement: typeof findLatestResponseElement;
+						extractClaudeRawSourcesFromResponseElement: typeof extractClaudeRawSourcesFromResponseElement;
+					},
+					selectors: string[],
+				) => unknown;
+
+				return extractor(
+					{
+						getCachedRawSources,
+						setCachedRawSources,
+						findLatestResponseElement,
+						extractClaudeRawSourcesFromResponseElement,
+					},
+					selectors,
+				);
+			}
+
 			function readResponseText(_provider: string, selectors: string[]): string {
 				return findLatestResponseElement(selectors)?.element.innerText.trim() || "";
 			}
@@ -359,267 +397,6 @@ export async function runPageDomOp<T>(
 				return String(uaDataPlatform || navigator.platform || "").toLowerCase();
 			}
 
-			function extractChatgptRawSources() {
-				const results: Array<{
-					rawHref: string;
-					title: string;
-					citedText: string;
-				}> = [];
-				for (const anchor of Array.from(
-					document.querySelectorAll(
-						'ul li > a[target="_blank"][rel*="noopener"][href^="http"]',
-					),
-				)) {
-					if (!(anchor instanceof HTMLAnchorElement)) continue;
-
-					const textBlocks = Array.from(anchor.querySelectorAll("*"))
-						.map((element) => element.textContent?.trim())
-						.filter(Boolean);
-
-					results.push({
-						rawHref: anchor.href,
-						title: textBlocks[1] || "",
-						citedText: textBlocks.slice(2).join(" ") || "",
-					});
-				}
-
-				return results;
-			}
-
-			function extractPerplexityRawSources() {
-				const results: Array<{
-					rawHref: string;
-					title: string;
-					citedText: string;
-				}> = [];
-				const panel = document.querySelector(
-					'[role="tabpanel"][aria-labelledby*="citations"]',
-				);
-				if (!panel) return results;
-
-				for (const anchor of Array.from(
-					panel.querySelectorAll('a[href^="http"]'),
-				)) {
-					if (!(anchor instanceof HTMLAnchorElement)) continue;
-
-					const rawHref = anchor.href.replace(/#.*$/, "");
-					if (!rawHref) continue;
-
-					const textNodes = Array.from(anchor.querySelectorAll("*"))
-						.map((element) => element.textContent?.trim())
-						.filter(Boolean);
-
-					results.push({
-						rawHref,
-						title: textNodes[1] || "",
-						citedText: textNodes.slice(2).join(" ") || "",
-					});
-				}
-
-				return results;
-			}
-
-			function extractGeminiRawSources() {
-				const results: Array<{
-					rawHref: string;
-					title: string;
-					citedText: string;
-				}> = [];
-				for (const anchor of Array.from(
-					document.querySelectorAll(
-						'context-sidebar inline-source-card a[href^="http"]',
-					),
-				)) {
-					if (!(anchor instanceof HTMLAnchorElement)) continue;
-
-					const blocks = Array.from(anchor.querySelectorAll("*"))
-						.map((element) => element.textContent?.trim())
-						.filter(Boolean);
-
-					results.push({
-						rawHref: anchor.href,
-						title: blocks[1] || "",
-						citedText: blocks.slice(2).join(" ") || "",
-					});
-				}
-
-				return results;
-			}
-
-			function extractClaudeRawSources(selectors: string[]) {
-				const cached = getCachedRawSources("claude");
-				if (cached) return cached;
-
-				const responseEl = findLatestResponseElement(selectors)?.element;
-				if (!responseEl) return [];
-
-				const rawSources =
-					extractClaudeRawSourcesFromResponseElement(responseEl);
-				setCachedRawSources("claude", rawSources);
-				return rawSources;
-			}
-
-			function extractAIOverviewRawSources() {
-				const results: Array<{
-					rawHref: string;
-					title: string;
-					citedText: string;
-				}> = [];
-				const rhsCol = document.querySelector('[data-container-id="rhs-col"]');
-				if (!rhsCol) {
-					return { rawSources: results, containerFound: false };
-				}
-
-				const seen = new Set<string>();
-				for (const card of Array.from(rhsCol.querySelectorAll("div[data-src-id]"))) {
-					if (!(card instanceof HTMLElement)) continue;
-
-					const srcId = card.getAttribute("data-src-id")?.trim() || "";
-					if (!srcId || seen.has(srcId)) continue;
-					seen.add(srcId);
-
-					const link = card.querySelector('a[href^="http"]');
-					if (!(link instanceof HTMLAnchorElement)) continue;
-
-					const title =
-						link
-							.getAttribute("aria-label")
-							?.replace(/\.\s*Opens in new tab\.?$/i, "")
-							.trim() ||
-						link.href;
-					const citedText =
-						card.querySelector("[data-crb-snippet-text]")?.textContent?.trim() ||
-						"";
-
-					results.push({
-						rawHref: link.href,
-						title,
-						citedText,
-					});
-				}
-
-				return { rawSources: results, containerFound: true };
-			}
-
-			function extractAIOverviewResponseHtml() {
-				const sourceCardDatePattern =
-					/([A-Z][a-z]+ \d{1,2}, \d{4}|\d{1,2} [A-Z][a-z]+ \d{4}|\d+\s(?:second|minute|hour|day|week|month|year)s? ago|[Yy]esterday|\b\d{4}\b\s(?:—|·))/;
-				const placeholderSelector =
-					'[data-container-id="model-response-placeholder"]';
-				const placeholderWrapperSelector =
-					'div:has(> [data-container-id="main-col"])';
-				const mainColSelector = '[data-container-id="main-col"]';
-				const noiseTags = [
-					"script",
-					"style",
-					"button",
-					"svg",
-					"noscript",
-					"iframe",
-					"sup",
-				];
-				const aiOverviewChipSelector = 'a[href*="google.com/search"]';
-				const sourceContainers = [
-					'[data-container-id="rhs-col"]',
-					'[data-xid="aim-aside-initial-corroboration-container"]',
-					'[role="dialog"][data-type="hovc"]',
-				];
-				const sourceLinkSelector = 'a[target="_blank"][rel="noopener"]';
-				const headingSelector = '[role="heading"]';
-				const inlineSourceLinkSelector = 'a[target="_blank"][rel="noopener"]';
-
-				const placeholder =
-					document.querySelector(placeholderSelector) ||
-					document.querySelector(placeholderWrapperSelector) ||
-					document.querySelector(mainColSelector)?.parentElement;
-				if (!placeholder) {
-					return {
-						success: false,
-						error: "model-response-placeholder not found",
-					};
-				}
-
-				const mainCol = placeholder.querySelector(mainColSelector) || placeholder;
-				if (((mainCol.textContent || "").trim()).length < 50) {
-					return { success: false, error: "no-ai-overview: main-col empty" };
-				}
-
-				const clone = placeholder.cloneNode(true) as HTMLElement;
-
-				for (const tag of noiseTags) {
-					for (const element of Array.from(clone.querySelectorAll(tag))) {
-						element.remove();
-					}
-				}
-
-				for (const anchor of Array.from(
-					clone.querySelectorAll(aiOverviewChipSelector),
-				)) {
-					const span = document.createElement("span");
-					span.textContent = anchor.textContent;
-					anchor.parentNode?.replaceChild(span, anchor);
-				}
-
-				for (const selector of sourceContainers) {
-					for (const element of Array.from(clone.querySelectorAll(selector))) {
-						element.remove();
-					}
-				}
-
-				const remainingSourceLinks = Array.from(
-					clone.querySelectorAll(sourceLinkSelector),
-				);
-				const toRemove = new Set<Element>();
-				for (const link of remainingSourceLinks) {
-					let element: Element = link;
-					while (element.parentElement && element.parentElement !== clone) {
-						const parent = element.parentElement;
-						if (parent.querySelector(headingSelector)) break;
-						const hasNonSourceSibling = Array.from(parent.children).some(
-							(sibling) =>
-								sibling !== element &&
-								(sibling.textContent || "").length > 100 &&
-								!sibling.querySelector(inlineSourceLinkSelector),
-						);
-						if (hasNonSourceSibling) break;
-						element = parent;
-					}
-					toRemove.add(element);
-				}
-				for (const element of toRemove) {
-					element.remove();
-				}
-
-				const extractedMainCol = clone.querySelector(mainColSelector) || clone;
-				for (const element of Array.from(clone.querySelectorAll("*"))) {
-					if (
-						extractedMainCol &&
-						(element === extractedMainCol || extractedMainCol.contains(element))
-					) {
-						continue;
-					}
-
-					const text = element.textContent || "";
-					if (
-						text.length < 5000 &&
-						sourceCardDatePattern.test(text) &&
-						!element.querySelector(headingSelector)
-					) {
-						element.remove();
-					}
-				}
-
-				const html = (extractedMainCol || clone).outerHTML.trim();
-				if (!html) {
-					return {
-						success: false,
-						error: "AI Overview HTML was empty after extraction",
-					};
-				}
-
-				return { success: true, html };
-			}
-
 			switch (currentOperation) {
 				case "ping":
 					return true;
@@ -650,28 +427,14 @@ export async function runPageDomOp<T>(
 						(currentParams?.fallbackSelectors as string[]) || [],
 					);
 				case "raw-sources":
-					switch (currentParams?.provider) {
-						case "chatgpt":
-							return extractChatgptRawSources();
-						case "perplexity":
-							return extractPerplexityRawSources();
-						case "gemini":
-							return extractGeminiRawSources();
-						case "claude":
-							return extractClaudeRawSources(
-								(currentParams?.selectors as string[]) || [],
-							);
-						case "ai-overview":
-							return extractAIOverviewRawSources();
-						default:
-							return [];
-					}
-				case "ai-overview-response-html":
-					return extractAIOverviewResponseHtml();
+					return runProviderRawSourcesExtractor(
+						String(currentParams?.providerRawSourcesExtractor || ""),
+						(currentParams?.selectors as string[]) || [],
+					);
 				default:
 					throw new Error(`unknown page operation: ${currentOperation}`);
 			}
 		},
-		{ operation, params: params ?? {} },
+		{ operation, params: nextParams },
 	)) as T;
 }

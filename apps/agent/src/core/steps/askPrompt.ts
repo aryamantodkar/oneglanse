@@ -161,8 +161,8 @@ export async function askPrompt(
 
 	type SubmitStrategy = "native" | "enter" | "force" | "dispatch";
 	const submitOrder: SubmitStrategy[] = config.submitOrder ?? [
-		"native",
 		"enter",
+		"native",
 		"force",
 		"dispatch",
 	];

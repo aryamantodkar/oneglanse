@@ -1,4 +1,4 @@
-import type { Source } from "@oneglanse/types";
+import type { Provider, Source } from "@oneglanse/types";
 import { getDomain, getFaviconUrls } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 
@@ -11,6 +11,14 @@ export type RawSource = {
 	rawHref: string;
 	title: string;
 	citedText: string;
+};
+
+const PROVIDER_OWNED_SOURCE_DOMAINS: Partial<Record<Provider, string[]>> = {
+	chatgpt: ["chatgpt.com", "openai.com"],
+	perplexity: ["perplexity.ai"],
+	gemini: ["gemini.google.com", "google.com"],
+	claude: ["claude.ai", "anthropic.com"],
+	"ai-overview": ["google.com"],
 };
 
 function escapeRegExp(value: string): string {
@@ -36,37 +44,43 @@ function normalizeSourceTitle(rawTitle: string, url: string): string {
 	return title.trim() || normalized;
 }
 
+function isProviderOwnedSource(provider: Provider | undefined, url: string): boolean {
+	if (!provider) return false;
+
+	const hostname = (() => {
+		try {
+			return new URL(url).hostname.toLowerCase();
+		} catch {
+			return "";
+		}
+	})();
+	if (!hostname) return false;
+
+	return (PROVIDER_OWNED_SOURCE_DOMAINS[provider] || []).some(
+		(domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+	);
+}
+
 /**
  * Normalizes raw browser-extracted sources into typed Source objects:
  * - strips URL fragments
  * - extracts domains via getDomain()
  * - resolves favicons via getFaviconUrls()
- * - deduplicates using the provided key function
- *
- * @param keyFn Controls dedup granularity. Defaults to url|title.
- *              Pass `(url, title, citedText) => \`${url}|${title}|${citedText}\`` for tightest dedup.
  */
 export function buildSources(
 	rawSources: RawSource[],
-	keyFn: (url: string, title: string, citedText: string) => string = (
-		url,
-		title,
-	) => `${url}|${title}`,
+	options?: { provider?: Provider },
 ): Source[] {
-	const seen = new Set<string>();
 	const results: Source[] = [];
 
 	for (const { rawHref, title: rawTitle, citedText } of rawSources) {
 		const url = rawHref.replace(/#.*$/, "");
 		if (!url) continue;
+		if (isProviderOwnedSource(options?.provider, url)) continue;
 
 		const domain = getDomain(url) || null;
 		const title = normalizeSourceTitle(rawTitle || "", url) || domain || url;
 		const favicon = getFaviconUrls(domain ?? "")?.[0] ?? null;
-
-		const key = keyFn(url, title, citedText);
-		if (seen.has(key)) continue;
-		seen.add(key);
 
 		results.push({ title, cited_text: citedText, url, domain, favicon });
 	}

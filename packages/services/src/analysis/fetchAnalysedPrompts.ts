@@ -29,7 +29,7 @@ export async function fetchAnalysedPrompts(args: {
                 pr.sources,
                 pr.created_at,
                 pr.is_analysed,
-                if(pr.is_analysed, pa.brand_analysis, '[]') as brand_analysis
+                pa.brand_analysis as brand_analysis
             FROM analytics.prompt_responses pr
             ANY LEFT JOIN analytics.prompt_analysis pa
               ON pr.prompt_id = pa.prompt_id
@@ -49,17 +49,8 @@ export async function fetchAnalysedPrompts(args: {
 	>;
 
 	// Transform to flat array - handle both analyzed and unanalyzed
-	const records: AnalysisRecord[] = rows.map((row) => ({
-		id: row.id,
-		prompt_id: row.prompt_id,
-		prompt: row.prompt,
-		prompt_run_at: row.prompt_run_at,
-		user_id: row.user_id,
-		workspace_id: row.workspace_id,
-		model_provider: row.model_provider,
-		response: row.response || "",
-		sources: row.sources || [],
-		brand_analysis:
+	const records: AnalysisRecord[] = rows.map((row) => {
+		const parsedBrandAnalysis =
 			row.brand_analysis &&
 			row.brand_analysis !== "" &&
 			row.brand_analysis !== "{}" &&
@@ -67,10 +58,25 @@ export async function fetchAnalysedPrompts(args: {
 				? typeof row.brand_analysis === "string"
 					? JSON.parse(row.brand_analysis)
 					: row.brand_analysis
-				: undefined,
-		created_at: row.created_at,
-		is_analysed: row.is_analysed ?? true,
-	}));
+				: undefined;
+
+		return {
+			id: row.id,
+			prompt_id: row.prompt_id,
+			prompt: row.prompt,
+			prompt_run_at: row.prompt_run_at,
+			user_id: row.user_id,
+			workspace_id: row.workspace_id,
+			model_provider: row.model_provider,
+			response: row.response || "",
+			sources: row.sources || [],
+			brand_analysis: parsedBrandAnalysis,
+			created_at: row.created_at,
+			// ClickHouse ALTER UPDATE is asynchronous, so prompt_analysis may exist
+			// before prompt_responses.is_analysed flips to true.
+			is_analysed: row.is_analysed === true || parsedBrandAnalysis !== undefined,
+		};
+	});
 
 	return records;
 }

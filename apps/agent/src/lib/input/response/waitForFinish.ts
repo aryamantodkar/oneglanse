@@ -44,7 +44,11 @@ export async function waitForAssistantToFinish(
 	page: Page,
 	provider: Provider,
 ): Promise<void> {
-	logger.debug("⏳ Waiting for assistant to finish…");
+	logger.debug(
+		provider === "ai-overview"
+			? "⏳ Waiting for AI Overview response container to stabilize…"
+			: "⏳ Waiting for assistant to finish…",
+	);
 	const waitStart = Date.now();
 	let lastGenerationState = "";
 	let lastResponseState = "";
@@ -66,6 +70,7 @@ export async function waitForAssistantToFinish(
 				currentResponseState.signature !== lastResponseState;
 			const generationStateChanged =
 				currentGenerationState !== lastGenerationState;
+			const requiresContainerStabilityOnly = provider === "ai-overview";
 
 			if (!initialized) {
 				lastGenerationState = currentGenerationState;
@@ -88,6 +93,13 @@ export async function waitForAssistantToFinish(
 			}
 
 			const stableFor = Date.now() - lastChangeAt;
+			if (requiresContainerStabilityOnly) {
+				if (seenResponse && stableFor >= 2500) {
+					logger.debug("✅ AI Overview response container stabilized");
+					return true;
+				}
+			}
+
 			if (seenResponse && !hasVisibleIndicator && stableFor >= 1500) {
 				logger.debug("✅ Assistant finished");
 				return true;

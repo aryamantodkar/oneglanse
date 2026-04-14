@@ -1,16 +1,8 @@
 import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
-import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
 import { extractSourcesFromClaude } from "./lib/extractSources.js";
-
-const CLAUDE_URL = "https://claude.ai/new";
-
-async function resetClaudePage(
-	page: Parameters<ProviderConfig["waitForResponse"]>[0],
-): Promise<void> {
-	await resetProviderPage(page, "claude", CLAUDE_URL);
-}
+import { CLAUDE_URL, resetClaudePage } from "./lib/pageLifecycle.js";
 
 export const claudeConfig: ProviderConfig = {
 	url: CLAUDE_URL,

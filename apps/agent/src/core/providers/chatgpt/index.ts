@@ -4,17 +4,8 @@ import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown
 import { openSourcesPanel } from "../../../lib/input/sources/openPanel.js";
 import { findSourcesButton } from "../../../lib/input/sources/findButton.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
-import { resetProviderPage } from "../_shared/resetProviderPage.js";
 import type { ProviderConfig } from "../types.js";
-
-const CHATGPT_URL = "https://chatgpt.com/";
-
-async function resetChatgptPage(
-	page: Parameters<ProviderConfig["waitForResponse"]>[0],
-): Promise<void> {
-	await resetProviderPage(page, "chatgpt", CHATGPT_URL);
-	await dismissChatgptAuthModal(page, { waitForAppearanceMs: 1000 });
-}
+import { CHATGPT_URL, resetChatgptPage } from "./lib/pageLifecycle.js";
 
 export const chatgptConfig: ProviderConfig = {
 	url: CHATGPT_URL,
