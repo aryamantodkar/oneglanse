@@ -6,24 +6,21 @@
 
 ---
 
-<p align="center">
-  <img src="docs/images/Mockup-1.png" width="49%" />
-  <img src="docs/images/Mockup-2.png" width="49%" />
-</p>
-<p align="center">
-  <img src="docs/images/Mockup-3.png" width="49%" />
-  <img src="docs/images/Mockup-4.png" width="49%" />
-</p>
+<img src="docs/images/Mockup-1.png" width="100%" />
 
 ---
 
-## What It Does
+## The Problem
 
 AI chat products don't use the same ranking signals as Google. When someone asks ChatGPT or Gemini to recommend a tool in your category, the answer depends on what those models know — and how prominently your brand appears in their responses.
 
-OneGlanse runs your prompts inside the real UIs — not model APIs — and captures exactly what users see: the rendered response text, source citations, and which competitors appear alongside you. Every run is stored, analyzed with your own LLM API key, and turned into metrics you can track over time.
+Traditional SEO tools don't measure this. API-based LLM evals don't either — they return raw model output, not what users actually see inside ChatGPT or Perplexity.
 
-Fully open source. Everything runs in infrastructure you control.
+OneGlanse runs your prompts inside the real UIs and captures exactly what a user sees: the rendered response, source citations, sentiment framing, and which competitors appear alongside you. Every run is stored, analyzed with your own LLM API key, and tracked over time.
+
+---
+
+<img src="docs/images/Mockup-2.png" width="100%" />
 
 ---
 
@@ -36,16 +33,26 @@ Fully open source. Everything runs in infrastructure you control.
 - **Source & citation tracking** — which URLs and domains the AI is citing for your category
 - **Response analysis** — powered by your own OpenAI or Anthropic API key
 - **ClickHouse analytics** — fast, high-volume storage built for time-series response data
+- **Recurring scheduled runs** — automated prompt execution in self-host mode
 - **Self-hostable** — deploy the full stack on any VPS with a single command
-- **Scheduled runs** — recurring prompt execution in self-host mode
+
+---
+
+<img src="docs/images/Mockup-3.png" width="100%" />
 
 ---
 
 ## Your Data Stays Yours
 
-> OneGlanse stores everything in databases you control — on your local machine or your own VPS. Provider auth sessions are held on your machine. Response analysis calls go directly from your infrastructure to OpenAI or Anthropic. Nothing passes through a third-party server.
+OneGlanse uses your own provider accounts for browser authentication. Auth sessions are stored on your machine — never on an external server.
 
-OneGlanse uses your own provider accounts for browser authentication. No credentials are stored on external servers. The entire pipeline — from browser automation to analytics storage to LLM analysis — runs inside infrastructure you own and can audit.
+Response analysis calls go directly from your infrastructure to OpenAI or Anthropic using your own API keys. Analytics are stored in a ClickHouse instance you own and control.
+
+The entire pipeline — browser automation, response capture, storage, and analysis — runs inside infrastructure you own and can fully audit. Open source, MIT licensed.
+
+---
+
+<img src="docs/images/Mockup-4.png" width="100%" />
 
 ---
 
@@ -62,7 +69,7 @@ pnpm local
 
 Opens at [http://localhost:3000](http://localhost:3000).
 
-The script handles everything on first run: generates `.env`, starts Postgres / ClickHouse / Redis, runs database migrations, and bootstraps the Camoufox browser runtime. Once the app opens, go to `/providers` to connect your AI provider accounts.
+On first run the script handles everything: generates `.env`, starts Postgres / ClickHouse / Redis, runs database migrations, and bootstraps the Camoufox browser runtime. Once the app opens, go to `/providers` to connect your AI provider accounts.
 
 For VPS self-hosting, provider auth setup, and all configuration options → **[docs.oneglanse.com](https://docs.oneglanse.com)**
 
