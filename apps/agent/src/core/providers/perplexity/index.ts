@@ -16,6 +16,7 @@ export const perplexityConfig: ProviderConfig = {
 	label: "Perplexity",
 	displayName: "Perplexity",
 	beforeRetryHook: resetPerplexityPage,
+	betweenPromptsHook: resetPerplexityPage,
 	checkSubmitSuccess: async (page, { preSubmitUrl }) =>
 		waitForPerplexitySearchUrl(page, preSubmitUrl),
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),

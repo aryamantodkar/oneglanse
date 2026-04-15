@@ -9,31 +9,39 @@ OneGlanse helps teams understand how their brand appears inside real AI products
 
 It runs prompts across supported providers, captures the rendered responses and citations, and turns that data into:
 
-- Visibility metrics
+- Visibility metrics and GEO scores
 - Sentiment and perception signals
 - Competitor co-mentions
 - Source and citation intelligence
+
+<img src="/images/Mockup-1.png" alt="OneGlanse Dashboard" />
 
 ## What Makes It Different
 
 OneGlanse is UI-first.
 
-That means it measures what users actually see in products like ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
+It measures what users actually see in products like ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — not what a raw model API returns. The difference matters: UI responses include formatting, citations, follow-up suggestions, and ranked recommendations that don't appear in direct API calls.
+
+## Your Data, Your Infrastructure
+
+OneGlanse is fully open source and self-hostable. Your responses, analytics, and auth sessions live in databases and storage you control — locally or on your own VPS. Response analysis calls go directly from your infrastructure to OpenAI or Anthropic. Nothing passes through a third-party server.
+
+Provider authentication uses your own accounts. No credentials are stored externally.
 
 ## Core Workflow
 
 1. Create or select a workspace
-2. Connect providers
+2. Connect providers on `/providers`
 3. Add prompts your target audience would actually search for
 4. Run prompt collection
-5. Review dashboard, prompt responses, and sources
+5. Review the dashboard, prompt responses, and sources
 
 ## Deployment Paths
 
 OneGlanse supports three ways to use the product:
 
-- Cloud app
-- Local run
-- Self-hosted deployment
+- **Cloud app** — hosted at [app.oneglanse.com](https://app.oneglanse.com), fastest setup
+- **Local run** — run the full stack on your own machine for development and manual runs
+- **Self-hosted** — deploy to your own VPS for recurring scheduling and full data ownership
 
 See [Getting Started](/getting-started) for the full setup paths.

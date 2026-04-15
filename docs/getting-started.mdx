@@ -32,29 +32,25 @@ Use local mode when you want to run the web app and agent on your own machine.
 - pnpm 10+
 - Docker + Docker Compose
 
-### Install
+### Install & Start
 
 ```bash
 pnpm install
-```
-
-### Start
-
-```bash
 pnpm local
 ```
 
 This:
 
-- Creates `.env` if missing
+- Creates `.env` if missing (with auto-generated secrets)
+- Bootstraps the Camoufox browser runtime automatically on first run
 - Starts Postgres, ClickHouse, and Redis
-- Runs migrations
+- Runs database migrations
 - Starts the web app and the agent
 - Opens the app at `http://localhost:3000`
 
 ### Local Notes
 
-- Local mode supports interactive provider auth
+- Local mode supports interactive provider auth via `/providers`
 - Local mode supports manual prompt runs
 - Local mode does not support recurring scheduling
 
@@ -62,40 +58,42 @@ This:
 
 Use self-host mode when you want the full product in your own infrastructure.
 
-### Install
+### Install & Start
 
 ```bash
 pnpm install
-```
-
-### Start
-
-```bash
 pnpm self-host
 ```
 
 This starts:
 
-- The main app stack
-- The public stack
-- It tries to pull the latest published images before starting the services
-- If pull access is unavailable, it falls back automatically to a local Docker build
+- The main app stack (`docker-compose.yml`) — web, agent, Postgres, ClickHouse, Redis
+- The always-on public stack (`docker-compose.public.yml`) — Nginx gateway, landing page
+- Tries to pull the latest published images before starting
+- Falls back automatically to a local Docker build if pulling is unavailable
 
 Default ports:
 
 - Landing: `3000`
-- App: `3001`
+- App (via gateway): `3001`
 - Auth upload API: `3333`
 
-Persistent self-host state defaults to `/opt/oneglanse/storage`. Override it
-with `ONEGLANSE_STORAGE_ROOT` if your VPS should store data elsewhere.
+Persistent state defaults to `/opt/oneglanse/storage`. Override with `ONEGLANSE_STORAGE_ROOT` if your VPS should store data elsewhere.
 
-Use `pnpm self-host:build` only if you intentionally want to build the Docker
-images from local source instead of pulling the published images.
+### Docker Image Overrides
+
+To use custom Docker images instead of the published ones, set these in `.env` before running `pnpm self-host`:
+
+- `ONEGLANSE_WEB_IMAGE`
+- `ONEGLANSE_AGENT_IMAGE`
+- `ONEGLANSE_POSTGRES_IMAGE`
+- `ONEGLANSE_LANDING_IMAGE`
+
+Use `pnpm self-host:build` only if you intentionally want to build images from local source.
 
 ### Provider Auth Setup
 
-Interactive provider login (Google, LinkedIn, etc.) cannot run on a headless server. You capture sessions locally and transfer them to the VPS.
+Interactive provider login cannot run on a headless server. Capture sessions locally and transfer them to the VPS.
 
 **Step 1 — Start your VPS first**
 
@@ -105,33 +103,41 @@ pnpm self-host
 
 The auth upload API must be running on port `3333` before you transfer sessions.
 
-**Step 2 — Capture and transfer sessions from your local machine**
+**Step 2 — Transfer sessions from your local machine**
+
+If `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` are set in your local `.env`, run:
+
+```bash
+pnpm upload:vps
+```
+
+This uploads any existing local sessions directly without reopening the auth flow.
+
+If you don't have local sessions yet, or want to capture new ones:
 
 ```bash
 pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
 ```
 
-Replace `YOUR_VPS_HOST` with your server's IP or hostname, and `YOUR_TOKEN` with the value of `AGENT_AUTH_UPLOAD_TOKEN` in your VPS `.env` file.
-
-This command:
-
-1. Starts the local auth stack
-2. Opens the local `/providers` page in your browser
-3. Lets you connect providers interactively from the web UI
-4. Compresses and uploads saved sessions to the VPS over HTTP
+This opens the local `/providers` page, lets you connect providers interactively, and uploads the saved sessions to the VPS.
 
 **Step 3 — Verify transfer**
 
-The agent reads the transferred sessions at the start of each job run. If the session hash has changed since the last run, it reseeds the browser profile automatically before executing prompts.
+The agent reads transferred sessions at the start of each job run and reseeds the browser profile automatically if the session has changed.
 
-### Self-Hosted Notes
+### Self-Host Notes
 
-- Interactive provider login does not run on the server — use the auth transfer command above
 - Re-run the transfer command any time a provider session expires
-- Recurring scheduling is supported
+- Recurring scheduling is supported in self-host mode
+- App-only updates: `pnpm self-host:app`
+- Public stack updates: `pnpm self-host:public`
 
 ## Choosing the Right Mode
 
-- Use Cloud for the fastest product access
-- Use Local for development and manual runs
-- Use Self-Hosted for production control and private infrastructure
+| | Cloud | Local | Self-Host |
+|---|---|---|---|
+| Fastest setup | ✓ | | |
+| Interactive provider auth | | ✓ | |
+| Manual prompt runs | | ✓ | |
+| Recurring scheduling | ✓ | | ✓ |
+| Full data ownership | | ✓ | ✓ |

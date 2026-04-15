@@ -1,4 +1,4 @@
-import { DatabaseError } from "@oneglanse/errors";
+import { DatabaseError, Logger } from "@oneglanse/errors";
 import { Redis } from "ioredis";
 import { env } from "../env.js";
 
@@ -22,21 +22,21 @@ export const redis = new Redis({
 });
 
 redis.on("connect", () => {
-	console.log("Redis connected");
+	Logger.info("Redis connected");
 });
 
 redis.on("error", (err) => {
-	console.log("Redis error", err);
+	Logger.error("Redis error", err);
 });
 
 export async function waitForRedis(): Promise<void> {
 	for (let i = 0; i < 10; i++) {
 		try {
 			await redis.ping();
-			console.log("Redis ready");
+			Logger.info("Redis ready");
 			return;
 		} catch {
-			console.log("⏳ Waiting for Redis...");
+			Logger.info("Waiting for Redis...");
 			await new Promise((r) => setTimeout(r, 1000));
 		}
 	}

@@ -10,6 +10,10 @@ import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFin
 import { extractAIOverviewSources } from "./lib/extractSources.js";
 import { expandAIOverviewSources } from "./lib/expand.js";
 import {
+	AI_OVERVIEW_URL,
+	resetAIOverviewPage,
+} from "./lib/pageLifecycle.js";
+import {
 	assertAIOverviewPageNotBlocked,
 	dismissGoogleConsentDialog,
 	ensureAIOverviewGoogleSession,
@@ -18,19 +22,16 @@ import {
 import type { ProviderConfig } from "../types.js";
 
 export const aiOverviewConfig: ProviderConfig = {
-	url: "https://www.google.com/",
+	url: AI_OVERVIEW_URL,
 	label: "AI Overview",
 	displayName: "AI Overview",
 	skipInitialNavigation: true,
 	navigateToPrompt: async (page, prompt) => {
 		await ensureAIOverviewGoogleSession(page);
-
-		if (!page.url().startsWith("https://www.google.com/")) {
-			await navigateWithRetry(page, "https://www.google.com/", {
-				waitUntil: "domcontentloaded",
-				timeout: 30000,
-			});
-		}
+		await navigateWithRetry(page, AI_OVERVIEW_URL, {
+			waitUntil: "domcontentloaded",
+			timeout: 30000,
+		});
 
 		assertAIOverviewPageNotBlocked(page);
 		await dismissGoogleConsentDialog(page);
@@ -62,9 +63,8 @@ export const aiOverviewConfig: ProviderConfig = {
 	},
 	waitForResponse: (page) => waitForAssistantToFinish(page, "ai-overview"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "ai-overview"),
-	betweenPromptsHook: async (page) => {
-		await page.waitForTimeout(8000 + Math.floor(Math.random() * 12000));
-	},
+	beforeRetryHook: resetAIOverviewPage,
+	betweenPromptsHook: resetAIOverviewPage,
 	extractSources: async (page) => {
 		await expandAIOverviewSources(page);
 		return extractAIOverviewSources(page);

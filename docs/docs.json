@@ -6,6 +6,12 @@
 		"primary": "#111827"
 	},
 	"navigation": {
-		"pages": ["introduction", "getting-started", "api-reference"]
+		"pages": [
+			"introduction",
+			"getting-started",
+			"environment-variables",
+			"troubleshooting",
+			"api-reference"
+		]
 	}
 }

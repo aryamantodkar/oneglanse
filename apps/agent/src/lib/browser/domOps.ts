@@ -309,6 +309,23 @@ export async function runPageDomOp<T>(
 			}
 
 			function readResponseHtml(provider: string, selectors: string[]): string {
+				// AI Overview: bypass findLatestResponseElement (which uses innerText and
+				// misses CSS-clipped content) — directly query the container, clone it,
+				// strip noise, and return innerHTML so turndown preserves formatting.
+				if (provider === "ai-overview") {
+					const root = document.querySelector('[data-container-id="main-col"]');
+					if (!root) return "";
+
+					const clone = root.cloneNode(true) as HTMLElement;
+					formatCitationAnchors(clone);
+
+					clone
+						.querySelectorAll('[data-src-id], a, button, svg, img, style, script')
+						.forEach((el) => el.remove());
+
+					return clone.innerHTML.trim();
+				}
+
 				const latestResponse = findLatestResponseElement(selectors);
 				if (!latestResponse) return "";
 
@@ -327,6 +344,7 @@ export async function runPageDomOp<T>(
 				// tooltips, live regions, citation superscripts, and decorative media
 				const noiseSelectors = [
 					"button",
+					"[role='button']",
 					"svg",
 					"script",
 					"style",
@@ -338,10 +356,8 @@ export async function runPageDomOp<T>(
 					"[data-testid='voice-play-turn-action-button']",
 					"[data-testid='thumbs-up-button']",
 					"[data-testid='thumbs-down-button']",
+					"[aria-hidden='true']",
 				];
-				if (provider !== "ai-overview") {
-					noiseSelectors.push("[aria-hidden='true']");
-				}
 				for (const sel of noiseSelectors) {
 					for (const el of Array.from(clone.querySelectorAll(sel))) {
 						el.remove();

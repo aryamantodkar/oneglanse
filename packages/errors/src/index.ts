@@ -4,7 +4,6 @@ export * from "./error/NotFoundError.js";
 export * from "./error/AuthError.js";
 export * from "./error/EnvError.js";
 export * from "./error/ExternalServiceError.js";
-export * from "./error/RateLimitError.js";
 export * from "./error/DatabaseError.js";
 export * from "./error/IPRefreshNeededError.js";
 export * from "./logger.js";

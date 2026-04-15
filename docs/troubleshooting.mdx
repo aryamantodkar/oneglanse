@@ -1,0 +1,144 @@
+---
+title: Troubleshooting
+description: Solutions for common issues when setting up and running OneGlanse.
+---
+
+# Troubleshooting
+
+---
+
+## Camoufox fails to start
+
+**Symptom:** Agent crashes immediately with a Python or pip error.
+
+**Cause:** Python 3 is not on the PATH or the wrong binary is being used.
+
+**Fix:** Find your Python 3 binary and set it explicitly:
+
+```bash
+which python3
+# e.g. /opt/homebrew/bin/python3
+```
+
+Add to `.env`:
+
+```bash
+CAMOUFOX_PYTHON_BIN=/opt/homebrew/bin/python3
+```
+
+Then restart with `pnpm local`.
+
+---
+
+## Redis connection refused
+
+**Symptom:** App or agent logs show `ECONNREFUSED 127.0.0.1:6379`.
+
+**Cause:** The Redis Docker container is not running.
+
+**Fix:** Check that Docker is running and the containers are up:
+
+```bash
+docker ps
+```
+
+If the containers aren't listed, restart with `pnpm local`. If Docker itself isn't running, start it first.
+
+---
+
+## ClickHouse unavailable on first run
+
+**Symptom:** Dashboard shows no data, or logs show a ClickHouse connection error shortly after startup.
+
+**Cause:** ClickHouse takes 10–20 seconds to fully initialize on first boot.
+
+**Fix:** Wait a moment and reload the page. If it persists, check the container:
+
+```bash
+docker logs oneglanse-clickhouse-1
+```
+
+---
+
+## Provider auth not saving
+
+**Symptom:** The `/providers` page shows a provider as disconnected after you closed the login window.
+
+**Cause:** The Camoufox window was closed before the session was fully written.
+
+**Fix:** Open the provider connection again, complete the full sign-in flow (including any 2FA or confirmation steps), and wait for the checkmark to appear in the OneGlanse UI before closing the browser window.
+
+---
+
+## Google sign-in is unavailable
+
+**Symptom:** No Google sign-in button appears on the login page.
+
+**Cause:** `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are not set in `.env`.
+
+**Fix:** Add them to `.env`:
+
+```bash
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+Note: these control sign-in to the OneGlanse web app itself. They are separate from the Google / Gemini / AI Overview provider connections used for monitoring.
+
+---
+
+## Agent not processing prompts
+
+**Symptom:** Prompts are queued but no responses appear.
+
+**Causes and fixes:**
+
+1. **Worker not started** — `pnpm local` starts both web and agent. If you started the web app separately, also run `pnpm dev:agent`.
+2. **Provider auth missing** — visit `/providers` and check which providers show a connected status. If a provider is disconnected, reconnect it.
+3. **Redis not reachable** — see the Redis section above.
+
+---
+
+## Self-host: image pull fails
+
+**Symptom:** `pnpm self-host` fails with a Docker pull error or `unauthorized`.
+
+**Cause:** The GHCR images are unavailable or you're not authenticated with GHCR.
+
+**Fix:** `pnpm self-host` automatically falls back to building images locally if the pull fails. If you want to force a local build explicitly:
+
+```bash
+pnpm self-host:build
+```
+
+---
+
+## Migrations fail on startup
+
+**Symptom:** The `migrate` container exits with an error; the web app won't start.
+
+**Cause:** Postgres wasn't ready when migrations ran, or there's a schema conflict.
+
+**Fix:**
+
+```bash
+# Check migration logs
+docker logs oneglanse-migrate-1
+
+# Re-run migrations manually
+pnpm db:migrate
+```
+
+If there's a schema conflict from a previous installation, check the Drizzle migration files in `packages/db/drizzle/`.
+
+---
+
+## VPS: sessions not transferring
+
+**Symptom:** `pnpm upload:vps` runs but providers still show as disconnected on the VPS.
+
+**Fixes:**
+
+1. Confirm the VPS agent is running: `curl http://YOUR_VPS_IP:3333/health`
+2. Check `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` match your VPS `.env`
+3. Check agent logs on the VPS: `docker logs oneglanse-agent-worker-1`

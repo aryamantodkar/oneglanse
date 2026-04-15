@@ -32,6 +32,7 @@ const REFRESH_ON_RETRY_FAILURES = new Set([
 	"submission_failed",
 	"no_editor",
 	"timeout",
+	"extraction_failed",
 ]);
 
 // Identifies extraction and validation failures that warrant a log warning.

@@ -1,11 +1,11 @@
 ---
-title: API Reference
+title: Reference
 description: Operational reference for app modes, provider auth, supported providers, and key runtime behavior.
 ---
 
-# API Reference
+# Reference
 
-This document is the operational reference for how OneGlanse behaves across app modes.
+This is the operational reference for how OneGlanse behaves across app modes.
 
 ## App Modes
 
@@ -23,6 +23,7 @@ OneGlanse supports three app modes:
 | Interactive provider auth | No | Yes | No |
 | Manual `Run Prompts Now` | No | Yes | No |
 | Recurring scheduling | Yes | No | Yes |
+| Full data ownership | No | Yes | Yes |
 
 ## Supported Runtime Providers
 
@@ -36,53 +37,67 @@ OneGlanse supports three app modes:
 
 - ChatGPT
 - Perplexity
-- Google
+- Google (covers Gemini and AI Overview)
 - Claude
-
-Gemini and Google Search auth are stored separately.
 
 ## Key Routes
 
-- `/dashboard`
-- `/prompts`
-- `/sources`
-- `/people`
-- `/schedule`
-- `/providers`
+- `/dashboard` — visibility metrics and GEO scores
+- `/prompts` — manage and run prompts
+- `/sources` — source and citation attribution
+- `/people` — team members
+- `/schedule` — recurring schedule (self-host/cloud) or manual run (local)
+- `/providers` — connect and manage provider auth sessions
 
 ### Route Behavior by Mode
 
 - `/providers` is available in local and self-host mode
-- `/schedule` becomes a manual run page in local mode
-- `/schedule` becomes a recurring schedule page in cloud and self-host mode
+- `/schedule` shows a manual run trigger in local mode
+- `/schedule` shows a recurring schedule editor in cloud and self-host mode
 
 ## Useful Commands
 
 ```bash
-pnpm local
-pnpm auth
-pnpm self-host
-pnpm self-host:app
-pnpm self-host:public
-pnpm typecheck
+pnpm local                   # Full local app + worker
+pnpm auth                    # Start local stack and open /providers
+pnpm upload:vps              # Upload existing local sessions to VPS
+pnpm self-host               # Start both app and public VPS stacks
+pnpm self-host:app           # Pull and restart app stack only
+pnpm self-host:public        # Pull and restart public stack only
+pnpm self-host:build         # Build and start both stacks from source
+pnpm self-host:app:build     # Build app stack from source
+pnpm self-host:public:build  # Build public stack from source
+pnpm self-host:pull          # Pull latest published images
+pnpm typecheck               # Typecheck the monorepo
+pnpm build                   # Build all packages
 ```
 
 ## Provider Auth Upload
 
-For self-host environments, capture auth locally and upload it:
+For self-host environments, capture auth locally and upload to the VPS.
+
+If `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` are set in your local `.env`:
+
+```bash
+pnpm upload:vps
+```
+
+Or with explicit flags:
 
 ```bash
 pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
 ```
 
-This opens the local `/providers` page and uploads any newly saved sessions to
-the VPS.
+This opens the local `/providers` page and uploads any newly saved sessions to the VPS.
 
 ## Storage Model
 
 OneGlanse uses:
 
-- Portable auth bundles
-- Persistent runtime browser profiles
+- **Portable auth bundles** — one per auth group, the source of truth, transferable to VPS
+- **Persistent runtime profiles** — one per runtime provider, machine-local, seeded from the auth bundle
 
-Auth bundles are the portable source of truth. Runtime profiles are the machine-local execution state used during runs.
+Runtime behavior:
+- If a runtime profile is missing, it is seeded from the auth bundle
+- If the auth bundle changes, the runtime profile is reseeded automatically
+- Otherwise the existing persistent profile is reused directly
