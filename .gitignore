@@ -52,3 +52,7 @@ improvements/
 
 # Codebase memory
 CODEBASE_MEMORY.md
+
+# Test / scratch data
+mockData/
+llm_results.json
