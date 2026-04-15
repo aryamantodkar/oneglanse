@@ -97,7 +97,7 @@ OneGlanse is built on top of exceptional open source work. We're grateful to eve
 
 | Project | Use | License |
 |---|---|---|
-| [Camoufox Browser](https://camoufox.com) | Anti-fingerprint Firefox-based browser used for all provider sessions | MPL-2.0 |
+| [Camoufox Browser](https://github.com/daijro/camoufox) | Anti-fingerprint Firefox-based browser used for all provider sessions | MPL-2.0 |
 | [Playwright](https://github.com/microsoft/playwright) | Browser automation and page control | Apache-2.0 |
 
 ### Job Queue & Infrastructure
