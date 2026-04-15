@@ -272,6 +272,42 @@ export async function runPageDomOp<T>(
 				return findLatestResponseElement(selectors)?.element.innerText.trim() || "";
 			}
 
+			function isCitationAnchor(anchor: HTMLAnchorElement): boolean {
+				const text = anchor.textContent?.trim() || "";
+				if (!text || text.length > 40) return false;
+				if (/^\+?\d+$/.test(text)) return true;
+				if (/^[a-z0-9.\- ]+$/i.test(text) && text.length < 25) return true;
+				return false;
+			}
+
+			function formatCitationAnchors(root: HTMLElement): void {
+				const cleanCitationText = (text: string) =>
+					text.replace(/\+\d+$/, "").trim();
+
+				for (const anchor of Array.from(root.querySelectorAll("a[href]"))) {
+					if (!(anchor instanceof HTMLAnchorElement)) continue;
+					if (!isCitationAnchor(anchor)) continue;
+
+					const rawText = anchor.textContent?.trim();
+					if (!rawText) continue;
+
+					const cleaned = cleanCitationText(rawText);
+					if (!cleaned) {
+						anchor.remove();
+						continue;
+					}
+
+					const strong = document.createElement("strong");
+					strong.textContent = `[${cleaned}]`;
+
+					anchor.replaceWith(
+						document.createTextNode(" "),
+						strong,
+						document.createTextNode(" "),
+					);
+				}
+			}
+
 			function readResponseHtml(provider: string, selectors: string[]): string {
 				const latestResponse = findLatestResponseElement(selectors);
 				if (!latestResponse) return "";
@@ -285,6 +321,7 @@ export async function runPageDomOp<T>(
 
 				// Clone before mutating so the live DOM is untouched
 				const clone = latestResponse.element.cloneNode(true) as HTMLElement;
+				formatCitationAnchors(clone);
 
 				// Strip UI chrome that leaks into text: action buttons, icons,
 				// tooltips, live regions, citation superscripts, and decorative media

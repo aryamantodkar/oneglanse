@@ -21,7 +21,6 @@ export const perplexityConfig: ProviderConfig = {
 	waitForResponse: (page) => waitForAssistantToFinish(page, "perplexity"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "perplexity"),
 	postNavigationHook: perplexityPostNavigationHook,
-	betweenPromptsHook: resetPerplexityPage,
 	extractSources: async (page) => {
 		const btn = await findSourcesButton(page);
 		if (!btn) return [];
