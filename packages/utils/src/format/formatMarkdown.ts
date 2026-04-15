@@ -39,57 +39,90 @@ marked.setOptions({
 	renderer,
 });
 
+const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+	allowedTags: [
+		"p",
+		"br",
+		"strong",
+		"em",
+		"blockquote",
+		"code",
+		"pre",
+		"ul",
+		"ol",
+		"li",
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"hr",
+		"a",
+		"table",
+		"thead",
+		"tbody",
+		"tfoot",
+		"tr",
+		"th",
+		"td",
+		"div",
+		"span",
+		"mark",
+	],
+	allowedAttributes: {
+		a: ["href", "title", "target", "rel"],
+		td: ["colspan", "rowspan"],
+		th: ["colspan", "rowspan"],
+	},
+	allowedSchemes: ["http", "https", "mailto"],
+	disallowedTagsMode: "discard",
+	transformTags: {
+		a: (_tagName, attrs) => {
+			const safeHref = sanitizeHref(attrs.href);
+			return {
+				tagName: "a",
+				attribs: {
+					href: safeHref,
+					target: "_blank",
+					rel: "noopener noreferrer",
+					...(attrs.title ? { title: attrs.title } : {}),
+				},
+			};
+		},
+	},
+};
+
+function sanitizeRenderedHtml(input: string): string {
+	return sanitizeHtml(input, SANITIZE_OPTIONS);
+}
+
+function stripHtmlTags(input: string): string {
+	return input.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function looksLikeHtml(input: string): boolean {
+	return /<\/?[a-z][\s\S]*>/i.test(input);
+}
+
 export function formatMarkdown(text: string): string {
 	if (!text) return "No response available";
-	const rendered = marked.parse(text) as string;
-	return sanitizeHtml(rendered, {
-		allowedTags: [
-			"p",
-			"br",
-			"strong",
-			"em",
-			"blockquote",
-			"code",
-			"pre",
-			"ul",
-			"ol",
-			"li",
-			"h1",
-			"h2",
-			"h3",
-			"h4",
-			"h5",
-			"h6",
-			"hr",
-			"a",
-			"table",
-			"thead",
-			"tbody",
-			"tfoot",
-			"tr",
-			"th",
-			"td",
-		],
-		allowedAttributes: {
-			a: ["href", "title", "target", "rel"],
-			td: ["colspan", "rowspan"],
-			th: ["colspan", "rowspan"],
-		},
-		allowedSchemes: ["http", "https", "mailto"],
-		disallowedTagsMode: "discard",
-		transformTags: {
-			a: (_tagName, attrs) => {
-				const safeHref = sanitizeHref(attrs.href);
-				return {
-					tagName: "a",
-					attribs: {
-						href: safeHref,
-						target: "_blank",
-						rel: "noopener noreferrer",
-						...(attrs.title ? { title: attrs.title } : {}),
-					},
-				};
-			},
-		},
-	});
+	const renderedMarkdown = sanitizeRenderedHtml(marked.parse(text) as string);
+
+	if (!looksLikeHtml(text)) {
+		return renderedMarkdown;
+	}
+
+	const sanitizedHtmlInput = sanitizeRenderedHtml(text);
+	const markdownTextLength = stripHtmlTags(renderedMarkdown).length;
+	const htmlTextLength = stripHtmlTags(sanitizedHtmlInput).length;
+
+	// If the source is raw HTML and the markdown parser dropped a meaningful
+	// amount of content, prefer the sanitized HTML so the UI matches the stored
+	// response more faithfully.
+	if (htmlTextLength > markdownTextLength * 1.1) {
+		return sanitizedHtmlInput;
+	}
+
+	return renderedMarkdown;
 }

@@ -320,7 +320,9 @@ export async function runPageDomOp<T>(
 					formatCitationAnchors(clone);
 
 					clone
-						.querySelectorAll('[data-src-id], a, button, svg, img, style, script')
+						.querySelectorAll(
+							'[data-src-id], button, [role="button"], svg, img, style, script',
+						)
 						.forEach((el) => el.remove());
 
 					return clone.innerHTML.trim();
