@@ -1,21 +1,20 @@
-import { getDomain } from "./getDomain.js";
-
 export function getUniqueLinks(
 	items: { title?: string; url?: string }[] = [],
 ): { title: string; url: string }[] {
-	const map = new Map<string, { title: string; url: string }>();
+	const results: { title: string; url: string }[] = [];
 
 	for (const item of items) {
-		if (!item?.url) continue;
+		const rawUrl = item?.url?.trim();
+		if (!rawUrl) continue;
 
-		const domain = getDomain(item.url);
-		if (!domain || map.has(domain)) continue;
+		const url = rawUrl.replace(/#.*$/, "");
+		if (!url) continue;
 
-		map.set(domain, {
-			title: item.title || domain,
-			url: item.url,
+		results.push({
+			title: item.title || url,
+			url,
 		});
 	}
 
-	return Array.from(map.values());
+	return results;
 }

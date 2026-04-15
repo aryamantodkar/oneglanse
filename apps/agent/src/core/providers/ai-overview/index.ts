@@ -8,6 +8,7 @@ import { extractAssistantMarkdown } from "../../../lib/input/markdown/toMarkdown
 import { insertPromptIntoEditor } from "../../../lib/input/editor/promptInput.js";
 import { waitForAssistantToFinish } from "../../../lib/input/response/waitForFinish.js";
 import { extractAIOverviewSources } from "./lib/extractSources.js";
+import { expandAIOverviewSources } from "./lib/expand.js";
 import {
 	assertAIOverviewPageNotBlocked,
 	dismissGoogleConsentDialog,
@@ -64,5 +65,8 @@ export const aiOverviewConfig: ProviderConfig = {
 	betweenPromptsHook: async (page) => {
 		await page.waitForTimeout(8000 + Math.floor(Math.random() * 12000));
 	},
-	extractSources: (page) => extractAIOverviewSources(page),
+	extractSources: async (page) => {
+		await expandAIOverviewSources(page);
+		return extractAIOverviewSources(page);
+	},
 };

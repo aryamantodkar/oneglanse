@@ -72,6 +72,7 @@ export function buildSources(
 	options?: { provider?: Provider },
 ): Source[] {
 	const results: Source[] = [];
+	const seen = new Set<string>();
 
 	for (const { rawHref, title: rawTitle, citedText } of rawSources) {
 		const url = rawHref.replace(/#.*$/, "");
@@ -81,8 +82,17 @@ export function buildSources(
 		const domain = getDomain(url) || null;
 		const title = normalizeSourceTitle(rawTitle || "", url) || domain || url;
 		const favicon = getFaviconUrls(domain ?? "")?.[0] ?? null;
+		const source: Source = { title, cited_text: citedText, url, domain, favicon };
+		const dedupeKey = JSON.stringify({
+			domain: source.domain ?? null,
+			url: source.url,
+			title: source.title,
+			cited_text: source.cited_text ?? "",
+		});
 
-		results.push({ title, cited_text: citedText, url, domain, favicon });
+		if (seen.has(dedupeKey)) continue;
+		seen.add(dedupeKey);
+		results.push(source);
 	}
 
 	return results;

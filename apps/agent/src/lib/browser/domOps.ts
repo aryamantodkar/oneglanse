@@ -297,12 +297,14 @@ export async function runPageDomOp<T>(
 					"iframe",
 					"sup",
 					"[aria-live]",
-					"[aria-hidden='true']",
 					"[data-testid='copy-turn-action-button']",
 					"[data-testid='voice-play-turn-action-button']",
 					"[data-testid='thumbs-up-button']",
 					"[data-testid='thumbs-down-button']",
 				];
+				if (provider !== "ai-overview") {
+					noiseSelectors.push("[aria-hidden='true']");
+				}
 				for (const sel of noiseSelectors) {
 					for (const el of Array.from(clone.querySelectorAll(sel))) {
 						el.remove();
