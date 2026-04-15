@@ -1,103 +1,58 @@
 ---
 title: Reference
-description: Operational reference for app modes, provider auth, supported providers, and key runtime behavior.
+description: Commands, routes, and runtime behavior reference for OneGlanse.
 ---
 
 # Reference
 
-This is the operational reference for how OneGlanse behaves across app modes.
-
-## App Modes
-
-OneGlanse supports three app modes:
-
-- `cloud`
-- `local`
-- `self-host`
-
-## Mode Capabilities
-
-| Capability | Cloud | Local | Self-Host |
-| --- | --- | --- | --- |
-| Use hosted product | Yes | No | No |
-| Interactive provider auth | No | Yes | No |
-| Manual `Run Prompts Now` | No | Yes | No |
-| Recurring scheduling | Yes | No | Yes |
-| Full data ownership | No | Yes | Yes |
-
-## Supported Runtime Providers
-
-- ChatGPT
-- Perplexity
-- Gemini
-- Claude
-- AI Overview
-
-## Auth Groups
-
-- ChatGPT
-- Perplexity
-- Google (covers Gemini and AI Overview)
-- Claude
-
-## Key Routes
-
-- `/dashboard` — visibility metrics and GEO scores
-- `/prompts` — manage and run prompts
-- `/sources` — source and citation attribution
-- `/people` — team members
-- `/schedule` — recurring schedule (self-host/cloud) or manual run (local)
-- `/providers` — connect and manage provider auth sessions
-
-### Route Behavior by Mode
-
-- `/providers` is available in local and self-host mode
-- `/schedule` shows a manual run trigger in local mode
-- `/schedule` shows a recurring schedule editor in cloud and self-host mode
-
 ## Useful Commands
 
 ```bash
-pnpm local                   # Full local app + worker
-pnpm auth                    # Start local stack and open /providers
-pnpm upload:vps              # Upload existing local sessions to VPS
-pnpm self-host               # Start both app and public VPS stacks
-pnpm self-host:app           # Pull and restart app stack only
-pnpm self-host:public        # Pull and restart public stack only
+pnpm local                   # Start full local stack (web + agent + docker services)
+pnpm auth                    # Start local stack and open /providers for auth setup
+pnpm upload:vps              # Upload local auth sessions to VPS
+pnpm self-host               # Start full self-hosted stack
+pnpm self-host:app           # Restart app stack only
+pnpm self-host:public        # Restart public stack only
 pnpm self-host:build         # Build and start both stacks from source
-pnpm self-host:app:build     # Build app stack from source
-pnpm self-host:public:build  # Build public stack from source
-pnpm self-host:pull          # Pull latest published images
 pnpm typecheck               # Typecheck the monorepo
 pnpm build                   # Build all packages
 ```
 
-## Provider Auth Upload
+## Key Routes
 
-For self-host environments, capture auth locally and upload to the VPS.
+| Route | Description |
+|---|---|
+| `/dashboard` | Visibility metrics and GEO scores |
+| `/prompts` | Manage and run prompts |
+| `/sources` | Source and citation attribution |
+| `/providers` | Connect and manage provider auth sessions |
+| `/schedule` | Manual run trigger (local) or recurring schedule editor (self-host/cloud) |
+| `/people` | Team members |
 
-If `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` are set in your local `.env`:
+## App Modes
 
-```bash
-pnpm upload:vps
-```
+| Capability | Cloud | Local | Self-Host |
+|---|---|---|---|
+| Interactive provider auth | — | Yes | — |
+| Manual prompt runs | — | Yes | — |
+| Recurring scheduling | Yes | — | Yes |
+| Full data ownership | — | Yes | Yes |
 
-Or with explicit flags:
+## Auth Groups
 
-```bash
-pnpm auth -- --upload-url http://YOUR_VPS_HOST:3333/auth/sessions --upload-token YOUR_TOKEN
-```
+Each auth group covers one or more runtime providers:
 
-This opens the local `/providers` page and uploads any newly saved sessions to the VPS.
+| Auth Group | Covers |
+|---|---|
+| Google | Gemini, AI Overview |
+| ChatGPT | ChatGPT |
+| Perplexity | Perplexity |
+| Claude | Claude |
 
 ## Storage Model
 
-OneGlanse uses:
+- **Portable auth bundles** — one per auth group, transferable to VPS, source of truth
+- **Persistent runtime profiles** — one per provider, machine-local, seeded from the auth bundle
 
-- **Portable auth bundles** — one per auth group, the source of truth, transferable to VPS
-- **Persistent runtime profiles** — one per runtime provider, machine-local, seeded from the auth bundle
-
-Runtime behavior:
-- If a runtime profile is missing, it is seeded from the auth bundle
-- If the auth bundle changes, the runtime profile is reseeded automatically
-- Otherwise the existing persistent profile is reused directly
+If a runtime profile is missing or the auth bundle has changed, the profile is reseeded automatically. Otherwise the existing profile is reused.
