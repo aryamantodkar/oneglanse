@@ -6,7 +6,7 @@
 
 ---
 
-<img src="docs/images/Mockup-1.png" width="100%" />
+<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-1.png" width="100%" />
 
 ---
 
@@ -20,7 +20,7 @@ OneGlanse runs your prompts inside the real UIs and captures exactly what a user
 
 ---
 
-<img src="docs/images/Mockup-2.png" width="100%" />
+<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-2.png" width="100%" />
 
 ---
 
@@ -38,7 +38,7 @@ OneGlanse runs your prompts inside the real UIs and captures exactly what a user
 
 ---
 
-<img src="docs/images/Mockup-3.png" width="100%" />
+<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-3.png" width="100%" />
 
 ---
 
@@ -52,7 +52,7 @@ The entire pipeline — browser automation, response capture, storage, and analy
 
 ---
 
-<img src="docs/images/Mockup-4.png" width="100%" />
+<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-4.png" width="100%" />
 
 ---
 
