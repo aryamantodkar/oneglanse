@@ -42,8 +42,9 @@ coverage/
 # Misc
 *.pem
 
-# Claude Code
+# Claude Code / Codex
 .claude/
+.codex/
 
 .oneglanse-storage/
 
