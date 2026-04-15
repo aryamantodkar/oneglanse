@@ -6,7 +6,7 @@
 
 ---
 
-<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-1.png" width="100%" />
+<img width="100%" alt="OneGlanse Dashboard" src="https://github.com/user-attachments/assets/d5438aff-67bc-4556-baa8-939906a59c02" />
 
 ---
 
@@ -20,7 +20,7 @@ OneGlanse runs your prompts inside the real UIs and captures exactly what a user
 
 ---
 
-<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-2.png" width="100%" />
+<img width="100%" alt="OneGlanse Prompt Responses" src="https://github.com/user-attachments/assets/09fae3f5-4e3c-4920-9d19-c32d9a1da0d5" />
 
 ---
 
@@ -38,7 +38,7 @@ OneGlanse runs your prompts inside the real UIs and captures exactly what a user
 
 ---
 
-<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-3.png" width="100%" />
+<img width="100%" alt="OneGlanse Source Intelligence" src="https://github.com/user-attachments/assets/caace32a-1e68-44e8-9b71-f582e9dc9de0" />
 
 ---
 
@@ -52,7 +52,7 @@ The entire pipeline — browser automation, response capture, storage, and analy
 
 ---
 
-<img src="https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/docs/images/Mockup-4.png" width="100%" />
+<img width="100%" alt="OneGlanse Analytics" src="https://github.com/user-attachments/assets/aac7d04b-e7b9-4e58-b780-2afd33b6c960" />
 
 ---
 
