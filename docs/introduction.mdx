@@ -1,47 +1,26 @@
 ---
 title: Introduction
-description: OneGlanse tracks how your brand appears across real AI chat interfaces and turns responses into visibility, sentiment, and source intelligence.
+description: OneGlanse is the open-source GEO tracker. Monitor how your brand appears inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
 ---
 
 # Introduction
 
-OneGlanse helps teams understand how their brand appears inside real AI products, not just model APIs.
+OneGlanse tracks how your brand appears inside real AI products and turns that data into visibility scores, sentiment signals, competitor co-mentions, and source intelligence — tracked over time.
 
-It runs prompts across supported providers, captures the rendered responses and citations, and turns that data into:
-
-- Visibility metrics and GEO scores
-- Sentiment and perception signals
-- Competitor co-mentions
-- Source and citation intelligence
+It captures responses from the real product UIs, not raw model APIs. The difference matters: UI responses include citations, ranked recommendations, and framing that don't appear in direct API calls.
 
 <img src="/images/Mockup-1.png" alt="OneGlanse Dashboard" />
 
-## What Makes It Different
+## Your data, your infrastructure
 
-OneGlanse is UI-first.
+OneGlanse is fully open source and self-hostable. Responses, analytics, and auth sessions live in databases you control — on your local machine or your own VPS. Response analysis calls go directly from your infrastructure to OpenAI or Anthropic. Nothing passes through a third-party server.
 
-It measures what users actually see in products like ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — not what a raw model API returns. The difference matters: UI responses include formatting, citations, follow-up suggestions, and ranked recommendations that don't appear in direct API calls.
+Provider auth uses your own accounts. No credentials are stored externally.
 
-## Your Data, Your Infrastructure
+## Deployment paths
 
-OneGlanse is fully open source and self-hostable. Your responses, analytics, and auth sessions live in databases and storage you control — locally or on your own VPS. Response analysis calls go directly from your infrastructure to OpenAI or Anthropic. Nothing passes through a third-party server.
-
-Provider authentication uses your own accounts. No credentials are stored externally.
-
-## Core Workflow
-
-1. Create or select a workspace
-2. Connect providers on `/providers`
-3. Add prompts your target audience would actually search for
-4. Run prompt collection
-5. Review the dashboard, prompt responses, and sources
-
-## Deployment Paths
-
-OneGlanse supports three ways to use the product:
-
-- **Cloud app** — hosted at [app.oneglanse.com](https://app.oneglanse.com), fastest setup
-- **Local run** — run the full stack on your own machine for development and manual runs
+- **Cloud app** — hosted at [app.oneglanse.com](https://app.oneglanse.com), fastest setup, no installation
+- **Local** — full stack on your own machine, interactive provider auth, manual prompt runs
 - **Self-hosted** — deploy to your own VPS for recurring scheduling and full data ownership
 
-See [Getting Started](/getting-started) for the full setup paths.
+See [Getting Started](/getting-started) to pick your path.
