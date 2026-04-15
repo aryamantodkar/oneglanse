@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability in OneGlanse, please **do not open a public GitHub issue**.
 
-Instead, email the maintainer directly at **aryamantodkar@gmail.com** with:
+Instead, email the maintainer directly at **aryamant20@gmail.com** with:
 
 - A description of the vulnerability
 - Steps to reproduce it
