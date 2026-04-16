@@ -17,8 +17,8 @@ const shutdown = async (signal: string) => {
 
 	try {
 		// Step 1: Stop accepting new jobs and wait for current jobs to finish.
-		// BullMQ re-queues any job that was picked up but not acknowledged, so
-		// nothing is lost — the next worker restart will retry it.
+		// Any jobs still in-flight when we exit will be drained on next startup
+		// (drainQueues runs before workers start), so they do not restart automatically.
 		if (workers.length > 0) {
 			logger.log("[agent] Closing BullMQ workers (draining current jobs)...");
 			await Promise.all(workers.map((w) => w.close()));
