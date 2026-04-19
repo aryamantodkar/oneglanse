@@ -1,13 +1,22 @@
-<svg width="320" height="64" viewBox="0 0 320 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <image href="/images/logo-dark.png" x="0" y="0" width="64" height="64" />
+<svg width="452" height="72" viewBox="0 0 452 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>OneGlanse</title>
+  <g
+    stroke="#F9FAFB"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="12"
+  >
+    <path d="M62 14 A30 30 0 1 0 62 58" />
+    <path d="M60 36 H108" />
+  </g>
   <text
-    x="80"
-    y="41"
+    x="126"
+    y="47"
     fill="#F9FAFB"
     font-family="Inter, Arial, sans-serif"
-    font-size="28"
+    font-size="36"
     font-weight="700"
-    letter-spacing="-0.03em"
+    letter-spacing="-0.04em"
   >
     OneGlanse
   </text>
