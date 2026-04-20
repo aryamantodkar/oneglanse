@@ -211,13 +211,12 @@ export default function LayoutContent({
 	const providersHref = providersParams.size
 		? `/providers?${providersParams.toString()}`
 		: "/providers";
-	const providersNextHref =
-		canLaunchProvidersLocally && providerGateNext
-			? getPostProvidersContinuePath({
-					rawNext: providerGateNext,
-					workspaceId: providersWorkspaceId || null,
-				})
-			: null;
+	const providersNextHref = providerGateNext
+		? getPostProvidersContinuePath({
+				rawNext: providerGateNext,
+				workspaceId: providersWorkspaceId || null,
+			})
+		: null;
 	const workspaceHref = providersWorkspaceId
 		? `/workspace?workspace=${providersWorkspaceId}`
 		: "/workspace";
@@ -298,10 +297,11 @@ export default function LayoutContent({
 						description={
 							canLaunchProvidersLocally
 								? "Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active."
-								: "Provider auth can only be captured on a local run. Run `pnpm auth` on your local machine, complete sign-in for at least one provider, then sync the saved auth back here before continuing."
+								: null
 						}
 						nextHref={providersNextHref}
 						showOnboardingActions
+						watchForExternalUpdates={!canLaunchProvidersLocally}
 					/>
 				</main>
 			</>

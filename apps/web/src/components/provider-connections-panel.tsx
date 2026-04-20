@@ -134,6 +134,7 @@ export function ProviderConnectionsPanel(props: {
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
 	showOnboardingActions?: boolean;
+	watchForExternalUpdates?: boolean;
 }) {
 	const {
 		title = "Providers",
@@ -142,9 +143,12 @@ export function ProviderConnectionsPanel(props: {
 		showSetupNotice = true,
 		workspaceId = null,
 		showOnboardingActions = false,
+		watchForExternalUpdates = false,
 	} = props;
 	const router = useRouter();
-	const authProvidersQuery = useProviderConnections();
+	const authProvidersQuery = useProviderConnections({
+		watchForExternalUpdates,
+	});
 	const resolvedWorkspaceId = workspaceId ?? "";
 
 	const enabledProvidersQuery = api.workspace.getEnabledProviders.useQuery(
@@ -258,14 +262,17 @@ export function ProviderConnectionsPanel(props: {
 		cards.some((card) => card.status.connecting);
 
 	const handleSkipForNow = () => {
-		if (!nextHref) {
-			return;
-		}
-
 		writeSkipProviderGate(true);
 		setShowSkipDialog(false);
-		router.push(nextHref);
+		router.push(nextHref ?? "/workspace");
 	};
+
+	const canInteractivelyConnect =
+		authProvidersQuery.data?.interactiveConnectAllowed ?? true;
+	const shouldShowExternalContinueAction =
+		showOnboardingActions &&
+		!canInteractivelyConnect &&
+		!hasAtLeastOneConnection;
 
 	return (
 		<section>
@@ -278,11 +285,8 @@ export function ProviderConnectionsPanel(props: {
 							</h2>
 						) : null}
 						<Button
-							variant="ghost"
-							className={cn(
-								formSecondaryButtonClassName,
-								"h-10 shrink-0 border border-red-200 bg-red-50 text-red-700 shadow-none hover:bg-red-100 hover:text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60 dark:hover:text-red-100",
-							)}
+							variant="destructive"
+							className={cn(formPrimaryButtonClassName, "h-10 shrink-0 px-4")}
 							onClick={() => resetAllMutation.mutate()}
 							disabled={
 								!hasAtLeastOneConnection ||
@@ -320,17 +324,18 @@ export function ProviderConnectionsPanel(props: {
 				</p>
 			) : null}
 
-			{showSetupNotice &&
-			!authProvidersQuery.data?.interactiveConnectAllowed ? (
+			{showSetupNotice && !canInteractivelyConnect ? (
 				<p className="mb-6 rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
 					To connect or refresh providers, run{" "}
 					<code className="rounded px-1 font-mono text-xs">pnpm auth</code> on
-					your local machine, then finish sign-in on the local{" "}
+					your local machine, finish sign-in on the local{" "}
 					<code className="rounded px-1 font-mono text-xs">
 						/providers/local
 					</code>{" "}
-					page. When the local auth flow finishes, you can choose whether to
-					upload the saved sessions to your VPS.
+					page, then upload the saved sessions to this VPS.{" "}
+					{watchForExternalUpdates
+						? "This page updates automatically as soon as uploaded sessions are detected."
+						: "Refresh this page after the upload completes to see the updated provider status."}
 				</p>
 			) : null}
 
@@ -498,9 +503,9 @@ export function ProviderConnectionsPanel(props: {
 				})}
 			</div>
 
-			{showOnboardingActions && nextHref ? (
+			{showOnboardingActions ? (
 				<div className="mt-6 flex items-center justify-end gap-3">
-					{hasAtLeastOneConnection ? (
+					{hasAtLeastOneConnection && nextHref ? (
 						<Button
 							variant="ghost"
 							className={cn(
@@ -514,17 +519,27 @@ export function ProviderConnectionsPanel(props: {
 							<ArrowRight className="h-4 w-4" />
 						</Button>
 					) : null}
-					<Button
-						variant="ghost"
-						onClick={() => setShowSkipDialog(true)}
-						disabled={isAnyConnectionPending}
-						className={cn(
-							formSecondaryButtonClassName,
-							"h-10 w-auto border border-gray-200/80 px-3.5 text-[11px] dark:border-gray-700",
-						)}
-					>
-						Skip for now
-					</Button>
+					{shouldShowExternalContinueAction ? (
+						<Button
+							onClick={handleSkipForNow}
+							disabled={isAnyConnectionPending}
+							className={cn(formPrimaryButtonClassName, "h-11 w-auto px-5")}
+						>
+							OK, understood
+						</Button>
+					) : nextHref ? (
+						<Button
+							variant="ghost"
+							onClick={() => setShowSkipDialog(true)}
+							disabled={isAnyConnectionPending}
+							className={cn(
+								formSecondaryButtonClassName,
+								"h-10 w-auto border border-gray-200/80 px-3.5 text-[11px] dark:border-gray-700",
+							)}
+						>
+							Skip for now
+						</Button>
+					) : null}
 				</div>
 			) : null}
 

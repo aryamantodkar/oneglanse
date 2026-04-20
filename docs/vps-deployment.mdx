@@ -9,7 +9,7 @@ If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the a
 
 ```bash
 # On your VPS (as a non-root user with sudo privileges):
-curl -fsSL https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/scripts/setup-vps.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/scripts/setup-vps.sh)
 ```
 
 Or clone first and run locally:
@@ -20,6 +20,8 @@ bash /tmp/oneglanse/scripts/setup-vps.sh
 ```
 
 The script is interactive — it asks for your domain, LLM key, and proxy URL, then does the rest. If you leave the auth upload token blank, it generates one automatically, and it handles first-run Docker group access for the setup user in the same session.
+
+Do not use `curl ... | bash` here. Because the setup flow is interactive, piping the script body into `bash` steals stdin from the prompts. `bash <(...)` keeps stdin attached to your terminal, so the prompts work correctly.
 
 The VPS flow is intentionally simple:
 
@@ -67,6 +69,8 @@ Point a DNS A record at your VPS IP before continuing — nginx and certbot need
 A  app.yourdomain.com  →  YOUR_VPS_IP
 ```
 
+If you do not have a real domain yet and only need a temporary launch/test hostname, a wildcard DNS helper such as `YOUR_VPS_IP.nip.io` or `YOUR_VPS_IP.sslip.io` also works.
+
 ---
 
 ## 2. Install dependencies
@@ -74,6 +78,8 @@ A  app.yourdomain.com  →  YOUR_VPS_IP
 SSH into your VPS and run:
 
 ```bash
+sudo apt-get update
+
 # Docker
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
@@ -82,6 +88,9 @@ newgrp docker
 # Node.js 20
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
+
+# git
+sudo apt-get install -y git
 
 # nginx + certbot
 sudo apt install -y nginx certbot python3-certbot-nginx

@@ -55,6 +55,7 @@ async function resetAllProviders(): Promise<{ ok: boolean }> {
 
 export function useProviderConnections(options?: {
 	initialData?: ProviderConnectionsState;
+	watchForExternalUpdates?: boolean;
 }) {
 	return useQuery({
 		queryKey: PROVIDER_CONNECTIONS_QUERY_KEY,
@@ -67,7 +68,12 @@ export function useProviderConnections(options?: {
 			const data = query.state.data;
 			if (!data) return PROVIDER_CONNECTIONS_POLL_INTERVAL_MS;
 			const anyConnecting = data.cards.some((card) => card.status.connecting);
-			return anyConnecting ? PROVIDER_CONNECTIONS_POLL_INTERVAL_MS : false;
+			const anyConnected = data.cards.some((card) => card.status.connected);
+			const shouldWatchForExternalUpdates =
+				options?.watchForExternalUpdates && !anyConnected;
+			return anyConnecting || shouldWatchForExternalUpdates
+				? PROVIDER_CONNECTIONS_POLL_INTERVAL_MS
+				: false;
 		},
 	});
 }

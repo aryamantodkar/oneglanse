@@ -11,6 +11,7 @@ export function ProvidersScreen(props: {
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
 	showOnboardingActions?: boolean;
+	watchForExternalUpdates?: boolean;
 }) {
 	const {
 		title = DEFAULT_PROVIDERS_TITLE,
@@ -19,6 +20,7 @@ export function ProvidersScreen(props: {
 		showSetupNotice = true,
 		workspaceId = null,
 		showOnboardingActions = false,
+		watchForExternalUpdates = false,
 	} = props;
 
 	return (
@@ -31,6 +33,7 @@ export function ProvidersScreen(props: {
 					showSetupNotice={showSetupNotice}
 					workspaceId={workspaceId}
 					showOnboardingActions={showOnboardingActions}
+					watchForExternalUpdates={watchForExternalUpdates}
 				/>
 			</div>
 		</div>

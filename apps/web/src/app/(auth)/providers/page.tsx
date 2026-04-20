@@ -27,15 +27,12 @@ export default async function ProvidersPage({
 
 	return (
 		<ProvidersScreen
-			description={
-				isSelfHost
-					? "Run `pnpm run auth` on your local machine, complete provider sign-in there, and upload the saved session to this VPS."
-					: undefined
-			}
+			description={isSelfHost ? null : undefined}
 			nextHref={nextHref}
-			showSetupNotice={!isSelfHost}
+			showSetupNotice
 			showOnboardingActions={false}
 			workspaceId={workspace?.id ?? null}
+			watchForExternalUpdates={isSelfHost}
 		/>
 	);
 }

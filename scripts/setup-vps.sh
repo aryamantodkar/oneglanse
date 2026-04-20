@@ -18,6 +18,7 @@ header()  { echo -e "\n${BOLD}$*${NC}"; }
 
 require_cmd() { command -v "$1" >/dev/null 2>&1; }
 has_group() { id -nG "$USER" | tr ' ' '\n' | grep -qx "$1"; }
+docker_socket_access() { docker info >/dev/null 2>&1; }
 
 DOCKER_GROUP_PENDING=0
 
@@ -103,6 +104,13 @@ else
   success "Node.js already installed ($(node -v))"
 fi
 
+if ! require_cmd git; then
+  info "Installing git..."
+  sudo apt-get install -y git
+else
+  success "git already installed"
+fi
+
 if ! require_cmd nginx; then
   info "Installing nginx + certbot..."
   sudo apt install -y nginx certbot python3-certbot-nginx
@@ -175,7 +183,7 @@ success ".env configured"
 header "4 / 6 — Starting OneGlanse"
 
 info "Starting the app from published Docker images..."
-if has_group docker; then
+if docker_socket_access; then
   node scripts/run-compose.mjs bootstrap
 elif [[ "$DOCKER_GROUP_PENDING" -eq 1 ]]; then
   info "Current shell does not yet include the docker group — bootstrapping with sudo using the docker group for this first run."

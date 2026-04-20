@@ -43,7 +43,13 @@ services:
           cpus: '1'
           memory: 1G
     healthcheck:
-      test: ["CMD", "node", "-e", "require('ioredis').default({host:'redis'}).ping().then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const Redis=require('ioredis'); const client=new Redis({host:'redis', password:process.env.REDIS_PASSWORD || 'redis'}); client.ping().then(()=>client.quit()).then(()=>process.exit(0)).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 10s
       retries: 3
