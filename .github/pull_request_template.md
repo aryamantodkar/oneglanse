@@ -1,6 +1,6 @@
 ## What does this PR do?
 
-<!-- Brief description of the change and why it's needed. -->
+<!-- A clear, concise description of the change and why it's needed. -->
 
 ## Related issue
 
@@ -14,12 +14,13 @@ Closes #
 - [ ] Docs
 - [ ] Other
 
-## Testing
+## How was this tested?
 
-<!-- How did you verify this works? For agent changes, describe what you observed in the browser. -->
+<!-- How did you verify this works? For agent/browser changes, describe what you observed. -->
 
 ## Checklist
 
 - [ ] `pnpm typecheck` passes
-- [ ] I only changed what was necessary for this fix/feature
-- [ ] I didn't add unused imports or dead code
+- [ ] Only changed what was necessary for this fix/feature
+- [ ] No unused imports, dead code, or unrelated formatting changes
+- [ ] Docs updated if behaviour changed

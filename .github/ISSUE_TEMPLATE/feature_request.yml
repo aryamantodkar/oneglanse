@@ -1,17 +1,19 @@
 name: Feature Request
-description: Suggest a new feature or improvement
+description: Suggest a new feature or improvement for OneGlanse
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Before submitting, check if a similar request already exists. If you're planning to implement this yourself, opening the issue first avoids duplicate work.
+        Have an idea? We'd love to hear it.
+        Before submitting, check [existing issues](https://github.com/aryamantodkar/oneglanse/issues) to see if it's already been requested.
 
   - type: textarea
     id: problem
     attributes:
       label: What problem does this solve?
-      description: Describe the use case or pain point.
+      description: Describe the use case or pain point. The clearer the problem, the better we can evaluate the solution.
+      placeholder: "I'm trying to do X, but currently I have to Y which is frustrating because..."
     validations:
       required: true
 
@@ -19,21 +21,36 @@ body:
     id: solution
     attributes:
       label: Proposed solution
-      description: What would you like to see? Be as specific as you can.
+      description: What would you like to see? Be as specific as you can — UI behaviour, API shape, config options, etc.
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      description: Any other approaches you thought about?
+      label: Alternatives you've considered
+      description: Any other approaches you thought about, or workarounds you're currently using?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Provider coverage (new AI product)
+        - Response analysis / scoring
+        - Scheduling / automation
+        - Auth / session management
+        - Dashboard / UI
+        - Self-host / deployment
+        - API / integrations
+        - Docs
+        - Other
 
   - type: dropdown
     id: willing
     attributes:
-      label: Are you willing to implement this?
+      label: Would you like to implement this?
       options:
-        - "Yes"
-        - "No"
-        - "Maybe, with guidance"
+        - "Yes — I'll open a PR"
+        - "Maybe — I'd need some guidance"
+        - "No — just the suggestion"

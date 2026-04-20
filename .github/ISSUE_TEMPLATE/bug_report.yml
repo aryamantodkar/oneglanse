@@ -1,24 +1,35 @@
 name: Bug Report
-description: Report a bug in OneGlanse
+description: Something isn't working as expected
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug. Fill in as much detail as you can.
+        Thanks for reporting a bug. The more detail you provide, the faster it gets fixed.
+        Before submitting, check [existing issues](https://github.com/aryamantodkar/oneglanse/issues) to avoid duplicates.
 
   - type: dropdown
     id: area
     attributes:
       label: Area
       options:
-        - Web app
+        - Web app (UI / dashboard)
         - Agent / browser automation
-        - Provider auth
-        - Response analysis
-        - Self-host / Docker
+        - Provider auth (pnpm auth)
+        - Response analysis (LLM)
+        - Self-host / Docker / VPS
         - Docs
         - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: setup
+    attributes:
+      label: Setup path
+      options:
+        - Local (pnpm local)
+        - Self-host (VPS / Docker)
     validations:
       required: true
 
@@ -26,7 +37,7 @@ body:
     id: description
     attributes:
       label: What happened?
-      description: A clear description of the bug.
+      description: A clear description of the bug and what you expected instead.
     validations:
       required: true
 
@@ -42,27 +53,26 @@ body:
       required: true
 
   - type: textarea
-    id: expected
-    attributes:
-      label: Expected behavior
-    validations:
-      required: true
-
-  - type: textarea
     id: logs
     attributes:
-      label: Relevant logs
-      description: Set `DEBUG_ENABLED=true` in `.env` for verbose agent output.
+      label: Relevant logs or errors
+      description: Set `DEBUG_ENABLED=true` in `.env` for verbose agent output. Paste any relevant output here.
       render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, drag and drop screenshots here.
 
   - type: input
     id: version
     attributes:
       label: OneGlanse version or commit
-      placeholder: e.g. d8e85486
+      placeholder: e.g. main @ a1b2c3d
 
   - type: input
     id: os
     attributes:
       label: OS + Node.js version
-      placeholder: e.g. macOS 15, Node 22
+      placeholder: e.g. macOS 15.2, Node 22.3

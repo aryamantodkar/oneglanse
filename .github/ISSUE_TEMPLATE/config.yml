@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://docs.oneglanse.com
+    about: Setup guides, environment variables, VPS deployment, and troubleshooting.
+  - name: Discussions — Q&A
+    url: https://github.com/aryamantodkar/oneglanse/discussions
+    about: Ask questions, share what you're tracking, or get help with your setup.
