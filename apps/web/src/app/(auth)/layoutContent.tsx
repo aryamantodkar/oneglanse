@@ -184,13 +184,13 @@ export default function LayoutContent({
 	const isProvidersPage = pathname === "/providers";
 	const shouldEnforceProviderGate =
 		!resolvedWorkspace && !isResolvingWorkspaceFromUrl;
-	const shouldShowConnectionGate =
-		shouldEnforceProviderGate &&
-		!hasAtLeastOneConnection &&
-		!hasSkippedProviderGate &&
-		!isProvidersPage;
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
 	const isPeoplePage = pathname?.startsWith("/people") ?? false;
+	const shouldShowConnectionGate =
+		shouldEnforceProviderGate &&
+		!hasSkippedProviderGate &&
+		!isProvidersPage &&
+		!isWorkspaceSetupPage;
 	const pageHeader = getPageHeader(pathname);
 	const providersWorkspaceId =
 		workspaceIdFromUrl || resolvedWorkspace?.id || "";
@@ -264,7 +264,8 @@ export default function LayoutContent({
 			!isResolvingWorkspaceFromUrl &&
 			hasAtLeastOneConnection &&
 			!isWorkspaceSetupPage &&
-			!isProvidersPage
+			!isProvidersPage &&
+			!shouldShowConnectionGate
 		) {
 			router.replace("/workspace");
 		}
@@ -275,6 +276,7 @@ export default function LayoutContent({
 		isWorkspaceSetupPage,
 		resolvedWorkspace,
 		router,
+		shouldShowConnectionGate,
 	]);
 
 	if (shouldShowConnectionGate) {
