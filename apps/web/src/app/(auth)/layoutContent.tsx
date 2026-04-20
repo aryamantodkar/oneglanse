@@ -208,9 +208,6 @@ export default function LayoutContent({
 	if (providerGateNext && canLaunchProvidersLocally) {
 		providersParams.set("next", providerGateNext);
 	}
-	const providersHref = providersParams.size
-		? `/providers?${providersParams.toString()}`
-		: "/providers";
 	const providersNextHref = providerGateNext
 		? getPostProvidersContinuePath({
 				rawNext: providerGateNext,

@@ -68,9 +68,8 @@ export function useProviderConnections(options?: {
 			const data = query.state.data;
 			if (!data) return PROVIDER_CONNECTIONS_POLL_INTERVAL_MS;
 			const anyConnecting = data.cards.some((card) => card.status.connecting);
-			const anyConnected = data.cards.some((card) => card.status.connected);
 			const shouldWatchForExternalUpdates =
-				options?.watchForExternalUpdates && !anyConnected;
+				options?.watchForExternalUpdates === true;
 			return anyConnecting || shouldWatchForExternalUpdates
 				? PROVIDER_CONNECTIONS_POLL_INTERVAL_MS
 				: false;

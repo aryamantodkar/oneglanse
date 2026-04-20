@@ -94,6 +94,21 @@ function getConnectionStatusMessage(
 	return card.status.error;
 }
 
+function formatConnectionUpdatedAt(timestamp: string | null): string | null {
+	if (!timestamp) {
+		return null;
+	}
+
+	return new Date(timestamp).toLocaleString(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: true,
+	});
+}
+
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
 	if (card.status.connecting) {
 		return `${formPanelClassName} border-gray-200/40 bg-stone-50 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-white/5 dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]`;
@@ -285,8 +300,11 @@ export function ProviderConnectionsPanel(props: {
 							</h2>
 						) : null}
 						<Button
-							variant="destructive"
-							className={cn(formPrimaryButtonClassName, "h-10 shrink-0 px-4")}
+							variant="ghost"
+							className={cn(
+								formSecondaryButtonClassName,
+								"h-10 shrink-0 border border-red-200 bg-red-50 text-red-700 shadow-none hover:bg-red-100 hover:text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60 dark:hover:text-red-100",
+							)}
 							onClick={() => resetAllMutation.mutate()}
 							disabled={
 								!hasAtLeastOneConnection ||
@@ -353,6 +371,9 @@ export function ProviderConnectionsPanel(props: {
 					const cardTitle = getConnectionCardTitle(card);
 					const statusLabel = getConnectionStatusLabel(card);
 					const statusMessage = getConnectionStatusMessage(card);
+					const updatedAtLabel = formatConnectionUpdatedAt(
+						status.lastUpdatedAt,
+					);
 					const canInteractivelyReconnect = Boolean(
 						authProvidersQuery.data?.interactiveConnectAllowed,
 					);
@@ -394,9 +415,16 @@ export function ProviderConnectionsPanel(props: {
 												</p>
 											</div>
 											{isConnected && !statusMessage ? (
-												<div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-													<CheckCircle2 className="h-3.5 w-3.5" />
-													Ready for prompt runs
+												<div className="mt-1.5 space-y-1">
+													<div className="flex flex-wrap items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+														<CheckCircle2 className="h-3.5 w-3.5" />
+														Ready for prompt runs
+													</div>
+													{updatedAtLabel ? (
+														<p className="text-[11px] leading-4.5 text-gray-500 dark:text-gray-400">
+															Updated {updatedAtLabel}
+														</p>
+													) : null}
 												</div>
 											) : null}
 											{statusMessage ? (

@@ -121,7 +121,12 @@ function ManualRunView({
 	if (mode === "local") {
 		return (
 			<div className="flex flex-col gap-3">
-				<div className={cn(formPanelClassName, "flex items-center justify-between gap-4 px-5 py-5")}>
+				<div
+					className={cn(
+						formPanelClassName,
+						"flex items-center justify-between gap-4 px-5 py-5",
+					)}
+				>
 					<div className="flex items-center gap-4">
 						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
 							<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -151,7 +156,12 @@ function ManualRunView({
 					</Button>
 				</div>
 
-				<div className={cn(formPanelClassName, "flex items-center justify-between gap-4 px-5 py-5 opacity-50")}>
+				<div
+					className={cn(
+						formPanelClassName,
+						"flex items-center justify-between gap-4 px-5 py-5 opacity-50",
+					)}
+				>
 					<div className="flex items-center gap-4">
 						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
 							<Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -177,24 +187,26 @@ function ManualRunView({
 		<div
 			className={cn(
 				formPanelClassName,
-				"flex flex-col items-center gap-5 px-6 py-10 text-center sm:px-8 sm:py-12",
+				"flex items-center justify-between gap-4 px-5 py-5",
 			)}
 		>
-			<div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-				<PlayCircle className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-			</div>
-			<div className="space-y-1.5">
-				<h2 className="text-base font-semibold tracking-[-0.02em] text-gray-900 sm:text-lg dark:text-gray-100">
-					Manual run
-				</h2>
-				<p className="text-sm leading-5 text-gray-500 dark:text-gray-400">
-					Trigger one immediate run without changing the recurring schedule.
-				</p>
+			<div className="flex items-center gap-4">
+				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+					<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+				</div>
+				<div className="space-y-0.5">
+					<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						Manual run
+					</h2>
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						Trigger one immediate run without changing the recurring schedule.
+					</p>
+				</div>
 			</div>
 			<Button
 				onClick={() => void onRunNow()}
 				disabled={isRunning}
-				className="min-w-32"
+				className="shrink-0"
 			>
 				{isRunning ? (
 					<>
