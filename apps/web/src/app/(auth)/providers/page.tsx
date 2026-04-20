@@ -7,7 +7,7 @@ import { resolveAppMode } from "@oneglanse/types";
 export default async function ProvidersPage({
 	searchParams,
 }: {
-	searchParams?: Promise<{ next?: string }>;
+	searchParams?: Promise<{ next?: string; onboarding?: string }>;
 }) {
 	let workspace = null;
 	try {
@@ -16,9 +16,10 @@ export default async function ProvidersPage({
 		workspace = null;
 	}
 	const params = await searchParams;
-	const nextHref = params?.next
+	const showOnboardingActions = params?.onboarding === "1";
+	const nextHref = showOnboardingActions
 		? getPostProvidersContinuePath({
-				rawNext: params.next,
+				rawNext: params?.next,
 				workspaceId: workspace?.id ?? null,
 			})
 		: null;
@@ -30,7 +31,7 @@ export default async function ProvidersPage({
 			description={isSelfHost ? null : undefined}
 			nextHref={nextHref}
 			showSetupNotice
-			showOnboardingActions={false}
+			showOnboardingActions={showOnboardingActions}
 			workspaceId={workspace?.id ?? null}
 			watchForExternalUpdates={isSelfHost}
 		/>

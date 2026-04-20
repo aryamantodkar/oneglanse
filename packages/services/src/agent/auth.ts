@@ -669,8 +669,21 @@ export async function readReusableIdentitySeedState(): Promise<StorageState | nu
 export async function readAuthLaunchSeedState(
 	provider: AuthProvider,
 ): Promise<StorageState | null> {
-	const providerState = await readAuthSession(provider);
-	return hasUsableAuthState(providerState) ? providerState : null;
+	const [providerState, reusableState] = await Promise.all([
+		readAuthSession(provider),
+		readReusableIdentitySeedState(),
+	]);
+
+	// Reusable identity state first, provider state last — last entry wins on
+	// cookie key conflicts, so the provider's own saved session always takes
+	// precedence over the shared Google/OAuth identity state.
+	const candidates = [reusableState, providerState].filter(
+		(s): s is StorageState => hasUsableAuthState(s),
+	);
+	if (candidates.length === 0) return null;
+
+	const merged = mergeStorageStates(candidates);
+	return hasUsableAuthState(merged) ? merged : null;
 }
 
 export async function saveReusableIdentitySessions(

@@ -21,7 +21,12 @@ export function getPostAuthProvidersPath(
 	rawNext: string | null | undefined,
 ): string {
 	const nextPath = getSafeAuthRedirectPath(rawNext);
-	return nextPath;
+
+	if (nextPath === "/" || nextPath === "/providers") {
+		return "/providers?onboarding=1";
+	}
+
+	return `/providers?next=${encodeURIComponent(nextPath)}&onboarding=1`;
 }
 
 export function getPostProvidersContinuePath(args: {
