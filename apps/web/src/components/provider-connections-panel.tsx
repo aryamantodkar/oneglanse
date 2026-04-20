@@ -303,7 +303,7 @@ export function ProviderConnectionsPanel(props: {
 							variant="ghost"
 							className={cn(
 								formSecondaryButtonClassName,
-								"h-10 shrink-0 border border-red-200 bg-red-50 text-red-700 shadow-none hover:bg-red-100 hover:text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60 dark:hover:text-red-100",
+								"h-10 shrink-0 border border-gray-200/80 bg-white/85 text-gray-600 shadow-none hover:bg-white hover:text-gray-900 dark:border-gray-700 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-gray-100",
 							)}
 							onClick={() => resetAllMutation.mutate()}
 							disabled={

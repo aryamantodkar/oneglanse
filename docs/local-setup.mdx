@@ -1,0 +1,101 @@
+---
+title: Local Setup
+description: Run the full OneGlanse stack on your own machine for the fastest setup, interactive provider auth, and manual prompt runs.
+---
+
+## When to choose local
+
+Local mode is the fastest way to get started.
+
+It is also the most reliable place to capture provider auth because it uses your real machine, your real browser environment, and your normal IP reputation.
+
+## Requirements
+
+- Node.js 20+
+- pnpm 10+
+- Docker
+
+If you do not have pnpm:
+
+```bash
+npm install -g pnpm@latest
+```
+
+## 1. Clone and configure
+
+```bash
+git clone https://github.com/aryamantodkar/oneglanse
+cd oneglanse
+cp .env.example .env
+```
+
+Set your analysis LLM key in `.env`:
+
+```bash
+# Pick one:
+OPENAI_API_KEY=sk-...
+
+# or:
+ANTHROPIC_API_KEY=sk-ant-...
+ANALYSIS_LLM_PROVIDER=claude
+```
+
+## 2. Start the local stack
+
+```bash
+pnpm local
+```
+
+The app runs at [http://localhost:3000](http://localhost:3000).
+
+On first run, OneGlanse:
+
+- Starts Postgres, ClickHouse, and Redis
+- Runs migrations
+- Bootstraps the browser runtime
+
+`pnpm local` uses your latest local source code for the web app and agent. It does not depend on pulling published web or agent images, and it now asks Docker for fresher local service and base images before starting the local infra stack.
+
+## 3. Connect providers
+
+Then:
+
+1. Sign up with email
+2. Connect your AI provider accounts
+3. Add prompts and run
+
+If Google OAuth is configured for the web app, users can also sign in with Google. That is separate from monitoring Google AI Overview, which still uses provider sessions captured through the browser auth flow.
+
+## Why OneGlanse uses UI collection
+
+OneGlanse does not rely on official model APIs for provider collection.
+
+Instead, it opens the real chat interfaces and captures what the provider UI actually renders. That matters because the UI can include:
+
+- Citations and source cards
+- Recommendation ordering
+- Brand framing and comparisons
+- Provider-specific formatting that never appears in raw API output
+
+This is the core product differentiator. GEO is about what users actually see inside the product surface, not just what a developer API returns.
+
+For more context on why UI answers and API answers differ, see [LLM scraped AI answers vs API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/).
+
+## Why OneGlanse uses Camoufox
+
+Provider websites are authenticated consumer apps with anti-bot protections.
+
+OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, because plain Chrome or Chromium automation is much more likely to run into:
+
+- Login loops
+- Forced verification challenges
+- Unstable sessions
+- Blocked or degraded collection flows
+
+Camoufox gives the runtime a more suitable browser fingerprint profile for authenticated UI collection, which makes provider sessions materially more reliable in practice.
+
+## Related pages
+
+- [Getting Started](/getting-started)
+- [Self-Hosted Setup](/self-hosted-setup)
+- [Environment Variables](/environment-variables)

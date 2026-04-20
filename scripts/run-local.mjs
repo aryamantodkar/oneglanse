@@ -32,6 +32,8 @@ async function main() {
 		"up",
 		"-d",
 		"--build",
+		"--pull",
+		"always",
 		"--force-recreate",
 		"--wait",
 		"db",

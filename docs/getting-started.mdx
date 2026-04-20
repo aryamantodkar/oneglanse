@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Run OneGlanse locally or self-host it on your own VPS with full control over data and execution.
+description: Choose the right OneGlanse setup path, then follow a dedicated guide for local or self-hosted deployment.
 ---
 
 | | Local | Self-Host |
@@ -13,195 +13,25 @@ description: Run OneGlanse locally or self-host it on your own VPS with full con
 
 ---
 
-## Local
+## Choose your setup
 
-Run the full stack on your machine — fastest way to get started with interactive auth and manual runs.
+- [Local Setup](/local-setup)
+Run the full stack on your machine with interactive provider auth and on-demand runs.
 
-Local mode is also the most reliable place to capture provider auth because it uses your real machine, your real browser environment, and your normal IP reputation.
+- [Self-Hosted Setup](/self-hosted-setup)
+Deploy OneGlanse on your own VPS for recurring schedules and always-on tracking.
 
-**Requirements:** Node.js 20+, pnpm 10+, Docker
+## Which path should you pick?
 
-If you don't have pnpm: `npm install -g pnpm@latest`
+- Choose Local if you want the fastest first run, interactive provider auth on your own machine, and manual prompt runs.
+- Choose Self-Hosted if you want recurring schedules, always-on tracking, and infrastructure you manage yourself.
 
-```bash
-git clone https://github.com/aryamantodkar/oneglanse
-cd oneglanse
-cp .env.example .env
-```
+## Shared requirements
 
-Set your LLM key in `.env` (only required value):
+Every setup path needs:
 
-```bash
-# Pick one:
-OPENAI_API_KEY=sk-...
+- An analysis LLM key
+- Provider sessions captured through the real provider UI
+- Docker for the database/runtime services used by the app
 
-# or:
-ANTHROPIC_API_KEY=sk-ant-...
-ANALYSIS_LLM_PROVIDER=claude
-```
-
-Start the app:
-
-```bash
-pnpm local
-```
-
-Runs at http://localhost:3000
-
-On first run, OneGlanse:
-- Starts Postgres, ClickHouse, and Redis
-- Runs migrations
-- Bootstraps the browser runtime
-
-Then:
-1. Sign up with email (Google OAuth is enabled only if client ID and secret are configured)
-2. Connect your AI provider accounts (you’ll be redirected automatically)
-3. Add prompts and run
-
-### Why the product uses UI collection
-
-OneGlanse does not rely on official model APIs for provider collection.
-
-Instead, it opens the real chat interfaces and captures what the provider UI actually renders. That matters because the UI can include:
-
-- citations and source cards
-- recommendation ordering
-- brand framing and comparisons
-- provider-specific formatting that never appears in the raw API output
-
-This is the core product differentiator. GEO is about what users see inside the product surface, not just what a developer API returns.
-
-For more context on why UI answers and API answers differ, see: [LLM scraped AI answers vs API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/).
-
-### Why OneGlanse uses Camoufox
-
-Provider websites do not behave like public JSON APIs. They are authenticated consumer apps with anti-bot protections.
-
-OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, because plain Chrome / Chromium automation is much more likely to run into:
-
-- login loops
-- forced verification challenges
-- unstable sessions
-- blocked or degraded collection flows
-
-Camoufox gives the runtime a more suitable browser fingerprint profile for authenticated UI collection, which makes provider sessions materially more reliable in practice.
-
----
-
-## Self-Host
-
-Deploy OneGlanse on your own VPS for scheduled runs and continuous tracking.
-This path deploys only the app.
-
-- The landing site is deployed separately on Vercel
-- The docs are deployed separately on Mintlify
-
-### 1. Deploy
-
-```bash
-git clone https://github.com/aryamantodkar/oneglanse
-cd oneglanse
-cp .env.example .env
-```
-
-Update `.env`:
-
-```bash
-# Required: analysis LLM
-OPENAI_API_KEY=sk-...
-# or ANTHROPIC_API_KEY + ANALYSIS_LLM_PROVIDER=claude
-
-# Required: residential proxy
-THORDATA_PROXY_API_URL=https://your-thordata-endpoint
-
-# Required: auth upload token
-AGENT_AUTH_UPLOAD_TOKEN=your-secret-token
-
-# Optional
-APP_URL=https://your-domain.com
-API_BASE_URL=https://your-domain.com
-```
-
-If `BETTER_AUTH_SECRET` or `INTERNAL_CRON_SECRET` are still `replace-me`, `node scripts/run-compose.mjs bootstrap` generates them automatically before the containers start.
-
-On standard VPS deployments, bootstrap pulls the published app images. On platforms where those images are not available yet, such as some local `arm64` development machines, it automatically falls back to a local Docker build instead of failing.
-
-Start:
-
-```bash
-node scripts/run-compose.mjs bootstrap
-```
-
-Persistent data is stored at /opt/oneglanse/storage
-
----
-
-### 2. Residential proxy
-
-VPS environments typically run on datacenter IP ranges, and those IPs are often blocked, challenged, or rate-limited by AI providers.
-
-That means:
-
-- the VPS is excellent for scheduling, persistence, and always-on tracking
-- the VPS is a poor direct network origin for browser traffic to provider websites
-
-So OneGlanse requires a residential proxy on VPS deployments. The browser still runs on your server, but outbound provider traffic exits through a residential IP instead of the VPS datacenter IP.
-
-OneGlanse integrates with ThorData:
-
-```bash
-THORDATA_PROXY_API_URL=https://your-thordata-api-endpoint
-PROXY_SCHEME=http
-```
-
-Before each run:
-- OneGlanse fetches fresh proxy candidates
-- Routes browser traffic through one
-- Releases it after completion
-
----
-
-### 3. Provider auth (local → VPS)
-
-Auth must be captured locally and uploaded — it cannot run on a headless server.
-
-The reason is twofold:
-
-- provider sign-in is much more reliable on your local machine
-- the resulting sessions can then be reused by the VPS worker after upload
-
-On your local machine, set these in `.env`:
-
-```bash
-ONEGLANSE_VPS_IP=your-vps-ip
-AGENT_AUTH_UPLOAD_TOKEN=your-secret-token   # same token as on the VPS
-```
-
-Then run the auth flow:
-
-```bash
-pnpm auth
-```
-
-`pnpm auth` opens the provider sign-in browser, captures sessions, then asks whether to upload to the VPS — answer `y`. Sessions are transferred immediately.
-
-When a session expires later and you want to re-upload without going through the sign-in flow again:
-
-```bash
-pnpm upload:vps
-```
-
----
-
-### 4. Run
-
-Open your deployed app, add prompts, and enable scheduling.
-
----
-
-### Updates
-
-```bash
-git pull
-node scripts/run-compose.mjs bootstrap
-```
+For environment variable details, see [Environment Variables](/environment-variables). For command behavior, see [Reference](/api-reference).

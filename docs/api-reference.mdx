@@ -6,7 +6,7 @@ description: Commands, routes, and runtime behavior reference for OneGlanse.
 ## Useful Commands
 
 ```bash
-pnpm local                   # Start full local stack (installs deps, starts web + agent + docker services)
+pnpm local                   # Start full local stack from local source and refresh Docker service/base images when available
 pnpm auth                    # Capture provider sessions locally; prompts to upload to VPS at the end
 pnpm upload:vps              # Re-upload existing local sessions to VPS without re-running the auth flow
 pnpm self-host               # Pull latest published images and start the self-hosted stack; auto-builds locally if your architecture is not published yet

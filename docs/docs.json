@@ -11,6 +11,8 @@
 		"pages": [
 			"introduction",
 			"getting-started",
+			"local-setup",
+			"self-hosted-setup",
 			"vps-deployment",
 			"environment-variables",
 			"troubleshooting",
