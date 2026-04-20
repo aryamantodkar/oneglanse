@@ -20,11 +20,10 @@ Thank you for your interest in contributing. OneGlanse is MIT-licensed and fully
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse
 cd oneglanse
-pnpm install
 pnpm local
 ```
 
-This starts the full stack locally at `http://localhost:3000`.
+`pnpm local` installs dependencies if needed, then starts the full stack locally at `http://localhost:3000`.
 
 ### Project Structure
 

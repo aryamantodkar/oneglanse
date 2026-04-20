@@ -90,13 +90,7 @@ Timeouts, retries, submission cadence, response minimums, and similar tuning are
 
 ## Local Development
 
-1. Install deps:
-
-```bash
-pnpm install
-```
-
-2. Ensure the root env file exists:
+1. Ensure the root env file exists:
 
 ```bash
 cp .env.example .env
@@ -112,6 +106,14 @@ THORDATA_PROXY_API_URL=https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER
 The agent requests fresh ThorData residential proxy candidates before each
 browser launch, leases one proxy for that session, and avoids giving the same
 leased proxy to two workers at the same time.
+
+2. Start the local stack from the repo root:
+
+```bash
+pnpm local
+```
+
+`pnpm local` installs dependencies if needed before starting the app and agent.
 
 Camoufox runtime example:
 
