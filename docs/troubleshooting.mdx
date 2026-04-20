@@ -99,17 +99,17 @@ Note: these control sign-in to the OneGlanse web app itself. They are separate f
 
 ## Self-host: image pull fails
 
-**Symptom:** `node scripts/run-compose.mjs bootstrap` fails with a Docker pull error or `unauthorized`.
+**Symptom:** `node scripts/run-compose.mjs bootstrap` fails with a Docker pull error, `unauthorized`, or an architecture mismatch such as `no matching manifest`.
 
-**Cause:** The GHCR images are unavailable or you're not authenticated with GHCR.
+**Cause:** Either the GHCR images are unavailable, you're not authenticated with GHCR, or the published image has not been published for your current CPU architecture yet.
 
-**Fix:** The VPS flow expects published images, not a local source build. Check outbound access to GHCR and Docker Hub, then retry:
+**Fix:** Check outbound access to GHCR and Docker Hub, then retry:
 
 ```bash
 node scripts/run-compose.mjs bootstrap
 ```
 
-If you're maintaining a fork or testing unpublished changes, a local source build is still available as an advanced path via `pnpm self-host:build`, but that is not the standard VPS setup.
+If the only problem is an architecture mismatch, bootstrap now automatically falls back to a local Docker build on that machine. If you're maintaining a fork or explicitly want a source build, you can still run `pnpm self-host:build` directly.
 
 ---
 

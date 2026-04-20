@@ -2,7 +2,7 @@ import {
 	edgeNetworkName,
 	ensureDockerNetwork,
 	ensureEnvFiles,
-	runCommand,
+	runCommandCapture,
 } from "./lib/runtime.mjs";
 
 const COMMANDS_REQUIRING_EDGE_NETWORK = new Set(["create", "start", "up"]);
@@ -12,6 +12,10 @@ const DEFAULT_IMAGES = {
 	ONEGLANSE_POSTGRES_IMAGE: "ghcr.io/aryamantodkar/oneglanse-postgres:latest",
 	ONEGLANSE_WEB_IMAGE: "ghcr.io/aryamantodkar/oneglanse-web:latest",
 };
+const ARCH_MISMATCH_PATTERNS = [
+	"no matching manifest",
+	"no match for platform in manifest",
+];
 const PULLABLE_SERVICES = [
 	{ service: "redis" },
 	{ service: "clickhouse" },
@@ -58,7 +62,29 @@ function shouldPullConfiguredImage(envKey, defaultImage) {
 }
 
 async function runCompose(composeArgs) {
-	await runCommand("docker", ["compose", "-f", COMPOSE_FILE, ...composeArgs]);
+	await runComposeCommand([...composeArgs]);
+}
+
+function isArchitectureMismatchError(error) {
+	const message = error instanceof Error ? error.message : String(error);
+	return ARCH_MISMATCH_PATTERNS.some((pattern) =>
+		message.toLowerCase().includes(pattern),
+	);
+}
+
+async function runComposeCommand(composeArgs) {
+	const { stdout, stderr } = await runCommandCapture("docker", [
+		"compose",
+		"-f",
+		COMPOSE_FILE,
+		...composeArgs,
+	]);
+	if (stdout) {
+		process.stdout.write(stdout);
+	}
+	if (stderr) {
+		process.stderr.write(stderr);
+	}
 }
 
 async function runSmartPull() {
@@ -73,20 +99,29 @@ async function runSmartPull() {
 		return;
 	}
 
-	await runCommand("docker", [
-		"compose",
-		"-f",
-		COMPOSE_FILE,
-		"pull",
-		...pullableServices,
-	]);
+	await runComposeCommand(["pull", ...pullableServices]);
 }
 
 async function runBootstrap() {
 	await ensureDockerNetwork(edgeNetworkName);
-	await runSmartPull();
-	await runCompose(["up", "-d", "--force-recreate"]);
-	console.log("Self-host stack started from published images.");
+	try {
+		await runSmartPull();
+		await runCompose(["up", "-d", "--force-recreate"]);
+		console.log("Self-host stack started from published images.");
+	} catch (error) {
+		if (!isArchitectureMismatchError(error)) {
+			throw error;
+		}
+
+		console.warn(
+			[
+				"Published self-host images are not available for this architecture yet.",
+				"Falling back to a local Docker build for this machine.",
+			].join(" "),
+		);
+		await runCompose(["up", "-d", "--build", "--force-recreate"]);
+		console.log("Self-host stack started from a local cross-platform build.");
+	}
 }
 
 async function main() {

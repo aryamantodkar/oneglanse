@@ -63,7 +63,7 @@ Once you're in, go to `/providers` to connect your AI provider accounts, then ad
 
 For VPS deployment, recurring scheduling, provider auth transfer, and all configuration options → **[docs.oneglanse.com](https://docs.oneglanse.com)**
 
-The landing site is deployed separately on Vercel, and the docs are deployed separately on Mintlify. `pnpm self-host` is only for the app stack.
+The landing site is deployed separately on Vercel, and the docs are deployed separately on Mintlify. `pnpm self-host` is only for the app stack. On machines where the published app images are not available for the current architecture yet, it automatically falls back to a local Docker build.
 
 ---
 

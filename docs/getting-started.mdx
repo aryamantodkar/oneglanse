@@ -124,6 +124,8 @@ API_BASE_URL=https://your-domain.com
 
 If `BETTER_AUTH_SECRET` or `INTERNAL_CRON_SECRET` are still `replace-me`, `node scripts/run-compose.mjs bootstrap` generates them automatically before the containers start.
 
+On standard VPS deployments, bootstrap pulls the published app images. On platforms where those images are not available yet, such as some local `arm64` development machines, it automatically falls back to a local Docker build instead of failing.
+
 Start:
 
 ```bash

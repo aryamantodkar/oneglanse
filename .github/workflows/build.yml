@@ -87,6 +87,7 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: ${{ github.event_name != 'pull_request' }}
@@ -106,6 +107,7 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           build-args: PNPM_VERSION=${{ env.PNPM }}
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -122,6 +124,7 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: ${{ github.event_name != 'pull_request' }}
@@ -144,6 +147,7 @@ jobs:
             PNPM_VERSION=${{ env.PNPM }}
             CAMOUFOX_PIP_SPEC=cloverlabs-camoufox[geoip]
             CAMOUFOX_BROWSER_CHANNEL=official/prerelease
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -160,6 +164,7 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: ${{ github.event_name != 'pull_request' }}
@@ -178,6 +183,7 @@ jobs:
         with:
           context: .
           file: ./packages/db/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
