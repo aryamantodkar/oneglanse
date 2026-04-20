@@ -105,66 +105,6 @@ The landing site is deployed separately on Vercel, and the docs are deployed sep
 
 ---
 
-## How Scoring Works
-
-Once a response is captured, it is sent to your LLM (OpenAI or Anthropic) with a structured analysis prompt. The LLM reads the raw response text and produces the metrics you see in the dashboard. The full prompt is in [`packages/services/src/analysis/analysisPrompt.ts`](packages/services/src/analysis/analysisPrompt.ts).
-
-Every metric is grounded in the actual text of the AI response — the analysis LLM is instructed to quote the passage that justifies each score before assigning it. If no passage exists, the conservative default is used.
-
-### GEO Score (0–100)
-
-The headline number. A weighted average of four equal components:
-
-| Component | Weight | What it measures |
-|---|---|---|
-| Visibility | 25% | How prominently the brand surfaces in the response |
-| Rank | 25% | Absolute position across the full response (#1 = 100, #2 = 80, #3 = 65 …) |
-| Sentiment | 25% | How positively the brand is described |
-| Recommendation | 25% | Whether the brand is actively recommended |
-
-### Visibility (0–100)
-
-How much "space" the brand occupies for someone reading the response. Calculated across five dimensions:
-
-- **Coverage** (25%) — what proportion of the response discusses the brand
-- **Placement** (25%) — where the brand first appears (opening = higher score)
-- **Structural Prominence** (20%) — whether it appears in a heading, numbered list, or top-3 slot
-- **Frequency** (15%) — how many times the brand is referenced
-- **Contextual Framing** (15%) — whether the brand is the direct answer vs. a passing mention
-
-### Sentiment (0–100)
-
-How the response frames the brand. 50 is neutral. The scale:
-
-| Range | Meaning |
-|---|---|
-| 0–20 | Actively warned against |
-| 21–40 | Notable drawbacks highlighted |
-| 41–59 | Factual, no evaluative language |
-| 60–80 | Favorable with some caveats |
-| 81–100 | Explicit superlatives ("best", "excellent") with no caveats |
-
-A brand not mentioned scores 50 — absence is neutral, not negative.
-
-### Recommendation Type
-
-- **top_pick** — named as the overall #1 choice with clear superlative language
-- **strong_alternative** — top 3 absolute rank with favorable language, or 4+ with explicitly strong praise
-- **conditional** — recommended only for specific use cases or audiences
-- **mentioned_only** — described but not recommended
-- **discouraged** — explicitly warned against
-- **not_mentioned** — absent from the response
-
-### Rank Position
-
-The brand's absolute position in the reading order of the full response — not its local rank within a sub-category. If a response has "Best for SMBs: 1. X, 2. Y" and "Best for Enterprise: 1. Z", Z's absolute rank is 3, not 1.
-
----
-
-If you spot a scoring inaccuracy or think the methodology could be improved, please [open an issue](https://github.com/aryamantodkar/oneglanse/issues) or submit a PR against [`analysisPrompt.ts`](packages/services/src/analysis/analysisPrompt.ts). Contributions to the scoring logic are especially welcome.
-
----
-
 ## Why There Is No Cloud Version
 
 OneGlanse is built around collecting responses from the real logged-in chat interfaces of ChatGPT, Gemini, Perplexity, Claude, and Google. That means the product depends on authenticated browser sessions tied to your own provider accounts.
@@ -273,6 +213,66 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 | [Drizzle ORM](https://github.com/drizzle-team/drizzle-orm) | TypeScript ORM | Apache-2.0 |
 | [Better Auth](https://github.com/better-auth/better-auth) | Authentication framework | MIT |
 | [Turndown](https://github.com/mixmark-io/turndown) | HTML to Markdown conversion | MIT |
+
+---
+
+## How Scoring Works
+
+Once a response is captured, it is sent to your LLM (OpenAI or Anthropic) with a structured analysis prompt. The LLM reads the raw response text and produces the metrics you see in the dashboard. The full prompt is in [`packages/services/src/analysis/analysisPrompt.ts`](packages/services/src/analysis/analysisPrompt.ts).
+
+Every metric is grounded in the actual text of the AI response — the analysis LLM is instructed to quote the passage that justifies each score before assigning it. If no passage exists, the conservative default is used.
+
+### GEO Score (0–100)
+
+The headline number. A weighted average of four equal components:
+
+| Component | Weight | What it measures |
+|---|---|---|
+| Visibility | 25% | How prominently the brand surfaces in the response |
+| Rank | 25% | Absolute position across the full response (#1 = 100, #2 = 80, #3 = 65 …) |
+| Sentiment | 25% | How positively the brand is described |
+| Recommendation | 25% | Whether the brand is actively recommended |
+
+### Visibility (0–100)
+
+How much "space" the brand occupies for someone reading the response. Calculated across five dimensions:
+
+- **Coverage** (25%) — what proportion of the response discusses the brand
+- **Placement** (25%) — where the brand first appears (opening = higher score)
+- **Structural Prominence** (20%) — whether it appears in a heading, numbered list, or top-3 slot
+- **Frequency** (15%) — how many times the brand is referenced
+- **Contextual Framing** (15%) — whether the brand is the direct answer vs. a passing mention
+
+### Sentiment (0–100)
+
+How the response frames the brand. 50 is neutral. The scale:
+
+| Range | Meaning |
+|---|---|
+| 0–20 | Actively warned against |
+| 21–40 | Notable drawbacks highlighted |
+| 41–59 | Factual, no evaluative language |
+| 60–80 | Favorable with some caveats |
+| 81–100 | Explicit superlatives ("best", "excellent") with no caveats |
+
+A brand not mentioned scores 50 — absence is neutral, not negative.
+
+### Recommendation Type
+
+- **top_pick** — named as the overall #1 choice with clear superlative language
+- **strong_alternative** — top 3 absolute rank with favorable language, or 4+ with explicitly strong praise
+- **conditional** — recommended only for specific use cases or audiences
+- **mentioned_only** — described but not recommended
+- **discouraged** — explicitly warned against
+- **not_mentioned** — absent from the response
+
+### Rank Position
+
+The brand's absolute position in the reading order of the full response — not its local rank within a sub-category. If a response has "Best for SMBs: 1. X, 2. Y" and "Best for Enterprise: 1. Z", Z's absolute rank is 3, not 1.
+
+---
+
+If you spot a scoring inaccuracy or think the methodology could be improved, please [open an issue](https://github.com/aryamantodkar/oneglanse/issues) or submit a PR against [`analysisPrompt.ts`](packages/services/src/analysis/analysisPrompt.ts). Contributions to the scoring logic are especially welcome.
 
 ---
 
