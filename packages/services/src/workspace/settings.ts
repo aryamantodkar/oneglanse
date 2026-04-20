@@ -116,3 +116,17 @@ export async function updateWorkspaceEnabledProviders(args: {
 
 	return { enabledProviders };
 }
+
+export async function updateWorkspaceSelectedPrompts(args: {
+	workspaceId: string;
+	selectedPromptIds: string[] | null;
+}): Promise<{ selectedPromptIds: string[] | null }> {
+	const { workspaceId, selectedPromptIds } = args;
+
+	await db
+		.update(schema.workspaces)
+		.set({ selectedPromptIds })
+		.where(eq(schema.workspaces.id, workspaceId));
+
+	return { selectedPromptIds };
+}

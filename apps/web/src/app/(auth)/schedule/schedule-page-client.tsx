@@ -14,7 +14,7 @@ import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AppMode } from "@oneglanse/types";
 import { canConfigureRecurringScheduleInMode } from "@oneglanse/types";
-import { Button, Skeleton, toast } from "@oneglanse/ui";
+import { Button, Checkbox, Skeleton, toast } from "@oneglanse/ui";
 import { cn } from "@oneglanse/utils";
 import { Calendar, Check, Loader2, PlayCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -107,6 +107,152 @@ function getScheduleLabel(cron: string | null): string {
 	if (!cron) return "Not scheduled";
 	const match = SCHEDULE_OPTIONS.find((opt) => opt.value === cron);
 	return match?.label ?? cron;
+}
+
+function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
+	const promptsQuery = api.prompt.fetchUserPrompts.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
+	const selectedQuery = api.workspace.getSelectedPrompts.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
+	const setSelectedMutation = api.workspace.setSelectedPrompts.useMutation();
+	const [localSelected, setLocalSelected] = useState<string[] | null>(null);
+	const [saving, setSaving] = useState(false);
+	const [hasInitialized, setHasInitialized] = useState(false);
+
+	useEffect(() => {
+		if (selectedQuery.data !== undefined && !hasInitialized) {
+			setLocalSelected(selectedQuery.data.selectedPromptIds ?? null);
+			setHasInitialized(true);
+		}
+	}, [selectedQuery.data, hasInitialized]);
+
+	const prompts = promptsQuery.data ?? [];
+	const savedIds = selectedQuery.data?.selectedPromptIds ?? null;
+
+	const effectiveSelected =
+		localSelected === null ? prompts.map((p) => p.id) : localSelected;
+	const hasChanges =
+		JSON.stringify([...(localSelected ?? [])].sort()) !==
+		JSON.stringify([...(savedIds ?? [])].sort());
+	const isAllSelected = localSelected === null || localSelected.length === 0;
+
+	const togglePrompt = (id: string) => {
+		setLocalSelected((prev) => {
+			const current = prev === null ? prompts.map((p) => p.id) : prev;
+			const isChecked = current.includes(id);
+			const next = isChecked
+				? current.filter((pid) => pid !== id)
+				: [...current, id];
+			return next.length === prompts.length ? null : next;
+		});
+	};
+
+	const handleSave = async () => {
+		setSaving(true);
+		try {
+			await setSelectedMutation.mutateAsync({
+				workspaceId,
+				selectedPromptIds: isAllSelected ? null : localSelected,
+			});
+			await selectedQuery.refetch();
+			toast.success(isAllSelected ? "Running all prompts." : "Selection saved.");
+		} catch {
+			toast.error("Failed to save selection.");
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const isLoading = promptsQuery.isLoading || selectedQuery.isLoading;
+
+	return (
+		<div className={cn(formPanelClassName, "px-5 py-5")}>
+			<div className="mb-4 flex items-center justify-between gap-3">
+				<div className="space-y-0.5">
+					<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						Prompts to run
+					</h2>
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						{isAllSelected
+							? "All prompts will be included."
+							: `${effectiveSelected.length} of ${prompts.length} selected.`}
+					</p>
+				</div>
+				{hasChanges && (
+					<Button
+						size="sm"
+						onClick={() => void handleSave()}
+						disabled={saving}
+						className="shrink-0"
+					>
+						{saving ? (
+							<>
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								Saving…
+							</>
+						) : (
+							"Save"
+						)}
+					</Button>
+				)}
+			</div>
+
+			{isLoading ? (
+				<div className="space-y-3">
+					{[0, 1, 2].map((i) => (
+						<div key={i} className="flex items-center gap-3">
+							<Skeleton className="h-4 w-4 rounded" />
+							<Skeleton className="h-4 w-48" />
+						</div>
+					))}
+				</div>
+			) : prompts.length === 0 ? (
+				<p className="text-sm text-gray-400 dark:text-gray-500">
+					No prompts configured yet. Add prompts on the{" "}
+					<a
+						href={`/prompts?workspace=${workspaceId}`}
+						className="underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300"
+					>
+						Prompts page
+					</a>
+					.
+				</p>
+			) : (
+				<div className="space-y-3">
+					{prompts.map((p) => {
+						const checked = effectiveSelected.includes(p.id);
+						return (
+							<div
+								key={p.id}
+								className="flex cursor-pointer items-start gap-3"
+								onClick={() => togglePrompt(p.id)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										togglePrompt(p.id);
+									}
+								}}
+							>
+								<Checkbox
+									checked={checked}
+									onCheckedChange={() => togglePrompt(p.id)}
+									className="mt-0.5 shrink-0"
+									onClick={(e) => e.stopPropagation()}
+								/>
+								<span className="line-clamp-2 text-sm text-gray-700 dark:text-gray-300">
+									{p.prompt}
+								</span>
+							</div>
+						);
+					})}
+				</div>
+			)}
+		</div>
+	);
 }
 
 function ManualRunView({
@@ -533,14 +679,14 @@ export default function SchedulePageClient({
 
 	if (!canConfigureSchedule) {
 		return (
-			<div className="web-centered-state">
-				<div className="w-full max-w-md">
-					<ManualRunView
-						isRunning={isRunning || runNowMutation.isPending}
-						onRunNow={handleRunNow}
-						mode="local"
-					/>
-				</div>
+			<div className="web-page-panel max-w-md space-y-4 sm:space-y-5">
+				<ScheduleIntro mode="local" />
+				<ManualRunView
+					isRunning={isRunning || runNowMutation.isPending}
+					onRunNow={handleRunNow}
+					mode="local"
+				/>
+				<PromptSelectionCard workspaceId={workspaceId} />
 			</div>
 		);
 	}
@@ -553,6 +699,7 @@ export default function SchedulePageClient({
 				onRunNow={handleRunNow}
 				mode="self-host"
 			/>
+			<PromptSelectionCard workspaceId={workspaceId} />
 			{cronTimingQuery.isLoading ? (
 				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{TIMING_SKELETON_KEYS.map((key) => (

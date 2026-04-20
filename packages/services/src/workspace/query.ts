@@ -61,6 +61,7 @@ export async function getWorkspacesForUser(
 			tenantId: schema.workspaces.tenantId,
 			schedule: schema.workspaces.schedule,
 			enabledProviders: schema.workspaces.enabledProviders,
+			selectedPromptIds: schema.workspaces.selectedPromptIds,
 			createdAt: schema.workspaces.createdAt,
 			deletedAt: schema.workspaces.deletedAt,
 		})
@@ -131,6 +132,7 @@ export async function getAllWorkspacesForUser(
 				tenantId: schema.workspaces.tenantId,
 				schedule: schema.workspaces.schedule,
 				enabledProviders: schema.workspaces.enabledProviders,
+				selectedPromptIds: schema.workspaces.selectedPromptIds,
 				createdAt: schema.workspaces.createdAt,
 				deletedAt: schema.workspaces.deletedAt,
 			},

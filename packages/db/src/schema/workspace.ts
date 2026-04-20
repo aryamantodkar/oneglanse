@@ -25,6 +25,7 @@ export const workspaces = pgTable("workspaces", {
 	tenantId: varchar("tenant_id", { length: 256 }).notNull(),
 	schedule: varchar("schedule", { length: 64 }),
 	enabledProviders: workspaceEnabledProviderEnum("enabled_providers").array(),
+	selectedPromptIds: text("selected_prompt_ids").array(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	deletedAt: timestamp("deleted_at"),
 });

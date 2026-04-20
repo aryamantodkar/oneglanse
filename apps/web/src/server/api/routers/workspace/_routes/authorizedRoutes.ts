@@ -10,6 +10,7 @@ import {
 	updateWorkspaceDetails,
 	updateWorkspaceEnabledProviders,
 	updateWorkspaceSchedule,
+	updateWorkspaceSelectedPrompts,
 } from "@oneglanse/services";
 import { authorizedWorkspaceProcedure } from "../../../procedures";
 import { parseCronExpressionOrThrow } from "../_helpers/scheduling";
@@ -18,6 +19,7 @@ import {
 	removeMemberInputSchema,
 	setEnabledProvidersInputSchema,
 	setScheduleInputSchema,
+	setSelectedPromptsInputSchema,
 	updateDetailsInputSchema,
 	updateOrganizationNameInputSchema,
 } from "../_schemas";
@@ -126,6 +128,20 @@ export const authorizedWorkspaceRoutes = {
 			return updateWorkspaceEnabledProviders({
 				workspaceId: ctx.workspaceId,
 				enabledProviders: input.enabledProviders,
+			});
+		}),
+
+	getSelectedPrompts: authorizedWorkspaceProcedure.query(async ({ ctx }) => {
+		const workspace = await getWorkspaceById({ workspaceId: ctx.workspaceId });
+		return { selectedPromptIds: workspace.selectedPromptIds ?? null };
+	}),
+
+	setSelectedPrompts: authorizedWorkspaceProcedure
+		.input(setSelectedPromptsInputSchema)
+		.mutation(async ({ ctx, input }) => {
+			return updateWorkspaceSelectedPrompts({
+				workspaceId: ctx.workspaceId,
+				selectedPromptIds: input.selectedPromptIds,
 			});
 		}),
 

@@ -8,8 +8,12 @@ import {
 	BrandComparisonChart,
 	BrandPerceptionCard,
 	CompetitiveLandscape,
+	type PromptGroup,
+	PromptResponsesList,
 	TopSources,
 } from "@oneglanse/ui";
+import type { AnalysisRecord } from "@oneglanse/types";
+import { filterAnalysisRecords } from "@oneglanse/utils";
 import { AlertTriangle, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -86,6 +90,51 @@ export default function Dashboard() {
 	}, [analysedPromptData]);
 	const hasFilteredAnalysis = metrics.analyzedRecords.length > 0;
 	const hasExportableData = hasFilteredAnalysis;
+
+	// Build prompt groups for the responses list section
+	const promptGroups = useMemo((): PromptGroup[] => {
+		if (!analysedPromptData) return [];
+		const filtered = filterAnalysisRecords(analysedPromptData, {
+			modelFilter,
+			timeFilter,
+		});
+		const groupMap = new Map<
+			string,
+			{ promptText: string; rows: AnalysisRecord[] }
+		>();
+		for (const record of filtered) {
+			const existing = groupMap.get(record.prompt_id);
+			if (existing) {
+				existing.rows.push(record);
+			} else {
+				groupMap.set(record.prompt_id, {
+					promptText: record.prompt,
+					rows: [record],
+				});
+			}
+		}
+		return Array.from(groupMap.entries()).map(([promptId, { promptText, rows }]) => ({
+			promptId,
+			promptText,
+			rows: rows.map((r) => ({
+				id: r.id,
+				modelProvider: r.model_provider,
+				promptRunAt: r.prompt_run_at,
+				response: r.response,
+				isAnalysed: r.is_analysed ?? false,
+				sources: r.sources.map((s) => ({ title: s.title, url: s.url })),
+				metrics:
+					r.is_analysed && r.brand_analysis
+						? {
+								geoScore: r.brand_analysis.geoScore.overall,
+								sentiment: r.brand_analysis.sentiment.score,
+								visibility: r.brand_analysis.presence.visibility,
+								position: r.brand_analysis.position.rankPosition,
+							}
+						: undefined,
+			})),
+		}));
+	}, [analysedPromptData, modelFilter, timeFilter]);
 
 	// Conditional renders
 	if (!workspaceId) return <NoWorkspaceState />;
@@ -198,6 +247,10 @@ export default function Dashboard() {
 							brandAvgRank={metrics.avgRank.position}
 						/>
 					</div>
+
+					{hasFilteredAnalysis && promptGroups.length > 0 && (
+						<PromptResponsesList groups={promptGroups} />
+					)}
 				</div>
 			</div>
 		</div>

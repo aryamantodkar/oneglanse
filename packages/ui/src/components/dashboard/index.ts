@@ -7,5 +7,6 @@ export * from "./competitive-landscape.js";
 export * from "./top-sources.js";
 export * from "./sources-intelligence-panel.js";
 export * from "./prompt-responses-preview.js";
+export * from "./prompt-responses-list.js";
 export * from "./sources-hover-links.js";
 export * from "./sortable-header.js";

@@ -446,6 +446,12 @@ export default function Prompts() {
 		} else {
 			if (!currentPrompt.trim()) return;
 
+			const trimmedLower = currentPrompt.trim().toLowerCase();
+			if (promptData.some((p) => p.prompt.trim().toLowerCase() === trimmedLower)) {
+				toast.warning("This prompt already exists.");
+				return;
+			}
+
 			const added = [
 				...promptData,
 				{

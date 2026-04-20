@@ -96,6 +96,7 @@ CREATE TABLE "workspaces" (
     "tenant_id" varchar(256) NOT NULL,
     "schedule" varchar(64),
     "enabled_providers" "workspace_enabled_provider"[],
+    "selected_prompt_ids" text[],
     "created_at" timestamp NOT NULL,
     "deleted_at" timestamp
 );

@@ -157,8 +157,11 @@ export async function submitAgentJobGroup(args: {
 			fetchUserPromptsForWorkspace({ workspaceId }),
 			getWorkspaceById({ workspaceId }),
 		]);
-		prompts = loadedPrompts;
-		const { enabledProviders } = workspace;
+		const { enabledProviders, selectedPromptIds } = workspace;
+		prompts =
+			selectedPromptIds && selectedPromptIds.length > 0
+				? loadedPrompts.filter((p) => selectedPromptIds.includes(p.id))
+				: loadedPrompts;
 		allowedProviders = enabledProviders
 			? PROVIDER_LIST.filter((provider) =>
 					enabledProviders.includes(

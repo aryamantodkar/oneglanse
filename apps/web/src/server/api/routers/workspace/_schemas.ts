@@ -47,3 +47,7 @@ export const setScheduleInputSchema = z.object({
 export const setEnabledProvidersInputSchema = z.object({
 	enabledProviders: z.array(z.enum(AUTH_PROVIDER_LIST)).min(1).nullable(),
 });
+
+export const setSelectedPromptsInputSchema = z.object({
+	selectedPromptIds: z.array(z.string()).nullable(),
+});

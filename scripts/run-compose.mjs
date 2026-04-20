@@ -104,6 +104,20 @@ async function runSmartPull() {
 
 async function runBootstrap() {
 	await ensureDockerNetwork(edgeNetworkName);
+
+	if (process.arch === "arm64") {
+		console.warn(
+			[
+				"ARM64 architecture detected.",
+				"Published app images are amd64-only — building from source instead.",
+				"Infrastructure images (redis, clickhouse) will be pulled as usual.",
+			].join(" "),
+		);
+		await runCompose(["up", "-d", "--build", "--force-recreate"]);
+		console.log("Self-host stack started from a local build.");
+		return;
+	}
+
 	try {
 		await runSmartPull();
 		await runCompose(["up", "-d", "--force-recreate"]);
