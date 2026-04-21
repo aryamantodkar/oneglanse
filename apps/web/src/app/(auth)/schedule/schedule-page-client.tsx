@@ -205,7 +205,7 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 			});
 			await selectedQuery.refetch();
 			setIsDialogOpen(false);
-			toast.success(isAllSelected ? "Running all prompts." : "Selection saved.");
+			toast.success("Prompts for this workspace updated.");
 		} catch {
 			toast.error("Failed to save selection.");
 		} finally {
@@ -254,15 +254,15 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 				</div>
 
 				{isLoading ? null : prompts.length === 0 ? (
-					<p className="text-sm text-gray-400 dark:text-gray-500">
-						No prompts configured yet. Add prompts on the{" "}
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						No prompts yet.{" "}
 						<a
 							href={`/prompts?workspace=${workspaceId}`}
-							className="underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300"
+							className="font-medium text-gray-700 underline underline-offset-2 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
 						>
-							Prompts page
-						</a>
-						.
+							Add some on the Prompts page
+						</a>{" "}
+						to get started.
 					</p>
 				) : null}
 			</div>

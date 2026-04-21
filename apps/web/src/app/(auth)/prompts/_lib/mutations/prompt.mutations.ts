@@ -1,5 +1,10 @@
 import { api } from "@/trpc/react";
 
 export function useStorePrompt() {
-	return api.prompt.store.useMutation();
+	const utils = api.useUtils();
+	return api.prompt.store.useMutation({
+		onSuccess: () => {
+			void utils.prompt.fetchUserPrompts.invalidate();
+		},
+	});
 }

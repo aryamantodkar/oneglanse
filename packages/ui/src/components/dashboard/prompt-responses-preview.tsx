@@ -61,14 +61,20 @@ export function PromptResponsesPreview({
 
 	return (
 		<section aria-label="Prompt responses preview" className="space-y-5">
-			<div className="space-y-1.5">
-				<h2 className="text-base font-medium tracking-[-0.025em] text-gray-950 sm:text-lg dark:text-gray-50">
-					{title}
-				</h2>
-				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-					{description}
-				</p>
-			</div>
+			{(title || description) && (
+				<div className="space-y-1.5">
+					{title && (
+						<h2 className="text-base font-medium tracking-[-0.025em] text-gray-950 sm:text-lg dark:text-gray-50">
+							{title}
+						</h2>
+					)}
+					{description && (
+						<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+							{description}
+						</p>
+					)}
+				</div>
+			)}
 
 			<div className="space-y-4.5">
 				{rows.map((row, index) => {
@@ -169,9 +175,9 @@ export function PromptResponsesPreview({
 							) : null}
 
 							<div
-								className={`prose max-w-none text-gray-700 transition-all duration-200 dark:prose-invert dark:text-gray-300 ${
+								className={`prose max-w-none text-gray-700 dark:prose-invert dark:text-gray-300 ${
 									isExpanded
-										? "overflow-visible"
+										? "max-h-[400px] overflow-y-auto"
 										: "line-clamp-3 overflow-hidden"
 								}`}
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: markdown is sanitized by shared formatter before rendering

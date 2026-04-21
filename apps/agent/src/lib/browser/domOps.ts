@@ -275,8 +275,13 @@ export async function runPageDomOp<T>(
 			function isCitationAnchor(anchor: HTMLAnchorElement): boolean {
 				const text = anchor.textContent?.trim() || "";
 				if (!text || text.length > 40) return false;
+				// Purely numeric refs: "1", "+3", "[2]"
 				if (/^\+?\d+$/.test(text)) return true;
-				if (/^[a-z0-9.\- ]+$/i.test(text) && text.length < 25) return true;
+				// Domain-style citation chips must contain a dot to distinguish them from
+				// normal link text like "Read more" or "Learn more".
+				// Allows "site.com", "sub.site.com", "emailtooltester.com+3" (Perplexity "+N" suffix).
+				// No spaces — domains never have spaces.
+				if (/^[a-z0-9.\-+]+$/i.test(text) && text.includes(".") && text.length < 40) return true;
 				return false;
 			}
 

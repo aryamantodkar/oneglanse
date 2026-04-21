@@ -76,14 +76,14 @@ If the brand is not mentioned AT ALL in the response's substantive content or qu
     "geoScore": { "overall": 0 },
     "presence": { "mentioned": false, "visibility": 0 },
     "position": { "rankPosition": null },
-    "sentiment": { "score": 50 },
+    "sentiment": { "score": 0 },
     "recommendation": { "type": "not_mentioned" },
     "competitors": [<still extract competitors that ARE mentioned in declarative statements>],
     "perception": { "coreClaims": [], "differentiators": [], "bestKnownFor": null, "pricingPerception": "not_mentioned" },
     "risks": { "items": [] }
 }
 
-CRITICAL: When brand is absent, sentiment.score MUST be 50 (neutral baseline). Absence is NOT negative — the LLM simply didn't mention the brand. Do NOT set sentiment to 0.
+CRITICAL: When brand is absent, sentiment.score MUST be 0. An absent brand has no measured sentiment — all metrics are zero.
 
 ---
 

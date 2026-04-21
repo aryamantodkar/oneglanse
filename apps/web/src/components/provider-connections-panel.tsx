@@ -475,7 +475,7 @@ export function ProviderConnectionsPanel(props: {
 											size="icon"
 											className={cn(
 												formSecondaryButtonClassName,
-												"size-9 shrink-0 border border-gray-200/80 p-0 text-gray-500 dark:border-gray-700 dark:text-gray-300",
+												"h-10 w-10 min-w-10 shrink-0 rounded-full border border-gray-200/80 px-0 py-0 text-gray-500 dark:border-gray-700 dark:text-gray-300",
 											)}
 											onClick={() =>
 												providerActionMutation.mutate({

@@ -31,7 +31,7 @@ type ActiveProviderRun = {
 
 function readActiveProviderRun(): ActiveProviderRun | null {
 	if (typeof window === "undefined") return null;
-	const raw = window.sessionStorage.getItem(ACTIVE_PROVIDER_RUN_STORAGE_KEY);
+	const raw = window.localStorage.getItem(ACTIVE_PROVIDER_RUN_STORAGE_KEY);
 	if (!raw) return null;
 
 	try {
@@ -55,7 +55,7 @@ function readActiveProviderRun(): ActiveProviderRun | null {
 
 export function persistActiveProviderRun(args: ActiveProviderRun): void {
 	if (typeof window === "undefined") return;
-	window.sessionStorage.setItem(
+	window.localStorage.setItem(
 		ACTIVE_PROVIDER_RUN_STORAGE_KEY,
 		JSON.stringify(args),
 	);
@@ -64,7 +64,7 @@ export function persistActiveProviderRun(args: ActiveProviderRun): void {
 
 export function clearActiveProviderRun(): void {
 	if (typeof window === "undefined") return;
-	window.sessionStorage.removeItem(ACTIVE_PROVIDER_RUN_STORAGE_KEY);
+	window.localStorage.removeItem(ACTIVE_PROVIDER_RUN_STORAGE_KEY);
 	window.dispatchEvent(new Event(ACTIVE_PROVIDER_RUN_EVENT));
 }
 

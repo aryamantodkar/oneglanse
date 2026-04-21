@@ -27,7 +27,6 @@ export function PromptResponsesList({
 	if (groups.length === 0) return null;
 
 	const visibleGroups = showAll ? groups : groups.slice(0, INITIAL_VISIBLE);
-	const hiddenCount = groups.length - INITIAL_VISIBLE;
 
 	const togglePrompt = (promptId: string) => {
 		setExpandedPrompts((prev) => {
@@ -39,16 +38,16 @@ export function PromptResponsesList({
 
 	return (
 		<section aria-label="Prompt responses" className="space-y-4">
-			<div className="space-y-1.5">
+			<div className="space-y-0.5">
 				<h2 className="text-base font-medium tracking-[-0.025em] text-gray-950 sm:text-lg dark:text-gray-50">
 					Prompt Responses
 				</h2>
-				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-					Click a prompt to view responses from each AI provider.
+				<p className="text-sm text-muted-foreground">
+					Expand a prompt to see the raw response from each provider.
 				</p>
 			</div>
 
-			<div className="space-y-2.5">
+			<div className="space-y-2">
 				{visibleGroups.map((group) => {
 					const isExpanded = expandedPrompts.has(group.promptId);
 					return (
@@ -61,18 +60,16 @@ export function PromptResponsesList({
 								type="button"
 								onClick={() => togglePrompt(group.promptId)}
 								className={cn(
-									"flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors duration-150 sm:px-6",
+									"flex w-full items-center justify-between gap-4 px-5 py-3.5 text-left transition-colors duration-150 sm:px-6",
 									isExpanded
 										? "bg-gray-50/80 dark:bg-neutral-900/60"
 										: "hover:bg-gray-50/60 dark:hover:bg-neutral-900/40",
 								)}
 							>
-								<div className="flex min-w-0 items-center gap-3">
-									<span className="line-clamp-2 text-sm font-medium text-gray-800 dark:text-gray-200">
-										{group.promptText}
-									</span>
-								</div>
-								<div className="flex shrink-0 items-center gap-2.5">
+								<span className="line-clamp-1 min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+									{group.promptText}
+								</span>
+								<div className="flex shrink-0 items-center gap-2">
 									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
 										{group.rows.length}{" "}
 										{group.rows.length === 1 ? "response" : "responses"}
@@ -88,15 +85,16 @@ export function PromptResponsesList({
 
 							{/* Expanded responses */}
 							{isExpanded && (
-								<div className="border-t border-gray-100 px-5 py-5 dark:border-gray-800 sm:px-6 sm:py-6">
-									<div className="space-y-4.5">
-										{group.rows.map((row, index) => (
-											<PromptResponsesPreview
-												key={row.id}
-												title=""
-												description=""
-												rows={[row]}
-											/>
+								<div className="border-t border-gray-100 dark:border-gray-800">
+									<div className="divide-y divide-gray-100/80 dark:divide-gray-800">
+										{group.rows.map((row) => (
+											<div key={row.id} className="px-5 py-4 sm:px-6">
+												<PromptResponsesPreview
+													title=""
+													description=""
+													rows={[row]}
+												/>
+											</div>
 										))}
 									</div>
 								</div>
