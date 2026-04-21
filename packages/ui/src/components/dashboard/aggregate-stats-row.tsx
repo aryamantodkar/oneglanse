@@ -106,7 +106,7 @@ export function AggregateStatsRow({
 				icon={Users}
 				label="Top Competitor"
 				value={topCompetitor}
-				subtitle="Most frequently appears with you"
+				subtitle="Highest visibility competitor in answers"
 				domain={topCompetitorDomain}
 			/>
 		</div>

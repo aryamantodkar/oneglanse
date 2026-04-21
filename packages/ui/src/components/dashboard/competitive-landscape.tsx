@@ -1,6 +1,6 @@
 "use client";
 
-import { getFaviconUrls } from "@oneglanse/utils";
+import { compareDashboardCompetitors, getFaviconUrls } from "@oneglanse/utils";
 import { type JSX, useMemo } from "react";
 import {
 	type SortDirection,
@@ -20,17 +20,6 @@ import type { DashboardCompetitorData } from "./types.js";
 
 function getVisibility(row: DashboardCompetitorData): number {
 	return row.visibility ?? 0;
-}
-
-function compareRows(
-	a: DashboardCompetitorData,
-	b: DashboardCompetitorData,
-): number {
-	const visibilityDiff = getVisibility(b) - getVisibility(a);
-	if (visibilityDiff !== 0) return visibilityDiff;
-	if (a.appearances !== b.appearances) return b.appearances - a.appearances;
-	if (a.avgSentiment !== b.avgSentiment) return b.avgSentiment - a.avgSentiment;
-	return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
 type SortColumn = "visibility" | "mentions" | "sentiment";
@@ -58,7 +47,7 @@ function compareByColumn(
 
 	if (diff !== 0) return diff * factor;
 
-	return compareRows(a, b);
+	return compareDashboardCompetitors(a, b);
 }
 
 function displayCompetitors(

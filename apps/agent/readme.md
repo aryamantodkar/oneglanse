@@ -103,6 +103,10 @@ PROXY_SCHEME=http
 THORDATA_PROXY_API_URL=https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER_ID&sesstype=1&number=5&country=US
 ```
 
+For ThorData on VPS, whitelist your VPS IP in the ThorData dashboard first, then generate the endpoint with `Whitelisted IPs` + `API Link`. Keep `Sticky session` enabled for prompt runs, and choose a valid country where the provider is available and aligned with your target audience.
+
+If that setup still does not work in your environment, email [aryamant20@gmail.com](mailto:aryamant20@gmail.com) or open a pull request if you want support for additional proxy providers or authentication methods.
+
 The agent requests fresh ThorData residential proxy candidates before each
 browser launch, leases one proxy for that session, and avoids giving the same
 leased proxy to two workers at the same time.

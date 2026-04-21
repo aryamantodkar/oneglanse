@@ -223,11 +223,7 @@ export default function Dashboard() {
 								topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
 								topCompetitor={metrics.aggregateStats.topCompetitor}
 								topCompetitorDomain={
-									metrics.competitorData.find(
-										(c) =>
-											c.name === metrics.aggregateStats.topCompetitor &&
-											!c.isBrand,
-									)?.domain
+									metrics.aggregateStats.topCompetitorDomain ?? undefined
 								}
 							/>
 

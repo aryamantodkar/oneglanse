@@ -1,5 +1,7 @@
 import type { AnalysisRecord, BrandAnalysisResult } from "@oneglanse/types";
 import {
+	buildSourceOccurrenceKey,
+	compareDashboardCompetitors,
 	filterAnalysisRecords,
 	getDomain,
 	removeUrlParams,
@@ -49,6 +51,7 @@ export function useDashboardData(
 			aggregateStats: {
 				presenceRate: 0,
 				topCompetitor: "N/A",
+				topCompetitorDomain: null as string | null,
 			},
 			brandPerception: {
 				bestKnownFor: null as string | null,
@@ -82,7 +85,6 @@ export function useDashboardData(
 
 		// aggregateStats
 		let mentionedCount = 0;
-		const competitorFrequency = new Map<string, number>();
 
 		// brandPerception
 		const bestKnownForCounts = new Map<string, number>();
@@ -144,12 +146,6 @@ export function useDashboardData(
 
 			// aggregateStats
 			if (analysis.presence.mentioned) mentionedCount++;
-			for (const c of analysis.competitors) {
-				competitorFrequency.set(
-					c.name,
-					(competitorFrequency.get(c.name) ?? 0) + 1,
-				);
-			}
 
 			// brandPerception
 			const p = analysis.perception;
@@ -201,10 +197,6 @@ export function useDashboardData(
 
 		const avgSentimentScore = Math.round(sentimentSum / total);
 
-		const topCompetitor =
-			[...competitorFrequency.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
-			"N/A";
-
 		const competitorList = [...competitorMap.values()]
 			.map((c) => ({
 				name: c.name,
@@ -215,11 +207,12 @@ export function useDashboardData(
 						? Math.round(c.visibilitySum / c.visibilityCount)
 						: 0,
 				avgSentiment: Math.round(c.sentimentSum / c.appearances),
-				avgRank:
-					c.rankCount > 0 ? Math.round(c.rankSum / c.rankCount) : null,
+				avgRank: c.rankCount > 0 ? Math.round(c.rankSum / c.rankCount) : null,
 				recCount: c.recCount,
 			}))
-			.sort((a, b) => b.appearances - a.appearances);
+			.sort(compareDashboardCompetitors);
+
+		const topCompetitorEntry = competitorList[0];
 
 		const brandEntry: CompetitorData = {
 			name: brandName,
@@ -246,7 +239,8 @@ export function useDashboardData(
 			},
 			aggregateStats: {
 				presenceRate: Math.round((mentionedCount / total) * 100),
-				topCompetitor,
+				topCompetitor: topCompetitorEntry?.name ?? "N/A",
+				topCompetitorDomain: topCompetitorEntry?.domain ?? null,
 			},
 			brandPerception: {
 				bestKnownFor:
@@ -254,9 +248,8 @@ export function useDashboardData(
 						(a, b) => b[1] - a[1],
 					)[0]?.[0] ?? null,
 				pricingPerception:
-					[...pricingCounts.entries()].sort(
-						(a, b) => b[1] - a[1],
-					)[0]?.[0] ?? "not_mentioned",
+					[...pricingCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+					"not_mentioned",
 				coreClaims: [...claimCounts.entries()]
 					.sort((a, b) => b[1] - a[1])
 					.slice(0, 8)
@@ -297,9 +290,11 @@ export function useDashboardData(
 				// groupSourcesByUrl logic on the sources page. Deduping by title
 				// collapses distinct URLs that share article titles, which causes
 				// inaccurate citation counts on the dashboard.
-				const dedupeKey = s.cited_text?.trim()
-					? `${cleanUrl}::${r.model_provider}::${s.cited_text}`
-					: `${cleanUrl}::${r.model_provider}`;
+				const dedupeKey = buildSourceOccurrenceKey({
+					url: cleanUrl,
+					cited_text: s.cited_text ?? "",
+					modelProvider: r.model_provider,
+				});
 				if (seenCitations.has(dedupeKey)) continue;
 				seenCitations.add(dedupeKey);
 

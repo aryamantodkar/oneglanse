@@ -1,5 +1,14 @@
 import type { GroupedSource, Source } from "@oneglanse/types";
 
+export function buildSourceOccurrenceKey(
+	source: Pick<Source, "url" | "cited_text"> & { modelProvider?: string },
+): string {
+	const cleanCitedText = source.cited_text?.trim();
+	return cleanCitedText
+		? `${source.url}::${source.modelProvider ?? ""}::${cleanCitedText}`
+		: `${source.url}::${source.modelProvider ?? ""}`;
+}
+
 export function groupSourcesByUrl(
 	sources: (Source & { modelProvider?: string })[],
 ): GroupedSource[] {
@@ -9,9 +18,7 @@ export function groupSourcesByUrl(
 	for (const s of sources) {
 		if (!s?.url) continue;
 
-		const key = s.cited_text?.trim()
-			? `${s.title}::${s.modelProvider}::${s.cited_text}`
-			: `${s.title}::${s.modelProvider}::${s.url}`;
+		const key = buildSourceOccurrenceKey(s);
 
 		if (seen.has(key)) continue;
 		seen.add(key);

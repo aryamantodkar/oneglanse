@@ -1,0 +1,61 @@
+<svg width="1645" height="556" viewBox="0 0 1645 556" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1645" height="556" fill="#F5F6F8"/>
+  <rect x="0.5" y="0.5" width="1644" height="555" fill="white" stroke="#E5E7EB"/>
+
+  <line x1="24" y1="47" x2="144" y2="47" stroke="#111827" stroke-width="2"/>
+  <text x="24" y="31" fill="#111827" font-family="Arial, sans-serif" font-size="16" font-weight="600">Endpoint generator</text>
+  <text x="184" y="31" fill="#6B7280" font-family="Arial, sans-serif" font-size="16">Code examples</text>
+  <text x="322" y="31" fill="#6B7280" font-family="Arial, sans-serif" font-size="16">Users</text>
+  <text x="393" y="31" fill="#6B7280" font-family="Arial, sans-serif" font-size="16">Whitelist</text>
+  <text x="491" y="31" fill="#6B7280" font-family="Arial, sans-serif" font-size="16">Advanced settings</text>
+
+  <text x="24" y="92" fill="#111827" font-family="Arial, sans-serif" font-size="16" font-weight="600">Authentication method</text>
+  <circle cx="32.5" cy="115.5" r="8.5" fill="white" stroke="#9CA3AF"/>
+  <text x="48" y="120" fill="#111827" font-family="Arial, sans-serif" font-size="14">User</text>
+  <circle cx="326.5" cy="115.5" r="8.5" fill="white" stroke="#2563EB"/>
+  <circle cx="326.5" cy="115.5" r="4" fill="#2563EB"/>
+  <text x="341" y="120" fill="#111827" font-family="Arial, sans-serif" font-size="14">Whitelisted IPs</text>
+  <line x1="24" y1="140.5" x2="624" y2="140.5" stroke="#E5E7EB"/>
+
+  <text x="24" y="168" fill="#111827" font-family="Arial, sans-serif" font-size="16" font-weight="600">Endpoint type</text>
+  <circle cx="32.5" cy="191.5" r="8.5" fill="white" stroke="#9CA3AF"/>
+  <text x="48" y="196" fill="#111827" font-family="Arial, sans-serif" font-size="14">Country entry</text>
+  <circle cx="326.5" cy="191.5" r="8.5" fill="white" stroke="#2563EB"/>
+  <circle cx="326.5" cy="191.5" r="4" fill="#2563EB"/>
+  <text x="341" y="196" fill="#111827" font-family="Arial, sans-serif" font-size="14">API Link</text>
+  <line x1="24" y1="216.5" x2="624" y2="216.5" stroke="#E5E7EB"/>
+
+  <text x="24" y="244" fill="#111827" font-family="Arial, sans-serif" font-size="16" font-weight="600">Parameter settings</text>
+  <text x="24" y="272" fill="#6B7280" font-family="Arial, sans-serif" font-size="13">Number</text>
+  <rect x="24" y="280" width="294" height="33" rx="2" fill="white" stroke="#D1D5DB"/>
+  <text x="39" y="301" fill="#111827" font-family="Arial, sans-serif" font-size="14">10</text>
+
+  <text x="330" y="272" fill="#6B7280" font-family="Arial, sans-serif" font-size="13">Country/Region</text>
+  <rect x="330" y="280" width="294" height="33" rx="2" fill="white" stroke="#D1D5DB"/>
+  <text x="346" y="301" fill="#111827" font-family="Arial, sans-serif" font-size="14">United States</text>
+  <path d="M593 294L599 300L605 294" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="24" y="347" fill="#111827" font-family="Arial, sans-serif" font-size="16" font-weight="600">Session settings</text>
+  <circle cx="32.5" cy="378.5" r="8.5" fill="white" stroke="#9CA3AF"/>
+  <text x="48" y="383" fill="#111827" font-family="Arial, sans-serif" font-size="14">Rotating session</text>
+  <circle cx="326.5" cy="378.5" r="8.5" fill="white" stroke="#2563EB"/>
+  <circle cx="326.5" cy="378.5" r="4" fill="#2563EB"/>
+  <text x="341" y="383" fill="#111827" font-family="Arial, sans-serif" font-size="14">Sticky session</text>
+  <rect x="442" y="362" width="171" height="33" rx="2" fill="#F9FAFB" stroke="#E5E7EB"/>
+  <text x="457" y="383" fill="#9CA3AF" font-family="Arial, sans-serif" font-size="14">10</text>
+  <line x1="556.5" y1="363" x2="556.5" y2="394" stroke="#E5E7EB"/>
+  <text x="565" y="383" fill="#9CA3AF" font-family="Arial, sans-serif" font-size="14">Mins</text>
+
+  <line x1="645" y1="73" x2="645" y2="516" stroke="#E5E7EB"/>
+
+  <text x="665" y="92" fill="#6B7280" font-family="Arial, sans-serif" font-size="14">Generate result</text>
+  <rect x="665" y="99" width="806" height="33" rx="2" fill="white" stroke="#D1D5DB"/>
+  <text x="680" y="120" fill="#6B7280" font-family="Arial, sans-serif" font-size="13">https://get-ip.thordata.net/api?td-customer=YOUR_CUSTOMER_ID&amp;sesstype=1&amp;number=10&amp;country=US</text>
+  <rect x="1481" y="99" width="136" height="33" rx="2" fill="#111827"/>
+  <text x="1512" y="120" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="600">Generate result</text>
+
+  <rect x="665" y="153" width="952" height="361" rx="10" fill="white" stroke="#E5E7EB"/>
+  <line x1="665" y1="198.5" x2="1617" y2="198.5" stroke="#E5E7EB"/>
+  <text x="680" y="181" fill="#9CA3AF" font-family="Arial, sans-serif" font-size="13">Output content</text>
+  <text x="956" y="355" fill="#4B5563" font-family="Arial, sans-serif" font-size="18">Click the "Generate" button to output the content.</text>
+</svg>

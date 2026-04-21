@@ -1,5 +1,8 @@
 import type { AnalysisRecord } from "@oneglanse/types";
-import type { DashboardCompetitorData as CompetitorData, DashboardSourceData as SourceData } from "@oneglanse/ui";
+import type {
+	DashboardCompetitorData as CompetitorData,
+	DashboardSourceData as SourceData,
+} from "@oneglanse/ui";
 
 export type { CompetitorData, SourceData };
 
@@ -18,6 +21,7 @@ export interface DashboardMetrics {
 	aggregateStats: {
 		presenceRate: number;
 		topCompetitor: string;
+		topCompetitorDomain: string | null;
 	};
 	competitorData: CompetitorData[];
 	brandPerception: {

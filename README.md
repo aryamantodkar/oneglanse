@@ -178,6 +178,8 @@ That is why self-hosted VPS runs require a residential proxy:
 
 Without that proxy layer, provider access from a VPS is often unstable or blocked outright.
 
+For ThorData specifically, whitelist your VPS IP first, then generate the endpoint with `Whitelisted IPs`, `API Link`, and `Sticky session`. Use a valid target-audience country where the providers are supported, and save that generated API link as `THORDATA_PROXY_API_URL`. The full walkthrough is in the self-hosted docs: [docs.oneglanse.com](https://docs.oneglanse.com).
+
 ---
 
 ## Stack

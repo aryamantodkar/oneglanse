@@ -68,6 +68,8 @@ Required on VPS deployments where direct connections to AI providers are blocked
 
 This is needed because most VPS providers use datacenter IP ranges, and those IPs are commonly blocked or challenged by AI chat products. OneGlanse uses the proxy only for provider website traffic from the VPS browser runtime.
 
+For ThorData on VPS, the recommended setup is to whitelist your VPS IP first, generate the endpoint with `Whitelisted IPs` + `API Link`, keep `Sticky session` enabled for prompt runs, and pick a valid country where the providers are supported and your audience is located.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `THORDATA_PROXY_API_URL` | No | — | ThorData rotating proxy API endpoint |
