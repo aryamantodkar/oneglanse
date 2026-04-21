@@ -22,6 +22,10 @@ docker_socket_access() { docker info >/dev/null 2>&1; }
 
 DOCKER_GROUP_PENDING=0
 
+if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+  fatal "Run this script as a non-root user with sudo privileges."
+fi
+
 # ─── Gather inputs ────────────────────────────────────────────────────────────
 
 header "OneGlanse — VPS Setup"

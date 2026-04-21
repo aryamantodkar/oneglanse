@@ -1,9 +1,11 @@
+import { auth } from "@/lib/auth/auth";
 import { readProviderConnectionsState } from "@/lib/provider-connections/server";
 import {
 	resetProviderAuthData,
 	spawnProviderAuthLogin,
 } from "@oneglanse/services";
-import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
+import { AUTH_PROVIDER_LIST, resolveAppMode } from "@oneglanse/types";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -14,11 +16,51 @@ const connectProviderSchema = z.object({
 	action: z.enum(["connect", "refresh"]).default("connect"),
 });
 
+function isLocalProvidersMode(): boolean {
+	return resolveAppMode(process.env.ONEGLANSE_APP_MODE) === "local";
+}
+
+async function requireProvidersApiAccess() {
+	if (isLocalProvidersMode()) {
+		return null;
+	}
+
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
+
+	if (session) {
+		return null;
+	}
+
+	return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
 export async function GET() {
+	const unauthorizedResponse = await requireProvidersApiAccess();
+	if (unauthorizedResponse) {
+		return unauthorizedResponse;
+	}
+
 	return NextResponse.json(await readProviderConnectionsState());
 }
 
 export async function POST(request: Request) {
+	const unauthorizedResponse = await requireProvidersApiAccess();
+	if (unauthorizedResponse) {
+		return unauthorizedResponse;
+	}
+
+	if (!isLocalProvidersMode()) {
+		return NextResponse.json(
+			{
+				error:
+					"Interactive provider connect and refresh are only available in local mode.",
+			},
+			{ status: 405 },
+		);
+	}
+
 	try {
 		const payload = connectProviderSchema.parse(await request.json());
 		void payload.action;
@@ -34,6 +76,20 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
+	const unauthorizedResponse = await requireProvidersApiAccess();
+	if (unauthorizedResponse) {
+		return unauthorizedResponse;
+	}
+
+	if (!isLocalProvidersMode()) {
+		return NextResponse.json(
+			{
+				error: "Provider reset is only available in local mode.",
+			},
+			{ status: 405 },
+		);
+	}
+
 	try {
 		await Promise.all(
 			AUTH_PROVIDER_LIST.map((authProvider) =>

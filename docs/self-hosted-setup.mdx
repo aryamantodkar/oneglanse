@@ -5,12 +5,33 @@ description: Deploy the OneGlanse app on your own VPS with nginx, SSL, and provi
 
 ## Interactive setup (recommended)
 
+Before you run the setup script, make sure you are logged in as a non-root user with `sudo` access. The script is designed for that flow and will stop if you run it as `root`.
+
 If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the app deployment path — dependencies, repo clone, `.env` config, Docker image pull, nginx, SSL, and firewall — in one session:
 
 ```bash
 # On your VPS (as a non-root user with sudo privileges):
 bash <(curl -fsSL https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/scripts/setup-vps.sh)
 ```
+
+If your VPS is freshly reinstalled and only has `root`, create a non-root sudo user first, then reconnect as that user before running the setup script:
+
+```bash
+# On the VPS as root, once:
+adduser deploy
+usermod -aG sudo deploy
+
+# Optional: copy your existing root SSH key access to the new user
+install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
+cp -a /root/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
+chown deploy:deploy /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+
+# Then reconnect as the new user:
+ssh deploy@YOUR_VPS_IP
+```
+
+When the script prompts for `Your domain for the app`, enter the hostname you want to serve OneGlanse on, such as `app.yourdomain.com`. The script configures nginx and requests the TLS certificate for that exact domain.
 
 Or clone first and run locally:
 
@@ -75,7 +96,7 @@ If you do not have a real domain yet and only need a temporary launch/test hostn
 
 ## 2. Install dependencies
 
-SSH into your VPS and run:
+SSH into your VPS as your non-root sudo user and run:
 
 ```bash
 sudo apt-get update
@@ -262,6 +283,15 @@ pnpm upload:vps
 
 Navigate to `https://app.yourdomain.com`, create your account, and start adding prompts.
 
+Before you run prompts from the VPS, make sure `THORDATA_PROXY_API_URL` in `/home/$USER/oneglanse/.env` points to your real residential proxy endpoint. If you deployed with a placeholder or later changed the proxy configuration, update that value and rerun:
+
+```bash
+cd /home/$USER/oneglanse
+node scripts/run-compose.mjs bootstrap
+```
+
+Without the correct proxy endpoint, VPS prompt runs are likely to be blocked, challenged, or less accurate.
+
 ---
 
 ## Updates
@@ -278,16 +308,27 @@ node scripts/run-compose.mjs bootstrap
 
 ## Firewall
 
-Allow only the ports nginx needs — block everything else:
+Allow only the ports nginx needs. For auth uploads, port `3333` is needed only for the agent upload API:
 
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full'
-sudo ufw allow 3333/tcp
 sudo ufw enable
 ```
 
-The app ports (3000, 5432, 8123, 6379) stay internal. Port `3333` must remain reachable from your local machine because `pnpm upload:vps` sends provider sessions to `http://YOUR_VPS_IP:3333/auth/sessions`.
+If your local machine has a stable public IP, prefer allowing `3333/tcp` only from that source:
+
+```bash
+sudo ufw allow from YOUR_LOCAL_PUBLIC_IP to any port 3333 proto tcp
+```
+
+If your local IP changes often, you can allow `3333/tcp` broadly instead and rely on `AGENT_AUTH_UPLOAD_TOKEN` for authentication:
+
+```bash
+sudo ufw allow 3333/tcp
+```
+
+The app ports (3000, 5432, 8123, 6379) stay internal. Port `3333` is only for `pnpm upload:vps`, which sends provider sessions to `http://YOUR_VPS_IP:3333/auth/sessions`. On self-hosted deployments, the web app's provider management endpoints stay behind app authentication, while the upload API on `3333` is protected by the bearer token in `AGENT_AUTH_UPLOAD_TOKEN`.
 
 ---
 

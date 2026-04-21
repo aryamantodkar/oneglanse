@@ -30,6 +30,7 @@ import {
 } from "@oneglanse/ui";
 import { cn, getModelFavicon } from "@oneglanse/utils";
 import {
+	AlertTriangle,
 	ArrowRight,
 	CheckCircle2,
 	Loader2,
@@ -328,10 +329,15 @@ export function ProviderConnectionsPanel(props: {
 							{description}
 						</p>
 					) : null}
-					{helperText ? (
-						<p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
-							{helperText}
-						</p>
+					{helperText && canInteractivelyConnect ? (
+						<div className="w-full rounded-[var(--app-radius)] border border-amber-200/60 bg-amber-50/45 px-3.5 py-2.5 text-amber-900 dark:border-amber-900/30 dark:bg-amber-950/15 dark:text-amber-100">
+							<div className="flex items-center gap-2.5">
+								<AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500/80 dark:text-amber-300/80" />
+								<p className="text-xs leading-5 text-amber-900/75 dark:text-amber-100/75">
+									{helperText}
+								</p>
+							</div>
+						</div>
 					) : null}
 				</div>
 			</div>

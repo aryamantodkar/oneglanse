@@ -4,7 +4,7 @@ const DEFAULT_PROVIDERS_TITLE = "Connect Providers";
 const DEFAULT_PROVIDERS_DESCRIPTION =
 	"Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active.";
 const DEFAULT_PROVIDERS_HELPER_TEXT =
-	"If Google OAuth keeps signing you into the same account, sign in to Gmail in this browser with the account you want to use first, then reconnect the provider.";
+	"If Google OAuth keeps selecting the same account, sign in to Gmail in the provider browser window with the account you want to use, then reconnect the provider.";
 
 export function ProvidersScreen(props: {
 	title?: string | null;

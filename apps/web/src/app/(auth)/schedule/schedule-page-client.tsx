@@ -153,7 +153,8 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 	const prompts = promptsQuery.data ?? [];
 	const savedIds = selectedQuery.data?.selectedPromptIds ?? null;
 	const allPromptIds = prompts.map((prompt) => prompt.id);
-	const effectiveSelected = localSelected === null ? allPromptIds : localSelected;
+	const effectiveSelected =
+		localSelected === null ? allPromptIds : localSelected;
 	const selectedCount = effectiveSelected.length;
 	const savedEffectiveSelected = savedIds === null ? allPromptIds : savedIds;
 	const hasChanges =
@@ -421,10 +422,12 @@ function ManualRunView({
 	isRunning,
 	onRunNow,
 	mode,
+	canRunNow,
 }: {
 	isRunning: boolean;
 	onRunNow: () => Promise<void>;
 	mode: "local" | "self-host";
+	canRunNow: boolean;
 }) {
 	if (mode === "local") {
 		return (
@@ -435,22 +438,24 @@ function ManualRunView({
 						"flex items-center justify-between gap-4 px-5 py-5",
 					)}
 				>
-						<div className="flex items-center gap-4">
-							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-								<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-							</div>
-							<div className="space-y-0.5">
-								<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-									Run Selected Prompts
-								</h2>
-								<p className="text-sm text-gray-500 dark:text-gray-400">
-									Start one fresh run for this workspace now.
-								</p>
-							</div>
+					<div className="flex items-center gap-4">
+						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+							<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
 						</div>
+						<div className="space-y-0.5">
+							<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+								Run Selected Prompts
+							</h2>
+							<p className="text-sm text-gray-500 dark:text-gray-400">
+								{canRunNow
+									? "Start one fresh run for this workspace now."
+									: "Add prompts on the Prompts page and select at least one to enable runs."}
+							</p>
+						</div>
+					</div>
 					<Button
 						onClick={() => void onRunNow()}
-						disabled={isRunning}
+						disabled={isRunning || !canRunNow}
 						className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 dark:border-gray-700/80"
 					>
 						{isRunning ? (
@@ -498,22 +503,24 @@ function ManualRunView({
 				"flex items-center justify-between gap-4 px-5 py-5",
 			)}
 		>
-				<div className="flex items-center gap-4">
-					<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-						<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-					</div>
-					<div className="space-y-0.5">
-						<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-							Run Selected Prompts
-						</h2>
-						<p className="text-sm text-gray-500 dark:text-gray-400">
-							Start one immediate run without changing the recurring schedule.
-						</p>
-					</div>
+			<div className="flex items-center gap-4">
+				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+					<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
 				</div>
+				<div className="space-y-0.5">
+					<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+						Run Selected Prompts
+					</h2>
+					<p className="text-sm text-gray-500 dark:text-gray-400">
+						{canRunNow
+							? "Start one immediate run without changing the recurring schedule."
+							: "Add prompts on the Prompts page and select at least one to enable runs."}
+					</p>
+				</div>
+			</div>
 			<Button
 				onClick={() => void onRunNow()}
-				disabled={isRunning}
+				disabled={isRunning || !canRunNow}
 				className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 dark:border-gray-700/80"
 			>
 				{isRunning ? (
@@ -727,6 +734,14 @@ export default function SchedulePageClient({
 
 	const setScheduleMutation = api.workspace.setSchedule.useMutation();
 	const runNowMutation = api.agent.run.useMutation();
+	const promptsQuery = api.prompt.fetchUserPrompts.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
+	const selectedPromptsQuery = api.workspace.getSelectedPrompts.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
 
 	const jobStatusQuery = api.agent.status.useQuery(
 		{ workspaceId, jobId: runJobId ?? "" },
@@ -761,6 +776,13 @@ export default function SchedulePageClient({
 
 	const currentSchedule = scheduleQuery.data?.schedule ?? null;
 	const hasChanges = selected !== currentSchedule;
+	const availablePromptIds =
+		promptsQuery.data?.map((prompt) => prompt.id) ?? [];
+	const selectedPromptIds =
+		selectedPromptsQuery.data?.selectedPromptIds ?? null;
+	const effectivePromptIds =
+		selectedPromptIds === null ? availablePromptIds : selectedPromptIds;
+	const canRunNow = effectivePromptIds.length > 0;
 
 	const handleSave = async () => {
 		setSaving(true);
@@ -848,6 +870,7 @@ export default function SchedulePageClient({
 				<ScheduleIntro mode="local" />
 				<PromptSelectionCard workspaceId={workspaceId} />
 				<ManualRunView
+					canRunNow={canRunNow}
 					isRunning={isRunning || runNowMutation.isPending}
 					onRunNow={handleRunNow}
 					mode="local"
@@ -861,6 +884,7 @@ export default function SchedulePageClient({
 			<ScheduleIntro mode="self-host" />
 			<PromptSelectionCard workspaceId={workspaceId} />
 			<ManualRunView
+				canRunNow={canRunNow}
 				isRunning={isRunning || runNowMutation.isPending}
 				onRunNow={handleRunNow}
 				mode="self-host"

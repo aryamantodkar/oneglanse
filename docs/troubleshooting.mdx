@@ -142,4 +142,5 @@ If there's a schema conflict from a previous installation, check the Drizzle mig
 1. Confirm the VPS agent is running: `curl http://YOUR_VPS_IP:3333/health`
 2. Confirm port `3333/tcp` is allowed by your VPS firewall or cloud security group
 3. Check `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` match your VPS `.env`
-4. Check agent logs on the VPS: `docker logs oneglanse-agent-worker`
+4. If `pnpm upload:vps` returns `401 Unauthorized`, the upload token on your local machine does not match the VPS `AGENT_AUTH_UPLOAD_TOKEN`
+5. Check agent logs on the VPS: `docker logs oneglanse-agent-worker`
