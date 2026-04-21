@@ -73,6 +73,7 @@ import {
 	ChevronDown,
 	FilterX,
 	FolderKanban,
+	MessageSquareOff,
 	Pencil,
 	Plus,
 	ReceiptText,
@@ -1053,10 +1054,7 @@ export default function Prompts() {
 									)}
 								>
 									<DialogHeader
-										className={cn(
-											formDialogHeaderClassName,
-											"relative z-[2] space-y-0.5 px-0 pt-1 pb-3 sm:px-0 sm:pt-1",
-										)}
+										className="relative z-[2] space-y-0.5 px-0 pt-1 pb-3 text-left"
 									>
 										<DialogTitle
 											className={cn(
@@ -1290,8 +1288,8 @@ export default function Prompts() {
 										)
 									) : (
 										<div className="web-empty-state py-12">
-											<div className="web-empty-state-icon">
-												<FilterX className="h-5 w-5 text-gray-400" />
+											<div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-gray-200/80 bg-stone-50 text-gray-400 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-500">
+												<MessageSquareOff className="h-5 w-5 text-gray-400" />
 											</div>
 
 											<h3 className="font-medium text-gray-900 text-md dark:text-gray-100">

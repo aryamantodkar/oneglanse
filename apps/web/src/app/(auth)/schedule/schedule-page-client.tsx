@@ -1,8 +1,12 @@
 "use client";
 
 import {
+	formDialogContentClassName,
+	formDialogFooterClassName,
+	formDialogHeaderClassName,
 	formHintClassName,
 	formPanelClassName,
+	formPrimaryButtonClassName,
 	formSecondaryButtonClassName,
 } from "@/components/forms/auth-form-chrome";
 import {
@@ -14,9 +18,26 @@ import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AppMode } from "@oneglanse/types";
 import { canConfigureRecurringScheduleInMode } from "@oneglanse/types";
-import { Button, Checkbox, Skeleton, toast } from "@oneglanse/ui";
+import {
+	Button,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	ScrollArea,
+	Skeleton,
+	toast,
+} from "@oneglanse/ui";
 import { cn } from "@oneglanse/utils";
-import { Calendar, Check, Loader2, PlayCircle } from "lucide-react";
+import {
+	Calendar,
+	Check,
+	Loader2,
+	PlayCircle,
+	SlidersHorizontal,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 function localHourToUTC(localHour: number): number {
@@ -120,29 +141,41 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 	);
 	const setSelectedMutation = api.workspace.setSelectedPrompts.useMutation();
 	const [localSelected, setLocalSelected] = useState<string[] | null>(null);
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [hasInitialized, setHasInitialized] = useState(false);
 
 	useEffect(() => {
-		if (selectedQuery.data !== undefined && !hasInitialized) {
+		if (selectedQuery.data !== undefined) {
 			setLocalSelected(selectedQuery.data.selectedPromptIds ?? null);
-			setHasInitialized(true);
 		}
-	}, [selectedQuery.data, hasInitialized]);
+	}, [selectedQuery.data]);
 
 	const prompts = promptsQuery.data ?? [];
 	const savedIds = selectedQuery.data?.selectedPromptIds ?? null;
-
-	const effectiveSelected =
-		localSelected === null ? prompts.map((p) => p.id) : localSelected;
+	const allPromptIds = prompts.map((prompt) => prompt.id);
+	const effectiveSelected = localSelected === null ? allPromptIds : localSelected;
+	const selectedCount = effectiveSelected.length;
+	const savedEffectiveSelected = savedIds === null ? allPromptIds : savedIds;
 	const hasChanges =
-		JSON.stringify([...(localSelected ?? [])].sort()) !==
-		JSON.stringify([...(savedIds ?? [])].sort());
-	const isAllSelected = localSelected === null || localSelected.length === 0;
+		JSON.stringify([...effectiveSelected].sort()) !==
+		JSON.stringify([...savedEffectiveSelected].sort());
+	const isAllSelected =
+		prompts.length > 0 && effectiveSelected.length === prompts.length;
+	const getPromptCreatedAt = (prompt: (typeof prompts)[number]) =>
+		new Date(prompt.created_at).getTime();
+	const orderedPrompts = [...prompts].sort((left, right) => {
+		const leftSelected = effectiveSelected.includes(left.id);
+		const rightSelected = effectiveSelected.includes(right.id);
 
+		if (leftSelected !== rightSelected) {
+			return leftSelected ? -1 : 1;
+		}
+
+		return getPromptCreatedAt(right) - getPromptCreatedAt(left);
+	});
 	const togglePrompt = (id: string) => {
 		setLocalSelected((prev) => {
-			const current = prev === null ? prompts.map((p) => p.id) : prev;
+			const current = prev === null ? allPromptIds : prev;
 			const isChecked = current.includes(id);
 			const next = isChecked
 				? current.filter((pid) => pid !== id)
@@ -151,14 +184,27 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 		});
 	};
 
+	const toggleAllPrompts = () => {
+		setLocalSelected((prev) => {
+			const current = prev === null ? allPromptIds : prev;
+			return current.length === prompts.length ? [] : null;
+		});
+	};
+
 	const handleSave = async () => {
+		if (effectiveSelected.length === 0) {
+			toast.error("Select at least one prompt to run.");
+			return;
+		}
+
 		setSaving(true);
 		try {
 			await setSelectedMutation.mutateAsync({
 				workspaceId,
-				selectedPromptIds: isAllSelected ? null : localSelected,
+				selectedPromptIds: isAllSelected ? null : effectiveSelected,
 			});
 			await selectedQuery.refetch();
+			setIsDialogOpen(false);
 			toast.success(isAllSelected ? "Running all prompts." : "Selection saved.");
 		} catch {
 			toast.error("Failed to save selection.");
@@ -171,86 +217,202 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 
 	return (
 		<div className={cn(formPanelClassName, "px-5 py-5")}>
-			<div className="mb-4 flex items-center justify-between gap-3">
-				<div className="space-y-0.5">
-					<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-						Prompts to run
-					</h2>
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						{isAllSelected
-							? "All prompts will be included."
-							: `${effectiveSelected.length} of ${prompts.length} selected.`}
-					</p>
-				</div>
-				{hasChanges && (
+			<div className="flex flex-col gap-4">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<div className="min-w-0 space-y-0.5">
+						<div className="flex min-w-0 items-center gap-2">
+							<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+								Prompts For This Workspace
+							</h2>
+							{isLoading ? (
+								<span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-200/80 bg-stone-50 text-gray-500 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-300">
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								</span>
+							) : prompts.length > 0 ? (
+								<span className="inline-flex shrink-0 items-center rounded-full border border-gray-200/80 bg-stone-50 px-2.5 py-0.5 text-[11px] font-medium text-gray-600 dark:border-gray-700 dark:bg-neutral-900 dark:text-gray-300">
+									{isAllSelected
+										? `${prompts.length} of ${prompts.length} selected`
+										: `${selectedCount} of ${prompts.length} selected`}
+								</span>
+							) : null}
+						</div>
+						<p className="text-sm text-gray-500 dark:text-gray-400">
+							Choose which prompts this workspace should run.
+						</p>
+					</div>
 					<Button
-						size="sm"
-						onClick={() => void handleSave()}
-						disabled={saving}
-						className="shrink-0"
-					>
-						{saving ? (
-							<>
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-								Saving…
-							</>
-						) : (
-							"Save"
+						variant="ghost"
+						onClick={() => setIsDialogOpen(true)}
+						className={cn(
+							formSecondaryButtonClassName,
+							"h-10 w-full rounded-[var(--app-radius)] border border-gray-200/70 px-4 text-sm font-medium dark:border-gray-700/80 sm:w-auto",
 						)}
+					>
+						<SlidersHorizontal className="h-4 w-4" />
+						Configure Prompts
 					</Button>
-				)}
+				</div>
+
+				{isLoading ? null : prompts.length === 0 ? (
+					<p className="text-sm text-gray-400 dark:text-gray-500">
+						No prompts configured yet. Add prompts on the{" "}
+						<a
+							href={`/prompts?workspace=${workspaceId}`}
+							className="underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300"
+						>
+							Prompts page
+						</a>
+						.
+					</p>
+				) : null}
 			</div>
 
-			{isLoading ? (
-				<div className="space-y-3">
-					{[0, 1, 2].map((i) => (
-						<div key={i} className="flex items-center gap-3">
-							<Skeleton className="h-4 w-4 rounded" />
-							<Skeleton className="h-4 w-48" />
-						</div>
-					))}
-				</div>
-			) : prompts.length === 0 ? (
-				<p className="text-sm text-gray-400 dark:text-gray-500">
-					No prompts configured yet. Add prompts on the{" "}
-					<a
-						href={`/prompts?workspace=${workspaceId}`}
-						className="underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-300"
+			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+				<DialogContent
+					className={cn(
+						formDialogContentClassName,
+						"!max-w-[min(100vw-1.5rem,56rem)] max-h-[min(100dvh-1.5rem,48rem)] grid-rows-[auto,minmax(0,1fr),auto] border-transparent bg-white shadow-[0_20px_70px_-34px_rgba(15,23,42,0.26)] dark:bg-neutral-950 dark:shadow-[0_24px_80px_-36px_rgba(0,0,0,0.58)]",
+					)}
+				>
+					<DialogHeader
+						className={cn(
+							formDialogHeaderClassName,
+							"space-y-0.5 sm:space-y-0.5",
+						)}
 					>
-						Prompts page
-					</a>
-					.
-				</p>
-			) : (
-				<div className="space-y-3">
-					{prompts.map((p) => {
-						const checked = effectiveSelected.includes(p.id);
-						return (
+						<DialogTitle className="text-lg font-semibold tracking-[-0.02em] text-gray-950 leading-tight dark:text-gray-50">
+							Select Prompts
+						</DialogTitle>
+						<DialogDescription className="text-sm leading-5 text-gray-500 dark:text-gray-400">
+							Choose what this workspace should run.
+						</DialogDescription>
+					</DialogHeader>
+
+					<ScrollArea className="min-h-0 px-4 pt-2 sm:px-5">
+						<div className="space-y-2 pb-4">
 							<div
-								key={p.id}
-								className="flex cursor-pointer items-start gap-3"
-								onClick={() => togglePrompt(p.id)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault();
-										togglePrompt(p.id);
+								role="button"
+								tabIndex={0}
+								onClick={toggleAllPrompts}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ") {
+										event.preventDefault();
+										toggleAllPrompts();
 									}
 								}}
+								className={cn(
+									"flex w-full items-center gap-3 rounded-[var(--app-radius)] border bg-white px-4 py-3.5 text-left transition-[border-color,box-shadow,opacity] duration-150 dark:bg-neutral-950",
+									isAllSelected
+										? "border-gray-200/70 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.16)] dark:border-gray-700/80"
+										: "border-gray-200/80 opacity-70 hover:opacity-100 dark:border-gray-800/80",
+								)}
 							>
-								<Checkbox
-									checked={checked}
-									onCheckedChange={() => togglePrompt(p.id)}
-									className="mt-0.5 shrink-0"
-									onClick={(e) => e.stopPropagation()}
-								/>
-								<span className="line-clamp-2 text-sm text-gray-700 dark:text-gray-300">
-									{p.prompt}
-								</span>
+								<div
+									className={cn(
+										"flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+										isAllSelected
+											? "border-gray-950 bg-gray-950 text-white dark:border-white dark:bg-white dark:text-gray-950"
+											: "border-gray-300 bg-transparent text-transparent dark:border-gray-600",
+									)}
+								>
+									<Check className="h-3 w-3" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-sm leading-6 text-gray-900 dark:text-gray-100">
+										Select all prompts
+									</p>
+								</div>
 							</div>
-						);
-					})}
-				</div>
-			)}
+							{orderedPrompts.map((prompt, index) => {
+								const checked = effectiveSelected.includes(prompt.id);
+								return (
+									<div
+										key={prompt.id}
+										role="button"
+										tabIndex={0}
+										onClick={() => togglePrompt(prompt.id)}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												togglePrompt(prompt.id);
+											}
+										}}
+										className={cn(
+											"flex w-full items-center gap-3 rounded-[var(--app-radius)] border bg-white px-4 py-3.5 text-left transition-[border-color,box-shadow,opacity,transform] duration-150 dark:bg-neutral-950",
+											checked
+												? "border-gray-200/70 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.16)] dark:border-gray-700/80"
+												: "border-gray-200/80 opacity-70 hover:opacity-100 dark:border-gray-800/80",
+										)}
+									>
+										<div
+											className={cn(
+												"flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+												checked
+													? "border-gray-950 bg-gray-950 text-white dark:border-white dark:bg-white dark:text-gray-950"
+													: "border-gray-300 bg-transparent text-transparent dark:border-gray-600",
+											)}
+										>
+											<Check className="h-3 w-3" />
+										</div>
+										<div className="min-w-0 flex-1">
+											<div
+												className={cn(
+													"mb-1 text-[10px] font-semibold uppercase tracking-[0.1em]",
+													checked
+														? "text-gray-500 dark:text-gray-400"
+														: "text-gray-400 dark:text-gray-500",
+												)}
+											>
+												<span>Prompt {index + 1}</span>
+											</div>
+											<p
+												className={cn(
+													"line-clamp-2 text-sm leading-6",
+													checked
+														? "text-gray-900 dark:text-gray-100"
+														: "text-gray-600 dark:text-gray-400",
+												)}
+											>
+												{prompt.prompt}
+											</p>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					</ScrollArea>
+
+					<DialogFooter className={formDialogFooterClassName}>
+						<Button
+							variant="ghost"
+							onClick={() => setIsDialogOpen(false)}
+							className={cn(
+								formSecondaryButtonClassName,
+								"h-10 rounded-[var(--app-radius)] border border-gray-200/70 dark:border-gray-700/80",
+							)}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => void handleSave()}
+							disabled={saving || effectiveSelected.length === 0 || !hasChanges}
+							className={cn(
+								formPrimaryButtonClassName,
+								"h-10 w-auto rounded-[var(--app-radius)] border border-gray-200/70 px-5 dark:border-gray-700/80",
+							)}
+						>
+							{saving ? (
+								<>
+									<Loader2 className="h-4 w-4 animate-spin" />
+									Saving…
+								</>
+							) : (
+								"Save selection"
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
@@ -273,23 +435,23 @@ function ManualRunView({
 						"flex items-center justify-between gap-4 px-5 py-5",
 					)}
 				>
-					<div className="flex items-center gap-4">
-						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-							<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<div className="flex items-center gap-4">
+							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+								<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+							</div>
+							<div className="space-y-0.5">
+								<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+									Run Selected Prompts
+								</h2>
+								<p className="text-sm text-gray-500 dark:text-gray-400">
+									Start one fresh run for this workspace now.
+								</p>
+							</div>
 						</div>
-						<div className="space-y-0.5">
-							<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-								Run prompts
-							</h2>
-							<p className="text-sm text-gray-500 dark:text-gray-400">
-								Run all providers and get fresh responses on demand.
-							</p>
-						</div>
-					</div>
 					<Button
 						onClick={() => void onRunNow()}
 						disabled={isRunning}
-						className="shrink-0"
+						className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 dark:border-gray-700/80"
 					>
 						{isRunning ? (
 							<>
@@ -321,7 +483,7 @@ function ManualRunView({
 							</p>
 						</div>
 					</div>
-					<span className="shrink-0 rounded-full border border-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
+					<span className="inline-flex h-9 shrink-0 items-center rounded-[var(--app-radius)] border border-gray-200/70 px-4 text-sm font-medium text-gray-500 dark:border-gray-700/80 dark:text-gray-400">
 						Self-host
 					</span>
 				</div>
@@ -336,23 +498,23 @@ function ManualRunView({
 				"flex items-center justify-between gap-4 px-5 py-5",
 			)}
 		>
-			<div className="flex items-center gap-4">
-				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-					<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+				<div className="flex items-center gap-4">
+					<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+						<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+					</div>
+					<div className="space-y-0.5">
+						<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+							Run Selected Prompts
+						</h2>
+						<p className="text-sm text-gray-500 dark:text-gray-400">
+							Start one immediate run without changing the recurring schedule.
+						</p>
+					</div>
 				</div>
-				<div className="space-y-0.5">
-					<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-						Manual run
-					</h2>
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						Trigger one immediate run without changing the recurring schedule.
-					</p>
-				</div>
-			</div>
 			<Button
 				onClick={() => void onRunNow()}
 				disabled={isRunning}
-				className="shrink-0"
+				className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 dark:border-gray-700/80"
 			>
 				{isRunning ? (
 					<>
@@ -375,12 +537,12 @@ function ScheduleIntro({
 	return (
 		<div className="space-y-1">
 			<h2 className="text-lg font-semibold text-gray-900 sm:text-xl dark:text-gray-100">
-				{mode === "local" ? "Run prompts" : "Schedule overview"}
+				Workspace Runs
 			</h2>
 			<p className="text-sm text-gray-500 dark:text-gray-400">
 				{mode === "local"
-					? "Use local mode for clean, on-demand runs while your machine is active."
-					: "Manage recurring runs and trigger a manual run whenever you need fresh results."}
+					? "Choose the prompts for this workspace and run them whenever you need fresh results."
+					: "Choose the prompts for this workspace and manage both recurring and manual runs."}
 			</p>
 		</div>
 	);
@@ -467,7 +629,10 @@ function ScheduleOptionsSection({
 						size="sm"
 						onClick={() => void onDisable()}
 						disabled={saving}
-						className={cn(formSecondaryButtonClassName, "h-10 w-auto px-4")}
+						className={cn(
+							formSecondaryButtonClassName,
+							"h-10 w-auto rounded-[var(--app-radius)] px-4",
+						)}
 					>
 						{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Disable"}
 					</Button>
@@ -480,7 +645,7 @@ function ScheduleOptionsSection({
 						key={option.value}
 						type="button"
 						onClick={() => onSelect(option.value)}
-						className={`flex w-full items-center justify-between gap-4 ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
+						className={`flex w-full items-center justify-between gap-4 rounded-[var(--app-radius)] ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
 							selected === option.value
 								? "border-gray-900 bg-stone-50 dark:border-gray-100 dark:bg-neutral-900"
 								: "border-gray-100/80 hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-neutral-900"
@@ -515,7 +680,7 @@ function ScheduleOptionsSection({
 					<Button
 						onClick={() => void onSave()}
 						disabled={saving}
-						className="gap-2"
+						className="gap-2 rounded-[var(--app-radius)] border border-gray-200/70 dark:border-gray-700/80"
 					>
 						{saving ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
@@ -679,27 +844,27 @@ export default function SchedulePageClient({
 
 	if (!canConfigureSchedule) {
 		return (
-			<div className="web-page-panel max-w-md space-y-4 sm:space-y-5">
+			<div className="web-page-panel max-w-4xl lg:max-w-5xl xl:max-w-6xl space-y-5 sm:space-y-6">
 				<ScheduleIntro mode="local" />
+				<PromptSelectionCard workspaceId={workspaceId} />
 				<ManualRunView
 					isRunning={isRunning || runNowMutation.isPending}
 					onRunNow={handleRunNow}
 					mode="local"
 				/>
-				<PromptSelectionCard workspaceId={workspaceId} />
 			</div>
 		);
 	}
 
 	return (
-		<div className="web-page-panel max-w-2xl space-y-6 sm:space-y-7">
+		<div className="web-page-panel max-w-4xl lg:max-w-5xl xl:max-w-6xl space-y-6 sm:space-y-7">
 			<ScheduleIntro mode="self-host" />
+			<PromptSelectionCard workspaceId={workspaceId} />
 			<ManualRunView
 				isRunning={isRunning || runNowMutation.isPending}
 				onRunNow={handleRunNow}
 				mode="self-host"
 			/>
-			<PromptSelectionCard workspaceId={workspaceId} />
 			{cronTimingQuery.isLoading ? (
 				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{TIMING_SKELETON_KEYS.map((key) => (
