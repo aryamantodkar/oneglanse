@@ -38,11 +38,11 @@ export function PromptResponsesList({
 
 	return (
 		<section aria-label="Prompt responses" className="space-y-4">
-			<div className="space-y-0.5">
-				<h2 className="text-base font-medium tracking-[-0.025em] text-gray-950 sm:text-lg dark:text-gray-50">
+			<div className="py-2 sm:py-3">
+				<h1 className="mt-2 text-base font-semibold leading-none tracking-tight text-gray-900 sm:text-lg dark:text-gray-100">
 					Prompt Responses
-				</h2>
-				<p className="text-sm text-muted-foreground">
+				</h1>
+				<p className="mt-2 text-xs text-muted-foreground">
 					Expand a prompt to see the raw response from each provider.
 				</p>
 			</div>
@@ -111,9 +111,7 @@ export function PromptResponsesList({
 					onClick={() => setShowAll((prev) => !prev)}
 					className="inline-flex items-center gap-1.5 rounded-[var(--app-radius)] px-0 py-0 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
 				>
-					{showAll
-						? "Show fewer prompts"
-						: `Show all ${groups.length} prompts`}
+					{showAll ? "Show fewer prompts" : `Show all ${groups.length} prompts`}
 					<ChevronDown
 						className={cn(
 							"h-4 w-4 transition-transform duration-200",

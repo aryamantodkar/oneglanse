@@ -8,7 +8,6 @@ type MetricKey = "presence" | "recommendation" | "sentiment" | "rankStrength";
 
 type SeriesPoint = {
 	name: string;
-	domain: string;
 	isBrand: boolean;
 	composite: number;
 	values: Record<MetricKey, number>;
@@ -67,10 +66,20 @@ function buildPath(points: Array<{ x: number; y: number }>): string {
 		.join(" ");
 }
 
+function getMetricLabelLines(
+	metric: { key: MetricKey; label: string },
+	isCompactChart: boolean,
+): string[] {
+	if (metric.key === "recommendation" && isCompactChart) {
+		return ["Recommend."];
+	}
+
+	return [metric.label];
+}
+
 export function BrandComparisonChart({
 	competitors,
 	brandName,
-	brandDomain,
 	totalResponses,
 	brandPresenceRate,
 	brandRecommendationRate,
@@ -79,7 +88,6 @@ export function BrandComparisonChart({
 }: {
 	competitors: DashboardCompetitorData[];
 	brandName: string;
-	brandDomain: string;
 	totalResponses: number;
 	brandPresenceRate: number;
 	brandRecommendationRate: number;
@@ -130,7 +138,6 @@ export function BrandComparisonChart({
 	const series: SeriesPoint[] = [
 		{
 			name: brandName,
-			domain: brandDomain,
 			isBrand: true,
 			values: {
 				presence: clampScore(brandPresenceRate),
@@ -142,7 +149,6 @@ export function BrandComparisonChart({
 		},
 		...rivals.map((r) => ({
 			name: r.name,
-			domain: r.domain,
 			isBrand: false,
 			values: {
 				presence: clampScore(
@@ -202,15 +208,16 @@ export function BrandComparisonChart({
 		);
 	}
 
+	const isCompactChart = containerWidth > 0 && containerWidth < 640;
+	const isLaptopChart = containerWidth >= 640 && containerWidth < 1024;
 	const width = 760;
-	const height = 280;
-	const left = 50;
-	const right = 16;
+	const height = isCompactChart ? 308 : 292;
+	const left = isCompactChart ? 56 : isLaptopChart ? 54 : 50;
+	const right = isCompactChart ? 72 : isLaptopChart ? 68 : 60;
 	const top = 20;
-	const bottom = 44;
+	const bottom = isCompactChart ? 72 : 56;
 	const plotWidth = width - left - right;
 	const plotHeight = height - top - bottom;
-	const isCompactChart = containerWidth > 0 && containerWidth < 640;
 
 	const xFor = (index: number) =>
 		left + (index * plotWidth) / Math.max(1, METRIC_CONFIG.length - 1);
@@ -268,7 +275,7 @@ export function BrandComparisonChart({
 					<svg
 						ref={svgRef}
 						viewBox={`0 0 ${width} ${height}`}
-						className="h-[250px] w-full sm:h-[270px] lg:h-[280px]"
+						className="h-[280px] w-full sm:h-[290px] lg:h-[300px]"
 						role="img"
 						aria-label="Brand comparison chart"
 					>
@@ -347,21 +354,29 @@ export function BrandComparisonChart({
 							);
 						})}
 
-						{METRIC_CONFIG.map((metric, idx) => (
-							<text
-								key={metric.key}
-								x={xFor(idx)}
-								y={height - 14}
-								textAnchor="middle"
-								className="fill-gray-500 text-[11px] font-medium"
-							>
-								{isCompactChart && metric.key === "recommendation"
-									? "Recom."
-									: isCompactChart && metric.key === "rankStrength"
-										? "Rank"
-										: metric.label}
-							</text>
-						))}
+						{METRIC_CONFIG.map((metric, idx) => {
+							const labelLines = getMetricLabelLines(metric, isCompactChart);
+
+							return (
+								<text
+									key={metric.key}
+									x={xFor(idx)}
+									y={height - (labelLines.length > 1 ? 32 : 18)}
+									textAnchor="middle"
+									className={`fill-gray-500 ${isCompactChart ? "text-[10px]" : "text-[11px]"} font-medium`}
+								>
+									{labelLines.map((line, lineIdx) => (
+										<tspan
+											key={`${metric.key}-${line}-${lineIdx}`}
+											x={xFor(idx)}
+											dy={lineIdx === 0 ? 0 : 12}
+										>
+											{line}
+										</tspan>
+									))}
+								</text>
+							);
+						})}
 					</svg>
 
 					{hoveredPoint && !hoveredBrand && (

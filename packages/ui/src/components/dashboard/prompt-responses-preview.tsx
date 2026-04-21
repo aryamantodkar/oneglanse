@@ -62,14 +62,14 @@ export function PromptResponsesPreview({
 	return (
 		<section aria-label="Prompt responses preview" className="space-y-5">
 			{(title || description) && (
-				<div className="space-y-1.5">
+				<div>
 					{title && (
-						<h2 className="text-base font-medium tracking-[-0.025em] text-gray-950 sm:text-lg dark:text-gray-50">
+						<h1 className="mt-2 text-base font-semibold leading-none tracking-tight text-gray-900 sm:text-lg dark:text-gray-100">
 							{title}
-						</h2>
+						</h1>
 					)}
 					{description && (
-						<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+						<p className="mt-2 max-w-2xl text-xs text-muted-foreground">
 							{description}
 						</p>
 					)}

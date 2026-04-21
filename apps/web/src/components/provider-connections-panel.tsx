@@ -145,6 +145,7 @@ function getCardMutationState(args: {
 export function ProviderConnectionsPanel(props: {
 	title?: string | null;
 	description?: string | null;
+	helperText?: string | null;
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
@@ -154,6 +155,7 @@ export function ProviderConnectionsPanel(props: {
 	const {
 		title = "Providers",
 		description = "Log in to a provider, then close the browser window. Auth is saved automatically.",
+		helperText = null,
 		nextHref = null,
 		showSetupNotice = true,
 		workspaceId = null,
@@ -324,6 +326,11 @@ export function ProviderConnectionsPanel(props: {
 					{description ? (
 						<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
 							{description}
+						</p>
+					) : null}
+					{helperText ? (
+						<p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
+							{helperText}
 						</p>
 					) : null}
 				</div>

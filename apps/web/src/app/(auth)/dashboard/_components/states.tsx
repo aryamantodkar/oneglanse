@@ -4,14 +4,7 @@ import {
 	Skeleton,
 	WorkspaceRequiredState,
 } from "@oneglanse/ui";
-import {
-	BarChart3,
-	Building2,
-	Link2,
-	Sparkles,
-	Trophy,
-	Users,
-} from "lucide-react";
+import { BarChart3, Building2, Link2, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 
 const DASHBOARD_SKELETON_KEYS = [
@@ -89,12 +82,43 @@ export function EmptyState({ workspaceId }: { workspaceId: string }) {
 	);
 }
 
+export function FilteredDashboardState({
+	workspaceId,
+	modelFilter,
+}: {
+	workspaceId: string;
+	modelFilter: string;
+}) {
+	const isModelSpecific = modelFilter !== "All Models";
+
+	return (
+		<EmptyStatePanel
+			eyebrow="No matching dashboard data"
+			title={
+				isModelSpecific
+					? "No data available for this model"
+					: "No data available for the selected filters"
+			}
+			description={
+				isModelSpecific
+					? "Try another model or run prompts across this model to populate the dashboard."
+					: "Try another model or time range to populate the dashboard."
+			}
+			action={
+				<Button asChild>
+					<Link href={`/prompts?workspace=${workspaceId}`}>Open Prompts</Link>
+				</Button>
+			}
+		/>
+	);
+}
+
 export function NoAnalysisState({ workspaceId }: { workspaceId: string }) {
 	return (
 		<EmptyStatePanel
-			icon={Sparkles}
-			title="Responses Ready. Insights Next."
-			description="Run analysis to turn responses into dashboard signals."
+			eyebrow="Analysis required"
+			title="No analyzed data available yet"
+			description="Run prompts and analysis to populate the dashboard."
 			action={
 				<Button asChild>
 					<Link href={`/prompts?workspace=${workspaceId}`}>Go to Prompts</Link>

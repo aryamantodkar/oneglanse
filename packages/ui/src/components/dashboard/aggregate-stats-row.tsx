@@ -68,7 +68,6 @@ export function AggregateStatsRow({
 	topSource,
 	topCompetitor,
 	topCompetitorDomain,
-	noData = false,
 	className,
 }: {
 	presenceRate: number;
@@ -76,11 +75,8 @@ export function AggregateStatsRow({
 	topSource: string;
 	topCompetitor: string;
 	topCompetitorDomain?: string;
-	noData?: boolean;
 	className?: string;
 }) {
-	const emptySubtitle = "No analysis data for selected filters";
-
 	return (
 		<div
 			className={cn(
@@ -91,27 +87,27 @@ export function AggregateStatsRow({
 			<StatCard
 				icon={Globe}
 				label="Presence Rate"
-				value={noData ? "—" : `${presenceRate}%`}
-				subtitle={noData ? emptySubtitle : "Prompts mentioning your brand"}
+				value={`${presenceRate}%`}
+				subtitle="Prompts mentioning your brand"
 			/>
 			<StatCard
 				icon={Trophy}
 				label="Rank"
-				value={noData ? "—" : `#${rank}`}
-				subtitle={noData ? emptySubtitle : "Avg rank across prompts"}
+				value={`#${rank}`}
+				subtitle="Avg rank across prompts"
 			/>
 			<StatCard
 				icon={Link2}
 				label="Top Source"
-				value={noData ? "—" : topSource}
-				subtitle={noData ? emptySubtitle : "Most cited information source"}
+				value={topSource}
+				subtitle="Most cited information source"
 			/>
 			<StatCard
 				icon={Users}
 				label="Top Competitor"
-				value={noData ? "—" : topCompetitor}
-				subtitle={noData ? emptySubtitle : "Most frequently appears with you"}
-				domain={noData ? undefined : topCompetitorDomain}
+				value={topCompetitor}
+				subtitle="Most frequently appears with you"
+				domain={topCompetitorDomain}
 			/>
 		</div>
 	);

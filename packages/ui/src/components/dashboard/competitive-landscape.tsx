@@ -1,7 +1,6 @@
 "use client";
 
 import { getFaviconUrls } from "@oneglanse/utils";
-import { Users } from "lucide-react";
 import { type JSX, useMemo } from "react";
 import {
 	type SortDirection,
@@ -16,7 +15,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "../table.js";
-import { DashboardEmptyState } from "./empty-state.js";
 import { SortableHeader } from "./sortable-header.js";
 import type { DashboardCompetitorData } from "./types.js";
 
@@ -101,119 +99,115 @@ export function CompetitiveLandscape({
 		[competitors, sortColumn, sortDirection],
 	);
 
+	if (rows.length === 0) {
+		return <></>;
+	}
+
 	return (
 		<div className="flex min-w-0 flex-col">
-			{rows.length === 0 ? (
-				<DashboardEmptyState
-					icon={Users}
-					title="Competitor pressure will appear here"
-					description="After analysis runs, this table shows which brands keep getting mentioned beside you and how strongly they overlap."
-				/>
-			) : (
-				<div className="min-w-0 px-1.5 py-2">
-					<Table
-						className="w-full"
-						surface="plain"
-						containerClassName="rounded-[var(--app-radius)] bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
-					>
-						<TableHeader>
-							<TableRow className="border-b border-gray-200/80 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
-								<TableHead className="px-5 py-4.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									Competitor
-								</TableHead>
-								<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									<SortableHeader
-										column="visibility"
-										currentSort={sortColumn}
-										currentDirection={sortDirection}
-										onSort={toggleSort}
-										onResetSort={resetSort}
-										className="ml-auto"
-									>
-										Visibility
-									</SortableHeader>
-								</TableHead>
-								<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									<SortableHeader
-										column="mentions"
-										currentSort={sortColumn}
-										currentDirection={sortDirection}
-										onSort={toggleSort}
-										onResetSort={resetSort}
-										className="ml-auto"
-									>
-										Mentions
-									</SortableHeader>
-								</TableHead>
-								<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-									<SortableHeader
-										column="sentiment"
-										currentSort={sortColumn}
-										currentDirection={sortDirection}
-										onSort={toggleSort}
-										onResetSort={resetSort}
-										className="ml-auto"
-									>
-										Sentiment
-									</SortableHeader>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((row) => {
-								const favicon = getFaviconUrls(row.domain ?? "")[0];
-								const visibility = getVisibility(row);
+			<div className="min-w-0 px-1.5 py-2">
+				<Table
+					className="w-full"
+					surface="plain"
+					containerClassName="rounded-[var(--app-radius)] bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
+				>
+					<TableHeader>
+						<TableRow className="border-b border-gray-200/80 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
+							<TableHead className="px-5 py-4.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								Competitor
+							</TableHead>
+							<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<SortableHeader
+									column="visibility"
+									currentSort={sortColumn}
+									currentDirection={sortDirection}
+									onSort={toggleSort}
+									onResetSort={resetSort}
+									className="ml-auto"
+								>
+									Visibility
+								</SortableHeader>
+							</TableHead>
+							<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<SortableHeader
+									column="mentions"
+									currentSort={sortColumn}
+									currentDirection={sortDirection}
+									onSort={toggleSort}
+									onResetSort={resetSort}
+									className="ml-auto"
+								>
+									Mentions
+								</SortableHeader>
+							</TableHead>
+							<TableHead className="w-28 px-5 py-4.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+								<SortableHeader
+									column="sentiment"
+									currentSort={sortColumn}
+									currentDirection={sortDirection}
+									onSort={toggleSort}
+									onResetSort={resetSort}
+									className="ml-auto"
+								>
+									Sentiment
+								</SortableHeader>
+							</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{rows.map((row) => {
+							const favicon = getFaviconUrls(row.domain ?? "")[0];
+							const visibility = getVisibility(row);
 
-								return (
-									<TableRow
-										key={row.name}
-										className="last:border-0 hover:bg-stone-50/70 dark:hover:bg-neutral-900/50"
-									>
-										<TableCell className="px-5 py-4.5 align-top">
-											<div className="flex min-w-0 items-start gap-2.5">
-												{favicon ? (
-													<img
-														src={favicon}
-														alt=""
-														className="h-4 w-4 shrink-0 rounded-[var(--app-radius)]"
-														onError={(e) => {
-															(e.target as HTMLImageElement).style.display =
-																"none";
-														}}
-													/>
-												) : null}
-												<div className="min-w-0 flex-1">
-													<div className="flex min-w-0 flex-wrap items-center gap-1.5">
-														<span className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-gray-900 [overflow-wrap:anywhere] dark:text-gray-100">
-															{row.name}
+							return (
+								<TableRow
+									key={row.name}
+									className="last:border-0 hover:bg-stone-50/70 dark:hover:bg-neutral-900/50"
+								>
+									<TableCell className="px-5 py-4.5 align-top">
+										<div className="flex min-w-0 items-start gap-2.5">
+											{favicon ? (
+												<img
+													src={favicon}
+													alt=""
+													className="h-4 w-4 shrink-0 rounded-[var(--app-radius)]"
+													onError={(e) => {
+														(e.target as HTMLImageElement).style.display =
+															"none";
+													}}
+												/>
+											) : null}
+											<div className="min-w-0 flex-1">
+												<div className="flex min-w-0 flex-wrap items-center gap-1.5">
+													<span className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-gray-900 [overflow-wrap:anywhere] dark:text-gray-100">
+														{row.name}
+													</span>
+													{row.isBrand ? (
+														<span className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-200">
+															You
 														</span>
-														{row.isBrand ? (
-															<span className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-200">
-																You
-															</span>
-														) : null}
-													</div>
+													) : null}
 												</div>
 											</div>
-										</TableCell>
-										<TableCell className="px-5 py-4.5 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
-											{visibility}%
-										</TableCell>
-										<TableCell className="px-5 py-4.5 text-right text-sm text-gray-700 dark:text-gray-200">
-											{row.appearances}
-										</TableCell>
-										<TableCell className="px-5 py-4.5 text-right">
-											<span className="inline-flex justify-end">
-												<SentimentMetricCell sentiment={row.avgSentiment} />
-											</span>
-										</TableCell>
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</div>
-			)}
+										</div>
+									</TableCell>
+									<TableCell className="px-5 py-4.5 text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+										{visibility}%
+									</TableCell>
+									<TableCell className="px-5 py-4.5 text-right text-sm text-gray-700 dark:text-gray-200">
+										{row.appearances}
+									</TableCell>
+									<TableCell className="px-5 py-4.5 text-right">
+										<span className="inline-flex justify-end">
+											<SentimentMetricCell sentiment={row.avgSentiment} />
+										</span>
+									</TableCell>
+								</TableRow>
+							);
+						})}
+					</TableBody>
+				</Table>
+			</div>
 		</div>
 	);
 }
