@@ -69,7 +69,7 @@ function resolveRuntimeHeadlessMode(): "virtual" | "headful" | "headless" {
 	return "headless";
 }
 
-export function quarantineProxy(hostPort: string): void {
+function quarantineProxy(hostPort: string): void {
 	quarantinedProxies.set(hostPort, Date.now() + QUARANTINE_TTL_MS);
 	logger.warn(
 		`[proxy-quarantine] ${hostPort} quarantined for ${QUARANTINE_TTL_MS / 60000}min`,

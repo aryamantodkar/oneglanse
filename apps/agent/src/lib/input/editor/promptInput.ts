@@ -28,7 +28,7 @@ async function focusEditorTarget(page: Page, input: Locator): Promise<void> {
 	await page.waitForTimeout(randomBetween(30, 90));
 }
 
-export async function prepareEditorForPrompt(
+async function prepareEditorForPrompt(
 	page: Page,
 	input: Locator,
 	provider: Provider,

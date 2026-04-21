@@ -42,7 +42,7 @@ export type KeyboardPressOptions = {
 	delay?: number;
 };
 
-export type MouseMoveOptions = {
+type MouseMoveOptions = {
 	steps?: number;
 };
 
@@ -130,20 +130,6 @@ export interface Page {
 
 export type StorageStateOptions = {
 	path?: string;
-};
-
-export type BrowserContextOptions = {
-	storageState?:
-		| string
-		| {
-				cookies?: unknown[];
-				origins?: unknown[];
-		  };
-	viewport?: PageViewportSize;
-	locale?: string;
-	timezoneId?: string;
-	userAgent?: string;
-	extraHTTPHeaders?: Record<string, string>;
 };
 
 export interface BrowserContext {

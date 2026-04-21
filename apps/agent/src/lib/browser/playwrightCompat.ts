@@ -24,7 +24,7 @@ class PlaywrightWorkerCompat implements Worker {
 	}
 }
 
-export class PlaywrightLocatorCompat implements Locator {
+class PlaywrightLocatorCompat implements Locator {
 	constructor(private readonly locator: PlaywrightLocator) {}
 
 	private wrap(next: PlaywrightLocator): PlaywrightLocatorCompat {
@@ -335,7 +335,7 @@ export class PlaywrightBrowserContextCompat implements BrowserContext {
 	}
 }
 
-export class PlaywrightPageCompat implements Page {
+class PlaywrightPageCompat implements Page {
 	readonly mouse;
 	readonly keyboard;
 

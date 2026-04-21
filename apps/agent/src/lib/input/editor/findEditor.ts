@@ -53,7 +53,7 @@ export async function findActiveEditorCandidateFromSelectors(
 	throw new NotFoundError("active prompt editor");
 }
 
-export async function findActiveEditorFromSelectors(
+async function findActiveEditorFromSelectors(
 	page: Page,
 	selectors: string[],
 ): Promise<Locator> {
@@ -64,7 +64,7 @@ export async function findActiveEditorFromSelectors(
 	return candidate.locator;
 }
 
-export async function findActiveEditor(
+async function findActiveEditor(
 	page: Page,
 	provider?: Provider,
 ): Promise<Locator> {

@@ -91,7 +91,7 @@ function buildEmptyResults(): Record<Provider, AgentResult> {
 	) as unknown as Record<Provider, AgentResult>;
 }
 
-export function registerActiveProviderStop(
+function registerActiveProviderStop(
 	jobGroupId: string,
 	provider: Provider,
 	stop: () => Promise<void>,
@@ -99,7 +99,7 @@ export function registerActiveProviderStop(
 	activeProviderStops.set(buildProviderJobId(jobGroupId, provider), stop);
 }
 
-export function unregisterActiveProviderStop(
+function unregisterActiveProviderStop(
 	jobGroupId: string,
 	provider: Provider,
 ): void {

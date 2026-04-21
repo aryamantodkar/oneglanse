@@ -24,11 +24,6 @@ export type UpstreamProxyConfig = {
 	logProxy: string;
 };
 
-export type ProxyForwarderHandle = {
-	serverUrl: string;
-	close: () => Promise<void>;
-};
-
 type TrackedSocket = Socket | Duplex;
 
 const SOCKET_TIMEOUT_MS = 30_000;
@@ -346,86 +341,4 @@ export function checkProxyReachable(
 			resolve(false);
 		});
 	});
-}
-
-export async function createProxyForwarder(
-	proxy: UpstreamProxyConfig,
-): Promise<ProxyForwarderHandle> {
-	const sockets = new Set<TrackedSocket>();
-	const server = createServer();
-
-	const trackSocket = (socket: TrackedSocket) => {
-		sockets.add(socket);
-		socket.on("close", () => {
-			sockets.delete(socket);
-		});
-	};
-
-	server.on("connection", trackSocket);
-	server.on("clientError", (error, socket) => {
-		socket.destroy(error);
-	});
-	server.on("request", (request, response) => {
-		handleHttpProxyRequest(request, response, proxy, trackSocket).catch(
-			(error) => {
-				handleProxyError(response, 502, error);
-			},
-		);
-	});
-	server.on("connect", (request, clientSocket, head) => {
-		trackSocket(clientSocket);
-		try {
-			const { host, port } = parseAuthority(request.url ?? "");
-
-			void createTunnelSocket(proxy, host, port)
-				.then((upstreamSocket) => {
-					trackSocket(upstreamSocket);
-					clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-					if (head.length > 0) {
-						upstreamSocket.write(head);
-					}
-					relaySockets(clientSocket, upstreamSocket);
-				})
-				.catch((error) => {
-					const body = error instanceof Error ? error.message : "proxy error";
-					// Log the real tunnel failure so the cause is visible in agent logs.
-					logger.warn(`[forwarder] CONNECT tunnel failed: ${body}`);
-					// Use end() not destroy() — destroy() discards buffered writes so
-					// The browser never sees the 502 and gets ERR_CONNECTION_CLOSED instead.
-					clientSocket.end(
-						`HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
-					);
-				});
-		} catch (error) {
-			const body = error instanceof Error ? error.message : "proxy error";
-			clientSocket.end(
-				`HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
-			);
-		}
-	});
-
-	await new Promise<void>((resolve, reject) => {
-		server.once("error", reject);
-		server.listen(0, "127.0.0.1", () => {
-			server.off("error", reject);
-			resolve();
-		});
-	});
-
-	const address = server.address();
-	if (!address || typeof address === "string") {
-		throw new Error("Could not bind local proxy forwarder");
-	}
-
-	return {
-		serverUrl: `http://127.0.0.1:${address.port}`,
-		close: async () => {
-			for (const socket of sockets) {
-				socket.destroy();
-			}
-			await new Promise<void>((resolve) => {
-				server.close(() => resolve());
-			});
-		},
-	};
 }
