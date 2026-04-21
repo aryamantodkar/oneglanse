@@ -235,7 +235,7 @@
 	}
 
 	.web-empty-state {
-		@apply mx-auto flex min-h-[228px] w-full max-w-[16.5rem] flex-col items-center justify-center rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-5 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:min-h-[240px] sm:max-w-[17.5rem] sm:px-5 sm:py-5.5 xl:min-h-[260px] xl:max-w-[19rem] xl:rounded-[var(--app-radius)] xl:px-6 xl:py-6;
+		@apply mx-auto flex min-h-[208px] w-full max-w-[15rem] flex-col items-center justify-center rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-4 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:min-h-[220px] sm:max-w-[16rem] sm:px-4.5 sm:py-4.5 xl:min-h-[236px] xl:max-w-[17rem] xl:rounded-[var(--app-radius)] xl:px-5 xl:py-5;
 	}
 
 	.web-empty-state-icon {

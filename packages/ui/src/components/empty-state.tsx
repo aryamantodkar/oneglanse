@@ -4,16 +4,16 @@ import type * as React from "react";
 import { cn } from "@oneglanse/utils";
 
 export const EMPTY_STATE_PANEL_WIDTH_CLASS =
-	"w-full max-w-[21.75rem] sm:max-w-[23rem] xl:max-w-[25rem]";
+	"w-full max-w-[19rem] sm:max-w-[20.5rem] xl:max-w-[22rem]";
 
 export const EMPTY_STATE_PANEL_HEIGHT_CLASS =
-	"min-h-[19.5rem] sm:min-h-[20.5rem] xl:min-h-[22rem]";
+	"min-h-[17.5rem] sm:min-h-[18.5rem] xl:min-h-[19.5rem]";
 
 export const DASHBOARD_EMPTY_STATE_WIDTH_CLASS =
-	"w-full max-w-[15rem] sm:max-w-[16rem] xl:max-w-[17.25rem]";
+	"w-full max-w-[13.75rem] sm:max-w-[14.75rem] xl:max-w-[16rem]";
 
 export const DASHBOARD_EMPTY_STATE_HEIGHT_CLASS =
-	"min-h-[236px] sm:min-h-[248px] xl:min-h-[268px]";
+	"min-h-[214px] sm:min-h-[228px] xl:min-h-[244px]";
 
 export type EmptyStateExample =
 	| string
@@ -57,18 +57,18 @@ export function EmptyStatePanel({
 		<div className={cn("web-centered-state", className)}>
 			<div
 				className={cn(
-					`${EMPTY_STATE_PANEL_WIDTH_CLASS} ${EMPTY_STATE_PANEL_HEIGHT_CLASS} flex flex-col rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-4 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:px-5 sm:py-5 xl:rounded-[var(--app-radius)] xl:px-7 xl:py-7`,
+					`${EMPTY_STATE_PANEL_WIDTH_CLASS} ${EMPTY_STATE_PANEL_HEIGHT_CLASS} flex flex-col rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-3.5 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:px-4.5 sm:py-4.5 xl:rounded-[var(--app-radius)] xl:px-5.5 xl:py-5.5`,
 					contentClassName,
 				)}
 			>
 				<div
 					className={cn(
-						"flex flex-1 flex-col pt-2 sm:pt-2.5 xl:pt-3",
+						"flex flex-1 flex-col pt-1.5 sm:pt-2 xl:pt-2.5",
 						!action && hasSupportingContent ? "justify-between" : undefined,
 						!action && !hasSupportingContent ? "justify-center" : undefined,
 					)}
 				>
-					<div className="pb-2 sm:pb-2.5 xl:pb-3">
+					<div className="pb-1.5 sm:pb-2 xl:pb-2.5">
 						{eyebrow ? (
 							<div className="mt-0 inline-flex items-center self-center rounded-[var(--app-radius)] border border-gray-200/80 bg-stone-50 px-3 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-gray-500 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-400 sm:text-[10px]">
 								{eyebrow}
@@ -78,31 +78,31 @@ export function EmptyStatePanel({
 						<h2
 							className={cn(
 								"text-[1rem] font-medium leading-[1.15] tracking-[-0.03em] text-gray-950 dark:text-gray-50 sm:text-[1.08rem] xl:text-[1.24rem]",
-								eyebrow ? "mt-2 xl:mt-2.5" : "mt-0",
+								eyebrow ? "mt-1.5 xl:mt-2" : "mt-0",
 							)}
 						>
 							{title}
 						</h2>
-						<p className="mx-auto mt-1.5 max-w-xl text-[12px] leading-[1.45] text-gray-500 dark:text-gray-400 sm:text-[13px] sm:leading-[1.5] xl:mt-2 xl:text-sm xl:leading-5">
+						<p className="mx-auto mt-1.5 max-w-xl text-[11px] leading-[1.4] text-gray-500 dark:text-gray-400 sm:text-[12px] sm:leading-[1.45] xl:mt-1.5 xl:text-[13px] xl:leading-[1.5]">
 							{description}
 						</p>
 					</div>
 
-					<div className="h-2.5 sm:h-3 xl:h-3.5" />
+					<div className="h-2 sm:h-2.5 xl:h-3" />
 
 					{hasExamples ? (
-						<div className="mx-auto w-full max-w-xl rounded-[var(--app-radius)] bg-stone-50/90 p-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-neutral-900/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-3 xl:rounded-[var(--app-radius)] xl:p-3.5">
+						<div className="mx-auto w-full max-w-xl rounded-[var(--app-radius)] bg-stone-50/90 p-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-neutral-900/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-2.5 xl:rounded-[var(--app-radius)] xl:p-3">
 							<p className="px-1 text-[10px] font-medium uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400 sm:text-[11px]">
 								{examplesLabel}
 							</p>
-							<div className="mt-2 grid gap-2 sm:mt-2.5 sm:gap-2.5 xl:mt-3">
+							<div className="mt-1.5 grid gap-1.5 sm:mt-2 sm:gap-2 xl:mt-2.5">
 								{examples?.map((example) => (
 									<div
 										key={typeof example === "string" ? example : example.label}
-										className="flex items-center gap-2 rounded-[var(--app-radius)] bg-white/90 px-3 py-2 text-[12px] font-normal leading-[1.45] text-gray-700 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:text-gray-200 dark:shadow-[0_8px_24px_-20px_rgba(0,0,0,0.5)] sm:gap-2.5 sm:rounded-[var(--app-radius)] sm:text-sm sm:leading-5"
+										className="flex items-center gap-2 rounded-[var(--app-radius)] bg-white/90 px-2.5 py-1.5 text-[11px] font-normal leading-[1.4] text-gray-700 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:text-gray-200 dark:shadow-[0_8px_24px_-20px_rgba(0,0,0,0.5)] sm:gap-2.5 sm:rounded-[var(--app-radius)] sm:text-[12px] sm:leading-[1.45]"
 									>
 										{typeof example !== "string" && example.icon ? (
-											<example.icon className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500 sm:h-4 sm:w-4" />
+											<example.icon className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
 										) : null}
 										<span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
 											{typeof example === "string" ? example : example.label}
@@ -118,10 +118,10 @@ export function EmptyStatePanel({
 							{highlights?.map((item) => (
 								<div
 									key={item}
-									className="flex items-start gap-2 border-gray-200/70 px-1 py-1.5 text-[12px] text-gray-600 dark:border-gray-800 dark:text-gray-300 sm:py-2 sm:text-sm"
+									className="flex items-start gap-2 border-gray-200/70 px-1 py-1.5 text-[11px] text-gray-600 dark:border-gray-800 dark:text-gray-300 sm:py-2 sm:text-[12px]"
 								>
 									<span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-[var(--app-radius)] bg-gray-400 dark:bg-gray-500" />
-									<span className="leading-[1.45] sm:leading-5">{item}</span>
+									<span className="leading-[1.4] sm:leading-[1.45]">{item}</span>
 								</div>
 							))}
 						</div>
@@ -129,7 +129,7 @@ export function EmptyStatePanel({
 				</div>
 
 				{action ? (
-					<div className="mt-3.5 flex min-h-10 items-center justify-center sm:mt-4 sm:min-h-11 xl:mt-5 xl:min-h-12">
+					<div className="mt-3 flex min-h-9 items-center justify-center sm:mt-3.5 sm:min-h-10 xl:mt-4 xl:min-h-11">
 						{action}
 					</div>
 				) : null}
