@@ -142,27 +142,6 @@ Why the proxy is mandatory on VPS:
 
 The proxy is what makes VPS-based scheduling viable. Without it, direct provider access from the VPS is often unreliable.
 
-### Recommended ThorData configuration
-
-Before generating the ThorData endpoint, whitelist your VPS public IP in the ThorData dashboard. That is the recommended setup for OneGlanse because it reduces authentication friction and keeps the proxy flow simpler on self-hosted VPS deployments.
-
-When you generate the endpoint, use these settings:
-
-- Authentication method: `Whitelisted IPs`
-- Endpoint type: `API Link`
-- Session setting: `Sticky session`
-- Country: choose a valid country where your target providers are available and where your audience is actually located
-
-Use the generated API link as `THORDATA_PROXY_API_URL`. Keep sticky sessions enabled for prompt runs so the provider flow stays on a stable residential IP long enough for sign-in and collection to complete reliably.
-
-<img
-  width="100%"
-  alt="Recommended ThorData endpoint generator settings: Whitelisted IPs, API Link, Sticky session, and a valid supported country"
-  src="/images/thordata-endpoint-generator.svg"
-/>
-
-If you still run into proxy issues after using this setup, email [aryamant20@gmail.com](mailto:aryamant20@gmail.com) or open a pull request if you want support for additional proxy providers or authentication methods.
-
 ---
 
 ## 4. Start the stack

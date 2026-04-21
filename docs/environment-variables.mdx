@@ -75,6 +75,27 @@ For ThorData on VPS, the recommended setup is to whitelist your VPS IP first, ge
 | `THORDATA_PROXY_API_URL` | No | — | ThorData rotating proxy API endpoint |
 | `PROXY_SCHEME` | No | `http` | Proxy protocol used for ThorData proxy URLs |
 
+### Recommended ThorData setup
+
+If you are using ThorData, whitelist your VPS public IP in the ThorData dashboard before generating the proxy endpoint. That keeps authentication simpler and is the recommended setup for OneGlanse on VPS deployments.
+
+Use these ThorData endpoint generator settings:
+
+- Authentication method: `Whitelisted IPs`
+- Endpoint type: `API Link`
+- Session setting: `Sticky session`
+- Country: choose a valid country where the providers are available and where your target audience is located
+
+Use the generated API link as `THORDATA_PROXY_API_URL`. Keep sticky sessions enabled for prompt runs so the provider flow stays on a stable residential IP long enough for sign-in and response collection to complete reliably.
+
+<img
+  width="100%"
+  alt="Recommended ThorData endpoint generator settings: Whitelisted IPs, API Link, Sticky session, and a valid supported country"
+  src="/images/thordata-endpoint-generator.svg"
+/>
+
+If you still run into proxy issues after using this setup, email [aryamant20@gmail.com](mailto:aryamant20@gmail.com) or open a pull request if you want support for additional proxy providers or authentication methods.
+
 ---
 
 ## Agent / Runtime Overrides
