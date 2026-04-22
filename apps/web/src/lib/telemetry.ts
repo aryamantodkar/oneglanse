@@ -8,7 +8,7 @@
  * app.posthog.com → Settings → Project API key.
  */
 
-const POSTHOG_KEY = ""; // TODO: paste your PostHog project API key
+const POSTHOG_KEY = "phc_u5esrkrxNLU7DjmSymdoCPQWxxWd68EtQSDWhfVV36Xk";
 
 function capture(event: string, distinctId: string, props: Record<string, string>): void {
 	if (!POSTHOG_KEY) return;
