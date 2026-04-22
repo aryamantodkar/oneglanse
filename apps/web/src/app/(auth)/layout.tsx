@@ -2,6 +2,7 @@ import "../../styles/globals.css";
 import { auth } from "@/lib/auth/auth";
 import { appIcons } from "@/lib/app-metadata";
 import { readProviderConnectionsState } from "@/lib/provider-connections/server";
+import { trackUserActive } from "@/lib/telemetry";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { TRPCReactProvider } from "@/trpc/react";
 import { resolveAppMode } from "@oneglanse/types";
@@ -45,6 +46,8 @@ export default async function RootLayout({
 	if (!session) {
 		return redirect("/login");
 	}
+
+	trackUserActive({ email: session.user.email, name: session.user.name });
 
 	const cookieStore = await cookies();
 	const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
