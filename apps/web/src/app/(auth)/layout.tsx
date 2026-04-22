@@ -9,7 +9,6 @@ import { resolveAppMode } from "@oneglanse/types";
 import { SidebarProvider } from "@oneglanse/ui";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import { after } from "next/server";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import LayoutContent from "./layoutContent";
@@ -48,7 +47,7 @@ export default async function RootLayout({
 		return redirect("/login");
 	}
 
-	after(() => trackUserActive({ email: session.user.email, name: session.user.name }));
+	await trackUserActive({ email: session.user.email, name: session.user.name });
 
 	const cookieStore = await cookies();
 	const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
