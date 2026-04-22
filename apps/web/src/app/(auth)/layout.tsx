@@ -47,7 +47,7 @@ export default async function RootLayout({
 		return redirect("/login");
 	}
 
-	await trackUserActive({ email: session.user.email, name: session.user.name });
+	await trackUserActive(session.user.id);
 
 	const cookieStore = await cookies();
 	const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";

@@ -48,7 +48,7 @@ export const auth = betterAuth({
 		user: {
 			create: {
 				after: async (user) => {
-					await trackUserSignup({ email: user.email, name: user.name });
+					await trackUserSignup(user.id);
 				},
 			},
 		},

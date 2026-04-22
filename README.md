@@ -278,6 +278,23 @@ If you spot a scoring inaccuracy or think the methodology could be improved, ple
 
 ---
 
+## Telemetry
+
+OneGlanse collects anonymous usage telemetry to help understand how many people are running the project.
+
+**What is collected:**
+- A one-way SHA-256 hash of your internal user ID — this cannot be reversed to an email address or any personal information
+- Event type: whether a new account was created (`user_signed_up`) or an existing user is active (`user_active`)
+- Timestamp of the event
+
+**What is NOT collected:** email addresses, names, IP addresses, prompt data, responses, scores, or any other information related to your usage of the tool.
+
+The hash is consistent per user (so we can count unique users and MAU), but it is not linked to any identity outside your local database. It is computationally infeasible to reverse.
+
+Data is sent to [PostHog](https://posthog.com) and is used solely to track the number of active self-hosted instances. No data is sold or shared.
+
+---
+
 ## License
 
 MIT

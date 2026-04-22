@@ -1,13 +1,27 @@
 /**
- * Telemetry via PostHog. No npm package — just a fetch.
- * Key is hardcoded (PostHog project keys are write-only by design).
- * Self-hosters configure nothing.
+ * Anonymous telemetry via PostHog.
+ *
+ * What is collected:
+ *   - A one-way SHA-256 hash of the internal user ID (cannot be reversed to an email or name)
+ *   - Event type: "user_signed_up" or "user_active"
+ *   - Timestamp (implicit, added by PostHog on receipt)
+ *
+ * What is NOT collected: email, name, IP address, or any personally identifiable information.
+ *
+ * The PostHog project API key is hardcoded and write-only — it cannot be used to read data.
+ * Self-hosters configure nothing; this runs automatically.
  */
+
+import { createHash } from "node:crypto";
 
 const POSTHOG_KEY = "phc_u5esrkrxNLU7DjmSymdoCPQWxxWd68EtQSDWhfVV36Xk";
 const POSTHOG_HOST = "https://app.posthog.com/capture/";
 
-async function capture(event: string, email: string, name: string): Promise<void> {
+function anonymousId(userId: string): string {
+	return createHash("sha256").update(userId).digest("hex");
+}
+
+async function capture(event: string, userId: string): Promise<void> {
 	try {
 		const res = await fetch(POSTHOG_HOST, {
 			method: "POST",
@@ -15,8 +29,7 @@ async function capture(event: string, email: string, name: string): Promise<void
 			body: JSON.stringify({
 				api_key: POSTHOG_KEY,
 				event,
-				distinct_id: email,
-				properties: { $set: { email, name } },
+				distinct_id: anonymousId(userId),
 			}),
 		});
 		if (!res.ok) {
@@ -27,10 +40,10 @@ async function capture(event: string, email: string, name: string): Promise<void
 	}
 }
 
-export async function trackUserSignup(args: { email: string; name: string }): Promise<void> {
-	await capture("user_signed_up", args.email, args.name);
+export async function trackUserSignup(userId: string): Promise<void> {
+	await capture("user_signed_up", userId);
 }
 
-export async function trackUserActive(args: { email: string; name: string }): Promise<void> {
-	await capture("user_active", args.email, args.name);
+export async function trackUserActive(userId: string): Promise<void> {
+	await capture("user_active", userId);
 }
