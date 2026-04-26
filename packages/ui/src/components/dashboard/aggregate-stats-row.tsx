@@ -71,7 +71,7 @@ export function AggregateStatsRow({
 	className,
 }: {
 	presenceRate: number;
-	rank: number;
+	rank: number | null;
 	topSource: string;
 	topCompetitor: string;
 	topCompetitorDomain?: string;
@@ -93,7 +93,7 @@ export function AggregateStatsRow({
 			<StatCard
 				icon={Trophy}
 				label="Rank"
-				value={`#${rank}`}
+				value={rank === null ? "--" : `#${rank}`}
 				subtitle="Avg rank across prompts"
 			/>
 			<StatCard

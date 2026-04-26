@@ -1,5 +1,9 @@
 # OneGlanse
 
+<p align="center">
+  <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
+</p>
+
 **The open-source GEO tracker. Free to run. Fully self-hosted. Your data never leaves your machine.**
 
 OneGlanse monitors how your brand appears inside real AI products — ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. It is open source, MIT licensed, and costs nothing to run on your own machine or VPS.

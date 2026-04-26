@@ -219,7 +219,7 @@ export default function Dashboard() {
 						<>
 							<AggregateStatsRow
 								presenceRate={metrics.aggregateStats.presenceRate}
-								rank={metrics.avgRank.position ?? 0}
+								rank={metrics.avgRank.position}
 								topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
 								topCompetitor={metrics.aggregateStats.topCompetitor}
 								topCompetitorDomain={
