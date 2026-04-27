@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 		title: "OneGlanse",
 		description:
 			"Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
-		images: ["/opengraph-image"],
+		images: ["/twitter-image"],
 	},
 };
 

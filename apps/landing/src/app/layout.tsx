@@ -60,7 +60,7 @@ export const metadata: Metadata = {
 		title: "OneGlanse | Open-source GEO & AI Visibility Platform",
 		description:
 			"Track brand visibility across LLM providers with self-hostable agents, ClickHouse analytics, and reproducible prompt testing.",
-		images: ["/opengraph-image"],
+		images: ["/twitter-image"],
 	},
 };
 
