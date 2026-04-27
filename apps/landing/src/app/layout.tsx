@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
@@ -68,7 +69,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
 	return (
 		<html lang="en" className={geist.variable} suppressHydrationWarning>
-			<body>{children}</body>
+			<body>
+				{children}
+				<Analytics />
+			</body>
 		</html>
 	);
 }

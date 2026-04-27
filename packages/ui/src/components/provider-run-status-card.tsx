@@ -53,7 +53,7 @@ export function ProviderRunStatusCard(props: {
 		: 0;
 
 	function getSubtitle() {
-		if (phase === "pending") return "Queued — waiting to start";
+		if (phase === "pending") return "Queued: waiting to start";
 		if (phase === "running") {
 			if (isStopping) return "Canceling prompts…";
 			if (showProgress) {

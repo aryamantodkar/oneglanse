@@ -13,10 +13,11 @@
 	"dependencies": {
 		"@oneglanse/ui": "workspace:*",
 		"@oneglanse/utils": "workspace:*",
+		"@vercel/analytics": "^2.0.1",
+		"lucide-react": "^0.544.0",
 		"next": "^15.5.5",
 		"react": "^19.0.0",
-		"react-dom": "^19.0.0",
-		"lucide-react": "^0.544.0"
+		"react-dom": "^19.0.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

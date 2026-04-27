@@ -34,7 +34,7 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 	{
 		title: "Free to Run Locally",
 		description:
-			"Install once and run entirely on your own machine — no subscription, no usage limits.",
+			"Install once and run entirely on your own machine with no subscription, no usage limits.",
 		icon: KeyRound,
 	},
 	{
@@ -80,7 +80,7 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 export const STORAGE_KEY = "oneglanse-landing-theme" as const;
 
 export const METHOD_POINTS = [
-	"All five providers — ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — are monitored through their real web UIs, not model APIs.",
+	"All five providers are monitored through their real web UIs: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. They are not monitored through model APIs.",
 	"You log in to each provider with your own account. Sessions are stored locally on your machine and never leave your infrastructure.",
 	"Captured responses are analyzed using your own OpenAI or Anthropic API key. No data passes through any third-party server.",
 	"UI responses can differ from API responses in ranking, wording, and citation behavior for the same prompt.",
@@ -89,7 +89,7 @@ export const METHOD_POINTS = [
 
 export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 	{
-		text: "Free to run locally — no subscription, no API calls to third-party servers.",
+		text: "Free to run locally with no subscription, no API calls to third-party servers.",
 		icon: KeyRound,
 	},
 	{

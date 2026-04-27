@@ -1,15 +1,15 @@
 # Contributing to OneGlanse
 
-I'm relatively new to open source — this is one of my first public projects. If you find something worth fixing or improving, I'd genuinely love a PR or even just an issue. Every bit of help makes this better.
+I'm relatively new to open source. This is one of my first public projects. If you find something worth fixing or improving, I'd genuinely love a PR or even just an issue. Every bit of help makes this better.
 
 Thank you for your interest in contributing. OneGlanse is MIT-licensed and fully open source.
 
 ## Ways to Contribute
 
-- **Bug reports** — file a GitHub issue with reproduction steps
-- **Feature requests** — open an issue to discuss before building
-- **Code** — fix bugs, implement requested features, improve performance
-- **Docs** — improve `docs/` or `README.md`
+- **Bug reports:** file a GitHub issue with reproduction steps
+- **Feature requests:** open an issue to discuss before building
+- **Code:** fix bugs, implement requested features, improve performance
+- **Docs:** improve `docs/` or `README.md`
 
 ---
 
@@ -30,7 +30,7 @@ pnpm local
 ```
 apps/
   web/          # Next.js 15 app (tRPC, Drizzle, Better Auth)
-  agent/        # BullMQ worker — browser automation + response capture
+  agent/        # BullMQ worker for browser automation + response capture
 packages/
   db/           # Drizzle schema, migrations, ClickHouse schema
   services/     # Shared business logic (LLM analysis, queue, redis)
@@ -60,9 +60,9 @@ pnpm auth           # Open /providers for interactive auth setup
 
 ### Code Style
 
-- TypeScript throughout — no `any` unless there's a genuine reason
+- TypeScript throughout. Avoid `any` unless there's a genuine reason
 - Match the style of the file you're editing
-- No unnecessary abstractions — solve the problem at hand
+- No unnecessary abstractions. Solve the problem at hand
 - Keep changes surgical: touch only what you must
 
 ### Commits
@@ -75,12 +75,12 @@ Add CSV export for source attribution data
 Remove unused RateLimitError class
 ```
 
-One commit per logical change. Avoid "WIP" or "fix2" commits — squash before opening a PR if needed.
+One commit per logical change. Avoid "WIP" or "fix2" commits. Squash before opening a PR if needed.
 
 ### Pull Requests
 
 - Reference the issue your PR addresses: `Closes #123`
-- Keep PRs focused — one feature or fix per PR
+- Keep PRs focused: one feature or fix per PR
 - Include a short description of what changed and why
 - If you changed agent behavior, describe how you tested it
 

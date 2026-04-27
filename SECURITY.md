@@ -19,4 +19,4 @@ You will receive a response within 72 hours. Once the issue is confirmed and a f
 
 ## Notes on Auth
 
-OneGlanse stores provider auth sessions locally on your machine (or your own VPS). Auth bundles are never transmitted to any external server. Response analysis API calls go directly from your infrastructure to OpenAI or Anthropic — no proxying through OneGlanse servers.
+OneGlanse stores provider auth sessions locally on your machine (or your own VPS). Auth bundles are never transmitted to any external server. Response analysis API calls go directly from your infrastructure to OpenAI or Anthropic. OneGlanse servers do not proxy them.

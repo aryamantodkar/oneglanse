@@ -30,9 +30,9 @@ pnpm build                   # Build all packages
 
 | Capability | Local | Self-Host |
 |---|---|---|
-| Interactive provider auth | Yes | — |
+| Interactive provider auth | Yes | N/A |
 | Manual prompt runs | Yes | Yes |
-| Recurring scheduling | — | Yes |
+| Recurring scheduling | N/A | Yes |
 | Full data ownership | Yes | Yes |
 
 ## Auth Groups
@@ -48,7 +48,7 @@ Each auth group covers one or more runtime providers:
 
 ## Storage Model
 
-- **Portable auth bundles** — one per auth group, transferable to VPS, source of truth
-- **Persistent runtime profiles** — one per provider, machine-local, seeded from the auth bundle
+- **Portable auth bundles:** one per auth group, transferable to VPS, source of truth
+- **Persistent runtime profiles:** one per provider, machine-local, seeded from the auth bundle
 
 If a runtime profile is missing or the auth bundle has changed, the profile is reseeded automatically. Otherwise the existing profile is reused.

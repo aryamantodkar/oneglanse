@@ -48,7 +48,7 @@ If the containers aren't listed, restart with `pnpm local`. If Docker itself isn
 
 **Symptom:** Dashboard shows no data, or logs show a ClickHouse connection error shortly after startup.
 
-**Cause:** ClickHouse takes 10–20 seconds to fully initialize on first boot.
+**Cause:** ClickHouse takes 10 to 20 seconds to fully initialize on first boot.
 
 **Fix:** Wait a moment and reload the page. If it persists, check the container:
 
@@ -91,9 +91,9 @@ Note: these control sign-in to the OneGlanse web app itself. They are separate f
 
 **Causes and fixes:**
 
-1. **Worker not started** — `pnpm local` starts both web and agent. If you started the web app separately, also run `pnpm dev:agent`.
-2. **Provider auth missing** — run `pnpm auth` locally and confirm at least one provider completes sign-in. If a provider is still disconnected, rerun the auth flow for that provider.
-3. **Redis not reachable** — see the Redis section above.
+1. **Worker not started:** `pnpm local` starts both web and agent. If you started the web app separately, also run `pnpm dev:agent`.
+2. **Provider auth missing:** run `pnpm auth` locally and confirm at least one provider completes sign-in. If a provider is still disconnected, rerun the auth flow for that provider.
+3. **Redis not reachable:** see the Redis section above.
 
 ---
 

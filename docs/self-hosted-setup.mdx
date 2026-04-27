@@ -1,13 +1,13 @@
 ---
 title: Self-Hosted Setup
-description: Deploy the OneGlanse app on your own VPS with nginx, SSL, and provider auth upload — step by step with copy-paste commands.
+description: Deploy the OneGlanse app on your own VPS with nginx, SSL, and provider auth upload: step by step with copy-paste commands.
 ---
 
 ## Interactive setup (recommended)
 
 Before you run the setup script, make sure you are logged in as a non-root user with `sudo` access. The script is designed for that flow and will stop if you run it as `root`.
 
-If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the app deployment path — dependencies, repo clone, `.env` config, Docker image pull, nginx, SSL, and firewall — in one session:
+If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the app deployment path: dependencies, repo clone, `.env` config, Docker image pull, nginx, SSL, and firewall: in one session:
 
 ```bash
 # On your VPS (as a non-root user with sudo privileges):
@@ -40,7 +40,7 @@ git clone https://github.com/aryamantodkar/oneglanse /tmp/oneglanse
 bash /tmp/oneglanse/scripts/setup-vps.sh
 ```
 
-The script is interactive — it asks for your domain, LLM key, and proxy URL, then does the rest. If you leave the auth upload token blank, it generates one automatically, and it handles first-run Docker group access for the setup user in the same session.
+The script is interactive: it asks for your domain, LLM key, and proxy URL, then does the rest. If you leave the auth upload token blank, it generates one automatically, and it handles first-run Docker group access for the setup user in the same session.
 
 Do not use `curl ... | bash` here. Because the setup flow is interactive, piping the script body into `bash` steals stdin from the prompts. `bash <(...)` keeps stdin attached to your terminal, so the prompts work correctly.
 
@@ -84,10 +84,10 @@ Any provider works (Hetzner, DigitalOcean, Vultr, etc.). Minimum spec:
 | Disk | 40 GB SSD | 80 GB SSD |
 | OS | Ubuntu 22.04 | Ubuntu 24.04 |
 
-Point a DNS A record at your VPS IP before continuing — nginx and certbot need it:
+Point a DNS A record at your VPS IP before continuing: nginx and certbot need it:
 
 ```
-A  app.yourdomain.com  →  YOUR_VPS_IP
+A  app.yourdomain.com points to YOUR_VPS_IP
 ```
 
 If you do not have a real domain yet and only need a temporary launch/test hostname, a wildcard DNS helper such as `YOUR_VPS_IP.nip.io` or `YOUR_VPS_IP.sslip.io` also works.
@@ -140,16 +140,16 @@ Minimum required changes:
 APP_URL=https://app.yourdomain.com
 API_BASE_URL=https://app.yourdomain.com
 
-# LLM key for response analysis — pick one:
+# LLM key for response analysis: pick one:
 OPENAI_API_KEY=sk-...
 # or:
 # ANTHROPIC_API_KEY=sk-ant-...
 # ANALYSIS_LLM_PROVIDER=claude
 
-# Residential proxy — required on VPS
+# Residential proxy: required on VPS
 THORDATA_PROXY_API_URL=https://your-thordata-endpoint
 
-# Auth upload token — any strong random string
+# Auth upload token: any strong random string
 AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret
 ```
 
@@ -198,7 +198,7 @@ Create the nginx site config:
 sudo nano /etc/nginx/sites-available/oneglanse
 ```
 
-Paste this — replace `app.yourdomain.com` with your domain:
+Paste this: replace `app.yourdomain.com` with your domain:
 
 ```nginx
 server {
@@ -239,7 +239,7 @@ sudo certbot --nginx -d app.yourdomain.com
 
 Certbot will:
 1. Obtain a certificate
-2. Automatically update the nginx config to redirect HTTP → HTTPS
+2. Automatically update the nginx config to redirect HTTP traffic to HTTPS
 3. Set up auto-renewal via a systemd timer
 
 Verify auto-renewal works:
@@ -256,7 +256,7 @@ Provider auth must be captured on your **local machine** (it needs a real browse
 
 OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, for this flow. That is intentional: plain Chrome / Chromium automation is more likely to trigger login loops, verification challenges, or unstable sessions on provider websites. Camoufox is a better fit for authenticated scraping against anti-bot-protected chat interfaces.
 
-**On your local machine** — set these in your local `.env`:
+**On your local machine:** set these in your local `.env`:
 
 ```bash
 ONEGLANSE_VPS_IP=YOUR_VPS_IP
@@ -269,7 +269,7 @@ Then open the provider auth flow and sign in to each provider:
 pnpm auth
 ```
 
-At the end of the sign-in flow, `pnpm auth` will ask whether to upload to the VPS — answer `y`. Sessions are transferred and the VPS agent picks them up immediately.
+At the end of the sign-in flow, `pnpm auth` will ask whether to upload to the VPS: answer `y`. Sessions are transferred and the VPS agent picks them up immediately.
 
 When a session expires later and you want to re-upload without going through the sign-in flow again:
 
@@ -334,19 +334,19 @@ The app ports (3000, 5432, 8123, 6379) stay internal. Port `3333` is only for `p
 
 ## Troubleshooting
 
-**502 Bad Gateway** — the web container isn't running yet. Check:
+**502 Bad Gateway:** the web container isn't running yet. Check:
 ```bash
 docker logs oneglanse-web --tail 50
 ```
 
-**SSL certificate failed** — DNS hasn't propagated yet. Wait a few minutes and retry:
+**SSL certificate failed:** DNS hasn't propagated yet. Wait a few minutes and retry:
 ```bash
 sudo certbot --nginx -d app.yourdomain.com
 ```
 
-**Providers disconnected after reboot** — sessions survive restarts (they're in the volume at `/opt/oneglanse/storage`). If they expire, re-run `pnpm upload:vps` from your local machine.
+**Providers disconnected after reboot:** sessions survive restarts (they're in the volume at `/opt/oneglanse/storage`). If they expire, re-run `pnpm upload:vps` from your local machine.
 
-**VPS ran out of disk** — ClickHouse data grows over time. Check usage:
+**VPS ran out of disk:** ClickHouse data grows over time. Check usage:
 ```bash
 df -h
 docker system df
