@@ -2,6 +2,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import Script from "next/script";
 
 const geist = Geist({
 	subsets: ["latin"],
@@ -72,6 +73,12 @@ export default function RootLayout({
 			<body>
 				{children}
 				<Analytics />
+				<Script
+					defer
+					data-domain="oneglanse.com"
+					data-site-id="gx_vW8p4KqTeprD"
+					src="https://ghostlyx.com/js/script.js"
+				/>
 			</body>
 		</html>
 	);
