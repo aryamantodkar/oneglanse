@@ -483,7 +483,7 @@ export default function Prompts() {
 	};
 
 	const handleAddBulkPrompts = () => {
-		const parsed = parseBulkPrompts(bulkInput).slice(0, 100);
+		const parsed = parseBulkPrompts(bulkInput);
 		if (parsed.length === 0) return;
 
 		const existingLower = new Set(
@@ -642,19 +642,9 @@ export default function Prompts() {
 								{bulkInput.trim() &&
 									(() => {
 										const count = parseBulkPrompts(bulkInput).length;
-										const overLimit = count > 100;
 										return (
-											<p
-												className={cn(
-													"text-[11px] sm:text-[12px]",
-													overLimit
-														? "text-red-500"
-														: "text-gray-500 dark:text-gray-400",
-												)}
-											>
-												{overLimit
-													? `${count} prompts detected — only the first 100 will be added.`
-													: `${count} prompt${count === 1 ? "" : "s"} detected`}
+											<p className="text-[11px] text-gray-500 sm:text-[12px] dark:text-gray-400">
+												{count} prompt{count === 1 ? "" : "s"} detected
 											</p>
 										);
 									})()}
@@ -722,7 +712,7 @@ export default function Prompts() {
 							>
 								Add{" "}
 								{parseBulkPrompts(bulkInput).length > 0
-									? `${Math.min(parseBulkPrompts(bulkInput).length, 100)} Prompt${parseBulkPrompts(bulkInput).length === 1 ? "" : "s"}`
+									? `${parseBulkPrompts(bulkInput).length} Prompt${parseBulkPrompts(bulkInput).length === 1 ? "" : "s"}`
 									: "Prompts"}
 							</Button>
 						) : (
