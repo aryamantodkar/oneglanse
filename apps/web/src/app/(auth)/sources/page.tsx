@@ -2,6 +2,7 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import type { GroupedSource, SourceGroupResult } from "@oneglanse/types";
 import {
@@ -264,6 +265,91 @@ export default function SourcesPage(): React.JSX.Element {
 							<ExportMenu
 								className="w-full sm:w-auto"
 								disabled={!hasExportableData}
+								onExportReport={() => {
+									const concentrationRisk =
+										metrics.topDomainShare >= 45
+											? "High — over 45% of citations from one domain."
+											: metrics.topDomainShare >= 30
+												? "Moderate — top domain accounts for 30%+ of citations."
+												: "Healthy — citations are spread across multiple domains.";
+
+									const topDomainRows = domainGroups.slice(0, 8).map((g) => ({
+										label: g.domain,
+										value: `${g.totalCitations} citation${g.totalCitations === 1 ? "" : "s"}`,
+										sub: `${g.urlCount} URL${g.urlCount === 1 ? "" : "s"}`,
+									}));
+
+									const topUrlRows = displayedSources.slice(0, 6).map((s) => ({
+										label:
+											getUrlPath(s.url).length > 55
+												? `${getUrlPath(s.url).slice(0, 55)}…`
+												: getUrlPath(s.url) || s.url,
+										value: `${s.totalSources ?? 0} citation${(s.totalSources ?? 0) === 1 ? "" : "s"}`,
+									}));
+
+									const actions = [
+										metrics.topDomainShare >= 45
+											? "Diversify citation sources — over 45% concentration in one domain is a risk."
+											: null,
+										domainGroups.length < 3
+											? "Broaden your content footprint to appear on more domains."
+											: null,
+										metrics.totalCitations === 0
+											? "No citations yet — publish authoritative content that AI models can reference."
+											: null,
+									].filter((s): s is string => s !== null);
+
+									downloadHtmlReport(
+										`sources-report-${workspaceId}-${Date.now()}.html`,
+										{
+											title: "Sources Intelligence Report",
+											subtitle: `${metrics.totalDomains} domains · ${metrics.totalUrls} URLs · ${metrics.totalCitations} citations`,
+											generatedAt: new Date().toLocaleString(),
+											metrics: [
+												{
+													label: "Total Citations",
+													value: metrics.totalCitations,
+													highlight: true,
+												},
+												{
+													label: "Domains",
+													value: metrics.totalDomains,
+												},
+												{
+													label: "URLs",
+													value: metrics.totalUrls,
+												},
+												{
+													label: "Top Domain Share",
+													value: metrics.topDomainShare,
+													suffix: "%",
+												},
+											],
+											actions:
+												actions.length > 0
+													? actions.map((text) => ({ text }))
+													: [
+															{
+																text: `Source concentration is healthy. Top domain: ${metrics.topDomain} (${metrics.topDomainShare}%).`,
+															},
+														],
+											sections: [
+												{
+													title: "Concentration Risk",
+													rows: [
+														{ label: "Assessment", value: concentrationRisk },
+													],
+												},
+												...(topDomainRows.length > 0
+													? [{ title: "Top Domains", rows: topDomainRows }]
+													: []),
+												...(topUrlRows.length > 0
+													? [{ title: "Top URLs", rows: topUrlRows }]
+													: []),
+											],
+										},
+									);
+								}}
 								onExportJson={() => {
 									const citationRows = domainGroups.flatMap((group) =>
 										group.urls.flatMap((source) =>

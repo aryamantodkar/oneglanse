@@ -15,6 +15,7 @@ import {
 import { authClient } from "@/lib/auth/auth-client";
 import { signOutAndRedirect } from "@/lib/auth/logout";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type {
@@ -242,6 +243,104 @@ export default function SettingsPage() {
 		downloadCsv(`workspace-all-${workspaceId}-${Date.now()}.csv`, rows);
 	};
 
+	const handleExportAllReport = () => {
+		const userPrompts = userPromptsQuery.data ?? [];
+		const analysisData = Array.isArray(analysisQuery.data)
+			? analysisQuery.data
+			: [];
+		const combinedSources = sourcesQuery.data?.sourceStats?.combined ?? [];
+		const domainStatsRaw = sourcesQuery.data?.domain_stats;
+		const domainStats = Array.isArray(domainStatsRaw)
+			? domainStatsRaw
+			: (domainStatsRaw?.combined ?? []);
+
+		const analyzedRecords = analysisData.filter(
+			(r: AnalysisRecord) => r.is_analysed && r.brand_analysis,
+		);
+		const avgGeo =
+			analyzedRecords.length > 0
+				? Math.round(
+						analyzedRecords.reduce(
+							(s: number, r: AnalysisRecord) =>
+								s + (r.brand_analysis?.geoScore?.overall ?? 0),
+							0,
+						) / analyzedRecords.length,
+					)
+				: 0;
+		const presenceRate =
+			analyzedRecords.length > 0
+				? Math.round((analyzedRecords.length / analysisData.length) * 100)
+				: 0;
+		const totalCitations = combinedSources.reduce(
+			(sum: number, s: GroupedSource) => sum + (s.totalSources ?? 0),
+			0,
+		);
+
+		const topDomainRows = (domainStats as DomainStats[])
+			.slice(0, 5)
+			.map((d: DomainStats) => ({
+				label: d.domain,
+				value: `${d.totalOccurrences} mention${d.totalOccurrences === 1 ? "" : "s"}`,
+			}));
+
+		const topPromptRows = [...analyzedRecords]
+			.sort(
+				(a: AnalysisRecord, b: AnalysisRecord) =>
+					(b.brand_analysis?.geoScore?.overall ?? 0) -
+					(a.brand_analysis?.geoScore?.overall ?? 0),
+			)
+			.slice(0, 5)
+			.map((r: AnalysisRecord) => ({
+				label: r.prompt.length > 60 ? `${r.prompt.slice(0, 60)}…` : r.prompt,
+				value: String(r.brand_analysis?.geoScore?.overall ?? "—"),
+				sub: "GEO score",
+			}));
+
+		const actions = [
+			presenceRate < 70
+				? "Increase brand mention frequency across high-intent prompts."
+				: null,
+			userPrompts.length < 5
+				? "Add more prompts to improve coverage across buyer intent categories."
+				: null,
+			totalCitations === 0
+				? "No citations captured yet — publish content for AI models to reference."
+				: null,
+		].filter((s): s is string => s !== null);
+
+		downloadHtmlReport(`workspace-report-${workspaceId}-${Date.now()}.html`, {
+			title: "Workspace AI Visibility Report",
+			subtitle: `${userPrompts.length} prompts · ${analysisData.length} responses · ${totalCitations} citations`,
+			generatedAt: new Date().toLocaleString(),
+			metrics: [
+				{
+					label: "Analyzed Responses",
+					value: analyzedRecords.length,
+					highlight: true,
+				},
+				{ label: "Prompts", value: userPrompts.length },
+				{ label: "Avg GEO Score", value: avgGeo },
+				{ label: "Total Citations", value: totalCitations },
+			],
+			actions:
+				actions.length > 0
+					? actions.map((text) => ({ text }))
+					: [
+							{
+								text: "Workspace is performing well. Continue scaling prompt coverage.",
+							},
+						],
+			sections: [
+				...(topDomainRows.length > 0
+					? [{ title: "Top Citation Domains", rows: topDomainRows }]
+					: []),
+				...(topPromptRows.length > 0
+					? [{ title: "Strongest Prompts by GEO Score", rows: topPromptRows }]
+					: []),
+			],
+		});
+	};
+
 	const hasAnyExportData =
 		(userPromptsQuery.data?.length ?? 0) > 0 ||
 		(analysisQuery.data?.length ?? 0) > 0 ||
@@ -268,6 +367,24 @@ export default function SettingsPage() {
 								</p>
 							</div>
 							<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+								<Button
+									variant="outline"
+									className={cn(
+										formSecondaryButtonClassName,
+										subtleBorderButtonClassName,
+										"w-full gap-2 sm:w-auto",
+									)}
+									onClick={handleExportAllReport}
+									disabled={
+										userPromptsQuery.isLoading ||
+										analysisQuery.isLoading ||
+										sourcesQuery.isLoading ||
+										!hasAnyExportData
+									}
+								>
+									<Download className="h-4 w-4" />
+									Export Report
+								</Button>
 								<Button
 									variant="outline"
 									className={cn(
