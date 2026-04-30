@@ -59,6 +59,7 @@ import {
 } from "@oneglanse/ui";
 import { PositionMetricCell, SentimentMetricCell } from "@oneglanse/ui";
 import {
+	buildDetailedAnalysisCsvRow,
 	filterAnalysisRecords,
 	formatDate,
 	formatMarkdown,
@@ -869,12 +870,21 @@ export default function Prompts() {
 													) / analyzedRows.length,
 												)
 											: 0;
+									const avgVisibility =
+										analyzedRows.length > 0
+											? Math.round(
+													analyzedRows.reduce(
+														(s, r) => s + (r.metrics?.visibility ?? 0),
+														0,
+													) / analyzedRows.length,
+												)
+											: 0;
 									const topPrompts = [...analyzedRows]
 										.sort(
 											(a, b) =>
 												(b.metrics?.geoScore ?? 0) - (a.metrics?.geoScore ?? 0),
 										)
-										.slice(0, 5)
+										.slice(0, 8)
 										.map((r) => ({
 											label:
 												r.prompt.prompt.length > 60
@@ -888,7 +898,7 @@ export default function Prompts() {
 											(a, b) =>
 												(a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0),
 										)
-										.slice(0, 5)
+										.slice(0, 8)
 										.map((r) => ({
 											label:
 												r.prompt.prompt.length > 60
@@ -901,7 +911,9 @@ export default function Prompts() {
 										analyzedRows.some((r) => (r.metrics?.geoScore ?? 0) < 40)
 											? "Revise low-scoring prompts to better reflect buyer intent and comparison language."
 											: null,
-										analyzedRows.some((r) => r.reason === "brand-not-mentioned")
+										analyzedRows.some(
+											(r) => r.reason === "brand-not-mentioned",
+										)
 											? "Some prompts returned responses that don't mention your brand — consider refining prompt wording."
 											: null,
 										avgGeo > 70
@@ -909,20 +921,52 @@ export default function Prompts() {
 											: null,
 									].filter((s): s is string => s !== null);
 
-									const sections = [
-										topPrompts.length > 0
-											? { title: "Strongest Prompts", rows: topPrompts }
-											: null,
-										weakPrompts.length > 0 && analyzedRows.length > 1
-											? { title: "Prompts to Improve", rows: weakPrompts }
-											: null,
-									].filter((s): s is NonNullable<typeof s> => s !== null);
+									const records = filteredRecords.map((r) => {
+										const ba = r.brand_analysis;
+										const risks = ba?.risks?.items ?? [];
+										const competitors = ba?.competitors ?? [];
+										return {
+											promptId: r.prompt_id,
+											prompt: r.prompt,
+											model: r.model_provider,
+											runAt: r.prompt_run_at,
+											geoScore: ba?.geoScore?.overall ?? "",
+											sentiment: ba?.sentiment?.score ?? "",
+											visibility: ba?.presence?.visibility ?? "",
+											rank: ba?.position?.rankPosition ?? "",
+											recommendation: ba?.recommendation?.type ?? "",
+											mentioned: ba?.presence?.mentioned ?? "",
+											riskCritical: risks.filter(
+												(x) => x.severity === "critical",
+											).length,
+											riskWarning: risks.filter(
+												(x) => x.severity === "warning",
+											).length,
+											riskInfo: risks.filter((x) => x.severity === "info")
+												.length,
+											citationCount: r.sources?.length ?? 0,
+											bestKnownFor: ba?.perception?.bestKnownFor ?? "",
+											pricingPerception:
+												ba?.perception?.pricingPerception ?? "",
+											coreClaims:
+												ba?.perception?.coreClaims?.join(" | ") ?? "",
+											differentiators:
+												ba?.perception?.differentiators?.join(" | ") ?? "",
+											competitorNames: competitors.map((c) => c.name).join(" | "),
+											sourceUrls: (r.sources ?? []).map((s) => s.url).join(" | "),
+											sourceDomains: (r.sources ?? [])
+												.map((s) => s.domain ?? "")
+												.filter(Boolean)
+												.join(" | "),
+											response: r.response ?? "",
+										};
+									});
 
 									downloadHtmlReport(
 										`prompts-report-${workspaceId}-${Date.now()}.html`,
 										{
 											title: "Prompt Performance Report",
-											subtitle: `${sortedPromptsWithMetrics.length} prompts · ${analyzedRows.length} analyzed`,
+											subtitle: `${sortedPromptsWithMetrics.length} prompts · ${analyzedRows.length} analyzed · ${filteredRecords.length} total records`,
 											generatedAt: new Date().toLocaleString(),
 											metrics: [
 												{
@@ -930,17 +974,13 @@ export default function Prompts() {
 													value: sortedPromptsWithMetrics.length,
 													highlight: true,
 												},
+												{ label: "Analyzed", value: analyzedRows.length },
+												{ label: "Avg GEO Score", value: avgGeo },
+												{ label: "Avg Sentiment", value: avgSentiment },
 												{
-													label: "Analyzed",
-													value: analyzedRows.length,
-												},
-												{
-													label: "Avg GEO Score",
-													value: avgGeo,
-												},
-												{
-													label: "Avg Sentiment",
-													value: avgSentiment,
+													label: "Avg Visibility",
+													value: avgVisibility,
+													suffix: "%",
 												},
 											],
 											actions:
@@ -951,7 +991,15 @@ export default function Prompts() {
 																text: "Maintain current prompt strategy and expand coverage.",
 															},
 														],
-											sections,
+											sections: [
+												topPrompts.length > 0
+													? { title: "Strongest Prompts", rows: topPrompts }
+													: null,
+												weakPrompts.length > 0 && analyzedRows.length > 1
+													? { title: "Prompts to Improve", rows: weakPrompts }
+													: null,
+											].filter((s): s is NonNullable<typeof s> => s !== null),
+											records,
 										},
 									);
 								}}
@@ -971,32 +1019,6 @@ export default function Prompts() {
 											(a, b) =>
 												(a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0),
 										)[0];
-									const promptRows = sortedPromptsWithMetrics.map(
-										({ prompt, metrics, modelProvider, reason }) => ({
-											promptId: prompt.id,
-											prompt: prompt.prompt,
-											modelProvider,
-											geoScore: metrics?.geoScore ?? null,
-											sentiment: metrics?.sentiment ?? null,
-											visibility: metrics?.visibility ?? null,
-											position: metrics?.position ?? null,
-											reason: reason ?? null,
-											responses: filteredRecords
-												.filter((r) => r.prompt_id === prompt.id)
-												.map((r) => ({
-													model: r.model_provider,
-													promptRunAt: r.prompt_run_at,
-													response: r.response,
-													citations: r.sources?.length ?? 0,
-													sources: (r.sources ?? []).map((source) => ({
-														title: source.title ?? "",
-														url: source.url ?? "",
-														domain: source.domain ?? "",
-														citedText: source.cited_text ?? "",
-													})),
-												})),
-										}),
-									);
 
 									downloadJson(`prompts-${workspaceId}-${Date.now()}.json`, {
 										generatedAt: new Date().toISOString(),
@@ -1004,12 +1026,7 @@ export default function Prompts() {
 										report: {
 											title: "Prompt Performance Export",
 											version: "2.0",
-											filters: {
-												modelFilter,
-												timeFilter,
-												sortBy,
-												sortDirection,
-											},
+											filters: { modelFilter, timeFilter, sortBy, sortDirection },
 										},
 										overview: {
 											totalPrompts: sortedPromptsWithMetrics.length,
@@ -1030,19 +1047,51 @@ export default function Prompts() {
 											sortedPromptsWithMetrics.some(
 												(row) => row.reason === "brand-not-mentioned",
 											)
-												? "Revise prompts where brand is not mentioned to improve coverage."
+												? "Revise prompts where brand is not mentioned."
 												: null,
 										].filter(Boolean),
-										detailedData: {
-											rows: promptRows,
-										},
+										records: filteredRecords.map((r) => ({
+											recordId: r.id,
+											promptId: r.prompt_id,
+											prompt: r.prompt,
+											model: r.model_provider,
+											runAt: r.prompt_run_at,
+											isAnalysed: r.is_analysed,
+											geoScore: r.brand_analysis?.geoScore?.overall ?? null,
+											sentiment: r.brand_analysis?.sentiment?.score ?? null,
+											visibility:
+												r.brand_analysis?.presence?.visibility ?? null,
+											rank: r.brand_analysis?.position?.rankPosition ?? null,
+											brandMentioned:
+												r.brand_analysis?.presence?.mentioned ?? null,
+											recommendation:
+												r.brand_analysis?.recommendation?.type ?? null,
+											bestKnownFor:
+												r.brand_analysis?.perception?.bestKnownFor ?? null,
+											pricingPerception:
+												r.brand_analysis?.perception?.pricingPerception ?? null,
+											coreClaims:
+												r.brand_analysis?.perception?.coreClaims ?? [],
+											differentiators:
+												r.brand_analysis?.perception?.differentiators ?? [],
+											risks: r.brand_analysis?.risks?.items ?? [],
+											competitors: r.brand_analysis?.competitors ?? [],
+											citations: r.sources?.length ?? 0,
+											sources: (r.sources ?? []).map((s) => ({
+												title: s.title ?? "",
+												url: s.url,
+												domain: s.domain ?? "",
+												citedText: s.cited_text ?? "",
+											})),
+											response: r.response ?? "",
+										})),
 									});
 								}}
 								onExportCsv={() => {
 									const analyzedPromptCount = sortedPromptsWithMetrics.filter(
 										(row) => row.metrics !== null,
 									).length;
-									const rows = [
+									const overviewRows = [
 										{
 											section: "overview",
 											metric: "Total Prompts",
@@ -1059,27 +1108,14 @@ export default function Prompts() {
 											value:
 												sortedPromptsWithMetrics.length - analyzedPromptCount,
 										},
-										...sortedPromptsWithMetrics.map(
-											({ prompt, metrics, modelProvider, reason }) => {
-												const promptSources = filteredRecords
-													.filter((r) => r.prompt_id === prompt.id)
-													.flatMap((r) => r.sources ?? []);
-												return {
-													section: "prompt_details",
-													prompt: prompt.prompt,
-													model: modelProvider,
-													geo_score: metrics?.geoScore ?? "",
-													sentiment: metrics?.sentiment ?? "",
-													visibility: metrics?.visibility ?? "",
-													position: metrics?.position ?? "",
-													status: reason ?? "ok",
-													source_urls: joinSourceUrls(promptSources),
-													cited_texts: joinCitedTexts(promptSources),
-												};
-											},
-										),
 									];
-									downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, rows);
+									const detailRows = filteredRecords.map((r) =>
+										buildDetailedAnalysisCsvRow(r),
+									);
+									downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, [
+										...overviewRows,
+										...detailRows,
+									]);
 								}}
 							/>
 						</div>

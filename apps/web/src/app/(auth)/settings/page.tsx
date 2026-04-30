@@ -38,7 +38,7 @@ import {
 	toast,
 } from "@oneglanse/ui";
 import {
-	buildAnalysisCsvRow,
+	buildDetailedAnalysisCsvRow,
 	getUniqueModelProviders,
 	joinCitedTexts,
 } from "@oneglanse/utils";
@@ -177,13 +177,11 @@ export default function SettingsPage() {
 		const domainStats = Array.isArray(domainStatsRaw)
 			? domainStatsRaw
 			: (domainStatsRaw?.combined ?? []);
+		const m = dashboardMetrics;
 
 		const rows: Array<Record<string, unknown>> = [
-			{
-				section: "overview",
-				metric: "Prompts",
-				value: userPrompts.length,
-			},
+			// ── Overview ──────────────────────────────────────────────────────────
+			{ section: "overview", metric: "Prompts", value: userPrompts.length },
 			{
 				section: "overview",
 				metric: "Analysis Records",
@@ -203,22 +201,94 @@ export default function SettingsPage() {
 					0,
 				),
 			},
-			...userPrompts.map((prompt) => ({
-				section: "prompt_definitions",
-				prompt_id: prompt.id,
-				prompt: prompt.prompt,
-				created_at: prompt.created_at,
+			// ── Aggregate metrics ─────────────────────────────────────────────────
+			{
+				section: "aggregate_metrics",
+				metric: "Presence Rate",
+				value: `${m.aggregateStats.presenceRate}%`,
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Avg Rank",
+				value: m.avgRank.position ?? "N/A",
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Recommendation Rate",
+				value: `${m.impactMetrics.recommendationRate}%`,
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Top Pick Rate",
+				value: `${m.impactMetrics.topPickRate}%`,
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Avg Sentiment",
+				value: m.avgSentiment.score,
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Avg Visibility",
+				value: `${m.impactMetrics.avgVisibility}%`,
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Critical Risks",
+				value: m.impactMetrics.criticalRiskCount,
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Top Competitor",
+				value: m.aggregateStats.topCompetitor,
+			},
+			// ── Brand perception ──────────────────────────────────────────────────
+			{
+				section: "brand_perception",
+				metric: "Best Known For",
+				value: m.brandPerception.bestKnownFor ?? "",
+			},
+			{
+				section: "brand_perception",
+				metric: "Pricing Perception",
+				value: m.brandPerception.pricingPerception,
+			},
+			{
+				section: "brand_perception",
+				metric: "Core Claims",
+				value: m.brandPerception.coreClaims.join(" | "),
+			},
+			{
+				section: "brand_perception",
+				metric: "Differentiators",
+				value: m.brandPerception.differentiators.join(" | "),
+			},
+			// ── Competitor table ──────────────────────────────────────────────────
+			...m.competitorData
+				.filter((c) => !c.isBrand)
+				.map((c) => ({
+					section: "competitors",
+					name: c.name,
+					domain: c.domain,
+					appearances: c.appearances,
+					avg_rank: c.avgRank ?? "",
+					avg_sentiment: c.avgSentiment,
+					recommendation_count: c.recCount,
+				})),
+			// ── Citation source table ─────────────────────────────────────────────
+			...m.sourcesIntelligence.map((s) => ({
+				section: "citation_sources",
+				domain: s.domain,
+				citation_count: s.citationCount,
 			})),
-			...analysisData.map((record: AnalysisRecord) => ({
-				prompt_id: record.prompt_id,
-				...buildAnalysisCsvRow(record, "analysis_metrics"),
-			})),
+			// ── Domain performance ────────────────────────────────────────────────
 			...domainStats.map((domain: DomainStats) => ({
 				section: "source_domain_performance",
 				domain: domain.domain,
 				total_sources: domain.totalOccurrences,
 				percentage: domain.usedPercentageAcrossAllDomains,
 			})),
+			// ── URL performance ───────────────────────────────────────────────────
 			...combinedSources.map((source: GroupedSource) => ({
 				section: "source_url_performance",
 				url: source.url,
@@ -227,6 +297,7 @@ export default function SettingsPage() {
 				models: getUniqueModelProviders(source.excerpts ?? []).join(", "),
 				cited_texts: joinCitedTexts(source.excerpts ?? []),
 			})),
+			// ── Source excerpts ───────────────────────────────────────────────────
 			...combinedSources.flatMap((source: GroupedSource) =>
 				(source.excerpts ?? []).map((excerpt: SourceExcerpt) => ({
 					section: "source_excerpts",
@@ -236,23 +307,10 @@ export default function SettingsPage() {
 					cited_text: excerpt.cited_text ?? "",
 				})),
 			),
-			...analysisData.flatMap((record: AnalysisRecord) =>
-				(record.sources ?? []).map((source: Source) => ({
-					section: "analysis_sources",
-					prompt_id: record.prompt_id,
-					model: record.model_provider,
-					source_title: source.title ?? "",
-					source_url: source.url ?? "",
-					source_domain: source.domain ?? "",
-					source_cited_text: source.cited_text ?? "",
-				})),
+			// ── Full per-record detail (every metric) ─────────────────────────────
+			...analysisData.map((record: AnalysisRecord) =>
+				buildDetailedAnalysisCsvRow(record),
 			),
-			...analysisData.map((record: AnalysisRecord) => ({
-				section: "analysis_full_json",
-				prompt_id: record.prompt_id,
-				model: record.model_provider,
-				brand_analysis_json: JSON.stringify(record.brand_analysis ?? {}),
-			})),
 		];
 
 		downloadCsv(`workspace-all-${workspaceId}-${Date.now()}.csv`, rows);
@@ -345,6 +403,39 @@ export default function SettingsPage() {
 				: null,
 		].filter((s): s is NonNullable<typeof s> => s !== null);
 
+		const records = m.analyzedRecords.map((r) => {
+			const ba = r.brand_analysis;
+			const risks = ba?.risks?.items ?? [];
+			const competitors = ba?.competitors ?? [];
+			return {
+				promptId: r.prompt_id,
+				prompt: r.prompt,
+				model: r.model_provider,
+				runAt: r.prompt_run_at,
+				geoScore: ba?.geoScore?.overall ?? "",
+				sentiment: ba?.sentiment?.score ?? "",
+				visibility: ba?.presence?.visibility ?? "",
+				rank: ba?.position?.rankPosition ?? "",
+				recommendation: ba?.recommendation?.type ?? "",
+				mentioned: ba?.presence?.mentioned ?? "",
+				riskCritical: risks.filter((x) => x.severity === "critical").length,
+				riskWarning: risks.filter((x) => x.severity === "warning").length,
+				riskInfo: risks.filter((x) => x.severity === "info").length,
+				citationCount: r.sources?.length ?? 0,
+				bestKnownFor: ba?.perception?.bestKnownFor ?? "",
+				pricingPerception: ba?.perception?.pricingPerception ?? "",
+				coreClaims: ba?.perception?.coreClaims?.join(" | ") ?? "",
+				differentiators: ba?.perception?.differentiators?.join(" | ") ?? "",
+				competitorNames: competitors.map((c) => c.name).join(" | "),
+				sourceUrls: (r.sources ?? []).map((s) => s.url).join(" | "),
+				sourceDomains: (r.sources ?? [])
+					.map((s) => s.domain ?? "")
+					.filter(Boolean)
+					.join(" | "),
+				response: r.response ?? "",
+			};
+		});
+
 		downloadHtmlReport(`workspace-report-${workspaceId}-${Date.now()}.html`, {
 			title: m.brandName || "AI Visibility Report",
 			subtitle: `${m.brandDomain ? `${m.brandDomain} · ` : ""}${userPrompts.length} prompts · ${m.analyzedRecords.length} responses analyzed · ${m.totalCitations} citations`,
@@ -397,6 +488,7 @@ export default function SettingsPage() {
 							},
 						],
 			sections,
+			records,
 		});
 	};
 
