@@ -18,6 +18,7 @@ import { downloadCsv, downloadJson } from "@/lib/export/download";
 import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
+import { useDashboardData } from "../dashboard/_hooks/use-dashboard-data";
 import type {
 	AnalysisRecord,
 	DomainStats,
@@ -73,6 +74,20 @@ export default function SettingsPage() {
 	const sourcesQuery = api.prompt.fetchPromptSources.useQuery(
 		{ workspaceId },
 		{ enabled: !!workspaceId },
+	);
+	const workspaceQuery = api.workspace.getById.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
+
+	const dashboardMetrics = useDashboardData(
+		Array.isArray(analysisQuery.data) ? analysisQuery.data : [],
+		"All Models",
+		"all",
+		{
+			name: workspaceQuery.data?.name,
+			domain: workspaceQuery.data?.domain,
+		},
 	);
 
 	// Delete account handler
@@ -244,83 +259,134 @@ export default function SettingsPage() {
 	};
 
 	const handleExportAllReport = () => {
+		const m = dashboardMetrics;
 		const userPrompts = userPromptsQuery.data ?? [];
-		const analysisData = Array.isArray(analysisQuery.data)
-			? analysisQuery.data
-			: [];
-		const combinedSources = sourcesQuery.data?.sourceStats?.combined ?? [];
-		const domainStatsRaw = sourcesQuery.data?.domain_stats;
-		const domainStats = Array.isArray(domainStatsRaw)
-			? domainStatsRaw
-			: (domainStatsRaw?.combined ?? []);
 
-		const analyzedRecords = analysisData.filter(
-			(r: AnalysisRecord) => r.is_analysed && r.brand_analysis,
-		);
-		const avgGeo =
-			analyzedRecords.length > 0
-				? Math.round(
-						analyzedRecords.reduce(
-							(s: number, r: AnalysisRecord) =>
-								s + (r.brand_analysis?.geoScore?.overall ?? 0),
-							0,
-						) / analyzedRecords.length,
-					)
-				: 0;
-		const presenceRate =
-			analyzedRecords.length > 0
-				? Math.round((analyzedRecords.length / analysisData.length) * 100)
-				: 0;
-		const totalCitations = combinedSources.reduce(
-			(sum: number, s: GroupedSource) => sum + (s.totalSources ?? 0),
-			0,
-		);
+		const actions = [
+			m.aggregateStats.presenceRate < 70
+				? "Increase brand mention frequency across high-intent prompts."
+				: null,
+			(m.avgRank.position ?? 99) > 3
+				? "Improve ranking consistency by strengthening comparison-oriented messaging."
+				: null,
+			m.impactMetrics.topPickRate < 35
+				? "Raise top-pick rate with stronger differentiators and proof points."
+				: null,
+			m.impactMetrics.criticalRiskCount > 0
+				? "Resolve critical risk signals found in model answers."
+				: null,
+			userPrompts.length < 5
+				? "Add more prompts to improve coverage across buyer intent categories."
+				: null,
+			m.totalCitations === 0
+				? "No citations captured yet — publish authoritative content for AI models to reference."
+				: null,
+		].filter((s): s is string => s !== null);
 
-		const topDomainRows = (domainStats as DomainStats[])
-			.slice(0, 5)
-			.map((d: DomainStats) => ({
-				label: d.domain,
-				value: `${d.totalOccurrences} mention${d.totalOccurrences === 1 ? "" : "s"}`,
+		const topCompetitorRows = m.competitorData
+			.filter((c) => !c.isBrand)
+			.slice(0, 6)
+			.map((c) => ({
+				label: c.name,
+				value: `${c.appearances} mention${c.appearances === 1 ? "" : "s"}`,
+				sub: c.avgRank != null ? `avg rank ${c.avgRank}` : undefined,
 			}));
 
-		const topPromptRows = [...analyzedRecords]
+		const topSourceRows = m.sourcesIntelligence.slice(0, 6).map((s) => ({
+			label: s.domain,
+			value: `${s.citationCount} citation${s.citationCount === 1 ? "" : "s"}`,
+		}));
+
+		const topPromptRows = [...m.analyzedRecords]
 			.sort(
-				(a: AnalysisRecord, b: AnalysisRecord) =>
+				(a, b) =>
 					(b.brand_analysis?.geoScore?.overall ?? 0) -
 					(a.brand_analysis?.geoScore?.overall ?? 0),
 			)
-			.slice(0, 5)
-			.map((r: AnalysisRecord) => ({
+			.slice(0, 6)
+			.map((r) => ({
 				label: r.prompt.length > 60 ? `${r.prompt.slice(0, 60)}…` : r.prompt,
 				value: String(r.brand_analysis?.geoScore?.overall ?? "—"),
 				sub: "GEO score",
 			}));
 
-		const actions = [
-			presenceRate < 70
-				? "Increase brand mention frequency across high-intent prompts."
+		const perceptionRows = [
+			m.brandPerception.bestKnownFor
+				? { label: "Best known for", value: m.brandPerception.bestKnownFor }
 				: null,
-			userPrompts.length < 5
-				? "Add more prompts to improve coverage across buyer intent categories."
+			m.brandPerception.pricingPerception !== "not_mentioned"
+				? {
+						label: "Pricing perception",
+						value: m.brandPerception.pricingPerception.replace(/_/g, " "),
+					}
 				: null,
-			totalCitations === 0
-				? "No citations captured yet — publish content for AI models to reference."
+			...m.brandPerception.coreClaims.slice(0, 3).map((c) => ({
+				label: "Core claim",
+				value: c,
+			})),
+			...m.brandPerception.differentiators.slice(0, 3).map((d) => ({
+				label: "Differentiator",
+				value: d,
+			})),
+		].filter((r): r is NonNullable<typeof r> => r !== null);
+
+		const sections = [
+			perceptionRows.length > 0
+				? { title: "Brand Perception", rows: perceptionRows }
 				: null,
-		].filter((s): s is string => s !== null);
+			topCompetitorRows.length > 0
+				? { title: "Top Competitors", rows: topCompetitorRows }
+				: null,
+			topSourceRows.length > 0
+				? { title: "Top Citation Sources", rows: topSourceRows }
+				: null,
+			topPromptRows.length > 0
+				? { title: "Strongest Prompts by GEO Score", rows: topPromptRows }
+				: null,
+		].filter((s): s is NonNullable<typeof s> => s !== null);
 
 		downloadHtmlReport(`workspace-report-${workspaceId}-${Date.now()}.html`, {
-			title: "Workspace AI Visibility Report",
-			subtitle: `${userPrompts.length} prompts · ${analysisData.length} responses · ${totalCitations} citations`,
+			title: m.brandName || "AI Visibility Report",
+			subtitle: `${m.brandDomain ? `${m.brandDomain} · ` : ""}${userPrompts.length} prompts · ${m.analyzedRecords.length} responses analyzed · ${m.totalCitations} citations`,
 			generatedAt: new Date().toLocaleString(),
 			metrics: [
 				{
-					label: "Analyzed Responses",
-					value: analyzedRecords.length,
+					label: "Presence Rate",
+					value: m.aggregateStats.presenceRate,
+					suffix: "%",
 					highlight: true,
 				},
-				{ label: "Prompts", value: userPrompts.length },
-				{ label: "Avg GEO Score", value: avgGeo },
-				{ label: "Total Citations", value: totalCitations },
+				{
+					label: "Avg Rank",
+					value: m.avgRank.position ?? "—",
+				},
+				{
+					label: "Recommendation Rate",
+					value: m.impactMetrics.recommendationRate,
+					suffix: "%",
+				},
+				{
+					label: "Top Pick Rate",
+					value: m.impactMetrics.topPickRate,
+					suffix: "%",
+				},
+				{
+					label: "Avg Sentiment",
+					value: m.avgSentiment.score,
+				},
+				{
+					label: "Citations",
+					value: m.totalCitations,
+				},
+				{
+					label: "Avg Visibility",
+					value: m.impactMetrics.avgVisibility,
+					suffix: "%",
+				},
+				{
+					label: "Critical Risks",
+					value: m.impactMetrics.criticalRiskCount,
+				},
 			],
 			actions:
 				actions.length > 0
@@ -330,14 +396,7 @@ export default function SettingsPage() {
 								text: "Workspace is performing well. Continue scaling prompt coverage.",
 							},
 						],
-			sections: [
-				...(topDomainRows.length > 0
-					? [{ title: "Top Citation Domains", rows: topDomainRows }]
-					: []),
-				...(topPromptRows.length > 0
-					? [{ title: "Strongest Prompts by GEO Score", rows: topPromptRows }]
-					: []),
-			],
+			sections,
 		});
 	};
 
