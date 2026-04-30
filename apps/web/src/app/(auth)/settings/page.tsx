@@ -15,15 +15,12 @@ import {
 import { authClient } from "@/lib/auth/auth-client";
 import { signOutAndRedirect } from "@/lib/auth/logout";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
-import { useDashboardData } from "../dashboard/_hooks/use-dashboard-data";
 import type {
 	AnalysisRecord,
 	DomainStats,
 	GroupedSource,
-	Source,
 	SourceExcerpt,
 } from "@oneglanse/types";
 import {
@@ -45,7 +42,39 @@ import {
 import { cn } from "@oneglanse/utils";
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useDashboardData } from "../dashboard/_hooks/use-dashboard-data";
+import type { DashboardMetrics } from "../dashboard/_utils/types";
 import { useLayoutUserEmail } from "../workspace-context";
+
+function getWorkspaceActionPriorities(
+	metrics: DashboardMetrics,
+	promptCount: number,
+): string[] {
+	const priorities = [
+		metrics.aggregateStats.presenceRate < 70
+			? "Increase brand mention frequency across high-intent prompts."
+			: null,
+		(metrics.avgRank.position ?? 99) > 3
+			? "Improve ranking consistency by strengthening comparison-oriented messaging."
+			: null,
+		metrics.impactMetrics.topPickRate < 35
+			? "Raise top-pick conversion with stronger differentiators and proof points."
+			: null,
+		metrics.impactMetrics.criticalRiskCount > 0
+			? "Resolve critical risk signals found in model answers."
+			: null,
+		promptCount < 5
+			? "Add more prompts to improve coverage across buyer intent categories."
+			: null,
+		metrics.totalCitations === 0
+			? "No citations captured yet. Publish authoritative content for AI models to reference."
+			: null,
+	].filter((priority): priority is string => priority !== null);
+
+	return priorities.length > 0
+		? priorities
+		: ["Maintain current trajectory and scale winning prompt themes."];
+}
 
 export default function SettingsPage() {
 	const searchParams = useSafeSearchParams();
@@ -121,6 +150,7 @@ export default function SettingsPage() {
 		const domainStats = Array.isArray(domainStatsRaw)
 			? domainStatsRaw
 			: (domainStatsRaw?.combined ?? []);
+		const m = dashboardMetrics;
 
 		const citationRows = combinedSources.flatMap((source: GroupedSource) =>
 			(source.excerpts ?? []).map((excerpt: SourceExcerpt) => ({
@@ -132,11 +162,43 @@ export default function SettingsPage() {
 			})),
 		);
 		const analysisRecords = Array.isArray(analysisData) ? analysisData : [];
+		const analysisMetricRows = analysisRecords.map((record: AnalysisRecord) =>
+			buildDetailedAnalysisCsvRow(record),
+		);
+		const promptRows = userPrompts.map((prompt) => ({
+			promptId: prompt.id,
+			prompt: prompt.prompt,
+			createdAt: prompt.created_at,
+		}));
+		const sourceRows = combinedSources.map((source: GroupedSource) => {
+			const models = getUniqueModelProviders(source.excerpts ?? []);
+
+			return {
+				url: source.url,
+				title: source.title,
+				totalCitations: source.totalSources ?? 0,
+				modelCount: models.length,
+				models,
+				excerptCount: source.excerpts?.length ?? 0,
+				citedTexts: joinCitedTexts(source.excerpts ?? []),
+			};
+		});
+		const dashboardSourceRows = m.sourcesIntelligence.map((source) => ({
+			domain: source.domain,
+			favicon: source.favicon,
+			citationCount: source.citationCount,
+			uniqueRecordCount: source.uniqueRecords.size,
+			modelCount: source.models.size,
+			models: [...source.models],
+			uniqueRecords: [...source.uniqueRecords],
+		}));
+		const actionPriorities = getWorkspaceActionPriorities(
+			m,
+			userPrompts.length,
+		);
 
 		downloadJson(`workspace-all-${workspaceId}-${Date.now()}.json`, {
 			generatedAt: new Date().toISOString(),
-			workspace: null,
-			organization: null,
 			report: {
 				title: "Workspace AI Visibility Export",
 				version: "2.0",
@@ -147,19 +209,35 @@ export default function SettingsPage() {
 				sourceUrlCount: combinedSources.length,
 				citationCount: citationRows.length,
 			},
+			metrics: {
+				dashboard: {
+					brandName: m.brandName,
+					brandDomain: m.brandDomain,
+					avgRank: m.avgRank,
+					avgSentiment: m.avgSentiment,
+					impactMetrics: m.impactMetrics,
+					aggregateStats: m.aggregateStats,
+					totalCitations: m.totalCitations,
+				},
+				brandPerception: m.brandPerception,
+				competitors: m.competitorData,
+				citationSources: dashboardSourceRows,
+				sourceDomains: domainStats,
+				actionPriorities,
+			},
 			exports: {
 				dashboard: {
 					analysisCount: analysisRecords.length,
-					records: analysisRecords,
+					records: analysisMetricRows,
 				},
 				prompts: {
 					promptCount: userPrompts.length,
-					prompts: userPrompts,
-					analyses: analysisData,
+					prompts: promptRows,
+					analyses: analysisMetricRows,
 				},
 				sources: {
 					domainStats,
-					groupedSources: combinedSources,
+					groupedSources: sourceRows,
 					citations: citationRows,
 				},
 			},
@@ -178,9 +256,13 @@ export default function SettingsPage() {
 			? domainStatsRaw
 			: (domainStatsRaw?.combined ?? []);
 		const m = dashboardMetrics;
+		const actionPriorities = getWorkspaceActionPriorities(
+			m,
+			userPrompts.length,
+		);
 
 		const rows: Array<Record<string, unknown>> = [
-			// ── Overview ──────────────────────────────────────────────────────────
+			// Overview
 			{ section: "overview", metric: "Prompts", value: userPrompts.length },
 			{
 				section: "overview",
@@ -201,7 +283,19 @@ export default function SettingsPage() {
 					0,
 				),
 			},
-			// ── Aggregate metrics ─────────────────────────────────────────────────
+			// Prompt inventory
+			...userPrompts.map((prompt) => ({
+				section: "prompt_inventory",
+				prompt_id: prompt.id,
+				prompt: prompt.prompt,
+				created_at: prompt.created_at,
+			})),
+			// Aggregate metrics
+			{
+				section: "aggregate_metrics",
+				metric: "Total Responses",
+				value: m.impactMetrics.totalResponses,
+			},
 			{
 				section: "aggregate_metrics",
 				metric: "Presence Rate",
@@ -242,7 +336,22 @@ export default function SettingsPage() {
 				metric: "Top Competitor",
 				value: m.aggregateStats.topCompetitor,
 			},
-			// ── Brand perception ──────────────────────────────────────────────────
+			{
+				section: "aggregate_metrics",
+				metric: "Top Competitor Domain",
+				value: m.aggregateStats.topCompetitorDomain ?? "",
+			},
+			{
+				section: "aggregate_metrics",
+				metric: "Total Citations",
+				value: m.totalCitations,
+			},
+			...actionPriorities.map((priority, index) => ({
+				section: "action_priorities",
+				priority: index + 1,
+				action: priority,
+			})),
+			// Brand perception
 			{
 				section: "brand_perception",
 				metric: "Best Known For",
@@ -263,7 +372,7 @@ export default function SettingsPage() {
 				metric: "Differentiators",
 				value: m.brandPerception.differentiators.join(" | "),
 			},
-			// ── Competitor table ──────────────────────────────────────────────────
+			// Competitor table
 			...m.competitorData
 				.filter((c) => !c.isBrand)
 				.map((c) => ({
@@ -271,33 +380,46 @@ export default function SettingsPage() {
 					name: c.name,
 					domain: c.domain,
 					appearances: c.appearances,
+					visibility: c.visibility ?? "",
 					avg_rank: c.avgRank ?? "",
 					avg_sentiment: c.avgSentiment,
 					recommendation_count: c.recCount,
 				})),
-			// ── Citation source table ─────────────────────────────────────────────
+			// Citation source table
 			...m.sourcesIntelligence.map((s) => ({
 				section: "citation_sources",
 				domain: s.domain,
 				citation_count: s.citationCount,
+				unique_record_count: s.uniqueRecords.size,
+				model_count: s.models.size,
+				models: [...s.models].join(" | "),
+				unique_records: [...s.uniqueRecords].join(" | "),
 			})),
-			// ── Domain performance ────────────────────────────────────────────────
+			// Domain performance
 			...domainStats.map((domain: DomainStats) => ({
 				section: "source_domain_performance",
 				domain: domain.domain,
 				total_sources: domain.totalOccurrences,
+				source_text_count: domain.sourceTextCount,
 				percentage: domain.usedPercentageAcrossAllDomains,
+				avg_sources_per_domain: domain.avgSourcesPerDomain,
 			})),
-			// ── URL performance ───────────────────────────────────────────────────
-			...combinedSources.map((source: GroupedSource) => ({
-				section: "source_url_performance",
-				url: source.url,
-				title: source.title,
-				total_citations: source.totalSources ?? 0,
-				models: getUniqueModelProviders(source.excerpts ?? []).join(", "),
-				cited_texts: joinCitedTexts(source.excerpts ?? []),
-			})),
-			// ── Source excerpts ───────────────────────────────────────────────────
+			// URL performance
+			...combinedSources.map((source: GroupedSource) => {
+				const models = getUniqueModelProviders(source.excerpts ?? []);
+
+				return {
+					section: "source_url_performance",
+					url: source.url,
+					title: source.title,
+					total_citations: source.totalSources ?? 0,
+					model_count: models.length,
+					models: models.join(", "),
+					excerpt_count: source.excerpts?.length ?? 0,
+					cited_texts: joinCitedTexts(source.excerpts ?? []),
+				};
+			}),
+			// Source excerpts
 			...combinedSources.flatMap((source: GroupedSource) =>
 				(source.excerpts ?? []).map((excerpt: SourceExcerpt) => ({
 					section: "source_excerpts",
@@ -307,189 +429,13 @@ export default function SettingsPage() {
 					cited_text: excerpt.cited_text ?? "",
 				})),
 			),
-			// ── Full per-record detail (every metric) ─────────────────────────────
+			// Full per-record detail
 			...analysisData.map((record: AnalysisRecord) =>
 				buildDetailedAnalysisCsvRow(record),
 			),
 		];
 
 		downloadCsv(`workspace-all-${workspaceId}-${Date.now()}.csv`, rows);
-	};
-
-	const handleExportAllReport = () => {
-		const m = dashboardMetrics;
-		const userPrompts = userPromptsQuery.data ?? [];
-
-		const actions = [
-			m.aggregateStats.presenceRate < 70
-				? "Increase brand mention frequency across high-intent prompts."
-				: null,
-			(m.avgRank.position ?? 99) > 3
-				? "Improve ranking consistency by strengthening comparison-oriented messaging."
-				: null,
-			m.impactMetrics.topPickRate < 35
-				? "Raise top-pick rate with stronger differentiators and proof points."
-				: null,
-			m.impactMetrics.criticalRiskCount > 0
-				? "Resolve critical risk signals found in model answers."
-				: null,
-			userPrompts.length < 5
-				? "Add more prompts to improve coverage across buyer intent categories."
-				: null,
-			m.totalCitations === 0
-				? "No citations captured yet — publish authoritative content for AI models to reference."
-				: null,
-		].filter((s): s is string => s !== null);
-
-		const topCompetitorRows = m.competitorData
-			.filter((c) => !c.isBrand)
-			.slice(0, 6)
-			.map((c) => ({
-				label: c.name,
-				value: `${c.appearances} mention${c.appearances === 1 ? "" : "s"}`,
-				sub: c.avgRank != null ? `avg rank ${c.avgRank}` : undefined,
-			}));
-
-		const topSourceRows = m.sourcesIntelligence.slice(0, 6).map((s) => ({
-			label: s.domain,
-			value: `${s.citationCount} citation${s.citationCount === 1 ? "" : "s"}`,
-		}));
-
-		const topPromptRows = [...m.analyzedRecords]
-			.sort(
-				(a, b) =>
-					(b.brand_analysis?.geoScore?.overall ?? 0) -
-					(a.brand_analysis?.geoScore?.overall ?? 0),
-			)
-			.slice(0, 6)
-			.map((r) => ({
-				label: r.prompt.length > 60 ? `${r.prompt.slice(0, 60)}…` : r.prompt,
-				value: String(r.brand_analysis?.geoScore?.overall ?? "—"),
-				sub: "GEO score",
-			}));
-
-		const perceptionRows = [
-			m.brandPerception.bestKnownFor
-				? { label: "Best known for", value: m.brandPerception.bestKnownFor }
-				: null,
-			m.brandPerception.pricingPerception !== "not_mentioned"
-				? {
-						label: "Pricing perception",
-						value: m.brandPerception.pricingPerception.replace(/_/g, " "),
-					}
-				: null,
-			...m.brandPerception.coreClaims.slice(0, 3).map((c) => ({
-				label: "Core claim",
-				value: c,
-			})),
-			...m.brandPerception.differentiators.slice(0, 3).map((d) => ({
-				label: "Differentiator",
-				value: d,
-			})),
-		].filter((r): r is NonNullable<typeof r> => r !== null);
-
-		const sections = [
-			perceptionRows.length > 0
-				? { title: "Brand Perception", rows: perceptionRows }
-				: null,
-			topCompetitorRows.length > 0
-				? { title: "Top Competitors", rows: topCompetitorRows }
-				: null,
-			topSourceRows.length > 0
-				? { title: "Top Citation Sources", rows: topSourceRows }
-				: null,
-			topPromptRows.length > 0
-				? { title: "Strongest Prompts by GEO Score", rows: topPromptRows }
-				: null,
-		].filter((s): s is NonNullable<typeof s> => s !== null);
-
-		const records = m.analyzedRecords.map((r) => {
-			const ba = r.brand_analysis;
-			const risks = ba?.risks?.items ?? [];
-			const competitors = ba?.competitors ?? [];
-			return {
-				promptId: r.prompt_id,
-				prompt: r.prompt,
-				model: r.model_provider,
-				runAt: r.prompt_run_at,
-				geoScore: ba?.geoScore?.overall ?? "",
-				sentiment: ba?.sentiment?.score ?? "",
-				visibility: ba?.presence?.visibility ?? "",
-				rank: ba?.position?.rankPosition ?? "",
-				recommendation: ba?.recommendation?.type ?? "",
-				mentioned: ba?.presence?.mentioned ?? "",
-				riskCritical: risks.filter((x) => x.severity === "critical").length,
-				riskWarning: risks.filter((x) => x.severity === "warning").length,
-				riskInfo: risks.filter((x) => x.severity === "info").length,
-				citationCount: r.sources?.length ?? 0,
-				bestKnownFor: ba?.perception?.bestKnownFor ?? "",
-				pricingPerception: ba?.perception?.pricingPerception ?? "",
-				coreClaims: ba?.perception?.coreClaims?.join(" | ") ?? "",
-				differentiators: ba?.perception?.differentiators?.join(" | ") ?? "",
-				competitorNames: competitors.map((c) => c.name).join(" | "),
-				sourceUrls: (r.sources ?? []).map((s) => s.url).join(" | "),
-				sourceDomains: (r.sources ?? [])
-					.map((s) => s.domain ?? "")
-					.filter(Boolean)
-					.join(" | "),
-				response: r.response ?? "",
-			};
-		});
-
-		downloadHtmlReport(`workspace-report-${workspaceId}-${Date.now()}.html`, {
-			title: m.brandName || "AI Visibility Report",
-			subtitle: `${m.brandDomain ? `${m.brandDomain} · ` : ""}${userPrompts.length} prompts · ${m.analyzedRecords.length} responses analyzed · ${m.totalCitations} citations`,
-			generatedAt: new Date().toLocaleString(),
-			metrics: [
-				{
-					label: "Presence Rate",
-					value: m.aggregateStats.presenceRate,
-					suffix: "%",
-					highlight: true,
-				},
-				{
-					label: "Avg Rank",
-					value: m.avgRank.position ?? "—",
-				},
-				{
-					label: "Recommendation Rate",
-					value: m.impactMetrics.recommendationRate,
-					suffix: "%",
-				},
-				{
-					label: "Top Pick Rate",
-					value: m.impactMetrics.topPickRate,
-					suffix: "%",
-				},
-				{
-					label: "Avg Sentiment",
-					value: m.avgSentiment.score,
-				},
-				{
-					label: "Citations",
-					value: m.totalCitations,
-				},
-				{
-					label: "Avg Visibility",
-					value: m.impactMetrics.avgVisibility,
-					suffix: "%",
-				},
-				{
-					label: "Critical Risks",
-					value: m.impactMetrics.criticalRiskCount,
-				},
-			],
-			actions:
-				actions.length > 0
-					? actions.map((text) => ({ text }))
-					: [
-							{
-								text: "Workspace is performing well. Continue scaling prompt coverage.",
-							},
-						],
-			sections,
-			records,
-		});
 	};
 
 	const hasAnyExportData =
@@ -518,24 +464,6 @@ export default function SettingsPage() {
 								</p>
 							</div>
 							<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-								<Button
-									variant="outline"
-									className={cn(
-										formSecondaryButtonClassName,
-										subtleBorderButtonClassName,
-										"w-full gap-2 sm:w-auto",
-									)}
-									onClick={handleExportAllReport}
-									disabled={
-										userPromptsQuery.isLoading ||
-										analysisQuery.isLoading ||
-										sourcesQuery.isLoading ||
-										!hasAnyExportData
-									}
-								>
-									<Download className="h-4 w-4" />
-									Export Report
-								</Button>
 								<Button
 									variant="outline"
 									className={cn(

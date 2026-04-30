@@ -2,7 +2,6 @@
 
 import { ExportMenu } from "@/components/export-menu";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import type { GroupedSource, SourceGroupResult } from "@oneglanse/types";
 import {
@@ -44,6 +43,12 @@ const SOURCES_METRIC_SKELETON_KEYS = [
 	"sources-metric-c",
 	"sources-metric-d",
 ] as const;
+
+function getSourceConcentrationRisk(topDomainShare: number): string {
+	if (topDomainShare >= 45) return "high";
+	if (topDomainShare >= 30) return "moderate";
+	return "healthy";
+}
 
 export default function SourcesPage(): React.JSX.Element {
 	const [selectedProvider, setSelectedProvider] =
@@ -265,92 +270,10 @@ export default function SourcesPage(): React.JSX.Element {
 							<ExportMenu
 								className="w-full sm:w-auto"
 								disabled={!hasExportableData}
-								onExportReport={() => {
-									const concentrationRisk =
-										metrics.topDomainShare >= 45
-											? "High — over 45% of citations from one domain."
-											: metrics.topDomainShare >= 30
-												? "Moderate — top domain accounts for 30%+ of citations."
-												: "Healthy — citations are spread across multiple domains.";
-
-									const topDomainRows = domainGroups.slice(0, 8).map((g) => ({
-										label: g.domain,
-										value: `${g.totalCitations} citation${g.totalCitations === 1 ? "" : "s"}`,
-										sub: `${g.urlCount} URL${g.urlCount === 1 ? "" : "s"}`,
-									}));
-
-									const topUrlRows = displayedSources.slice(0, 6).map((s) => ({
-										label:
-											getUrlPath(s.url).length > 55
-												? `${getUrlPath(s.url).slice(0, 55)}…`
-												: getUrlPath(s.url) || s.url,
-										value: `${s.totalSources ?? 0} citation${(s.totalSources ?? 0) === 1 ? "" : "s"}`,
-									}));
-
-									const actions = [
-										metrics.topDomainShare >= 45
-											? "Diversify citation sources — over 45% concentration in one domain is a risk."
-											: null,
-										domainGroups.length < 3
-											? "Broaden your content footprint to appear on more domains."
-											: null,
-										metrics.totalCitations === 0
-											? "No citations yet — publish authoritative content that AI models can reference."
-											: null,
-									].filter((s): s is string => s !== null);
-
-									downloadHtmlReport(
-										`sources-report-${workspaceId}-${Date.now()}.html`,
-										{
-											title: "Sources Intelligence Report",
-											subtitle: `${metrics.totalDomains} domains · ${metrics.totalUrls} URLs · ${metrics.totalCitations} citations`,
-											generatedAt: new Date().toLocaleString(),
-											metrics: [
-												{
-													label: "Total Citations",
-													value: metrics.totalCitations,
-													highlight: true,
-												},
-												{
-													label: "Domains",
-													value: metrics.totalDomains,
-												},
-												{
-													label: "URLs",
-													value: metrics.totalUrls,
-												},
-												{
-													label: "Top Domain Share",
-													value: metrics.topDomainShare,
-													suffix: "%",
-												},
-											],
-											actions:
-												actions.length > 0
-													? actions.map((text) => ({ text }))
-													: [
-															{
-																text: `Source concentration is healthy. Top domain: ${metrics.topDomain} (${metrics.topDomainShare}%).`,
-															},
-														],
-											sections: [
-												{
-													title: "Concentration Risk",
-													rows: [
-														{ label: "Assessment", value: concentrationRisk },
-													],
-												},
-												...(topDomainRows.length > 0
-													? [{ title: "Top Domains", rows: topDomainRows }]
-													: []),
-												...(topUrlRows.length > 0
-													? [{ title: "Top URLs", rows: topUrlRows }]
-													: []),
-											],
-										},
-									);
-								}}
 								onExportJson={() => {
+									const concentrationRisk = getSourceConcentrationRisk(
+										metrics.topDomainShare,
+									);
 									const citationRows = domainGroups.flatMap((group) =>
 										group.urls.flatMap((source) =>
 											(source.excerpts ?? []).map((excerpt) => ({
@@ -380,12 +303,51 @@ export default function SourcesPage(): React.JSX.Element {
 												: 0,
 										urlCount: group.urlCount,
 									}));
-									const concentrationRisk =
-										metrics.topDomainShare >= 45
-											? "high"
-											: metrics.topDomainShare >= 30
-												? "moderate"
-												: "healthy";
+									const domainMetricRows = domainGroups.map((group) => ({
+										domain: group.domain,
+										totalCitations: group.totalCitations,
+										citationShare:
+											metrics.totalCitations > 0
+												? Number(
+														(
+															(group.totalCitations / metrics.totalCitations) *
+															100
+														).toFixed(1),
+													)
+												: 0,
+										urlCount: group.urlCount,
+										providerCount: group.providers.size,
+										providers: Array.from(group.providers),
+									}));
+									const urlMetricRows = displayedSources.map((source) => {
+										const models = getUniqueModelProviders(
+											source.excerpts ?? [],
+										);
+
+										return {
+											url: source.url,
+											urlPath: getUrlPath(source.url),
+											title: source.title,
+											domain: getDomain(source.url) || "",
+											totalCitations: source.totalSources ?? 0,
+											citationShare:
+												metrics.totalCitations > 0
+													? Number(
+															(
+																((source.totalSources ?? 0) /
+																	metrics.totalCitations) *
+																100
+															).toFixed(1),
+														)
+													: 0,
+											providerCount: models.length,
+											models,
+											excerptCount: source.excerpts?.length ?? 0,
+											citedTexts: joinCitedTexts(source.excerpts ?? [], {
+												clean: true,
+											}),
+										};
+									});
 
 									downloadJson(`sources-${workspaceId}-${Date.now()}.json`, {
 										generatedAt: new Date().toISOString(),
@@ -409,18 +371,16 @@ export default function SourcesPage(): React.JSX.Element {
 										leaderboards: { topDomains },
 										detailedData: {
 											aggregate: metrics,
-											domainGroups: domainGroups.map((group) => ({
-												domain: group.domain,
-												totalCitations: group.totalCitations,
-												urlCount: group.urlCount,
-												providers: Array.from(group.providers),
-											})),
-											sources: displayedSources,
+											domainGroups: domainMetricRows,
+											sources: urlMetricRows,
 											citations: citationRows,
 										},
 									});
 								}}
 								onExportCsv={() => {
+									const concentrationRisk = getSourceConcentrationRisk(
+										metrics.topDomainShare,
+									);
 									const rows = [
 										{
 											section: "overview",
@@ -442,11 +402,37 @@ export default function SourcesPage(): React.JSX.Element {
 											metric: "Top Domain Share",
 											value: `${metrics.topDomainShare}%`,
 										},
+										{
+											section: "overview",
+											metric: "Avg Citations Per URL",
+											value: metrics.avgCitationsPerUrl,
+										},
+										{
+											section: "overview",
+											metric: "Top Domain",
+											value: metrics.topDomain,
+										},
+										{
+											section: "overview",
+											metric: "Source Concentration Risk",
+											value: concentrationRisk,
+										},
 										...domainGroups.map((group) => ({
 											section: "domain_performance",
 											domain: group.domain,
 											total_citations: group.totalCitations,
+											citation_share:
+												metrics.totalCitations > 0
+													? Number(
+															(
+																(group.totalCitations /
+																	metrics.totalCitations) *
+																100
+															).toFixed(1),
+														)
+													: 0,
 											url_count: group.urlCount,
+											provider_count: group.providers.size,
 											providers: Array.from(group.providers).join(", "),
 										})),
 										...displayedSources.map((source) => ({
@@ -455,7 +441,18 @@ export default function SourcesPage(): React.JSX.Element {
 											url_path: getUrlPath(source.url),
 											title: source.title,
 											total_citations: source.totalSources ?? 0,
+											citation_share:
+												metrics.totalCitations > 0
+													? Number(
+															(
+																((source.totalSources ?? 0) /
+																	metrics.totalCitations) *
+																100
+															).toFixed(1),
+														)
+													: 0,
 											domain: getDomain(source.url) || "",
+											excerpt_count: source.excerpts?.length ?? 0,
 											models: getUniqueModelProviders(
 												source.excerpts ?? [],
 											).join(", "),
@@ -463,6 +460,22 @@ export default function SourcesPage(): React.JSX.Element {
 												clean: true,
 											}),
 										})),
+										...domainGroups.flatMap((group) =>
+											group.urls.flatMap((source) =>
+												(source.excerpts ?? []).map((excerpt) => ({
+													section: "source_citations",
+													domain: group.domain,
+													url: source.url,
+													url_path: getUrlPath(source.url),
+													title: source.title,
+													total_citations: source.totalSources ?? 0,
+													model_provider: excerpt.model_provider ?? "",
+													cited_text: excerpt.cited_text
+														? cleanCitedText(excerpt.cited_text)
+														: "",
+												})),
+											),
+										),
 									];
 									downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
 								}}

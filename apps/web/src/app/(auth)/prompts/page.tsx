@@ -25,7 +25,6 @@ import {
 	formToolbarSelectClassName,
 } from "@/components/forms/auth-form-chrome";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
-import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
@@ -64,8 +63,6 @@ import {
 	formatDate,
 	formatMarkdown,
 	getModelFavicon,
-	joinCitedTexts,
-	joinSourceUrls,
 	modelSelectors,
 } from "@oneglanse/utils";
 import { cn } from "@oneglanse/utils";
@@ -848,165 +845,25 @@ export default function Prompts() {
 							<ExportMenu
 								className="w-full sm:w-auto"
 								disabled={!hasExportableData}
-								onExportReport={() => {
-									const analyzedRows = sortedPromptsWithMetrics.filter(
-										(row) => row.metrics !== null,
-									);
-									const avgGeo =
-										analyzedRows.length > 0
-											? Math.round(
-													analyzedRows.reduce(
-														(s, r) => s + (r.metrics?.geoScore ?? 0),
-														0,
-													) / analyzedRows.length,
-												)
-											: 0;
-									const avgSentiment =
-										analyzedRows.length > 0
-											? Math.round(
-													analyzedRows.reduce(
-														(s, r) => s + (r.metrics?.sentiment ?? 0),
-														0,
-													) / analyzedRows.length,
-												)
-											: 0;
-									const avgVisibility =
-										analyzedRows.length > 0
-											? Math.round(
-													analyzedRows.reduce(
-														(s, r) => s + (r.metrics?.visibility ?? 0),
-														0,
-													) / analyzedRows.length,
-												)
-											: 0;
-									const topPrompts = [...analyzedRows]
-										.sort(
-											(a, b) =>
-												(b.metrics?.geoScore ?? 0) - (a.metrics?.geoScore ?? 0),
-										)
-										.slice(0, 8)
-										.map((r) => ({
-											label:
-												r.prompt.prompt.length > 60
-													? `${r.prompt.prompt.slice(0, 60)}…`
-													: r.prompt.prompt,
-											value: String(r.metrics?.geoScore ?? "—"),
-											sub: "GEO score",
-										}));
-									const weakPrompts = [...analyzedRows]
-										.sort(
-											(a, b) =>
-												(a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0),
-										)
-										.slice(0, 8)
-										.map((r) => ({
-											label:
-												r.prompt.prompt.length > 60
-													? `${r.prompt.prompt.slice(0, 60)}…`
-													: r.prompt.prompt,
-											value: String(r.metrics?.geoScore ?? "—"),
-											sub: "GEO score",
-										}));
-									const actions = [
-										analyzedRows.some((r) => (r.metrics?.geoScore ?? 0) < 40)
-											? "Revise low-scoring prompts to better reflect buyer intent and comparison language."
-											: null,
-										analyzedRows.some(
-											(r) => r.reason === "brand-not-mentioned",
-										)
-											? "Some prompts returned responses that don't mention your brand — consider refining prompt wording."
-											: null,
-										avgGeo > 70
-											? "Strong GEO coverage — focus on expanding prompt volume in high-intent categories."
-											: null,
-									].filter((s): s is string => s !== null);
-
-									const records = filteredRecords.map((r) => {
-										const ba = r.brand_analysis;
-										const risks = ba?.risks?.items ?? [];
-										const competitors = ba?.competitors ?? [];
-										return {
-											promptId: r.prompt_id,
-											prompt: r.prompt,
-											model: r.model_provider,
-											runAt: r.prompt_run_at,
-											geoScore: ba?.geoScore?.overall ?? "",
-											sentiment: ba?.sentiment?.score ?? "",
-											visibility: ba?.presence?.visibility ?? "",
-											rank: ba?.position?.rankPosition ?? "",
-											recommendation: ba?.recommendation?.type ?? "",
-											mentioned: ba?.presence?.mentioned ?? "",
-											riskCritical: risks.filter(
-												(x) => x.severity === "critical",
-											).length,
-											riskWarning: risks.filter(
-												(x) => x.severity === "warning",
-											).length,
-											riskInfo: risks.filter((x) => x.severity === "info")
-												.length,
-											citationCount: r.sources?.length ?? 0,
-											bestKnownFor: ba?.perception?.bestKnownFor ?? "",
-											pricingPerception:
-												ba?.perception?.pricingPerception ?? "",
-											coreClaims:
-												ba?.perception?.coreClaims?.join(" | ") ?? "",
-											differentiators:
-												ba?.perception?.differentiators?.join(" | ") ?? "",
-											competitorNames: competitors.map((c) => c.name).join(" | "),
-											sourceUrls: (r.sources ?? []).map((s) => s.url).join(" | "),
-											sourceDomains: (r.sources ?? [])
-												.map((s) => s.domain ?? "")
-												.filter(Boolean)
-												.join(" | "),
-											response: r.response ?? "",
-										};
-									});
-
-									downloadHtmlReport(
-										`prompts-report-${workspaceId}-${Date.now()}.html`,
-										{
-											title: "Prompt Performance Report",
-											subtitle: `${sortedPromptsWithMetrics.length} prompts · ${analyzedRows.length} analyzed · ${filteredRecords.length} total records`,
-											generatedAt: new Date().toLocaleString(),
-											metrics: [
-												{
-													label: "Total Prompts",
-													value: sortedPromptsWithMetrics.length,
-													highlight: true,
-												},
-												{ label: "Analyzed", value: analyzedRows.length },
-												{ label: "Avg GEO Score", value: avgGeo },
-												{ label: "Avg Sentiment", value: avgSentiment },
-												{
-													label: "Avg Visibility",
-													value: avgVisibility,
-													suffix: "%",
-												},
-											],
-											actions:
-												actions.length > 0
-													? actions.map((text) => ({ text }))
-													: [
-															{
-																text: "Maintain current prompt strategy and expand coverage.",
-															},
-														],
-											sections: [
-												topPrompts.length > 0
-													? { title: "Strongest Prompts", rows: topPrompts }
-													: null,
-												weakPrompts.length > 0 && analyzedRows.length > 1
-													? { title: "Prompts to Improve", rows: weakPrompts }
-													: null,
-											].filter((s): s is NonNullable<typeof s> => s !== null),
-											records,
-										},
-									);
-								}}
 								onExportJson={() => {
 									const analyzedRows = sortedPromptsWithMetrics.filter(
 										(row) => row.metrics !== null,
 									);
+									const averageMetric = (
+										getValue: (
+											row: (typeof analyzedRows)[number],
+										) => number | null,
+									) => {
+										const values = analyzedRows
+											.map(getValue)
+											.filter((value): value is number => value !== null);
+										return values.length > 0
+											? Math.round(
+													values.reduce((sum, value) => sum + value, 0) /
+														values.length,
+												)
+											: null;
+									};
 									const topPrompt = analyzedRows
 										.slice()
 										.sort(
@@ -1019,6 +876,28 @@ export default function Prompts() {
 											(a, b) =>
 												(a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0),
 										)[0];
+									const promptMetricRows = sortedPromptsWithMetrics.map(
+										(row) => ({
+											promptId: row.prompt.id,
+											prompt: row.prompt.prompt,
+											createdAt: row.prompt.created_at,
+											modelProvider: row.modelProvider,
+											recordCount: row.recordCount,
+											statusReason: row.reason,
+											geoScore: row.metrics?.geoScore ?? null,
+											sentiment: row.metrics?.sentiment ?? null,
+											visibility: row.metrics?.visibility ?? null,
+											position:
+												row.metrics?.position != null &&
+												row.metrics.position > 0
+													? row.metrics.position
+													: null,
+											sourceIndex: row.sourceIndex,
+										}),
+									);
+									const detailedRecords = filteredRecords.map((record) =>
+										buildDetailedAnalysisCsvRow(record),
+									);
 
 									downloadJson(`prompts-${workspaceId}-${Date.now()}.json`, {
 										generatedAt: new Date().toISOString(),
@@ -1026,15 +905,36 @@ export default function Prompts() {
 										report: {
 											title: "Prompt Performance Export",
 											version: "2.0",
-											filters: { modelFilter, timeFilter, sortBy, sortDirection },
+											filters: {
+												modelFilter,
+												timeFilter,
+												sortBy,
+												sortDirection,
+											},
 										},
 										overview: {
 											totalPrompts: sortedPromptsWithMetrics.length,
 											analyzedPrompts: analyzedRows.length,
 											unanalyzedPrompts:
 												sortedPromptsWithMetrics.length - analyzedRows.length,
+											responseRecords: filteredRecords.length,
 										},
 										impactSummary: {
+											avgGeoScore: averageMetric(
+												(row) => row.metrics?.geoScore ?? null,
+											),
+											avgSentiment: averageMetric(
+												(row) => row.metrics?.sentiment ?? null,
+											),
+											avgVisibility: averageMetric(
+												(row) => row.metrics?.visibility ?? null,
+											),
+											avgPosition: averageMetric((row) =>
+												row.metrics?.position != null &&
+												row.metrics.position > 0
+													? row.metrics.position
+													: null,
+											),
 											highestGeoPrompt: topPrompt?.prompt.prompt ?? null,
 											highestGeoScore: topPrompt?.metrics?.geoScore ?? null,
 											lowestGeoPrompt: weakestPrompt?.prompt.prompt ?? null,
@@ -1050,47 +950,49 @@ export default function Prompts() {
 												? "Revise prompts where brand is not mentioned."
 												: null,
 										].filter(Boolean),
-										records: filteredRecords.map((r) => ({
-											recordId: r.id,
-											promptId: r.prompt_id,
-											prompt: r.prompt,
-											model: r.model_provider,
-											runAt: r.prompt_run_at,
-											isAnalysed: r.is_analysed,
-											geoScore: r.brand_analysis?.geoScore?.overall ?? null,
-											sentiment: r.brand_analysis?.sentiment?.score ?? null,
-											visibility:
-												r.brand_analysis?.presence?.visibility ?? null,
-											rank: r.brand_analysis?.position?.rankPosition ?? null,
-											brandMentioned:
-												r.brand_analysis?.presence?.mentioned ?? null,
-											recommendation:
-												r.brand_analysis?.recommendation?.type ?? null,
-											bestKnownFor:
-												r.brand_analysis?.perception?.bestKnownFor ?? null,
-											pricingPerception:
-												r.brand_analysis?.perception?.pricingPerception ?? null,
-											coreClaims:
-												r.brand_analysis?.perception?.coreClaims ?? [],
-											differentiators:
-												r.brand_analysis?.perception?.differentiators ?? [],
-											risks: r.brand_analysis?.risks?.items ?? [],
-											competitors: r.brand_analysis?.competitors ?? [],
-											citations: r.sources?.length ?? 0,
-											sources: (r.sources ?? []).map((s) => ({
-												title: s.title ?? "",
-												url: s.url,
-												domain: s.domain ?? "",
-												citedText: s.cited_text ?? "",
-											})),
-											response: r.response ?? "",
-										})),
+										promptMetrics: promptMetricRows,
+										records: detailedRecords,
 									});
 								}}
 								onExportCsv={() => {
-									const analyzedPromptCount = sortedPromptsWithMetrics.filter(
+									const analyzedRows = sortedPromptsWithMetrics.filter(
 										(row) => row.metrics !== null,
-									).length;
+									);
+									const averageMetric = (
+										getValue: (
+											row: (typeof analyzedRows)[number],
+										) => number | null,
+									) => {
+										const values = analyzedRows
+											.map(getValue)
+											.filter((value): value is number => value !== null);
+										return values.length > 0
+											? Math.round(
+													values.reduce((sum, value) => sum + value, 0) /
+														values.length,
+												)
+											: "N/A";
+									};
+									const promptMetricRows = sortedPromptsWithMetrics.map(
+										(row) => ({
+											section: "prompt_metrics",
+											prompt_id: row.prompt.id,
+											prompt: row.prompt.prompt,
+											created_at: row.prompt.created_at,
+											model_provider: row.modelProvider ?? "",
+											record_count: row.recordCount,
+											status_reason: row.reason ?? "",
+											geo_score: row.metrics?.geoScore ?? "",
+											sentiment: row.metrics?.sentiment ?? "",
+											visibility: row.metrics?.visibility ?? "",
+											position:
+												row.metrics?.position != null &&
+												row.metrics.position > 0
+													? row.metrics.position
+													: "N/A",
+											source_index: row.sourceIndex,
+										}),
+									);
 									const overviewRows = [
 										{
 											section: "overview",
@@ -1100,13 +1002,44 @@ export default function Prompts() {
 										{
 											section: "overview",
 											metric: "Analyzed Prompts",
-											value: analyzedPromptCount,
+											value: analyzedRows.length,
 										},
 										{
 											section: "overview",
 											metric: "Unanalyzed Prompts",
 											value:
-												sortedPromptsWithMetrics.length - analyzedPromptCount,
+												sortedPromptsWithMetrics.length - analyzedRows.length,
+										},
+										{
+											section: "overview",
+											metric: "Avg GEO Score",
+											value: averageMetric(
+												(row) => row.metrics?.geoScore ?? null,
+											),
+										},
+										{
+											section: "overview",
+											metric: "Avg Sentiment",
+											value: averageMetric(
+												(row) => row.metrics?.sentiment ?? null,
+											),
+										},
+										{
+											section: "overview",
+											metric: "Avg Visibility",
+											value: averageMetric(
+												(row) => row.metrics?.visibility ?? null,
+											),
+										},
+										{
+											section: "overview",
+											metric: "Avg Position",
+											value: averageMetric((row) =>
+												row.metrics?.position != null &&
+												row.metrics.position > 0
+													? row.metrics.position
+													: null,
+											),
 										},
 									];
 									const detailRows = filteredRecords.map((r) =>
@@ -1114,6 +1047,7 @@ export default function Prompts() {
 									);
 									downloadCsv(`prompts-${workspaceId}-${Date.now()}.csv`, [
 										...overviewRows,
+										...promptMetricRows,
 										...detailRows,
 									]);
 								}}
