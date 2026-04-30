@@ -31,7 +31,11 @@ import {
 	NoAnalysisState,
 	NoWorkspaceState,
 } from "./_components/states";
-import { exportAnalysisCsv, exportAnalysisJson } from "./_utils/export";
+import {
+	exportAnalysisCsv,
+	exportAnalysisJson,
+	exportAnalysisReport,
+} from "./_utils/export";
 
 // Hooks
 import { useDashboardData } from "./_hooks/use-dashboard-data";
@@ -198,6 +202,9 @@ export default function Dashboard() {
 						<ExportMenu
 							className="w-full sm:w-auto"
 							disabled={!hasExportableData}
+							onExportReport={() =>
+								exportAnalysisReport({ workspaceId, metrics })
+							}
 							onExportJson={() =>
 								exportAnalysisJson({
 									workspaceId,

@@ -6,6 +6,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@oneglanse/ui";
 import { Download } from "lucide-react";
@@ -13,11 +14,13 @@ import { Download } from "lucide-react";
 export function ExportMenu({
 	onExportJson,
 	onExportCsv,
+	onExportReport,
 	disabled = false,
 	className,
 }: {
 	onExportJson: () => void;
 	onExportCsv: () => void;
+	onExportReport?: () => void;
 	disabled?: boolean;
 	className?: string;
 }) {
@@ -38,6 +41,14 @@ export function ExportMenu({
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
+				{onExportReport && (
+					<>
+						<DropdownMenuItem onClick={onExportReport}>
+							Export Report
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+					</>
+				)}
 				<DropdownMenuItem onClick={onExportJson}>Export JSON</DropdownMenuItem>
 				<DropdownMenuItem onClick={onExportCsv}>Export CSV</DropdownMenuItem>
 			</DropdownMenuContent>

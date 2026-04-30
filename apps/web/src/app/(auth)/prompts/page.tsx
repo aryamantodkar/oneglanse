@@ -25,6 +25,7 @@ import {
 	formToolbarSelectClassName,
 } from "@/components/forms/auth-form-chrome";
 import { downloadCsv, downloadJson } from "@/lib/export/download";
+import { downloadHtmlReport } from "@/lib/export/report";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AnalysisRecord, UserPrompt } from "@oneglanse/types";
@@ -128,6 +129,8 @@ export default function Prompts() {
 		resetSort: resetColumnSort,
 	} = useSortState<SortColumn>("prompt", "asc");
 	const [currentPrompt, setCurrentPrompt] = useState("");
+	const [bulkMode, setBulkMode] = useState(false);
+	const [bulkInput, setBulkInput] = useState("");
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 	const [loading, setLoading] = useState(false);
@@ -448,7 +451,9 @@ export default function Prompts() {
 			if (!currentPrompt.trim()) return;
 
 			const trimmedLower = currentPrompt.trim().toLowerCase();
-			if (promptData.some((p) => p.prompt.trim().toLowerCase() === trimmedLower)) {
+			if (
+				promptData.some((p) => p.prompt.trim().toLowerCase() === trimmedLower)
+			) {
 				toast.warning("This prompt already exists.");
 				return;
 			}
@@ -468,6 +473,49 @@ export default function Prompts() {
 			setDialogOpen(false);
 			void savePrompts(added);
 		}
+	};
+
+	const parseBulkPrompts = (raw: string): string[] => {
+		return raw
+			.split(/\n\s*\n/)
+			.map((s) => s.trim())
+			.filter(Boolean);
+	};
+
+	const handleAddBulkPrompts = () => {
+		const parsed = parseBulkPrompts(bulkInput).slice(0, 100);
+		if (parsed.length === 0) return;
+
+		const existingLower = new Set(
+			promptData.map((p) => p.prompt.trim().toLowerCase()),
+		);
+		const seen = new Set<string>();
+		const newPrompts: UserPrompt[] = [];
+
+		for (const text of parsed) {
+			const key = text.toLowerCase();
+			if (existingLower.has(key) || seen.has(key)) continue;
+			seen.add(key);
+			newPrompts.push({
+				id: crypto.randomUUID(),
+				created_at: new Date().toISOString(),
+				user_id: "",
+				workspace_id: workspaceId ?? "",
+				prompt: text,
+			});
+		}
+
+		if (newPrompts.length === 0) {
+			toast.warning("All prompts already exist.");
+			return;
+		}
+
+		const added = [...promptData, ...newPrompts];
+		setPromptData(added);
+		setBulkInput("");
+		setDialogOpen(false);
+		setBulkMode(false);
+		void savePrompts(added);
 	};
 
 	const toggleRow = (idx: number) => {
@@ -534,6 +582,8 @@ export default function Prompts() {
 						setEditIndex(null);
 						setEditPromptValue("");
 						setCurrentPrompt("");
+						setBulkMode(false);
+						setBulkInput("");
 					}
 				}}
 			>
@@ -549,38 +599,112 @@ export default function Prompts() {
 							"gap-5 pt-4 sm:gap-6 sm:pt-5",
 						)}
 					>
-						<div className="grid gap-2">
-							<Textarea
-								ref={promptTextareaRef}
-								placeholder={promptExample}
-								rows={2}
-								value={editIndex !== null ? editPromptValue : currentPrompt}
-								onChange={(e) => {
-									if (editIndex !== null) {
-										setEditPromptValue(e.target.value);
-									} else {
-										setCurrentPrompt(e.target.value);
-									}
+						{editIndex === null && (
+							<div className="flex rounded-[var(--app-radius)] border border-gray-200/60 bg-gray-50/80 p-0.5 dark:border-gray-800/60 dark:bg-gray-900/50">
+								<button
+									type="button"
+									onClick={() => setBulkMode(false)}
+									className={cn(
+										"flex-1 rounded-[calc(var(--app-radius)-2px)] px-3 py-1.5 text-[11px] font-medium transition-all sm:text-[12px]",
+										!bulkMode
+											? "bg-white text-gray-900 shadow-[0_1px_3px_rgba(15,23,42,0.08)] dark:bg-neutral-800 dark:text-gray-100"
+											: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200",
+									)}
+								>
+									Single
+								</button>
+								<button
+									type="button"
+									onClick={() => setBulkMode(true)}
+									className={cn(
+										"flex-1 rounded-[calc(var(--app-radius)-2px)] px-3 py-1.5 text-[11px] font-medium transition-all sm:text-[12px]",
+										bulkMode
+											? "bg-white text-gray-900 shadow-[0_1px_3px_rgba(15,23,42,0.08)] dark:bg-neutral-800 dark:text-gray-100"
+											: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200",
+									)}
+								>
+									Bulk
+								</button>
+							</div>
+						)}
 
-									requestAnimationFrame(syncPromptTextareaHeight);
-								}}
-								className={cn(
-									formTextareaClassName,
-									"min-h-[76px] max-h-[220px] resize-none overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
-								)}
-							/>
-						</div>
+						{bulkMode && editIndex === null ? (
+							<div className="grid gap-2.5">
+								<Textarea
+									placeholder={`Paste prompts here, separated by a blank line:\n\nWhat's the best project management software?\n\nHow does your pricing compare to competitors?\n\nWhat are the top alternatives to your product?`}
+									value={bulkInput}
+									onChange={(e) => setBulkInput(e.target.value)}
+									className={cn(
+										formTextareaClassName,
+										"min-h-[180px] resize-none shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
+									)}
+								/>
+								{bulkInput.trim() &&
+									(() => {
+										const count = parseBulkPrompts(bulkInput).length;
+										const overLimit = count > 100;
+										return (
+											<p
+												className={cn(
+													"text-[11px] sm:text-[12px]",
+													overLimit
+														? "text-red-500"
+														: "text-gray-500 dark:text-gray-400",
+												)}
+											>
+												{overLimit
+													? `${count} prompts detected — only the first 100 will be added.`
+													: `${count} prompt${count === 1 ? "" : "s"} detected`}
+											</p>
+										);
+									})()}
+								<div className={formDialogSupportCardClassName}>
+									<p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+										How to format
+									</p>
+									<p className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300">
+										Separate each prompt with a blank line. A single prompt can
+										span multiple lines — just don&apos;t leave a blank line in
+										the middle of it.
+									</p>
+								</div>
+							</div>
+						) : (
+							<>
+								<div className="grid gap-2">
+									<Textarea
+										ref={promptTextareaRef}
+										placeholder={promptExample}
+										rows={2}
+										value={editIndex !== null ? editPromptValue : currentPrompt}
+										onChange={(e) => {
+											if (editIndex !== null) {
+												setEditPromptValue(e.target.value);
+											} else {
+												setCurrentPrompt(e.target.value);
+											}
 
-						<div className={formDialogSupportCardClassName}>
-							<p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
-								Strong Prompts Usually
-							</p>
-							<p className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300">
-								focus on what the target audience is searching for: comparing
-								options, finding alternatives, evaluating pricing, or choosing
-								the best fit for a use case.
-							</p>
-						</div>
+											requestAnimationFrame(syncPromptTextareaHeight);
+										}}
+										className={cn(
+											formTextareaClassName,
+											"min-h-[76px] max-h-[220px] resize-none overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.05),0_16px_36px_-22px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.16),0_18px_40px_-24px_rgba(0,0,0,0.46)]",
+										)}
+									/>
+								</div>
+
+								<div className={formDialogSupportCardClassName}>
+									<p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+										Strong Prompts Usually
+									</p>
+									<p className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300">
+										focus on what the target audience is searching for:
+										comparing options, finding alternatives, evaluating pricing,
+										or choosing the best fit for a use case.
+									</p>
+								</div>
+							</>
+						)}
 					</div>
 					<div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:justify-end sm:px-6 sm:pb-6">
 						<Button
@@ -590,17 +714,30 @@ export default function Prompts() {
 						>
 							Cancel
 						</Button>
-						<Button
-							onClick={handleAddOrEditPrompt}
-							disabled={
-								editIndex !== null
-									? !isEditPromptChanged
-									: !currentPrompt.trim()
-							}
-							className={cn(formPrimaryButtonClassName, "w-full sm:w-auto")}
-						>
-							{editIndex !== null ? "Update" : "Add"}
-						</Button>
+						{bulkMode && editIndex === null ? (
+							<Button
+								onClick={handleAddBulkPrompts}
+								disabled={parseBulkPrompts(bulkInput).length === 0}
+								className={cn(formPrimaryButtonClassName, "w-full sm:w-auto")}
+							>
+								Add{" "}
+								{parseBulkPrompts(bulkInput).length > 0
+									? `${Math.min(parseBulkPrompts(bulkInput).length, 100)} Prompt${parseBulkPrompts(bulkInput).length === 1 ? "" : "s"}`
+									: "Prompts"}
+							</Button>
+						) : (
+							<Button
+								onClick={handleAddOrEditPrompt}
+								disabled={
+									editIndex !== null
+										? !isEditPromptChanged
+										: !currentPrompt.trim()
+								}
+								className={cn(formPrimaryButtonClassName, "w-full sm:w-auto")}
+							>
+								{editIndex !== null ? "Update" : "Add"}
+							</Button>
+						)}
 					</div>
 				</DialogContent>
 			</Dialog>
@@ -720,6 +857,114 @@ export default function Prompts() {
 							<ExportMenu
 								className="w-full sm:w-auto"
 								disabled={!hasExportableData}
+								onExportReport={() => {
+									const analyzedRows = sortedPromptsWithMetrics.filter(
+										(row) => row.metrics !== null,
+									);
+									const avgGeo =
+										analyzedRows.length > 0
+											? Math.round(
+													analyzedRows.reduce(
+														(s, r) => s + (r.metrics?.geoScore ?? 0),
+														0,
+													) / analyzedRows.length,
+												)
+											: 0;
+									const avgSentiment =
+										analyzedRows.length > 0
+											? Math.round(
+													analyzedRows.reduce(
+														(s, r) => s + (r.metrics?.sentiment ?? 0),
+														0,
+													) / analyzedRows.length,
+												)
+											: 0;
+									const topPrompts = [...analyzedRows]
+										.sort(
+											(a, b) =>
+												(b.metrics?.geoScore ?? 0) - (a.metrics?.geoScore ?? 0),
+										)
+										.slice(0, 5)
+										.map((r) => ({
+											label:
+												r.prompt.prompt.length > 60
+													? `${r.prompt.prompt.slice(0, 60)}…`
+													: r.prompt.prompt,
+											value: String(r.metrics?.geoScore ?? "—"),
+											sub: "GEO score",
+										}));
+									const weakPrompts = [...analyzedRows]
+										.sort(
+											(a, b) =>
+												(a.metrics?.geoScore ?? 0) - (b.metrics?.geoScore ?? 0),
+										)
+										.slice(0, 5)
+										.map((r) => ({
+											label:
+												r.prompt.prompt.length > 60
+													? `${r.prompt.prompt.slice(0, 60)}…`
+													: r.prompt.prompt,
+											value: String(r.metrics?.geoScore ?? "—"),
+											sub: "GEO score",
+										}));
+									const actions = [
+										analyzedRows.some((r) => (r.metrics?.geoScore ?? 0) < 40)
+											? "Revise low-scoring prompts to better reflect buyer intent and comparison language."
+											: null,
+										analyzedRows.some((r) => r.reason === "brand-not-mentioned")
+											? "Some prompts returned responses that don't mention your brand — consider refining prompt wording."
+											: null,
+										avgGeo > 70
+											? "Strong GEO coverage — focus on expanding prompt volume in high-intent categories."
+											: null,
+									].filter((s): s is string => s !== null);
+
+									const sections = [
+										topPrompts.length > 0
+											? { title: "Strongest Prompts", rows: topPrompts }
+											: null,
+										weakPrompts.length > 0 && analyzedRows.length > 1
+											? { title: "Prompts to Improve", rows: weakPrompts }
+											: null,
+									].filter((s): s is NonNullable<typeof s> => s !== null);
+
+									downloadHtmlReport(
+										`prompts-report-${workspaceId}-${Date.now()}.html`,
+										{
+											title: "Prompt Performance Report",
+											subtitle: `${sortedPromptsWithMetrics.length} prompts · ${analyzedRows.length} analyzed`,
+											generatedAt: new Date().toLocaleString(),
+											metrics: [
+												{
+													label: "Total Prompts",
+													value: sortedPromptsWithMetrics.length,
+													highlight: true,
+												},
+												{
+													label: "Analyzed",
+													value: analyzedRows.length,
+												},
+												{
+													label: "Avg GEO Score",
+													value: avgGeo,
+												},
+												{
+													label: "Avg Sentiment",
+													value: avgSentiment,
+												},
+											],
+											actions:
+												actions.length > 0
+													? actions.map((text) => ({ text }))
+													: [
+															{
+																text: "Maintain current prompt strategy and expand coverage.",
+															},
+														],
+											sections,
+										},
+									);
+								}}
 								onExportJson={() => {
 									const analyzedRows = sortedPromptsWithMetrics.filter(
 										(row) => row.metrics !== null,
@@ -1053,9 +1298,7 @@ export default function Prompts() {
 											"shadow-[0_14px_30px_-28px_rgba(15,23,42,0.18)] dark:shadow-[0_14px_30px_-28px_rgba(0,0,0,0.45)]",
 									)}
 								>
-									<DialogHeader
-										className="relative z-[2] space-y-0.5 px-0 pt-1 pb-3 text-left"
-									>
+									<DialogHeader className="relative z-[2] space-y-0.5 px-0 pt-1 pb-3 text-left">
 										<DialogTitle
 											className={cn(
 												formSectionTitleClassName,
