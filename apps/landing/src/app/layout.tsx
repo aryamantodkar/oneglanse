@@ -76,6 +76,7 @@ export default function RootLayout({
 				<Script
 					defer
 					data-domain="oneglanse.com"
+					data-experiments="true"
 					data-site-id="gx_vW8p4KqTeprD"
 					src="https://ghostlyx.com/js/script.js"
 				/>
