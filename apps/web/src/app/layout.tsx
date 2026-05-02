@@ -11,6 +11,10 @@ export const metadata: Metadata = {
 	title: "OneGlanse",
 	description:
 		"Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
+	robots: {
+		index: false,
+		follow: false,
+	},
 	icons: appIcons,
 	openGraph: {
 		title: "OneGlanse",

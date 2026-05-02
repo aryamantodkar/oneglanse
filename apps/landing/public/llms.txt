@@ -1,0 +1,39 @@
+# OneGlanse
+
+> Open-source GEO and AI visibility tracking platform. Free to run. Fully self-hosted.
+
+OneGlanse monitors how your brand appears inside real AI products: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. It captures what users actually see — inline citations, ranked recommendations, brand framing, and competitor co-mentions — using real browser automation, not model APIs.
+
+## What makes it different
+
+- **UI-first, not API-based.** Most GEO tools query the model API. OneGlanse opens the actual ChatGPT, Gemini, Perplexity, Claude, and AI Overview interfaces the same way a user would and captures the rendered response. The UI layer adds citations, reorders recommendations, and changes framing in ways that never appear in raw API output.
+- **Self-hosted, free forever.** The full stack runs on your own machine or VPS via Docker Compose. No subscription. No usage limits.
+- **Your data never leaves your infrastructure.** Responses, analytics, and auth sessions are stored in a PostgreSQL and ClickHouse instance you control. Nothing passes through any third-party server.
+- **Your own provider accounts.** OneGlanse authenticates to AI providers using your own existing logins. No shared credentials.
+- **Open source (MIT).** Every step from prompt execution to GEO scoring is auditable.
+
+## GEO scoring
+
+Each captured response is analyzed with your own OpenAI or Anthropic key. The LLM produces four metrics:
+- **Visibility** — how prominently the brand surfaces in the response
+- **Rank** — absolute position in reading order across the full response
+- **Sentiment** — how positively the brand is described (0–100, 50 = neutral)
+- **Recommendation type** — top_pick, strong_alternative, conditional, mentioned_only, discouraged, or not_mentioned
+
+These combine into a single GEO score (0–100).
+
+## Supported AI providers
+
+ChatGPT, Google Gemini, Perplexity, Claude (Anthropic), Google AI Overview
+
+## Tech stack
+
+Next.js 15, React 19, tRPC, Drizzle ORM, Camoufox (anti-fingerprint Firefox), Playwright, BullMQ, ClickHouse, PostgreSQL 16, Redis, Better Auth
+
+## Links
+
+- Homepage: https://oneglanse.com
+- Documentation: https://docs.oneglanse.com
+- GitHub: https://github.com/aryamantodkar/oneglanse
+- License: MIT
+- Self-hosted setup: https://docs.oneglanse.com/self-hosted-setup

@@ -1,0 +1,26 @@
+# OneGlanse Documentation
+
+> OneGlanse is the open-source GEO and AI visibility tracking platform. These docs cover setup, configuration, and deployment.
+
+## What is OneGlanse?
+
+OneGlanse monitors how your brand appears in real AI products — ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — using browser automation against the actual product UIs. It captures inline citations, ranked recommendations, brand framing, and competitor co-mentions that never appear in raw model API output.
+
+It is open source (MIT), self-hosted, and free to run. All data stays on your own machine or VPS.
+
+## Documentation pages
+
+- Introduction: https://docs.oneglanse.com/introduction
+- Getting started: https://docs.oneglanse.com/getting-started
+- Local setup: https://docs.oneglanse.com/local-setup
+- Self-hosted setup (VPS + Docker): https://docs.oneglanse.com/self-hosted-setup
+- Environment variables: https://docs.oneglanse.com/environment-variables
+- Troubleshooting: https://docs.oneglanse.com/troubleshooting
+- API reference: https://docs.oneglanse.com/api-reference
+
+## Links
+
+- Homepage: https://oneglanse.com
+- GitHub: https://github.com/aryamantodkar/oneglanse
+- Full reference (llms-full.txt): https://oneglanse.com/llms-full.txt
+- License (MIT): https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE

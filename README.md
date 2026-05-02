@@ -1,10 +1,12 @@
-# OneGlanse
+# OneGlanse — Open-source GEO & AI Visibility Tracker
+
+**OneGlanse** is the open-source tool for tracking how your brand appears in AI-generated responses. It monitors ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — not via model APIs, but through the actual product UIs the same way a real user would. Free to run. Fully self-hosted. MIT licensed.
+
+> **Keywords:** GEO · generative engine optimization · AI visibility tracking · AI brand monitoring · open-source GEO tool · self-hosted AI tracker · ChatGPT brand tracking · Perplexity brand tracking
 
 <p align="center">
   <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
 </p>
-
-**The open-source GEO tracker. Free to run. Fully self-hosted. Your data never leaves your machine.**
 
 OneGlanse monitors how your brand appears inside real AI products: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. It is open source, MIT licensed, and costs nothing to run on your own machine or VPS.
 

@@ -1,0 +1,169 @@
+# OneGlanse — Full Reference
+
+> Open-source GEO (Generative Engine Optimization) and AI visibility tracking platform.
+> License: MIT | Self-hosted | Free to run | No cloud version
+
+---
+
+## What is OneGlanse?
+
+OneGlanse is an open-source tool for tracking how your brand appears inside real AI products: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. It is built for GEO (Generative Engine Optimization) — the practice of measuring and improving how brands surface in AI-generated responses.
+
+It is not a SaaS product. It runs entirely on your own machine or VPS. Your data never leaves your infrastructure.
+
+---
+
+## The core insight: UI responses differ from API responses
+
+Most GEO tools claim to "track ChatGPT" or "track Gemini" while actually querying model APIs. That is not the same as what users see.
+
+The same prompt can produce different results in:
+- Inline citations and source cards (appear in the UI, not in raw API output)
+- Recommendation ordering (UI post-processing can reorder)
+- Brand framing and competitor comparisons (UI-layer additions)
+- Provider-specific formatting
+
+OneGlanse captures the rendered UI response — the same answer a real user sees — and then runs analysis on it. This is the primary differentiator.
+
+Reference: [LLM scraped AI answers vs API results (Surfer SEO)](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/)
+
+---
+
+## How it works
+
+1. You connect your own accounts for each AI provider (ChatGPT, Gemini, Perplexity, Claude, Google).
+2. You define prompts to track — queries relevant to your brand or category.
+3. OneGlanse schedules or runs those prompts using Camoufox (anti-fingerprint Firefox) via Playwright.
+4. Each response is captured exactly as rendered in the product UI.
+5. Captured responses are sent to your own OpenAI or Anthropic API key for analysis.
+6. The analysis LLM extracts GEO scores, sentiment, rank, citations, competitor mentions, and brand perception data.
+7. Results are stored in ClickHouse (time-series) and PostgreSQL and displayed in the dashboard.
+
+---
+
+## GEO scoring methodology
+
+### GEO Score (0–100)
+Weighted average of four equal components:
+
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Visibility | 25% | How prominently the brand surfaces in the response |
+| Rank | 25% | Absolute position in reading order (#1 = 100, #2 = 80, #3 = 65…) |
+| Sentiment | 25% | How positively the brand is described |
+| Recommendation | 25% | Whether the brand is actively recommended |
+
+### Visibility (0–100)
+Five sub-dimensions:
+- Coverage (25%): proportion of response discussing the brand
+- Placement (25%): where the brand first appears
+- Structural prominence (20%): headings, numbered lists, top-3 slots
+- Frequency (15%): number of brand references
+- Contextual framing (15%): direct answer vs. passing mention
+
+### Sentiment (0–100)
+- 0–20: Actively warned against
+- 21–40: Notable drawbacks highlighted
+- 41–59: Factual, no evaluative language (neutral)
+- 60–80: Favorable with some caveats
+- 81–100: Explicit superlatives with no caveats
+
+A brand not mentioned scores 50. Absence is neutral, not negative.
+
+### Recommendation types
+- **top_pick** — named as the overall #1 choice with superlative language
+- **strong_alternative** — top 3 with favorable language, or 4+ with strong praise
+- **conditional** — recommended only for specific use cases
+- **mentioned_only** — described but not recommended
+- **discouraged** — explicitly warned against
+- **not_mentioned** — absent from the response
+
+---
+
+## Why Camoufox instead of standard Chrome
+
+OneGlanse uses Camoufox, an anti-fingerprint Firefox-based browser, for all provider sessions.
+
+AI chat products aggressively defend against scripted access. Standard Chrome/Chromium automation triggers:
+- Sign-in loops and forced verification
+- Session invalidation
+- Blank or degraded responses
+- Bot detection failures
+
+Camoufox reduces fingerprint mismatch and makes provider sessions more stable in this use case. Credit: [Camoufox project](https://github.com/daijro/camoufox).
+
+---
+
+## Why there is no cloud version
+
+OneGlanse depends on authenticated browser sessions tied to your own provider accounts. Logged-out sessions return shorter, degraded answers with fewer citations and less framing detail — not representative of what real signed-in users see.
+
+A cloud version with shared sessions would measure a materially worse proxy of real AI visibility. The product is intentionally designed to run with your own accounts and your own infrastructure.
+
+---
+
+## Why VPS deployments need a residential proxy
+
+VPS IP ranges are often blocked or challenged by AI provider websites. OneGlanse routes browser traffic through a residential proxy on VPS deployments. The proxy covers only browser access to provider UIs — not analytics or API calls.
+
+---
+
+## Features
+
+- 5 AI providers: ChatGPT, Gemini, Perplexity, Claude, Google AI Overview
+- UI-first capture via real browser automation
+- GEO scoring: visibility, rank, sentiment, recommendation type
+- Competitor co-mention tracking
+- Citation and source domain tracking
+- AI perception analysis: pricing signal, key claims, brand positioning
+- Per-prompt time-series analytics
+- Scheduled and on-demand prompt runs
+- Bulk prompt import and enriched CSV export
+- Self-hostable Docker Compose stack
+- ClickHouse for high-volume time-series storage
+- PostgreSQL for relational data
+- Redis + BullMQ for job queuing
+- Better Auth for authentication
+- MIT licensed, fully open source
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Web app | Next.js 15, React 19, tRPC, Drizzle ORM |
+| Browser worker | Camoufox, Playwright, BullMQ |
+| Analytics DB | ClickHouse |
+| Relational DB | PostgreSQL 16 |
+| Queue | Redis |
+| Auth | Better Auth |
+| Response analysis | OpenAI or Anthropic (user-provided key) |
+
+---
+
+## Alternatives and comparisons
+
+OneGlanse is an alternative to: Peec AI, Profound, Otterly.ai, Athena HQ, and other GEO/AI visibility tracking tools.
+
+Key differences vs. most competitors:
+- Open source and self-hosted (most competitors are closed SaaS)
+- UI-first capture instead of API queries
+- You bring your own provider accounts (no shared sessions)
+- You bring your own analysis LLM key (no third-party data pipeline)
+- Free to run (no subscription)
+
+---
+
+## Links
+
+- Homepage: https://oneglanse.com
+- Documentation: https://docs.oneglanse.com
+- GitHub: https://github.com/aryamantodkar/oneglanse
+- Introduction: https://docs.oneglanse.com/introduction
+- Getting started: https://docs.oneglanse.com/getting-started
+- Local setup: https://docs.oneglanse.com/local-setup
+- Self-hosted setup: https://docs.oneglanse.com/self-hosted-setup
+- Environment variables: https://docs.oneglanse.com/environment-variables
+- Troubleshooting: https://docs.oneglanse.com/troubleshooting
+- License (MIT): https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE
