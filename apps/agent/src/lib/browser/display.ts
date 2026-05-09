@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
+import { release } from "node:os";
 
 const XVFB_CANDIDATES = ["/usr/bin/Xvfb", "/usr/local/bin/Xvfb"];
 const XVFB_START_TIMEOUT_MS = 5_000;
@@ -23,6 +24,12 @@ function findXvfbBinary(): string | null {
 
 export function detectDisplay(): string | null {
 	return process.env.DISPLAY?.trim() || null;
+}
+
+export function isWsl(): boolean {
+	if (process.platform !== "linux") return false;
+	const kernelRelease = release().toLowerCase();
+	return kernelRelease.includes("microsoft") || kernelRelease.includes("wsl");
 }
 
 function parseScreenSpec(): { width: number; height: number; depth: number } {

@@ -25,12 +25,14 @@ import {
 	firefox,
 } from "playwright-core";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
-import { detectDisplay } from "../lib/browser/display.js";
+import { detectDisplay, isWsl } from "../lib/browser/display.js";
 
 const AUTH_SNAPSHOT_DEBOUNCE_MS = 250;
 const AUTH_SNAPSHOT_HEARTBEAT_MS = 2_000;
 const AUTH_WINDOW_CLOSE_GRACE_MS = 1_000;
 const SYSTEM_THEME_DETECT_TIMEOUT_MS = 4_000;
+const AUTH_WINDOW_WIDTH = 1280;
+const AUTH_WINDOW_HEIGHT = 900;
 const execFileAsync = promisify(execFile);
 type BrowserLaunchOptions = NonNullable<Parameters<typeof firefox.launch>[0]>;
 type PersistedStorageState = Parameters<typeof saveAuthSession>[1];
@@ -160,6 +162,36 @@ async function detectSystemDarkMode(): Promise<boolean | null> {
 	} catch {
 		return null;
 	}
+}
+
+function resolveAuthDisplay(): string | undefined {
+	const display = detectDisplay() ?? undefined;
+	if (!isWsl() || display) {
+		return display;
+	}
+
+	throw new Error(
+		"Provider login requires a visible browser window, but no WSL display was detected. Enable WSLg (`wsl --update`, then restart WSL) or run `pnpm auth` from a desktop OS with GUI support.",
+	);
+}
+
+function buildAuthLaunchArgs(args: string[] | undefined): string[] {
+	const baseArgs = args ?? [];
+	if (!isWsl()) {
+		return baseArgs;
+	}
+
+	const nextArgs = [...baseArgs];
+	if (!nextArgs.includes("--new-window")) {
+		nextArgs.push("--new-window");
+	}
+	if (!nextArgs.includes("--width")) {
+		nextArgs.push("--width", String(AUTH_WINDOW_WIDTH));
+	}
+	if (!nextArgs.includes("--height")) {
+		nextArgs.push("--height", String(AUTH_WINDOW_HEIGHT));
+	}
+	return nextArgs;
 }
 
 function matchesDomainSuffix(
@@ -659,9 +691,10 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 		systemDarkMode === true ? 0 : systemDarkMode === false ? 1 : 2;
 	const systemUsesDarkThemePref =
 		systemDarkMode === true ? 1 : systemDarkMode === false ? 0 : -1;
+	const authDisplay = resolveAuthDisplay();
 
 	const launchOptions = await resolveCamoufoxLaunchOptions({
-		display: detectDisplay() ?? undefined,
+		display: authDisplay,
 		provider: browserProvider,
 		headlessMode: "headful",
 		humanize: false,
@@ -677,6 +710,7 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 
 	const browser = await firefox.launch({
 		...(launchOptions as BrowserLaunchOptions),
+		args: buildAuthLaunchArgs(launchOptions.args),
 		headless: false,
 		// Re-apply auth-critical prefs HERE, after Camoufox's Python launch_options
 		// has already merged its own generated prefs into firefoxUserPrefs. We have
@@ -715,7 +749,9 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 		},
 	});
 	const context = await browser.newContext({
-		viewport: null,
+		viewport: isWsl()
+			? { width: AUTH_WINDOW_WIDTH, height: AUTH_WINDOW_HEIGHT }
+			: null,
 		...(playwrightStorageState ? { storageState: playwrightStorageState } : {}),
 	});
 	attachAuthDebugLogging(context, provider);
