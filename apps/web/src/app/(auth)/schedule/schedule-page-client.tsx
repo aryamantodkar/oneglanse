@@ -289,18 +289,11 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 						</DialogDescription>
 					</DialogHeader>
 
-					<ScrollArea className="min-h-0 px-4 pt-2 sm:px-5">
+					<ScrollArea className="h-full min-h-0 overflow-hidden px-4 pt-2 sm:px-5">
 						<div className="space-y-2 pb-4">
-							<div
-								role="button"
-								tabIndex={0}
+							<button
+								type="button"
 								onClick={toggleAllPrompts}
-								onKeyDown={(event) => {
-									if (event.key === "Enter" || event.key === " ") {
-										event.preventDefault();
-										toggleAllPrompts();
-									}
-								}}
 								className={cn(
 									"flex w-full items-center gap-3 rounded-[var(--app-radius)] border bg-white px-4 py-3.5 text-left transition-[border-color,box-shadow,opacity] duration-150 dark:bg-neutral-950",
 									isAllSelected
@@ -323,21 +316,14 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 										Select all prompts
 									</p>
 								</div>
-							</div>
+							</button>
 							{orderedPrompts.map((prompt, index) => {
 								const checked = effectiveSelected.includes(prompt.id);
 								return (
-									<div
+									<button
 										key={prompt.id}
-										role="button"
-										tabIndex={0}
+										type="button"
 										onClick={() => togglePrompt(prompt.id)}
-										onKeyDown={(event) => {
-											if (event.key === "Enter" || event.key === " ") {
-												event.preventDefault();
-												togglePrompt(prompt.id);
-											}
-										}}
 										className={cn(
 											"flex w-full items-center gap-3 rounded-[var(--app-radius)] border bg-white px-4 py-3.5 text-left transition-[border-color,box-shadow,opacity,transform] duration-150 dark:bg-neutral-950",
 											checked
@@ -377,7 +363,7 @@ function PromptSelectionCard({ workspaceId }: { workspaceId: string }) {
 												{prompt.prompt}
 											</p>
 										</div>
-									</div>
+									</button>
 								);
 							})}
 						</div>
