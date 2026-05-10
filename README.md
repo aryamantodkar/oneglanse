@@ -34,6 +34,8 @@ The public surfaces are deployed separately:
 
 **Requirements:** Node.js 20+, pnpm 10+, Docker
 
+**WSL is not supported for Camoufox browser automation.** OneGlanse depends on Camoufox opening real provider browser windows for auth and UI capture. Run the local setup from native macOS, native Linux, or native Windows instead of inside WSL. WSL/WSLg may show a Camoufox taskbar icon without a usable login window, which prevents choosing the provider account reliably.
+
 If you don't have pnpm: `npm install -g pnpm@latest`
 
 ```bash
