@@ -13,11 +13,16 @@ function initOpenai(): ChatGptClient {
 	if (!apiKey) {
 		throw new EnvError(
 			"OPENAI_API_KEY",
-			"Missing ChatGPT API key. Please set OPENAI_API_KEY in your environment.",
+			"Missing OpenAI-compatible API key. Please set OPENAI_API_KEY in your environment " +
+				"(when OPENAI_BASE_URL points at a gateway such as OpenRouter, use that gateway's key).",
 		);
 	}
 
-	openaiClient = new ChatGptClient({ apiKey });
+	// baseURL is only passed when explicitly configured, so the default stays
+	// the official OpenAI endpoint baked into the SDK.
+	openaiClient = new ChatGptClient(
+		env.OPENAI_BASE_URL ? { apiKey, baseURL: env.OPENAI_BASE_URL } : { apiKey },
+	);
 	return openaiClient;
 }
 
