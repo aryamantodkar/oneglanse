@@ -19,6 +19,14 @@ const ServicesEnvSchema = z.object({
 	OPENAI_API_KEY: z.string().optional(),
 	ANTHROPIC_API_KEY: z.string().optional(),
 	ANALYSIS_LLM_PROVIDER: z.enum(["openai", "claude"]).default("openai"),
+	// Optional OpenAI-compatible gateway (e.g. OpenRouter: https://openrouter.ai/api/v1).
+	// Unset => the official OpenAI API is used, exactly as before.
+	OPENAI_BASE_URL: z.string().trim().url().optional(),
+	// Model used by the "openai" analysis provider.
+	ANALYSIS_OPENAI_MODEL: z.string().trim().default("gpt-4.1"),
+	// Which OpenAI wire format to call. "responses" is the OpenAI default;
+	// "chat" (Chat Completions) is the portable format that gateways implement.
+	ANALYSIS_OPENAI_API: z.enum(["responses", "chat"]).default("responses"),
 });
 
 export const env = ServicesEnvSchema.parse(process.env);

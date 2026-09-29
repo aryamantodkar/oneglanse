@@ -15,7 +15,7 @@ async function runWithOpenAI(prompt: string, responseLength: number): Promise<st
 	let response;
 	try {
 		response = await chatgpt.responses.create({
-			model: "gpt-4.1",
+			model: env.ANALYSIS_OPENAI_MODEL,
 			temperature: 0,
 			input: [
 				{ role: "system", content: systemPrompt },
@@ -33,6 +33,39 @@ async function runWithOpenAI(prompt: string, responseLength: number): Promise<st
 		);
 	}
 	return response.output_text?.trim() || "";
+}
+
+/**
+ * Chat Completions variant. Same prompt, same JSON-object output contract, but
+ * over the portable wire format that OpenAI-compatible gateways (OpenRouter,
+ * LiteLLM, vLLM, ...) implement. Selected with ANALYSIS_OPENAI_API=chat.
+ */
+async function runWithOpenAIChat(
+	prompt: string,
+	responseLength: number,
+): Promise<string> {
+	let response;
+	try {
+		response = await chatgpt.chat.completions.create({
+			model: env.ANALYSIS_OPENAI_MODEL,
+			temperature: 0,
+			// No max_tokens: capping output truncates the JSON and fails the parse.
+			response_format: { type: "json_object" },
+			messages: [
+				{ role: "system", content: systemPrompt },
+				{ role: "user", content: prompt },
+			],
+		});
+	} catch (err) {
+		throw new ExternalServiceError(
+			"ChatGPT",
+			"Failed to analyze response.",
+			502,
+			{ responseLength },
+			err,
+		);
+	}
+	return response.choices[0]?.message?.content?.trim() || "";
 }
 
 async function runWithClaude(prompt: string, responseLength: number): Promise<string> {
@@ -63,10 +96,14 @@ export async function runAnalysis(
 ): Promise<BrandAnalysisResult> {
 	const prompt = analysisPrompt(input);
 
-	const text =
-		env.ANALYSIS_LLM_PROVIDER === "claude"
-			? await runWithClaude(prompt, input.response.length)
-			: await runWithOpenAI(prompt, input.response.length);
+	let text: string;
+	if (env.ANALYSIS_LLM_PROVIDER === "claude") {
+		text = await runWithClaude(prompt, input.response.length);
+	} else if (env.ANALYSIS_OPENAI_API === "chat") {
+		text = await runWithOpenAIChat(prompt, input.response.length);
+	} else {
+		text = await runWithOpenAI(prompt, input.response.length);
+	}
 
 	let parsed: unknown;
 	try {
