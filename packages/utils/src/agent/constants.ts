@@ -57,7 +57,11 @@ export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 	],
 	perplexity: [
 		'div[id^="markdown-content-"]',
-		'[id^="markdown-content-"] .prose'
+		'[id^="markdown-content-"] .prose',
+		// Perplexity dropped the markdown-content-* ids; the answer body now
+		// renders into a bare .prose block. Kept last so the legacy ids win
+		// if they ever come back.
+		'.prose'
 	],
 	gemini: ['message-content .markdown'],
 	claude: [

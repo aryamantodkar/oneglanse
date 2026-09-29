@@ -12,10 +12,24 @@ import {
 
 export const PERPLEXITY_RAW_SOURCES_DOM_EXTRACTOR = String.raw`(_helpers) => {
 	const results = [];
+	// Perplexity used to render citations inside a labelled tabpanel. It no
+	// longer does: opening the sources panel injects the links elsewhere in the
+	// document, leaving that tabpanel present but empty. Prefer the panel when
+	// it actually holds links, otherwise scan the document and drop
+	// Perplexity's own URLs.
 	const panel = document.querySelector(
 		'[role="tabpanel"][aria-labelledby*="citations"]',
 	);
-	if (!panel) return results;
+	const panelHasLinks =
+		!!panel && panel.querySelectorAll('a[href^="http"]').length > 0;
+	const scope = panelHasLinks ? panel : document;
+	const isSelfLink = (href) => {
+		try {
+			return /(^|\.)perplexity\.ai$/.test(new URL(href).hostname);
+		} catch (err) {
+			return true;
+		}
+	};
 
 	const getCleanTexts = (anchor) => {
 		const texts = [];
@@ -38,11 +52,15 @@ export const PERPLEXITY_RAW_SOURCES_DOM_EXTRACTOR = String.raw`(_helpers) => {
 		return Array.from(new Set(texts));
 	};
 
-	for (const anchor of Array.from(panel.querySelectorAll('a[href^="http"]'))) {
+	const seenHrefs = new Set();
+	for (const anchor of Array.from(scope.querySelectorAll('a[href^="http"]'))) {
 		if (!(anchor instanceof HTMLAnchorElement)) continue;
 
 		const rawHref = anchor.href.replace(/#.*$/, "");
 		if (!rawHref) continue;
+		if (!panelHasLinks && isSelfLink(rawHref)) continue;
+		if (seenHrefs.has(rawHref)) continue;
+		seenHrefs.add(rawHref);
 
 		const texts = getCleanTexts(anchor);
 		if (texts.length === 0) continue;
