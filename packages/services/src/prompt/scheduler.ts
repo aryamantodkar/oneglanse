@@ -30,11 +30,11 @@ export async function configureSchedulerSecrets(): Promise<void> {
 		// current_user here is the app role; ALTER ROLE ... SET persists the GUC
 		// for every future session opened by that role, including pg_cron workers.
 		const apiBaseUrlSql = await pool.query<{ sql: string }>(
-			"SELECT format('ALTER ROLE CURRENT_USER SET app.api_base_url = %L', $1) AS sql",
+			"SELECT format('ALTER ROLE CURRENT_USER SET app.api_base_url = %L', $1::text) AS sql",
 			[apiBaseUrl],
 		);
 		const cronSecretSql = await pool.query<{ sql: string }>(
-			"SELECT format('ALTER ROLE CURRENT_USER SET app.cron_secret = %L', $1) AS sql",
+			"SELECT format('ALTER ROLE CURRENT_USER SET app.cron_secret = %L', $1::text) AS sql",
 			[cronSecret],
 		);
 
@@ -68,8 +68,11 @@ export async function scheduleCronForPrompts(
 		`
       SELECT format(
         $fmt$
-        SELECT http_post(
+        SELECT http((
+          'POST',
           current_setting('app.api_base_url') || '/api/trpc/internal.runPrompts?batch=1',
+          ARRAY[http_header('Authorization', 'Bearer ' || current_setting('app.cron_secret'))],
+          'application/json',
           jsonb_build_object(
             '0',
             jsonb_build_object(
@@ -79,12 +82,8 @@ export async function scheduleCronForPrompts(
                 'userId', %L
               )
             )
-          ),
-          jsonb_build_object(
-            'Authorization', 'Bearer ' || current_setting('app.cron_secret'),
-            'Content-Type', 'application/json'
-          )
-        );
+          )::text
+        )::http_request);
         $fmt$,
         $1::text,
         $2::text
