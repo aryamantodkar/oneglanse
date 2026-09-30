@@ -43,13 +43,15 @@ docs/           # Mintlify docs
 
 ```bash
 pnpm local          # Start everything (web + agent + docker services)
-pnpm lint           # Run lint checks across the monorepo
+pnpm lint           # Lint Web, Landing, and Agent tests
 pnpm test           # Run automated regression tests
 pnpm typecheck      # Run typecheck across the monorepo
 pnpm build          # Build all packages
 pnpm db:migrate     # Run pending Drizzle migrations
 pnpm auth           # Open /providers for interactive auth setup
 ```
+
+Automated Agent tests live in `apps/agent/tests/`, grouped by provider. Keep new package tests in that package's own `tests/` folder.
 
 ---
 

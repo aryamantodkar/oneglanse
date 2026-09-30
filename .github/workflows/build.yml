@@ -25,7 +25,7 @@ env:
   PNPM: '10.16.0'
 
 jobs:
-  # ── Typecheck ────────────────────────────────────────────────
+  # ── Validation ───────────────────────────────────────────────
   validate:
     name: Lint, Typecheck, Test, Build
     runs-on: ubuntu-latest

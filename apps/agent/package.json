@@ -8,8 +8,9 @@
 		"dev": "node --loader ts-node/esm src/index.ts",
 		"start:worker": "node dist/index.js",
 		"build": "tsc",
-		"test": "vitest run",
-		"typecheck": "tsc --noEmit"
+		"lint": "biome check tests",
+		"test": "vitest run tests",
+		"typecheck": "tsc --noEmit && tsc --project tsconfig.tests.json --noEmit"
 	},
 	"dependencies": {
 		"@oneglanse/errors": "workspace:*",

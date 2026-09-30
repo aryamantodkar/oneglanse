@@ -2,7 +2,7 @@ import { PROVIDER_MODEL_RESPONSE_SELECTORS } from "@oneglanse/utils";
 import { JSDOM } from "jsdom";
 import type { Page as PlaywrightPage } from "playwright-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runPageDomOp } from "../../../../lib/browser/domOps.js";
+import { runPageDomOp } from "../../../src/lib/browser/domOps.js";
 
 function createPage(html: string): PlaywrightPage {
 	const dom = new JSDOM(html, {
