@@ -48,7 +48,7 @@ export async function configureSchedulerSecrets(): Promise<void> {
 		await pool.query(cronSecretStatement);
 	} catch (err) {
 		console.warn(
-			"[scheduler] Could not persist GUCs via ALTER ROLE — cron secret may still be stored inline:",
+			"[scheduler] Could not persist scheduler settings via ALTER ROLE; scheduled prompt runs may fail:",
 			toErrorMessage(err),
 		);
 	}

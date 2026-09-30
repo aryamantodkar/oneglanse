@@ -129,6 +129,7 @@ describe("prompt scheduler against the bundled PostgreSQL extensions", () => {
 	});
 
 	it("runs the saved SQL through pg_cron and sends the authorized JSON request", async () => {
+		await scheduler.configureSchedulerSecrets();
 		await scheduler.scheduleCronForPrompts({
 			workspaceId: "workspace-1",
 			userId: "user's-id",
