@@ -13,7 +13,9 @@
 	},
 	"scripts": {
 		"build": "tsc",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit && tsc --project tsconfig.tests.json --noEmit",
+		"test": "vitest run tests",
+		"lint": "biome check tests"
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.89.0",
@@ -29,6 +31,7 @@
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.11"
 	}
 }
