@@ -43,6 +43,8 @@ docs/           # Mintlify docs
 
 ```bash
 pnpm local          # Start everything (web + agent + docker services)
+pnpm lint           # Run lint checks across the monorepo
+pnpm test           # Run automated regression tests
 pnpm typecheck      # Run typecheck across the monorepo
 pnpm build          # Build all packages
 pnpm db:migrate     # Run pending Drizzle migrations

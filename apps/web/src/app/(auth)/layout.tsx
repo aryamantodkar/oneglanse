@@ -1,6 +1,6 @@
 import "../../styles/globals.css";
-import { auth } from "@/lib/auth/auth";
 import { appIcons } from "@/lib/app-metadata";
+import { auth } from "@/lib/auth/auth";
 import { readProviderConnectionsState } from "@/lib/provider-connections/server";
 import { trackUserActive } from "@/lib/telemetry";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
@@ -15,7 +15,8 @@ import LayoutContent from "./layoutContent";
 
 export const metadata: Metadata = {
 	title: "OneGlanse",
-	description: "Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
+	description:
+		"Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
 	icons: appIcons,
 };
 

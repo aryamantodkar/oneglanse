@@ -16,7 +16,12 @@ export const analysisRouter = createTRPCRouter({
 				analyzeAll: z.boolean().optional().default(true),
 			}),
 		)
-		.use(createRateLimiter("analysis.analyzeMetrics", { limit: 10, windowSecs: 60 }))
+		.use(
+			createRateLimiter("analysis.analyzeMetrics", {
+				limit: 10,
+				windowSecs: 60,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			return analysePromptsForWorkspace({
 				workspaceId: ctx.workspaceId,

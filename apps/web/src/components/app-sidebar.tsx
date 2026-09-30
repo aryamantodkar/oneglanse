@@ -6,10 +6,7 @@ import { signOutAndRedirect } from "@/lib/auth/logout";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
-import {
-	type AppMode,
-	canAccessPeopleInMode,
-} from "@oneglanse/types";
+import { type AppMode, canAccessPeopleInMode } from "@oneglanse/types";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

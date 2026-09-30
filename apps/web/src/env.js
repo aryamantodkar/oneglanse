@@ -15,9 +15,7 @@ export const env = createEnv({
 			.default("development"),
 	},
 	client: {
-		NEXT_PUBLIC_ONEGLANSE_APP_MODE: z
-			.enum(["self-host", "local"])
-			.optional(),
+		NEXT_PUBLIC_ONEGLANSE_APP_MODE: z.enum(["self-host", "local"]).optional(),
 	},
 	runtimeEnv: {
 		APP_URL: process.env.APP_URL,

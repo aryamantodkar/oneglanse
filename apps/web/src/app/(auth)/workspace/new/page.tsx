@@ -7,8 +7,8 @@ import {
 	formPrimaryButtonClassName,
 	formSurfaceClassName,
 } from "@/components/forms/auth-form-chrome";
-import { authClient } from "@/lib/auth/auth-client";
 import { env } from "@/env";
+import { authClient } from "@/lib/auth/auth-client";
 import { api } from "@/trpc/react";
 import { resolveAppMode } from "@oneglanse/types";
 import {

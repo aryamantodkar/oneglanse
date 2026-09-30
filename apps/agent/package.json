@@ -8,6 +8,7 @@
 		"dev": "node --loader ts-node/esm src/index.ts",
 		"start:worker": "node dist/index.js",
 		"build": "tsc",
+		"test": "vitest run",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
@@ -22,9 +23,12 @@
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {
+		"@types/jsdom": "^21.1.7",
 		"@types/node": "^25.0.3",
 		"@types/turndown": "^5.0.6",
+		"jsdom": "^26.1.0",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.11"
 	}
 }

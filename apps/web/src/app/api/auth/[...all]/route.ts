@@ -7,24 +7,24 @@ const AUTH_RATE_LIMIT = { limit: 20, windowSecs: 60 };
 const betterAuthHandler = toNextJsHandler(auth);
 
 async function withRateLimit(
-  req: NextRequest,
-  handler: (req: NextRequest) => Promise<Response>,
+	req: NextRequest,
+	handler: (req: NextRequest) => Promise<Response>,
 ): Promise<Response> {
-  const ip = getClientIp(req.headers);
-  const { allowed } = await checkRateLimit(`rl:auth:${ip}`, AUTH_RATE_LIMIT);
-  if (!allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
-      { status: 429 },
-    );
-  }
-  return handler(req);
+	const ip = getClientIp(req.headers);
+	const { allowed } = await checkRateLimit(`rl:auth:${ip}`, AUTH_RATE_LIMIT);
+	if (!allowed) {
+		return NextResponse.json(
+			{ error: "Too many requests. Please try again later." },
+			{ status: 429 },
+		);
+	}
+	return handler(req);
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
-  return withRateLimit(req, (r) => betterAuthHandler.POST(r));
+	return withRateLimit(req, (r) => betterAuthHandler.POST(r));
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  return withRateLimit(req, (r) => betterAuthHandler.GET(r));
+	return withRateLimit(req, (r) => betterAuthHandler.GET(r));
 }
