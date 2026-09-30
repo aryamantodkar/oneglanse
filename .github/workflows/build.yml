@@ -19,6 +19,10 @@ on:
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   PREFIX: ghcr.io/${{ github.repository_owner }}
@@ -194,3 +198,32 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=oneglanse-postgres
           cache-to: type=gha,scope=oneglanse-postgres,mode=max
+
+  merge-gate:
+    name: PR Gate
+    if: ${{ always() }}
+    needs:
+      - validate
+      - changes
+      - build-web
+      - build-agent
+      - build-postgres
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs
+        env:
+          VALIDATE: ${{ needs.validate.result }}
+          CHANGES: ${{ needs.changes.result }}
+          WEB: ${{ needs.build-web.result }}
+          AGENT: ${{ needs.build-agent.result }}
+          POSTGRES: ${{ needs.build-postgres.result }}
+        run: |
+          test "$VALIDATE" = "success"
+          test "$CHANGES" = "success"
+
+          for result in "$WEB" "$AGENT" "$POSTGRES"; do
+            case "$result" in
+              success|skipped) ;;
+              *) exit 1 ;;
+            esac
+          done
