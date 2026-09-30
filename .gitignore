@@ -11,7 +11,8 @@ build/
 # IDE
 .idea/
 .vscode/
-.codex/
+.codex/*
+!.codex/config.toml
 *.swp
 *.swo
 
@@ -44,7 +45,11 @@ coverage/
 *.pem
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/CLAUDE.md
+
+# CodeGraph index is generated per checkout
+.codegraph/
 
 .oneglanse-storage/
 

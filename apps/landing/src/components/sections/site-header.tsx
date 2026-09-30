@@ -2,9 +2,75 @@ import { BrandLogo } from "@/components/common/brand-logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
-import { Github, Server } from "lucide-react";
+import { GitFork, Github, Server, Star } from "lucide-react";
 
-export function SiteHeader(): React.JSX.Element {
+type GitHubRepositoryStats = {
+	stars: number;
+	forks: number;
+};
+
+async function getGitHubRepositoryStats(): Promise<GitHubRepositoryStats | null> {
+	try {
+		const repositoryPath = new URL(SITE_URLS.github).pathname
+			.replace(/\.git\/?$/, "")
+			.replace(/\/$/, "");
+		const repositorySegments = repositoryPath.split("/").filter(Boolean);
+
+		if (repositorySegments.length !== 2) {
+			return null;
+		}
+
+		const owner = repositorySegments[0];
+		const repository = repositorySegments[1];
+
+		if (!owner || !repository) {
+			return null;
+		}
+
+		const response = await fetch(
+			`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}`,
+			{
+				headers: {
+					Accept: "application/vnd.github+json",
+					"X-GitHub-Api-Version": "2022-11-28",
+				},
+				next: { revalidate: 300 },
+			},
+		);
+
+		if (!response.ok) {
+			return null;
+		}
+
+		const data: unknown = await response.json();
+
+		if (typeof data !== "object" || data === null) {
+			return null;
+		}
+
+		const stats = data as Record<string, unknown>;
+
+		if (
+			typeof stats.stargazers_count !== "number" ||
+			typeof stats.forks_count !== "number"
+		) {
+			return null;
+		}
+
+		return {
+			stars: stats.stargazers_count,
+			forks: stats.forks_count,
+		};
+	} catch {
+		return null;
+	}
+}
+
+export async function SiteHeader(): Promise<React.JSX.Element> {
+	const repositoryStats = await getGitHubRepositoryStats();
+	const formatCount = (count: number): string =>
+		new Intl.NumberFormat("en").format(count);
+
 	return (
 		<header className="section-shell sticky top-0 z-40 pt-4 sm:pt-5">
 			<div className="landing-surface flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
@@ -19,14 +85,38 @@ export function SiteHeader(): React.JSX.Element {
 				</a>
 
 				<div className="flex shrink-0 items-center gap-2">
-					<Button asChild variant="outline">
+					<Button
+						asChild
+						variant="outline"
+						className="h-9 gap-1.5 border-amber-400/70 bg-gradient-to-b from-amber-200 to-amber-300 px-2.5 text-amber-950 shadow-[0_8px_18px_-10px_rgba(245,158,11,0.75)] hover:border-amber-500 hover:from-amber-100 hover:to-amber-200 hover:text-amber-950 hover:shadow-[0_10px_22px_-10px_rgba(245,158,11,0.8)] dark:border-amber-300/30 dark:from-amber-300/20 dark:to-amber-500/15 dark:text-amber-100 dark:shadow-[0_8px_20px_-10px_rgba(245,158,11,0.32)] dark:hover:border-amber-200/50 dark:hover:from-amber-300/25 dark:hover:to-amber-500/20 dark:hover:text-amber-50"
+					>
 						<a
 							href={SITE_URLS.github}
 							target="_blank"
 							rel="noreferrer noopener"
+							aria-label={
+								repositoryStats
+									? `GitHub repository: ${formatCount(repositoryStats.stars)} stars and ${formatCount(repositoryStats.forks)} forks`
+									: "View OneGlanse on GitHub"
+							}
 						>
 							<Github className="h-4 w-4" aria-hidden="true" />
 							<span className="hidden sm:inline">GitHub</span>
+							{repositoryStats && (
+								<span className="inline-flex items-center gap-1.5 border-l border-amber-800/20 pl-1.5 text-xs font-semibold tabular-nums dark:border-amber-100/20">
+									<span className="inline-flex items-center gap-1">
+										<Star
+											className="h-3.5 w-3.5 fill-current"
+											aria-hidden="true"
+										/>
+										{formatCount(repositoryStats.stars)}
+									</span>
+									<span className="hidden items-center gap-1 min-[360px]:inline-flex">
+										<GitFork className="h-3.5 w-3.5" aria-hidden="true" />
+										{formatCount(repositoryStats.forks)}
+									</span>
+								</span>
+							)}
 						</a>
 					</Button>
 					<Button asChild variant="outline" className="hidden md:inline-flex">
