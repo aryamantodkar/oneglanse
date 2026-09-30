@@ -1,6 +1,10 @@
 import "server-only";
+import {
+	type RateLimitConfig,
+	checkRateLimit,
+	getClientIp,
+} from "@/lib/rate-limit";
 import { TRPCError } from "@trpc/server";
-import { checkRateLimit, getClientIp, type RateLimitConfig } from "@/lib/rate-limit";
 import { t } from "../trpc";
 
 /**
@@ -11,17 +15,20 @@ import { t } from "../trpc";
  * Usage: procedure.use(createRateLimiter("agent.run", { limit: 3, windowSecs: 60 }))
  */
 export function createRateLimiter(keyPrefix: string, config: RateLimitConfig) {
-  return t.middleware(async ({ ctx, next }) => {
-    const identifier = ctx.session?.user?.id ?? getClientIp(ctx.headers);
-    const { allowed } = await checkRateLimit(`rl:${keyPrefix}:${identifier}`, config);
+	return t.middleware(async ({ ctx, next }) => {
+		const identifier = ctx.session?.user?.id ?? getClientIp(ctx.headers);
+		const { allowed } = await checkRateLimit(
+			`rl:${keyPrefix}:${identifier}`,
+			config,
+		);
 
-    if (!allowed) {
-      throw new TRPCError({
-        code: "TOO_MANY_REQUESTS",
-        message: "Rate limit exceeded. Please slow down.",
-      });
-    }
+		if (!allowed) {
+			throw new TRPCError({
+				code: "TOO_MANY_REQUESTS",
+				message: "Rate limit exceeded. Please slow down.",
+			});
+		}
 
-    return next();
-  });
+		return next();
+	});
 }

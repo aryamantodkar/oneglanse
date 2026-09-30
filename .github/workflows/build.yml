@@ -1,6 +1,8 @@
 name: Build
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
@@ -23,9 +25,9 @@ env:
   PNPM: '10.16.0'
 
 jobs:
-  # ── Typecheck ────────────────────────────────────────────────
+  # ── Validation ───────────────────────────────────────────────
   validate:
-    name: Typecheck
+    name: Lint, Typecheck, Test, Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +39,10 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
 
   # ── Detect which apps changed ────────────────────────────────
   changes:

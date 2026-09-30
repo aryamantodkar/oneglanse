@@ -1,8 +1,8 @@
 import "server-only";
 
-import { timingSafeEqual } from "crypto";
-import { AuthError } from "@oneglanse/errors";
+import { timingSafeEqual } from "node:crypto";
 import { env } from "@/env";
+import { AuthError } from "@oneglanse/errors";
 import { t } from "../trpc";
 
 export const isInternal = t.middleware(({ next, ctx }) => {

@@ -20,7 +20,10 @@ Closes #
 
 ## Checklist
 
+- [ ] `pnpm lint` passes
+- [ ] `pnpm test` passes
 - [ ] `pnpm typecheck` passes
+- [ ] `pnpm build` passes
 - [ ] Only changed what was necessary for this fix/feature
 - [ ] No unused imports, dead code, or unrelated formatting changes
 - [ ] Docs updated if behaviour changed

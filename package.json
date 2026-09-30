@@ -21,6 +21,7 @@
 		"self-host:build": "node scripts/run-compose.mjs up -d --build",
 		"self-host:pull": "node scripts/run-compose.mjs pull --ignore-buildable",
 		"lint": "turbo lint",
+		"test": "turbo test",
 		"typecheck": "turbo typecheck",
 		"clean": "turbo clean && rm -rf node_modules",
 		"db:generate": "pnpm --filter @oneglanse/db db:generate",

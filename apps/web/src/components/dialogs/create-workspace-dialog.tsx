@@ -145,9 +145,9 @@ export function CreateWorkspaceDialog({
 						placeholder="my-workspace"
 						value={formData.slug}
 						onChange={(e) => {
-						setSlugTouched(true);
-						setFormData({ ...formData, slug: e.target.value });
-					}}
+							setSlugTouched(true);
+							setFormData({ ...formData, slug: e.target.value });
+						}}
 						className={formFieldClassName}
 					/>
 				</div>

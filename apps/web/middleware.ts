@@ -1,7 +1,4 @@
-import {
-	canAccessPeopleInMode,
-	resolveAppMode,
-} from "@oneglanse/types";
+import { canAccessPeopleInMode, resolveAppMode } from "@oneglanse/types";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
