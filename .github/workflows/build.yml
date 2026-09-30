@@ -46,6 +46,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm deadcode
       - run: pnpm build
 
   # ── Detect which apps changed ────────────────────────────────
@@ -99,6 +100,7 @@ jobs:
               - 'pnpm-workspace.yaml'
               - 'tsconfig.json'
               - 'turbo.json'
+              - '.github/workflows/build.yml'
             agent:
               - 'apps/agent/src/**'
               - 'apps/agent/docker/**'
@@ -127,6 +129,7 @@ jobs:
               - 'pnpm-workspace.yaml'
               - 'tsconfig.json'
               - 'turbo.json'
+              - '.github/workflows/build.yml'
             postgres:
               - 'packages/db/Dockerfile'
               - 'packages/db/init-scripts/**'
