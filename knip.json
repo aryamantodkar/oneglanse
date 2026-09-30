@@ -1,0 +1,14 @@
+{
+	"workspaces": {
+		".": {
+			"entry": [
+				"scripts/run-auth.mjs",
+				"scripts/run-compose.mjs",
+				"scripts/run-local.mjs"
+			]
+		},
+		"apps/agent": {
+			"entry": ["src/index.ts", "src/auth/cli.ts", "src/run-test.ts"]
+		}
+	}
+}

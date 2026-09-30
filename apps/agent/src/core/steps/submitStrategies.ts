@@ -10,7 +10,6 @@ import { normalizePromptValue } from "../../lib/input/editor/promptInput.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
 const SUBMIT_METHOD_TIMEOUT_MS = 5_000;
-const CAMOUFOX_HUMANIZE = true;
 const EMPTY_INPUT_SUBMIT_ERROR = "Input has no content before submit";
 
 export type SubmitContext = {
@@ -37,37 +36,13 @@ async function humanPause(
 }
 
 async function humanizeFocus(page: Page, input: Locator): Promise<void> {
-	if (CAMOUFOX_HUMANIZE) {
-		await clickLocatorLikeUser(page, input, {
-			delay: randomBetween(40, 120),
-			timeout: 3000,
-		}).catch(() => null);
-		await humanPause(page, 50, 140);
-		await input.focus().catch(() => null);
-		await humanPause(page, 40, 120);
-		return;
-	}
-
-	const box = await input.boundingBox().catch(() => null);
-	if (box) {
-		const x = box.x + box.width * (0.35 + Math.random() * 0.3);
-		const y = box.y + box.height * (0.35 + Math.random() * 0.3);
-		await page.mouse.move(x, y, { steps: randomBetween(8, 20) });
-		await humanPause(page, 40, 120);
-		await clickLocatorLikeUser(page, input, {
-			delay: randomBetween(40, 120),
-			timeout: 3000,
-		}).catch(() => null);
-	} else {
-		await clickLocatorLikeUser(page, input, {
-			force: true,
-			timeout: 3000,
-		}).catch(() => null);
-	}
-
-	await humanPause(page, 80, 180);
-	await input.focus().catch(() => null);
+	await clickLocatorLikeUser(page, input, {
+		delay: randomBetween(40, 120),
+		timeout: 3000,
+	}).catch(() => null);
 	await humanPause(page, 50, 140);
+	await input.focus().catch(() => null);
+	await humanPause(page, 40, 120);
 }
 
 function hasWords(content: string): boolean {
