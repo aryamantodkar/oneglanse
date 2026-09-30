@@ -24,6 +24,7 @@
 		"test": "turbo test",
 		"typecheck": "turbo typecheck",
 		"clean": "turbo clean && rm -rf node_modules",
+		"codegraph:init": "codegraph init --yes",
 		"db:generate": "pnpm --filter @oneglanse/db db:generate",
 		"db:migrate": "pnpm --filter @oneglanse/db db:migrate",
 		"db:push": "pnpm --filter @oneglanse/db db:push",
@@ -34,6 +35,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
+		"@colbymchenry/codegraph": "1.6.0",
 		"knip": "^5.85.0",
 		"turbo": "^2.3.3",
 		"typescript": "^5.9.3"

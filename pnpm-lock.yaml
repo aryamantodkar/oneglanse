@@ -12,6 +12,9 @@ importers:
       '@biomejs/biome':
         specifier: 1.9.4
         version: 1.9.4
+      '@colbymchenry/codegraph':
+        specifier: 1.6.0
+        version: 1.6.0
       knip:
         specifier: ^5.85.0
         version: 5.85.0(@types/node@25.3.3)(typescript@5.9.3)
@@ -589,6 +592,40 @@ packages:
   '@clickhouse/client@1.17.0':
     resolution: {integrity: sha512-Y3DQoamKZ/Iyosoq7Lj7lqpDkQDK4R/5mI52yJs4ZLPIO+d6/CYDqTbFBIb4No3C/AlXUYE4TKhj/kXDpe6rOA==}
     engines: {node: '>=16'}
+
+  '@colbymchenry/codegraph-darwin-arm64@1.6.0':
+    resolution: {integrity: sha512-usYVM30d7kH2Fm3ZPkiE84J8bWAicPsw/3Kh8LjbwvHkBkU3IlEYRQFkTDAf+HSRLLs8h5w/5WHkx/FvNKRZ/g==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@colbymchenry/codegraph-darwin-x64@1.6.0':
+    resolution: {integrity: sha512-MMYFseqAmytsj47ZsGZI+0OVDTYsEktHg6x42tB6y+8MWUjvH1ivz5Yk6RtX6iFAnNJeMSlV+SJepfP7pvbNbQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@colbymchenry/codegraph-linux-arm64@1.6.0':
+    resolution: {integrity: sha512-Uk2xKPh/DP/B0r4tg/uNZFwMsJDB+uKSbTN+Pcbf2F7PjolrqiFiR/9uqj8rndTjWmWDnxEK6IafJ1AOW4TpLA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@colbymchenry/codegraph-linux-x64@1.6.0':
+    resolution: {integrity: sha512-zQMtxLdFBB5tNSuCIk5zLW281I/AMyfWqwjIcg1h7n521174Es54xlnWuEhmTPWKYSmMuOpInKeE6YpOPtERuQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@colbymchenry/codegraph-win32-arm64@1.6.0':
+    resolution: {integrity: sha512-O5/xEp8RDiJh3cbto2Dg94uk02zO70UCq5OuvP1aJV9ZQmMKKFTnOWNyeZi+LSHMO5CQOv3kfskrORmGAB5+xw==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@colbymchenry/codegraph-win32-x64@1.6.0':
+    resolution: {integrity: sha512-zSjrLgkE2j2UYsPp6ThlVKL4xoZ1WnMkOfNH8i3XFGNXBS8p500WFA9bh0JJJ+IQx6vhtltTxTTdlVmVICGYsw==}
+    cpu: [x64]
+    os: [win32]
+
+  '@colbymchenry/codegraph@1.6.0':
+    resolution: {integrity: sha512-nCN40MqmYxF7gH1QTKqlxJ1d2mzwhw3fzSdGV2wjnQKsymjM3JZnH/5rpGqhBkcUEom0qWq0WjDRvOZh2t8mFA==}
+    hasBin: true
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -3966,6 +4003,33 @@ snapshots:
   '@clickhouse/client@1.17.0':
     dependencies:
       '@clickhouse/client-common': 1.17.0
+
+  '@colbymchenry/codegraph-darwin-arm64@1.6.0':
+    optional: true
+
+  '@colbymchenry/codegraph-darwin-x64@1.6.0':
+    optional: true
+
+  '@colbymchenry/codegraph-linux-arm64@1.6.0':
+    optional: true
+
+  '@colbymchenry/codegraph-linux-x64@1.6.0':
+    optional: true
+
+  '@colbymchenry/codegraph-win32-arm64@1.6.0':
+    optional: true
+
+  '@colbymchenry/codegraph-win32-x64@1.6.0':
+    optional: true
+
+  '@colbymchenry/codegraph@1.6.0':
+    optionalDependencies:
+      '@colbymchenry/codegraph-darwin-arm64': 1.6.0
+      '@colbymchenry/codegraph-darwin-x64': 1.6.0
+      '@colbymchenry/codegraph-linux-arm64': 1.6.0
+      '@colbymchenry/codegraph-linux-x64': 1.6.0
+      '@colbymchenry/codegraph-win32-arm64': 1.6.0
+      '@colbymchenry/codegraph-win32-x64': 1.6.0
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
