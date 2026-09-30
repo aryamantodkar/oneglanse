@@ -4,7 +4,8 @@
 			"entry": [
 				"scripts/run-auth.mjs",
 				"scripts/run-compose.mjs",
-				"scripts/run-local.mjs"
+				"scripts/run-local.mjs",
+				"scripts/test-web-image.mjs"
 			]
 		},
 		"apps/agent": {

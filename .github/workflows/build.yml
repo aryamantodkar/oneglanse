@@ -17,6 +17,8 @@ on:
       - 'turbo.json'
       - 'docker-compose.yml'
       - '.github/workflows/build.yml'
+      - 'scripts/test-docker-image.sh'
+      - 'scripts/test-web-image.mjs'
   workflow_dispatch:
 
 concurrency:
@@ -57,6 +59,7 @@ jobs:
       web:      ${{ steps.f.outputs.web }}
       agent:    ${{ steps.f.outputs.agent }}
       postgres: ${{ steps.f.outputs.postgres }}
+      apps:     ${{ steps.apps.outputs.apps }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -101,6 +104,8 @@ jobs:
               - 'tsconfig.json'
               - 'turbo.json'
               - '.github/workflows/build.yml'
+              - 'scripts/test-docker-image.sh'
+              - 'scripts/test-web-image.mjs'
             agent:
               - 'apps/agent/src/**'
               - 'apps/agent/docker/**'
@@ -130,60 +135,48 @@ jobs:
               - 'tsconfig.json'
               - 'turbo.json'
               - '.github/workflows/build.yml'
+              - 'scripts/test-docker-image.sh'
+              - 'scripts/test-web-image.mjs'
             postgres:
               - 'packages/db/Dockerfile'
               - 'packages/db/init-scripts/**'
               - '.github/workflows/build.yml'
 
-  # ── Build jobs ───────────────────────────────────────────────
-  build-web:
-    name: Web
-    needs: [validate, changes]
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.web == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        if: ${{ github.event_name != 'pull_request' }}
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: ${{ env.PREFIX }}/oneglanse-web
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-,format=short
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./apps/web/Dockerfile
-          build-args: PNPM_VERSION=${{ env.PNPM }}
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=oneglanse-web
-          cache-to: type=gha,scope=oneglanse-web,mode=max
+      - name: Select app images
+        id: apps
+        env:
+          WEB: ${{ steps.f.outputs.web }}
+          AGENT: ${{ steps.f.outputs.agent }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          node <<'NODE' >> "$GITHUB_OUTPUT"
+          const apps = ['web', 'agent'].filter(app =>
+            process.env.EVENT === 'workflow_dispatch' ||
+            process.env[app.toUpperCase()] === 'true');
+          console.log(`apps=${JSON.stringify(apps)}`);
+          NODE
 
-  build-agent:
-    name: Agent
-    needs: [validate, changes]
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.agent == 'true' }}
-    runs-on: ubuntu-latest
+  # ── Native app image builds ──────────────────────────────────
+  build-apps:
+    name: ${{ matrix.app }} (${{ matrix.arch }})
+    needs: changes
+    if: ${{ needs.changes.outputs.apps != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: ${{ github.event_name != 'pull_request' }}
@@ -194,24 +187,103 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.PREFIX }}/oneglanse-agent
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-,format=short
-      - uses: docker/build-push-action@v5
+          images: ${{ env.PREFIX }}/oneglanse-${{ matrix.app }}
+      - name: Build image
+        uses: docker/build-push-action@v6
+        id: build
         with:
           context: .
-          file: ./apps/agent/Dockerfile
+          file: ./apps/${{ matrix.app }}/Dockerfile
           build-args: |
             PNPM_VERSION=${{ env.PNPM }}
-            CAMOUFOX_PIP_SPEC=cloverlabs-camoufox[geoip]
-            CAMOUFOX_BROWSER_CHANNEL=official/prerelease
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+            ${{ matrix.app == 'agent' && 'CAMOUFOX_PIP_SPEC=cloverlabs-camoufox[geoip]' || '' }}
+            ${{ matrix.app == 'agent' && 'CAMOUFOX_BROWSER_CHANNEL=official/prerelease' || '' }}
+          platforms: linux/${{ matrix.arch }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ github.event_name == 'pull_request' && format('oneglanse-{0}:ci', matrix.app) || '' }}
+          outputs: ${{ github.event_name != 'pull_request' && format('type=image,name={0}/oneglanse-{1},push-by-digest=true,name-canonical=true,push=true', env.PREFIX, matrix.app) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=oneglanse-agent
-          cache-to: type=gha,scope=oneglanse-agent,mode=max
+          cache-from: type=gha,scope=oneglanse-${{ matrix.app }}-${{ matrix.arch }}
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,scope=oneglanse-{0}-{1},mode=max', matrix.app, matrix.arch) || '' }}
+      - name: Load published digest for runtime tests
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          IMAGE: ${{ env.PREFIX }}/oneglanse-${{ matrix.app }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          APP: ${{ matrix.app }}
+        run: |
+          docker pull "$IMAGE@$DIGEST"
+          docker tag "$IMAGE@$DIGEST" "oneglanse-$APP:ci"
+      - name: Test runtime image
+        timeout-minutes: 5
+        env:
+          APP: ${{ matrix.app }}
+        run: bash scripts/test-docker-image.sh "$APP" "oneglanse-$APP:ci"
+      - name: Export image digest
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          name: digests-${{ matrix.app }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Publish tags only after validation and both native builds pass.
+  publish-apps:
+    name: Publish ${{ matrix.app }}
+    needs: [validate, changes, build-apps]
+    if: ${{ github.event_name != 'pull_request' && needs.changes.outputs.apps != '[]' }}
+    strategy:
+      matrix:
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digests-${{ matrix.app }}-*
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.PREFIX }}/oneglanse-${{ matrix.app }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+      - name: Publish multi-platform manifest
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ env.PREFIX }}/oneglanse-${{ matrix.app }}
+          METADATA: ${{ steps.meta.outputs.json }}
+        run: |
+          shopt -s nullglob
+          digests=(*)
+          test "${#digests[@]}" -eq 2
+          args=()
+          while IFS= read -r tag; do
+            args+=(--tag "$tag")
+          done < <(jq -r '.tags[]' <<< "$METADATA")
+          for digest in "${digests[@]}"; do
+            args+=("$IMAGE@sha256:$digest")
+          done
+          docker buildx imagetools create --dry-run "${args[@]}" > "$RUNNER_TEMP/manifest.json"
+          jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] | sort == ["amd64", "arm64"]' "$RUNNER_TEMP/manifest.json"
+          docker buildx imagetools create "${args[@]}"
 
   build-postgres:
     name: Postgres
@@ -247,7 +319,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=oneglanse-postgres
-          cache-to: type=gha,scope=oneglanse-postgres,mode=max
+          cache-to: ${{ github.event_name != 'pull_request' && 'type=gha,scope=oneglanse-postgres,mode=max' || '' }}
 
   merge-gate:
     name: PR Gate
@@ -255,8 +327,8 @@ jobs:
     needs:
       - validate
       - changes
-      - build-web
-      - build-agent
+      - build-apps
+      - publish-apps
       - build-postgres
     runs-on: ubuntu-latest
     steps:
@@ -264,14 +336,14 @@ jobs:
         env:
           VALIDATE: ${{ needs.validate.result }}
           CHANGES: ${{ needs.changes.result }}
-          WEB: ${{ needs.build-web.result }}
-          AGENT: ${{ needs.build-agent.result }}
+          APPS: ${{ needs.build-apps.result }}
+          PUBLISH: ${{ needs.publish-apps.result }}
           POSTGRES: ${{ needs.build-postgres.result }}
         run: |
           test "$VALIDATE" = "success"
           test "$CHANGES" = "success"
 
-          for result in "$WEB" "$AGENT" "$POSTGRES"; do
+          for result in "$APPS" "$PUBLISH" "$POSTGRES"; do
             case "$result" in
               success|skipped) ;;
               *) exit 1 ;;
