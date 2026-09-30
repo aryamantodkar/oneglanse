@@ -17,7 +17,7 @@ import {
 	logger,
 } from "@oneglanse/utils";
 import type { Browser, BrowserContext, Page } from "playwright";
-import { runAgents } from "../../../core/runAgents.js";
+import { runPrompts } from "../../../core/prompt-runner/index.js";
 
 // Hard ceiling on browser launch + profile warmup + initial provider navigation.
 // This phase runs entirely outside the executor timeout — its own budget prevents
@@ -285,7 +285,6 @@ async function runRetryCycle(
 					break;
 				}
 
-
 				if (attempt < ATTEMPTS_PER_CYCLE - 1) {
 					await sleep(jitter(RETRY_DELAY));
 				}
@@ -378,7 +377,12 @@ export async function runWithRetryCycles(
 	const executor =
 		options?.executor ??
 		((attempt, currentAttemptPayload) =>
-			runAgents(currentAttemptPayload, attempt.page, provider, options?.onPromptProgress));
+			runPrompts(
+				currentAttemptPayload,
+				attempt.page,
+				provider,
+				options?.onPromptProgress,
+			));
 
 	// Scale execution timeout by prompt count so multi-prompt jobs don't time out mid-run.
 	// Setup (launch + warmup + nav) is bounded separately by AGENT_SETUP_TIMEOUT_MS.

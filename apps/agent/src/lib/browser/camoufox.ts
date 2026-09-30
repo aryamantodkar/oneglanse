@@ -108,17 +108,10 @@ type CamoufoxLaunchOptions = {
 let cachedPythonBinary: string | null = null;
 let cachedSystemFontFamilies: string[] | null = null;
 let pendingSystemFontFamilies: Promise<string[]> | null = null;
-const CAMOUFOX_HUMANIZE = true;
 const CAMOUFOX_HUMANIZE_MAX_TIME_S = 1.5;
 
 function isLocalAppMode(): boolean {
 	return resolveAppMode(process.env.ONEGLANSE_APP_MODE) === "local";
-}
-
-function getHumanizeValue(): false | true | number {
-	if (!CAMOUFOX_HUMANIZE) return false;
-	const maxTime = CAMOUFOX_HUMANIZE_MAX_TIME_S;
-	return maxTime > 0 ? maxTime : true;
 }
 
 function resolveHeadlessMode(
@@ -634,7 +627,7 @@ async function buildLaunchPayload(args: {
 			? false
 			: typeof args.humanize === "boolean"
 				? args.humanize
-				: getHumanizeValue();
+				: CAMOUFOX_HUMANIZE_MAX_TIME_S;
 	if (!args.plainAuthMode) {
 		// Auth browser must never have these applied — they can break Google/OAuth
 		// rendering (e.g. block_webgl breaks the sign-in widget, disable_coop breaks

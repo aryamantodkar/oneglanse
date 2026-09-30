@@ -3,13 +3,11 @@ import type { Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import {
-	moveMouseToElement,
 	preInteractionIdle,
 	randomBetween,
-	smallScroll,
 } from "../../lib/browser/humanBehavior.js";
-import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import { ensureEditorNotBlocked } from "../../lib/input/editor/assertNotBlocked.js";
+import { findEnabledSendButton } from "../../lib/input/editor/findSendButton.js";
 import {
 	insertPromptIntoEditor,
 	normalizePromptValue,
@@ -30,7 +28,6 @@ const SUBMISSION_PHASE_TIMEOUT_MS = 30_000;
 const HOOK_TIMEOUT_MS = 10_000;
 const TYPE_PHASE_TIMEOUT_MS = 25_000;
 const POST_SUBMIT_STABILIZE_TIMEOUT_MS = 12_000;
-const CAMOUFOX_HUMANIZE = true;
 
 export async function askPrompt(
 	page: Page,
@@ -56,7 +53,9 @@ export async function askPrompt(
 		await ensureEditorNotBlocked(page, input, provider);
 	} catch (err) {
 		if (config.beforeRetryHook) {
-			logger.warn(`editor blocked for ${provider} — refreshing page immediately`);
+			logger.warn(
+				`editor blocked for ${provider} — refreshing page immediately`,
+			);
 			await config.beforeRetryHook(page);
 			const refreshedInput = await withTimeout(
 				`[${provider}] waitForEditorReady after refresh`,
@@ -71,21 +70,11 @@ export async function askPrompt(
 	}
 
 	await preInteractionIdle(page);
-	if (!CAMOUFOX_HUMANIZE && Math.random() < 0.4) await smallScroll(page);
-	if (!CAMOUFOX_HUMANIZE && Math.random() < 0.6) {
-		await moveMouseToElement(page, input);
-	}
 
 	logger.debug(`pasting ${prompt.length} chars…`);
 	const { rawValue: insertedValue } = await withTimeout(
 		`[${provider}] insertPromptIntoEditor`,
-		async () =>
-			await insertPromptIntoEditor(
-				page,
-				input,
-				prompt,
-				provider,
-			),
+		async () => await insertPromptIntoEditor(page, input, prompt, provider),
 		TYPE_PHASE_TIMEOUT_MS,
 	);
 	logger.debug(`pasting ${prompt.length} chars complete`);
