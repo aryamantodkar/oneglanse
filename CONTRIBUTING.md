@@ -26,7 +26,7 @@ CodeGraph is optional contributor tooling. Run `pnpm codegraph:init` to create i
 
 ## Change and verify behavior
 
-Keep a PR focused on one coherent change. Read its direct callers and tests before editing. Add a regression test for a bug when practical. For provider DOM changes, use sanitized fixtures and describe the provider, prompt or scenario, expected result, and observed result. A live provider run is supplemental evidence when the external UI is the subject of the change; it must not be required by deterministic CI.
+Read direct callers and tests before editing. Add a regression test for a bug when practical. For provider DOM changes, use sanitized fixtures and describe the provider, prompt or scenario, expected result, and observed result. A live provider run is supplemental evidence when the external UI is the subject of the change; it must not be required by deterministic CI.
 
 Run relevant focused checks while working. Before opening a PR, run:
 
@@ -39,6 +39,16 @@ pnpm build
 ```
 
 CI runs the same repository checks. It also builds and tests finished Docker images on native AMD64 and ARM64 runners when relevant files change. Contributors do not need to reproduce that image matrix locally. For Docker packaging changes, inspect the runtime image checks rather than checking Dockerfile text alone.
+
+### Branches and pull requests
+
+Create a descriptive branch from `main`, using a prefix such as `feat/`, `fix/`, `docs/`, `refactor/`, or `ci/`.
+
+Keep each pull request focused on one coherent responsibility. A feature or fix may span several files when those files are required to complete the same behavior.
+
+For larger changes, split the work when it crosses a separate responsibility, system boundary, or independently reviewable behavior. If one stage depends on another, use stacked pull requests and target the dependent pull request at its parent branch.
+
+Do not split work only because the diff is large, and do not combine unrelated cleanup with the change.
 
 In the PR, explain the behavior change and why it is needed, show the checks and observations that support it, and state any compatibility or deployment effect. Link an issue when one exists. Keep unrelated work out of the diff.
 
