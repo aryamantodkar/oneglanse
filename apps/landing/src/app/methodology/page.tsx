@@ -1,6 +1,10 @@
 import { SiteFooter } from "@/components/sections/site-footer";
 import { SiteHeader } from "@/components/sections/site-header";
-import { PRODUCT_POSITIONING, SITE_URLS } from "@/lib/landing-content";
+import {
+	PRODUCT_POSITIONING,
+	SITE_URLS,
+	SOCIAL_METADATA,
+} from "@/lib/landing-content";
 import type { Metadata } from "next";
 
 const title = "AI Visibility & GEO Tracking Methodology";
@@ -14,11 +18,13 @@ export const metadata: Metadata = {
 		canonical: SITE_URLS.methodology,
 	},
 	openGraph: {
+		...SOCIAL_METADATA.openGraph,
 		title: `${title} | OneGlanse`,
 		description,
 		url: SITE_URLS.methodology,
 	},
 	twitter: {
+		...SOCIAL_METADATA.twitter,
 		title: `${title} | OneGlanse`,
 		description,
 	},

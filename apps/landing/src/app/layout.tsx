@@ -1,5 +1,10 @@
 import "./globals.css";
-import { PRODUCT_SUMMARY, SITE_TITLE, SITE_URLS } from "@/lib/landing-content";
+import {
+	PRODUCT_SUMMARY,
+	SITE_TITLE,
+	SITE_URLS,
+	SOCIAL_METADATA,
+} from "@/lib/landing-content";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
@@ -25,25 +30,15 @@ export const metadata: Metadata = {
 		canonical: SITE_URLS.homepage,
 	},
 	openGraph: {
+		...SOCIAL_METADATA.openGraph,
 		title: SITE_TITLE,
 		description: PRODUCT_SUMMARY,
 		url: SITE_URLS.homepage,
-		siteName: "OneGlanse",
-		type: "website",
-		images: [
-			{
-				url: "/social-preview.png",
-				width: 1200,
-				height: 630,
-				alt: "Free, open-source AI visibility tracking for marketing teams",
-			},
-		],
 	},
 	twitter: {
-		card: "summary_large_image",
+		...SOCIAL_METADATA.twitter,
 		title: SITE_TITLE,
 		description: PRODUCT_SUMMARY,
-		images: ["/social-preview.png"],
 	},
 };
 
@@ -76,6 +71,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
 	return (
 		<html lang="en" className={geist.variable} suppressHydrationWarning>
+			<head>
+				<link rel="describedby" href="/llms.txt" />
+			</head>
 			<body>
 				<script
 					type="application/ld+json"

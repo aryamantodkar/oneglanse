@@ -10,6 +10,7 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { Metadata } from "next";
 
 export const PRODUCT_POSITIONING =
 	"Free, open-source AI visibility tracking for marketing teams.";
@@ -26,6 +27,25 @@ export const SITE_URLS = {
 	methodology: "https://oneglanse.com/methodology",
 	sitemap: "https://oneglanse.com/sitemap.xml",
 } as const;
+
+export const SOCIAL_METADATA = {
+	openGraph: {
+		siteName: "OneGlanse",
+		type: "website",
+		images: [
+			{
+				url: "/social-preview.png",
+				width: 1200,
+				height: 630,
+				alt: PRODUCT_POSITIONING,
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		images: ["/social-preview.png"],
+	},
+} satisfies Pick<Metadata, "openGraph" | "twitter">;
 
 type FeatureItem = {
 	title: string;
