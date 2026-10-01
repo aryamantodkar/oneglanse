@@ -1,5 +1,6 @@
 import { BrandLogo } from "@/components/common/brand-logo";
 import { FOOTER_LINKS } from "@/lib/landing-content";
+import Link from "next/link";
 
 export function SiteFooter(): React.JSX.Element {
 	return (
@@ -13,18 +14,23 @@ export function SiteFooter(): React.JSX.Element {
 					<ul className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
 						{FOOTER_LINKS.map((link) => (
 							<li key={link.label}>
-								<a
-									href={link.href}
-									className="hover:text-foreground"
-									target={link.href.startsWith("http") ? "_blank" : undefined}
-									rel={
-										link.href.startsWith("http")
-											? "noreferrer noopener"
-											: undefined
-									}
-								>
-									{link.label}
-								</a>
+								{link.href.startsWith("http") ? (
+									<a
+										href={link.href}
+										className="transition-colors hover:text-foreground"
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										{link.label}
+									</a>
+								) : (
+									<Link
+										href={link.href}
+										className="transition-colors hover:text-foreground"
+									>
+										{link.label}
+									</Link>
+								)}
 							</li>
 						))}
 					</ul>

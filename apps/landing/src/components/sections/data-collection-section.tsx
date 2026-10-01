@@ -8,6 +8,7 @@ import {
 	ShieldCheck,
 	ShieldOff,
 } from "lucide-react";
+import Link from "next/link";
 
 export function DataCollectionSection(): React.JSX.Element {
 	return (
@@ -77,13 +78,13 @@ export function DataCollectionSection(): React.JSX.Element {
 
 				<p className="mt-4 text-sm leading-6 text-muted-foreground">
 					Read the collection and comparison protocol:{" "}
-					<a
+					<Link
 						href="/methodology"
 						className="inline-flex items-center gap-1 text-foreground underline underline-offset-4"
 					>
 						OneGlanse methodology
 						<BookOpenText className="h-3.5 w-3.5" aria-hidden="true" />
-					</a>
+					</Link>
 				</p>
 			</Card>
 		</section>

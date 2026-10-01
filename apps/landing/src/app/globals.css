@@ -96,19 +96,37 @@
 	body {
 		@apply bg-background text-foreground;
 		margin: 0;
+		isolation: isolate;
 		background: radial-gradient(
 				circle at top,
 				rgba(241, 245, 249, 0.9),
 				transparent 42%
 			), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+		transition: color var(--motion-duration-slow) var(--motion-ease-standard);
 	}
 
-	.dark body {
+	body::before {
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		content: "";
 		background: radial-gradient(
 				circle at top,
 				rgba(38, 38, 38, 0.65),
 				transparent 34%
 			), linear-gradient(180deg, #111111 0%, #0a0a0a 100%);
+		opacity: 0;
+		transition: opacity var(--motion-duration-slow) var(--motion-ease-standard);
+	}
+
+	.dark body::before {
+		opacity: 1;
+	}
+
+	main {
+		animation: landing-page-enter var(--motion-duration-slow)
+			var(--motion-ease-standard) both;
 	}
 }
 
@@ -123,14 +141,45 @@
 
 	.landing-surface {
 		@apply rounded-[16px] border border-black/5 bg-white/92 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.24),0_10px_18px_-14px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-white/8 dark:bg-neutral-950/88 dark:shadow-[0_24px_54px_-32px_rgba(0,0,0,0.72)];
+		transition: background-color var(--motion-duration-slow)
+			var(--motion-ease-standard), border-color var(--motion-duration-slow)
+			var(--motion-ease-standard), box-shadow var(--motion-duration-slow)
+			var(--motion-ease-standard);
 	}
 
 	.landing-soft-card {
 		@apply rounded-[14px] border border-black/5 bg-white/90 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.24),0_8px_16px_-12px_rgba(15,23,42,0.12)] dark:border-white/8 dark:bg-neutral-950/84 dark:shadow-[0_20px_42px_-26px_rgba(0,0,0,0.72)];
+		transition: background-color var(--motion-duration-slow)
+			var(--motion-ease-standard), border-color var(--motion-duration-slow)
+			var(--motion-ease-standard), box-shadow var(--motion-duration-slow)
+			var(--motion-ease-standard);
 	}
 
 	.landing-muted-card {
 		@apply rounded-[12px] bg-slate-50/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-white/6;
+		transition: background-color var(--motion-duration-slow)
+			var(--motion-ease-standard);
+	}
+
+	.ui-page-enter {
+		animation: landing-rise-in 480ms var(--motion-ease-standard) both;
+	}
+
+	.ui-stagger > * {
+		animation: landing-rise-in 480ms var(--motion-ease-standard) both;
+	}
+
+	.ui-stagger > *:nth-child(2) {
+		animation-delay: 70ms;
+	}
+
+	.ui-stagger > *:nth-child(3) {
+		animation-delay: 140ms;
+	}
+
+	.theme-icon-enter {
+		animation: landing-icon-enter var(--motion-duration-slow)
+			var(--motion-ease-standard) both;
 	}
 
 	.content-link {
@@ -138,11 +187,19 @@
 	}
 
 	.content-filter {
-		@apply inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring;
+		@apply inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring;
+		transition: transform var(--motion-duration-fast)
+			var(--motion-ease-standard), background-color var(--motion-duration-slow)
+			var(--motion-ease-standard), border-color var(--motion-duration-slow)
+			var(--motion-ease-standard);
 	}
 
 	.content-card-link {
-		@apply block h-full rounded-[14px] border border-border bg-card p-6 transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:p-7;
+		@apply block h-full rounded-[14px] border border-border bg-card p-6 hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:p-7;
+		transition: transform var(--motion-duration-fast)
+			var(--motion-ease-standard), background-color var(--motion-duration-slow)
+			var(--motion-ease-standard), border-color var(--motion-duration-slow)
+			var(--motion-ease-standard);
 	}
 
 	.content-table th,
@@ -168,6 +225,87 @@
 
 	.comparison-table tbody td:last-child {
 		@apply bg-muted/20;
+	}
+}
+
+[data-slot="button"] {
+	transition-property: transform, box-shadow, background-color, color,
+		border-color, opacity;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	[data-slot="button"]:not(:disabled):hover {
+		transform: translateY(-2px);
+	}
+
+	.content-card-link:hover {
+		transform: translateY(-2px);
+	}
+}
+
+[data-slot="button"]:not(:disabled):active,
+.content-filter:active,
+.content-card-link:active {
+	transform: scale(0.97);
+}
+
+@keyframes landing-page-enter {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes landing-rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes landing-icon-enter {
+	from {
+		opacity: 0;
+		transform: rotate(-18deg) scale(0.8);
+	}
+	to {
+		opacity: 1;
+		transform: rotate(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	body,
+	body::before,
+	.landing-surface,
+	.landing-soft-card,
+	.landing-muted-card,
+	[data-slot="button"],
+	.content-filter,
+	.content-card-link {
+		transition: none;
+	}
+
+	main,
+	.ui-page-enter,
+	.ui-stagger > *,
+	.theme-icon-enter {
+		animation: none;
+		opacity: 1;
+	}
+
+	[data-slot="button"]:not(:disabled):hover,
+	.content-card-link:hover,
+	[data-slot="button"]:not(:disabled):active,
+	.content-filter:active,
+	.content-card-link:active {
+		transform: none;
 	}
 }
 
