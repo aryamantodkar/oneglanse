@@ -6,7 +6,11 @@ ARG PNPM_VERSION=10.16.0
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.json ./
+# Cache registry downloads independently of app and workspace source changes.
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN pnpm fetch
+
+COPY package.json turbo.json tsconfig.json ./
 COPY apps/agent ./apps/agent
 COPY packages/db ./packages/db
 COPY packages/errors ./packages/errors
@@ -14,8 +18,7 @@ COPY packages/services ./packages/services
 COPY packages/types ./packages/types
 COPY packages/utils ./packages/utils
 
-RUN --mount=type=cache,id=pnpm-store-agent,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN CI=true pnpm install --offline --frozen-lockfile
 
 FROM deps AS builder
 RUN pnpm turbo build --filter=@oneglanse/agent...

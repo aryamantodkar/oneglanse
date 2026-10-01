@@ -6,7 +6,11 @@ ARG PNPM_VERSION=10.16.0
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.json ./
+# Cache registry downloads independently of app and workspace source changes.
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN pnpm fetch
+
+COPY package.json turbo.json tsconfig.json ./
 COPY apps/web ./apps/web
 COPY packages/db ./packages/db
 COPY packages/errors ./packages/errors
@@ -15,8 +19,7 @@ COPY packages/types ./packages/types
 COPY packages/ui ./packages/ui
 COPY packages/utils ./packages/utils
 
-RUN --mount=type=cache,id=pnpm-store-web,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN CI=true pnpm install --offline --frozen-lockfile
 
 FROM deps AS builder
 ENV SKIP_ENV_VALIDATION=true
@@ -35,7 +38,8 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
-RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+# Make pnpm available to the non-root migration user without a runtime download.
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 WORKDIR /workspace
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
