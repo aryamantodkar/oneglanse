@@ -1,6 +1,6 @@
 import { tools } from "./tools";
 
-export type Comparison = {
+type Comparison = {
 	slug: string;
 	toolSlug: string;
 	summary: string;

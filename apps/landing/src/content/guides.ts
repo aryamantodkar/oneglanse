@@ -1,6 +1,6 @@
 import type { Source } from "./sources";
 
-export type Guide = {
+type Guide = {
 	slug: string;
 	title: string;
 	intro: string;
