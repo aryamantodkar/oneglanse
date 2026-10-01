@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		},
 		...[
 			"/why-self-hosted",
+			"/why-camoufox",
 			"/ai-visibility-tools",
 			"/compare",
 			"/guides",

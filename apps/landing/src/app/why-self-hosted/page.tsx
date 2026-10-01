@@ -1,5 +1,6 @@
 import { ContentShell } from "@/components/content/content-shell";
 import { contentMetadata } from "@/lib/content-metadata";
+import Link from "next/link";
 
 export const metadata = contentMetadata(
 	"Why OneGlanse Is Self-Hosted",
@@ -115,6 +116,13 @@ export default function WhySelfHostedPage(): React.JSX.Element {
 						The same design choice that makes UI collection useful also makes
 						centralized collection more expensive and difficult to operate
 						reliably.
+					</p>
+					<p>
+						Read{" "}
+						<Link href="/why-camoufox" className="content-link">
+							why OneGlanse moved from Chromium to Camoufox
+						</Link>{" "}
+						for the engineering history behind its browser choice.
 					</p>
 				</section>
 

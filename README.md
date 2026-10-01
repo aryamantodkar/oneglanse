@@ -65,6 +65,12 @@ Collection uses your own provider accounts and authenticated browser sessions. R
 
 See [ARCHITECTURE.md](https://github.com/oneglanse/oneglanse/blob/main/ARCHITECTURE.md) for the full data flow.
 
+### Why Camoufox?
+
+OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), a modified Firefox browser, with Playwright for provider collection. The project first used Chromium with custom handling for screen dimensions, browser identity, WebGL, fonts, locale, and worker contexts. Keeping those signals consistent became its own engineering task, so OneGlanse moved much of that work to Camoufox.
+
+Camoufox is a major part of OneGlanse's UI collection layer. Credit to its contributors for building and maintaining the browser that this project relies on. OneGlanse currently installs `cloverlabs-camoufox`, with active development also at [Clover Labs](https://github.com/CloverLabsAI/camoufox). [Read why OneGlanse moved from Chromium to Camoufox →](https://oneglanse.com/why-camoufox)
+
 ## Quick start
 
 You need Node.js 20 or newer, pnpm 10 or newer, and Docker. You also need an analysis model API key, such as OpenAI or Anthropic, and accounts for the products you want to track.
