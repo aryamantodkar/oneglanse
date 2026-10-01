@@ -25,6 +25,19 @@
   <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
 </p>
 
+<p align="center"><em>Illustrative product mockups with sample data.</em></p>
+
+<table>
+  <tr>
+    <td><img src="docs/images/Mockup-1.png" alt="Illustrative dashboard and source overview" /><br />Dashboard</td>
+    <td><img src="docs/images/Mockup-2.png" alt="Illustrative captured response and analysis" /><br />Captured response</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/Mockup-3.png" alt="Illustrative citations and competitor view" /><br />Sources and citations</td>
+    <td><img src="docs/images/Mockup-4.png" alt="Illustrative prompt-level metrics" /><br />Prompt tracking</td>
+  </tr>
+</table>
+
 ## What it does
 
 - Runs the prompts you choose in supported AI products and saves the visible responses.
@@ -117,6 +130,10 @@ Both modes use infrastructure you control for app data. Self-hosting is intended
 Captured responses, analysis results, and provider sessions are stored in the local or self-hosted app stack. Response analysis sends captured text to the OpenAI, Anthropic, or compatible model endpoint you configure. Provider sign-in and self-hosted session transfer use your own accounts and server. Review your model provider's data handling terms before you send responses to it.
 
 The app also sends `user_signed_up` and `user_active` events to PostHog. Each event contains a SHA-256 hash of the app's internal user ID; PostHog adds a receipt timestamp. The telemetry request does not include prompts, captured responses, scores, names, or email addresses. See [the telemetry implementation](apps/web/src/lib/telemetry.ts) for the exact request.
+
+## Compare AI visibility tools
+
+The [tool directory](https://oneglanse.com/ai-visibility-tools) lists sourced product facts. Read the direct comparisons with [Elmo](https://oneglanse.com/compare/oneglanse-vs-elmo), [Profound](https://oneglanse.com/compare/oneglanse-vs-profound), and [Peec AI](https://oneglanse.com/compare/oneglanse-vs-peec-ai). Each page states its evidence and limits.
 
 ## Documentation and contributing
 

@@ -75,14 +75,26 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 		<header className="section-shell sticky top-0 z-40 pt-4 sm:pt-5">
 			<div className="landing-surface flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
 				<a
-					href={SITE_URLS.homepage}
+					href="/"
 					className="inline-flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
-					target="_blank"
-					rel="noreferrer noopener"
 				>
 					<BrandLogo className="h-6 w-6" />
 					OneGlanse
 				</a>
+				<nav
+					aria-label="Explore"
+					className="hidden items-center gap-4 text-sm font-medium text-muted-foreground lg:flex"
+				>
+					<a className="hover:text-foreground" href="/ai-visibility-tools">
+						Tools
+					</a>
+					<a className="hover:text-foreground" href="/compare">
+						Compare
+					</a>
+					<a className="hover:text-foreground" href="/guides">
+						Guides
+					</a>
+				</nav>
 
 				<div className="flex shrink-0 items-center gap-2">
 					<Button

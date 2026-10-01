@@ -137,6 +137,9 @@ export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 ];
 
 export const FOOTER_LINKS = [
+	{ label: "Tools", href: "/ai-visibility-tools" },
+	{ label: "Compare", href: "/compare" },
+	{ label: "Guides", href: "/guides" },
 	{ label: "Methodology", href: "/methodology" },
 	{ label: "Docs", href: SITE_URLS.docs },
 	{ label: "GitHub", href: SITE_URLS.github },

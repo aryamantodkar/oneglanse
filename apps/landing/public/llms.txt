@@ -10,6 +10,9 @@ Analysis fields such as visibility, rank, sentiment, and recommendation are mode
 
 - [Homepage](https://oneglanse.com): Product overview and supported AI products.
 - [Collection methodology](https://oneglanse.com/methodology): How OneGlanse collects and interprets sampled responses.
+- [AI visibility tools](https://oneglanse.com/ai-visibility-tools): Sourced directory and collection-method categories.
+- [Product comparisons](https://oneglanse.com/compare): Five sourced comparisons with other AI visibility products.
+- [Guides](https://oneglanse.com/guides): AI visibility, AEO, GEO, and SEO definitions and measurement.
 - [Documentation](https://docs.oneglanse.com/introduction): Product and setup documentation.
 - [Local setup](https://docs.oneglanse.com/local-setup): Run OneGlanse locally.
 - [Self-hosted setup](https://docs.oneglanse.com/self-hosted-setup): Deploy OneGlanse on your own infrastructure.

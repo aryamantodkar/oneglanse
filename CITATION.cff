@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use OneGlanse in research, cite this software."
+title: "OneGlanse"
+type: software
+authors:
+  - family-names: Todkar
+    given-names: Aryaman
+repository-code: "https://github.com/oneglanse/oneglanse"
+url: "https://oneglanse.com"
+license: MIT
+abstract: "Open-source AI visibility tracking using rendered product-interface responses and separate model-backed analysis."
+keywords:
+  - AI visibility
+  - answer engine optimization
+  - generative engine optimization
