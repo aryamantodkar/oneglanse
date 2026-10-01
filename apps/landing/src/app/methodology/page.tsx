@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { SiteHeader } from "@/components/sections/site-header";
-import {
-	PRODUCT_POSITIONING,
-	SITE_URLS,
-} from "@/lib/landing-content";
+import { PRODUCT_POSITIONING, SITE_URLS } from "@/lib/landing-content";
+import type { Metadata } from "next";
 
 const title = "AI Visibility Tracking Methodology";
 const description =
@@ -51,8 +48,8 @@ export default function MethodologyPage(): React.JSX.Element {
 						<p className="mt-5 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
 							{PRODUCT_POSITIONING} OneGlanse submits prompts through the
 							ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview
-							interfaces, then sends captured response text to the model endpoint
-							that you configure for analysis.
+							interfaces, then sends captured response text to the model
+							endpoint that you configure for analysis.
 						</p>
 					</header>
 
@@ -63,9 +60,9 @@ export default function MethodologyPage(): React.JSX.Element {
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
 								Provider collection uses browser automation to submit configured
-								prompts and capture the rendered response and citations available
-								in that interaction. It does not use the provider&apos;s model API
-								for collection.
+								prompts and capture the rendered response and citations
+								available in that interaction. It does not use the
+								provider&apos;s model API for collection.
 							</p>
 						</section>
 
@@ -75,8 +72,8 @@ export default function MethodologyPage(): React.JSX.Element {
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
 								A separately configured OpenAI, Anthropic, or compatible model
-								endpoint analyzes captured text. The resulting visibility,
-								rank, sentiment, and recommendation fields are model-backed
+								endpoint analyzes captured text. The resulting visibility, rank,
+								sentiment, and recommendation fields are model-backed
 								interpretations. They are not scores returned by the provider
 								interface.
 							</p>
@@ -87,11 +84,12 @@ export default function MethodologyPage(): React.JSX.Element {
 								3. Interpret each result as a sample
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
-								An answer is an observation from one prompt run, account, product
-								interface, and point in time. Results can change with prompt
-								wording, account state, location, product updates, and time.
-								OneGlanse reports the captured sample; it does not claim that one
-								run represents every user or every answer from that product.
+								An answer is an observation from one prompt run, account,
+								product interface, and point in time. Results can change with
+								prompt wording, account state, location, product updates, and
+								time. OneGlanse reports the captured sample; it does not claim
+								that one run represents every user or every answer from that
+								product.
 							</p>
 						</section>
 
@@ -100,9 +98,9 @@ export default function MethodologyPage(): React.JSX.Element {
 								A repeatable UI-versus-API comparison
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
-								A product interface and an API are separate collection
-								surfaces. To compare them, run the same prompt on both and record
-								the conditions that could affect each result:
+								A product interface and an API are separate collection surfaces.
+								To compare them, run the same prompt on both and record the
+								conditions that could affect each result:
 							</p>
 							<ul className="mt-4 list-disc space-y-2 pl-6 text-base leading-7 text-muted-foreground">
 								{comparisonFields.map((field) => (
@@ -113,8 +111,8 @@ export default function MethodologyPage(): React.JSX.Element {
 								Repeat trials across prompts and dates. Compare answer text,
 								brand mentions, recommendation order, and cited URLs as separate
 								outcomes. Report the sample size and incomplete runs. Do not
-								combine UI and API results into one metric unless the purpose and
-								limitations of that combined metric are stated.
+								combine UI and API results into one metric unless the purpose
+								and limitations of that combined metric are stated.
 							</p>
 						</section>
 
@@ -132,12 +130,12 @@ export default function MethodologyPage(): React.JSX.Element {
 								>
 									Surfer
 								</a>{" "}
-								reports 21.3% to 31.6% overlap in canonicalized brand lists
-								from a comparison of 1,000 prompts and 13,779 answers. The
-								study used one sample per prompt and approximate model parity.
-								These are study-specific findings, not a universal rate or a
-								OneGlanse benchmark. OneGlanse does not currently publish its own
-								measured cross-provider UI-versus-API benchmark.
+								reports 21.3% to 31.6% overlap in canonicalized brand lists from
+								a comparison of 1,000 prompts and 13,779 answers. The study used
+								one sample per prompt and approximate model parity. These are
+								study-specific findings, not a universal rate or a OneGlanse
+								benchmark. OneGlanse does not currently publish its own measured
+								cross-provider UI-versus-API benchmark.
 							</p>
 						</aside>
 

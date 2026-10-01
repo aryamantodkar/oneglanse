@@ -1,9 +1,5 @@
 import "./globals.css";
-import {
-	PRODUCT_SUMMARY,
-	SITE_TITLE,
-	SITE_URLS,
-} from "@/lib/landing-content";
+import { PRODUCT_SUMMARY, SITE_TITLE, SITE_URLS } from "@/lib/landing-content";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";

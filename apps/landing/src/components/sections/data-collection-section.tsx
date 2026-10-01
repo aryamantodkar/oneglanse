@@ -24,8 +24,8 @@ export function DataCollectionSection(): React.JSX.Element {
 					Data collection methodology
 				</h2>
 				<p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-					How collection and model-backed analysis work, and what the results can
-					tell you.
+					How collection and model-backed analysis work, and what the results
+					can tell you.
 				</p>
 
 				<ul className="mt-4 grid gap-2">

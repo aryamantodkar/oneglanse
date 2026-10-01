@@ -10,10 +10,11 @@ export function HeroSection(): React.JSX.Element {
 						{PRODUCT_POSITIONING}
 					</h1>
 					<p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-						Run prompts through the real ChatGPT, Perplexity, Gemini, Claude, and
-						Google AI Overview interfaces. OneGlanse extracts rendered responses
-						and citations. Provider collection does not use model APIs; a separate
-						model endpoint you configure analyzes the captured responses afterward.
+						Run prompts through the real ChatGPT, Perplexity, Gemini, Claude,
+						and Google AI Overview interfaces. OneGlanse extracts rendered
+						responses and citations. Provider collection does not use model
+						APIs; a separate model endpoint you configure analyzes the captured
+						responses afterward.
 					</p>
 				</div>
 

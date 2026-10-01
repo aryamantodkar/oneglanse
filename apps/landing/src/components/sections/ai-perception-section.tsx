@@ -19,20 +19,21 @@ export function AiPerceptionSection(): React.JSX.Element {
 							AI Perception
 						</h2>
 						<p className="mt-2 max-w-xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
-							Review themes and claims that the configured analysis model finds in
-							captured answers.
+							Review themes and claims that the configured analysis model finds
+							in captured answers.
 						</p>
 					</div>
 
 					<ul className="mt-6 space-y-3">
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Themes are derived from captured provider responses by the configured
-							analysis model
+							Themes are derived from captured provider responses by the
+							configured analysis model
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Pricing and positioning observations are model-backed interpretations
+							Pricing and positioning observations are model-backed
+							interpretations
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -41,11 +42,13 @@ export function AiPerceptionSection(): React.JSX.Element {
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Inspect how captured answers describe a brand and its differentiators
+							Inspect how captured answers describe a brand and its
+							differentiators
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Review differences between runs without treating them as predictions
+							Review differences between runs without treating them as
+							predictions
 						</li>
 					</ul>
 				</div>
