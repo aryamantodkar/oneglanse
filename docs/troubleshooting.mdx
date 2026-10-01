@@ -5,13 +5,14 @@ description: Diagnose known setup, provider, and scheduling failures.
 
 ## Browser runtime fails to start
 
-If local Agent logs show a Python or Camoufox installation error, confirm Python 3 is available:
+If local Agent logs show a Python or Camoufox installation error, check the installed Python version:
 
-```bash
-which python3
-```
+- macOS/Linux: `python3 --version`
+- Windows: `python --version`
 
-If auto-detection selects the wrong binary, set `CAMOUFOX_PYTHON_BIN` to the path returned by that command in `.env`, then restart `pnpm local`.
+OneGlanse needs Python 3.10+ for the local Camoufox runtime. The setup script can provision it automatically on supported environments.
+
+If auto-detection selects the wrong binary, set `CAMOUFOX_PYTHON_BIN` to the path of a compatible interpreter in `.env`, then restart `pnpm local`.
 
 Provider sign-in needs a visible desktop browser. On WSL, the Agent reports an error when it cannot detect a display. Use WSLg with a working graphical display, or run the sign-in flow from a native desktop OS.
 

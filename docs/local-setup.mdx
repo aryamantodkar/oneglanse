@@ -7,12 +7,13 @@ description: Install OneGlanse on your machine and run prompts on demand.
 
 - Node.js 20 or newer
 - pnpm 10 (the repository pins `pnpm@10.16.0`)
+- Python 3.10+ for the local Camoufox runtime (auto-provisioned where supported)
 - Docker with Compose
 - A desktop session for provider sign-in
 
 If pnpm is not installed, run `corepack enable` with your Node.js installation. The repository's `packageManager` field selects its pinned pnpm version.
 
-Use native macOS, Linux, or Windows for the documented local sign-in path. WSL has display-specific handling in the Agent, but this guide does not establish WSL as a supported setup path. If you use WSL, provider sign-in needs a working graphical display such as WSLg.
+Native macOS, Linux, or Windows is the documented setup path. WSL requires a working graphical display such as WSLg and is not part of the supported setup path.
 
 ## 1. Clone and configure
 
