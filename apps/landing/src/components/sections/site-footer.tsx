@@ -5,8 +5,8 @@ export function SiteFooter(): React.JSX.Element {
 	return (
 		<footer className="border-t border-gray-200 py-8 dark:border-gray-800">
 			<div className="section-shell flex flex-col gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:text-left">
-				<div className="flex items-center gap-2">
-					<BrandLogo className="h-5 w-5" />
+				<div className="flex items-center justify-center gap-2 sm:justify-start">
+					<BrandLogo alt="" className="h-5 w-5 shrink-0" />
 					<p>© {new Date().getFullYear()} OneGlanse</p>
 				</div>
 				<nav aria-label="Footer links">

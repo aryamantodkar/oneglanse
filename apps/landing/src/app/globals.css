@@ -132,4 +132,120 @@
 	.landing-muted-card {
 		@apply rounded-[12px] bg-slate-50/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-white/6;
 	}
+
+	.content-link {
+		@apply decoration-border underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring;
+	}
+
+	.content-filter {
+		@apply inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring;
+	}
+
+	.content-card-link {
+		@apply block h-full rounded-[14px] border border-border bg-card p-6 transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:p-7;
+	}
+
+	.content-table th,
+	.content-table td {
+		@apply px-5 py-5 align-top leading-6;
+	}
+
+	.content-table thead th {
+		@apply py-3 text-xs font-semibold text-foreground;
+	}
+
+	.content-table tbody tr {
+		@apply border-t border-border;
+	}
+
+	.content-table tbody td {
+		@apply text-muted-foreground;
+	}
+
+	.content-table tbody th {
+		@apply font-medium;
+	}
+
+	.comparison-table tbody td:last-child {
+		@apply bg-muted/20;
+	}
+}
+
+@media (max-width: 767px) {
+	.content-table,
+	.content-table tbody,
+	.content-table tr,
+	.content-table th,
+	.content-table td {
+		display: block;
+		width: 100%;
+	}
+
+	.content-table thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.content-table tbody tr {
+		padding: 20px;
+	}
+
+	.content-table tbody tr:first-child {
+		border-top: 0;
+	}
+
+	.content-table tbody td,
+	.content-table tbody th {
+		padding: 0;
+	}
+
+	.content-table td[data-label]::before {
+		content: attr(data-label);
+		display: block;
+		margin-bottom: 4px;
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--foreground);
+	}
+
+	.tool-table tbody tr {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+	}
+
+	.tool-table .tool-name,
+	.tool-table .tool-details {
+		grid-column: 1 / -1;
+	}
+
+	.tool-table .tool-name {
+		font-size: 18px;
+	}
+
+	.tool-table .tool-name span {
+		display: block;
+		width: fit-content;
+		margin-top: 8px;
+	}
+
+	.comparison-table tbody tr {
+		display: grid;
+		gap: 16px;
+	}
+
+	.comparison-table tbody th {
+		font-weight: 600;
+	}
+
+	.comparison-table tbody td {
+		padding: 14px;
+		border-radius: 8px;
+		background: var(--muted);
+	}
 }
