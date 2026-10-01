@@ -45,7 +45,15 @@ Collection uses your own provider accounts and authenticated browser sessions. R
 
 ## Supported products
 
-ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Collection runs against their user-facing web interfaces.
+<p align="center">
+  <span><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;ChatGPT</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=perplexity.ai&amp;sz=64" width="20" height="20" alt="" />&nbsp;Perplexity</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=gemini.google.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;Gemini</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=claude.ai&amp;sz=64" width="20" height="20" alt="" />&nbsp;Claude</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=google.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;Google AI Overview</span>
+</p>
+
+<p align="center">Collection runs against their user-facing web interfaces.</p>
 
 ## How it works
 
