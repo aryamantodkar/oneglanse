@@ -9,7 +9,7 @@ Self-host mode runs Web, Agent, Postgres, ClickHouse, and Redis through Docker. 
 
 - An Ubuntu 22.04 or 24.04 VPS and a domain whose DNS A record points to it
 - A non-root user with `sudo` access
-- An OpenAI or Anthropic analysis key, or an OpenAI-compatible endpoint
+- An OpenAI or Anthropic API key, or an OpenAI-compatible endpoint and its API key
 - Provider accounts and a desktop machine for browser sign-in
 - A ThorData residential proxy API endpoint for provider browser traffic in self-host mode
 
@@ -122,14 +122,14 @@ Verify `https://app.example.com` loads before creating an account.
 
 ## Capture and upload provider sessions
 
-On your desktop machine, complete [Local Setup](/local-setup) so the local database services and browser runtime are ready. Then configure an upload target in that checkout's `.env`. Use the same token as the VPS. The default IP shortcut constructs a plain HTTP URL on port 3333:
+On your desktop machine, clone the repository and install dependencies if you have not already. Configure an upload target in that checkout's `.env`, using the same token as the VPS. The default IP shortcut constructs a plain HTTP URL on port 3333:
 
 ```dotenv
 ONEGLANSE_VPS_IP=YOUR_VPS_IP
 AGENT_AUTH_UPLOAD_TOKEN=your-long-random-secret
 ```
 
-Capture provider sessions locally:
+Run `pnpm auth` to prepare the Camoufox browser runtime, build the required workspace packages, and open the local provider sign-in UI on port 3100. The full local app stack and its database services are not required.
 
 ```bash
 pnpm auth

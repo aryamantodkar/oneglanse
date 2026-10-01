@@ -1,11 +1,10 @@
-<p align="center">
+<h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png" />
-    <img src="docs/images/logo.png" alt="OneGlanse logo" width="88" height="88" />
+    <img src="docs/images/logo.png" alt="OneGlanse logo" width="40" height="40" />
   </picture>
-</p>
-
-<h1 align="center">OneGlanse</h1>
+  &nbsp;OneGlanse
+</h1>
 
 <p align="center"><strong>Free, open-source AI visibility tracking for marketing teams.</strong></p>
 
@@ -105,7 +104,7 @@ pnpm local
 
 Open [http://localhost:3000](http://localhost:3000), create an account, connect provider accounts at `/providers`, add prompts, and run them. The local script prepares the browser runtime, starts the supporting services, and applies database migrations. The first start can take longer while Docker images and browser files download.
 
-Browser automation requires a usable desktop session for provider sign-in. Use native macOS, Linux, or Windows for local setup; WSL is not supported for this flow. See the [local setup guide](https://docs.oneglanse.com/local-setup) for the full steps and troubleshooting.
+Browser automation requires a usable desktop session for provider sign-in. Native macOS, Linux, or Windows is the documented setup path. WSL requires a working graphical display such as WSLg and is not part of the supported setup path. See the [local setup guide](https://docs.oneglanse.com/local-setup) for the full steps and troubleshooting.
 
 ## Local and self-hosted use
 
