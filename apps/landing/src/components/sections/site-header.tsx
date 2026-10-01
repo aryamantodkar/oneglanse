@@ -88,7 +88,7 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 					<Button
 						asChild
 						variant="outline"
-						className="h-9 gap-1.5 border-amber-400/70 bg-gradient-to-b from-amber-200 to-amber-300 px-2.5 text-amber-950 shadow-[0_8px_18px_-10px_rgba(245,158,11,0.75)] hover:border-amber-500 hover:from-amber-100 hover:to-amber-200 hover:text-amber-950 hover:shadow-[0_10px_22px_-10px_rgba(245,158,11,0.8)] dark:border-amber-300/30 dark:from-amber-300/20 dark:to-amber-500/15 dark:text-amber-100 dark:shadow-[0_8px_20px_-10px_rgba(245,158,11,0.32)] dark:hover:border-amber-200/50 dark:hover:from-amber-300/25 dark:hover:to-amber-500/20 dark:hover:text-amber-50"
+						className="h-9 gap-1.5 border-amber-300/60 bg-gradient-to-b from-amber-100/65 to-amber-200/55 px-2.5 text-amber-900 shadow-[0_6px_16px_-12px_rgba(245,158,11,0.4)] hover:border-amber-400/70 hover:from-amber-100/80 hover:to-amber-200/70 hover:text-amber-950 hover:shadow-[0_8px_18px_-12px_rgba(245,158,11,0.5)] dark:border-amber-300/30 dark:from-amber-300/20 dark:to-amber-500/15 dark:text-amber-100 dark:shadow-[0_8px_20px_-10px_rgba(245,158,11,0.32)] dark:hover:border-amber-200/50 dark:hover:from-amber-300/25 dark:hover:to-amber-500/20 dark:hover:text-amber-50"
 					>
 						<a
 							href={SITE_URLS.github}
