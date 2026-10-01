@@ -27,6 +27,10 @@ export function DataCollectionSection(): React.JSX.Element {
 					How collection and model-backed analysis work, and what the results
 					can tell you.
 				</p>
+				<p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
+					AI visibility tracking, also called GEO (Generative Engine
+					Optimization), describes how brands appear in AI-generated answers.
+				</p>
 
 				<ul className="mt-4 grid gap-2">
 					{METHOD_POINTS.map((point, index) => (

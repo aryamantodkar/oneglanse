@@ -3,9 +3,9 @@ import { SiteHeader } from "@/components/sections/site-header";
 import { PRODUCT_POSITIONING, SITE_URLS } from "@/lib/landing-content";
 import type { Metadata } from "next";
 
-const title = "AI Visibility Tracking Methodology";
+const title = "AI Visibility & GEO Tracking Methodology";
 const description =
-	"Learn how OneGlanse collects rendered AI product responses, analyzes them with a configured model endpoint, and compares results without treating samples as universal benchmarks.";
+	"Learn how OneGlanse collects rendered AI product responses and analyzes samples for AI visibility and GEO (Generative Engine Optimization), with clear limits on UI-versus-API comparisons.";
 
 export const metadata: Metadata = {
 	title: `${title} | OneGlanse`,

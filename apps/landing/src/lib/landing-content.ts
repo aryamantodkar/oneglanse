@@ -14,7 +14,7 @@ import type { LucideIcon } from "lucide-react";
 export const PRODUCT_POSITIONING =
 	"Free, open-source AI visibility tracking for marketing teams.";
 export const PRODUCT_SUMMARY = `${PRODUCT_POSITIONING} Collect rendered answers and available citations from supported AI product interfaces, then analyze responses with a model endpoint you configure.`;
-export const SITE_TITLE = "OneGlanse | AI visibility tracking";
+export const SITE_TITLE = "OneGlanse | Open-source AI Visibility & GEO Tracker";
 
 export const SITE_URLS = {
 	github: "https://github.com/oneglanse/oneglanse",

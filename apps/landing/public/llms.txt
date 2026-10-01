@@ -8,10 +8,10 @@ Analysis fields such as visibility, rank, sentiment, and recommendation are mode
 
 ## Links
 
-- Homepage: https://oneglanse.com
-- Collection methodology: https://oneglanse.com/methodology
-- Documentation: https://docs.oneglanse.com/introduction
-- Local setup: https://docs.oneglanse.com/local-setup
-- Self-hosted setup: https://docs.oneglanse.com/self-hosted-setup
-- Repository: https://github.com/oneglanse/oneglanse
-- License: https://github.com/oneglanse/oneglanse/blob/main/LICENSE
+- [Homepage](https://oneglanse.com): Product overview and supported AI products.
+- [Collection methodology](https://oneglanse.com/methodology): How OneGlanse collects and interprets sampled responses.
+- [Documentation](https://docs.oneglanse.com/introduction): Product and setup documentation.
+- [Local setup](https://docs.oneglanse.com/local-setup): Run OneGlanse locally.
+- [Self-hosted setup](https://docs.oneglanse.com/self-hosted-setup): Deploy OneGlanse on your own infrastructure.
+- [Repository](https://github.com/oneglanse/oneglanse): Source code and contribution history.
+- [License](https://github.com/oneglanse/oneglanse/blob/main/LICENSE): MIT License.
