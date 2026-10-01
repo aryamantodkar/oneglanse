@@ -5,15 +5,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        Have an idea? We'd love to hear it.
-        Before submitting, check [existing issues](https://github.com/aryamantodkar/oneglanse/issues) to see if it's already been requested.
+        Check [existing issues](https://github.com/oneglanse/oneglanse/issues) before submitting a request.
 
   - type: textarea
     id: problem
     attributes:
       label: What problem does this solve?
-      description: Describe the use case or pain point. The clearer the problem, the better we can evaluate the solution.
-      placeholder: "I'm trying to do X, but currently I have to Y which is frustrating because..."
+      description: Describe the use case and current limitation.
     validations:
       required: true
 
@@ -21,7 +19,7 @@ body:
     id: solution
     attributes:
       label: Proposed solution
-      description: What would you like to see? Be as specific as you can. Include UI behaviour, API shape, config options, etc.
+      description: Describe the behavior you would like to see.
     validations:
       required: true
 

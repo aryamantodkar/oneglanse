@@ -8,9 +8,9 @@ import {
 const COMMANDS_REQUIRING_EDGE_NETWORK = new Set(["create", "start", "up"]);
 const COMPOSE_FILE = "docker-compose.yml";
 const DEFAULT_IMAGES = {
-	ONEGLANSE_AGENT_IMAGE: "ghcr.io/aryamantodkar/oneglanse-agent:latest",
-	ONEGLANSE_POSTGRES_IMAGE: "ghcr.io/aryamantodkar/oneglanse-postgres:latest",
-	ONEGLANSE_WEB_IMAGE: "ghcr.io/aryamantodkar/oneglanse-web:latest",
+	ONEGLANSE_AGENT_IMAGE: "ghcr.io/oneglanse/oneglanse-agent:latest",
+	ONEGLANSE_POSTGRES_IMAGE: "ghcr.io/oneglanse/oneglanse-postgres:latest",
+	ONEGLANSE_WEB_IMAGE: "ghcr.io/oneglanse/oneglanse-web:latest",
 };
 const ARCH_MISMATCH_PATTERNS = [
 	"no matching manifest",

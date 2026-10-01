@@ -4,5 +4,5 @@ contact_links:
     url: https://docs.oneglanse.com
     about: Setup guides, environment variables, VPS deployment, and troubleshooting.
   - name: Discussions and Q&A
-    url: https://github.com/aryamantodkar/oneglanse/discussions
+    url: https://github.com/oneglanse/oneglanse/discussions
     about: Ask questions, share what you're tracking, or get help with your setup.

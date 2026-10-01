@@ -5,7 +5,7 @@
 	"homepage": "https://oneglanse.com",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/aryamantodkar/oneglanse"
+		"url": "https://github.com/oneglanse/oneglanse"
 	},
 	"private": true,
 	"scripts": {

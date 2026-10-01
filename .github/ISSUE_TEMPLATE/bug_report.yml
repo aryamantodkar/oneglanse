@@ -5,8 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug. The more detail you provide, the faster it gets fixed.
-        Before submitting, check [existing issues](https://github.com/aryamantodkar/oneglanse/issues) to avoid duplicates.
+        Check [existing issues](https://github.com/oneglanse/oneglanse/issues) before submitting a report.
 
   - type: dropdown
     id: area
@@ -26,18 +25,38 @@ body:
   - type: dropdown
     id: setup
     attributes:
-      label: Setup path
+      label: Setup mode
       options:
         - Local (pnpm local)
         - Self-host (VPS / Docker)
     validations:
       required: true
 
-  - type: textarea
-    id: description
+  - type: dropdown
+    id: provider
     attributes:
-      label: What happened?
-      description: A clear description of the bug and what you expected instead.
+      label: Affected provider
+      options:
+        - ChatGPT
+        - Perplexity
+        - Gemini
+        - Claude
+        - Google AI Overview
+        - N/A
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
     validations:
       required: true
 
@@ -55,15 +74,9 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Relevant logs or errors
-      description: Set `DEBUG_ENABLED=true` in `.env` for verbose agent output. Paste any relevant output here.
+      label: Sanitized logs or errors
+      description: Remove API keys, tokens, session data, and personal information before posting. Set `DEBUG_ENABLED=true` in `.env` for verbose agent output.
       render: shell
-
-  - type: textarea
-    id: screenshots
-    attributes:
-      label: Screenshots
-      description: If applicable, drag and drop screenshots here.
 
   - type: input
     id: version

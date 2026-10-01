@@ -1,10 +1,4 @@
-<h1 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png" />
-    <img src="docs/images/logo.png" alt="OneGlanse logo" width="40" height="40" />
-  </picture>
-  &nbsp;OneGlanse
-</h1>
+<h1 align="center">OneGlanse</h1>
 
 <p align="center"><strong>Free, open-source AI visibility tracking for marketing teams.</strong></p>
 
