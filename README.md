@@ -21,16 +21,9 @@
 
 <p align="center">Run locally for free. Bring your own provider accounts and analysis model key.</p>
 
-<table>
-  <tr>
-    <td><img src="docs/images/Mockup-1.png" alt="Illustrative dashboard and source overview" /><br />Dashboard</td>
-    <td><img src="docs/images/Mockup-2.png" alt="Illustrative captured response and analysis" /><br />Captured response</td>
-  </tr>
-  <tr>
-    <td><img src="docs/images/Mockup-3.png" alt="Illustrative citations and competitor view" /><br />Sources and citations</td>
-    <td><img src="docs/images/Mockup-4.png" alt="Illustrative prompt-level metrics" /><br />Prompt tracking</td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
+</p>
 
 ## What it does
 
