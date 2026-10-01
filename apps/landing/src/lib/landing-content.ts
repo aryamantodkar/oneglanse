@@ -144,6 +144,7 @@ export const DISCOVERY_LINKS = [
 
 export const FOOTER_LINKS = [
 	...DISCOVERY_LINKS,
+	{ label: "Why Self-Hosted", href: "/why-self-hosted" },
 	{ label: "Methodology", href: "/methodology" },
 	{ label: "Docs", href: SITE_URLS.docs },
 	{ label: "GitHub", href: SITE_URLS.github },

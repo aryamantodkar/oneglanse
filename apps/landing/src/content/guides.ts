@@ -29,7 +29,7 @@ export const guides: Guide[] = [
 			"AI visibility describes whether a brand, product, or source appears in sampled AI-generated answers. It is a measurement of observed responses, not a count of every user conversation.",
 		example: {
 			heading: "Example metric",
-			text: "Attempt 20 prompts in one product. Capture 18 complete answers; 2 runs fail. If 7 complete answers mention the brand, report 7/18 (38.9%) and 2 failed runs. A failed capture is missing data, not a confirmed absence. This is an illustrative mention rate, not OneGlanse’s model-backed visibility score.",
+			text: "Attempt 20 prompts in one product. Capture 18 complete answers; 2 runs fail. If 7 complete answers mention the brand, report 7/18 (38.9%) and 2 failed runs. A failed capture is missing data, not a confirmed absence. Mention rate and OneGlanse’s model-backed visibility score are different metrics.",
 		},
 		sections: [
 			{

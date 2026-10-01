@@ -13,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 			url: SITE_URLS.methodology,
 		},
 		...[
+			"/why-self-hosted",
 			"/ai-visibility-tools",
 			"/compare",
 			"/guides",
