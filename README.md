@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png" />
-    <img src="docs/images/logo.png" alt="OneGlanse logo" width="40" height="40" />
+    <img src="docs/images/logo.png" alt="OneGlanse logo" width="40" height="40" align="middle" />
   </picture>
   &nbsp;OneGlanse
 </h1>
