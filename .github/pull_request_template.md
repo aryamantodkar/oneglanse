@@ -1,29 +1,11 @@
-## What does this PR do?
+## What changed and why?
 
-<!-- A clear, concise description of the change and why it's needed. -->
+<!-- Describe the concrete behavior and the reason for the change. Link an issue if one exists. -->
 
-## Related issue
+## Evidence
 
-Closes #
+<!-- List local checks and meaningful results. CI reports its own status. For a provider/browser change, include the provider, prompt or scenario, expected behavior, and observed behavior. -->
 
-## Type of change
+## Boundaries and impact
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Refactor / cleanup
-- [ ] Docs
-- [ ] Other
-
-## How was this tested?
-
-<!-- How did you verify this works? For agent/browser changes, describe what you observed. -->
-
-## Checklist
-
-- [ ] `pnpm lint` passes
-- [ ] `pnpm test` passes
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm build` passes
-- [ ] Only changed what was necessary for this fix/feature
-- [ ] No unused imports, dead code, or unrelated formatting changes
-- [ ] Docs updated if behaviour changed
+<!-- State any architecture boundary, compatibility or deployment effect, and what is outside this PR's scope. Write "None" when a field does not apply. -->
