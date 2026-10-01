@@ -15,15 +15,15 @@ export const comparisons: Comparison[] = [
 		slug: "oneglanse-vs-elmo",
 		toolSlug: "elmo",
 		summary:
-			"Both projects publish source code and support self-hosting. OneGlanse limits provider collection to five browser-driven product interfaces; Elmo documents a broader workflow with reports, a REST API, a CLI, and target-specific collection.",
+			"Both tools are open source and support self-hosting. OneGlanse collects from five product interfaces. Elmo combines scraped and API targets with a REST API, CLI, and shareable reports.",
 		otherStrength:
-			"Elmo documents query fan-out, opportunity recommendations, shareable reports, a CLI, and a REST API. Those are concrete advantages when you need a programmatic or wider reporting workflow.",
+			"Elmo offers query fan-out, opportunity recommendations, and shareable reports. Its REST API and CLI support programmatic workflows.",
 		oneglanseFit:
-			"Choose OneGlanse when your main question is what the five supported product interfaces rendered for a prompt and you want to inspect the captured response and citations in your own stack.",
+			"You want captured UI responses and model-backed analysis in your own stack, with collection code you can inspect.",
 		otherFit:
-			"Choose Elmo when API access, CLI setup, query fan-out, or shareable reporting matters more than a single documented collection surface.",
+			"API access, CLI setup, query fan-out, or shareable reporting are part of your workflow.",
 		methodNote:
-			"Elmo release notes describe both scraping and direct-API targets. Compare the collection target for each engine before treating two metrics as equivalent.",
+			"Both tools use product interfaces. Elmo also supports direct model APIs. Its README lists scraped products separately from API targets, so check the target behind each result. OneGlanse uses a model endpoint only for analysis after collection.",
 	},
 	{
 		slug: "oneglanse-vs-profound",
@@ -33,25 +33,25 @@ export const comparisons: Comparison[] = [
 		otherStrength:
 			"Profound documents citation share, regional analysis, sentiment, competitive views, and dedicated content and agent analytics. It suits teams that need a managed platform and wider organizational reporting.",
 		oneglanseFit:
-			"Choose OneGlanse when control of the runtime and auditable product-interface collection are your main requirements.",
+			"Control of the runtime and auditable product-interface collection are your main requirements.",
 		otherFit:
-			"Choose Profound when managed analytics, regional views, and connected optimization workflows justify a subscription.",
+			"Managed analytics, regional views, and connected optimization workflows justify a subscription.",
 		methodNote:
-			"Profound documents its outputs but does not establish one collection method for every product in the sources cited here. Ask for the method behind the surfaces you will compare.",
+			"Profound states that Answer Engine Insights uses headless browsers to query front-end interfaces. UI collection is therefore shared by both tools. Compare engine coverage, location, prompts, and scoring rules before equating their metrics.",
 	},
 	{
 		slug: "oneglanse-vs-peec-ai",
 		toolSlug: "peec-ai",
 		summary:
-			"OneGlanse exposes a self-hosted collection and analysis pipeline. Peec AI packages AI visibility monitoring and client reporting as a subscription service.",
+			"OneGlanse gives you a self-hosted collection and analysis pipeline. Peec AI offers managed monitoring, location targeting, and client reporting.",
 		otherStrength:
-			"Peec documents daily prompt tracking, citation counts, competitor gaps, and agency reporting. Its managed workflow reduces setup work for a marketing team.",
+			"Peec offers daily tracking, location targeting, competitor views, and multi-client agency reporting. Exports and integrations help teams share results.",
 		oneglanseFit:
-			"Choose OneGlanse if you want to run and inspect the provider browser sessions and manage the captured data yourself.",
+			"You want to run and inspect the provider browser sessions and manage the captured data yourself.",
 		otherFit:
-			"Choose Peec AI if you need agency reporting and managed daily checks without maintaining the application stack.",
+			"You need agency reporting and managed daily checks without maintaining the application stack.",
 		methodNote:
-			"Peec's cited pages do not specify a universal UI-versus-API collection method. Confirm its method for each product if that distinction matters to your study.",
+			"Peec documents UI scraping for most tracked engines and separate API targets, including OpenAI Search API. OneGlanse collects only through its five supported product interfaces. Compare the exact target, not just the provider name.",
 	},
 	{
 		slug: "oneglanse-vs-otterly-ai",
@@ -61,25 +61,25 @@ export const comparisons: Comparison[] = [
 		otherStrength:
 			"Otterly AI documents daily tracking, team access, and higher-tier API and MCP access. Its pricing page states which engines are included and which require add-ons.",
 		oneglanseFit:
-			"Choose OneGlanse when you prefer an open codebase, control over sessions, and collection from the supported product interfaces.",
+			"You prefer an open codebase, control over sessions, and collection from the supported product interfaces.",
 		otherFit:
-			"Choose Otterly AI when managed recurring checks and a ready-made team service are worth the subscription and plan limits.",
+			"Managed recurring checks and a ready-made team service are worth the subscription and plan limits.",
 		methodNote:
-			"Otterly's cited pages describe monitoring and coverage, not a single collection method across all engines. Compare an actual sample before equating scores.",
+			"Otterly states that it uses web scraping. Both tools therefore document product-interface collection. That does not make their samples equivalent: prompts, location, account state, and scoring can differ.",
 	},
 	{
 		slug: "oneglanse-vs-promptwatch",
 		toolSlug: "promptwatch",
 		summary:
-			"Both products track brand appearances in AI answers. OneGlanse is an open, self-hostable tracker; Promptwatch combines tracking with crawler analytics and content workflows.",
+			"Both products collect answers through AI product interfaces. OneGlanse is an open, self-hostable tracker; Promptwatch combines tracking with crawler analytics and content workflows.",
 		otherStrength:
 			"Promptwatch documents prompt tracking, citation analysis, share of voice, AI crawler activity, and content agents. These go beyond OneGlanse's tracking and response analysis scope.",
 		oneglanseFit:
-			"Choose OneGlanse when you need inspectable browser collection and control over the runtime and captured responses.",
+			"You need inspectable browser collection and control over the runtime and captured responses.",
 		otherFit:
-			"Choose Promptwatch when crawler telemetry and a connected content workflow matter more than self-hosting.",
+			"Crawler telemetry and a connected content workflow matter more than self-hosting.",
 		methodNote:
-			"Promptwatch's public page says it tracks real prompts and responses. It does not establish browser-UI collection for every provider, so this comparison does not claim methodological parity.",
+			"Promptwatch's data page explicitly describes collection from AI product interfaces. This is a shared method, not a unique OneGlanse feature. Compare the sampled products and context; UI collection alone does not prove coverage of all user experiences.",
 	},
 ];
 

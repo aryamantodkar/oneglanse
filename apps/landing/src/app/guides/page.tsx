@@ -1,6 +1,7 @@
 import { ContentShell } from "@/components/content/content-shell";
 import { guides } from "@/content/guides";
 import { contentMetadata } from "@/lib/content-metadata";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = contentMetadata(
@@ -20,11 +21,19 @@ export default function GuidesPage(): React.JSX.Element {
 					<li key={guide.slug}>
 						<Link
 							href={`/guides/${guide.slug}`}
-							className="block h-full rounded-xl border border-border p-5 hover:bg-muted"
+							className="content-card-link group"
 						>
-							<h2 className="text-lg font-semibold">{guide.title}</h2>
+							<div className="flex items-start justify-between gap-4">
+								<h2 className="text-lg font-semibold tracking-tight">
+									{guide.title}
+								</h2>
+								<ArrowRight
+									className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1"
+									aria-hidden="true"
+								/>
+							</div>
 							<p className="mt-2 text-sm leading-6 text-muted-foreground">
-								{guide.intro}
+								{guide.description}
 							</p>
 						</Link>
 					</li>

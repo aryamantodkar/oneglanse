@@ -1,6 +1,7 @@
 import { ContentShell } from "@/components/content/content-shell";
-import { comparisons, comparisonTool } from "@/content/comparisons";
+import { comparisonTool, comparisons } from "@/content/comparisons";
 import { contentMetadata } from "@/lib/content-metadata";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = contentMetadata(
@@ -14,18 +15,24 @@ export default function ComparePage(): React.JSX.Element {
 		<ContentShell
 			eyebrow="Comparisons"
 			title="Compare AI visibility tools"
-			intro="Choose by collection surface, deployment model, and the work you need to do. Each comparison links to the vendor's own documentation."
+			intro="Five comparisons, grounded in vendor documentation. Choose by collection method, deployment, and reporting needs."
 		>
 			<ul className="grid gap-4 sm:grid-cols-2">
 				{comparisons.map((comparison) => (
 					<li key={comparison.slug}>
 						<Link
 							href={`/compare/${comparison.slug}`}
-							className="block h-full rounded-xl border border-border p-5 hover:bg-muted"
+							className="content-card-link group"
 						>
-							<h2 className="text-lg font-semibold">
-								OneGlanse vs {comparisonTool(comparison)?.name}
-							</h2>
+							<div className="flex items-start justify-between gap-4">
+								<h2 className="text-lg font-semibold tracking-tight">
+									OneGlanse vs {comparisonTool(comparison)?.name}
+								</h2>
+								<ArrowRight
+									className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1"
+									aria-hidden="true"
+								/>
+							</div>
 							<p className="mt-2 text-sm leading-6 text-muted-foreground">
 								{comparison.summary}
 							</p>

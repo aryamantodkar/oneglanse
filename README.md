@@ -21,10 +21,6 @@
 
 <p align="center">Run locally for free. Bring your own provider accounts and analysis model key.</p>
 
-<p align="center">
-  <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
-</p>
-
 <p align="center"><em>Illustrative product mockups with sample data.</em></p>
 
 <table>

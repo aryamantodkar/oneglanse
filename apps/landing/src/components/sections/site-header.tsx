@@ -1,6 +1,6 @@
 import { BrandLogo } from "@/components/common/brand-logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
-import { SITE_URLS } from "@/lib/landing-content";
+import { DISCOVERY_LINKS, SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
 import { GitFork, Github, Server, Star } from "lucide-react";
 
@@ -73,27 +73,23 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 
 	return (
 		<header className="section-shell sticky top-0 z-40 pt-4 sm:pt-5">
-			<div className="landing-surface flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+			<div className="landing-surface flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
 				<a
 					href="/"
-					className="inline-flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
+					className="inline-flex shrink-0 items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
 				>
-					<BrandLogo className="h-6 w-6" />
+					<BrandLogo alt="" className="h-6 w-6 shrink-0" />
 					OneGlanse
 				</a>
 				<nav
 					aria-label="Explore"
-					className="hidden items-center gap-4 text-sm font-medium text-muted-foreground lg:flex"
+					className="order-last flex w-full items-center justify-center gap-6 border-t border-border pt-3 text-sm font-medium text-muted-foreground lg:order-none lg:w-auto lg:border-0 lg:pt-0"
 				>
-					<a className="hover:text-foreground" href="/ai-visibility-tools">
-						Tools
-					</a>
-					<a className="hover:text-foreground" href="/compare">
-						Compare
-					</a>
-					<a className="hover:text-foreground" href="/guides">
-						Guides
-					</a>
+					{DISCOVERY_LINKS.map((link) => (
+						<a key={link.href} className="content-link" href={link.href}>
+							{link.label}
+						</a>
+					))}
 				</nav>
 
 				<div className="flex shrink-0 items-center gap-2">
@@ -115,7 +111,7 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 							<Github className="h-4 w-4" aria-hidden="true" />
 							<span className="hidden sm:inline">GitHub</span>
 							{repositoryStats && (
-								<span className="inline-flex items-center gap-1.5 border-l border-amber-800/20 pl-1.5 text-xs font-semibold tabular-nums dark:border-amber-100/20">
+								<span className="hidden items-center gap-1.5 border-l border-amber-800/20 pl-1.5 text-xs font-semibold tabular-nums dark:border-amber-100/20 min-[360px]:inline-flex">
 									<span className="inline-flex items-center gap-1">
 										<Star
 											className="h-3.5 w-3.5 fill-current"
@@ -123,7 +119,7 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 										/>
 										{formatCount(repositoryStats.stars)}
 									</span>
-									<span className="hidden items-center gap-1 min-[360px]:inline-flex">
+									<span className="hidden items-center gap-1 sm:inline-flex">
 										<GitFork className="h-3.5 w-3.5" aria-hidden="true" />
 										{formatCount(repositoryStats.forks)}
 									</span>

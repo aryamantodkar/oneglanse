@@ -1,59 +1,83 @@
+import { SourceLinks } from "@/components/content/source-links";
+import { comparisons } from "@/content/comparisons";
 import type { Tool } from "@/content/tools";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export function ToolTable({ items }: { items: Tool[] }): React.JSX.Element {
 	return (
-		<div className="overflow-x-auto rounded-xl border border-border">
-			<table className="w-full min-w-[780px] text-left text-sm">
-				<thead className="bg-muted/50">
+		<div className="landing-soft-card overflow-hidden">
+			<table className="content-table tool-table w-full table-fixed text-left text-sm">
+				<caption className="sr-only">
+					AI visibility tools: access, collection method, and capabilities
+				</caption>
+				<thead className="bg-muted/60">
 					<tr>
-						<th className="p-4 font-semibold">Tool</th>
-						<th className="p-4 font-semibold">Access</th>
-						<th className="p-4 font-semibold">Collection</th>
-						<th className="p-4 font-semibold">What it covers</th>
+						<th scope="col" className="w-[19%]">
+							Tool
+						</th>
+						<th scope="col" className="w-[18%]">
+							Access
+						</th>
+						<th scope="col" className="w-[20%]">
+							Collection
+						</th>
+						<th scope="col">What it covers</th>
 					</tr>
 				</thead>
 				<tbody>
-					{items.map((tool) => (
-						<tr key={tool.slug} className="border-t border-border align-top">
-							<td className="p-4 font-medium">
-								<a
-									className="underline underline-offset-4"
-									href={tool.url}
-									target="_blank"
-									rel="noreferrer noopener"
-								>
-									{tool.name}
-								</a>
-								{tool.openSource && (
-									<span className="mt-1 block text-xs text-muted-foreground">
-										Open source{tool.selfHosted ? " · Self-hosted" : ""}
-									</span>
-								)}
-							</td>
-							<td className="p-4 text-muted-foreground">{tool.model}</td>
-							<td className="p-4 text-muted-foreground">{tool.collection}</td>
-							<td className="p-4 text-muted-foreground">
-								{tool.summary}
-								{[
-									"elmo",
-									"profound",
-									"peec-ai",
-									"otterly-ai",
-									"promptwatch",
-								].includes(tool.slug) && (
-									<span className="mt-2 block">
+					{items.map((tool) => {
+						const comparison = comparisons.find(
+							(entry) => entry.toolSlug === tool.slug,
+						);
+						return (
+							<tr key={tool.slug}>
+								<th scope="row" className="tool-name">
+									<a
+										className="content-link font-semibold text-foreground"
+										href={tool.url}
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										{tool.name}
+									</a>
+									{tool.openSource && (
+										<span className="mt-3 inline-block rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
+											Open source{tool.selfHosted ? " · Self-hosted" : ""}
+										</span>
+									)}
+								</th>
+								<td data-label="Access">{tool.model}</td>
+								<td data-label="Collection">{tool.collection}</td>
+								<td className="tool-details">
+									<p>{tool.summary}</p>
+									{comparison && (
 										<Link
-											className="font-medium text-foreground underline underline-offset-4"
-											href={`/compare/oneglanse-vs-${tool.slug}`}
+											className="content-link mt-3 inline-flex items-center gap-1.5 font-medium text-foreground"
+											href={`/compare/${comparison.slug}`}
 										>
 											Compare with OneGlanse
+											<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
 										</Link>
-									</span>
-								)}
-							</td>
-						</tr>
-					))}
+									)}
+									<details className="mt-3">
+										<summary className="w-fit cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+											Details & sources ({tool.sources.length})
+										</summary>
+										<div className="space-y-3 pt-3">
+											<p className="text-xs leading-6">
+												<span className="font-medium text-foreground">
+													Documented targets:{" "}
+												</span>
+												{tool.targets}
+											</p>
+											<SourceLinks sources={tool.sources} />
+										</div>
+									</details>
+								</td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>

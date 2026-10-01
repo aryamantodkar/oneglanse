@@ -41,6 +41,7 @@ export function ThemeToggle(): React.JSX.Element {
 			onClick={handleToggle}
 			variant="outline"
 			size="sm"
+			className="h-9 w-9 px-0 sm:w-auto sm:px-3"
 			aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
 		>
 			{isDark ? (
@@ -48,7 +49,7 @@ export function ThemeToggle(): React.JSX.Element {
 			) : (
 				<Moon className="h-4 w-4" aria-hidden="true" />
 			)}
-			{isDark ? "Light" : "Dark"}
+			<span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
 		</Button>
 	);
 }

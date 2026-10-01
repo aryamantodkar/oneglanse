@@ -1,7 +1,7 @@
-import { SITE_URLS } from "@/lib/landing-content";
-import { categories } from "@/content/tools";
 import { comparisons } from "@/content/comparisons";
 import { guides } from "@/content/guides";
+import { categories } from "@/content/tools";
+import { SITE_URLS } from "@/lib/landing-content";
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
