@@ -131,7 +131,7 @@ if [[ -d "$INSTALL_DIR/.git" ]]; then
   git -C "$INSTALL_DIR" pull
 else
   info "Cloning into $INSTALL_DIR..."
-  git clone --depth 1 https://github.com/aryamantodkar/oneglanse "$INSTALL_DIR"
+  git clone --depth 1 https://github.com/oneglanse/oneglanse "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
