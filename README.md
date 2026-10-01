@@ -45,16 +45,23 @@ Collection uses your own provider accounts and authenticated browser sessions. R
 
 ## Supported products
 
-ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Collection runs against their user-facing web interfaces.
+<p align="center">
+  <span><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;ChatGPT</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=perplexity.ai&amp;sz=64" width="20" height="20" alt="" />&nbsp;Perplexity</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=gemini.google.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;Gemini</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=claude.ai&amp;sz=64" width="20" height="20" alt="" />&nbsp;Claude</span>
+  <span><img src="https://www.google.com/s2/favicons?domain=google.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;Google AI Overview</span>
+</p>
+
+<p align="center">Collection runs against their user-facing web interfaces.</p>
 
 ## How it works
 
-1. Add your brand, competitors, and prompts in the web app.
-2. The agent opens each selected product in a browser session and captures the response.
-3. The app stores the response and asks your configured model to analyze brand visibility, position, sentiment, recommendations, and sources.
-4. The dashboard shows results by prompt and over time.
+1. Add your brand, competitors, and prompts.
+2. The agent runs each prompt through the selected product's web UI, waits for the rendered answer to stabilize, then extracts the response and citations from the page DOM with provider-specific selectors.
+3. OneGlanse stores the result, analyzes it with your configured model, and shows visibility, rank, sentiment, recommendations, sources, and changes over time.
 
-The web app, agent, job queue, and databases have separate responsibilities. See [ARCHITECTURE.md](ARCHITECTURE.md) for their boundaries and data flow.
+See [ARCHITECTURE.md](https://github.com/oneglanse/oneglanse/blob/main/ARCHITECTURE.md) for the full data flow.
 
 ## Quick start
 
