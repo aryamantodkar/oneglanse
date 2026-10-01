@@ -1,6 +1,6 @@
 # Engineering rules
 
-OneGlanse is a self-hostable AI visibility tracker. Agent collects responses from real AI product UIs through browser automation. Model APIs are used for later analysis, not provider collection.
+OneGlanse is an open-source AI visibility tracker that measures how brands appear across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Provider responses are collected from the products' actual interfaces through browser automation. A configured analysis model is used separately to analyze the captured responses.
 
 Code and tests define implemented behavior. [ARCHITECTURE.md](ARCHITECTURE.md) defines intended system boundaries. Use [CONTRIBUTING.md](CONTRIBUTING.md) for setup and contribution steps.
 

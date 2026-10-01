@@ -7,7 +7,7 @@ Thanks for helping improve OneGlanse. Read [ARCHITECTURE.md](ARCHITECTURE.md) fo
 Use Node.js 20 or newer, pnpm 10.16.0, and Docker with Compose. Fork the repository and branch from `main`.
 
 ```bash
-git clone https://github.com/aryamantodkar/oneglanse.git
+git clone https://github.com/oneglanse/oneglanse.git
 cd oneglanse
 pnpm local
 ```
@@ -42,4 +42,4 @@ CI runs the same repository checks. It also builds and tests finished Docker ima
 
 In the PR, explain the behavior change and why it is needed, show the checks and observations that support it, and state any compatibility or deployment effect. Link an issue when one exists. Keep unrelated work out of the diff.
 
-For a bug report, use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). Include the version or commit, OS, reproduction steps, expected and actual behavior, and relevant logs with secrets removed. Use [Discussions](https://github.com/aryamantodkar/oneglanse/discussions) for general questions.
+For a bug report, use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). Include the version or commit, OS, reproduction steps, expected and actual behavior, and relevant logs with secrets removed. Use [Discussions](https://github.com/oneglanse/oneglanse/discussions) for general questions.

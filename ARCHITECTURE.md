@@ -2,7 +2,7 @@
 
 This document describes intended ownership boundaries. Code and tests define current implemented behavior. Use CodeGraph to follow a specific call path; use [AGENTS.md](AGENTS.md) for change rules and [CONTRIBUTING.md](CONTRIBUTING.md) for setup.
 
-OneGlanse collects responses from real ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview interfaces. The Agent drives browser sessions; a configured model API analyzes the captured text afterward.
+OneGlanse is an open-source AI visibility tracker that collects responses from ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview through their product interfaces. Agent drives those interfaces with browser automation; captured responses are analyzed separately using the configured analysis model.
 
 ```mermaid
 flowchart TD
@@ -15,8 +15,8 @@ flowchart TD
     Agent --> Provider[Provider implementation]
     Provider --> Browser[Camoufox and Playwright]
     Browser --> UI[AI product UI]
-    Agent --> CH
-    Agent --> Model[Configured analysis model API]
+    Agent -->|results and analysis| Services
+    Services --> Model[Configured analysis model]
 ```
 
 ## Repository ownership
@@ -35,7 +35,7 @@ flowchart TD
 1. Web saves a workspace's prompt definitions through Services in ClickHouse. Workspace membership, provider selection, selected prompt IDs, and schedule settings live in PostgreSQL.
 2. An authorized Web run request, or the internal scheduled-run procedure, calls `submitAgentJobGroup`. Services loads prompts and workspace settings, checks available provider sessions, records progress in Redis, and submits a BullMQ job for each selected provider.
 3. Agent consumes provider queues. Its current execution gate allows one provider job at a time across the worker process, even though each provider has its own queue. A provider implementation launches a browser, submits each prompt to the real product UI, and extracts response text and citations.
-4. Agent stores captured responses in ClickHouse, then starts background analysis through the configured OpenAI, Anthropic, or OpenAI-compatible endpoint. Analysis data is also stored in ClickHouse. Web reads progress from Redis and results through Services.
+4. Agent passes captured responses to Services for persistence in ClickHouse, then starts background analysis through Services. The analysis layer uses the configured OpenAI, Anthropic, or OpenAI-compatible endpoint and stores derived analysis data in ClickHouse. Web reads progress from Redis and results through Services.
 
 Provider differences are expected. Provider configuration, session handling, selectors, prompt submission, and extraction belong under `apps/agent/src/core/providers/<provider>/` or the provider's existing steps. Put behavior in shared browser code only when current providers actually share it. A provider UI change can break extraction without a repository change, so live checks supplement deterministic fixture tests.
 
