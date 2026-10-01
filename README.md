@@ -26,21 +26,13 @@ The scores are produced by model-backed analysis of captured answers. They help 
 
 An AI product includes more than its underlying model. Its interface can add search and retrieval, apply ranking and safety filters, personalize or shorten an answer, and present citations, source cards, recommendation order, and product-specific formatting. A model API exposes a different surface, so its answer can differ from what the product shows.
 
-Surfer's [2026 comparison study](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/) ran 1,000 prompts across five AI products and compared 13,779 answers collected from product interfaces and comparable APIs. It reported 21.3% to 31.6% overlap in named brands after normalizing brand names, and found that answer length and cited sources also varied by product. These figures describe that study's prompts and methods; results can differ for other prompts, accounts, or collection methods.
+Surfer's [2026 study](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/) ran 1,000 prompts across five AI products and compared 13,779 answers collected from product interfaces and comparable APIs. It reported 21.3% to 31.6% overlap in named brands after normalizing brand names, and found that answer length and cited sources also varied by product. These figures describe that study's prompts and methods; results can differ for other prompts, accounts, or collection methods.
 
 Collection uses your own provider accounts and authenticated browser sessions. Results can vary by account, location, prompt, and time. OneGlanse does not claim that a single run represents every user's experience. After collection, analysis sends the response to the model endpoint you configure with your own API key.
 
 ## Supported products
 
-| Product | Collection surface |
-| --- | --- |
-| ChatGPT | Chat interface |
-| Perplexity | Search and answer interface |
-| Gemini | Chat interface |
-| Claude | Chat interface |
-| Google AI Overview | Google Search results with AI Overview |
-
-Provider interfaces change. If a collection flow fails, check the [issues](https://github.com/oneglanse/oneglanse/issues) or open a report with the provider and the failed step.
+ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Collection runs against their user-facing web interfaces.
 
 ## How it works
 
