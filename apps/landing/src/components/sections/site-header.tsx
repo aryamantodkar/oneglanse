@@ -1,14 +1,46 @@
 import { BrandLogo } from "@/components/common/brand-logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
+import { comparisonTool, comparisons } from "@/content/comparisons";
+import { guides } from "@/content/guides";
+import { categories } from "@/content/tools";
 import { DISCOVERY_LINKS, SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
 import { BookOpen, GitFork, Github, Star } from "lucide-react";
 import Link from "next/link";
+import { DiscoveryNav } from "./discovery-nav";
 
 type GitHubRepositoryStats = {
 	stars: number;
 	forks: number;
 };
+
+const discoveryItems: Record<
+	(typeof DISCOVERY_LINKS)[number]["href"],
+	Array<{ label: string; href: string }>
+> = {
+	"/ai-visibility-tools": Object.entries(categories).map(
+		([slug, category]) => ({
+			label: category.label,
+			href: `/ai-visibility-tools/${slug}`,
+		}),
+	),
+	"/compare": comparisons.map((comparison) => ({
+		label: `OneGlanse vs ${comparisonTool(comparison)?.name ?? comparison.toolSlug}`,
+		href: `/compare/${comparison.slug}`,
+	})),
+	"/guides": guides.map((guide) => ({
+		label: guide.title,
+		href: `/guides/${guide.slug}`,
+	})),
+};
+
+const discoveryMenus = DISCOVERY_LINKS.map((link) => ({
+	...link,
+	items: [
+		{ label: `All ${link.label.toLowerCase()}`, href: link.href },
+		...discoveryItems[link.href],
+	],
+}));
 
 async function getGitHubRepositoryStats(): Promise<GitHubRepositoryStats | null> {
 	try {
@@ -82,20 +114,7 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 					<BrandLogo alt="" className="h-6 w-6 shrink-0" />
 					OneGlanse
 				</Link>
-				<nav
-					aria-label="Explore"
-					className="col-span-2 row-start-2 flex items-center gap-5 border-t border-border pt-3 text-sm font-normal lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-0 lg:pt-0"
-				>
-					{DISCOVERY_LINKS.map((link) => (
-						<Link
-							key={link.href}
-							className="text-foreground/60 transition-colors hover:text-foreground/85 active:opacity-70 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-foreground/60 dark:hover:text-foreground/85"
-							href={link.href}
-						>
-							{link.label}
-						</Link>
-					))}
-				</nav>
+				<DiscoveryNav menus={discoveryMenus} />
 
 				<div className="col-start-2 row-start-1 flex shrink-0 items-center justify-self-end gap-2 lg:col-start-3">
 					<Button
