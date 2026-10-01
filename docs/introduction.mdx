@@ -1,9 +1,9 @@
 ---
 title: Introduction
-description: What OneGlanse measures and how it collects AI product responses.
+description: Free, open-source AI visibility tracking for marketing teams.
 ---
 
-OneGlanse is a free, open-source AI visibility tracker for marketing teams. It tracks how a brand appears in responses from ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview.
+OneGlanse records sampled responses from ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview.
 
 ## How collection works
 
@@ -15,7 +15,7 @@ OneGlanse is a free, open-source AI visibility tracker for marketing teams. It t
 
 Provider collection uses browser automation, not model APIs. Product-level elements such as citations, source cards, and answer formatting can differ from, or be absent in, raw model API output. If the goal is to understand a response users can encounter, the product interface is the relevant collection surface. Results can still vary by account, location, prompt, and time.
 
-A [Surfer study of scraped AI answers and API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/) provides more context on this difference.
+For the collection details and a repeatable UI-versus-API comparison protocol, see the [OneGlanse methodology](https://oneglanse.com/methodology).
 
 Prompts, captured responses, and analysis results are stored in your local or self-hosted OneGlanse stack. Response analysis sends captured text to the model endpoint you configure. The Web app also sends limited usage events to PostHog. See the repository [security policy](https://github.com/oneglanse/oneglanse/blob/main/SECURITY.md) for the session-transfer and analysis boundaries.
 

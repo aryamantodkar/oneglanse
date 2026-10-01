@@ -10,8 +10,8 @@ export function FeatureGrid(): React.JSX.Element {
 		>
 			<SectionHeading
 				eyebrow="Features"
-				title="Built for teams that run GEO like infrastructure"
-				description="High-signal workflows. Minimal noise."
+				title="Review answers from AI products"
+				description="Collect responses from product interfaces, then analyze the results."
 			/>
 			<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 				{FEATURE_ITEMS.map((feature) => {

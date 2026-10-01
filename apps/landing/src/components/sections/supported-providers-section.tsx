@@ -20,8 +20,8 @@ export function SupportedProvidersSection(): React.JSX.Element {
 					Supported Providers
 				</h2>
 				<p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
-					Unified tracking across all LLM providers with consistent metrics and
-					source-level evidence.
+					Browser-based collection from five supported AI product interfaces.
+					Metrics are interpretations of each captured response.
 				</p>
 			</div>
 

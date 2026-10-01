@@ -9,8 +9,8 @@ export function PromptResponsesSection(): React.JSX.Element {
 			aria-labelledby="prompt-responses-title"
 		>
 			<PromptResponsesPreview
-				title="Real LLM UI Responses"
-				description="Review provider-rendered answers exactly as users see them, with source attribution and analysis metrics in one view."
+				title="Captured AI product responses"
+				description="Review rendered answers and available citations, then inspect the separate model-backed analysis."
 				rows={PREVIEW_PROMPT_RESPONSES.map((row) => ({
 					id: row.id,
 					modelProvider: row.modelProvider,

@@ -16,8 +16,12 @@ export function SiteFooter(): React.JSX.Element {
 								<a
 									href={link.href}
 									className="hover:text-foreground"
-									target="_blank"
-									rel="noreferrer noopener"
+									target={link.href.startsWith("http") ? "_blank" : undefined}
+									rel={
+										link.href.startsWith("http")
+											? "noreferrer noopener"
+											: undefined
+									}
 								>
 									{link.label}
 								</a>

@@ -7,6 +7,7 @@ OneGlanse collects responses from the user-facing interfaces of ChatGPT, Perplex
 ## Documentation
 
 - Introduction: https://docs.oneglanse.com/introduction
+- Collection methodology: https://oneglanse.com/methodology
 - Getting started: https://docs.oneglanse.com/getting-started
 - Local setup: https://docs.oneglanse.com/local-setup
 - Self-hosted setup: https://docs.oneglanse.com/self-hosted-setup

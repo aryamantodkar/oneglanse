@@ -52,5 +52,5 @@ If the work has one coherent responsibility, keep it in one pull request. Do not
 - Test behavior, not source-text edits. Add a regression test for a bug when practical.
 - Test provider DOM and extraction changes with sanitized, deterministic fixtures. Use a live provider check only when the external UI boundary itself needs verification.
 - Test Docker packaging through the built image and its runtime checks. Measure the affected path before and after a performance claim.
-- Do not run checks locally when the PR workflow already runs them; rely on the PR workflow results.
-- Run focused local checks only when they cover behavior not included in the PR workflow or help diagnose a failure. GitHub's PR Gate is the merge check; the native image matrix runs in CI when relevant.
+- Do not run checks locally when the PR workflow already covers them. Do not manually dispatch or rerun a workflow for a commit that already has its check result. Inspect the existing GitHub status instead.
+- Run a local check only when the PR workflow does not cover the behavior or when it helps diagnose a failure. A new commit receives its own automatic PR workflow run. GitHub's PR Gate is the merge check; the native image matrix runs in CI when relevant.
