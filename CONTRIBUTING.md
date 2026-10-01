@@ -1,124 +1,45 @@
 # Contributing to OneGlanse
 
-I'm relatively new to open source. This is one of my first public projects. If you find something worth fixing or improving, I'd genuinely love a PR or even just an issue. Every bit of help makes this better.
+Thanks for helping improve OneGlanse. Read [ARCHITECTURE.md](ARCHITECTURE.md) for system boundaries and [AGENTS.md](AGENTS.md) for change rules. Code and tests define the current behavior.
 
-Thank you for your interest in contributing. OneGlanse is MIT-licensed and fully open source.
+## Set up locally
 
-## Ways to Contribute
-
-- **Bug reports:** file a GitHub issue with reproduction steps
-- **Feature requests:** open an issue to discuss before building
-- **Code:** fix bugs, implement requested features, improve performance
-- **Docs:** improve `docs/` or `README.md`
-
----
-
-## Development Setup
-
-**Requirements:** Node.js 20+, pnpm 10+, Docker + Docker Compose
+Use Node.js 20 or newer, pnpm 10.16.0, and Docker with Compose. Fork the repository and branch from `main`.
 
 ```bash
-git clone https://github.com/aryamantodkar/oneglanse
+git clone https://github.com/oneglanse/oneglanse.git
 cd oneglanse
 pnpm local
 ```
 
-`pnpm local` installs dependencies if needed, then starts the full stack locally at `http://localhost:3000`.
+`pnpm local` installs dependencies, prepares the local browser runtime, starts PostgreSQL, ClickHouse, and Redis, runs migrations, and opens Web at `http://localhost:3000`. Use `pnpm auth` to sign in to providers through a local browser when that flow is needed.
 
-### Project Structure
+CodeGraph is optional contributor tooling. Run `pnpm codegraph:init` to create its local index, then use `pnpm exec codegraph explore "question or symbol"` for call paths. Use `rg` for exact text searches.
 
-```
-apps/
-  web/          # Next.js 15 app (tRPC, Drizzle, Better Auth)
-  agent/        # BullMQ worker for browser automation + response capture
-packages/
-  db/           # Drizzle schema, migrations, ClickHouse schema
-  services/     # Shared business logic (LLM analysis, queue, redis)
-  errors/       # Shared error types and Logger
-  types/        # Shared TypeScript types
-docs/           # Mintlify docs
-```
+## Find the owner
 
-### Useful Commands
+- `apps/web`: UI, authentication, tRPC routes, and access checks.
+- `apps/agent`: provider browser automation and worker execution. Provider-specific behavior lives under `apps/agent/src/core/providers/<provider>/`.
+- `packages/services`: reusable application behavior, queue submission, storage operations, and analysis.
+- `packages/db`: database schema, migrations, and clients. `packages/types`, `packages/ui`, `packages/utils`, and `packages/errors` hold their named shared contracts and components.
+- `apps/landing` and `docs`: the public site and operator docs.
+
+## Change and verify behavior
+
+Keep a PR focused on one coherent change. Read its direct callers and tests before editing. Add a regression test for a bug when practical. For provider DOM changes, use sanitized fixtures and describe the provider, prompt or scenario, expected result, and observed result. A live provider run is supplemental evidence when the external UI is the subject of the change; it must not be required by deterministic CI.
+
+Run relevant focused checks while working. Before opening a PR, run:
 
 ```bash
-pnpm local          # Start everything (web + agent + docker services)
-pnpm lint           # Lint Web, Landing, and Agent tests
-pnpm test           # Run automated regression tests
-pnpm typecheck      # Run typecheck across the monorepo
-pnpm build          # Build all packages
-pnpm db:migrate     # Run pending Drizzle migrations
-pnpm auth           # Open /providers for interactive auth setup
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm deadcode
+pnpm build
 ```
 
-Automated Agent tests live in `apps/agent/tests/`, grouped by provider. Keep new package tests in that package's own `tests/` folder.
+CI runs the same repository checks. It also builds and tests finished Docker images on native AMD64 and ARM64 runners when relevant files change. Contributors do not need to reproduce that image matrix locally. For Docker packaging changes, inspect the runtime image checks rather than checking Dockerfile text alone.
 
----
+In the PR, explain the behavior change and why it is needed, show the checks and observations that support it, and state any compatibility or deployment effect. Link an issue when one exists. Keep unrelated work out of the diff.
 
-## Making Changes
-
-### Branching
-
-- Fork the repo and create a branch from `main`
-- Name branches descriptively: `fix/ai-overview-extraction`, `feat/export-csv`
-
-### Code Style
-
-- TypeScript throughout. Avoid `any` unless there's a genuine reason
-- Match the style of the file you're editing
-- No unnecessary abstractions. Solve the problem at hand
-- Keep changes surgical: touch only what you must
-
-### Commits
-
-Write clear, present-tense commit messages:
-
-```
-Fix AI Overview extraction skipping clipped content
-Add CSV export for source attribution data
-Remove unused RateLimitError class
-```
-
-One commit per logical change. Avoid "WIP" or "fix2" commits. Squash before opening a PR if needed.
-
-### Pull Requests
-
-- Reference the issue your PR addresses: `Closes #123`
-- Keep PRs focused: one feature or fix per PR
-- Include a short description of what changed and why
-- If you changed agent behavior, describe how you tested it
-
----
-
-## Agent / Browser Automation
-
-The agent (`apps/agent/`) runs Camoufox + Playwright to capture responses from real AI product UIs. When working in this area:
-
-- Test with `CAMOUFOX_HEADLESS_MODE=headful` so you can see what the browser is doing
-- Set `DEBUG_ENABLED=true` for verbose logs
-- Provider-specific logic lives in `apps/agent/src/core/providers/<provider>/`
-- DOM helpers live in `apps/agent/src/lib/browser/domOps.ts`
-
----
-
-## Reporting Bugs
-
-Use the [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml) template. Include:
-
-- OneGlanse version or commit hash
-- OS and Node.js version
-- Steps to reproduce
-- What you expected vs. what happened
-- Relevant logs (set `DEBUG_ENABLED=true` for agent issues)
-
----
-
-## Feature Requests
-
-Open a [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml) issue before writing code. This avoids duplicate work and ensures the feature fits the project direction.
-
----
-
-## Questions
-
-For general questions, open a [Discussion](https://github.com/aryamantodkar/oneglanse/discussions) rather than an issue.
+For a bug report, use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). Include the version or commit, OS, reproduction steps, expected and actual behavior, and relevant logs with secrets removed. Use [Discussions](https://github.com/oneglanse/oneglanse/discussions) for general questions.

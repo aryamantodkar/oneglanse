@@ -1,22 +1,13 @@
-# Security Policy
+# Security policy
 
-## Reporting a Vulnerability
+## Report a vulnerability
 
-If you discover a security vulnerability in OneGlanse, please **do not open a public GitHub issue**.
+Email **aryamant20@gmail.com** rather than opening a public issue. Include the affected version or commit, reproduction steps, and likely impact. Remove live credentials, provider sessions, and personal data from reports unless a secure exchange is arranged.
 
-Instead, email the maintainer directly at **aryamant20@gmail.com** with:
+Please report security issues in OneGlanse code or deployment defaults, including credential or session exposure, authentication bypass, cross-workspace access, and secret leakage. A dependency issue is also relevant when it affects a supported OneGlanse deployment.
 
-- A description of the vulnerability
-- Steps to reproduce it
-- The potential impact
+## Authentication and data flow
 
-You will receive a response within 72 hours. Once the issue is confirmed and a fix is ready, a public disclosure will be made.
+Provider browser sessions are stored under the configured auth storage path on the user's machine or self-hosted server. In self-host mode, `pnpm auth` or `pnpm upload:vps` can transfer local sessions to the configured Agent endpoint using `AGENT_AUTH_UPLOAD_TOKEN`. This auth upload flow does not use a maintainer-operated credential relay. The default URL derived from `ONEGLANSE_VPS_IP` uses plain HTTP on port 3333; use a protected network path or configure an HTTPS upload URL and restrict access to that port.
 
-## Scope
-
-- **In scope:** vulnerabilities in the web app, agent, or any code in this repo
-- **Out of scope:** vulnerabilities in third-party dependencies (report those upstream)
-
-## Notes on Auth
-
-OneGlanse stores provider auth sessions locally on your machine (or your own VPS). Auth bundles are never transmitted to any external server. Response analysis API calls go directly from your infrastructure to OpenAI or Anthropic. OneGlanse servers do not proxy them.
+Captured responses are analyzed from the user's deployment through the configured OpenAI, Anthropic, or OpenAI-compatible endpoint. Provider browser sessions and analysis requests cross different boundaries; do not assume that neither leaves the local machine.
