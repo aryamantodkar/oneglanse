@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme-brand-dark.svg" />
-    <img src="docs/images/readme-brand-light.svg" alt="OneGlanse" width="232" height="64" />
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme-mark-dark.svg" />
+    <img src="docs/images/readme-mark-light.svg" alt="OneGlanse" width="232" height="64" />
   </picture>
 </h1>
 

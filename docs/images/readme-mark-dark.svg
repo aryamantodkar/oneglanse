@@ -1,19 +1,19 @@
 <svg width="261" height="72" viewBox="0 0 261 72" fill="none" xmlns="http://www.w3.org/2000/svg">
   <title>OneGlanse</title>
   <g
-    transform="translate(18 23) scale(0.45)"
-    stroke="#111827"
+    transform="translate(14 23) scale(0.45)"
+    stroke="#F9FAFB"
     stroke-linecap="round"
     stroke-linejoin="round"
     stroke-width="12"
   >
     <path d="M62 14 A30 30 0 1 0 62 58" />
-    <path d="M60 36 H76" />
+    <path d="M60 36 H90" />
   </g>
   <text
-    x="63"
+    x="66"
     y="50"
-    fill="#111827"
+    fill="#F9FAFB"
     font-family="Inter, Arial, sans-serif"
     font-size="36"
     font-weight="700"
