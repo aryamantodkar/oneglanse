@@ -1,56 +1,54 @@
 ---
-title: Reference
-description: Commands, routes, and runtime behavior reference for OneGlanse.
+title: Runtime Reference
+description: Commands, app modes, routes, provider auth groups, and session storage.
 ---
 
-## Useful Commands
+## Commands
 
-```bash
-pnpm local                   # Start full local stack from local source and refresh Docker service/base images when available
-pnpm auth                    # Capture provider sessions locally; prompts to upload to VPS at the end
-pnpm upload:vps              # Re-upload existing local sessions to VPS without re-running the auth flow
-pnpm self-host               # Pull latest published images and start the self-hosted stack; auto-builds locally if your architecture is not published yet
-pnpm self-host:build         # Build from source and start the self-hosted stack
-pnpm lint                    # Lint Web, Landing, and Agent tests
-pnpm test                    # Run automated regression tests
-pnpm typecheck               # Typecheck the monorepo
-pnpm build                   # Build all packages
-```
-
-## Key Routes
-
-| Route | Description |
+| Command | Behavior |
 |---|---|
-| `/dashboard` | Visibility metrics and GEO scores |
-| `/prompts` | Manage and run prompts |
-| `/sources` | Source and citation attribution |
-| `/providers` | Connect and manage provider auth sessions |
-| `/schedule` | Manual run trigger (local) or recurring schedule editor (self-host) |
-| `/people` | Team members |
+| `pnpm local` | Prepare dependencies and browser runtime, start local data services, run migrations, then start Web and Agent from source. |
+| `pnpm auth` | Open the local provider sign-in UI. If sessions changed and an upload target is configured, prompt to upload them. |
+| `pnpm upload:vps` | Upload existing local sessions without reopening sign-in. Requires an upload target and token. |
+| `pnpm self-host` | Pull and start configured Docker images. Build locally only when Docker reports no compatible image manifest. |
+| `pnpm self-host:build` | Build application images from source and start the self-hosted stack. |
 
-## App Modes
+## Application modes
 
-| Capability | Local | Self-Host |
+| Capability | Local | Self-host |
 |---|---|---|
-| Interactive provider auth | Yes | N/A |
+| Interactive provider sign-in | Yes | Capture locally and upload |
 | Manual prompt runs | Yes | Yes |
-| Recurring scheduling | N/A | Yes |
-| Full data ownership | Yes | Yes |
+| Recurring schedules | No | Yes |
+| Provider browser proxy | Not used by mode | ThorData discovery required |
 
-## Auth Groups
+`pnpm local` forces local mode. The VPS setup script sets self-host mode. For manual VPS setup, set `ONEGLANSE_APP_MODE=self-host` in `.env` before `pnpm self-host` or its Node script equivalent. See [Environment Variables](/environment-variables).
 
-Each auth group covers one or more runtime providers:
+## Provider auth groups
 
-| Auth Group | Covers |
+The browser runtime tracks five providers. The auth groups below share one saved sign-in session where shown.
+
+| Auth group | Runtime provider |
 |---|---|
-| Google | Gemini, AI Overview |
 | ChatGPT | ChatGPT |
 | Perplexity | Perplexity |
+| Gemini | Gemini |
+| Google | Google AI Overview |
 | Claude | Claude |
 
-## Storage Model
+## Important routes
 
-- **Portable auth bundles:** one per auth group, transferable to VPS, source of truth
-- **Persistent runtime profiles:** one per provider, machine-local, seeded from the auth bundle
+| Route | Purpose |
+|---|---|
+| `/dashboard` | Visibility metrics |
+| `/prompts` | Manage prompts |
+| `/sources` | Inspect sources and citations |
+| `/providers` | Manage provider connections |
+| `/schedule` | Run prompts and, in self-host mode, configure a recurring schedule |
+| `/people` | Manage team members in self-host mode |
 
-If a runtime profile is missing or the auth bundle has changed, the profile is reseeded automatically. Otherwise the existing profile is reused.
+The Agent also exposes `GET /health` and bearer-protected `POST /auth/sessions` on port 3333 for self-host session transfer.
+
+## Session storage
+
+Each auth group has a portable session bundle. Provider runtime profiles are stored separately and are seeded from the bundle when needed. The local capture flow can upload bundles to the self-hosted Agent. See [Self-Hosted Setup](/self-hosted-setup#capture-and-upload-provider-sessions) for the operational steps.

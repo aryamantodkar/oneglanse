@@ -1,353 +1,173 @@
 ---
 title: Self-Hosted Setup
-description: Deploy the OneGlanse app on your own VPS with nginx, SSL, and provider auth upload: step by step with copy-paste commands.
+description: Deploy the always-on OneGlanse app on an Ubuntu VPS.
 ---
 
-## Interactive setup (recommended)
+Self-host mode runs Web, Agent, Postgres, ClickHouse, and Redis through Docker. It supports manual prompt runs and recurring schedules. Provider sign-in happens on a desktop machine; you then upload the sessions to the Agent on the VPS.
 
-Before you run the setup script, make sure you are logged in as a non-root user with `sudo` access. The script is designed for that flow and will stop if you run it as `root`.
+## Requirements
 
-If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the app deployment path: dependencies, repo clone, `.env` config, Docker image pull, nginx, SSL, and firewall: in one session:
+- An Ubuntu 22.04 or 24.04 VPS and a domain whose DNS A record points to it
+- A non-root user with `sudo` access
+- An OpenAI or Anthropic analysis key, or an OpenAI-compatible endpoint
+- Provider accounts and a desktop machine for browser sign-in
+- A ThorData residential proxy API endpoint for provider browser traffic in self-host mode
+
+Datacenter IPs are often challenged by provider interfaces. The current self-host browser path uses ThorData proxy discovery and requires `THORDATA_PROXY_API_URL`. See [Environment Variables](/environment-variables) for that setting.
+
+## Recommended automated setup
+
+On the VPS, connect as a non-root sudo user. The script rejects root. Set the DNS A record before starting so certificate issuance can succeed.
 
 ```bash
-# On your VPS (as a non-root user with sudo privileges):
-bash <(curl -fsSL https://raw.githubusercontent.com/aryamantodkar/oneglanse/main/scripts/setup-vps.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/oneglanse/oneglanse/main/scripts/setup-vps.sh)
 ```
 
-If your VPS is freshly reinstalled and only has `root`, create a non-root sudo user first, then reconnect as that user before running the setup script:
+The interactive script asks for a domain, install directory, analysis key, proxy API URL, and upload token. It installs missing Docker, Node.js, Git, and nginx dependencies, configures `.env`, starts the Docker stack, configures nginx and attempts a Let's Encrypt certificate, and opens firewall ports if `ufw` is installed. It generates an upload token when you leave that prompt blank. It also handles first-run Docker group access for its setup session.
+
+The script opens port 3333 for session upload and can continue if certificate issuance fails. Review the [session-upload security options](#session-upload-security) and confirm HTTPS works before using the public app. Run it with `bash <(...)` so its prompts can read your terminal.
+
+You can also clone the repository and run the script from that checkout:
 
 ```bash
-# On the VPS as root, once:
-adduser deploy
-usermod -aG sudo deploy
-
-# Optional: copy your existing root SSH key access to the new user
-install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
-cp -a /root/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
-chown deploy:deploy /home/deploy/.ssh/authorized_keys
-chmod 600 /home/deploy/.ssh/authorized_keys
-
-# Then reconnect as the new user:
-ssh deploy@YOUR_VPS_IP
-```
-
-When the script prompts for `Your domain for the app`, enter the hostname you want to serve OneGlanse on, such as `app.yourdomain.com`. The script configures nginx and requests the TLS certificate for that exact domain.
-
-Or clone first and run locally:
-
-```bash
-git clone https://github.com/aryamantodkar/oneglanse /tmp/oneglanse
+git clone https://github.com/oneglanse/oneglanse.git /tmp/oneglanse
 bash /tmp/oneglanse/scripts/setup-vps.sh
 ```
 
-The script is interactive: it asks for your domain, LLM key, and proxy URL, then does the rest. If you leave the auth upload token blank, it generates one automatically, and it handles first-run Docker group access for the setup user in the same session.
-
-Do not use `curl ... | bash` here. Because the setup flow is interactive, piping the script body into `bash` steals stdin from the prompts. `bash <(...)` keeps stdin attached to your terminal, so the prompts work correctly.
-
-The VPS flow is intentionally simple:
-
-- it pulls the published Docker images
-- it does not build the app on your server by default
-- `git pull` updates the deployment files, and the next bootstrap pulls the latest published app images
-
----
+After either setup path, continue at [Capture and upload provider sessions](#capture-and-upload-provider-sessions).
 
 ## Manual setup
 
-This guide deploys OneGlanse on a fresh Ubuntu 22.04 / 24.04 VPS. At the end you'll have:
+### 1. Prepare the VPS and DNS
 
-- OneGlanse running behind nginx with HTTPS
-- Postgres, ClickHouse, and Redis running in Docker
-- Provider sessions uploaded from your local machine
+Use a non-root sudo user. Point your app hostname, such as `app.example.com`, to the VPS IP before requesting a certificate.
 
-This guide intentionally deploys only the app.
-
-- The landing site is deployed separately on Vercel
-- The docs are deployed separately on Mintlify
-
-Important context before you start:
-
-- OneGlanse collects responses from real provider UIs, not official model APIs
-- provider auth is captured locally with `pnpm auth`
-- VPS browser traffic needs a residential proxy because datacenter IPs are often blocked by provider websites
-
----
-
-## 1. Provision the VPS
-
-Any provider works (Hetzner, DigitalOcean, Vultr, etc.). Minimum spec:
-
-| | Minimum | Recommended |
-|---|---|---|
-| CPU | 2 vCPU | 4 vCPU |
-| RAM | 4 GB | 8 GB |
-| Disk | 40 GB SSD | 80 GB SSD |
-| OS | Ubuntu 22.04 | Ubuntu 24.04 |
-
-Point a DNS A record at your VPS IP before continuing: nginx and certbot need it:
-
-```
-A  app.yourdomain.com points to YOUR_VPS_IP
-```
-
-If you do not have a real domain yet and only need a temporary launch/test hostname, a wildcard DNS helper such as `YOUR_VPS_IP.nip.io` or `YOUR_VPS_IP.sslip.io` also works.
-
----
-
-## 2. Install dependencies
-
-SSH into your VPS as your non-root sudo user and run:
+Install Docker, Node.js 20 or newer, Git, nginx, and Certbot. For example, on Ubuntu:
 
 ```bash
 sudo apt-get update
-
-# Docker
 curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 newgrp docker
-
-# Node.js 20
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# git
-sudo apt-get install -y git
-
-# nginx + certbot
-sudo apt install -y nginx certbot python3-certbot-nginx
+sudo apt-get install -y nodejs git nginx certbot python3-certbot-nginx
 ```
 
----
-
-## 3. Clone and configure
+### 2. Clone and configure
 
 ```bash
-git clone https://github.com/aryamantodkar/oneglanse /home/$USER/oneglanse
-cd /home/$USER/oneglanse
+git clone https://github.com/oneglanse/oneglanse.git "$HOME/oneglanse"
+cd "$HOME/oneglanse"
 cp .env.example .env
 ```
 
-Edit `.env` and fill in the required values:
+Edit `.env`. Set your public URL, one analysis provider, the ThorData API endpoint, and an upload token:
 
-```bash
-nano .env
+```dotenv
+APP_URL=https://app.example.com
+API_BASE_URL=https://app.example.com
+ONEGLANSE_APP_MODE=self-host
+OPENAI_API_KEY=your-key
+THORDATA_PROXY_API_URL=https://your-thordata-api-link
+AGENT_AUTH_UPLOAD_TOKEN=your-long-random-secret
 ```
 
-Minimum required changes:
+For Anthropic, set `ANTHROPIC_API_KEY` and `ANALYSIS_LLM_PROVIDER=claude` instead of `OPENAI_API_KEY`. Keep `ONEGLANSE_APP_MODE=self-host`: the automated setup script sets it, but manual setup must set it in `.env`. The bootstrap command generates `BETTER_AUTH_SECRET` and `INTERNAL_CRON_SECRET` if they are blank or still placeholders. See [Environment Variables](/environment-variables) for all supported values.
 
-```bash
-# Your public URL
-APP_URL=https://app.yourdomain.com
-API_BASE_URL=https://app.yourdomain.com
-
-# LLM key for response analysis: pick one:
-OPENAI_API_KEY=sk-...
-# or:
-# ANTHROPIC_API_KEY=sk-ant-...
-# ANALYSIS_LLM_PROVIDER=claude
-
-# Residential proxy: required on VPS
-THORDATA_PROXY_API_URL=https://your-thordata-endpoint
-
-# Auth upload token: any strong random string
-AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret
-```
-
-If `BETTER_AUTH_SECRET` or `INTERNAL_CRON_SECRET` are still unset or left as `replace-me`, `node scripts/run-compose.mjs bootstrap` generates them automatically before Docker starts.
-
-Why the proxy is mandatory on VPS:
-
-- VPS traffic usually originates from datacenter IP ranges
-- provider websites frequently challenge or block those IPs
-- OneGlanse collects from authenticated web UIs, so network reputation matters
-
-The proxy is what makes VPS-based scheduling viable. Without it, direct provider access from the VPS is often unreliable.
-
----
-
-## 4. Start the stack
+### 3. Start the stack
 
 ```bash
 node scripts/run-compose.mjs bootstrap
 ```
 
-On a fresh server, this can take several minutes because Docker has to pull the published images.
+This uses published application images when available. If Docker reports no compatible image manifest, it falls back to a local build. The Web app listens on `127.0.0.1:3000`; Postgres, ClickHouse, and Redis also bind to loopback. The Agent upload API listens on port `3333`.
 
-This pulls the published Docker images and starts:
-- Web app on **127.0.0.1:3000** (loopback only, for nginx)
-- Agent worker (internal)
-- Postgres on port **5432** (internal)
-- ClickHouse on port **8123** (internal)
-- Redis on port **6379** (internal)
-
-Verify everything is up:
+Check the containers:
 
 ```bash
 docker ps
 ```
 
-You should see containers for `web`, `agent-worker`, `postgres`, `clickhouse`, and `redis`.
+Look for `oneglanse-web`, `oneglanse-agent-worker`, `postgres_db`, `clickhouse_db`, and `redis`.
 
----
+### 4. Configure nginx and HTTPS
 
-## 5. Configure nginx
-
-Create the nginx site config:
-
-```bash
-sudo nano /etc/nginx/sites-available/oneglanse
-```
-
-Paste this: replace `app.yourdomain.com` with your domain:
+Create `/etc/nginx/sites-available/oneglanse` with your real hostname:
 
 ```nginx
 server {
     listen 80;
-    server_name app.yourdomain.com;
+    server_name app.example.com;
 
     location / {
-        proxy_pass         http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
-        proxy_set_header   Upgrade $http_upgrade;
-        proxy_set_header   Connection 'upgrade';
-        proxy_set_header   Host $host;
-        proxy_set_header   X-Real-IP $remote_addr;
-        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 120s;
     }
 }
 ```
 
-Enable the site and reload:
-
 ```bash
-sudo ln -s /etc/nginx/sites-available/oneglanse /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -s /etc/nginx/sites-available/oneglanse /etc/nginx/sites-enabled/oneglanse
 sudo nginx -t
 sudo systemctl reload nginx
+sudo certbot --nginx -d app.example.com
 ```
 
----
+Verify `https://app.example.com` loads before creating an account.
 
-## 6. Enable HTTPS with Let's Encrypt
+## Capture and upload provider sessions
 
-```bash
-sudo certbot --nginx -d app.yourdomain.com
-```
+On your desktop machine, complete [Local Setup](/local-setup) so the local database services and browser runtime are ready. Then configure an upload target in that checkout's `.env`. Use the same token as the VPS. The default IP shortcut constructs a plain HTTP URL on port 3333:
 
-Certbot will:
-1. Obtain a certificate
-2. Automatically update the nginx config to redirect HTTP traffic to HTTPS
-3. Set up auto-renewal via a systemd timer
-
-Verify auto-renewal works:
-
-```bash
-sudo certbot renew --dry-run
-```
-
----
-
-## 7. Upload provider auth sessions
-
-Provider auth must be captured on your **local machine** (it needs a real browser). Once captured, upload the sessions to the VPS.
-
-OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, for this flow. That is intentional: plain Chrome / Chromium automation is more likely to trigger login loops, verification challenges, or unstable sessions on provider websites. Camoufox is a better fit for authenticated scraping against anti-bot-protected chat interfaces.
-
-**On your local machine:** set these in your local `.env`:
-
-```bash
+```dotenv
 ONEGLANSE_VPS_IP=YOUR_VPS_IP
-AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret   # same as on VPS
+AGENT_AUTH_UPLOAD_TOKEN=your-long-random-secret
 ```
 
-Then open the provider auth flow and sign in to each provider:
+Capture provider sessions locally:
 
 ```bash
 pnpm auth
 ```
 
-At the end of the sign-in flow, `pnpm auth` will ask whether to upload to the VPS: answer `y`. Sessions are transferred and the VPS agent picks them up immediately.
-
-When a session expires later and you want to re-upload without going through the sign-in flow again:
+Finish sign-in in the browser, return to the terminal, and press Enter. If sessions changed and upload is configured, the command asks whether to upload them. To send existing sessions later without signing in again:
 
 ```bash
 pnpm upload:vps
 ```
 
----
+For an HTTPS upload endpoint, set `AGENT_AUTH_UPLOAD_URL` to its full `/auth/sessions` URL instead of using `ONEGLANSE_VPS_IP`. You must provide TLS termination or a secure tunnel for that endpoint. The Agent does not provide HTTPS itself.
 
-## 8. Open the app
+Open the Providers page on the VPS app to check connection status. Then add prompts and run them. Configure recurring runs on the Schedule page.
 
-Navigate to `https://app.yourdomain.com`, create your account, and start adding prompts.
+## Updating
 
-Before you run prompts from the VPS, make sure `THORDATA_PROXY_API_URL` in `/home/$USER/oneglanse/.env` points to your real residential proxy endpoint. If you deployed with a placeholder or later changed the proxy configuration, update that value and rerun:
-
-```bash
-cd /home/$USER/oneglanse
-node scripts/run-compose.mjs bootstrap
-```
-
-Without the correct proxy endpoint, VPS prompt runs are likely to be blocked, challenged, or less accurate.
-
----
-
-## Updates
-
-Pull and redeploy without downtime:
+From the VPS checkout:
 
 ```bash
-cd /home/$USER/oneglanse
+cd "$HOME/oneglanse"
 git pull
 node scripts/run-compose.mjs bootstrap
 ```
 
----
+Bootstrap pulls current configured images and recreates containers. Expect a brief interruption during recreation. If you changed `.env`, this command also applies the new values.
 
-## Firewall
+## Session-upload security
 
-Allow only the ports nginx needs. For auth uploads, port `3333` is needed only for the agent upload API:
+The Agent exposes `POST /auth/sessions` on port 3333 and requires `AGENT_AUTH_UPLOAD_TOKEN`. The IP shortcut sends the token and provider sessions over plain HTTP. Use a private network, VPN, or an HTTPS reverse proxy for uploads. Restrict port 3333 to your source IP when possible. The automated script opens that port broadly, so narrow the firewall rule after setup if you use a public VPS.
 
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw enable
-```
-
-If your local machine has a stable public IP, prefer allowing `3333/tcp` only from that source:
+For example, with `ufw` and a stable desktop public IP:
 
 ```bash
-sudo ufw allow from YOUR_LOCAL_PUBLIC_IP to any port 3333 proto tcp
+sudo ufw delete allow 3333/tcp
+sudo ufw allow from YOUR_DESKTOP_PUBLIC_IP to any port 3333 proto tcp
 ```
 
-If your local IP changes often, you can allow `3333/tcp` broadly instead and rely on `AGENT_AUTH_UPLOAD_TOKEN` for authentication:
+Do not expose the database ports. In the Compose file, they bind to loopback. See the repository [security policy](https://github.com/oneglanse/oneglanse/blob/main/SECURITY.md) for the full data-flow boundary.
 
-```bash
-sudo ufw allow 3333/tcp
-```
-
-The app ports (3000, 5432, 8123, 6379) stay internal. Port `3333` is only for `pnpm upload:vps`, which sends provider sessions to `http://YOUR_VPS_IP:3333/auth/sessions`. On self-hosted deployments, the web app's provider management endpoints stay behind app authentication, while the upload API on `3333` is protected by the bearer token in `AGENT_AUTH_UPLOAD_TOKEN`.
-
----
-
-## Troubleshooting
-
-**502 Bad Gateway:** the web container isn't running yet. Check:
-```bash
-docker logs oneglanse-web --tail 50
-```
-
-**SSL certificate failed:** DNS hasn't propagated yet. Wait a few minutes and retry:
-```bash
-sudo certbot --nginx -d app.yourdomain.com
-```
-
-**Providers disconnected after reboot:** sessions survive restarts (they're in the volume at `/opt/oneglanse/storage`). If they expire, re-run `pnpm upload:vps` from your local machine.
-
-**VPS ran out of disk:** ClickHouse data grows over time. Check usage:
-```bash
-df -h
-docker system df
-```
+For deployment problems, see [Troubleshooting](/troubleshooting).

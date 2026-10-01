@@ -1,66 +1,22 @@
 ---
 title: Introduction
-description: OneGlanse is the open-source GEO tracker that shows how your brand appears inside real AI products: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
+description: What OneGlanse measures and how it collects AI product responses.
 ---
-## Built on real AI outputs
 
-OneGlanse captures responses directly from product interfaces, not raw model APIs.
+OneGlanse is a free, open-source AI visibility tracker for marketing teams. It tracks how a brand appears in responses from ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview.
 
-That distinction matters.
+## How collection works
 
-UI responses include:
-- Citations and sources users actually see
-- Ranked recommendations and comparisons
-- Framing, tone, and positioning
+1. You configure prompts and select providers.
+2. The Agent opens each provider's user-facing interface and submits the prompt.
+3. It captures the rendered response and available citations.
+4. A separately configured model endpoint analyzes the captured text.
+5. The dashboard shows the resulting visibility metrics.
 
-These layers are stripped out in API responses, but they define real-world visibility.
+Provider collection uses browser automation, not model APIs. Product-level elements such as citations, source cards, and answer formatting can differ from, or be absent in, raw model API output. If the goal is to understand a response users can encounter, the product interface is the relevant collection surface. Results can still vary by account, location, prompt, and time.
 
-OneGlanse is intentionally **UI-first**:
+A [Surfer study of scraped AI answers and API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/) provides more context on this difference.
 
-- It opens the real ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview interfaces
-- It captures the rendered answer that a user actually sees
-- It analyzes that captured UI response afterward
+Prompts, captured responses, and analysis results are stored in your local or self-hosted OneGlanse stack. Response analysis sends captured text to the model endpoint you configure. The Web app also sends limited usage events to PostHog. See the repository [security policy](https://github.com/oneglanse/oneglanse/blob/main/SECURITY.md) for the session-transfer and analysis boundaries.
 
-This is the main differentiator in the product. We are not trying to approximate AI visibility by querying official APIs. We measure the live consumer surfaces where recommendation order, citations, source cards, and framing actually appear.
-
-If you want the underlying model completion, APIs are useful. If you want GEO truth, the UI matters more.
-
-You can read more about the API-vs-UI gap here: [LLM scraped AI answers vs API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/).
-
-## Why OneGlanse uses Camoufox
-
-OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, for provider sessions.
-
-We do not use standard Chrome / Chromium automation as the primary runtime because provider web apps are heavily protected against scripted access. In practice, plain Chrome-style automation is much more likely to trigger sign-in loops, verification challenges, unstable sessions, or failed UI rendering.
-
-The issue is not only "headless vs headful". Provider detection systems also look at browser fingerprint consistency and automation signals. Camoufox is materially better suited for this workflow, which is why OneGlanse depends on it for stable authenticated scraping of real chat interfaces.
-
-## Your data stays yours
-
-OneGlanse is fully open source and self-hostable.
-
-All data, including responses, analytics, and auth sessions, lives in infrastructure you control:
-- Local machine or private VPS
-- Your own database
-- Your own provider accounts
-
-Analysis requests go directly from your environment to model providers like OpenAI or Anthropic. No proxy servers. No third-party data pipelines.
-
-Credentials are never stored externally.
-
-## Why VPS runs need a proxy
-
-Self-hosted VPS runs usually come from datacenter IP ranges. Those IPs are routinely blocked, challenged, or rate-limited by AI provider websites.
-
-That means a VPS can be perfect for scheduling and persistence, but a poor direct network origin for browser traffic. OneGlanse solves that by routing provider traffic through a residential proxy on VPS deployments.
-
-The proxy is not for analytics or API calls. It is specifically for browser access to provider websites from a server environment where datacenter IP reputation would otherwise break collection.
-
-## Deployment options
-
-Choose the setup that fits your workflow:
-
-- **Local:** run the full stack locally with interactive provider auth
-- **Self-hosted:** deploy on your own VPS for scheduled tracking and full control
-
-Start with [Getting Started](/getting-started), then follow either [Local Setup](/local-setup) or [Self-Hosted Setup](/self-hosted-setup).
+To choose a deployment mode, see [Getting Started](/getting-started).
