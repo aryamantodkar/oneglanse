@@ -1,4 +1,9 @@
-<p align="center"><img src="docs/images/logo-whitebg.png" alt="OneGlanse logo" width="88" height="88" /></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png" />
+    <img src="docs/images/logo.png" alt="OneGlanse logo" width="88" height="88" />
+  </picture>
+</p>
 
 <h1 align="center">OneGlanse</h1>
 
