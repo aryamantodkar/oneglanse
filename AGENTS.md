@@ -1,12 +1,14 @@
 # Engineering rules
 
-OneGlanse is an open-source AI visibility tracker that measures how brands appear across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Provider responses are collected from the products' actual interfaces through browser automation. A configured analysis model is used separately to analyze the captured responses.
+OneGlanse is an open-source AI visibility tracker. Provider collection uses browser automation against real product interfaces; analysis is a separate model-backed step.
 
-Code and tests define implemented behavior. [ARCHITECTURE.md](ARCHITECTURE.md) defines intended system boundaries. Use [CONTRIBUTING.md](CONTRIBUTING.md) for setup and contribution steps.
+Code and tests define implemented behavior.
 
 ## Navigate and change code
 
-- Use CodeGraph for structure and call paths. Use `rg` for exact text and references. If `.codegraph/` is absent, run `pnpm codegraph:init` before structural exploration.
+- Use CodeGraph first for current structure, ownership, callers, and call paths. Use `rg` for exact text and references. If `.codegraph/` is absent, run `pnpm codegraph:init`.
+- Read `ARCHITECTURE.md` only when a change crosses system boundaries or requires architectural context.
+- `CONTRIBUTING.md` is for contributor setup and workflow.
 - For behavior changes, read the implementation, direct callers and consumers, and relevant tests before editing.
 - Make the smallest coherent change. Preserve unrelated work and behavior.
 - Keep one authoritative owner for each rule. Do not add an abstraction, option, or fallback for a hypothetical need.
