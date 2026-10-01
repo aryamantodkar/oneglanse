@@ -16,6 +16,7 @@ on:
       - 'tsconfig.json'
       - 'turbo.json'
       - 'docker-compose.yml'
+      - 'scripts/run-compose.mjs'
       - '.github/workflows/build.yml'
       - 'scripts/test-docker-image.sh'
       - 'scripts/test-web-image.mjs'
@@ -140,6 +141,8 @@ jobs:
             postgres:
               - 'packages/db/Dockerfile'
               - 'packages/db/init-scripts/**'
+              - 'docker-compose.yml'
+              - 'scripts/run-compose.mjs'
               - '.github/workflows/build.yml'
 
       - name: Select app images
