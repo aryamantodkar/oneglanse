@@ -21,8 +21,6 @@
 
 <p align="center">Run locally for free. Bring your own provider accounts and analysis model key.</p>
 
-<p align="center"><em>Illustrative product mockups with sample data.</em></p>
-
 <table>
   <tr>
     <td><img src="docs/images/Mockup-1.png" alt="Illustrative dashboard and source overview" /><br />Dashboard</td>
