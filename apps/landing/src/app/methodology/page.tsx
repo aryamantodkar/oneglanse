@@ -6,6 +6,7 @@ import {
 	SOCIAL_METADATA,
 } from "@/lib/landing-content";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 const title = "AI Visibility & GEO Tracking Methodology";
 const description =
@@ -69,6 +70,13 @@ export default function MethodologyPage(): React.JSX.Element {
 								prompts and capture the rendered response and citations
 								available in that interaction. It does not use the
 								provider&apos;s model API for collection.
+							</p>
+							<p className="mt-3 text-base leading-7 text-muted-foreground">
+								The Agent uses Camoufox for that browser layer. Read{" "}
+								<Link href="/why-camoufox" className="content-link">
+									why OneGlanse moved from Chromium to Camoufox
+								</Link>{" "}
+								for the design history and its limits.
 							</p>
 						</section>
 
