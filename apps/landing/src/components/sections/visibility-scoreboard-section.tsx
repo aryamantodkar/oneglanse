@@ -28,8 +28,8 @@ export function VisibilityScoreboardSection(): React.JSX.Element {
 					Visibility Scoreboard
 				</h2>
 				<p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
-					See how your brand stacks up on visibility, mentions, and sentiment
-					across all LLM providers.
+					Compare model-backed visibility, mention, rank, and sentiment analysis
+					for captured responses.
 				</p>
 			</div>
 			<div className="landing-surface overflow-x-auto">

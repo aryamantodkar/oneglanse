@@ -10,19 +10,42 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { Metadata } from "next";
 
-const githubRepoUrl =
-	process.env.NEXT_PUBLIC_GITHUB_REPO_URL?.trim() ||
-	"https://github.com/aryamantodkar/oneglanse";
+export const PRODUCT_POSITIONING =
+	"Free, open-source AI visibility tracking for marketing teams.";
+export const PRODUCT_SUMMARY = `${PRODUCT_POSITIONING} Collect rendered answers and available citations from supported AI product interfaces, then analyze responses with a model endpoint you configure.`;
+export const SITE_TITLE = "OneGlanse | Open-source AI Visibility & GEO Tracker";
 
 export const SITE_URLS = {
-	github: githubRepoUrl,
-	githubLicense: `${githubRepoUrl}/blob/main/LICENSE`,
+	github: "https://github.com/oneglanse/oneglanse",
+	githubLicense: "https://github.com/oneglanse/oneglanse/blob/main/LICENSE",
 	signup: "https://oneglanse.com/signup",
 	login: "https://oneglanse.com/login",
 	docs: "https://docs.oneglanse.com/",
 	homepage: "https://oneglanse.com",
+	methodology: "https://oneglanse.com/methodology",
+	sitemap: "https://oneglanse.com/sitemap.xml",
 } as const;
+
+export const SOCIAL_METADATA = {
+	openGraph: {
+		siteName: "OneGlanse",
+		type: "website",
+		images: [
+			{
+				url: "/social-preview.png",
+				width: 1200,
+				height: 630,
+				alt: PRODUCT_POSITIONING,
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		images: ["/social-preview.png"],
+	},
+} satisfies Pick<Metadata, "openGraph" | "twitter">;
 
 type FeatureItem = {
 	title: string;
@@ -34,23 +57,24 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 	{
 		title: "Free to Run Locally",
 		description:
-			"Install once and run entirely on your own machine with no subscription, no usage limits.",
+			"Run OneGlanse without a subscription or usage fee. Provider plans, hosting, and model usage can cost extra.",
 		icon: KeyRound,
 	},
 	{
 		title: "Your Own Provider Accounts",
 		description:
-			"Log in to each AI provider with your own account. Sessions stay on your machine.",
+			"Use your own provider accounts. Sessions stay in your local runtime or on the self-hosted server you control.",
 		icon: ShieldCheck,
 	},
 	{
 		title: "AI Visibility Tracking",
-		description: "See where your brand appears and where it disappears.",
+		description: "Inspect mentions and recommendations in captured responses.",
 		icon: Eye,
 	},
 	{
-		title: "GEO Monitoring",
-		description: "Track recommendation strength, rank, and sentiment by model.",
+		title: "Response Analysis",
+		description:
+			"Compare mentions, rank, sentiment, recommendations, citations, and source domains in captured answers.",
 		icon: Radar,
 	},
 	{
@@ -61,18 +85,20 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 	},
 	{
 		title: "Self-hostable Architecture",
-		description: "Deploy web, worker, queue, and analytics in your own infra.",
+		description:
+			"Deploy the web app, worker, databases, and queue in infrastructure you control.",
 		icon: Boxes,
 	},
 	{
 		title: "ClickHouse Analytics",
 		description:
-			"Store high-volume responses and analytics with low-latency queries.",
+			"Query captured responses, citations, and analysis data in ClickHouse.",
 		icon: Database,
 	},
 	{
 		title: "Open-source Transparency",
-		description: "Audit every step from prompt execution to final metric.",
+		description:
+			"Read the code that collects provider responses and produces model-backed analysis.",
 		icon: Activity,
 	},
 ];
@@ -80,20 +106,20 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 export const STORAGE_KEY = "oneglanse-landing-theme" as const;
 
 export const METHOD_POINTS = [
-	"All five providers are monitored through their real web UIs: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. They are not monitored through model APIs.",
-	"You log in to each provider with your own account. Sessions are stored locally on your machine and never leave your infrastructure.",
-	"Captured responses are analyzed using your own OpenAI or Anthropic API key. No data passes through any third-party server.",
-	"UI responses can differ from API responses in ranking, wording, and citation behavior for the same prompt.",
-	"Most GEO vendors do not disclose collection methods, refresh cadence, or model provenance details.",
+	"Collection uses browser automation on the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview interfaces. Provider collection does not use model APIs.",
+	"Use your own provider accounts. Sessions stay on your local machine or, in self-host mode, are transferred to your own Agent server.",
+	"After collection, captured response text is analyzed by the OpenAI, Anthropic, or compatible model endpoint you configure.",
+	"A product interface and its provider API are different collection surfaces. Results can vary by account, location, prompt, and time.",
+	"Visibility, rank, sentiment, and recommendation scores are model-backed interpretations of captured answers, not measurements from the AI products.",
 ] as const;
 
 export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 	{
-		text: "Free to run locally with no subscription, no API calls to third-party servers.",
+		text: "Run locally without a OneGlanse subscription. Provider plans, hosting, and model usage can cost extra.",
 		icon: KeyRound,
 	},
 	{
-		text: "Use your own provider accounts. Sessions live on your machine, never elsewhere.",
+		text: "Use your own provider accounts. Sessions stay in your local runtime or on the self-hosted server you control.",
 		icon: ShieldCheck,
 	},
 	{
@@ -101,16 +127,17 @@ export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 		icon: GitBranch,
 	},
 	{
-		text: "Self-hostable Docker stack for web, worker, queue, and analytics.",
+		text: "Self-hostable Docker stack for the web app, worker, queue, and data services.",
 		icon: Boxes,
 	},
 	{
-		text: "Full data ownership for prompts, responses, citations, and analytics.",
+		text: "Store prompts, captured responses, citations, and analysis in your local or self-hosted app stack.",
 		icon: Database,
 	},
 ];
 
 export const FOOTER_LINKS = [
+	{ label: "Methodology", href: "/methodology" },
 	{ label: "Docs", href: SITE_URLS.docs },
 	{ label: "GitHub", href: SITE_URLS.github },
 	{ label: "License", href: SITE_URLS.githubLicense },

@@ -10,8 +10,8 @@ export function AiVisibilitySection(): React.JSX.Element {
 		>
 			<SectionHeading
 				eyebrow="Competitor Comparison"
-				title="See how your brand performs across AI answers"
-				description="Track where you lead, where you lag, and what to improve next across all LLM providers."
+				title="Compare brand visibility in AI answers"
+				description="Review mentions, recommendations, and sentiment in captured responses from supported AI products."
 			/>
 			<AiVisibilityPreview />
 		</section>

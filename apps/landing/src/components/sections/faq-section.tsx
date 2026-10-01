@@ -1,3 +1,4 @@
+import { PRODUCT_POSITIONING } from "@/lib/landing-content";
 import { Card } from "@oneglanse/ui";
 
 type FaqItem = {
@@ -8,43 +9,47 @@ type FaqItem = {
 const FAQ_ITEMS: FaqItem[] = [
 	{
 		question: "What is OneGlanse?",
-		answer:
-			"OneGlanse is an open-source GEO (Generative Engine Optimization) and AI visibility tracking platform. It monitors how your brand appears inside real AI products — ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — and produces scores for visibility, rank, sentiment, and recommendation strength.",
+		answer: `${PRODUCT_POSITIONING} It runs prompts through the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview interfaces, extracts rendered responses and citations, then analyzes the captured text with a model endpoint you configure.`,
 	},
 	{
 		question: "What is GEO (Generative Engine Optimization)?",
 		answer:
-			"GEO stands for Generative Engine Optimization. It is the practice of understanding and improving how your brand surfaces in AI-generated responses. As more users get answers directly from AI products instead of clicking search results, GEO measures whether you appear, where you rank, how you are framed, and whether the AI recommends you.",
+			"GEO stands for Generative Engine Optimization. It is the practice of understanding and improving how a brand appears in AI-generated responses. OneGlanse records sampled responses from AI product interfaces so teams can inspect mentions, rank, sentiment, citations, and recommendations.",
 	},
 	{
 		question: "How is OneGlanse different from API-based AI trackers?",
 		answer:
-			"Most GEO tools claim to track AI visibility by querying model APIs. OneGlanse opens the actual ChatGPT, Gemini, Perplexity, Claude, and AI Overview interfaces the same way a real user would. The UI layer adds inline citations, source cards, and recommendation ordering that never appear in raw API output. OneGlanse captures what users actually see, not what the API returns.",
+			"OneGlanse uses browser automation to submit prompts to the AI product interfaces and extract their rendered responses and citations. Provider collection does not use model APIs. Product interfaces and their provider APIs can return different wording, ordering, and citations. Analysis happens afterward through the model endpoint you configure.",
 	},
 	{
 		question: "Which AI providers does OneGlanse support?",
 		answer:
-			"OneGlanse supports ChatGPT (OpenAI), Google Gemini, Perplexity, Claude (Anthropic), and Google AI Overview. All five are monitored through their real web UIs using your own authenticated accounts.",
+			"OneGlanse supports ChatGPT (OpenAI), Google Gemini, Perplexity, Claude (Anthropic), and Google AI Overview. Collection uses browser automation on their user-facing interfaces.",
 	},
 	{
 		question: "Is OneGlanse free?",
 		answer:
-			"Yes. OneGlanse is MIT licensed and free to run locally or on your own VPS. There is no subscription and no usage limit. You bring your own OpenAI or Anthropic API key for response analysis, and your own AI provider accounts for data collection.",
+			"Yes. OneGlanse is MIT licensed and has no subscription or usage fee. Provider plans, model API usage, hosting, and proxy service can cost extra. You use your own AI product accounts for collection and configure the endpoint and key for response analysis.",
 	},
 	{
-		question: "Does OneGlanse store my data in the cloud?",
+		question: "Where does OneGlanse store prompts and responses?",
 		answer:
-			"No. All data — responses, analytics, auth sessions, and scores — is stored in a PostgreSQL and ClickHouse instance you own and control, running locally or on your own VPS. Nothing passes through any third-party server. Analysis requests go directly from your machine to OpenAI or Anthropic.",
+			"In local mode, app data is stored in the stack running on your machine. In self-host mode, it is stored in the services you deploy. Prompts are submitted to the selected AI product interfaces, and captured response text is sent to the analysis model endpoint you configure. In self-host mode, you transfer provider sessions to your own Agent server.",
+	},
+	{
+		question: "What analytics does OneGlanse use?",
+		answer:
+			"The landing site uses Vercel Analytics. The app sends user_signed_up and user_active events to PostHog. Each app event includes a SHA-256 hash of the internal user ID, not prompts, captured responses, scores, names, or email addresses.",
 	},
 	{
 		question: "What is a GEO score?",
 		answer:
-			"A GEO score (0–100) is a weighted average of four equal components: Visibility (how prominently you surface), Rank (your absolute position in the response), Sentiment (how positively you are described), and Recommendation (whether the AI actively recommends you). Each component is scored separately so you can diagnose exactly where you are winning or losing.",
+			"OneGlanse asks the configured analysis model to estimate visibility, rank, sentiment, and recommendation strength from each captured response. The overall score combines those components. These are model-backed interpretations of sampled text, not official measurements from the AI products.",
 	},
 	{
 		question: "How do I get started with OneGlanse?",
 		answer:
-			"Clone the repository, copy .env.example to .env, set your OpenAI or Anthropic API key, and run pnpm local. The script starts Postgres, ClickHouse, Redis, runs migrations, and opens the app at localhost:3000. Go to /providers to connect your AI accounts, then add prompts and run. Full instructions are at docs.oneglanse.com.",
+			"Follow the local setup guide to start the app, connect supported AI product accounts, configure a model endpoint for analysis, and run your first prompts. The guide is at docs.oneglanse.com/local-setup.",
 	},
 ];
 

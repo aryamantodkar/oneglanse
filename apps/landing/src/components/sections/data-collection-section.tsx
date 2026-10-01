@@ -1,7 +1,7 @@
 import { METHOD_POINTS } from "@/lib/landing-content";
 import { Card } from "@oneglanse/ui";
 import {
-	ExternalLink,
+	BookOpenText,
 	Fingerprint,
 	KeyRound,
 	Monitor,
@@ -24,8 +24,12 @@ export function DataCollectionSection(): React.JSX.Element {
 					Data collection methodology
 				</h2>
 				<p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-					We disclose exactly how AI visibility data is collected and why
-					UI-first monitoring matters.
+					How collection and model-backed analysis work, and what the results
+					can tell you.
+				</p>
+				<p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
+					AI visibility tracking, also called GEO (Generative Engine
+					Optimization), describes how brands appear in AI-generated answers.
 				</p>
 
 				<ul className="mt-4 grid gap-2">
@@ -72,15 +76,13 @@ export function DataCollectionSection(): React.JSX.Element {
 				</ul>
 
 				<p className="mt-4 text-sm leading-6 text-muted-foreground">
-					You can read more here on how UI responses differ from API responses:{" "}
+					Read the collection and comparison protocol:{" "}
 					<a
-						href="https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/"
-						target="_blank"
-						rel="noreferrer noopener"
+						href="/methodology"
 						className="inline-flex items-center gap-1 text-foreground underline underline-offset-4"
 					>
-						LLM scraped AI answers vs API results
-						<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+						OneGlanse methodology
+						<BookOpenText className="h-3.5 w-3.5" aria-hidden="true" />
 					</a>
 				</p>
 			</Card>

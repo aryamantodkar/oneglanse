@@ -1,18 +1,13 @@
+import { SITE_URLS } from "@/lib/landing-content";
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
 	return [
 		{
-			url: "https://oneglanse.com",
-			lastModified: new Date(),
-			changeFrequency: "weekly",
-			priority: 1,
+			url: SITE_URLS.homepage,
 		},
 		{
-			url: "https://oneglanse.com/#open-source",
-			lastModified: new Date(),
-			changeFrequency: "monthly",
-			priority: 0.7,
+			url: SITE_URLS.methodology,
 		},
 	];
 }

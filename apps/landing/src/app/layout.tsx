@@ -1,4 +1,10 @@
 import "./globals.css";
+import {
+	PRODUCT_SUMMARY,
+	SITE_TITLE,
+	SITE_URLS,
+	SOCIAL_METADATA,
+} from "@/lib/landing-content";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
@@ -9,78 +15,30 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://oneglanse.com"),
-	title: "OneGlanse | Open-source GEO & AI Visibility Tracker",
-	description:
-		"OneGlanse is the open-source GEO tracker that monitors how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. Self-hosted, free to run, your data stays on your machine.",
+	metadataBase: new URL(SITE_URLS.homepage),
+	title: SITE_TITLE,
+	description: PRODUCT_SUMMARY,
 	keywords: [
-		"GEO",
-		"generative engine optimization",
 		"AI visibility",
 		"AI visibility tracker",
 		"AI visibility tracking",
-		"brand visibility AI",
-		"ChatGPT brand tracking",
-		"Gemini brand tracking",
-		"Perplexity brand tracking",
-		"open source GEO tool",
-		"self-hosted GEO",
-		"LLM visibility",
-		"AI search optimization",
-		"AI mention tracking",
+		"open-source AI visibility tracker",
+		"AI answer monitoring",
 		"oneglanse",
 	],
 	alternates: {
-		canonical: "https://oneglanse.com",
-	},
-	icons: {
-		icon: [
-			{
-				url: "/logo.png",
-				media: "(prefers-color-scheme: light)",
-				type: "image/png",
-			},
-			{
-				url: "/logo-dark.png",
-				media: "(prefers-color-scheme: dark)",
-				type: "image/png",
-			},
-		],
-		shortcut: [
-			{
-				url: "/logo.png",
-				type: "image/png",
-			},
-		],
-		apple: [
-			{
-				url: "/logo.png",
-				type: "image/png",
-			},
-		],
+		canonical: SITE_URLS.homepage,
 	},
 	openGraph: {
-		title: "OneGlanse | Open-source GEO & AI Visibility Tracker",
-		description:
-			"OneGlanse is the open-source GEO tracker that monitors how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. Self-hosted, free to run, your data stays on your machine.",
-		url: "https://oneglanse.com",
-		siteName: "OneGlanse",
-		type: "website",
-		images: [
-			{
-				url: "/opengraph-image",
-				width: 1200,
-				height: 630,
-				alt: "OneGlanse open-source AI visibility tracking",
-			},
-		],
+		...SOCIAL_METADATA.openGraph,
+		title: SITE_TITLE,
+		description: PRODUCT_SUMMARY,
+		url: SITE_URLS.homepage,
 	},
 	twitter: {
-		card: "summary_large_image",
-		title: "OneGlanse | Open-source GEO & AI Visibility Tracker",
-		description:
-			"OneGlanse is the open-source GEO tracker that monitors how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. Self-hosted, free to run, your data stays on your machine.",
-		images: ["/twitter-image"],
+		...SOCIAL_METADATA.twitter,
+		title: SITE_TITLE,
+		description: PRODUCT_SUMMARY,
 	},
 };
 
@@ -88,9 +46,8 @@ const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "SoftwareApplication",
 	name: "OneGlanse",
-	url: "https://oneglanse.com",
-	description:
-		"Open-source GEO and AI visibility tracking platform. Monitors how brands appear in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview using real browser automation.",
+	url: SITE_URLS.homepage,
+	description: PRODUCT_SUMMARY,
 	applicationCategory: "BusinessApplication",
 	operatingSystem: "Linux, macOS, Windows",
 	offers: {
@@ -98,16 +55,15 @@ const jsonLd = {
 		price: "0",
 		priceCurrency: "USD",
 	},
-	license: "https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE",
-	codeRepository: "https://github.com/aryamantodkar/oneglanse",
+	license: SITE_URLS.githubLicense,
+	codeRepository: SITE_URLS.github,
 	author: {
 		"@type": "Organization",
 		name: "OneGlanse",
-		url: "https://oneglanse.com",
-		sameAs: ["https://github.com/aryamantodkar/oneglanse"],
+		url: SITE_URLS.homepage,
+		sameAs: [SITE_URLS.github],
 	},
-	keywords:
-		"GEO, generative engine optimization, AI visibility, AI tracking, ChatGPT tracking, open source, self-hosted",
+	keywords: "AI visibility tracking, open-source software, marketing analytics",
 };
 
 export default function RootLayout({
@@ -115,6 +71,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
 	return (
 		<html lang="en" className={geist.variable} suppressHydrationWarning>
+			<head>
+				<link rel="describedby" href="/llms.txt" />
+			</head>
 			<body>
 				<script
 					type="application/ld+json"
