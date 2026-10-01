@@ -1,146 +1,104 @@
 ---
 title: Troubleshooting
-description: Solutions for common issues when setting up and running OneGlanse.
+description: Diagnose known setup, provider, and scheduling failures.
 ---
 
----
+## Browser runtime fails to start
 
-## Camoufox fails to start
-
-**Symptom:** Agent crashes immediately with a Python or pip error.
-
-**Cause:** Python 3 is not on the PATH or the wrong binary is being used.
-
-**Fix:** Find your Python 3 binary and set it explicitly:
+If local Agent logs show a Python or Camoufox installation error, confirm Python 3 is available:
 
 ```bash
 which python3
-# e.g. /opt/homebrew/bin/python3
 ```
 
-Add to `.env`:
+If auto-detection selects the wrong binary, set `CAMOUFOX_PYTHON_BIN` to the path returned by that command in `.env`, then restart `pnpm local`.
 
-```bash
-CAMOUFOX_PYTHON_BIN=/opt/homebrew/bin/python3
-```
-
-Then restart with `pnpm local`.
-
----
+Provider sign-in needs a visible desktop browser. On WSL, the Agent reports an error when it cannot detect a display. Use WSLg with a working graphical display, or run the sign-in flow from a native desktop OS.
 
 ## Redis connection refused
 
-**Symptom:** App or agent logs show `ECONNREFUSED 127.0.0.1:6379`.
-
-**Cause:** The Redis Docker container is not running.
-
-**Fix:** Check that Docker is running and the containers are up:
+If Web or Agent reports `ECONNREFUSED` for Redis, check that Docker is running and the `redis` container is healthy:
 
 ```bash
 docker ps
 ```
 
-If the containers aren't listed, restart with `pnpm local`. If Docker itself isn't running, start it first.
+For local mode, restart `pnpm local`. That command starts the database and Redis containers before Web and Agent.
 
----
+## ClickHouse unavailable at startup
 
-## ClickHouse unavailable on first run
-
-**Symptom:** Dashboard shows no data, or logs show a ClickHouse connection error shortly after startup.
-
-**Cause:** ClickHouse takes 10 to 20 seconds to fully initialize on first boot.
-
-**Fix:** Wait a moment and reload the page. If it persists, check the container:
+If the dashboard or logs report a ClickHouse connection error, check the container and wait for its health check:
 
 ```bash
-docker logs clickhouse_db
+docker logs clickhouse_db --tail 100
 ```
 
----
+On a first start, initialization can take time. If the container remains unhealthy, inspect its logs before retrying the app.
 
-## Provider auth not saving
+## Provider stays disconnected after sign-in
 
-**Symptom:** A provider still shows as disconnected after you finish the local auth flow.
+Complete any provider confirmation or two-factor step and wait for the connection status in the OneGlanse Providers page. If it stays disconnected, repeat the local provider sign-in flow. For a VPS, upload the saved session again with `pnpm upload:vps` from the desktop.
 
-**Cause:** The Camoufox window was closed before the session was fully written.
+## Google sign-in button is missing
 
-**Fix:** Open the provider connection again, complete the full sign-in flow (including any 2FA or confirmation steps), and wait for the checkmark to appear in the OneGlanse UI before closing the browser window.
+Set both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Web app's `.env`, then restart Web. These values enable Google sign-in to OneGlanse. They are separate from browser sessions for Gemini and Google AI Overview.
 
----
+## Prompts remain queued
 
-## Google sign-in is unavailable
-
-**Symptom:** No Google sign-in button appears on the login page.
-
-**Cause:** `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are not set in `.env`.
-
-**Fix:** Add them to `.env`:
+Check that the Agent worker is running. `pnpm local` starts Web and Agent together; a separate Web development process needs `pnpm dev:agent`. On a VPS, inspect the worker:
 
 ```bash
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
+docker logs oneglanse-agent-worker --tail 100
 ```
 
-Note: these control sign-in to the OneGlanse web app itself. They are separate from the Google / Gemini / AI Overview provider connections used for monitoring.
+Also check provider connection status and Redis health. A provider without a valid session cannot complete its browser run.
 
----
+## Provider opens but response or citations are missing
 
-## Agent not processing prompts
+Provider interfaces can change independently of OneGlanse. Retry the same prompt once, check the Agent logs for extraction errors, and report a reproducible case in the [issue tracker](https://github.com/oneglanse/oneglanse/issues). Include the provider, approximate time, and sanitized output. Do not include credentials or session files.
 
-**Symptom:** Prompts are queued but no responses appear.
+## Self-host image pull fails
 
-**Causes and fixes:**
-
-1. **Worker not started:** `pnpm local` starts both web and agent. If you started the web app separately, also run `pnpm dev:agent`.
-2. **Provider auth missing:** run `pnpm auth` locally and confirm at least one provider completes sign-in. If a provider is still disconnected, rerun the auth flow for that provider.
-3. **Redis not reachable:** see the Redis section above.
-
----
-
-## Self-host: image pull fails
-
-**Symptom:** `node scripts/run-compose.mjs bootstrap` fails with a Docker pull error, `unauthorized`, or an architecture mismatch such as `no matching manifest`.
-
-**Cause:** Either the GHCR images are unavailable, you're not authenticated with GHCR, or the published image has not been published for your current CPU architecture yet.
-
-**Fix:** Check outbound access to GHCR and Docker Hub, then retry:
+`pnpm self-host` pulls configured images. If Docker reports `no matching manifest` for the machine's architecture, bootstrap falls back to a local build. Other pull errors, such as registry access or authentication failures, still stop the command. Check Docker's error and outbound registry access, then retry:
 
 ```bash
-node scripts/run-compose.mjs bootstrap
+pnpm self-host
 ```
 
-If the only problem is an architecture mismatch, bootstrap now automatically falls back to a local Docker build on that machine. If you're maintaining a fork or explicitly want a source build, you can still run `pnpm self-host:build` directly.
+Use `pnpm self-host:build` when you explicitly need to build the application images from source.
 
----
+## Migration fails on startup
 
-## Migrations fail on startup
-
-**Symptom:** The `migrate` container exits with an error; the web app won't start.
-
-**Cause:** Postgres wasn't ready when migrations ran, or there's a schema conflict.
-
-**Fix:**
+Check the migration container and Postgres logs:
 
 ```bash
-# Check migration logs
-docker logs oneglanse-migrate
-
-# Re-run migrations manually
-pnpm db:migrate
+docker logs oneglanse-migrate --tail 100
+docker logs postgres_db --tail 100
 ```
 
-If there's a schema conflict from a previous installation, check the Drizzle migration files in `packages/db/drizzle/`.
+Resolve the reported database or migration error, then rerun `pnpm self-host`. The Compose stack runs migrations before Web starts.
 
----
+## Sessions do not transfer to the VPS
 
-## VPS: sessions not transferring
+Confirm the Agent is reachable from the desktop and the upload port is allowed by your firewall or private network:
 
-**Symptom:** `pnpm upload:vps` runs but providers still show as disconnected on the VPS.
+```bash
+curl http://YOUR_VPS_IP:3333/health
+```
 
-**Fixes:**
+Check that the desktop uses the correct `AGENT_AUTH_UPLOAD_URL` or `ONEGLANSE_VPS_IP`, and that `AGENT_AUTH_UPLOAD_TOKEN` matches the VPS value. A `401 Unauthorized` response means the token was rejected. Check the Agent logs with `docker logs oneglanse-agent-worker --tail 100`.
 
-1. Confirm the VPS agent is running: `curl http://YOUR_VPS_IP:3333/health`
-2. Confirm port `3333/tcp` is allowed by your VPS firewall or cloud security group
-3. Check `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` match your VPS `.env`
-4. If `pnpm upload:vps` returns `401 Unauthorized`, the upload token on your local machine does not match the VPS `AGENT_AUTH_UPLOAD_TOKEN`
-5. Check agent logs on the VPS: `docker logs oneglanse-agent-worker`
+The IP shortcut uses plain HTTP. Use the secure upload paths in [Self-Hosted Setup](/self-hosted-setup#session-upload-security) before transferring sessions across an untrusted network.
+
+## Recurring schedule is saved but does not run
+
+Recurring schedules require self-host mode. Check that the Schedule page shows a selected cadence and that Web, Postgres, and Agent are running. The scheduler stores a `pg_cron` job in Postgres and calls the Web app through `API_BASE_URL` with `INTERNAL_CRON_SECRET`.
+
+Inspect Web and Postgres logs for `[scheduler]`, `pg_cron`, or scheduled-run errors:
+
+```bash
+docker logs oneglanse-web --tail 100
+docker logs postgres_db --tail 100
+```
+
+Verify that `API_BASE_URL` is reachable from the Postgres container and that startup generated `INTERNAL_CRON_SECRET`. A saved cadence can remain visible even if creation of its `pg_cron` job failed, because that update is best effort. After fixing the cause, save the schedule again to recreate the job. Do the same for schedules saved before an affected version was upgraded.

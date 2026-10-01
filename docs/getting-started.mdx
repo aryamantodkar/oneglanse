@@ -1,37 +1,17 @@
 ---
 title: Getting Started
-description: Choose the right OneGlanse setup path, then follow a dedicated guide for local or self-hosted deployment.
+description: Choose between a local installation and an always-on self-hosted deployment.
 ---
 
-| | Local | Self-Host |
+| | Local | Self-hosted |
 |---|---|---|
-| Fast setup | ✓ | |
-| Interactive provider auth | ✓ | |
-| Manual prompt runs | ✓ | ✓ |
-| Recurring scheduling | | ✓ |
-| Full data ownership | ✓ | ✓ |
+| Best for | First runs, development, and testing | Always-on tracking |
+| Provider sign-in | On the same machine | Capture locally, then upload sessions |
+| Prompt runs | Manual | Manual and recurring |
+| Deployment | Source on your machine | Docker on your VPS |
 
----
+Choose [Local Setup](/local-setup) for the fastest first run. Choose [Self-Hosted Setup](/self-hosted-setup) when you need recurring schedules.
 
-## Choose your setup
+OneGlanse has no subscription or usage fee. Both modes require your own provider accounts and access to an analysis model. Self-hosting can also incur VPS and residential proxy costs.
 
-- [Local Setup](/local-setup)
-Run the full stack on your machine with interactive provider auth and on-demand runs.
-
-- [Self-Hosted Setup](/self-hosted-setup)
-Deploy OneGlanse on your own VPS for recurring schedules and always-on tracking.
-
-## Which path should you pick?
-
-- Choose Local if you want the fastest first run, interactive provider auth on your own machine, and manual prompt runs.
-- Choose Self-Hosted if you want recurring schedules, always-on tracking, and infrastructure you manage yourself.
-
-## Shared requirements
-
-Every setup path needs:
-
-- An analysis LLM key
-- Provider sessions captured through the real provider UI
-- Docker for the database/runtime services used by the app
-
-For environment variable details, see [Environment Variables](/environment-variables). For command behavior, see [Reference](/api-reference).
+Both paths use Docker for database services. Follow the requirements in the setup guide you choose. See [Environment Variables](/environment-variables) for configuration details.
