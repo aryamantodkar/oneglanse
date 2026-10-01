@@ -13,6 +13,31 @@ Code and tests define implemented behavior.
 - Make the smallest coherent change. Preserve unrelated work and behavior.
 - Keep one authoritative owner for each rule. Do not add an abstraction, option, or fallback for a hypothetical need.
 
+## Change decomposition
+
+Before creating a branch or editing files for a nontrivial task, decide whether the work belongs in one pull request or should be split into stages.
+
+Split the work when it crosses more than one responsibility, pipeline boundary, independent invariant, or substantial runtime surface:
+
+1. Define the stages before implementation.
+2. Give each stage one responsibility and one primary review question.
+3. Keep implementation, tests, and required documentation for that responsibility in the same stage.
+4. Use stacked pull requests when a later stage depends on an earlier one.
+5. Target `main` from the first independently mergeable stage. A dependent stage targets its parent stage branch.
+
+If the work has one coherent responsibility, keep it in one pull request. Do not split merely because many files or implementation steps are involved.
+
+## Git and pull requests
+
+- Branch from the latest appropriate base before implementation.
+- Use descriptive prefixes such as `feat/`, `fix/`, `refactor/`, `perf/`, `test/`, `docs/`, `ci/`, `build/`, and `chore/`.
+- Keep each pull request to one coherent responsibility and one primary review question.
+- Split when a new responsibility, pipeline boundary, independent invariant, or substantial runtime surface begins. File count alone is not a reason to split.
+- Use stacked pull requests for dependent stages rather than accumulating later stages into one branch.
+- Do not combine unrelated cleanup with the requested change.
+- Do not push directly to `main`.
+- Merge only after the required PR Gate passes.
+
 ## Protect the boundaries
 
 - Keep reusable application behavior in `packages/services`. Web routes and components own the HTTP and UI boundary.
