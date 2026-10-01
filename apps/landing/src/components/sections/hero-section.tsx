@@ -22,10 +22,6 @@ export function HeroSection(): React.JSX.Element {
 					<DashboardBrowserPreview />
 				</div>
 			</div>
-			<p className="mx-auto max-w-6xl px-6 text-center text-xs leading-5 text-muted-foreground sm:px-8 xl:px-10">
-				Dashboard figures and response examples on this page use illustrative
-				sample data.
-			</p>
 		</section>
 	);
 }

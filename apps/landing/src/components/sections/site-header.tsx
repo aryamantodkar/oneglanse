@@ -73,7 +73,7 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 
 	return (
 		<header className="section-shell sticky top-0 z-40 pt-4 sm:pt-5">
-			<div className="landing-surface flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+			<div className="landing-surface grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 px-4 py-3 sm:px-5 lg:grid-cols-[auto_1fr_auto] lg:gap-x-7">
 				<a
 					href="/"
 					className="inline-flex shrink-0 items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
@@ -83,16 +83,20 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 				</a>
 				<nav
 					aria-label="Explore"
-					className="order-last flex w-full items-center justify-center gap-6 border-t border-border pt-3 text-sm font-medium text-muted-foreground lg:order-none lg:w-auto lg:border-0 lg:pt-0"
+					className="col-span-2 row-start-2 flex items-center gap-5 border-t border-border pt-3 text-sm font-medium text-muted-foreground lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-0 lg:pt-0"
 				>
 					{DISCOVERY_LINKS.map((link) => (
-						<a key={link.href} className="content-link" href={link.href}>
+						<a
+							key={link.href}
+							className="transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+							href={link.href}
+						>
 							{link.label}
 						</a>
 					))}
 				</nav>
 
-				<div className="flex shrink-0 items-center gap-2">
+				<div className="col-start-2 row-start-1 flex shrink-0 items-center justify-self-end gap-2 lg:col-start-3">
 					<Button
 						asChild
 						variant="outline"

@@ -112,6 +112,8 @@ Browser automation requires a usable desktop session for provider sign-in. Nativ
 
 Both modes use infrastructure you control for app data. Self-hosting is intended for an always-on deployment; it needs a server, a domain, provider accounts, an analysis key, and a proxy suitable for the provider sites. The [self-hosted guide](https://docs.oneglanse.com/self-hosted-setup) covers setup, session transfer, and operations. The landing site and documentation site are separate from the app runtime.
 
+**Why no hosted app?** OneGlanse collects through real AI product interfaces, which means operating browsers, authenticated sessions, residential proxies, and bot-detection handling. Running that centrally at scale is expensive, so the current runtime is local or self-hosted. [Learn why](https://oneglanse.com/why-self-hosted).
+
 ## Data and telemetry
 
 Captured responses, analysis results, and provider sessions are stored in the local or self-hosted app stack. Response analysis sends captured text to the OpenAI, Anthropic, or compatible model endpoint you configure. Provider sign-in and self-hosted session transfer use your own accounts and server. Review your model provider's data handling terms before you send responses to it.
@@ -129,3 +131,13 @@ The [documentation](https://docs.oneglanse.com) has detailed [local setup](https
 ## License
 
 OneGlanse is available under the [MIT License](LICENSE).
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=oneglanse%2Foneglanse&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=oneglanse/oneglanse&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=oneglanse/oneglanse&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=oneglanse/oneglanse&type=date&legend=top-left" />
+  </picture>
+</a>
