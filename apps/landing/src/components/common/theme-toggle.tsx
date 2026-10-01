@@ -44,11 +44,13 @@ export function ThemeToggle(): React.JSX.Element {
 			className="h-9 w-9 px-0 sm:w-auto sm:px-3"
 			aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
 		>
-			{isDark ? (
-				<Sun className="h-4 w-4" aria-hidden="true" />
-			) : (
-				<Moon className="h-4 w-4" aria-hidden="true" />
-			)}
+			<span
+				key={theme}
+				className="theme-icon-enter inline-flex"
+				aria-hidden="true"
+			>
+				{isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+			</span>
 			<span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
 		</Button>
 	);

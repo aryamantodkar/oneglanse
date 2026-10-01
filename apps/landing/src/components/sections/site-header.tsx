@@ -3,6 +3,7 @@ import { ThemeToggle } from "@/components/common/theme-toggle";
 import { DISCOVERY_LINKS, SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
 import { BookOpen, GitFork, Github, Star } from "lucide-react";
+import Link from "next/link";
 
 type GitHubRepositoryStats = {
 	stars: number;
@@ -74,25 +75,25 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 	return (
 		<header className="section-shell sticky top-0 z-40 pt-4 sm:pt-5">
 			<div className="landing-surface grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 px-4 py-3 sm:px-5 lg:grid-cols-[auto_1fr_auto] lg:gap-x-7">
-				<a
+				<Link
 					href="/"
 					className="inline-flex shrink-0 items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
 				>
 					<BrandLogo alt="" className="h-6 w-6 shrink-0" />
 					OneGlanse
-				</a>
+				</Link>
 				<nav
 					aria-label="Explore"
-					className="col-span-2 row-start-2 flex items-center gap-5 border-t border-border pt-3 text-sm font-medium text-muted-foreground lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-0 lg:pt-0"
+					className="col-span-2 row-start-2 flex items-center gap-5 border-t border-border pt-3 text-sm font-normal lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-0 lg:pt-0"
 				>
 					{DISCOVERY_LINKS.map((link) => (
-						<a
+						<Link
 							key={link.href}
-							className="transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+							className="text-foreground/60 transition-colors hover:text-foreground/85 active:opacity-70 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-foreground/60 dark:hover:text-foreground/85"
 							href={link.href}
 						>
 							{link.label}
-						</a>
+						</Link>
 					))}
 				</nav>
 
