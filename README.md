@@ -45,13 +45,15 @@ Collection uses your own provider accounts and authenticated browser sessions. R
 
 ## Supported products
 
-<p align="center">
-  <span><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;ChatGPT</span>
-  <span><img src="https://www.google.com/s2/favicons?domain=perplexity.ai&amp;sz=64" width="20" height="20" alt="" />&nbsp;Perplexity</span>
-  <span><img src="https://www.google.com/s2/favicons?domain=gemini.google.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;Gemini</span>
-  <span><img src="https://www.google.com/s2/favicons?domain=claude.ai&amp;sz=64" width="20" height="20" alt="" />&nbsp;Claude</span>
-  <span><img src="https://www.google.com/s2/favicons?domain=google.com&amp;sz=64" width="20" height="20" alt="" />&nbsp;Google AI Overview</span>
-</p>
+<table align="center">
+  <tr>
+    <td align="center"><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&amp;sz=64" width="20" height="20" alt="" /><br />ChatGPT</td>
+    <td align="center"><img src="https://www.google.com/s2/favicons?domain=perplexity.ai&amp;sz=64" width="20" height="20" alt="" /><br />Perplexity</td>
+    <td align="center"><img src="https://www.google.com/s2/favicons?domain=gemini.google.com&amp;sz=64" width="20" height="20" alt="" /><br />Gemini</td>
+    <td align="center"><img src="https://www.google.com/s2/favicons?domain=claude.ai&amp;sz=64" width="20" height="20" alt="" /><br />Claude</td>
+    <td align="center"><img src="https://www.google.com/s2/favicons?domain=google.com&amp;sz=64" width="20" height="20" alt="" /><br />Google AI Overview</td>
+  </tr>
+</table>
 
 <p align="center">Collection runs against their user-facing web interfaces.</p>
 
