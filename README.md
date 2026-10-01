@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/logo-whitebg.png" alt="OneGlanse logo" width="88" height="88" /></p>
+
 <h1 align="center">OneGlanse</h1>
 
 <p align="center"><strong>Free, open-source AI visibility tracking for marketing teams.</strong></p>
