@@ -1,12 +1,25 @@
-# OneGlanse
+<h1 align="center">OneGlanse</h1>
 
-**Free, open-source AI visibility tracking for marketing teams.**
+<p align="center"><strong>Free, open-source AI visibility tracking for marketing teams.</strong></p>
 
-OneGlanse tracks how your brand appears across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview, including mentions, recommendations, competitors, citations, and the sources these products surface.
+<p align="center">
+  <a href="https://github.com/oneglanse/oneglanse/stargazers">
+    <img src="https://img.shields.io/github/stars/oneglanse/oneglanse?style=flat-square" alt="GitHub stars" />
+  </a>
+  <a href="https://github.com/oneglanse/oneglanse/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/oneglanse/oneglanse?style=flat-square" alt="MIT License" />
+  </a>
+  <a href="https://www.producthunt.com/products/oneglanse">
+    <img src="https://img.shields.io/badge/Product%20Hunt-%2328%20Day%20Rank-DA552F?style=flat-square&amp;logo=producthunt&amp;logoColor=white" alt="Product Hunt #28 Day Rank" />
+  </a>
+  <a href="https://docs.oneglanse.com">
+    <img src="https://img.shields.io/badge/docs-oneglanse.com-blue?style=flat-square" alt="Documentation" />
+  </a>
+</p>
 
-Unlike API-based AI visibility trackers, OneGlanse collects responses from the real product interfaces. It uses Camoufox and Playwright browser automation to run your prompts and extract rendered responses, citations, and source data. Provider collection does not use model APIs.
+<p align="center">Track how your brand appears across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview using real product interfaces, not model APIs.</p>
 
-A separately configured model API analyzes the captured responses after collection and powers the visibility metrics in the dashboard. OneGlanse itself is free and open source to run locally, with no OneGlanse subscription or usage fee. You bring your own provider accounts and analysis model API key; external model, account, hosting, or proxy costs may apply.
+<p align="center">Run locally for free. Bring your own provider accounts and analysis model key.</p>
 
 <p align="center">
   <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
@@ -46,6 +59,8 @@ The web app, agent, job queue, and databases have separate responsibilities. See
 ## Quick start
 
 You need Node.js 20 or newer, pnpm 10 or newer, and Docker. You also need an analysis model API key, such as OpenAI or Anthropic, and accounts for the products you want to track.
+
+OneGlanse has no subscription or usage fee. Model API usage, provider plans, VPS hosting, and proxy service can cost extra.
 
 ```bash
 git clone https://github.com/oneglanse/oneglanse.git
