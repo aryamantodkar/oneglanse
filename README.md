@@ -1,8 +1,10 @@
 # OneGlanse
 
-OneGlanse is an open-source AI visibility tracker. It records how a brand appears in answers from ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview, then shows mentions, recommendations, competitors, and cited sources in one dashboard.
+**Open-source AI visibility tracking from real AI product interfaces, not model API output.**
 
-OneGlanse collects answers from the products' browser interfaces. It uses a separately configured model API to analyze the collected text. You can run the app on your computer or host it on your own server.
+OneGlanse tracks how your brand appears in ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. It runs your prompts through the product interfaces and brings the responses, citations, recommendations, and competing brands into one dashboard.
+
+OneGlanse itself is free and open source to run locally, with no OneGlanse subscription or usage fee. You bring your own provider accounts and analysis model API key. Model API calls analyze responses after collection; they do not collect the provider responses. External model, account, hosting, and proxy costs may apply.
 
 <p align="center">
   <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
@@ -20,7 +22,7 @@ The scores are produced by model-backed analysis of captured answers. They help 
 
 ## Why collect from the browser?
 
-People interact with the finished ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview interfaces. Those interfaces can present citations, source cards, ordering, and formatting that a raw model API response does not show. OneGlanse captures the product response first, so you can inspect the answer that its browser session saw.
+People interact with the finished ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview interfaces. Those interfaces can present citations, source cards, ordering, and formatting that a raw model API response does not show. The agent uses Camoufox and Playwright browser automation to submit prompts and extract the visible response and citations.
 
 Collection uses your own provider accounts and authenticated browser sessions. Results can vary by account, location, prompt, and time. OneGlanse does not claim that a single run represents every user's experience. After collection, analysis sends the response to the model endpoint you configure with your own API key.
 
@@ -47,7 +49,7 @@ The web app, agent, job queue, and databases have separate responsibilities. See
 
 ## Quick start
 
-You need Node.js 20 or newer, pnpm 10 or newer, and Docker. You also need an OpenAI or Anthropic API key for response analysis and accounts for the products you want to track.
+You need Node.js 20 or newer, pnpm 10 or newer, and Docker. You also need an analysis model API key, such as OpenAI or Anthropic, and accounts for the products you want to track.
 
 ```bash
 git clone https://github.com/oneglanse/oneglanse.git
