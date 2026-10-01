@@ -2,7 +2,7 @@ import { BrandLogo } from "@/components/common/brand-logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { DISCOVERY_LINKS, SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
-import { GitFork, Github, Server, Star } from "lucide-react";
+import { BookOpen, GitFork, Github, Star } from "lucide-react";
 
 type GitHubRepositoryStats = {
 	stars: number;
@@ -131,10 +131,19 @@ export async function SiteHeader(): Promise<React.JSX.Element> {
 							)}
 						</a>
 					</Button>
-					<Button asChild variant="outline" className="hidden md:inline-flex">
-						<a href={SITE_URLS.docs} target="_blank" rel="noreferrer noopener">
-							<Server className="h-4 w-4" aria-hidden="true" />
-							Self Host
+					<Button
+						asChild
+						variant="outline"
+						className="w-9 px-0 sm:w-auto sm:px-4"
+					>
+						<a
+							href={SITE_URLS.docs}
+							target="_blank"
+							rel="noreferrer noopener"
+							aria-label="Docs"
+						>
+							<BookOpen className="h-4 w-4" aria-hidden="true" />
+							<span className="hidden sm:inline">Docs</span>
 						</a>
 					</Button>
 					<ThemeToggle />
