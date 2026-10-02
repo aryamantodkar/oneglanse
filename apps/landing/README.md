@@ -4,9 +4,9 @@ Public marketing site for OneGlanse, deployed separately on Vercel.
 
 ## Responsibilities
 
-- Present product narrative, capabilities, and OSS messaging.
-- Showcase static previews powered by shared UI/types utilities.
-- Route users to the application and docs.
+- Explain what the product does and why it is open source.
+- Show static dashboard previews with shared UI components.
+- Link to the app and docs.
 
 ## Structure
 
@@ -45,4 +45,4 @@ If port `3000` is already used by another app, run with a custom `PORT`.
 - `@oneglanse/types`
 - `@oneglanse/utils`
 
-These ensure landing previews stay aligned with product domain and shared components.
+These keep landing previews aligned with the app.

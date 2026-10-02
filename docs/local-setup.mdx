@@ -7,7 +7,7 @@ description: Install OneGlanse on your machine and run prompts on demand.
 
 - Node.js 20 or newer
 - pnpm 10 (the repository pins `pnpm@10.16.0`)
-- Python 3.10+ for the local Camoufox runtime (auto-provisioned where supported)
+- Python 3.10+ for the local Camoufox browser (auto-provisioned where supported)
 - Docker with Compose
 - A desktop session for provider sign-in
 
@@ -44,7 +44,7 @@ See [Environment Variables](/environment-variables) for OpenAI-compatible endpoi
 pnpm local
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The command installs workspace dependencies, prepares the browser runtime, starts Postgres, ClickHouse, and Redis through Docker, runs migrations, and starts Web and Agent from local source. The first run can take several minutes.
+Open [http://localhost:3000](http://localhost:3000). The command installs workspace dependencies, prepares the browser files, starts Postgres, ClickHouse, and Redis through Docker, runs migrations, and starts Web and Agent from local source. The first run can take several minutes.
 
 ## 3. Connect providers and run prompts
 

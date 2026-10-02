@@ -3,22 +3,16 @@ title: Introduction
 description: Free, open-source AI visibility tracking for marketing teams.
 ---
 
-OneGlanse is a free, open-source AI visibility tracker for marketing teams. It
-records sampled responses from ChatGPT, Perplexity, Gemini, Claude, and Google AI
-Overview.
+OneGlanse runs your prompts on ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview and saves the answers and citations it sees.
 
-## How collection works
+It opens the real websites instead of calling their model APIs. That matters because the websites can add search, citations, and other behavior that a raw API call may not reproduce.
 
-1. You configure prompts and select providers.
-2. The Agent opens each provider's user-facing interface and submits the prompt.
-3. It captures the rendered response and available citations.
-4. A separately configured model endpoint analyzes the captured text.
-5. The dashboard shows the resulting visibility metrics.
+The analysis model you connect reads each saved answer and produces the visibility, rank, sentiment, and recommendation scores shown in the dashboard. You need an analysis model API key to run OneGlanse.
 
-Provider collection uses browser automation, not model APIs. Product-level elements such as citations, source cards, and answer formatting can differ from, or be absent in, raw model API output. If the goal is to understand a response users can encounter, the product interface is the relevant collection surface. Results can still vary by account, location, prompt, and time.
+## What happens to your data
 
-For the collection details and a repeatable UI-versus-API comparison protocol, see the [OneGlanse methodology](https://oneglanse.com/methodology).
+Prompts, answers, and scores stay in your local or self-hosted OneGlanse installation. Analysis sends saved answer text to the model endpoint you configure. The Web app also sends limited usage events to PostHog. See the [security policy](https://github.com/oneglanse/oneglanse/blob/main/SECURITY.md) for details about session transfer and data flow.
 
-Prompts, captured responses, and analysis results are stored in your local or self-hosted OneGlanse stack. Response analysis sends captured text to the model endpoint you configure. The Web app also sends limited usage events to PostHog. See the repository [security policy](https://github.com/oneglanse/oneglanse/blob/main/SECURITY.md) for the session-transfer and analysis boundaries.
+One answer does not represent every user. Results can change with the prompt, account, location, and time. Read [how OneGlanse gets its data](https://oneglanse.com/methodology) for the collection method and its limits.
 
-To choose a deployment mode, see [Getting Started](/getting-started).
+To choose how to run it, see [Getting Started](/getting-started).

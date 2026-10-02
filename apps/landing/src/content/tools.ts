@@ -23,14 +23,14 @@ export const tools: Tool[] = [
 		slug: "oneglanse",
 		name: "OneGlanse",
 		url: "https://oneglanse.com",
-		model: "Free software; own accounts and model endpoint",
-		collection: "Product interfaces",
+		model: "Free software; use your own AI accounts and analysis model",
+		collection: "AI websites",
 		targets: "ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview.",
 		collectionKind: "ui",
 		openSource: true,
 		selfHosted: true,
 		summary:
-			"Captures answers and citations from five product interfaces. Model-backed analysis reports visibility, rank, sentiment, and recommendations.",
+			"Saves answers and citations from five AI websites. A model you connect scores visibility, rank, sentiment, and recommendations.",
 		sources: [
 			{
 				label: "OneGlanse README",
@@ -47,7 +47,7 @@ export const tools: Tool[] = [
 		name: "Elmo",
 		url: "https://www.elmohq.com",
 		model: "Open-source software; cloud option",
-		collection: "Product interfaces + APIs",
+		collection: "AI websites + APIs",
 		targets:
 			"UI: ChatGPT, Perplexity, Gemini, Copilot, Google AI Mode, and AI Overviews. Direct APIs also cover Claude and other models.",
 		collectionKind: "mixed",
@@ -71,7 +71,7 @@ export const tools: Tool[] = [
 		name: "Profound",
 		url: "https://www.tryprofound.com",
 		model: "Subscription",
-		collection: "Product interfaces",
+		collection: "AI websites",
 		targets:
 			"Examples in Answer Engine Insights documentation: ChatGPT, Perplexity, and Gemini.",
 		collectionKind: "ui",
@@ -99,7 +99,7 @@ export const tools: Tool[] = [
 		name: "Peec AI",
 		url: "https://peec.ai",
 		model: "Subscription",
-		collection: "Product interfaces + APIs",
+		collection: "AI websites + APIs",
 		targets:
 			"UI targets include ChatGPT, Perplexity, Gemini, Copilot, Google AI Mode, and AI Overviews. Separate API targets are also available.",
 		collectionKind: "mixed",
@@ -146,7 +146,7 @@ export const tools: Tool[] = [
 		name: "Promptwatch",
 		url: "https://promptwatch.com",
 		model: "Subscription",
-		collection: "Product interfaces",
+		collection: "AI websites",
 		targets:
 			"Examples: ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews.",
 		collectionKind: "ui",
@@ -164,7 +164,7 @@ export const tools: Tool[] = [
 		name: "Ahrefs Brand Radar",
 		url: "https://ahrefs.com/brand-radar",
 		model: "Subscription",
-		collection: "Web interfaces; Claude custom prompts use API",
+		collection: "AI websites; Claude custom prompts use API",
 		targets:
 			"Examples: ChatGPT, Perplexity, Gemini, Claude, Google AI Overviews, and AI Mode. Index and custom-prompt coverage differ.",
 		collectionKind: "mixed",
@@ -185,7 +185,7 @@ export const tools: Tool[] = [
 		name: "Semrush AI Visibility Toolkit",
 		url: "https://www.semrush.com/solutions/ai-visibility/",
 		model: "Subscription",
-		collection: "Not disclosed in cited sources",
+		collection: "Not stated in public docs",
 		targets:
 			"Examples: ChatGPT, Gemini, Perplexity, and Google AI. Custom-prompt coverage differs from brand reports.",
 		collectionKind: "undisclosed",
@@ -209,7 +209,7 @@ export const tools: Tool[] = [
 		name: "Rankscale",
 		url: "https://rankscale.ai",
 		model: "Subscription",
-		collection: "Not disclosed in cited sources",
+		collection: "Not stated in public docs",
 		targets:
 			"Examples: ChatGPT, Perplexity, Gemini, Claude, Grok, Copilot, and Google AI Mode.",
 		collectionKind: "undisclosed",
@@ -227,7 +227,7 @@ export const tools: Tool[] = [
 		name: "Scrunch",
 		url: "https://scrunch.com",
 		model: "Subscription",
-		collection: "Not disclosed in cited sources",
+		collection: "Not stated in public docs",
 		targets: "Examples: ChatGPT, Perplexity, Claude, Gemini, and Copilot.",
 		collectionKind: "undisclosed",
 		openSource: false,
@@ -243,10 +243,10 @@ export const categories = {
 		title: "Open-source AI visibility tools",
 		label: "Open source",
 		description:
-			"Tools with a published open-source license. Compare what you can inspect, modify, and run yourself.",
+			"Open-source AI visibility tools whose code you can inspect and run yourself.",
 		criteria: [
-			"Inspect the collection code and the scoring rules separately. Open code lets you audit both; it does not make a captured answer representative of every user.",
-			"Check the license, maintained releases, setup instructions, and costs for provider accounts, hosting, and analysis endpoints.",
+			"Read the code that gets answers and the code that scores them. Open code does not mean one answer represents every user.",
+			"Check the license, recent releases, setup steps, and costs for AI accounts, hosting, and model APIs.",
 		],
 		matches: (tool: Tool) => tool.openSource,
 	},
@@ -254,21 +254,21 @@ export const categories = {
 		title: "Self-hosted AI visibility tools",
 		label: "Self-hosted",
 		description:
-			"Tools documented for deployment on infrastructure you control. Provider accounts and model calls may still use external services.",
+			"AI visibility tools you can run on your own server. They may still call AI services or other APIs.",
 		criteria: [
-			"Trace where browser sessions, captured answers, and analysis requests go. Self-hosting the app does not mean no data reaches a model provider.",
-			"Budget for the server, database, queue, provider plans, and model usage. Confirm backup and upgrade steps before an always-on deployment.",
+			"Check where saved logins, answers, and model requests go. Self-hosting does not mean your data stays offline.",
+			"Budget for the server, database, queue, AI plans, and model usage. Check backup and upgrade steps before running it full time.",
 		],
 		matches: (tool: Tool) => tool.selfHosted,
 	},
 	"browser-based": {
-		title: "AI visibility tools using product interfaces",
-		label: "Product interfaces",
+		title: "AI visibility tools that use the real websites",
+		label: "Real websites",
 		description:
-			"Tools that document browser or product-interface collection for at least some targets. A listed tool can also use APIs for other targets.",
+			"These products say they open AI websites instead of relying only on model APIs. Some use both methods.",
 		criteria: [
-			"Check the method for each engine. Mixed tools document both UI and API targets. Undisclosed methods are omitted; that does not establish API use.",
-			"Record prompt, account state, location, time, rendered answer, and citations. Compare the same surface across runs before drawing a trend.",
+			"Check how each AI product is queried. Some tools use websites for one product and APIs for another. Unknown methods are omitted.",
+			"Record the prompt, account, location, time, answer, and citations. Compare like with like across runs.",
 		],
 		matches: (tool: Tool) =>
 			tool.collectionKind === "ui" || tool.collectionKind === "mixed",

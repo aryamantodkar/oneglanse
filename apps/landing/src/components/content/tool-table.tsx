@@ -17,12 +17,12 @@ export function ToolTable({ items }: { items: Tool[] }): React.JSX.Element {
 							Tool
 						</th>
 						<th scope="col" className="w-[18%]">
-							Access
+							Price / access
 						</th>
 						<th scope="col" className="w-[20%]">
-							Collection
+							How it gets answers
 						</th>
-						<th scope="col">What it covers</th>
+						<th scope="col">What it tracks</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -47,8 +47,8 @@ export function ToolTable({ items }: { items: Tool[] }): React.JSX.Element {
 										</span>
 									)}
 								</th>
-								<td data-label="Access">{tool.model}</td>
-								<td data-label="Collection">{tool.collection}</td>
+								<td data-label="Price / access">{tool.model}</td>
+								<td data-label="How it gets answers">{tool.collection}</td>
 								<td className="tool-details">
 									<p>{tool.summary}</p>
 									{comparison && (
@@ -67,7 +67,7 @@ export function ToolTable({ items }: { items: Tool[] }): React.JSX.Element {
 										<div className="space-y-3 pt-3">
 											<p className="text-xs leading-6">
 												<span className="font-medium text-foreground">
-													Documented targets:{" "}
+													AI products:{" "}
 												</span>
 												{tool.targets}
 											</p>

@@ -13,9 +13,8 @@ export const metadata = contentMetadata(
 export default function ComparePage(): React.JSX.Element {
 	return (
 		<ContentShell
-			eyebrow="Comparisons"
 			title="Compare AI visibility tools"
-			intro="Five comparisons, grounded in vendor documentation. Choose by collection method, deployment, and reporting needs."
+			intro="Side-by-side comparisons of OneGlanse and five other AI visibility products. I use each company’s public documentation and link the sources."
 		>
 			<ul className="grid gap-4 sm:grid-cols-2">
 				{comparisons.map((comparison) => (

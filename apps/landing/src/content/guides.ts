@@ -26,10 +26,10 @@ export const guides: Guide[] = [
 		description:
 			"Measure brand mentions and citations in sampled AI answers. Build a prompt set, report failures, and interpret results.",
 		intro:
-			"AI visibility describes whether a brand, product, or source appears in sampled AI-generated answers. It is a measurement of observed responses, not a count of every user conversation.",
+			"AI visibility is how often your brand shows up in a set of AI answers you chose to track. It does not tell you what every ChatGPT or Gemini user sees.",
 		example: {
 			heading: "Example metric",
-			text: "Attempt 20 prompts in one product. Capture 18 complete answers; 2 runs fail. If 7 complete answers mention the brand, report 7/18 (38.9%) and 2 failed runs. A failed capture is missing data, not a confirmed absence. Mention rate and OneGlanse’s model-backed visibility score are different metrics.",
+			text: "Run 20 prompts in one product. If 18 return answers and 7 of those mention your brand, report 7/18 (38.9%) and 2 failed runs. A failed run is missing data, not proof that the brand was absent. Mention rate and the visibility score from your analysis model are different measures.",
 		},
 		sections: [
 			{
@@ -47,9 +47,9 @@ export const guides: Guide[] = [
 				],
 			},
 			{
-				heading: "Interpret the sample",
+				heading: "Don’t overread small changes",
 				paragraphs: [
-					"Generated answers vary with wording, account state, location, retrieval, and time. Show the sample size and collection method. Repeat the same prompts and inspect the variation before treating a small change as a trend. These samples do not measure every private user conversation.",
+					"Change the wording, account, location, or date and you may get a different answer. Show how many runs you made and how you got the answers. Repeat prompts before calling a small change a trend.",
 				],
 			},
 		],
@@ -67,7 +67,7 @@ export const guides: Guide[] = [
 		description:
 			"Publish clear, verifiable answers. Learn what to improve, how to keep pages crawlable, and which outcomes to measure.",
 		intro:
-			"AEO is work that helps answer systems find, understand, and cite accurate information about a subject. The term has no single technical standard or guaranteed ranking formula.",
+			"AEO is a loose name for making your site easier for answer engines to understand and cite. There is no official AEO standard or guaranteed ranking formula.",
 		example: {
 			heading: "Example improvement",
 			text: "A pricing page says only “contact sales.” If buyers ask whether a free plan exists, publish a direct answer with the actual plan terms and update date. Then check whether sampled answers describe the plan correctly. Publishing an answer does not guarantee retrieval or a citation.",
@@ -87,7 +87,7 @@ export const guides: Guide[] = [
 				],
 			},
 			{
-				heading: "Measure outcomes",
+				heading: "Check whether anything changed",
 				paragraphs: [
 					"Track cited URLs and brand mentions separately across a fixed prompt set. Inspect the exact response before calling a change an improvement. Referral traffic and conversions are separate outcomes from appearing in an answer.",
 				],
@@ -107,7 +107,7 @@ export const guides: Guide[] = [
 		description:
 			"Plan a GEO study with stable prompts, saved responses, and repeat runs. Separate observed changes from causal claims.",
 		intro:
-			"GEO studies and improves how content appears in answers produced by generative search systems. The term describes a goal; results depend on the system, prompt set, and measurement method.",
+			"GEO is the name people use for improving how a brand or website appears in AI-generated answers. There is no universal GEO score or recipe.",
 		example: {
 			heading: "Example study",
 			text: "Freeze 30 category prompts, a location, and the products to test. Save baseline responses and citations. Correct one outdated product fact on the canonical page. Run the same prompts again across several dates, keeping an unchanged topic as a comparison. Report the samples and failures. A before-and-after difference alone does not prove that the page edit caused it.",
@@ -120,7 +120,7 @@ export const guides: Guide[] = [
 				],
 			},
 			{
-				heading: "A practical workflow",
+				heading: "What to measure",
 				paragraphs: [
 					"Choose a stable set of relevant prompts. Capture answers and cited sources on a schedule. Identify missing or inaccurate facts about your product, then improve the original pages that should answer those questions.",
 					"Publish evidence that others can verify: product documentation, methods, definitions, comparisons, and original measurements. Repeat the same prompt set after a change and keep the raw responses. Log provider updates, account changes, and other page edits that could affect the result.",
@@ -129,7 +129,7 @@ export const guides: Guide[] = [
 			{
 				heading: "Limits",
 				paragraphs: [
-					"A mention is not a conversion. A citation is not proof that the answer is correct. One product interface and its model API may return different answers, so do not combine them without recording the collection surface.",
+					"A mention is not a conversion. A citation does not prove that the answer is correct. An AI website and its model API may return different answers, so record which one you used.",
 				],
 			},
 		],
@@ -148,7 +148,7 @@ export const guides: Guide[] = [
 		description:
 			"Compare the goals and measurements behind SEO, AEO, and GEO. Understand where the terms overlap.",
 		intro:
-			"SEO focuses on search discoverability. AEO focuses on useful, accurate answers. GEO focuses on visibility in generated responses. The terms overlap; they are working labels, not three separate technical standards.",
+			"SEO, AEO, and GEO overlap more than the names suggest. SEO asks whether people find you in search. AEO asks whether an answer engine can use your information. GEO asks how you show up in generated answers.",
 		example: {
 			heading: "Use the right measure",
 			text: "For “best CRM for a small agency,” SEO asks whether your page appears and earns clicks in search. AEO asks whether an answer cites the page and states its facts correctly. GEO asks how your brand appears in sampled generated responses. These can move in different directions.",
@@ -169,7 +169,7 @@ export const guides: Guide[] = [
 			{
 				heading: "GEO: generated responses",
 				paragraphs: [
-					"The question is how a brand or source appears in a generated response for a defined prompt set. Track mentions, descriptions, recommendations, citations, and changes over time. State the engine and collection surface.",
+					"Look at how your brand or site appears for a fixed set of prompts. Track mentions, descriptions, recommendations, citations, and changes over time. Name the AI product and say whether you used its website or API.",
 				],
 			},
 			{

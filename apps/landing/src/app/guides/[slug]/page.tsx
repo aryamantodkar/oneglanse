@@ -28,10 +28,9 @@ export default async function GuidePage({
 	if (!guide) notFound();
 	return (
 		<ContentShell
-			eyebrow="Guide"
 			title={guide.title}
 			intro={guide.intro}
-			backLink={{ label: "All guides", href: "/guides" }}
+			backLink={{ label: "All articles", href: "/guides" }}
 		>
 			<div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-16">
 				<aside className="rounded-xl border border-border p-5 lg:sticky lg:top-28 lg:order-last">

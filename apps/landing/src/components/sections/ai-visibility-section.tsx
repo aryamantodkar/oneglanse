@@ -9,9 +9,9 @@ export function AiVisibilitySection(): React.JSX.Element {
 			aria-labelledby="competitor-comparison-title"
 		>
 			<SectionHeading
-				eyebrow="Competitor Comparison"
-				title="Compare brand visibility in AI answers"
-				description="Review mentions, recommendations, and sentiment in captured responses from supported AI products."
+				eyebrow="Competitor comparison"
+				title="See who shows up with you"
+				description="Compare mentions, recommendations, and sentiment across the AI products you track."
 			/>
 			<AiVisibilityPreview />
 		</section>

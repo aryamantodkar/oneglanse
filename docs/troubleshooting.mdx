@@ -3,14 +3,14 @@ title: Troubleshooting
 description: Diagnose known setup, provider, and scheduling failures.
 ---
 
-## Browser runtime fails to start
+## Browser fails to start
 
 If local Agent logs show a Python or Camoufox installation error, check the installed Python version:
 
 - macOS/Linux: `python3 --version`
 - Windows: `python --version`
 
-OneGlanse needs Python 3.10+ for the local Camoufox runtime. The setup script can provision it automatically on supported environments.
+OneGlanse needs Python 3.10+ for the local Camoufox browser. The setup script can provision it automatically on supported environments.
 
 If auto-detection selects the wrong binary, set `CAMOUFOX_PYTHON_BIN` to the path of a compatible interpreter in `.env`, then restart `pnpm local`.
 

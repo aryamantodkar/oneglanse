@@ -3,7 +3,7 @@ import { contentMetadata } from "@/lib/content-metadata";
 import Link from "next/link";
 
 export const metadata = contentMetadata(
-	"Why OneGlanse Is Self-Hosted",
+	"Why there isn’t a hosted OneGlanse",
 	"Why OneGlanse runs locally or on your infrastructure: collecting AI product responses through authenticated browsers is costly to operate at scale.",
 	"/why-self-hosted",
 );
@@ -22,32 +22,30 @@ const hostedRequirements = [
 export default function WhySelfHostedPage(): React.JSX.Element {
 	return (
 		<ContentShell
-			eyebrow="Deployment model"
-			title="Why OneGlanse Is Self-Hosted"
-			intro="OneGlanse does not currently offer a hosted version of the tracking application. It collects responses from real AI product interfaces rather than model APIs, and doing that reliably at scale requires expensive browser infrastructure."
+			title="Why there isn’t a hosted OneGlanse"
+			intro="I don’t run a hosted version of OneGlanse today because the expensive part isn’t the dashboard. It’s the browsers."
 		>
 			<article className="max-w-3xl space-y-10 text-base leading-7 text-muted-foreground">
 				<p>
-					OneGlanse is currently built and maintained by a solo developer. The
-					project&apos;s time and resources go toward making the open-source
-					product reliable and useful, rather than operating proxy fleets,
-					browser infrastructure, and anti-bot systems for a hosted service.
+					I build and maintain OneGlanse on my own. I would rather spend that
+					time improving the open-source app than running proxies and browsers
+					for everyone.
 				</p>
 
 				<section className="space-y-4" aria-labelledby="ui-scale">
 					<h2 id="ui-scale" className="text-2xl font-semibold text-foreground">
-						UI collection is harder to scale than API collection
+						Browsers are harder to run than API calls
 					</h2>
 					<p>
-						A typical AI monitoring service can send requests to a model API
-						from a server. OneGlanse takes a different path: its Agent opens
-						ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview in a
-						browser, submits prompts through each product interface, and
+						A service can call a model API from one server. OneGlanse instead
+						opens ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview in
+						a browser, submits prompts through each product interface, and
 						captures the rendered response and available citations.
 					</p>
 					<p>
-						That measures the product surface people use, but a hosted service
-						would have to operate many authenticated browsers while managing:
+						That lets OneGlanse see what people get on the actual websites. A
+						hosted service would have to operate many authenticated browsers
+						while managing:
 					</p>
 					<ul className="grid list-disc gap-x-8 gap-y-2 pl-6 sm:grid-cols-2">
 						{hostedRequirements.map((requirement) => (
@@ -83,7 +81,7 @@ export default function WhySelfHostedPage(): React.JSX.Element {
 
 				<section className="space-y-4" aria-labelledby="sessions">
 					<h2 id="sessions" className="text-2xl font-semibold text-foreground">
-						Authenticated sessions add another constraint
+						I would also have to manage everyone’s logins
 					</h2>
 					<p>
 						The supported AI products use authenticated user sessions. In local
@@ -92,9 +90,9 @@ export default function WhySelfHostedPage(): React.JSX.Element {
 					</p>
 					<p>
 						A hosted OneGlanse service would also need to securely operate
-						third-party account sessions for many users. Keeping the runtime
-						under your control avoids making OneGlanse a centralized custodian
-						of those sessions.
+						third-party account sessions for many users. Running OneGlanse
+						yourself keeps those sessions on your own machine or server, instead
+						of putting them in a service I operate.
 					</p>
 				</section>
 
@@ -103,7 +101,7 @@ export default function WhySelfHostedPage(): React.JSX.Element {
 						id="model-apis"
 						className="text-2xl font-semibold text-foreground"
 					>
-						Why not just use model APIs?
+						Why not just use the APIs?
 					</h2>
 					<p>
 						Model APIs would simplify collection infrastructure, but they would
@@ -131,7 +129,7 @@ export default function WhySelfHostedPage(): React.JSX.Element {
 						id="hosted-later"
 						className="text-2xl font-semibold text-foreground"
 					>
-						Could OneGlanse offer a hosted version later?
+						Could I host it later?
 					</h2>
 					<p>
 						Yes. Operating this infrastructure centrally is possible. It would
@@ -140,12 +138,10 @@ export default function WhySelfHostedPage(): React.JSX.Element {
 						provider-specific failures at scale.
 					</p>
 					<p>
-						As a solo developer, that is not where I want to spend the
-						project&apos;s resources today. The priority is keeping OneGlanse
-						free, open source, and focused on collection and analysis. For now,
-						the application runs locally or on infrastructure you control. A
-						hosted version can make sense if the project grows enough to justify
-						operating collection centrally.
+						Right now I would rather spend that time making the free,
+						open-source version better. You can run it locally or on your own
+						server. If the project grows enough to support the browser
+						infrastructure, a hosted version could make sense.
 					</p>
 				</section>
 			</article>

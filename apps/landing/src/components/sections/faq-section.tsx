@@ -1,4 +1,3 @@
-import { PRODUCT_POSITIONING } from "@/lib/landing-content";
 import { Card } from "@oneglanse/ui";
 
 type FaqItem = {
@@ -8,48 +7,29 @@ type FaqItem = {
 
 const FAQ_ITEMS: FaqItem[] = [
 	{
-		question: "What is OneGlanse?",
-		answer: `${PRODUCT_POSITIONING} It runs prompts through the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview interfaces, extracts rendered responses and citations, then analyzes the captured text with a model endpoint you configure.`,
-	},
-	{
-		question: "What is GEO (Generative Engine Optimization)?",
-		answer:
-			"GEO stands for Generative Engine Optimization. It is the practice of understanding and improving how a brand appears in AI-generated responses. OneGlanse records sampled responses from AI product interfaces so teams can inspect mentions, rank, sentiment, citations, and recommendations.",
-	},
-	{
-		question: "How is OneGlanse different from API-based AI trackers?",
-		answer:
-			"OneGlanse uses browser automation to submit prompts to the AI product interfaces and extract their rendered responses and citations. Provider collection does not use model APIs. Product interfaces and their provider APIs can return different wording, ordering, and citations. Analysis happens afterward through the model endpoint you configure.",
-	},
-	{
-		question: "Which AI providers does OneGlanse support?",
-		answer:
-			"OneGlanse supports ChatGPT (OpenAI), Google Gemini, Perplexity, Claude (Anthropic), and Google AI Overview. Collection uses browser automation on their user-facing interfaces.",
-	},
-	{
 		question: "Is OneGlanse free?",
 		answer:
-			"Yes. OneGlanse is MIT licensed and has no subscription or usage fee. Provider plans, model API usage, hosting, and proxy service can cost extra. You use your own AI product accounts for collection and configure the endpoint and key for response analysis.",
+			"Yes. The code is MIT licensed, and OneGlanse has no subscription fee. AI product plans, model API calls, hosting, and proxies may still cost money.",
 	},
 	{
-		question: "Where does OneGlanse store prompts and responses?",
+		question: "Why use the websites instead of model APIs?",
 		answer:
-			"In local mode, app data is stored in the stack running on your machine. In self-host mode, it is stored in the services you deploy. Prompts are submitted to the selected AI product interfaces, and captured response text is sent to the analysis model endpoint you configure. In self-host mode, you transfer provider sessions to your own Agent server.",
+			"The websites can search the web, choose sources, add citations, and present answers differently from their model APIs. OneGlanse saves what the website actually shows, then uses a separate model you connect for analysis.",
 	},
 	{
-		question: "What analytics does OneGlanse use?",
+		question: "Where does my data go?",
 		answer:
-			"The landing site uses Vercel Analytics. The app sends user_signed_up and user_active events to PostHog. Each app event includes a SHA-256 hash of the internal user ID, not prompts, captured responses, scores, names, or email addresses.",
+			"The app stores prompts, answers, and scores on your computer or your self-hosted server. It sends prompts to the AI websites you choose and answer text to the analysis model you connect. The app also sends limited, hashed usage events to PostHog.",
 	},
 	{
-		question: "What is a GEO score?",
+		question: "Can I run it on my own server?",
 		answer:
-			"OneGlanse asks the configured analysis model to estimate visibility, rank, sentiment, and recommendation strength from each captured response. The overall score combines those components. These are model-backed interpretations of sampled text, not official measurements from the AI products.",
+			"Yes. Run it locally on your computer or use Docker Compose on your own server. For a VPS, you will also need suitable proxy access and your own AI product accounts.",
 	},
 	{
-		question: "How do I get started with OneGlanse?",
+		question: "Which AI products work?",
 		answer:
-			"Follow the local setup guide to start the app, connect supported AI product accounts, configure a model endpoint for analysis, and run your first prompts. The guide is at docs.oneglanse.com/local-setup.",
+			"OneGlanse works with ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. It uses your own accounts to run prompts on their websites.",
 	},
 ];
 
@@ -83,11 +63,8 @@ export function FaqSection(): React.JSX.Element {
 					id="faq-title"
 					className="text-2xl font-semibold tracking-tight sm:text-3xl"
 				>
-					Frequently asked questions
+					Questions people ask
 				</h2>
-				<p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-					Common questions about OneGlanse, GEO, and AI visibility tracking.
-				</p>
 				<dl className="mt-8 grid gap-6 sm:grid-cols-2">
 					{FAQ_ITEMS.map(({ question, answer }) => (
 						<div key={question} className="landing-muted-card px-4 py-4">

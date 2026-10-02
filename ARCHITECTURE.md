@@ -1,6 +1,6 @@
 # OneGlanse architecture
 
-This document describes intended ownership boundaries. Code and tests define current implemented behavior. Use CodeGraph to follow a specific call path; use [AGENTS.md](AGENTS.md) for change rules and [CONTRIBUTING.md](CONTRIBUTING.md) for setup.
+This file explains where things live and how a prompt moves through OneGlanse. For exact behavior, trust the code and tests. Use CodeGraph to follow a specific call path; use [AGENTS.md](AGENTS.md) for change rules and [CONTRIBUTING.md](CONTRIBUTING.md) for setup.
 
 OneGlanse is an open-source AI visibility tracker that collects responses from ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview through their product interfaces. Agent drives those interfaces with browser automation; captured responses are analyzed separately using the configured analysis model.
 
@@ -19,7 +19,7 @@ flowchart TD
     Services --> Model[Configured analysis model]
 ```
 
-## Repository ownership
+## Where the code lives
 
 | Area | Responsibility |
 | --- | --- |
@@ -50,7 +50,7 @@ Provider differences are expected. Provider configuration, session handling, sel
 
 Scheduling is available in the self-host UI. Web saves the schedule on the PostgreSQL workspace record. Services then configures a `pg_cron` job that calls the authenticated internal `runPrompts` tRPC procedure, which submits the same provider jobs as a manual run. Cron setup is best effort after the workspace update, so a saved schedule alone does not prove that the cron job was installed; check scheduler logs when diagnosing missed runs.
 
-## Runtime modes and authentication
+## Local vs self-hosted
 
 `pnpm local` starts PostgreSQL, ClickHouse, and Redis with Docker, then runs Web and Agent on the development machine. Local mode permits interactive provider sign-in and does not select the self-host proxy path. Its UI does not expose people management or recurring schedules.
 
@@ -62,4 +62,4 @@ Provider collection uses Camoufox with Playwright to observe product interfaces.
 
 Every PR runs lint, typecheck, tests, dead-code analysis, and the repository build. Relevant Web and Agent source changes also build native AMD64 and ARM64 images and run tests against the finished images. PostgreSQL image changes use a separate build. PR Gate checks the required job results.
 
-For eligible pushes to `main`, CI builds architecture-specific Web and Agent image digests, tests those images, then publishes multiarchitecture manifests with `latest` and commit-based tags. Landing and documentation deployments are separate from the self-host application images. Live provider compatibility remains an external boundary and is not a dependency of deterministic CI.
+For eligible pushes to `main`, CI builds architecture-specific Web and Agent image digests, tests those images, then publishes multiarchitecture manifests with `latest` and commit-based tags. Landing and documentation deployments are separate from the self-host application images. CI cannot tell us whether ChatGPT, Gemini, or another site changed its HTML. We still need live checks for that.

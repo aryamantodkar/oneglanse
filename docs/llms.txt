@@ -2,7 +2,7 @@
 
 > Free, open-source AI visibility tracking for marketing teams.
 
-OneGlanse collects responses from the user-facing interfaces of ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview through browser automation. Provider collection does not use model APIs. A separately configured model endpoint analyzes captured responses afterward.
+OneGlanse opens the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview websites in a browser and saves the answers and citations it sees. It does not use their model APIs to fetch those answers. A separate model the user configures analyzes the saved text.
 
 ## Documentation
 
@@ -13,7 +13,7 @@ OneGlanse collects responses from the user-facing interfaces of ChatGPT, Perplex
 - Self-hosted setup: https://docs.oneglanse.com/self-hosted-setup
 - Environment variables: https://docs.oneglanse.com/environment-variables
 - Troubleshooting: https://docs.oneglanse.com/troubleshooting
-- Runtime reference: https://docs.oneglanse.com/api-reference
+- Commands and routes: https://docs.oneglanse.com/api-reference
 
 ## Source
 

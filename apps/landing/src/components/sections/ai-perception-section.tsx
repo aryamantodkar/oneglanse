@@ -16,39 +16,35 @@ export function AiPerceptionSection(): React.JSX.Element {
 							id="ai-perception-title"
 							className="text-2xl font-semibold tracking-tight sm:text-3xl"
 						>
-							AI Perception
+							How AI describes your brand
 						</h2>
 						<p className="mt-2 max-w-xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
-							Review themes and claims that the configured analysis model finds
-							in captured answers.
+							See which claims, strengths, weaknesses, and pricing language the
+							analysis model finds in your saved answers.
 						</p>
 					</div>
 
 					<ul className="mt-6 space-y-3">
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Themes are derived from captured provider responses by the
-							configured analysis model
+							See the themes the analysis model finds across answers
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Pricing and positioning observations are model-backed
-							interpretations
+							Review how answers describe your pricing and position
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Compare extracted claims across captured responses to review
-							consistency and change
+							Compare claims across runs to see what changes
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Inspect how captured answers describe a brand and its
-							differentiators
+							Read how each answer describes your brand and its strengths
 						</li>
 						<li className="flex items-start gap-2.5 text-sm text-gray-800 dark:text-gray-200">
 							<CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-							Review differences between runs without treating them as
-							predictions
+							Check differences between runs without assuming they predict
+							future answers
 						</li>
 					</ul>
 				</div>

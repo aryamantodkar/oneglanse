@@ -12,9 +12,8 @@ export const metadata = contentMetadata(
 export default function GuidesPage(): React.JSX.Element {
 	return (
 		<ContentShell
-			eyebrow="Guides"
-			title="Understand AI visibility"
-			intro="Definitions, measurement steps, and limits. Start with the question you need to answer."
+			title="AI visibility, without the jargon"
+			intro="Short explanations of AI visibility, AEO, GEO, and SEO: where the terms overlap and what you can actually measure."
 		>
 			<ul className="grid gap-4 sm:grid-cols-2">
 				{guides.map((guide) => (

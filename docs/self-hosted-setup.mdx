@@ -11,7 +11,7 @@ Self-host mode runs Web, Agent, Postgres, ClickHouse, and Redis through Docker. 
 - A non-root user with `sudo` access
 - An OpenAI or Anthropic API key, or an OpenAI-compatible endpoint and its API key
 - Provider accounts and a desktop machine for browser sign-in
-- A ThorData residential proxy API endpoint for provider browser traffic in self-host mode
+- A ThorData residential proxy API endpoint for browser traffic from the VPS
 
 Datacenter IPs are often challenged by provider interfaces. The current self-host browser path uses ThorData proxy discovery and requires `THORDATA_PROXY_API_URL`. See [Environment Variables](/environment-variables) for that setting.
 
@@ -61,7 +61,7 @@ cd "$HOME/oneglanse"
 cp .env.example .env
 ```
 
-Edit `.env`. Set your public URL, one analysis provider, the ThorData API endpoint, and an upload token:
+Edit `.env`. Set your public URL, one analysis model, the ThorData API endpoint, and an upload token:
 
 ```dotenv
 APP_URL=https://app.example.com
@@ -129,7 +129,7 @@ ONEGLANSE_VPS_IP=YOUR_VPS_IP
 AGENT_AUTH_UPLOAD_TOKEN=your-long-random-secret
 ```
 
-Run `pnpm auth` to prepare the Camoufox browser runtime, build the required workspace packages, and open the local provider sign-in UI on port 3100. The full local app stack and its database services are not required.
+Run `pnpm auth` to prepare the Camoufox browser, build the required workspace packages, and open the local provider sign-in UI on port 3100. The full local app stack and its database services are not required.
 
 ```bash
 pnpm auth

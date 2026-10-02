@@ -4,6 +4,14 @@ OneGlanse is an open-source AI visibility tracker. Provider collection uses brow
 
 Code and tests define implemented behavior.
 
+## Public writing
+
+- Explain OneGlanse with concrete nouns and verbs. Use "answer," "website," "browser," "server," and "model you connect" when those name the thing more clearly than an abstract term.
+- Keep technical names when they matter. Setup and reference docs must stay precise and instructional.
+- Narrative pages may use first person because one developer maintains OneGlanse.
+- Put detailed limits on `/methodology`. Link to that page instead of repeating the same caveat across the site.
+- Read new public copy aloud. Rewrite sentences that sound unnatural in conversation.
+
 ## Navigate and change code
 
 - Use CodeGraph first for current structure, ownership, callers, and call paths. Use `rg` for exact text and references. If `.codegraph/` is absent, run `pnpm codegraph:init`.

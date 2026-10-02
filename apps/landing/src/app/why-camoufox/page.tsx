@@ -69,16 +69,13 @@ const fingerprintSurfaces = [
 export default function WhyCamoufoxPage(): React.JSX.Element {
 	return (
 		<ContentShell
-			eyebrow="Engineering case study"
 			title="Why OneGlanse Uses Camoufox Instead of Chromium"
-			intro="OneGlanse collects answers from the browser interfaces of ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. The browser is part of the collection infrastructure, not just a way to render a page."
+			intro="I started OneGlanse with Chromium. As I added more AI websites and moved runs to a VPS, keeping the browser working became a project of its own."
 		>
 			<article className="max-w-3xl space-y-10 text-base leading-7 text-muted-foreground">
 				<p>
-					OneGlanse originally used Chromium. Keeping it reliable on VPS
-					infrastructure gradually turned browser fingerprinting into its own
-					project. In March 2026, OneGlanse moved to Camoufox, a modified
-					Firefox browser built for automated browsing.
+					In March 2026, I moved to Camoufox, a modified Firefox browser built
+					for automated browsing. The commit history below shows why.
 				</p>
 
 				<section className="space-y-4" aria-labelledby="chromium-approach">
@@ -89,11 +86,11 @@ export default function WhyCamoufoxPage(): React.JSX.Element {
 						The original Chromium approach
 					</h2>
 					<p>
-						The project tried direct Chrome DevTools Protocol (CDP) control,
-						Playwright Chromium, a short Selenium experiment, Rebrowser
-						Playwright, real Google Chrome in the VPS image, and a Chrome
-						extension with native messaging. Its custom fingerprint code
-						modified or generated many browser properties:
+						I tried direct Chrome DevTools Protocol (CDP) control, Playwright
+						Chromium, a short Selenium experiment, Rebrowser Playwright, real
+						Google Chrome in the VPS image, and a Chrome extension with native
+						messaging. My custom fingerprint code modified many browser
+						properties:
 					</p>
 					<ul className="list-disc space-y-1 pl-6">
 						{fingerprintSurfaces.map((surface) => (
@@ -118,10 +115,7 @@ export default function WhyCamoufoxPage(): React.JSX.Element {
 					>
 						The browser was becoming its own project
 					</h2>
-					<p>
-						The repository records the progression. Each item below links to the
-						commit that introduced or expanded the work.
-					</p>
+					<p>Each step links to the commit that changed the browser setup.</p>
 					<ol className="space-y-3 border-l border-border pl-5">
 						{history.map((step) => (
 							<li key={step.commit}>
@@ -140,10 +134,9 @@ export default function WhyCamoufoxPage(): React.JSX.Element {
 						))}
 					</ol>
 					<p>
-						The problem was not that Chromium cannot be automated. OneGlanse was
-						taking responsibility for an increasingly large browser identity
-						layer while its main job was collecting and analyzing AI product
-						responses.
+						Chromium can be automated. But I was maintaining more and more
+						browser fingerprint code instead of working on prompts, answers, and
+						citations.
 					</p>
 				</section>
 
@@ -152,7 +145,7 @@ export default function WhyCamoufoxPage(): React.JSX.Element {
 						id="why-camoufox"
 						className="text-2xl font-semibold text-foreground"
 					>
-						Why Camoufox changed the boundary
+						Why I chose Camoufox
 					</h2>
 					<p>
 						<a
@@ -171,11 +164,9 @@ export default function WhyCamoufoxPage(): React.JSX.Element {
 						path rather than Chromium&apos;s CDP path.
 					</p>
 					<p>
-						That let OneGlanse focus on the parts specific to AI visibility
-						collection: authenticated sessions, proxy management, provider
-						navigation, prompt submission, response stabilization, citations,
-						and retries. The March 29 refactor removed several hardcoded
-						fingerprint overrides and delegated more of that work to Camoufox.
+						That let me remove several hardcoded fingerprint overrides and get
+						back to OneGlanse: keeping logins working, running prompts, saving
+						answers and citations, and retrying failed runs.
 					</p>
 				</section>
 
@@ -195,9 +186,8 @@ export default function WhyCamoufoxPage(): React.JSX.Element {
 						browser sessions will never be detected.
 					</p>
 					<p>
-						Moving to Camoufox reduced the custom fingerprint code OneGlanse
-						needed to maintain. That is an engineering observation from this
-						project, not a controlled benchmark of detection rates.
+						Camoufox reduced the fingerprint code I maintain. I have not run a
+						controlled benchmark of detection rates.
 					</p>
 				</section>
 

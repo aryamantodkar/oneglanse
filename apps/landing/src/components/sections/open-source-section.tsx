@@ -16,10 +16,10 @@ export function OpenSourceSection(): React.JSX.Element {
 							id="open-source-title"
 							className="text-2xl font-semibold tracking-tight sm:text-3xl"
 						>
-							Open by design. Deploy on your terms.
+							Free, open source, and yours to run
 						</h2>
 						<p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-							Self-host the application stack in infrastructure you control.
+							Run OneGlanse on your laptop or host it on your own server.
 						</p>
 						<div className="mt-auto flex flex-wrap gap-3 pt-6">
 							<Button asChild variant="outline">
