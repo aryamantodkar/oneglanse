@@ -10,8 +10,8 @@ export function SourceIntelligenceSection(): React.JSX.Element {
 		>
 			<SectionHeading
 				eyebrow="Sources & Citations"
-				title="Inspect sources cited in captured answers."
-				description="Review cited pages and domains returned by the supported AI product interfaces."
+				title="See which sources AI cites"
+				description="Find the pages and domains that keep appearing in your answers."
 			/>
 			<SourceIntelligencePreview />
 		</section>

@@ -4,13 +4,11 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export function ContentShell({
-	eyebrow,
 	title,
 	intro,
 	backLink,
 	children,
 }: {
-	eyebrow: string;
 	title: string;
 	intro: string;
 	backLink?: { label: string; href: string };
@@ -31,10 +29,7 @@ export function ContentShell({
 								{backLink.label}
 							</Link>
 						) : null}
-						<p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-							{eyebrow}
-						</p>
-						<h1 className="mt-4 text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
+						<h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
 							{title}
 						</h1>
 						<p className="mt-5 text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">

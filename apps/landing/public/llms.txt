@@ -2,19 +2,19 @@
 
 > Free, open-source AI visibility tracking for marketing teams.
 
-OneGlanse collects rendered answers and available citations from the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview interfaces with browser automation. Provider collection does not use model APIs. A separately configured model endpoint analyzes captured responses afterward.
+OneGlanse opens the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview websites in a browser and saves the answers and citations it sees. It does not use their model APIs to fetch those answers. A separate model the user configures analyzes the saved text.
 
-Analysis fields such as visibility, rank, sentiment, and recommendation are model-backed interpretations of captured samples. Results can vary by prompt, account, location, and time.
+The model produces visibility, rank, sentiment, and recommendation scores from saved answers. Results can vary by prompt, account, location, and time.
 
 ## Links
 
 - [Homepage](https://oneglanse.com): Product overview and supported AI products.
-- [Collection methodology](https://oneglanse.com/methodology): How OneGlanse collects and interprets sampled responses.
-- [AI visibility tools](https://oneglanse.com/ai-visibility-tools): Sourced directory and collection-method categories.
-- [Product comparisons](https://oneglanse.com/compare): Five sourced comparisons with other AI visibility products.
-- [Guides](https://oneglanse.com/guides): AI visibility, AEO, GEO, and SEO definitions and measurement.
+- [Collection methodology](https://oneglanse.com/methodology): How OneGlanse gets answers and scores them.
+- [AI visibility tools](https://oneglanse.com/ai-visibility-tools): Product list with sources for each claim.
+- [Product comparisons](https://oneglanse.com/compare): Five comparisons with other AI visibility products.
+- [Guides](https://oneglanse.com/guides): Plain explanations of AI visibility, AEO, GEO, and SEO.
 - [Documentation](https://docs.oneglanse.com/introduction): Product and setup documentation.
 - [Local setup](https://docs.oneglanse.com/local-setup): Run OneGlanse locally.
-- [Self-hosted setup](https://docs.oneglanse.com/self-hosted-setup): Deploy OneGlanse on your own infrastructure.
+- [Self-hosted setup](https://docs.oneglanse.com/self-hosted-setup): Run OneGlanse on your own server.
 - [Repository](https://github.com/oneglanse/oneglanse): Source code and contribution history.
 - [License](https://github.com/oneglanse/oneglanse/blob/main/LICENSE): MIT License.

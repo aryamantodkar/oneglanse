@@ -25,11 +25,11 @@ export function VisibilityScoreboardSection(): React.JSX.Element {
 					id="visibility-scoreboard-title"
 					className="text-2xl font-semibold tracking-tight sm:text-3xl"
 				>
-					Visibility Scoreboard
+					Compare your brand
 				</h2>
 				<p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
-					Compare model-backed visibility, mention, rank, and sentiment analysis
-					for captured responses.
+					See which brands appear in the answers, how often they appear, and
+					what the analysis model says about them.
 				</p>
 			</div>
 			<div className="landing-surface overflow-x-auto">

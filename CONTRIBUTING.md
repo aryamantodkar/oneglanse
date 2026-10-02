@@ -44,9 +44,9 @@ CI runs the same repository checks. It also builds and tests finished Docker ima
 
 Create a descriptive branch from `main`, using a prefix such as `feat/`, `fix/`, `docs/`, `refactor/`, or `ci/`.
 
-Keep each pull request focused on one coherent responsibility. A feature or fix may span several files when those files are required to complete the same behavior.
+Keep each PR about one thing. A feature or fix may span several files when they all serve that change.
 
-For larger changes, split the work when it crosses a separate responsibility, system boundary, or independently reviewable behavior. If one stage depends on another, use stacked pull requests and target the dependent pull request at its parent branch.
+Split a large change when part of it can be reviewed or merged on its own. If one stage depends on another, use stacked PRs and target the later PR at its parent branch.
 
 Do not split work only because the diff is large, and do not combine unrelated cleanup with the change.
 

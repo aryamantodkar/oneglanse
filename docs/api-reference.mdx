@@ -1,5 +1,5 @@
 ---
-title: Runtime Reference
+title: Commands and routes
 description: Commands, app modes, routes, provider auth groups, and session storage.
 ---
 
@@ -7,7 +7,7 @@ description: Commands, app modes, routes, provider auth groups, and session stor
 
 | Command | Behavior |
 |---|---|
-| `pnpm local` | Prepare dependencies and browser runtime, start local data services, run migrations, then start Web and Agent from source. |
+| `pnpm local` | Prepare dependencies and browser files, start local data services, run migrations, then start Web and Agent from source. |
 | `pnpm auth` | Open the local provider sign-in UI. If sessions changed and an upload target is configured, prompt to upload them. |
 | `pnpm upload:vps` | Upload existing local sessions without reopening sign-in. Requires an upload target and token. |
 | `pnpm self-host` | Pull and start configured Docker images. Build locally only when Docker reports no compatible image manifest. |
@@ -26,7 +26,7 @@ description: Commands, app modes, routes, provider auth groups, and session stor
 
 ## Provider auth groups
 
-The browser runtime tracks five providers. The auth groups below share one saved sign-in session where shown.
+The Agent supports five AI products. The auth groups below share one saved sign-in session where shown.
 
 | Auth group | Runtime provider |
 |---|---|

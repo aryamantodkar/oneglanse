@@ -36,10 +36,9 @@ export default async function CategoryPage({
 	const items = tools.filter(entry.matches);
 	return (
 		<ContentShell
-			eyebrow="Tool directory"
 			title={entry.title}
 			intro={entry.description}
-			backLink={{ label: "All tools", href: "/ai-visibility-tools" }}
+			backLink={{ label: "All AI tools", href: "/ai-visibility-tools" }}
 		>
 			<p className="mb-5 text-xs text-muted-foreground">
 				{items.length} tools · Checked {verifiedAt}
@@ -53,12 +52,12 @@ export default async function CategoryPage({
 					))}
 				</ul>
 				<p>
-					Browse all deployment and collection options in the{" "}
+					See the other products in the{" "}
 					<Link
 						href="/ai-visibility-tools"
 						className="text-foreground underline underline-offset-4"
 					>
-						tool directory
+						AI tools directory
 					</Link>
 					.
 				</p>

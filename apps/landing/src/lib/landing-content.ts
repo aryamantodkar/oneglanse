@@ -1,20 +1,15 @@
 import {
-	Activity,
 	Boxes,
 	Database,
-	Eye,
 	GitBranch,
 	KeyRound,
-	Radar,
-	SearchCheck,
 	ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 
-export const PRODUCT_POSITIONING =
-	"Free, open-source AI visibility tracking for marketing teams.";
-export const PRODUCT_SUMMARY = `${PRODUCT_POSITIONING} Collect rendered answers and available citations from supported AI product interfaces, then analyze responses with a model endpoint you configure.`;
+export const PRODUCT_POSITIONING = "See how your brand shows up in AI answers.";
+export const PRODUCT_SUMMARY = `${PRODUCT_POSITIONING} OneGlanse runs your prompts on ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview, saves the answers and citations, and analyzes them with a model you connect. Free and open source.`;
 export const SITE_TITLE = "OneGlanse | Open-source AI Visibility & GEO Tracker";
 
 export const SITE_URLS = {
@@ -47,99 +42,50 @@ export const SOCIAL_METADATA = {
 	},
 } satisfies Pick<Metadata, "openGraph" | "twitter">;
 
-type FeatureItem = {
-	title: string;
-	description: string;
-	icon: LucideIcon;
-};
-
-export const FEATURE_ITEMS: FeatureItem[] = [
-	{
-		title: "Free to Run Locally",
-		description:
-			"Run OneGlanse without a subscription or usage fee. Provider plans, hosting, and model usage can cost extra.",
-		icon: KeyRound,
-	},
-	{
-		title: "Your Own Provider Accounts",
-		description:
-			"Use your own provider accounts. Sessions stay in your local runtime or on the self-hosted server you control.",
-		icon: ShieldCheck,
-	},
-	{
-		title: "AI Visibility Tracking",
-		description: "Inspect mentions and recommendations in captured responses.",
-		icon: Eye,
-	},
-	{
-		title: "Response Analysis",
-		description:
-			"Compare mentions, rank, sentiment, recommendations, citations, and source domains in captured answers.",
-		icon: Radar,
-	},
-	{
-		title: "Multi-Provider Prompt Testing",
-		description:
-			"Run one prompt set across ChatGPT, Claude, Gemini, Perplexity, and AI Overview.",
-		icon: SearchCheck,
-	},
-	{
-		title: "Self-hostable Architecture",
-		description:
-			"Deploy the web app, worker, databases, and queue in infrastructure you control.",
-		icon: Boxes,
-	},
-	{
-		title: "ClickHouse Analytics",
-		description:
-			"Query captured responses, citations, and analysis data in ClickHouse.",
-		icon: Database,
-	},
-	{
-		title: "Open-source Transparency",
-		description:
-			"Read the code that collects provider responses and produces model-backed analysis.",
-		icon: Activity,
-	},
-];
-
 export const STORAGE_KEY = "oneglanse-landing-theme" as const;
-
-export const METHOD_POINTS = [
-	"Collection uses browser automation on the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview interfaces. Provider collection does not use model APIs.",
-	"Use your own provider accounts. Sessions stay on your local machine or, in self-host mode, are transferred to your own Agent server.",
-	"After collection, captured response text is analyzed by the OpenAI, Anthropic, or compatible model endpoint you configure.",
-	"A product interface and its provider API are different collection surfaces. Results can vary by account, location, prompt, and time.",
-	"Visibility, rank, sentiment, and recommendation scores are model-backed interpretations of captured answers, not measurements from the AI products.",
-] as const;
 
 export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 	{
-		text: "Run locally without a OneGlanse subscription. Provider plans, hosting, and model usage can cost extra.",
+		text: "Run locally without a OneGlanse subscription. AI accounts, hosting, and model API calls may still cost money.",
 		icon: KeyRound,
 	},
 	{
-		text: "Use your own provider accounts. Sessions stay in your local runtime or on the self-hosted server you control.",
+		text: "Use your own AI accounts. Saved logins stay on your computer or the server you run.",
 		icon: ShieldCheck,
 	},
 	{
-		text: "Fully open-source codebase with auditable commits and change history.",
+		text: "Read the code that runs prompts, saves answers, and scores them.",
 		icon: GitBranch,
 	},
 	{
-		text: "Self-hostable Docker stack for the web app, worker, queue, and data services.",
+		text: "Run the web app, agent, databases, and queue on your own server.",
 		icon: Boxes,
 	},
 	{
-		text: "Store prompts, captured responses, citations, and analysis in your local or self-hosted app stack.",
+		text: "Keep prompts, saved answers, citations, and analysis in your own app stack.",
 		icon: Database,
 	},
 ];
 
 export const DISCOVERY_LINKS = [
-	{ label: "Tools", href: "/ai-visibility-tools" },
-	{ label: "Compare", href: "/compare" },
-	{ label: "Guides", href: "/guides" },
+	{
+		label: "AI Tools",
+		href: "/ai-visibility-tools",
+		heading: "AI visibility tools",
+		allLabel: "See all AI tools",
+	},
+	{
+		label: "Compare",
+		href: "/compare",
+		heading: "Comparisons",
+		allLabel: "See all comparisons",
+	},
+	{
+		label: "Learn",
+		href: "/guides",
+		heading: "Learn",
+		allLabel: "See all articles",
+	},
 ] as const;
 
 export const FOOTER_LINKS = [

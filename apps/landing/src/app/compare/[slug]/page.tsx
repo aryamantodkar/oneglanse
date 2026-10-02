@@ -35,7 +35,6 @@ export default async function ComparisonPage({
 	if (!comparison || !other || !oneglanse) notFound();
 	return (
 		<ContentShell
-			eyebrow="Product comparison"
 			title={`OneGlanse vs ${other.name}`}
 			intro={comparison.summary}
 			backLink={{ label: "All comparisons", href: "/compare" }}
@@ -43,7 +42,7 @@ export default async function ComparisonPage({
 			<div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
 				<span>Checked {verifiedAt}</span>
 				<span aria-hidden="true">·</span>
-				<span>Based on published documentation</span>
+				<span>Based on public documentation</span>
 			</div>
 			<div className="landing-soft-card overflow-hidden">
 				<table className="content-table comparison-table w-full table-fixed text-left text-sm">
@@ -66,7 +65,7 @@ export default async function ComparisonPage({
 					</thead>
 					<tbody>
 						{[
-							["Access", oneglanse.model, other.model],
+							["Price / access", oneglanse.model, other.model],
 							[
 								"Deployment",
 								"Local or self-hosted",
@@ -74,8 +73,8 @@ export default async function ComparisonPage({
 									? "Self-hosted or vendor-hosted"
 									: "Vendor-hosted service",
 							],
-							["Collection", oneglanse.collection, other.collection],
-							["Documented targets", oneglanse.targets, other.targets],
+							["How it gets answers", oneglanse.collection, other.collection],
+							["AI products", oneglanse.targets, other.targets],
 							["Reporting", oneglanse.summary, other.summary],
 						].map(([label, own, theirs]) => (
 							<tr key={label}>
@@ -90,7 +89,7 @@ export default async function ComparisonPage({
 			<div className="mt-10 grid gap-8 border-b border-border pb-10 md:grid-cols-2 md:gap-12">
 				<section>
 					<h2 className="text-xl font-semibold tracking-tight">
-						Where {other.name} stands out
+						What {other.name} does well
 					</h2>
 					<p className="mt-3 text-sm leading-7 text-muted-foreground">
 						{comparison.otherStrength}
@@ -98,7 +97,7 @@ export default async function ComparisonPage({
 				</section>
 				<section>
 					<h2 className="text-xl font-semibold tracking-tight">
-						What the collection method means
+						How they get their answers
 					</h2>
 					<p className="mt-3 text-sm leading-7 text-muted-foreground">
 						{comparison.methodNote}
@@ -107,17 +106,19 @@ export default async function ComparisonPage({
 			</div>
 			<section className="mt-10">
 				<h2 className="text-xl font-semibold tracking-tight">
-					Choose for your workflow
+					Which one makes more sense for you?
 				</h2>
 				<div className="mt-5 grid gap-4 md:grid-cols-2">
 					<div className="landing-soft-card p-6">
-						<h3 className="font-semibold">OneGlanse fits when</h3>
+						<h3 className="font-semibold">OneGlanse makes more sense if...</h3>
 						<p className="mt-3 text-sm leading-7 text-muted-foreground">
 							{comparison.oneglanseFit}
 						</p>
 					</div>
 					<div className="landing-soft-card p-6">
-						<h3 className="font-semibold">{other.name} fits when</h3>
+						<h3 className="font-semibold">
+							{other.name} makes more sense if...
+						</h3>
 						<p className="mt-3 text-sm leading-7 text-muted-foreground">
 							{comparison.otherFit}
 						</p>
@@ -125,13 +126,11 @@ export default async function ComparisonPage({
 				</div>
 			</section>
 			<section className="mt-10 rounded-xl bg-muted/50 p-6 sm:p-7">
-				<h2 className="text-lg font-semibold">Sources and scope</h2>
+				<h2 className="text-lg font-semibold">Sources and limits</h2>
 				<p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-					We publish OneGlanse. This comparison covers documented capabilities,
-					not hands-on performance. Target lists can be examples rather than
-					full catalogs. Coverage and features can depend on a plan. A shared
-					collection method does not make two samples or scoring rules
-					equivalent.
+					I build OneGlanse, so this comparison is not independent. I have not
+					benchmarked every feature of {other.name}. The claims below come from
+					public documentation. Features and AI product access can vary by plan.
 				</p>
 				<div className="mt-5 space-y-3">
 					<SourceLinks sources={oneglanse.sources} />

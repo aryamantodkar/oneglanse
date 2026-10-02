@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 type DiscoveryMenu = {
 	label: string;
+	heading: string;
 	href: string;
 	items: Array<{ label: string; href: string }>;
 };
@@ -98,7 +99,7 @@ export function DiscoveryNav({
 							>
 								<div className="landing-surface overflow-hidden border-border bg-white/98 p-2 shadow-xl dark:bg-neutral-950/98">
 									<p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-										Explore {menu.label}
+										{menu.heading}
 									</p>
 									<ul className="max-h-[min(28rem,70vh)] overflow-y-auto pb-1">
 										{menu.items.map((item) => (

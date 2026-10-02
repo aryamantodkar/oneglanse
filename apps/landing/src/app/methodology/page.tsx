@@ -1,10 +1,6 @@
 import { SiteFooter } from "@/components/sections/site-footer";
 import { SiteHeader } from "@/components/sections/site-header";
-import {
-	PRODUCT_POSITIONING,
-	SITE_URLS,
-	SOCIAL_METADATA,
-} from "@/lib/landing-content";
+import { SITE_URLS, SOCIAL_METADATA } from "@/lib/landing-content";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -46,30 +42,26 @@ export default function MethodologyPage(): React.JSX.Element {
 			<main className="section-shell py-12 sm:py-16">
 				<article className="mx-auto max-w-4xl">
 					<header className="mb-10">
-						<p className="text-sm font-medium text-muted-foreground">
-							OneGlanse methodology
-						</p>
-						<h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
+						<h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
 							How OneGlanse collects and analyzes AI answers
 						</h1>
 						<p className="mt-5 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
-							{PRODUCT_POSITIONING} OneGlanse submits prompts through the
-							ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview
-							interfaces, then sends captured response text to the model
-							endpoint that you configure for analysis.
+							OneGlanse runs your prompts on ChatGPT, Perplexity, Gemini,
+							Claude, and Google AI Overview. It saves the answers and citations
+							shown on those websites. A separate model you connect analyzes the
+							saved text.
 						</p>
 					</header>
 
 					<div className="space-y-10">
 						<section aria-labelledby="collection-title">
 							<h2 id="collection-title" className="text-2xl font-semibold">
-								1. Collect from the product interface
+								1. Open the real website
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
-								Provider collection uses browser automation to submit configured
-								prompts and capture the rendered response and citations
-								available in that interaction. It does not use the
-								provider&apos;s model API for collection.
+								The Agent opens each website in a browser, runs your prompt, and
+								saves the answer and citations it can find on the page. It does
+								not call those products&apos; model APIs to get the answer.
 							</p>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
 								The Agent uses Camoufox for that browser layer. Read{" "}
@@ -82,38 +74,33 @@ export default function MethodologyPage(): React.JSX.Element {
 
 						<section aria-labelledby="analysis-title">
 							<h2 id="analysis-title" className="text-2xl font-semibold">
-								2. Analyze the captured response separately
+								2. Analyze the answer afterward
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
-								A separately configured OpenAI, Anthropic, or compatible model
-								endpoint analyzes captured text. The resulting visibility, rank,
-								sentiment, and recommendation fields are model-backed
-								interpretations. They are not scores returned by the provider
-								interface.
+								An OpenAI, Anthropic, or compatible model you connect analyzes
+								the saved answer. It produces the visibility, rank, sentiment,
+								and recommendation fields in the dashboard. The AI website does
+								not provide those scores.
 							</p>
 						</section>
 
 						<section aria-labelledby="interpret-title">
 							<h2 id="interpret-title" className="text-2xl font-semibold">
-								3. Interpret each result as a sample
+								3. Don&apos;t treat one answer as universal
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
-								An answer is an observation from one prompt run, account,
-								product interface, and point in time. Results can change with
-								prompt wording, account state, location, product updates, and
-								time. OneGlanse reports the captured sample; it does not claim
-								that one run represents every user or every answer from that
-								product.
+								One run is just one run. Change the prompt, account, location,
+								or date and you may get a different answer. A saved answer does
+								not tell you what every user will see.
 							</p>
 						</section>
 
 						<section aria-labelledby="comparison-title">
 							<h2 id="comparison-title" className="text-2xl font-semibold">
-								A repeatable UI-versus-API comparison
+								Want to compare the website with the API?
 							</h2>
 							<p className="mt-3 text-base leading-7 text-muted-foreground">
-								A product interface and an API are separate collection surfaces.
-								To compare them, run the same prompt on both and record the
+								Run the same prompt on the website and API. Record the
 								conditions that could affect each result:
 							</p>
 							<ul className="mt-4 list-disc space-y-2 pl-6 text-base leading-7 text-muted-foreground">

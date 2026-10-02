@@ -17,11 +17,10 @@ export function SupportedProvidersSection(): React.JSX.Element {
 					id="supported-providers-title"
 					className="text-2xl font-semibold tracking-tight sm:text-3xl"
 				>
-					Supported Providers
+					Works with five AI products
 				</h2>
 				<p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-base">
-					Browser-based collection from five supported AI product interfaces.
-					Metrics are interpretations of each captured response.
+					ChatGPT, Claude, Gemini, Perplexity, and Google AI Overview.
 				</p>
 			</div>
 

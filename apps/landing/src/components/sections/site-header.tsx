@@ -37,7 +37,7 @@ const discoveryItems: Record<
 const discoveryMenus = DISCOVERY_LINKS.map((link) => ({
 	...link,
 	items: [
-		{ label: `All ${link.label.toLowerCase()}`, href: link.href },
+		{ label: link.allLabel, href: link.href },
 		...discoveryItems[link.href],
 	],
 }));

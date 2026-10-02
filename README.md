@@ -17,9 +17,9 @@
   </a>
 </p>
 
-<p align="center">Track how your brand appears across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview using real product interfaces, not model APIs.</p>
+<p align="center">Track what ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview say about your brand. OneGlanse runs your prompts on their websites and saves the answers and citations.</p>
 
-<p align="center">Run locally for free. Bring your own provider accounts and analysis model key.</p>
+<p align="center">Free and open source. Run it locally or on your own server. Bring your own AI accounts and analysis model key.</p>
 
 <p align="center">
   <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
@@ -27,21 +27,21 @@
 
 ## What it does
 
-- Runs the prompts you choose in supported AI products and saves the visible responses.
+- Runs the prompts you choose in supported AI products and saves the answers.
 - Tracks whether and where your brand appears, how it is described, and whether it is recommended.
 - Shows competing brands that appear in the same answers.
-- Records citations and source domains that appear in captured responses.
+- Records citations and source domains that appear in saved answers.
 - Lets you inspect individual responses and follow changes across prompt runs.
 
-The scores are produced by model-backed analysis of captured answers. They help compare runs, but they are interpretations of the response text, not measurements from the AI providers themselves. See the [analysis prompt](packages/services/src/analysis/analysisPrompt.ts) for the scoring instructions.
+The model you connect produces the scores from saved answers. They help compare runs, but they are its reading of the text, not scores returned by the AI websites. See the [analysis prompt](packages/services/src/analysis/analysisPrompt.ts) for the scoring instructions.
 
-## Why UI responses differ from model API responses
+## Why OneGlanse uses the websites instead of the APIs
 
-An AI product includes more than its underlying model. Its interface can add search and retrieval, apply ranking and safety filters, personalize or shorten an answer, and present citations, source cards, recommendation order, and product-specific formatting. A model API exposes a different surface, so its answer can differ from what the product shows.
+ChatGPT or Gemini is more than the underlying model. The website can search the web, choose sources, reorder recommendations, add citations, and format the answer differently. Calling the model API may not reproduce what a user sees on the website.
 
 Surfer's [2026 study](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/) ran 1,000 prompts across five AI products and compared 13,779 answers collected from product interfaces and comparable APIs. It reported 21.3% to 31.6% overlap in named brands after normalizing brand names, and found that answer length and cited sources also varied by product. These figures describe that study's prompts and methods; results can differ for other prompts, accounts, or collection methods.
 
-Collection uses your own provider accounts and authenticated browser sessions. Results can vary by account, location, prompt, and time. OneGlanse does not claim that a single run represents every user's experience. After collection, analysis sends the response to the model endpoint you configure with your own API key.
+Runs use your own AI accounts and saved browser logins. Answers can vary by account, location, prompt, and time. After each run, OneGlanse sends the saved answer to the analysis model you configure with your own API key.
 
 ## Supported products
 
@@ -55,19 +55,20 @@ Collection uses your own provider accounts and authenticated browser sessions. R
   </tr>
 </table>
 
-<p align="center">Collection runs against their user-facing web interfaces.</p>
+<p align="center">OneGlanse runs prompts on these websites.</p>
 
 ## How it works
 
 1. Add your brand, competitors, and prompts.
-2. The agent runs each prompt through the selected product's web UI, waits for the rendered answer to stabilize, then extracts the response and citations from the page DOM with provider-specific selectors.
-3. OneGlanse stores the result, analyzes it with your configured model, and shows visibility, rank, sentiment, recommendations, sources, and changes over time.
+2. OneGlanse opens the selected AI website and runs the prompt.
+3. It saves the answer and citations.
+4. The model you connect scores the answer. The dashboard shows visibility, rank, sentiment, recommendations, sources, and changes over time.
 
 See [ARCHITECTURE.md](https://github.com/oneglanse/oneglanse/blob/main/ARCHITECTURE.md) for the full data flow.
 
 ### Why Camoufox?
 
-OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), a modified Firefox browser, with Playwright for provider collection. The project first used Chromium with custom handling for screen dimensions, browser identity, WebGL, fonts, locale, and worker contexts. Keeping those signals consistent became its own engineering task, so OneGlanse moved much of that work to Camoufox.
+OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), a modified Firefox browser, with Playwright. I first used Chromium and wrote custom code for screen dimensions, browser identity, WebGL, fonts, locale, and worker contexts. Keeping those signals consistent became its own project, so I moved much of that work to Camoufox.
 
 Camoufox is a major part of OneGlanse's UI collection layer. Credit to its contributors for building and maintaining the browser that this project relies on. OneGlanse currently installs `cloverlabs-camoufox`, with active development also at [Clover Labs](https://github.com/CloverLabsAI/camoufox). [Read why OneGlanse moved from Chromium to Camoufox →](https://oneglanse.com/why-camoufox)
 
@@ -102,7 +103,7 @@ Then start the local app:
 pnpm local
 ```
 
-Open [http://localhost:3000](http://localhost:3000), create an account, connect provider accounts at `/providers`, add prompts, and run them. The local script prepares the browser runtime, starts the supporting services, and applies database migrations. The first start can take longer while Docker images and browser files download.
+Open [http://localhost:3000](http://localhost:3000), create an account, connect provider accounts at `/providers`, add prompts, and run them. The local script prepares the browser files, starts the supporting services, and applies database migrations. The first start can take longer while Docker images and browser files download.
 
 Browser automation requires a usable desktop session for provider sign-in. Native macOS, Linux, or Windows is the documented setup path. WSL requires a working graphical display such as WSLg and is not part of the supported setup path. See the [local setup guide](https://docs.oneglanse.com/local-setup) for the full steps and troubleshooting.
 
@@ -111,24 +112,24 @@ Browser automation requires a usable desktop session for provider sign-in. Nativ
 | | Local | Self-hosted |
 | --- | --- | --- |
 | Start | `pnpm local` on your computer | `pnpm self-host` on your server |
-| App runtime | Web app and agent run from your checkout | Web app and agent run with Docker Compose |
+| App | Web app and agent run from your checkout | Web app and agent run with Docker Compose |
 | Prompt runs | Start runs manually | Schedule recurring runs |
 | Provider sign-in | Use the local browser | Sign in locally, then upload sessions to your server |
 | Browser traffic | Uses your local network | Configure a residential proxy for VPS runs |
 
-Both modes use infrastructure you control for app data. Self-hosting is intended for an always-on deployment; it needs a server, a domain, provider accounts, an analysis key, and a proxy suitable for the provider sites. The [self-hosted guide](https://docs.oneglanse.com/self-hosted-setup) covers setup, session transfer, and operations. The landing site and documentation site are separate from the app runtime.
+Both modes store app data on your computer or server. Self-hosting is intended for an always-on deployment; it needs a server, a domain, provider accounts, an analysis key, and a proxy suitable for the provider sites. The [self-hosted guide](https://docs.oneglanse.com/self-hosted-setup) covers setup, session transfer, and operations. The landing site and documentation site are separate from the app runtime.
 
-**Why no hosted app?** OneGlanse collects through real AI product interfaces, which means operating browsers, authenticated sessions, residential proxies, and bot-detection handling. Running that centrally at scale is expensive, so the current runtime is local or self-hosted. [Learn why](https://oneglanse.com/why-self-hosted).
+**Why no hosted app?** OneGlanse runs prompts on the real AI websites, which means operating browsers, authenticated sessions, residential proxies, and bot-detection handling. Running that centrally at scale is expensive, so you run the app locally or on your own server. [Learn why](https://oneglanse.com/why-self-hosted).
 
 ## Data and telemetry
 
 Captured responses, analysis results, and provider sessions are stored in the local or self-hosted app stack. Response analysis sends captured text to the OpenAI, Anthropic, or compatible model endpoint you configure. Provider sign-in and self-hosted session transfer use your own accounts and server. Review your model provider's data handling terms before you send responses to it.
 
-The app also sends `user_signed_up` and `user_active` events to PostHog. Each event contains a SHA-256 hash of the app's internal user ID; PostHog adds a receipt timestamp. The telemetry request does not include prompts, captured responses, scores, names, or email addresses. See [the telemetry implementation](apps/web/src/lib/telemetry.ts) for the exact request.
+The app also sends `user_signed_up` and `user_active` events to PostHog. Each event contains a SHA-256 hash of the app's internal user ID; PostHog adds a receipt timestamp. The telemetry request does not include prompts, saved answers, scores, names, or email addresses. See [the telemetry implementation](apps/web/src/lib/telemetry.ts) for the exact request.
 
 ## Compare AI visibility tools
 
-The [tool directory](https://oneglanse.com/ai-visibility-tools) lists sourced product facts. Read the direct comparisons with [Elmo](https://oneglanse.com/compare/oneglanse-vs-elmo), [Profound](https://oneglanse.com/compare/oneglanse-vs-profound), and [Peec AI](https://oneglanse.com/compare/oneglanse-vs-peec-ai). Each page states its evidence and limits.
+The [AI visibility tools page](https://oneglanse.com/ai-visibility-tools) compares products and links the sources behind each claim. Read the direct comparisons with [Elmo](https://oneglanse.com/compare/oneglanse-vs-elmo), [Profound](https://oneglanse.com/compare/oneglanse-vs-profound), and [Peec AI](https://oneglanse.com/compare/oneglanse-vs-peec-ai). Each page states its evidence and limits.
 
 ## Documentation and contributing
 
