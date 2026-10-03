@@ -9,7 +9,8 @@ import type { LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 
 export const PRODUCT_POSITIONING = "See how your brand shows up in AI answers.";
-export const PRODUCT_SUMMARY = `${PRODUCT_POSITIONING} OneGlanse runs your prompts on ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview, saves the answers and citations, and analyzes them with a model you connect. Free and open source.`;
+export const PRODUCT_SUMMARY =
+	"Open-source AI search analytics and visibility tracker for AEO and GEO across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Run prompts on the real websites, save answers and citations, and analyze them with your own model.";
 export const SITE_TITLE = "OneGlanse | Open-source AI Visibility & GEO Tracker";
 
 export const SITE_URLS = {

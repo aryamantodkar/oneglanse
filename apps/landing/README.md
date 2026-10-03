@@ -16,6 +16,10 @@ Public marketing site for OneGlanse, deployed separately on Vercel.
 - `src/lib/landing-content.ts`: section copy/content model.
 - `src/lib/preview-data.ts`: preview dataset used across components.
 
+The build generates `public/llms-full.txt` from the landing articles and shared
+guide, tool, and comparison data. Edit those sources instead of the generated
+file.
+
 ## Scripts
 
 | Command | Description |

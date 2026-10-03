@@ -1,20 +1,46 @@
 # OneGlanse
 
-> Free, open-source AI visibility tracking for marketing teams.
+> Open-source AI visibility and GEO tracking from the answers shown on AI websites.
 
-OneGlanse opens the ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview websites in a browser and saves the answers and citations it sees. It does not use their model APIs to fetch those answers. A separate model the user configures analyzes the saved text.
+OneGlanse runs prompts on ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. It saves answers and citations from the websites, then uses a separate model the user connects to score the saved text. It does not use the products' model APIs to fetch answers. Run it locally or on your own server.
 
-The model produces visibility, rank, sentiment, and recommendation scores from saved answers. Results can vary by prompt, account, location, and time.
+## Product
 
-## Links
+- [Homepage](https://oneglanse.com/): What OneGlanse does and the AI products it supports.
+- [How OneGlanse gets its data](https://oneglanse.com/methodology): Browser collection, analysis, and limits of a single run.
+- [Why OneGlanse is self-hosted](https://oneglanse.com/why-self-hosted): The cost of operating browsers and proxies for many users.
+- [Why OneGlanse uses Camoufox](https://oneglanse.com/why-camoufox): The browser change and its limits.
+- [Full site content](https://oneglanse.com/llms-full.txt): Current long-form content generated from the landing pages and their shared content data.
 
-- [Homepage](https://oneglanse.com): Product overview and supported AI products.
-- [Collection methodology](https://oneglanse.com/methodology): How OneGlanse gets answers and scores them.
-- [AI visibility tools](https://oneglanse.com/ai-visibility-tools): Product list with sources for each claim.
-- [Product comparisons](https://oneglanse.com/compare): Five comparisons with other AI visibility products.
-- [Guides](https://oneglanse.com/guides): Plain explanations of AI visibility, AEO, GEO, and SEO.
-- [Documentation](https://docs.oneglanse.com/introduction): Product and setup documentation.
-- [Local setup](https://docs.oneglanse.com/local-setup): Run OneGlanse locally.
+## Learn
+
+- [AI visibility guides](https://oneglanse.com/guides): All articles.
+- [What is AI visibility?](https://oneglanse.com/guides/ai-visibility): What to measure in a set of AI answers.
+- [Answer engine optimization (AEO)](https://oneglanse.com/guides/answer-engine-optimization): Clear source pages and measurable outcomes.
+- [Generative engine optimization (GEO)](https://oneglanse.com/guides/generative-engine-optimization): Tracking brands in AI-generated answers.
+- [AEO vs GEO vs SEO](https://oneglanse.com/guides/aeo-vs-geo-vs-seo): Where these terms overlap.
+
+## Compare
+
+- [AI visibility tools](https://oneglanse.com/ai-visibility-tools): Product directory with public sources.
+- [Open-source AI visibility tools](https://oneglanse.com/ai-visibility-tools/open-source): Products with published source code.
+- [Self-hosted AI visibility tools](https://oneglanse.com/ai-visibility-tools/self-hosted): Products you can run on your own server.
+- [Tools that use the real websites](https://oneglanse.com/ai-visibility-tools/browser-based): Products that collect at least some answers from AI websites.
+- [All comparisons](https://oneglanse.com/compare): OneGlanse alongside other products.
+- [OneGlanse vs Elmo](https://oneglanse.com/compare/oneglanse-vs-elmo): Open-source tools with different collection and reporting options.
+- [OneGlanse vs Profound](https://oneglanse.com/compare/oneglanse-vs-profound): Self-hosted tracking and managed analytics.
+- [OneGlanse vs Peec AI](https://oneglanse.com/compare/oneglanse-vs-peec-ai): Self-hosted tracking and agency reporting.
+- [OneGlanse vs Otterly AI](https://oneglanse.com/compare/oneglanse-vs-otterly-ai): Self-hosted tracking and managed daily checks.
+- [OneGlanse vs Promptwatch](https://oneglanse.com/compare/oneglanse-vs-promptwatch): Browser-based tracking and crawler analytics.
+
+## Documentation
+
+- [Documentation](https://docs.oneglanse.com/introduction): Product and setup reference.
+- [Local setup](https://docs.oneglanse.com/local-setup): Run OneGlanse on your computer.
 - [Self-hosted setup](https://docs.oneglanse.com/self-hosted-setup): Run OneGlanse on your own server.
-- [Repository](https://github.com/oneglanse/oneglanse): Source code and contribution history.
+- [Documentation index](https://docs.oneglanse.com/llms.txt): Mintlify's current documentation links.
+
+## Source
+
+- [Repository](https://github.com/oneglanse/oneglanse): Source code and change history.
 - [License](https://github.com/oneglanse/oneglanse/blob/main/LICENSE): MIT License.

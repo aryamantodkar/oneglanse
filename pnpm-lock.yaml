@@ -100,6 +100,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
+      turndown:
+        specifier: ^7.2.2
+        version: 7.2.2
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -119,6 +122,12 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.14)
+      '@types/turndown':
+        specifier: ^5.0.6
+        version: 5.0.6
+      esbuild:
+        specifier: ^0.19.12
+        version: 0.19.12
       postcss:
         specifier: ^8.5.3
         version: 8.5.6

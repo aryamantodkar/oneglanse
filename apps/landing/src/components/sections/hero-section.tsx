@@ -9,9 +9,12 @@ export function HeroSection(): React.JSX.Element {
 					<h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
 						{PRODUCT_POSITIONING}
 					</h1>
+					<p className="mt-3 max-w-xl text-sm font-medium leading-6 text-foreground sm:text-base">
+						Open-source AI visibility and GEO tracking across ChatGPT,
+						Perplexity, Gemini, Claude, and Google AI Overview.
+					</p>
 					<p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-						Run your prompts on ChatGPT, Perplexity, Gemini, Claude, and Google
-						AI Overview. OneGlanse opens the real websites, saves the answers
+						OneGlanse runs your prompts on the real websites, saves the answers
 						and citations, and lets you compare runs over time.
 					</p>
 					<p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">

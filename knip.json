@@ -10,6 +10,9 @@
 		},
 		"apps/agent": {
 			"entry": ["src/index.ts", "src/auth/cli.ts", "src/run-test.ts"]
+		},
+		"apps/landing": {
+			"entry": ["src/lib/llms-full.tsx"]
 		}
 	}
 }
