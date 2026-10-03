@@ -1,0 +1,138 @@
+import Link from "next/link";
+
+const hostedRequirements = [
+	"Residential proxy capacity and IP reputation",
+	"Provider bot detection and verification challenges",
+	"Browser fingerprints",
+	"Authenticated sessions and session expiry",
+	"Provider rate limits",
+	"Retries and failed browser runs",
+	"UI changes that break automation",
+	"Concurrent browser workers and their compute cost",
+];
+
+export const whySelfHostedTitle = "Why there isn’t a hosted OneGlanse";
+export const whySelfHostedIntro =
+	"I don’t run a hosted version of OneGlanse today because the expensive part isn’t the dashboard. It’s the browsers.";
+
+export function WhySelfHostedArticle(): React.JSX.Element {
+	return (
+		<article className="max-w-3xl space-y-10 text-base leading-7 text-muted-foreground">
+			<p>
+				I build and maintain OneGlanse on my own. I would rather spend that time
+				improving the open-source app than running proxies and browsers for
+				everyone.
+			</p>
+
+			<section className="space-y-4" aria-labelledby="ui-scale">
+				<h2 id="ui-scale" className="text-2xl font-semibold text-foreground">
+					Browsers are harder to run than API calls
+				</h2>
+				<p>
+					A service can call a model API from one server. OneGlanse instead
+					opens ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview in a
+					browser, submits prompts through each product interface, and captures
+					the rendered response and available citations.
+				</p>
+				<p>
+					That lets OneGlanse see what people get on the actual websites. A
+					hosted service would have to operate many authenticated browsers while
+					managing:
+				</p>
+				<ul className="grid list-disc gap-x-8 gap-y-2 pl-6 sm:grid-cols-2">
+					{hostedRequirements.map((requirement) => (
+						<li key={requirement}>{requirement}</li>
+					))}
+				</ul>
+				<p>
+					The cost and operational work grow with the number of prompts, users,
+					regions, and providers. For a solo-maintained project, operating that
+					infrastructure would take substantial time away from improving the
+					product.
+				</p>
+			</section>
+
+			<section className="space-y-4" aria-labelledby="proxies">
+				<h2 id="proxies" className="text-2xl font-semibold text-foreground">
+					Why proxies matter
+				</h2>
+				<p>
+					Browser automation on cloud servers usually comes from datacenter IP
+					ranges. AI product interfaces can challenge, rate-limit, or block that
+					traffic more aggressively than residential traffic. OneGlanse&apos;s
+					self-hosted mode supports routing provider traffic through a
+					residential proxy.
+				</p>
+				<p>
+					Running this centrally for every user would mean paying for proxy
+					capacity and managing IP reputation, geography, sessions, and
+					provider-specific failures. Self-hosted users instead control the
+					proxy and infrastructure for their workload.
+				</p>
+			</section>
+
+			<section className="space-y-4" aria-labelledby="sessions">
+				<h2 id="sessions" className="text-2xl font-semibold text-foreground">
+					I would also have to manage everyone’s logins
+				</h2>
+				<p>
+					The supported AI products use authenticated user sessions. In local
+					mode, you sign in through a browser on your machine. In self-hosted
+					mode, you can transfer saved sessions to your own Agent server.
+				</p>
+				<p>
+					A hosted OneGlanse service would also need to securely operate
+					third-party account sessions for many users. Running OneGlanse
+					yourself keeps those sessions on your own machine or server, instead
+					of putting them in a service I operate.
+				</p>
+			</section>
+
+			<section className="space-y-4" aria-labelledby="model-apis">
+				<h2 id="model-apis" className="text-2xl font-semibold text-foreground">
+					Why not just use the APIs?
+				</h2>
+				<p>
+					Model APIs would simplify collection infrastructure, but they would
+					change what OneGlanse measures. Product interfaces can add retrieval,
+					citations, source cards, recommendation ordering, and formatting that
+					differ from the underlying model API. OneGlanse exists to observe that
+					product surface.
+				</p>
+				<p>
+					The same design choice that makes UI collection useful also makes
+					centralized collection more expensive and difficult to operate
+					reliably.
+				</p>
+				<p>
+					Read{" "}
+					<Link href="/why-camoufox" className="content-link">
+						why OneGlanse moved from Chromium to Camoufox
+					</Link>{" "}
+					for the engineering history behind its browser choice.
+				</p>
+			</section>
+
+			<section className="space-y-4" aria-labelledby="hosted-later">
+				<h2
+					id="hosted-later"
+					className="text-2xl font-semibold text-foreground"
+				>
+					Could I host it later?
+				</h2>
+				<p>
+					Yes. Operating this infrastructure centrally is possible. It would
+					require solving the cost and reliability of browser automation, proxy
+					management, bot detection, session handling, and provider-specific
+					failures at scale.
+				</p>
+				<p>
+					Right now I would rather spend that time making the free, open-source
+					version better. You can run it locally or on your own server. If the
+					project grows enough to support the browser infrastructure, a hosted
+					version could make sense.
+				</p>
+			</section>
+		</article>
+	);
+}

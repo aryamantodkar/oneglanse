@@ -1,0 +1,575 @@
+# OneGlanse
+
+Source: https://oneglanse.com
+
+## See how your brand shows up in AI answers.
+
+Open-source AI visibility and GEO tracker for ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. Run prompts on the real websites, save answers and citations, and analyze them with your own model.
+
+---
+
+# How OneGlanse collects and analyzes AI answers
+
+Source: https://oneglanse.com/methodology
+
+OneGlanse runs your prompts on ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview. It saves the answers and citations shown on those websites. A separate model you connect analyzes the saved text.
+
+## 1\. Open the real website
+
+The Agent opens each website in a browser, runs your prompt, and saves the answer and citations it can find on the page. It does not call those products' model APIs to get the answer.
+
+The Agent uses Camoufox for that browser layer. Read [why OneGlanse moved from Chromium to Camoufox](https://oneglanse.com/why-camoufox) for the design history and its limits.
+
+## 2\. Analyze the answer afterward
+
+An OpenAI, Anthropic, or compatible model you connect analyzes the saved answer. It produces the visibility, rank, sentiment, and recommendation fields in the dashboard. The AI website does not provide those scores.
+
+## 3\. Don't treat one answer as universal
+
+One run is just one run. Change the prompt, account, location, or date and you may get a different answer. A saved answer does not tell you what every user will see.
+
+## Want to compare the website with the API?
+
+Run the same prompt on the website and API. Record the conditions that could affect each result:
+
+-   Exact prompt text and any system or follow-up context
+-   Product interface or API, model/version when available, and run time
+-   Account state, language, location, and enabled search or grounding options
+-   Rendered answer text, named brands, recommendation order, and citation URLs
+-   Number of attempts, incomplete runs, and any exclusions
+
+Repeat trials across prompts and dates. Compare answer text, brand mentions, recommendation order, and cited URLs as separate outcomes. Report the sample size and incomplete runs. Do not combine UI and API results into one metric unless the purpose and limitations of that combined metric are stated.
+
+## Related published comparison
+
+A 2026 study by [Surfer](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/) reports 21.3% to 31.6% overlap in canonicalized brand lists from a comparison of 1,000 prompts and 13,779 answers. The study used one sample per prompt and approximate model parity. These are study-specific findings, not a universal rate or a OneGlanse benchmark. OneGlanse does not currently publish its own measured cross-provider UI-versus-API benchmark.
+
+For setup details, see the [OneGlanse documentation](https://docs.oneglanse.com/introduction). The code and product behavior are available in the [public repository](https://github.com/oneglanse/oneglanse).
+
+---
+
+# Why there isn’t a hosted OneGlanse
+
+Source: https://oneglanse.com/why-self-hosted
+
+I don’t run a hosted version of OneGlanse today because the expensive part isn’t the dashboard. It’s the browsers.
+
+I build and maintain OneGlanse on my own. I would rather spend that time improving the open-source app than running proxies and browsers for everyone.
+
+## Browsers are harder to run than API calls
+
+A service can call a model API from one server. OneGlanse instead opens ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview in a browser, submits prompts through each product interface, and captures the rendered response and available citations.
+
+That lets OneGlanse see what people get on the actual websites. A hosted service would have to operate many authenticated browsers while managing:
+
+-   Residential proxy capacity and IP reputation
+-   Provider bot detection and verification challenges
+-   Browser fingerprints
+-   Authenticated sessions and session expiry
+-   Provider rate limits
+-   Retries and failed browser runs
+-   UI changes that break automation
+-   Concurrent browser workers and their compute cost
+
+The cost and operational work grow with the number of prompts, users, regions, and providers. For a solo-maintained project, operating that infrastructure would take substantial time away from improving the product.
+
+## Why proxies matter
+
+Browser automation on cloud servers usually comes from datacenter IP ranges. AI product interfaces can challenge, rate-limit, or block that traffic more aggressively than residential traffic. OneGlanse's self-hosted mode supports routing provider traffic through a residential proxy.
+
+Running this centrally for every user would mean paying for proxy capacity and managing IP reputation, geography, sessions, and provider-specific failures. Self-hosted users instead control the proxy and infrastructure for their workload.
+
+## I would also have to manage everyone’s logins
+
+The supported AI products use authenticated user sessions. In local mode, you sign in through a browser on your machine. In self-hosted mode, you can transfer saved sessions to your own Agent server.
+
+A hosted OneGlanse service would also need to securely operate third-party account sessions for many users. Running OneGlanse yourself keeps those sessions on your own machine or server, instead of putting them in a service I operate.
+
+## Why not just use the APIs?
+
+Model APIs would simplify collection infrastructure, but they would change what OneGlanse measures. Product interfaces can add retrieval, citations, source cards, recommendation ordering, and formatting that differ from the underlying model API. OneGlanse exists to observe that product surface.
+
+The same design choice that makes UI collection useful also makes centralized collection more expensive and difficult to operate reliably.
+
+Read [why OneGlanse moved from Chromium to Camoufox](https://oneglanse.com/why-camoufox) for the engineering history behind its browser choice.
+
+## Could I host it later?
+
+Yes. Operating this infrastructure centrally is possible. It would require solving the cost and reliability of browser automation, proxy management, bot detection, session handling, and provider-specific failures at scale.
+
+Right now I would rather spend that time making the free, open-source version better. You can run it locally or on your own server. If the project grows enough to support the browser infrastructure, a hosted version could make sense.
+
+---
+
+# Why OneGlanse Uses Camoufox Instead of Chromium
+
+Source: https://oneglanse.com/why-camoufox
+
+I started OneGlanse with Chromium. As I added more AI websites and moved runs to a VPS, keeping the browser working became a project of its own.
+
+In March 2026, I moved to Camoufox, a modified Firefox browser built for automated browsing. The commit history below shows why.
+
+## The original Chromium approach
+
+I tried direct Chrome DevTools Protocol (CDP) control, Playwright Chromium, a short Selenium experiment, Rebrowser Playwright, real Google Chrome in the VPS image, and a Chrome extension with native messaging. My custom fingerprint code modified many browser properties:
+
+-   Screen, viewport, and window dimensions
+-   Browser version, user agent, and client hints
+-   Operating system and hardware properties
+-   Fonts, WebGL, and canvas output
+-   Languages, locale, timezone, and geolocation
+-   Worker-context browser properties
+
+VPS execution added virtual displays, sparse system fonts, profiles, proxy identity, and session state. The project also experimented with profile warmups, mouse movement, scrolling, and variable typing. Each change had a reason. Keeping all of the signals consistent was the harder task. A browser that reports one operating system while exposing another system's fonts or graphics properties can stand out more, not less.
+
+## The browser was becoming its own project
+
+Each step links to the commit that changed the browser setup.
+
+1.  March 4, 2026: [Moved from direct CDP control to Playwright Chromium](https://github.com/oneglanse/oneglanse/commit/c7a46129)
+2.  March 4, 2026: [Tried Selenium with Playwright/CDP before returning to Playwright](https://github.com/oneglanse/oneglanse/commit/2b272e6b)
+3.  March 7, 2026: [Tried Rebrowser Playwright](https://github.com/oneglanse/oneglanse/commit/8474fd7a)
+4.  March 7, 2026: [Expanded custom fingerprint handling](https://github.com/oneglanse/oneglanse/commit/5b34fa61)
+5.  March 7, 2026: [Adjusted the VPS browser fonts](https://github.com/oneglanse/oneglanse/commit/47eef53d)
+6.  March 8, 2026: [Installed Google Chrome and added sticky proxy sessions and profiles](https://github.com/oneglanse/oneglanse/commit/503d28f4)
+7.  March 9, 2026: [Tried a Chrome extension and native messaging](https://github.com/oneglanse/oneglanse/commit/16c1ad56)
+8.  March 27, 2026: [Replaced the custom Chrome browser layer with Camoufox](https://github.com/oneglanse/oneglanse/commit/49919de2)
+9.  March 29, 2026: [Removed hardcoded OS, screen, and fingerprint overrides](https://github.com/oneglanse/oneglanse/commit/729618f7)
+
+Chromium can be automated. But I was maintaining more and more browser fingerprint code instead of working on prompts, answers, and citations.
+
+## Why I chose Camoufox
+
+[Camoufox](https://github.com/daijro/camoufox) modifies Firefox itself. It handles many fingerprint properties inside the browser, instead of relying mainly on JavaScript patches after a page loads. Its launcher uses BrowserForge to generate plausible combinations of device, screen, locale, font, and graphics properties. Playwright controls it through Firefox's Juggler path rather than Chromium's CDP path.
+
+That let me remove several hardcoded fingerprint overrides and get back to OneGlanse: keeping logins working, running prompts, saving answers and citations, and retrying failed runs.
+
+## Camoufox does not eliminate bot detection
+
+Provider interfaces can still challenge automated traffic. Datacenter IP reputation, blocked proxies, expired sessions, UI changes, CAPTCHAs, Cloudflare, Turnstile, and rate limits still matter. OneGlanse still detects challenge pages and handles proxy failures. Camoufox is one part of collection, not a promise that browser sessions will never be detected.
+
+Camoufox reduced the fingerprint code I maintain. I have not run a controlled benchmark of detection rates.
+
+## Why the browser matters here
+
+A product interface can include retrieval, citations, source cards, and ordering that differ from a model API response. OneGlanse uses the browser to observe that product surface. The browser choice therefore affects the reliability of the data it can collect, even though the analysis step runs separately.
+
+## Credit to Camoufox
+
+OneGlanse's collection layer depends on the work of the Camoufox contributors. The project began at [daijro/camoufox](https://github.com/daijro/camoufox). Current browser development also occurs at [Clover Labs](https://github.com/CloverLabsAI/camoufox). OneGlanse currently installs the \`cloverlabs-camoufox\` Python package. These contributors maintain the browser layer that lets OneGlanse spend more effort on collection and analysis.
+
+For the wider infrastructure tradeoff, read [why OneGlanse is self-hosted](https://oneglanse.com/why-self-hosted). For how a collected answer is interpreted, read the [collection methodology](https://oneglanse.com/methodology).
+
+---
+
+# What is AI visibility?
+
+Source: https://oneglanse.com/guides/ai-visibility
+
+AI visibility is how often your brand shows up in a set of AI answers you chose to track. It does not tell you what every ChatGPT or Gemini user sees.
+
+## Example metric
+
+Run 20 prompts in one product. If 18 return answers and 7 of those mention your brand, report 7/18 (38.9%) and 2 failed runs. A failed run is missing data, not proof that the brand was absent. Mention rate and the visibility score from your analysis model are different measures.
+
+## What to measure
+
+Start with the prompt and answer. Record brand mentions, recommendation order, descriptions, cited URLs, provider, account or location context, and run time. Keep the raw answer so a reader can audit the metric. Define what counts as a mention before scoring, including aliases and names shared by several brands.
+
+Separate answer mentions from citations. A brand can appear without its own site being cited; a source can be cited without an explicit brand recommendation.
+
+## Build a useful prompt set
+
+Include category, problem, comparison, and purchase-intent prompts that real buyers might ask. Write the list before running the study. Keep prompts stable across repeated runs and record any change.
+
+Group results by topic and product. Report attempted runs, valid captures, and failures beside each rate. Apply the same rule across dates; a changing denominator can distort a trend.
+
+## Don’t overread small changes
+
+Change the wording, account, location, or date and you may get a different answer. Show how many runs you made and how you got the answers. Repeat prompts before calling a small change a trend.
+
+## Sources
+
+- [Google Search Central: AI features and your website](https://developers.google.com/search/docs/appearance/ai-features)
+- [OneGlanse collection methodology](https://oneglanse.com/methodology)
+
+---
+
+# Answer engine optimization (AEO)
+
+Source: https://oneglanse.com/guides/answer-engine-optimization
+
+AEO is a loose name for making your site easier for answer engines to understand and cite. There is no official AEO standard or guaranteed ranking formula.
+
+## Example improvement
+
+A pricing page says only “contact sales.” If buyers ask whether a free plan exists, publish a direct answer with the actual plan terms and update date. Then check whether sampled answers describe the plan correctly. Publishing an answer does not guarantee retrieval or a citation.
+
+## Start with the answer
+
+For each important question, publish a direct, checkable answer. Name the entity, define terms, state limits, and link to primary evidence. Use headings that match the question a reader is trying to resolve.
+
+Update product facts at their source. If a pricing, feature, or availability claim changes, stale copies across several pages make the answer less reliable.
+
+## Keep the site accessible
+
+Make important text available in crawlable HTML. Use descriptive titles, internal links, canonical URLs, and a sitemap. For Google AI features, Google says established Search best practices remain relevant; no special AI schema or new AI text file is required. A page must be indexed and eligible for a Search snippet to qualify as a supporting link. Eligibility does not guarantee inclusion.
+
+## Check whether anything changed
+
+Track cited URLs and brand mentions separately across a fixed prompt set. Inspect the exact response before calling a change an improvement. Referral traffic and conversions are separate outcomes from appearing in an answer.
+
+## Sources
+
+- [Google Search Central: AI features and your website](https://developers.google.com/search/docs/appearance/ai-features)
+- [Google Search Essentials](https://developers.google.com/search/docs/essentials)
+
+---
+
+# Generative engine optimization (GEO)
+
+Source: https://oneglanse.com/guides/generative-engine-optimization
+
+GEO is the name people use for improving how a brand or website appears in AI-generated answers. There is no universal GEO score or recipe.
+
+## Example study
+
+Freeze 30 category prompts, a location, and the products to test. Save baseline responses and citations. Correct one outdated product fact on the canonical page. Run the same prompts again across several dates, keeping an unchanged topic as a comparison. Report the samples and failures. A before-and-after difference alone does not prove that the page edit caused it.
+
+## What the research measures
+
+The foundational GEO paper framed visibility as a measurable property of generated answers and tested content changes in an experimental setting. Its findings do not establish a universal gain for every site or engine.
+
+## What to measure
+
+Choose a stable set of relevant prompts. Capture answers and cited sources on a schedule. Identify missing or inaccurate facts about your product, then improve the original pages that should answer those questions.
+
+Publish evidence that others can verify: product documentation, methods, definitions, comparisons, and original measurements. Repeat the same prompt set after a change and keep the raw responses. Log provider updates, account changes, and other page edits that could affect the result.
+
+## Limits
+
+A mention is not a conversion. A citation does not prove that the answer is correct. An AI website and its model API may return different answers, so record which one you used.
+
+## Sources
+
+- [GEO: Generative Engine Optimization (research paper)](https://arxiv.org/abs/2311.09735)
+- [Google Search Central: AI features and your website](https://developers.google.com/search/docs/appearance/ai-features)
+- [OneGlanse collection methodology](https://oneglanse.com/methodology)
+
+---
+
+# AEO vs GEO vs SEO
+
+Source: https://oneglanse.com/guides/aeo-vs-geo-vs-seo
+
+SEO, AEO, and GEO overlap more than the names suggest. SEO asks whether people find you in search. AEO asks whether an answer engine can use your information. GEO asks how you show up in generated answers.
+
+## Use the right measure
+
+For “best CRM for a small agency,” SEO asks whether your page appears and earns clicks in search. AEO asks whether an answer cites the page and states its facts correctly. GEO asks how your brand appears in sampled generated responses. These can move in different directions.
+
+## SEO: search results
+
+Typical observations include indexed pages, impressions, rankings, clicks, and organic conversions. The unit is usually a query and a result page. Google includes traffic from AI Overviews and AI Mode in the Web search type in Search Console; this is not a separate AI visibility score.
+
+## AEO: answer selection
+
+The question is whether an answer system uses your information and presents it accurately. Track the answer text, citations, and referral behavior when the product exposes them. AEO is often used as a broad name for AI answer work.
+
+## GEO: generated responses
+
+Look at how your brand or site appears for a fixed set of prompts. Track mentions, descriptions, recommendations, citations, and changes over time. Name the AI product and say whether you used its website or API.
+
+## Where they meet
+
+Accessible, accurate pages help traditional search and can also provide source material for AI features. Google says its Search best practices apply to AI Overviews and AI Mode. A single page can serve all three goals. Report search performance, answer accuracy, mentions, and citations as separate outcomes rather than calling them one ranking.
+
+## Sources
+
+- [Google Search Central: AI features and your website](https://developers.google.com/search/docs/appearance/ai-features)
+- [GEO: Generative Engine Optimization (research paper)](https://arxiv.org/abs/2311.09735)
+
+---
+
+# AI visibility tools
+
+Source: https://oneglanse.com/ai-visibility-tools
+
+Public product information checked 2026-10-01. I build OneGlanse, so this is not an independent benchmark. Check each source and current plan details.
+
+## OneGlanse
+
+Saves answers and citations from five AI websites. A model you connect scores visibility, rank, sentiment, and recommendations.
+
+- Price / access: Free software; use your own AI accounts and analysis model
+- How it gets answers: AI websites
+- AI products: ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview.
+- Sources: [OneGlanse README](https://github.com/oneglanse/oneglanse), [Collection methodology](https://oneglanse.com/methodology)
+
+## Elmo
+
+Tracks mentions, citations, competitors, and query fan-out. Includes shareable reports, a REST API, and a CLI.
+
+- Price / access: Open-source software; cloud option
+- How it gets answers: AI websites + APIs
+- AI products: UI: ChatGPT, Perplexity, Gemini, Copilot, Google AI Mode, and AI Overviews. Direct APIs also cover Claude and other models.
+- Sources: [Elmo README](https://github.com/elmohq/elmo/blob/main/README.md), [Release notes](https://github.com/elmohq/elmo/releases)
+
+## Profound
+
+Answer Engine Insights measures brand visibility, citations, sentiment, and competitive performance; it also offers content and agent analytics.
+
+- Price / access: Subscription
+- How it gets answers: AI websites
+- AI products: Examples in Answer Engine Insights documentation: ChatGPT, Perplexity, and Gemini.
+- Sources: [Browser collection method](https://www.tryprofound.com/articles/profound-vs-ahrefs), [Answer Engine Insights](https://help.tryprofound.com/articles/3443229936-answer-engine-insights-overview), [Citation analytics](https://www.tryprofound.com/features/answer-engine-insights/citations)
+
+## Peec AI
+
+Tracks visibility, position, sentiment, and citations. Offers agency reporting, location targeting, and integrations.
+
+- Price / access: Subscription
+- How it gets answers: AI websites + APIs
+- AI products: UI targets include ChatGPT, Perplexity, Gemini, Copilot, Google AI Mode, and AI Overviews. Separate API targets are also available.
+- Sources: [Collection methods and capabilities](https://peec.ai/ai-instructions), [AI visibility monitoring](https://peec.ai/product/ai-visibility), [Agency reporting](https://peec.ai/for-agencies)
+
+## Otterly AI
+
+Runs recurring prompt checks and reports AI search visibility, citations, and competitor mentions. Engine access varies by plan.
+
+- Price / access: Subscription
+- How it gets answers: Web scraping
+- AI products: ChatGPT, Perplexity, Copilot, and Google AI Overviews. Claude, Gemini, and Google AI Mode are listed as add-ons.
+- Sources: [Web scraping method](https://otterly.ai/alternatives/otterly-vs-conductor/), [Product overview](https://otterly.ai/), [Plans and engine coverage](https://otterly.ai/pricing)
+
+## Promptwatch
+
+Combines prompt tracking, citation analysis, share of voice, crawler analytics, and content workflows.
+
+- Price / access: Subscription
+- How it gets answers: AI websites
+- AI products: Examples: ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews.
+- Sources: [Data collection method](https://promptwatch.com/data), [Product overview](https://promptwatch.com/)
+
+## Ahrefs Brand Radar
+
+Searches a large index of AI answers and tracks custom prompts, brand mentions, citations, and share of voice.
+
+- Price / access: Subscription
+- How it gets answers: AI websites; Claude custom prompts use API
+- AI products: Examples: ChatGPT, Perplexity, Gemini, Claude, Google AI Overviews, and AI Mode. Index and custom-prompt coverage differ.
+- Sources: [Brand Radar documentation](https://help.ahrefs.com/en/articles/11064852-what-is-brand-radar-and-how-to-use-it), [Product overview](https://ahrefs.com/brand-radar)
+
+## Semrush AI Visibility Toolkit
+
+Reports brand share of voice, sentiment, prompt visibility, and citations alongside Semrush search data.
+
+- Price / access: Subscription
+- How it gets answers: Not stated in public docs
+- AI products: Examples: ChatGPT, Gemini, Perplexity, and Google AI. Custom-prompt coverage differs from brand reports.
+- Sources: [AI Visibility Toolkit](https://www.semrush.com/solutions/ai-visibility/), [Getting started](https://www.semrush.com/kb/1496-getting-started-with-ai-visibility-toolkit)
+
+## Rankscale
+
+Measures mentions, citations, and brand perception across generative answer products.
+
+- Price / access: Subscription
+- How it gets answers: Not stated in public docs
+- AI products: Examples: ChatGPT, Perplexity, Gemini, Claude, Grok, Copilot, and Google AI Mode.
+- Sources: [Product facts](https://rankscale.ai/media-kit), [Product overview](https://rankscale.ai/)
+
+## Scrunch
+
+Combines AI search visibility reporting with site and agent experience analysis.
+
+- Price / access: Subscription
+- How it gets answers: Not stated in public docs
+- AI products: Examples: ChatGPT, Perplexity, Claude, Gemini, and Copilot.
+- Sources: [Product overview](https://scrunch.com/)
+
+---
+
+# Open-source AI visibility tools
+
+Source: https://oneglanse.com/ai-visibility-tools/open-source
+
+Open-source AI visibility tools whose code you can inspect and run yourself.
+
+- Read the code that gets answers and the code that scores them. Open code does not mean one answer represents every user.
+- Check the license, recent releases, setup steps, and costs for AI accounts, hosting, and model APIs.
+
+Included: OneGlanse, Elmo.
+
+---
+
+# Self-hosted AI visibility tools
+
+Source: https://oneglanse.com/ai-visibility-tools/self-hosted
+
+AI visibility tools you can run on your own server. They may still call AI services or other APIs.
+
+- Check where saved logins, answers, and model requests go. Self-hosting does not mean your data stays offline.
+- Budget for the server, database, queue, AI plans, and model usage. Check backup and upgrade steps before running it full time.
+
+Included: OneGlanse, Elmo.
+
+---
+
+# AI visibility tools that use the real websites
+
+Source: https://oneglanse.com/ai-visibility-tools/browser-based
+
+These products say they open AI websites instead of relying only on model APIs. Some use both methods.
+
+- Check how each AI product is queried. Some tools use websites for one product and APIs for another. Unknown methods are omitted.
+- Record the prompt, account, location, time, answer, and citations. Compare like with like across runs.
+
+Included: OneGlanse, Elmo, Profound, Peec AI, Otterly AI, Promptwatch, Ahrefs Brand Radar.
+
+---
+
+# OneGlanse vs Elmo
+
+Source: https://oneglanse.com/compare/oneglanse-vs-elmo
+
+Both are open source and can run on your own server. OneGlanse gets answers from five AI websites. Elmo also uses APIs and has a REST API, CLI, and shareable reports.
+
+## What Elmo does well
+
+Elmo has a REST API, CLI, shareable reports, query expansion, and recommendation features that OneGlanse does not currently have.
+
+## How they get their answers
+
+Both open AI websites. Elmo also calls model APIs for some products. Check which method produced each result. OneGlanse calls a separate model only to analyze saved answers.
+
+## OneGlanse makes more sense if
+
+You want to run everything yourself, see answers from the AI websites, and inspect the code doing the work.
+
+## Elmo makes more sense if
+
+You need its API, CLI, query expansion, or shareable reports.
+
+## Sources
+
+- [Elmo README](https://github.com/elmohq/elmo/blob/main/README.md)
+- [Release notes](https://github.com/elmohq/elmo/releases)
+
+---
+
+# OneGlanse vs Profound
+
+Source: https://oneglanse.com/compare/oneglanse-vs-profound
+
+OneGlanse runs your prompts on your own machine or server. Profound is a managed service with broader reporting and content tools.
+
+## What Profound does well
+
+Profound documents citation share, regional analysis, sentiment, competitive views, and dedicated content and agent analytics. It suits teams that need a managed platform and wider organizational reporting.
+
+## How they get their answers
+
+Profound says it uses headless browsers to query AI websites. Both products use websites, but their prompts, locations, and scoring rules can differ.
+
+## OneGlanse makes more sense if
+
+You want to keep the app and saved answers on your own machine or server and inspect how it gets them.
+
+## Profound makes more sense if
+
+You need managed analytics, regional views, and content tools.
+
+## Sources
+
+- [Browser collection method](https://www.tryprofound.com/articles/profound-vs-ahrefs)
+- [Answer Engine Insights](https://help.tryprofound.com/articles/3443229936-answer-engine-insights-overview)
+- [Citation analytics](https://www.tryprofound.com/features/answer-engine-insights/citations)
+
+---
+
+# OneGlanse vs Peec AI
+
+Source: https://oneglanse.com/compare/oneglanse-vs-peec-ai
+
+OneGlanse runs on your own machine or server. Peec AI offers managed monitoring, location targeting, and client reports.
+
+## What Peec AI does well
+
+Peec offers daily tracking, location targeting, competitor views, and multi-client agency reporting. Exports and integrations help teams share results.
+
+## How they get their answers
+
+Peec says it opens websites for most tracked products and uses APIs for others, including OpenAI Search API. OneGlanse opens its five supported websites. Check the method for each product.
+
+## OneGlanse makes more sense if
+
+You want to control the browser sessions and keep the saved answers on your own server.
+
+## Peec AI makes more sense if
+
+You need agency reports and daily checks without maintaining the app.
+
+## Sources
+
+- [Collection methods and capabilities](https://peec.ai/ai-instructions)
+- [AI visibility monitoring](https://peec.ai/product/ai-visibility)
+- [Agency reporting](https://peec.ai/for-agencies)
+
+---
+
+# OneGlanse vs Otterly AI
+
+Source: https://oneglanse.com/compare/oneglanse-vs-otterly-ai
+
+OneGlanse runs locally or on your server with your own accounts. Otterly AI sells managed daily monitoring with plan-based prompt and engine limits.
+
+## What Otterly AI does well
+
+Otterly AI documents daily tracking, team access, and higher-tier API and MCP access. Its pricing page states which engines are included and which require add-ons.
+
+## How they get their answers
+
+Otterly says it uses web scraping. Both products get answers from AI websites, but prompts, location, account, and scoring can differ.
+
+## OneGlanse makes more sense if
+
+You want open code, control over saved logins, and answers from the supported AI websites.
+
+## Otterly AI makes more sense if
+
+Managed recurring checks and a ready-made team service are worth the subscription and plan limits.
+
+## Sources
+
+- [Web scraping method](https://otterly.ai/alternatives/otterly-vs-conductor/)
+- [Product overview](https://otterly.ai/)
+- [Plans and engine coverage](https://otterly.ai/pricing)
+
+---
+
+# OneGlanse vs Promptwatch
+
+Source: https://oneglanse.com/compare/oneglanse-vs-promptwatch
+
+Both get answers from AI websites. OneGlanse is open source and self-hosted; Promptwatch adds crawler analytics and content tools.
+
+## What Promptwatch does well
+
+Promptwatch documents prompt tracking, citation analysis, share of voice, AI crawler activity, and content agents. These go beyond OneGlanse's tracking and response analysis scope.
+
+## How they get their answers
+
+Promptwatch says it gets answers from AI websites. So does OneGlanse. Compare which products and prompts each tracks before comparing results.
+
+## OneGlanse makes more sense if
+
+You want to inspect the browser code and keep the app and answers on your own server.
+
+## Promptwatch makes more sense if
+
+You need crawler analytics and content tools in a managed service.
+
+## Sources
+
+- [Data collection method](https://promptwatch.com/data)
+- [Product overview](https://promptwatch.com/)

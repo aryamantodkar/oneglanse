@@ -72,7 +72,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" className={geist.variable} suppressHydrationWarning>
 			<head>
-				<link rel="describedby" href="/llms.txt" />
+				<link rel="describedby" href="/llms.txt" type="text/markdown" />
 			</head>
 			<body>
 				<script
