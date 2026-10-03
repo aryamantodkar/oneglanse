@@ -14,18 +14,28 @@ const geist = Geist({
 	variable: "--font-geist-sans",
 });
 
+const DISCOVERY_KEYWORDS = [
+	"AI visibility",
+	"AI visibility tracker",
+	"AI visibility tracking",
+	"AI search analytics",
+	"AI search optimization",
+	"AEO",
+	"answer engine optimization",
+	"GEO",
+	"generative engine optimization",
+	"LLMO",
+	"brand monitoring",
+	"open-source AI visibility",
+	"self-hosted AI visibility",
+	"oneglanse",
+] as const;
+
 export const metadata: Metadata = {
 	metadataBase: new URL(SITE_URLS.homepage),
 	title: SITE_TITLE,
 	description: PRODUCT_SUMMARY,
-	keywords: [
-		"AI visibility",
-		"AI visibility tracker",
-		"AI visibility tracking",
-		"open-source AI visibility tracker",
-		"AI answer monitoring",
-		"oneglanse",
-	],
+	keywords: [...DISCOVERY_KEYWORDS],
 	alternates: {
 		canonical: SITE_URLS.homepage,
 	},
@@ -63,7 +73,7 @@ const jsonLd = {
 		url: SITE_URLS.homepage,
 		sameAs: [SITE_URLS.github],
 	},
-	keywords: "AI visibility tracking, open-source software, marketing analytics",
+	keywords: DISCOVERY_KEYWORDS.join(", "),
 };
 
 export default function RootLayout({
