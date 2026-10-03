@@ -1,6 +1,6 @@
 <h1 align="center">OneGlanse</h1>
 
-<p align="center"><strong>Free, open-source AI visibility tracking for marketing teams.</strong></p>
+<p align="center"><strong>Open-source AI visibility &amp; GEO tracker.</strong></p>
 
 <p align="center">
   <a href="https://github.com/oneglanse/oneglanse/stargazers">
@@ -17,7 +17,7 @@
   </a>
 </p>
 
-<p align="center">Track what ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview say about your brand. OneGlanse runs your prompts on their websites and saves the answers and citations.</p>
+<p align="center">Track what ChatGPT, Perplexity, Gemini, Claude, and Google AI Overview say about your brand by running prompts on their actual websites, not model APIs.</p>
 
 <p align="center">Free and open source. Run it locally or on your own server. Bring your own AI accounts and analysis model key.</p>
 
